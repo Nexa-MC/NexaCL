@@ -1,4 +1,5 @@
 [
+  {"source":"内存分析","en":"Memory analysis","zh-Hant":"記憶體分析"},
   {"source":"整合包开发","en":"Modpack development","zh-Hant":"整合包開發"},
   {"source":"整合包开发模式","en":"Modpack development mode","zh-Hant":"整合包開發模式"},
   {"source":"显示导出、依赖网络、快照回滚和诊断工具，并自动保留历史快照。","en":"Show export, dependency graph, snapshot rollback and diagnostic tools, and retain snapshot history.","zh-Hant":"顯示匯出、相依網路、快照回復及診斷工具，並自動保留歷史快照。"},

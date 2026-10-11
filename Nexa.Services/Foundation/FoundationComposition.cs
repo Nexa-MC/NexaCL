@@ -152,7 +152,7 @@ public sealed class FoundationHost : IDisposable
             capabilityRegistry, capabilityProviders, StateStore,
             timeout: TimeSpan.FromSeconds(45),
             derivations: MachineDerivedRules.Defaults(),
-            projections: [new ResourceEstimatorProjection(history: ObservationHistory), new OnlineWorkingSetProjection(OnlineResourceModels), new LaunchPolicyProjection(), new PreflightProjection()]);
+            projections: [new UnavailableResourceEstimatorProjection(), new LaunchPolicyProjection(), new PreflightProjection()]);
         ResourceEstimator = new ResourceEstimator(history: ObservationHistory);
         Preflight = new CapabilityPreflightEngine();
         Tasks = tasks ?? throw new ArgumentNullException(nameof(tasks));

@@ -170,8 +170,12 @@ public sealed class CapabilityPreflightEngine
         AddBoolean(snapshot, collected, "mod.derived.compatibility_critical", "MOD_COMPAT_CRITICAL",
             PreflightSeverity.Critical, "mod", ["remediation.mod.resolve_conflict"]);
 
-        AddEstimateStateRules(snapshot, collected);
-        AddMemoryRules(snapshot, collected);
+        bool estimatesUnavailable = snapshot.Get<string>("estimate.status") is { Availability: CapabilityAvailability.TemporarilyUnavailable };
+        if (!estimatesUnavailable)
+        {
+            AddEstimateStateRules(snapshot, collected);
+            AddMemoryRules(snapshot, collected);
+        }
         AddInputRules(snapshot, collected);
         AddBoolean(snapshot, collected, "gpu.derived.low_performance_selected", "GPU_LOW_PERFORMANCE_ADAPTER",
             PreflightSeverity.Warning, "gpu", ["remediation.gpu.select_high_performance"]);
@@ -179,7 +183,7 @@ public sealed class CapabilityPreflightEngine
             PreflightSeverity.Critical, "gpu", ["remediation.gpu.reduce_resource_settings"]);
         long gpuBudget = BytesToMiB(ReadAvailableLong(snapshot, "gpu.memory.dedicated.available_budget"));
         long graphicsLaunch = ReadAvailableLong(snapshot, "estimate.graphics.total");
-        AddEstimatedGpuLimit(collected, gpuBudget > 0 && graphicsLaunch > gpuBudget);
+        AddEstimatedGpuLimit(collected, !estimatesUnavailable && gpuBudget > 0 && graphicsLaunch > gpuBudget);
         AddBoolean(snapshot, collected, "thermal.derived.gpu_high", "GPU_TEMPERATURE_HIGH",
             PreflightSeverity.Warning, "gpu", []);
         AddBoolean(snapshot, collected, "thermal.derived.gpu_near_limit", "GPU_TEMPERATURE_NEAR_LIMIT",
@@ -465,8 +469,12 @@ public sealed class PreflightProjection : ICapabilityProjection
             PreflightCatalog.OverallSeverity.Observe(report.OverallSeverity.ToString(), timestamp, source),
         ];
         HashSet<string> codes = report.Issues.Select(static issue => issue.Code).ToHashSet(StringComparer.Ordinal);
-        projected.AddRange(PreflightCatalog.RuleDefinitions.Select(pair => pair.Value.Observe(
-            codes.Contains(PreflightCatalog.RuleCodes[pair.Key]), timestamp, source)));
+        bool estimatesUnavailable = values.GetValueOrDefault("estimate.status")?.Availability == CapabilityAvailability.TemporarilyUnavailable;
+        projected.AddRange(PreflightCatalog.RuleDefinitions.Select(pair =>
+            estimatesUnavailable && (pair.Key.StartsWith("preflight.memory.", StringComparison.Ordinal)
+                || pair.Key.StartsWith("preflight.estimator.", StringComparison.Ordinal) || pair.Key == "preflight.gpu.vram.launch_critical")
+                ? pair.Value.Unavailable(CapabilityAvailability.TemporarilyUnavailable, timestamp, "暂不可用")
+                : pair.Value.Observe(codes.Contains(PreflightCatalog.RuleCodes[pair.Key]), timestamp, source)));
         return Array.AsReadOnly(projected.ToArray());
     }
 }

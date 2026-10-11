@@ -98,5 +98,13 @@ internal static partial class Program
         PumpUntil(() => FindByKey(fixture.Shell, scene, "HardwareAdvice.RenderDistance.Facts").Text!.StartsWith("16 chunks", StringComparison.Ordinal));
         AssertEqual(revision, fixture.Foundation.Host.SettingsPolicy.Read(new()).Value!.Revision);
         AssertTrue(evaluated.Any(snapshot => ReferenceEquals(snapshot, current)));
+        current = new MachineCapabilitySnapshot(3, now,
+            new UnavailableResourceEstimatorProjection().Project(new Dictionary<string, ICapability>(), now));
+        fixture.Store.Publish(fixture.Store.Resolve(MachineCapabilityStateContract.RevisionKey), 3L);
+        PumpUntil(() => HasKey(fixture.Shell, scene, "PlatformCapability.estimate.status")
+            && !HasKey(fixture.Shell, scene, "HardwareAdvice.Risk.Facts"));
+        AssertFalse(HasKey(fixture.Shell, scene, "PlatformCapability.estimate.heap.launch"));
+        AssertTrue(scene.Nodes.Any(node => node.Text == "暂不可用"));
+
     }
 }

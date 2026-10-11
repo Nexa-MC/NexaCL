@@ -106,6 +106,8 @@ internal sealed partial class SettingsPageController
             ? new(MinecraftRootDirectory: library.RootDirectory)
             : new(instance.DirectoryPath, instance.Id, library.RootDirectory);
     }
+    private bool MemoryAnalysisUnavailable => _machine?.Get<string>("estimate.status") is { Availability: CapabilityAvailability.TemporarilyUnavailable };
+
     private void BuildPlatformCapabilities()
     {
         var toolbar = Stack(_sections, "PlatformToolbar", XsrUiOrientation.Horizontal, 12);
@@ -122,6 +124,10 @@ internal sealed partial class SettingsPageController
             // (they rendered as endless 尚未接入检测提供方 rows), and remediation-style
             // Action definitions are operations, not observations.
             var visible = _machine.Values
+                .Where(value => !MemoryAnalysisUnavailable || !value.Id.StartsWith("estimate.", StringComparison.Ordinal) || value.Id == "estimate.status")
+                .Where(value => !(MemoryAnalysisUnavailable && value.Availability == CapabilityAvailability.TemporarilyUnavailable
+                    && (value.Id.StartsWith("preflight.memory.", StringComparison.Ordinal)
+                        || value.Id.StartsWith("preflight.estimator.", StringComparison.Ordinal) || value.Id == "preflight.gpu.vram.launch_critical")))
                 .Where(value => value.Definition.Kind != CapabilityKind.Action && value.Definition.Kind != CapabilityKind.Policy)
                 .Where(value => value.Id is not "input.gyroscope.available" and not "input.haptics.available"
                     and not "mod.metadata.fingerprint" and not "minecraft.settings.fingerprint")
@@ -139,7 +145,7 @@ internal sealed partial class SettingsPageController
                 .ToList();
             foreach (var group in orderedGroups)
             {
-                Text(_sections, group, 12, Muted, 24, 600);
+                Text(_sections, MemoryAnalysisUnavailable && group == "资源估算" ? "内存分析" : group, 12, Muted, 24, 600);
                 var card = SettingsCard("PlatformCard." + group, new(16, 6, 16, 6));
                 foreach (var value in visible.Where(value => value.Definition.Group == group))
                     BuildCapabilityRow(card, value);

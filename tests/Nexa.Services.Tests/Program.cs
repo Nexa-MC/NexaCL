@@ -6,6 +6,7 @@ internal static partial class Program
     [
         ..RegisterFoundationAndContent(),
         ..RegisterProxy(),
+        ("unavailable memory analysis retains other preflight checks", Sync(UnavailableMemoryAnalysisRetainsOtherPreflightChecks)),
         ("instance development mode is local and recovery independent", InstanceDevelopmentModeIsLocalAndRecoveryIndependent),
         ..RegisterRuntimeEvidence(),
         ..RegisterPolicyAndSecurity(),

@@ -27,7 +27,7 @@ internal sealed partial class SettingsPageController
     }
     private void BuildHardwareAdvice()
     {
-        if (_machine is not { } source || !_machineScope.HasInstanceScope) { RetireHardwareAdvice(); return; }
+        if (_machine is not { } source || !_machineScope.HasInstanceScope || MemoryAnalysisUnavailable) { RetireHardwareAdvice(); return; }
         if (!ReferenceEquals(_hardwareAdviceSource, source))
         {
             RetireHardwareAdvice(); _hardwareAdviceSource = source;

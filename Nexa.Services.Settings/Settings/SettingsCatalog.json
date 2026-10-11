@@ -1,4 +1,5 @@
 [
+  {"id":"global.game.preflight-memory-analysis","parent":null,"scope":"global","page":"game","section":"启动预检","label":"内存分析","kind":"Setting","key":null,"developer":false,"availability":"TemporarilyUnavailable"},
   {"id":"instance.development-mode","parent":null,"scope":"instance","page":"overview","section":"整合包开发","label":"整合包开发模式","kind":"Setting","key":"instance.development-mode","developer":false,"availability":"Available"},
   {
     "id": "instance.recovery.keep-history",
