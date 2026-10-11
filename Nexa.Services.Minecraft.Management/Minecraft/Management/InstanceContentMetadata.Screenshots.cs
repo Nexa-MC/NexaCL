@@ -14,9 +14,7 @@ internal static partial class InstanceContentMetadata
     {
         token.ThrowIfCancellationRequested();
         if (!CanReadScreenshot(item, headerBudget)) return item;
-        CheckPath(path);
-        await using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1,
-            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        await using var input = OpenPresentationRead(path);
         return await ReadScreenshotStreamAsync(item, path, input, previewBudget, headerBudget, token).ConfigureAwait(false);
     }
 

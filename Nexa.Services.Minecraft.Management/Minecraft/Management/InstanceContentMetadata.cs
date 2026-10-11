@@ -122,8 +122,7 @@ internal static partial class InstanceContentMetadata
             if (!item.IsDirectory)
             {
                 if (item.Size > 256L * 1024 * 1024) return item;
-                CheckPath(path);
-                stream = File.OpenRead(path);
+                stream = OpenPresentationRead(path);
                 try
                 {
                     archive = new ZipArchive(stream, ZipArchiveMode.Read);
@@ -233,10 +232,17 @@ internal static partial class InstanceContentMetadata
         for (string? current = path; current is not null; current = Path.GetDirectoryName(current))
             if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0) throw new IOException("不能读取链接内容。");
     }
-    private static async Task<byte[]> ReadFile(string path, int limit, ArchiveReadBudget budget, CancellationToken token)
+    // Metadata belongs to a captured file handle. Permit rename/delete while a retired
+    // UI read finishes, but never let another writer mutate bytes being interpreted.
+    internal static FileStream OpenPresentationRead(string path)
     {
         CheckPath(path);
-        using var input = File.OpenRead(path); using var output = new MemoryStream();
+        return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete,
+            4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
+    }
+    private static async Task<byte[]> ReadFile(string path, int limit, ArchiveReadBudget budget, CancellationToken token)
+    {
+        using var input = OpenPresentationRead(path); using var output = new MemoryStream();
         await ArchiveReadBudget.CopyAsync(input, output, input.Length, limit, budget, token).ConfigureAwait(false);
         return output.ToArray();
     }

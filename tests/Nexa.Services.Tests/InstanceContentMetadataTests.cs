@@ -7,6 +7,37 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask ContentPresentationReadAllowsRenameAndDeleteWithoutByteMutation()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string path = Path.Combine(root, "pack.zip");
+            string renamed = Path.Combine(root, "pack.zip.disabled");
+            const string metadata = "{\"pack\":{\"description\":\"Captured pack\",\"pack_format\":34}}";
+            using (var zip = ZipFile.Open(path, ZipArchiveMode.Create))
+            using (var writer = new StreamWriter(zip.CreateEntry("pack.mcmeta").Open()))
+                writer.Write(metadata);
+
+            await using var input = InstanceContentMetadata.OpenPresentationRead(path);
+            if (OperatingSystem.IsWindows())
+            {
+                bool rejected = false;
+                try { using var writer = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete); }
+                catch (IOException) { rejected = true; }
+                AssertTrue(rejected);
+            }
+            File.Move(path, renamed);
+            AssertTrue(!File.Exists(path) && File.Exists(renamed));
+            File.Delete(renamed);
+            AssertTrue(!File.Exists(renamed));
+            using var capturedArchive = new ZipArchive(input, ZipArchiveMode.Read, leaveOpen: true);
+            using var reader = new StreamReader(capturedArchive.GetEntry("pack.mcmeta")!.Open());
+            AssertEqual(metadata, await reader.ReadToEndAsync());
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     private static async ValueTask ContentMetadataUsesLocalNamesAndBoundedMedia()
     {
         string root = CreateTempDirectory();

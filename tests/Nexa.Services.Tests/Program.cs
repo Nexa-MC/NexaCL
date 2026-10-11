@@ -344,6 +344,7 @@ internal static partial class Program
         ("instance management follows enabled capabilities", Sync(InstanceManagementPagesFollowEnabledCapabilities)),
         ("instance management reads exact instance", InstanceManagementReadsExactInstance),
         ("content metadata uses local names and bounded media", ContentMetadataUsesLocalNamesAndBoundedMedia),
+        ("content presentation reads allow rename and delete without byte mutation", ContentPresentationReadAllowsRenameAndDeleteWithoutByteMutation),
         ("screenshot dimensions have an independent bounded header budget", ScreenshotDimensionsHaveAnIndependentBoundedHeaderBudget),
         ("screenshot headers reject malformed and unsupported facts", ScreenshotHeadersRejectMalformedAndUnsupportedFacts),
         ("screenshot metadata retires changed identity and rejects links", ScreenshotMetadataRetiresChangedIdentityAndRejectsLinks),
