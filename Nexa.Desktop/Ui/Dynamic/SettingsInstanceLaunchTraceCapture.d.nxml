@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="AdvancedLaunch.Line" Content="{data timestamp} · 执行器捕获启动计划" Localize="false" MaxLines="1" TrimOverflow="true" Class="instance-launch-line" />
+</nxml-dynamic>

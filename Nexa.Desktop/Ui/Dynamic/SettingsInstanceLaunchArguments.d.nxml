@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="AdvancedLaunch.Line.Arguments" Content="参数按真实顺序逐项显示；身份/凭证值和钩子正文不保留：" Localize="false" MaxLines="1" TrimOverflow="true" Class="instance-launch-line" />
+</nxml-dynamic>

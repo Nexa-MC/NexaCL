@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="AdvancedLaunch.Line" Content="捕获计划没有 Native 归档。" Localize="false" MaxLines="1" TrimOverflow="true" Class="instance-launch-line" />
+</nxml-dynamic>

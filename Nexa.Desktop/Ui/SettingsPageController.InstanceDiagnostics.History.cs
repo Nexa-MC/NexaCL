@@ -1,4 +1,3 @@
-using System.Globalization;
 using Nexa.Services.Logging;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
@@ -12,82 +11,131 @@ internal sealed partial class SettingsPageController
     private CancellationTokenSource? _instanceHistoryStop;
     private string? _instanceHistoryError;
     private int _instanceLaunchHistoryPage, _instanceCrashHistoryPage;
+    private XsrUiEntityId _instanceHistoryRoot;
 
     private void CancelInstanceDiagnosticHistory()
     {
         _instanceHistoryStop?.Cancel(); _instanceHistoryStop?.Dispose(); _instanceHistoryStop = null;
+        if (_instanceHistoryRead is { } retired)
+            _ = retired.ContinueWith(static task => _ = task.Exception, CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         _instanceHistoryRead = null; _instanceHistory = null; _instanceHistoryError = null;
         _instanceLaunchHistoryPage = _instanceCrashHistoryPage = 0;
         _instanceOperationPage = 0; _instanceOperationView = false;
     }
-
+    private void EnsureInstanceDiagnosticHistoryRead()
+    {
+        if (_instanceHistory is not null || _instanceHistoryRead is not null || _instanceHistoryError is not null) return;
+        if (_queries.TryResolve(DiagnosticWorkspaceContract.InstanceHistory, out var route))
+        {
+            _instanceHistoryStop = new(); var query = new DurableInstanceDiagnosticHistoryQuery(_instance!); var token = _instanceHistoryStop.Token;
+            _instanceHistoryRead = Task.Run(async () => await _queries.QueryAsync<DurableInstanceDiagnosticHistoryQuery, IReadOnlyList<DurableDiagnosticEntry>>(
+                route, query, cancellationToken: token).ConfigureAwait(false), token);
+            WakeOnPlatformCompletion(_instanceHistoryRead);
+        }
+        else _instanceHistoryError = "history.missing";
+        ProjectInstanceHistory();
+    }
     private void BuildInstanceDiagnosticHistory()
     {
-        if (_instanceHistory is null && _instanceHistoryRead is null && _instanceHistoryError is null)
-        {
-            if (_queries.TryResolve(DiagnosticWorkspaceContract.InstanceHistory, out var route))
+        _instanceHistoryRoot = AppendInstanceDiagnostic(_sections, "SettingsInstanceHistory.d.nxml", InstanceHistoryData());
+        var nodes = CatalogNodes(_instanceHistoryRoot);
+        foreach (string kind in new[] { "Launch", "Crash", "Operation" })
+            BindInstanceDiagnosticAction(nodes, "InstanceDiagnostics." + kind + "History.Next", () =>
             {
-                _instanceHistoryStop = new(); var query = new DurableInstanceDiagnosticHistoryQuery(_instance!); var token = _instanceHistoryStop.Token;
-                _instanceHistoryRead = Task.Run(async () => await _queries.QueryAsync<DurableInstanceDiagnosticHistoryQuery, IReadOnlyList<DurableDiagnosticEntry>>(route, query, cancellationToken: token).ConfigureAwait(false), token);
-                WakeOnPlatformCompletion(_instanceHistoryRead);
-            }
-            else _instanceHistoryError = "此环境未提供实例持久诊断历史。";
-        }
-        var launches = FormGroup(_sections, _instanceOperationView ? "InstanceDiagnostics.OperationHistory" : "InstanceDiagnostics.LaunchHistory", _instanceOperationView ? "操作阶段历史" : "启动历史");
-        if (_instanceHistoryError is { } error) Text(launches, error, 12, Muted, 32);
-        if (_instanceHistory is null)
-        { if (_instanceHistoryRead is not null) Text(launches, "正在读取此实例的持久运行历史…", 12, Muted, 30); return; }
-        if (_instanceOperationView) { BuildInstanceOperationHistory(launches); return; }
-        var grouped = _instanceHistory.Where(entry => entry.Instance is not null)
-            .GroupBy(entry => entry.Instance!.SessionId).Select(group => group.OrderByDescending(entry => entry.Timestamp).First()).OrderByDescending(entry => entry.Timestamp).ToArray();
-        BuildInstanceHistoryRows(launches, grouped, crashes: false);
-        var crashes = FormGroup(_sections, "InstanceDiagnostics.CrashHistory", "崩溃历史");
-        var failures = _instanceHistory.Where(entry => entry.Instance is { } instance && (instance.FailureCode is not null || instance.ExitCode is not null and not 0))
-            .GroupBy(entry => entry.Instance!.SessionId).Select(group => group.OrderByDescending(entry => entry.Timestamp).First()).OrderByDescending(entry => entry.Timestamp).ToArray();
-        BuildInstanceHistoryRows(crashes, failures, crashes: true);
-        Text(crashes, "历史仅包含结构化运行事实；旧的无实例身份记录不会混入此页。", 11, Muted, 34);
+                if (kind == "Operation") _instanceOperationPage++;
+                else if (kind == "Crash") _instanceCrashHistoryPage++;
+                else _instanceLaunchHistoryPage++;
+                ProjectInstanceHistory(kind);
+            });
+        ProjectInstanceHistory();
     }
-
-    private void BuildInstanceHistoryRows(XsrUiEntityId parent, DurableDiagnosticEntry[] entries, bool crashes)
+    private Dictionary<string, string> InstanceHistoryData()
     {
-        int pages = Math.Max(1, (entries.Length + 11) / 12);
-        int page = Math.Clamp(crashes ? _instanceCrashHistoryPage : _instanceLaunchHistoryPage, 0, pages - 1);
-        if (crashes) _instanceCrashHistoryPage = page; else _instanceLaunchHistoryPage = page;
-        if (entries.Length == 0) Text(parent, crashes ? "此实例没有已记录的异常退出。" : "此实例尚无持久运行记录。", 12, Muted, 30);
-        foreach (var entry in entries.Skip(page * 12).Take(12))
+        var result = new Dictionary<string, string>
         {
-            var row = Stack(parent, "InstanceDiagnostics.History." + entry.Instance!.SessionId.ToString("N"), XsrUiOrientation.Vertical, 3);
-            var caption = DiagnosticText(row, "InstanceDiagnostics.History.Timestamp", (entry.Instance.StartedAt ?? entry.Timestamp).ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss", CultureInfo.CurrentCulture), 13, Ink, 28);
-            DesktopLiteralText.Preserve(_shell.Tree, caption);
-            InstanceDiagnosticFact(row, "HistorySession", "运行身份", entry.Instance.SessionId.ToString("N"));
-            InstanceDiagnosticFact(row, "HistoryResult", "已记录结果", _shell.Renderer.LocalizeText(entry.Outcome switch
-            {
-                DiagnosticOperationOutcome.Started or DiagnosticOperationOutcome.Entered => "进行中",
-                DiagnosticOperationOutcome.Completed => "已完成",
-                DiagnosticOperationOutcome.Cancelled => "已取消",
-                DiagnosticOperationOutcome.Unfinished => "尚无完成记录",
-                _ => "失败或拒绝"
-            }));
-            if (entry.Instance.EndedAt is { } ended) InstanceDiagnosticFact(row, "HistoryEnded", "退出时间", ended.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss", CultureInfo.CurrentCulture));
-            if (entry.Instance.ExitCode is { } exit) InstanceDiagnosticFact(row, "HistoryExit", "退出码", exit.ToString(CultureInfo.InvariantCulture));
-            if (entry.Instance.FailureCode is { } code) InstanceDiagnosticFact(row, "HistoryFailure", "问题分类", code);
-            if (entry.Instance.LaunchDurationMilliseconds is { } duration) InstanceDiagnosticFact(row, "HistoryLaunchDuration", "进程启动耗时", duration.ToString(CultureInfo.InvariantCulture) + " ms");
+            ["pending"] = Flag(_instanceHistoryRead is not null || _instanceHistory is null && _instanceHistoryError is null),
+            ["hasError"] = Flag(_instanceHistoryError is not null),
+            ["error"] = _instanceHistoryError is null ? "" : InstanceDiagnosticTerm(_instanceHistoryError),
+            ["showStatus"] = Flag(_instanceHistory is null),
+        };
+        foreach (string kind in new[] { "Launch", "Crash", "Operation" })
+        {
+            int count = InstanceHistoryEntries(kind).Length;
+            int pages = Math.Max(1, (count + 11) / 12);
+            int requested = kind == "Launch" ? _instanceLaunchHistoryPage : kind == "Crash" ? _instanceCrashHistoryPage : _instanceOperationPage;
+            int page = requested % pages;
+            if (kind == "Launch") _instanceLaunchHistoryPage = page;
+            else if (kind == "Crash") _instanceCrashHistoryPage = page; else _instanceOperationPage = page;
+            result[kind + "Visible"] = Flag(_instanceHistory is not null && (kind == "Operation" ? _instanceOperationView : !_instanceOperationView));
+            result[kind + "Paging"] = Flag(pages > 1);
+            result[kind + "Page"] = InstanceNumber(page + 1);
+            result[kind + "Pages"] = InstanceNumber(pages);
         }
-        if (pages > 1) ManagementButton(parent, $"{page + 1}/{pages} · " + _shell.Renderer.LocalizeText("下一页"), () =>
-        {
-            if (crashes) _instanceCrashHistoryPage = (page + 1) % pages; else _instanceLaunchHistoryPage = (page + 1) % pages;
-            BuildSections(true);
-        }, 144);
+        return result;
     }
-
+    private DurableDiagnosticEntry[] InstanceHistoryEntries(string kind)
+    {
+        var entries = (_instanceHistory ?? []).Where(entry => entry.Instance is not null);
+        if (kind == "Operation") return entries.OrderByDescending(entry => entry.Timestamp).ToArray();
+        if (kind == "Crash") entries = entries.Where(entry => entry.Instance!.FailureCode is not null || entry.Instance.ExitCode is not null and not 0);
+        return entries.GroupBy(entry => entry.Instance!.SessionId).Select(group => group.OrderByDescending(entry => entry.Timestamp).First())
+            .OrderByDescending(entry => entry.Timestamp).ToArray();
+    }
+    private string InstanceDiagnosticOutcome(DiagnosticOperationOutcome outcome, bool operation = false) => InstanceDiagnosticTerm(outcome switch
+    {
+        DiagnosticOperationOutcome.Started => operation ? "outcome.started" : "outcome.running",
+        DiagnosticOperationOutcome.Entered => operation ? "outcome.entered" : "outcome.running",
+        DiagnosticOperationOutcome.Completed => "outcome.completed",
+        DiagnosticOperationOutcome.Cancelled => "outcome.cancelled",
+        DiagnosticOperationOutcome.Unfinished => "outcome.unfinished",
+        _ => "outcome.failed"
+    });
+    private void ProjectInstanceHistory(string? only = null)
+    {
+        if (!_shell.Tree.IsAlive(_instanceHistoryRoot)) return;
+        ReloadInstanceDiagnostic(_instanceHistoryRoot, InstanceHistoryData());
+        var nodes = CatalogNodes(_instanceHistoryRoot);
+        foreach (string kind in new[] { "Launch", "Crash", "Operation" })
+        {
+            if (only is not null && only != kind) continue;
+            var rows = nodes["InstanceDiagnostics." + kind + "History.Rows"];
+            _dynamic.Clear(rows);
+            if (_instanceHistory is null || (kind == "Operation" ? !_instanceOperationView : _instanceOperationView)) continue;
+            var entries = InstanceHistoryEntries(kind);
+            int page = kind == "Launch" ? _instanceLaunchHistoryPage : kind == "Crash" ? _instanceCrashHistoryPage : _instanceOperationPage;
+            if (entries.Length == 0) _dynamic.Append(rows, DesktopMarkup.Dynamic("SettingsInstance" + kind + "Empty.d.nxml"));
+            if (kind == "Operation") { ProjectInstanceOperationRows(rows, entries, page); continue; }
+            foreach (var entry in entries.Skip(page * 12).Take(12))
+            {
+                var instance = entry.Instance!;
+                _dynamic.Append(rows, DesktopMarkup.Dynamic("SettingsInstanceHistoryRow.d.nxml", new Dictionary<string, string>
+                {
+                    ["row"] = "InstanceDiagnostics.History." + instance.SessionId.ToString("N"),
+                    ["timestamp"] = InstanceTime(instance.StartedAt ?? entry.Timestamp),
+                    ["HistorySession"] = instance.SessionId.ToString("N"),
+                    ["HistoryResult"] = InstanceDiagnosticOutcome(entry.Outcome),
+                    ["hasEnded"] = Flag(instance.EndedAt is not null),
+                    ["HistoryEnded"] = instance.EndedAt is { } ended ? InstanceTime(ended) : "",
+                    ["hasExit"] = Flag(instance.ExitCode is not null),
+                    ["HistoryExit"] = instance.ExitCode is { } exit ? InstanceNumber(exit) : "",
+                    ["hasFailure"] = Flag(instance.FailureCode is not null),
+                    ["HistoryFailure"] = instance.FailureCode ?? "",
+                    ["hasDuration"] = Flag(instance.LaunchDurationMilliseconds is not null),
+                    ["HistoryLaunchDuration"] = instance.LaunchDurationMilliseconds is { } duration ? InstanceUnit("Milliseconds", InstanceNumber(duration)) : "",
+                }));
+            }
+        }
+    }
     private void UpdateInstanceDiagnostics()
     {
-        if (_selected != "diagnostics" || _instance != _instanceDiagnosticTarget)
+        if (!InstanceDiagnosticsVisible || !Nexa.Core.PathIdentity.Comparer.Equals(_instance, _instanceDiagnosticTarget))
         { if (_instanceDiagnosticTarget is not null) CancelInstanceDiagnostics(); return; }
+        EnsureInstanceDiagnosticHistoryRead();
         if (_instanceHistoryRead is not { IsCompleted: true } read) return;
         _instanceHistoryRead = null; _instanceHistoryStop?.Dispose(); _instanceHistoryStop = null;
         if (PendingQuery.Succeeded(read)) _instanceHistory = read.Result.Value!.Take(1024).ToArray();
-        else _instanceHistoryError = "无法读取此实例的持久诊断历史。";
-        BuildSections(true);
+        else _instanceHistoryError = "history.failed";
+        ProjectInstanceHistory();
     }
 }

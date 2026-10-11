@@ -9,8 +9,7 @@
   <ItemGroup>
     <AssemblyMetadata Include="NexaMicrosoftClientId" Condition="'$(NexaMicrosoftClientId)' != ''" Value="$(NexaMicrosoftClientId)" />
     <AssemblyMetadata Include="NexaLittleSkinClientId" Condition="'$(NexaLittleSkinClientId)' != ''" Value="$(NexaLittleSkinClientId)" />
-    <Content Include="Ui/**/*.nxml;Ui/**/*.nss" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <EmbeddedResource Include="Ui/Localization/messages.json" />
+    <Content Include="Ui/**/*.nxml;Ui/**/*.nss;Ui/Localization/messages.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="Assets/api-client.pfx" Condition="Exists('Assets/api-client.pfx')" />
     <EmbeddedResource Include="Assets/icon.png" />
     <EmbeddedResource Include="Assets/icon.ico" />

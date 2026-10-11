@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="AdvancedLaunch.Line" Content="未找到此类本地文档。" Localize="false" MaxLines="1" TrimOverflow="true" Class="instance-launch-line" />
+</nxml-dynamic>

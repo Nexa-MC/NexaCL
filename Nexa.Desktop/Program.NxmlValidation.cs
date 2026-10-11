@@ -254,6 +254,79 @@ internal static partial class Program
             shell.Tree.Walk(trace, entity => { if (shell.Tree.Name(entity) == "trace-detail") traceDetail = entity; return true; });
             if (shell.Tree.GetComponent<XsrUiText>(traceDetail) is not { Localize: false } traceText || !traceText.Content.StartsWith(literal, StringComparison.Ordinal))
                 throw new InvalidOperationException("Trace format reparsed literal metadata.");
+            var launchData = new Dictionary<string, string>
+            {
+                ["readEnabled"] = "true",
+                ["status"] = literal,
+                ["showStatus"] = "true",
+                ["hasFacts"] = "true",
+                ["paging"] = "true",
+                ["page"] = "1",
+                ["pages"] = "3",
+                ["previousEnabled"] = "false",
+                ["nextEnabled"] = "true"
+            };
+            foreach (string tab in new[] { "plan", "classpath", "natives", "manifest", "metadata", "lockfile", "trace" })
+            {
+                launchData[tab + "Style"] = "settings-catalog-action instance-launch-tab";
+                launchData[tab + "Selected"] = tab == "plan" ? "true" : "false";
+            }
+            var launchFacts = dynamic.Append(platformBody, DesktopMarkup.Dynamic("SettingsInstanceLaunchFacts.d.nxml", launchData, shell.Renderer.LocalizeText));
+            XsrUiEntityId launchRows = default, readFacts = default;
+            shell.Tree.Walk(launchFacts, entity =>
+            {
+                if (shell.Tree.Name(entity) == "AdvancedLaunch.Rows") launchRows = entity;
+                if (shell.Tree.Name(entity) == "AdvancedLaunch.Read") readFacts = entity;
+                return true;
+            });
+            if (shell.Tree.GetComponent<NxmlDynamicSlot>(launchRows) is null)
+                throw new InvalidOperationException("Instance launch facts lost their owned row slot.");
+            var documentLine = dynamic.Append(launchRows, DesktopMarkup.Dynamic("SettingsInstanceLaunchDocument.d.nxml",
+                new Dictionary<string, string> { ["path"] = literal, ["status"] = literal }, shell.Renderer.LocalizeText));
+            launchData["readEnabled"] = "false"; launchData["page"] = "2";
+            dynamic.Reload(launchFacts, DesktopMarkup.Dynamic("SettingsInstanceLaunchFacts.d.nxml", launchData, shell.Renderer.LocalizeText));
+            if (!shell.Tree.IsAlive(readFacts) || shell.Tree.GetComponent<XsrUiInput>(readFacts)?.Enabled != false
+                || !shell.Tree.IsAlive(documentLine) || shell.Tree.Parent(documentLine) != launchRows
+                || shell.Tree.GetComponent<XsrUiText>(documentLine) is not { Localize: false } documentText
+                || !documentText.Content.Contains(literal, StringComparison.Ordinal))
+                throw new InvalidOperationException("Instance launch reload lost input identity, owned rows or literal document metadata.");
+            var historyData = new Dictionary<string, string>
+            {
+                ["pending"] = "false",
+                ["hasError"] = "false",
+                ["error"] = "",
+                ["showStatus"] = "false",
+                ["LaunchVisible"] = "true",
+                ["CrashVisible"] = "true",
+                ["OperationVisible"] = "false",
+                ["LaunchPaging"] = "true",
+                ["CrashPaging"] = "false",
+                ["OperationPaging"] = "false",
+                ["LaunchPage"] = "1",
+                ["CrashPage"] = "1",
+                ["OperationPage"] = "1",
+                ["LaunchPages"] = "2",
+                ["CrashPages"] = "1",
+                ["OperationPages"] = "1"
+            };
+            var history = dynamic.Append(platformBody, DesktopMarkup.Dynamic("SettingsInstanceHistory.d.nxml", historyData, shell.Renderer.LocalizeText));
+            XsrUiEntityId historyNext = default;
+            shell.Tree.Walk(history, entity => { if (shell.Tree.Name(entity) == "InstanceDiagnostics.LaunchHistory.Next") historyNext = entity; return true; });
+            historyData["LaunchPage"] = "2";
+            dynamic.Reload(history, DesktopMarkup.Dynamic("SettingsInstanceHistory.d.nxml", historyData, shell.Renderer.LocalizeText));
+            if (!shell.Tree.IsAlive(historyNext))
+                throw new InvalidOperationException("History pagination lost action identity.");
+            var systemEvent = dynamic.Append(platformBody, DesktopMarkup.Dynamic("SettingsInstanceSystemEvent.d.nxml",
+                new Dictionary<string, string> { ["message"] = literal }));
+            if (shell.Tree.GetComponent<XsrUiText>(systemEvent) is not { Localize: false, MaxLines: 4 } eventText || eventText.Content != literal)
+                throw new InvalidOperationException("Bounded system event lost literal text semantics.");
+            var localization = new UiLocalizationCatalog();
+            localization.SetLanguage("en");
+            if (localization.Translate("设置") != "Settings"
+                || typeof(UiLocalizationCatalog).Assembly.GetManifestResourceNames().Contains("Nexa.Desktop.Ui.Localization.messages.json", StringComparer.Ordinal))
+                throw new InvalidOperationException("Published language bundle is missing or still embedded.");
+            Console.WriteLine("External localization validation passed: copied language catalog, English translation, no embedded fallback.");
+            Console.WriteLine("Dynamic instance diagnostics validation passed: external launch/history assets, retained actions, owned rows and literal metadata.");
             Console.WriteLine("Dynamic runtime validation passed: external metrics, retained probe action, owned slots and literal trace format.");
             Console.WriteLine("Dynamic dock validation passed: overlay ownership, process template, literal text and selection reload.");
         }

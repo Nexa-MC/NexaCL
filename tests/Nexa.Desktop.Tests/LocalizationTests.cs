@@ -94,7 +94,8 @@ internal static partial class Program
         AssertEqual("8 個版本", catalog.Translate("8 个版本"));
         catalog.SetLanguage("zh-Hans");
         AssertEqual("设置", catalog.Translate("设置"));
-        using var stream = typeof(UiLocalizationCatalog).Assembly.GetManifestResourceStream("Nexa.Desktop.Ui.Localization.messages.json")!;
+        AssertFalse(typeof(UiLocalizationCatalog).Assembly.GetManifestResourceNames().Contains("Nexa.Desktop.Ui.Localization.messages.json", StringComparer.Ordinal));
+        using var stream = File.OpenRead(Path.Combine(AppContext.BaseDirectory, "Ui", "Localization", "messages.json"));
         using var json = System.Text.Json.JsonDocument.Parse(stream);
         foreach (var entry in json.RootElement.EnumerateArray())
         {

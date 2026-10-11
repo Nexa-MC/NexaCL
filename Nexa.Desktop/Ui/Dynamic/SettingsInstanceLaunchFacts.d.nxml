@@ -1,0 +1,20 @@
+<nxml-dynamic>
+<StackPanel Key="AdvancedLaunchDiagnostics" Class="settings-diagnostics-card"><StackPanel Class="instance-diagnostics-body">
+<StackPanel Class="instance-diagnostics-toolbar"><Text Content="高级启动事实（只读）" Class="instance-diagnostics-title instance-diagnostics-spacer" /><Button Key="AdvancedLaunch.Read" Content="读取启动事实" Command="ui.settings.management.action" Enabled="{data readEnabled}" Class="settings-catalog-action instance-diagnostics-mode" /></StackPanel>
+<Text Content="读取执行器已捕获的脱敏计划和本地文档；不会刷新账户、下载依赖或启动游戏。" Class="instance-diagnostics-hint" />
+<Text Content="{data status}" Localize="false" IsVisible="{data showStatus}" Class="instance-diagnostics-hint" />
+<StackPanel Key="AdvancedLaunchTabs" Class="instance-launch-tabs" Scroll="true" IsVisible="{data hasFacts}">
+<Button Key="AdvancedLaunch.Tab.plan" Selected="{data planSelected}" Content="计划与命令" Command="ui.settings.management.action" Class="{data planStyle}" />
+<Button Key="AdvancedLaunch.Tab.classpath" Selected="{data classpathSelected}" Content="Classpath" Command="ui.settings.management.action" Class="{data classpathStyle}" />
+<Button Key="AdvancedLaunch.Tab.natives" Selected="{data nativesSelected}" Content="Natives" Command="ui.settings.management.action" Class="{data nativesStyle}" />
+<Button Key="AdvancedLaunch.Tab.manifest" Selected="{data manifestSelected}" Content="Manifest" Command="ui.settings.management.action" Class="{data manifestStyle}" />
+<Button Key="AdvancedLaunch.Tab.metadata" Selected="{data metadataSelected}" Content="实例元数据" Command="ui.settings.management.action" Class="{data metadataStyle}" />
+<Button Key="AdvancedLaunch.Tab.lockfile" Selected="{data lockfileSelected}" Content="Lockfile" Command="ui.settings.management.action" Class="{data lockfileStyle}" />
+<Button Key="AdvancedLaunch.Tab.trace" Selected="{data traceSelected}" Content="启动时间线" Command="ui.settings.management.action" Class="{data traceStyle}" />
+</StackPanel><Dynamic Key="AdvancedLaunch.Rows" Class="instance-diagnostics-rows" />
+<StackPanel Key="AdvancedLaunchPagination" Class="instance-diagnostics-toolbar" IsVisible="{data paging}">
+<Button Key="AdvancedLaunch.Previous" Content="上一页事实" Command="ui.settings.management.action" Enabled="{data previousEnabled}" Class="settings-catalog-action instance-diagnostics-page" />
+<Button Key="AdvancedLaunch.Next" Content="下一页事实" Command="ui.settings.management.action" Enabled="{data nextEnabled}" Class="settings-catalog-action instance-diagnostics-page" />
+<Text Content="第 {data page} / {data pages} 页" Localize="false" Class="instance-diagnostics-counter" />
+</StackPanel></StackPanel></StackPanel>
+</nxml-dynamic>

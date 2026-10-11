@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="InstanceDiagnostics.System.Event" Content="{data message}" Label="{data message}" Localize="false" MaxLines="4" TrimOverflow="true" Class="instance-diagnostics-event" />
+</nxml-dynamic>

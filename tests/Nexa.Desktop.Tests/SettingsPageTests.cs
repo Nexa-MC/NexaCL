@@ -14,7 +14,7 @@ internal static partial class Program
         var current = scene;
         // A durable write can finish before the profile/effective-value views consume its revision.
         // Wait for the same admission used by the real instance editor, then scroll the current card.
-        AssertTrue(SpinWait.SpinUntil(() =>
+        bool ready = SpinWait.SpinUntil(() =>
         {
             current = fixture.Shell.Render(size);
             var profiles = FindTree("LaunchProfiles");
@@ -25,7 +25,11 @@ internal static partial class Program
                 && FindTree(key).IsAssigned && !settings.SettingsWritePending
                 && (!profiles.IsAssigned || baseChoice.IsAssigned
                     && fixture.Shell.Tree.GetComponent<XsrUiInput>(baseChoice)?.Enabled == true);
-        }, TimeSpan.FromSeconds(5)));
+        }, TimeSpan.FromSeconds(5));
+        if (!ready)
+            throw new InvalidOperationException("Settings preview readiness failed: key=" + key + ", page=" + settings.SelectedSection
+                + ", target=" + FindTree(key).IsAssigned + ", pendingWrite=" + settings.SettingsWritePending
+                + ", profiles=" + FindTree("LaunchProfiles").IsAssigned + ", baseChoice=" + FindTree("LaunchProfileBase").IsAssigned);
         for (int step = -1; step < 512; step++)
         {
             // During a horizontal page transition both bodies may be visible.

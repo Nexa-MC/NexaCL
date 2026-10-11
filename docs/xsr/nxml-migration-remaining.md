@@ -37,6 +37,12 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
   preflight/remediation panels now load owned fragments and NSS. Hardware advice shares
   one asynchronous preflight evaluation per captured snapshot; presentation never queries.
   Fixed status/group/format copy is external, while service facts remain literal data.
+- Instance capture/status/resource/system-event panels, durable launch/crash/operation
+  histories and advanced captured launch facts now use external assets and owned row
+  slots. Background completions and pagination no longer rebuild the settings page.
+- The immutable language catalogue now ships as an external JSON asset. Build/publish
+  and architecture checks reject the former embedded resource; bounded parsing and
+  complete entry validation remain enforced.
 - Literal named text formats support localization before substitution, reject non-text
   placement and enforce both output and placeholder budgets. Data is never reparsed.
 - Resource filter overlays already use fragments. Other resource presentation is
@@ -58,7 +64,6 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 | Accounts and first run | `AccountFormController.cs`, `FirstRunController.cs` | Form structures, state copy, action availability and complete OOBE composition. |
 | Process and dock copy | `LaunchPageController.Process.cs`, `ProcessLogPageController.cs`, `DesktopTaskBubblePresenter.cs` | Layouts and visual constants are external; migrate remaining conditional labels and formatting, then audit all lifecycle paths. |
 | Global overlays | `DesktopCommandPalette.cs`, `DesktopFeedbackPresenter.cs` | Palette, notification/dialog collections and actions, keyboard focus and dismiss behavior. |
-| Localization assets | `UiLocalizationCatalog.cs` and `Nexa.Desktop.csproj` | Audit embedded translation data and move the remaining static language payload into the external asset bundle. |
 | Appearance | `CustomAppearanceSession.cs` | Separate runtime image/theme behavior from remaining fixed presentation construction. |
 | Task copy | `TaskCenterController.cs` | Externalize conditional labels, icons and text formatting as fragment variants/data formatting, not C# literals. |
 
@@ -322,3 +327,62 @@ and developer mode remain behavioral gates; no unobserved metric is invented.
   Validation logs/previews are under .tmp-cleanup-validation/runtime-*.
 - The overall migration is still incomplete. Instance/launch diagnostics, content
   management and the other surfaces in the remaining inventory are the next work.
+
+## Instance diagnostics / launch facts boundary
+
+Externalize the complete instance diagnostic surface: capture toolbar, current
+session/status, launch performance, guarded measured resource values, bounded
+system-event rows, durable launch/crash/operation history and advanced captured
+launch plan/document/timeline/paging. Fixed labels, status variants, metadata/unit
+formats and styles are assets. Service data remains literal, bounded and scoped.
+
+Move the existing automatic history read out of presentation into the async
+controller update lifecycle. Manual launch-fact reads remain explicit, read-only
+and coalesced. Both reads must cancel/retire on visibility, instance, page or
+development-mode changes; late results cannot populate another scope. Paging
+changes only owned row slots, with retained toolbar/focus/scroll and other captured
+sections. No observed metric may be replaced by an estimate or guessed zero.
+
+## External localization bundle boundary
+
+Move the immutable language catalogue out of embedded resources into
+Ui/Localization/messages.json beside the executable. Use the same bounded local
+asset reader as markup/styles. Preserve language resolution, literal arguments,
+named-format localization before substitution, singular forms and cached lookup.
+The catalogue is read once per presentation lifetime; translations are data and
+never executable markup. Publish/copy rules and architecture checks require the
+external file and reject the old embedded catalogue. Missing or malformed assets
+fail clearly; there is no compiled copy silently masking a broken package.
+
+## Instance diagnostics and localization validation, 2026-10-11
+
+- Desktop composition: 271 passed, 0 failed. Architecture: 69 projects passed.
+  NXML compiler/runtime: 56 passed.
+- Capture/history/operation/launch-fact partials are protected by both direct
+  node/style construction and legacy-helper factory regressions.
+- Automatic history reading is admitted by the async update lifecycle; rendering
+  does not start a query. Explicit launch capture coalesces reads. Navigation,
+  same-scope return and instance replacement cancel/discard retired tasks; unobserved
+  faults are consumed. Optional or unsampled metrics retain unavailable semantics.
+- History and launch paging preserve action/root identity and focus, and update only
+  their owned rows. Literal paths, environment names, captured arguments, document
+  lines and service metadata are not translated or reparsed as markup/bindings.
+- New named formats pass Simplified Chinese, Traditional Chinese and English checks.
+  The external language reader rejects empty, incomplete and oversized catalogues.
+  Build outputs contain the language file and no embedded copy.
+- Actual native previews captured both themes and a constrained 820px window:
+  current capture, measured-resource fields, launch/crash/operation history,
+  operation pagination, captured plan and document pagination. These instance/session
+  values are explicit read-only fixtures, not a live Minecraft measurement.
+- Native preview waits for the actual category transition to settle before scrolling.
+  Visual inspection corrected the selected tab contrast in dark mode. Existing
+  general/runtime/resource/task/dock previews continued to pass.
+- Windows x64 NativeAOT and self-contained full-trim publications succeeded. Both
+  actual executables ran --validate-shell and exited 0, positively verifying
+  Dynamic instance diagnostics and External localization validation markers.
+  The existing Jint IL2098 warning remains and is not suppressed.
+- Targeted whitespace format succeeded (workspace-loading warning). Validation
+  artifacts are under .tmp-cleanup-validation/instance-*.
+- Overall migration remains active. The remaining inventory still includes custom
+  instance pages, resources, launch/install, version selection, wardrobe/accounts/
+  OOBE, global overlays, conditional copy and appearance.

@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="AdvancedLaunch.Line" Content="此时间线限于本次启动器已观察事实，未观察阶段不会补造。" Localize="false" MaxLines="1" TrimOverflow="true" Class="instance-launch-line" />
+</nxml-dynamic>

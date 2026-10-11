@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="AdvancedLaunch.Line" Content="捕获阶段：执行器已应用图形策略，进程启动之前；后续启动结果以诊断历史为准。" Localize="false" MaxLines="1" TrimOverflow="true" Class="instance-launch-line" />
+</nxml-dynamic>

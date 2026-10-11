@@ -2,6 +2,7 @@ using System.Globalization;
 using Nexa.Core;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr;
 
 namespace Nexa.Desktop.Ui;
@@ -11,13 +12,72 @@ internal sealed partial class SettingsPageController
     private sealed record InstanceRuntimeCapture(MinecraftProcessSnapshot? Session, JvmHostObservation? Observation, JvmRunSample? Sample);
     private InstanceRuntimeCapture? _instanceDiagnosticCapture;
     private string? _instanceDiagnosticTarget;
-
+    private XsrUiEntityId _instanceDiagnosticRoot, _instanceSystemRows;
+    private readonly Dictionary<XsrUiEntityId, (string Template, Dictionary<string, string> Data)> _instanceDiagnosticViews = [];
+    private bool InstanceDiagnosticsVisible => !_disposed && _visible && _instance is not null && _selected == "diagnostics" && InstanceDevelopmentMode;
+    private static readonly Lazy<Dictionary<string, string>> InstanceDiagnosticTerms = new(() =>
+    {
+        var nodes = DesktopMarkup.Load("InstanceDiagnosticTerms.nxml").Root.Children;
+        if (nodes.Any(node => node.Recipe != NxmlRuntimeRecipe.Text || string.IsNullOrWhiteSpace(node.Key)
+            || node.Content is null || node.Bindings.Count != 0 || node.Children.Count != 0))
+            throw new NxmlCompileException("Instance diagnostic terms must be keyed literal text.");
+        return nodes.ToDictionary(node => node.Key!, node => node.Content!, StringComparer.Ordinal);
+    });
+    private string InstanceDiagnosticTerm(string key) => _shell.Renderer.LocalizeText(InstanceDiagnosticTerms.Value[key]);
+    private static string InstanceNumber(long value) => value.ToString(CultureInfo.InvariantCulture);
+    private static string InstanceTime(DateTimeOffset value) => value.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss", CultureInfo.CurrentCulture);
+    private string InstanceUnit(string template, string value) => DesktopMarkup.Dynamic("SettingsInstance" + template + ".d.nxml",
+        new Dictionary<string, string> { ["value"] = value }, _shell.Renderer.LocalizeText).Root.Content!;
+    private string InstanceBytes(long? bytes) => bytes is >= 0
+        ? InstanceUnit(bytes >= 1024 * 1024 ? "Megabytes" : "Kilobytes",
+            (bytes.Value / (bytes >= 1024 * 1024 ? 1024d * 1024 : 1024d)).ToString("N1", CultureInfo.CurrentCulture))
+        : InstanceDiagnosticTerm("unavailable");
+    private string InstanceProcessState(MinecraftProcessState state) => InstanceDiagnosticTerm(state switch
+    {
+        MinecraftProcessState.Created => "created",
+        MinecraftProcessState.Running => "running",
+        MinecraftProcessState.Exited => "exited",
+        MinecraftProcessState.Cancelled => "cancelled",
+        _ => "failed"
+    });
+    private XsrUiEntityId AppendInstanceDiagnostic(XsrUiEntityId slot, string template, Dictionary<string, string> data)
+    {
+        var root = _dynamic.Append(slot, DesktopMarkup.Dynamic(template, data, _shell.Renderer.LocalizeText));
+        _instanceDiagnosticViews[root] = (template, data);
+        return root;
+    }
+    private void ReloadInstanceDiagnostic(XsrUiEntityId root, Dictionary<string, string> data)
+    {
+        if (!_shell.Tree.IsAlive(root) || !_instanceDiagnosticViews.TryGetValue(root, out var view)) return;
+        if (view.Data.Count == data.Count && data.All(item => view.Data.GetValueOrDefault(item.Key) == item.Value)) return;
+        _dynamic.Reload(root, DesktopMarkup.Dynamic(view.Template, data, _shell.Renderer.LocalizeText));
+        _instanceDiagnosticViews[root] = (view.Template, data);
+    }
+    private void ResetInstanceDiagnosticControls()
+    {
+        _instanceDiagnosticViews.Clear();
+        _instanceDiagnosticRoot = _instanceSystemRows = _instanceHistoryRoot = _advancedLaunchRoot = default;
+    }
+    private void BindInstanceDiagnosticAction(Dictionary<string, XsrUiEntityId> nodes, string key, Action action)
+    {
+        var source = nodes[key]; string? scope = _instance;
+        _managementActions[source] = () =>
+        {
+            if (!InstanceDiagnosticsVisible || !PathIdentity.Comparer.Equals(scope, _instance)
+                || !PathIdentity.Comparer.Equals(_instanceDiagnosticTarget, _instance)
+                || _store.Read<long>(_revisionId).Value != _revision || !_shell.Tree.IsAlive(source)
+                || _shell.Tree.GetComponent<XsrUiInput>(source)?.Enabled != true) return;
+            for (var entity = source; entity.IsAssigned; entity = _shell.Tree.Parent(entity))
+                if (_shell.Tree.GetComponent<XsrUiElement>(entity)?.IsVisible == false) return;
+            action();
+        };
+    }
     private void CancelInstanceDiagnostics()
     {
         _instanceDiagnosticCapture = null; _instanceDiagnosticTarget = null;
+        _instanceDiagnosticRoot = _instanceSystemRows = default;
         CancelInstanceDiagnosticHistory();
     }
-
     private InstanceRuntimeCapture CaptureInstanceDiagnostics(string instance)
     {
         IReadOnlyList<T> Read<T>(XsrSemanticId key) => _store.TryResolve(key, out var id) ? _store.ReadCollection<T>(id).Items : [];
@@ -28,88 +88,87 @@ internal sealed partial class SettingsPageController
         var sample = Read<JvmRunSample>(JvmHostStateContract.SamplesKey).Where(item => item.SessionId == session.SessionId).OrderByDescending(item => item.Sequence).FirstOrDefault();
         return new(session, observation, sample);
     }
-
     private void BuildInstanceDiagnostics()
     {
-        if (_instance is null) return;
-        if (_instanceDiagnosticTarget != _instance) { CancelInstanceDiagnostics(); _instanceDiagnosticTarget = _instance; }
-        _instanceDiagnosticCapture ??= CaptureInstanceDiagnostics(_instance);
-        var toolbar = Stack(_sections, "InstanceDiagnostics.Toolbar", XsrUiOrientation.Horizontal, 10);
-        ManagementButton(toolbar, "刷新实例诊断", () => { CancelInstanceDiagnostics(); BuildSections(true); }, 144);
-        ManagementButton(toolbar, _instanceOperationView ? "查看运行历史" : "查看操作阶段", () => { _instanceOperationView = !_instanceOperationView; BuildSections(true); }, 144);
-        if (ExportDiagnostics is not null) ManagementButton(toolbar, "导出诊断包", () => _ = ExportDiagnosticsAsync(), 144);
-        Text(_sections, "仅显示此实例的捕获事实；点击刷新更新。缺少采样时显示不可用。", 12, Muted, 36);
-        var capture = _instanceDiagnosticCapture;
-        var status = FormGroup(_sections, "InstanceDiagnostics.Status", "当前状态");
-        if (capture.Session is not { } session) Text(status, "此实例尚无当前进程记录。", 13, Muted, 30);
-        else
+        if (!InstanceDiagnosticsVisible) return;
+        if (!PathIdentity.Comparer.Equals(_instanceDiagnosticTarget, _instance)) { CancelInstanceDiagnostics(); _instanceDiagnosticTarget = _instance; }
+        _instanceDiagnosticCapture ??= CaptureInstanceDiagnostics(_instance!);
+        _instanceDiagnosticRoot = AppendInstanceDiagnostic(_sections, "SettingsInstanceDiagnostics.d.nxml", InstanceDiagnosticData());
+        var nodes = CatalogNodes(_instanceDiagnosticRoot);
+        _instanceSystemRows = nodes["InstanceDiagnostics.System.Rows"];
+        BindInstanceDiagnosticAction(nodes, "InstanceDiagnostics.Refresh", () =>
         {
-            InstanceDiagnosticFact(status, "Session", "运行身份", session.SessionId.ToString("N"));
-            InstanceDiagnosticFact(status, "State", "进程状态", _shell.Renderer.LocalizeText(session.State switch { MinecraftProcessState.Created => "已创建", MinecraftProcessState.Running => "运行中", MinecraftProcessState.Exited => "已退出", MinecraftProcessState.Cancelled => "已取消", _ => "失败" }));
-            InstanceDiagnosticFact(status, "Window", "游戏窗口", _shell.Renderer.LocalizeText(session.GameWindowConfirmed ? "已检测到" : "未确认"));
-            if (session.ExitCode is { } exit) InstanceDiagnosticFact(status, "ExitCode", "退出码", exit.ToString(CultureInfo.InvariantCulture));
-        }
-        BuildInstanceLaunchPerformance(capture);
-        BuildInstanceResourceAnalysis(capture);
-        BuildInstanceSystemCorrelation(capture);
+            _instanceDiagnosticCapture = CaptureInstanceDiagnostics(_instance!);
+            CancelInstanceDiagnosticHistory();
+            ProjectInstanceCapture();
+            ProjectInstanceHistory();
+        });
+        BindInstanceDiagnosticAction(nodes, "InstanceDiagnostics.HistoryMode", () =>
+        {
+            _instanceOperationView = !_instanceOperationView;
+            ReloadInstanceDiagnostic(_instanceDiagnosticRoot, InstanceDiagnosticData());
+            ProjectInstanceHistory();
+        });
+        BindInstanceDiagnosticAction(nodes, "InstanceDiagnostics.Export", () => { if (ExportDiagnostics is not null) _ = ExportDiagnosticsAsync(); });
+        ProjectInstanceSystemEvents();
         BuildInstanceDiagnosticHistory();
     }
-
-    private void InstanceDiagnosticFact(XsrUiEntityId parent, string key, string label, string value)
+    private Dictionary<string, string> InstanceDiagnosticData()
     {
-        var row = Stack(parent, "InstanceDiagnostics." + key, XsrUiOrientation.Horizontal, 12);
-        _shell.Tree.GetComponent<XsrUiElement>(Text(row, label, 12, Muted, 28))!.Width = 180;
-        var text = DiagnosticText(row, "InstanceDiagnostics." + key + ".Value", value, 12, Ink, 28);
-        _shell.Tree.GetComponent<XsrUiElement>(text)!.Weight = 1;
-    }
-
-    private void BuildInstanceLaunchPerformance(InstanceRuntimeCapture capture)
-    {
-        var performance = FormGroup(_sections, "InstanceDiagnostics.Launch", "启动性能");
-        string Unknown() => _shell.Renderer.LocalizeText("不可用");
-        InstanceDiagnosticFact(performance, "StartedAt", "进程创建时间", capture.Session?.StartedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss", CultureInfo.CurrentCulture) ?? Unknown());
-        InstanceDiagnosticFact(performance, "LaunchDuration", "进程启动耗时", capture.Observation is { } observation && observation.LaunchDurationMilliseconds >= 0 ? observation.LaunchDurationMilliseconds.ToString(CultureInfo.InvariantCulture) + " ms" : Unknown());
-        InstanceDiagnosticFact(performance, "LaunchWindow", "启动采样窗口", capture.Observation is { LaunchWindowMilliseconds: > 0 } window ? window.LaunchWindowMilliseconds.ToString(CultureInfo.InvariantCulture) + " ms" : Unknown());
-        Text(performance, "进程耗时与前 30 秒采样不代表进入世界耗时或 Minecraft 帧率。", 11, Muted, 36);
-    }
-
-    private void BuildInstanceResourceAnalysis(InstanceRuntimeCapture capture)
-    {
-        var resources = FormGroup(_sections, "InstanceDiagnostics.Resources", "资源分析");
-        string Unknown() => _shell.Renderer.LocalizeText("不可用");
-        void Bytes(string key, string label, long? bytes) => InstanceDiagnosticFact(resources, key, label, bytes is >= 0 ? FormatContentSize(bytes.Value) : Unknown());
-        var observation = capture.Observation;
-        Bytes("Physical", "进程工作集峰值", observation is { CoreMetricsObserved: true } ? observation.PeakWorkingSetBytes : null);
-        Bytes("Private", "进程私有内存峰值", observation is { CoreMetricsObserved: true } ? observation.PeakPrivateBytes : null);
-        Bytes("Heap", "已测堆峰值", observation?.MeasuredHeapPeakBytes); Bytes("Native", "已测 native 峰值", observation?.MeasuredNativePeakBytes);
-        Bytes("Commit", "已测提交量峰值", observation?.MeasuredCommitPeakBytes); Bytes("GpuLocal", "已测 GPU 专用峰值", observation?.MeasuredGpuLocalPeakBytes);
-        Bytes("GpuShared", "已测 GPU 共享峰值", observation?.MeasuredGpuSharedPeakBytes); Bytes("TreePhysical", "进程树工作集峰值", observation?.PeakTreeWorkingSetBytes);
-        Bytes("PhysicalP95", "工作集 P95", observation is { CoreMetricsObserved: true } ? observation.RuntimePhysicalP95Bytes : null);
-        InstanceDiagnosticFact(resources, "CpuPeak", "已测 CPU 峰值", observation is { CpuPercentObserved: true } ? observation.CpuPeakPercent.ToString(CultureInfo.InvariantCulture) + "%" : Unknown());
-        if (capture.Sample is { SampleCount: > 0 } sample)
+        var capture = _instanceDiagnosticCapture!;
+        var session = capture.Session; var observation = capture.Observation; var sample = capture.Sample;
+        string Unknown() => InstanceDiagnosticTerm("unavailable");
+        string Milliseconds(long? value) => value is >= 0 ? InstanceUnit("Milliseconds", InstanceNumber(value.Value)) : Unknown();
+        string Mean(double? value, string unit) => value.HasValue && double.IsFinite(value.Value) && value >= 0
+            ? InstanceUnit(unit, value.Value.ToString("0.##", CultureInfo.InvariantCulture)) : Unknown();
+        bool hasSamples = sample is { SampleCount: > 0 };
+        return new()
         {
-            InstanceDiagnosticFact(resources, "SampleCount", "窗口采样次数", sample.SampleCount.ToString(CultureInfo.InvariantCulture));
-            InstanceDiagnosticFact(resources, "SampleWindow", "窗口长度", sample.WindowMilliseconds.ToString(CultureInfo.InvariantCulture) + " ms");
-            InstanceDiagnosticFact(resources, "WorkingMean", "窗口工作集均值", double.IsFinite(sample.WorkingMeanMiB) && sample.WorkingMeanMiB >= 0 ? sample.WorkingMeanMiB.ToString("0.##", CultureInfo.InvariantCulture) + " MiB" : Unknown());
-            InstanceDiagnosticFact(resources, "CpuMean", "窗口 CPU 均值", double.IsFinite(sample.CpuMeanPercent) && sample.CpuMeanPercent >= 0 ? sample.CpuMeanPercent.ToString("0.##", CultureInfo.InvariantCulture) + "%" : Unknown());
-        }
-        else Text(resources, "此实例尚无可用的运行采样窗口。", 12, Muted, 30);
+            ["historyMode"] = InstanceDiagnosticTerm("history." + Flag(_instanceOperationView)),
+            ["canExport"] = Flag(ExportDiagnostics is not null),
+            ["hasSession"] = Flag(session is not null),
+            ["noSession"] = Flag(session is null),
+            ["hasExit"] = Flag(session?.ExitCode is not null),
+            ["Session"] = session?.SessionId.ToString("N") ?? Unknown(),
+            ["State"] = session is null ? Unknown() : InstanceProcessState(session.State),
+            ["Window"] = session is null ? Unknown() : InstanceDiagnosticTerm("window." + Flag(session.GameWindowConfirmed)),
+            ["ExitCode"] = session?.ExitCode is { } exit ? InstanceNumber(exit) : Unknown(),
+            ["StartedAt"] = session is null ? Unknown() : InstanceTime(session.StartedAt),
+            ["LaunchDuration"] = Milliseconds(observation?.LaunchDurationMilliseconds),
+            ["LaunchWindow"] = observation is { LaunchWindowMilliseconds: > 0 } window ? Milliseconds(window.LaunchWindowMilliseconds) : Unknown(),
+            ["Physical"] = InstanceBytes(observation is { CoreMetricsObserved: true } ? observation.PeakWorkingSetBytes : null),
+            ["Private"] = InstanceBytes(observation is { CoreMetricsObserved: true } ? observation.PeakPrivateBytes : null),
+            ["Heap"] = InstanceBytes(observation?.MeasuredHeapPeakBytes),
+            ["Native"] = InstanceBytes(observation?.MeasuredNativePeakBytes),
+            ["Commit"] = InstanceBytes(observation?.MeasuredCommitPeakBytes),
+            ["GpuLocal"] = InstanceBytes(observation?.MeasuredGpuLocalPeakBytes),
+            ["GpuShared"] = InstanceBytes(observation?.MeasuredGpuSharedPeakBytes),
+            ["TreePhysical"] = InstanceBytes(observation?.PeakTreeWorkingSetBytes),
+            ["PhysicalP95"] = InstanceBytes(observation is { CoreMetricsObserved: true } ? observation.RuntimePhysicalP95Bytes : null),
+            ["CpuPeak"] = observation is { CpuPercentObserved: true } ? Mean(observation.CpuPeakPercent, "Percent") : Unknown(),
+            ["hasSamples"] = Flag(hasSamples),
+            ["noSamples"] = Flag(!hasSamples),
+            ["SampleCount"] = hasSamples ? InstanceNumber(sample!.SampleCount) : Unknown(),
+            ["SampleWindow"] = hasSamples ? Milliseconds(sample!.WindowMilliseconds) : Unknown(),
+            ["WorkingMean"] = hasSamples ? Mean(sample!.WorkingMeanMiB, "Mebibytes") : Unknown(),
+            ["CpuMean"] = hasSamples ? Mean(sample!.CpuMeanPercent, "Percent") : Unknown(),
+            ["hasSystem"] = Flag(observation is { SystemEventsObserved: true }),
+            ["noSystem"] = Flag(observation is not { SystemEventsObserved: true }),
+            ["emptySystem"] = Flag(observation is { SystemEventsObserved: true, SystemEvents.Count: 0 }),
+        };
     }
-
-    private void BuildInstanceSystemCorrelation(InstanceRuntimeCapture capture)
+    private void ProjectInstanceCapture()
     {
-        var system = FormGroup(_sections, "InstanceDiagnostics.System", "系统事件关联");
-        if (capture.Observation is not { SystemEventsObserved: true } observation)
-        { Text(system, "此运行的系统事件采集不可用。", 12, Muted, 30); return; }
-        Text(system, "仅列出该进程运行时段的实际事件，时间相关不能证明崩溃原因。", 11, Muted, 34);
-        if (observation.SystemEvents.Count == 0) Text(system, "采集已完成，此时段没有匹配事件。", 12, Muted, 30);
+        ReloadInstanceDiagnostic(_instanceDiagnosticRoot, InstanceDiagnosticData());
+        ProjectInstanceSystemEvents();
+    }
+    private void ProjectInstanceSystemEvents()
+    {
+        if (!_shell.Tree.IsAlive(_instanceSystemRows)) return;
+        _dynamic.Clear(_instanceSystemRows);
+        if (_instanceDiagnosticCapture?.Observation is not { SystemEventsObserved: true } observation) return;
         foreach (string message in observation.SystemEvents.Take(32))
-        {
-            string bounded = message.Length > 2048 ? message[..2048] + "…" : message;
-            var text = DiagnosticText(system, "InstanceDiagnostics.System.Event", bounded, 12, Muted, 0);
-            _shell.Tree.GetComponent<XsrUiElement>(text)!.Height = null;
-            _shell.Tree.GetComponent<XsrUiText>(text)!.MaxLines = 4;
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(text)!.WrapText = true;
-        }
+            _dynamic.Append(_instanceSystemRows, DesktopMarkup.Dynamic("SettingsInstanceSystemEvent.d.nxml",
+                new Dictionary<string, string> { ["message"] = message.Length > 2048 ? message[..2048] + "…" : message }));
     }
 }

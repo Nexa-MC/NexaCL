@@ -1,3 +1,4 @@
+using System.Globalization;
 using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Minecraft.Process;
@@ -8,97 +9,122 @@ namespace Nexa.Desktop.Ui;
 internal sealed partial class SettingsPageController
 {
     private sealed record AdvancedLaunchRead(MinecraftLaunchPlanDiagnosticSnapshot? Plan, InstanceLocalDocumentsSnapshot? Documents, string? Error);
+    private sealed record AdvancedLaunchLine(string Template, Dictionary<string, string> Data);
     private Task<AdvancedLaunchRead>? _advancedLaunchReading;
     private CancellationTokenSource? _advancedLaunchStop;
     private AdvancedLaunchRead? _advancedLaunch;
     private string? _advancedLaunchInstance;
     private string _advancedLaunchTab = "plan";
     private int _advancedLaunchPage;
+    private XsrUiEntityId _advancedLaunchRoot;
 
     private void CancelAdvancedLaunchDiagnostics()
     {
         _advancedLaunchStop?.Cancel(); _advancedLaunchStop?.Dispose(); _advancedLaunchStop = null;
+        if (_advancedLaunchReading is { } retired)
+            _ = retired.ContinueWith(static task => _ = task.Exception, CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         _advancedLaunchReading = null; _advancedLaunch = null; _advancedLaunchInstance = null;
-        _advancedLaunchPage = 0;
+        _advancedLaunchPage = 0; _advancedLaunchRoot = default;
     }
-
     private void UpdateAdvancedLaunchDiagnostics()
     {
-        if (_selected != "diagnostics" || _instance != _advancedLaunchInstance)
+        if (!InstanceDiagnosticsVisible || !Nexa.Core.PathIdentity.Comparer.Equals(_instance, _advancedLaunchInstance))
         { if (_advancedLaunchInstance is not null) CancelAdvancedLaunchDiagnostics(); return; }
         if (_advancedLaunchReading is not { IsCompleted: true } read) return;
         _advancedLaunchReading = null;
-        _advancedLaunch = read.IsCompletedSuccessfully ? read.Result : new(null, null, "读取未完成；请检查文件权限后重试。");
+        _advancedLaunch = read.IsCompletedSuccessfully ? read.Result : new(null, null, "launch.failed");
         _advancedLaunchStop?.Dispose(); _advancedLaunchStop = null;
-        BuildSections();
+        ProjectAdvancedLaunchDiagnostics();
     }
-
     private void BuildAdvancedLaunchDiagnostics()
     {
-        if (_instance is null) return;
-        var group = FormGroup(_sections, "AdvancedLaunchDiagnostics", "高级启动事实（只读）");
-        Text(group, "读取执行器已捕获的脱敏计划和本地文档；不会刷新账户、下载依赖或启动游戏。", 12, Muted, 34);
-        ManagementButton(group, "读取启动事实", ReadAdvancedLaunchDiagnostics, 124);
-        if (_advancedLaunchReading is not null) { Text(group, "正在读取本地事实…", 12, Muted, 24); return; }
-        if (_advancedLaunch is null) { Text(group, "点击读取；没有启动计划捕获时将显示未知。", 12, Muted, 24); return; }
-        if (_advancedLaunch.Error is { } error) Text(group, error, 12, Muted, 34);
-        var tabs = Stack(group, "AdvancedLaunchTabs", XsrUiOrientation.Horizontal, 5);
-        foreach (var (id, label) in new[] { ("plan", "计划与命令"), ("classpath", "Classpath"), ("natives", "Natives"),
-            ("manifest", "Manifest"), ("metadata", "实例元数据"), ("lockfile", "Lockfile"), ("trace", "启动时间线") })
-            ManagementButton(tabs, label, () => { _advancedLaunchTab = id; _advancedLaunchPage = 0; BuildSections(); }, 102);
-        var lines = AdvancedLaunchLines();
-        _advancedLaunchPage = Math.Clamp(_advancedLaunchPage, 0, Math.Max(0, (lines.Count - 1) / 32));
-        int first = _advancedLaunchPage * 32;
-        for (int index = first; index < Math.Min(lines.Count, first + 32); index++)
-        {
-            var text = Text(group, lines[index], 12, Ink, 26);
-            DesktopLiteralText.Preserve(_shell.Tree, text);
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(text)!.WrapText = false;
-        }
-        if (lines.Count > 32)
-        {
-            var pages = Stack(group, "AdvancedLaunchPagination", XsrUiOrientation.Horizontal, 8);
-            ManagementButton(pages, "上一页事实", () => { _advancedLaunchPage--; BuildSections(); }, 96);
-            ManagementButton(pages, "下一页事实", () => { _advancedLaunchPage++; BuildSections(); }, 96);
-            Text(pages, (_advancedLaunchPage + 1).ToString(System.Globalization.CultureInfo.InvariantCulture) + " / "
-                + ((lines.Count - 1) / 32 + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), 12, Muted, 26);
-        }
+        if (!InstanceDiagnosticsVisible) return;
+        _advancedLaunchRoot = AppendInstanceDiagnostic(_sections, "SettingsInstanceLaunchFacts.d.nxml", AdvancedLaunchData(0));
+        var nodes = CatalogNodes(_advancedLaunchRoot);
+        BindInstanceDiagnosticAction(nodes, "AdvancedLaunch.Read", ReadAdvancedLaunchDiagnostics);
+        foreach (string id in new[] { "plan", "classpath", "natives", "manifest", "metadata", "lockfile", "trace" })
+            BindInstanceDiagnosticAction(nodes, "AdvancedLaunch.Tab." + id, () =>
+            {
+                if (_advancedLaunchReading is not null || _advancedLaunch is null) return;
+                _advancedLaunchTab = id; _advancedLaunchPage = 0; ProjectAdvancedLaunchDiagnostics();
+            });
+        BindInstanceDiagnosticAction(nodes, "AdvancedLaunch.Previous", () => { _advancedLaunchPage--; ProjectAdvancedLaunchDiagnostics(); });
+        BindInstanceDiagnosticAction(nodes, "AdvancedLaunch.Next", () => { _advancedLaunchPage++; ProjectAdvancedLaunchDiagnostics(); });
+        ProjectAdvancedLaunchDiagnostics();
     }
-
-    private IReadOnlyList<string> AdvancedLaunchLines()
+    private Dictionary<string, string> AdvancedLaunchData(int count)
+    {
+        int pages = Math.Max(1, (count + 31) / 32);
+        _advancedLaunchPage = Math.Clamp(_advancedLaunchPage, 0, pages - 1);
+        string? status = _advancedLaunchReading is not null ? "launch.loading" : _advancedLaunch?.Error ?? (_advancedLaunch is null ? "launch.idle" : null);
+        var data = new Dictionary<string, string>
+        {
+            ["readEnabled"] = Flag(_advancedLaunchReading is null),
+            ["status"] = status is null ? "" : InstanceDiagnosticTerm(status),
+            ["showStatus"] = Flag(status is not null),
+            ["hasFacts"] = Flag(_advancedLaunchReading is null && _advancedLaunch is not null),
+            ["paging"] = Flag(count > 32),
+            ["page"] = InstanceNumber(_advancedLaunchPage + 1),
+            ["pages"] = InstanceNumber(pages),
+            ["previousEnabled"] = Flag(_advancedLaunchPage > 0),
+            ["nextEnabled"] = Flag(_advancedLaunchPage < pages - 1),
+        };
+        foreach (string id in new[] { "plan", "classpath", "natives", "manifest", "metadata", "lockfile", "trace" })
+        {
+            data[id + "Style"] = "settings-catalog-action instance-launch-tab" + (_advancedLaunchTab == id ? " instance-launch-tab-selected" : "");
+            data[id + "Selected"] = Flag(_advancedLaunchTab == id);
+        }
+        return data;
+    }
+    private void ProjectAdvancedLaunchDiagnostics()
+    {
+        if (!_shell.Tree.IsAlive(_advancedLaunchRoot)) return;
+        IReadOnlyList<AdvancedLaunchLine> lines = _advancedLaunchReading is null && _advancedLaunch is not null ? AdvancedLaunchLines() : [];
+        ReloadInstanceDiagnostic(_advancedLaunchRoot, AdvancedLaunchData(lines.Count));
+        var rows = CatalogNodes(_advancedLaunchRoot)["AdvancedLaunch.Rows"];
+        _dynamic.Clear(rows);
+        foreach (var line in lines.Skip(_advancedLaunchPage * 32).Take(32))
+            _dynamic.Append(rows, DesktopMarkup.Dynamic(line.Template, line.Data, _shell.Renderer.LocalizeText));
+    }
+    private static AdvancedLaunchLine LaunchLine(string kind, params (string Key, string Value)[] values)
+        => new("SettingsInstanceLaunch" + kind + ".d.nxml", values.ToDictionary(item => item.Key, item => item.Value, StringComparer.Ordinal));
+    private static AdvancedLaunchLine RawLaunchLine(string value) => LaunchLine("Line", ("value", value));
+    private IReadOnlyList<AdvancedLaunchLine> AdvancedLaunchLines()
     {
         var plan = _advancedLaunch?.Plan;
         if (_advancedLaunchTab is "manifest" or "metadata" or "lockfile")
         {
-            if (_advancedLaunch?.Documents is not { } documents) return ["本地文档未读取成功。"];
-            List<string> values = [];
+            if (_advancedLaunch?.Documents is not { } documents) return [LaunchLine("NoDocuments")];
+            List<AdvancedLaunchLine> values = [];
             foreach (var document in documents.Documents.Where(item => item.Kind == _advancedLaunchTab))
             {
-                values.Add(document.RelativePath + " · " + document.Status);
-                if (document.Truncated) values.Add("该文档超过显示预算，已截断；原文件未修改。");
-                values.AddRange(document.Lines);
+                values.Add(LaunchLine("Document", ("path", document.RelativePath), ("status", document.Status)));
+                if (document.Truncated) values.Add(LaunchLine("DocumentTruncated"));
+                values.AddRange(document.Lines.Select(RawLaunchLine));
             }
-            return values.Count > 0 ? values : ["未找到此类本地文档。"];
+            return values.Count > 0 ? values : [LaunchLine("NoDocumentKind")];
         }
         if (_advancedLaunchTab == "trace") return AdvancedObservedLaunchTrace(plan);
-        if (plan?.CapturedAt is not { } captured) return ["此启动器尚未捕获该实例的执行器计划；无法推断实际命令。"];
-        if (_advancedLaunchTab == "classpath") return plan.ClasspathEntries.Count == 0 ? ["捕获计划没有 Classpath 项。"] : plan.ClasspathEntries;
-        if (_advancedLaunchTab == "natives") return plan.NativeArchives.Count == 0 ? ["捕获计划没有 Native 归档。"] : plan.NativeArchives;
-        List<string> result = ["捕获时间：" + captured.ToLocalTime().ToString("g", System.Globalization.CultureInfo.CurrentCulture),
-            "捕获阶段：执行器已应用图形策略，进程启动之前；后续启动结果以诊断历史为准。",
-            "Java：" + plan.JavaExecutablePath, "工作目录：" + plan.WorkingDirectory, "Main class：" + plan.MainClass,
-            "加载器：" + plan.Loader, "堆请求 MiB：" + plan.HeapLimitMiB.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            "安全启动：" + (plan.SafeLaunch ? "开启" : "关闭"),
-            "环境变量名称（全部值均省略）：" + string.Join(", ", plan.EnvironmentNames),
-            "参数按真实顺序逐项显示；身份/凭证值和钩子正文不保留："];
-        if (plan.Truncated) result.Add("该计划超过捕获预算，显示不完整。");
-        result.AddRange(plan.Arguments); return result;
+        if (plan?.CapturedAt is not { } captured) return [LaunchLine("NoPlan")];
+        if (_advancedLaunchTab == "classpath") return plan.ClasspathEntries.Count == 0 ? [LaunchLine("NoClasspath")] : plan.ClasspathEntries.Select(RawLaunchLine).ToArray();
+        if (_advancedLaunchTab == "natives") return plan.NativeArchives.Count == 0 ? [LaunchLine("NoNatives")] : plan.NativeArchives.Select(RawLaunchLine).ToArray();
+        List<AdvancedLaunchLine> result =
+        [
+            LaunchLine("Captured", ("timestamp", captured.ToLocalTime().ToString("g", CultureInfo.CurrentCulture))),
+            LaunchLine("Phase"), LaunchLine("Java", ("executable", plan.JavaExecutablePath)),
+            LaunchLine("WorkingDirectory", ("directory", plan.WorkingDirectory)), LaunchLine("MainClass", ("mainClass", plan.MainClass)),
+            LaunchLine("Loader", ("loader", plan.Loader)), LaunchLine("Heap", ("heap", InstanceNumber(plan.HeapLimitMiB))),
+            LaunchLine("Safe", ("safe", InstanceDiagnosticTerm("safe." + Flag(plan.SafeLaunch)))),
+            LaunchLine("Environment", ("names", string.Join(", ", plan.EnvironmentNames))), LaunchLine("Arguments")
+        ];
+        if (plan.Truncated) result.Add(LaunchLine("PlanTruncated"));
+        result.AddRange(plan.Arguments.Select(RawLaunchLine)); return result;
     }
-
-    private List<string> AdvancedObservedLaunchTrace(MinecraftLaunchPlanDiagnosticSnapshot? plan)
+    private List<AdvancedLaunchLine> AdvancedObservedLaunchTrace(MinecraftLaunchPlanDiagnosticSnapshot? plan)
     {
-        List<string> lines = ["此时间线限于本次启动器已观察事实，未观察阶段不会补造。"];
-        if (plan?.CapturedAt is { } captured) lines.Add(captured.ToString("O", System.Globalization.CultureInfo.InvariantCulture) + " · 执行器捕获启动计划");
+        List<AdvancedLaunchLine> lines = [LaunchLine("TraceIntro")];
+        if (plan?.CapturedAt is { } captured) lines.Add(LaunchLine("TraceCapture", ("timestamp", captured.ToString("O", CultureInfo.InvariantCulture))));
         if (_store.TryResolve(MinecraftProcessStateComposition.SessionsKey, out var state))
         {
             var sessions = _store.ReadCollection<MinecraftProcessSnapshot>(state).Items;
@@ -106,33 +132,32 @@ internal sealed partial class SettingsPageController
             {
                 var item = sessions[index];
                 if (!Nexa.Core.PathIdentity.Comparer.Equals(item.InstanceDirectory, _instance)) continue;
-                lines.Add(item.StartedAt.ToString("O", System.Globalization.CultureInfo.InvariantCulture) + " · 进程启动 · " + item.SessionId + " · " + item.State);
-                if (item.EndedAt is { } ended) lines.Add(ended.ToString("O", System.Globalization.CultureInfo.InvariantCulture) + " · 进程结束 · exit "
-                    + (item.ExitCode?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "未知"));
+                lines.Add(LaunchLine("TraceStart", ("timestamp", item.StartedAt.ToString("O", CultureInfo.InvariantCulture)),
+                    ("session", item.SessionId.ToString()), ("state", InstanceProcessState(item.State))));
+                if (item.EndedAt is { } ended) lines.Add(LaunchLine("TraceEnd", ("timestamp", ended.ToString("O", CultureInfo.InvariantCulture)),
+                    ("exit", item.ExitCode is { } exit ? InstanceNumber(exit) : InstanceDiagnosticTerm("unknown"))));
             }
         }
-        if (lines.Count == 1) lines.Add("尚无此实例的计划或进程观测。");
+        if (lines.Count == 1) lines.Add(LaunchLine("NoTrace"));
         return lines;
     }
-
     private void ReadAdvancedLaunchDiagnostics()
     {
-        if (_advancedLaunchReading is not null || _instance is null) return;
+        if (_advancedLaunchReading is not null || !InstanceDiagnosticsVisible) return;
+        _advancedLaunchInstance = _instance;
         if (!_queries.TryResolve(MinecraftLaunchPlanDiagnosticContract.Query, out var planRoute)
             || !_queries.TryResolve(InstanceLocalDocumentsContract.Query, out var documentsRoute))
-        { _advancedLaunch = new(null, null, "启动事实查询未注册。"); BuildSections(); return; }
-        _advancedLaunchInstance = _instance; _advancedLaunchStop = new(); string instance = _instance;
+        { _advancedLaunch = new(null, null, "launch.missing"); ProjectAdvancedLaunchDiagnostics(); return; }
+        _advancedLaunchStop?.Dispose(); _advancedLaunchStop = new(); string instance = _instance!;
         var cancellation = _advancedLaunchStop.Token;
-        _advancedLaunchReading = ReadAsync(); WakeOnPlatformCompletion(_advancedLaunchReading); BuildSections();
+        _advancedLaunchReading = ReadAsync(); WakeOnPlatformCompletion(_advancedLaunchReading); ProjectAdvancedLaunchDiagnostics();
         async Task<AdvancedLaunchRead> ReadAsync()
         {
-            var plan = _queries.QueryAsync<MinecraftLaunchPlanDiagnosticQuery, MinecraftLaunchPlanDiagnosticSnapshot>(planRoute,
-                new(instance), cancellationToken: cancellation).AsTask();
-            var documents = _queries.QueryAsync<InstanceLocalDocumentsQuery, InstanceLocalDocumentsSnapshot>(documentsRoute,
-                new(instance), cancellationToken: cancellation).AsTask();
+            var plan = _queries.QueryAsync<MinecraftLaunchPlanDiagnosticQuery, MinecraftLaunchPlanDiagnosticSnapshot>(planRoute, new(instance), cancellationToken: cancellation).AsTask();
+            var documents = _queries.QueryAsync<InstanceLocalDocumentsQuery, InstanceLocalDocumentsSnapshot>(documentsRoute, new(instance), cancellationToken: cancellation).AsTask();
             await Task.WhenAll(plan, documents).ConfigureAwait(false);
             return new(plan.Result.IsSuccess ? plan.Result.Value : null, documents.Result.IsSuccess ? documents.Result.Value : null,
-                plan.Result.IsSuccess && documents.Result.IsSuccess ? null : "部分查询未完成；可用事实已保留。请重试。");
+                plan.Result.IsSuccess && documents.Result.IsSuccess ? null : "launch.partial");
         }
     }
 }

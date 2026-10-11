@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Content="{data value} KB" Localize="false" />
+</nxml-dynamic>

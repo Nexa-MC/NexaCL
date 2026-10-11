@@ -50,12 +50,28 @@ internal static partial class Program
         Pump(() => HasKey(fixture.Shell, scene, "SettingsNav.diagnostics"));
         Click("SettingsNav.diagnostics", "ui.settings.section"); Pump(() => HasKey(fixture.Shell, scene, "AdvancedLaunchDiagnostics"));
         AssertEqual(0, reads);
-        Click("Management.读取启动事实", "ui.settings.management.action"); Pump(() => scene.Nodes.Any(node => node.Text == "fixture.Main"));
+        var factsRoot = FindByKey(fixture.Shell, scene, "AdvancedLaunchDiagnostics").Entity;
+        var readButton = FindByKey(fixture.Shell, scene, "AdvancedLaunch.Read").Entity;
+        var statusRoot = FindByKey(fixture.Shell, scene, "InstanceDiagnostics.Status").Entity;
+        Click("AdvancedLaunch.Read", "ui.settings.management.action"); Pump(() => scene.Nodes.Any(node => node.Text == "fixture.Main"));
         AssertEqual(2, reads); AssertEqual(0, writes);
-        Click("Management.Classpath", "ui.settings.management.action"); Pump(() => scene.Nodes.Any(node => node.Text == "fixture-classpath"));
-        Click("Management.Manifest", "ui.settings.management.action"); Pump(() => scene.Nodes.Any(node => node.Text == "fixture-line-0"));
+        Click("AdvancedLaunch.Tab.classpath", "ui.settings.management.action"); Pump(() => scene.Nodes.Any(node => node.Text == "fixture-classpath"));
+        Click("AdvancedLaunch.Tab.manifest", "ui.settings.management.action"); Pump(() => scene.Nodes.Any(node => node.Text == "fixture-line-0"));
         AssertFalse(scene.Nodes.Any(node => node.Text == "fixture-line-69"));
-        Click("Management.下一页事实", "ui.settings.management.action"); Pump(() => scene.Nodes.Any(node => node.Text == "fixture-line-40"));
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiSelection>(FindByKey(fixture.Shell, scene, "AdvancedLaunch.Tab.manifest").Entity)!.IsSelected);
+        AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiSelection>(FindByKey(fixture.Shell, scene, "AdvancedLaunch.Tab.plan").Entity)!.IsSelected);
+        var next = FindByKey(fixture.Shell, scene, "AdvancedLaunch.Next").Entity;
+        fixture.Shell.Renderer.Focus(next, showIndicator: false);
+        Click("AdvancedLaunch.Next", "ui.settings.management.action"); Pump(() => scene.Nodes.Any(node => node.Text == "fixture-line-40"));
         AssertFalse(scene.Nodes.Any(node => node.Text == "fixture-line-0")); AssertEqual(2, reads); AssertEqual(0, writes);
+        AssertEqual(factsRoot, FindByKey(fixture.Shell, scene, "AdvancedLaunchDiagnostics").Entity);
+        AssertEqual(readButton, FindByKey(fixture.Shell, scene, "AdvancedLaunch.Read").Entity);
+        AssertEqual(statusRoot, FindByKey(fixture.Shell, scene, "InstanceDiagnostics.Status").Entity);
+        AssertEqual(next, FindByKey(fixture.Shell, scene, "AdvancedLaunch.Next").Entity);
+        AssertEqual(next, fixture.Shell.Renderer.Focused);
+        // Paging is a projection of the captured snapshot, with no reread or mutation.
+        Click("AdvancedLaunch.Tab.plan", "ui.settings.management.action");
+        Pump(() => scene.Nodes.Any(node => node.Text == "fixture.Main"));
+        AssertEqual(2, reads); AssertEqual(0, writes);
     }
 }

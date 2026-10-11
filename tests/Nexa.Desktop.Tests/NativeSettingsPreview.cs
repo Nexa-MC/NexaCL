@@ -1,3 +1,7 @@
+using Nexa.Xsr.State;
+using Nexa.Services.Minecraft.Launch;
+using Nexa.Services.Minecraft.Process;
+using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Setup;
 using Nexa.Services.Logging;
 using Nexa.Services.Capabilities;
@@ -385,6 +389,109 @@ internal static partial class Program
                 AssertTrue(f.Foundation.Host.SettingsPolicy.Set(new("diagnostics.ai.enabled", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "false"))).IsSuccess);
                 f.Shell.Stage.Navigation.Replace(controller.Page); surface.CommitScene();
             }, timeout.Token);
+            await startup.InvokeAsync(async () =>
+            {
+                // These are explicit readonly instance facts, not measurements of a game
+                // launched by this visual check. The actual product controller and native
+                // viewport own capture, scrolling, tabs and both kinds of pagination.
+                string instance = Path.Combine(f.TemporaryDirectory, "minecraft", "versions", "instance-preview");
+                EnableInstanceDevelopmentMode(f, instance);
+                var queries = new XsrQueryRouterBuilder();
+                f.Foundation.Queries.TryResolve(SettingsPolicyContract.CatalogQuery, out var catalog);
+                f.Foundation.Queries.TryResolve(SettingsPolicyContract.EffectiveQuery, out var effective);
+                queries.Register<SettingsCatalogQuery, SettingsCatalogSnapshot>(SettingsPolicyContract.CatalogQuery,
+                    (q, ct) => f.Foundation.Queries.QueryAsync<SettingsCatalogQuery, SettingsCatalogSnapshot>(catalog, q, cancellationToken: ct));
+                queries.Register<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(SettingsPolicyContract.EffectiveQuery,
+                    (q, ct) => f.Foundation.Queries.QueryAsync<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(effective, q, cancellationToken: ct));
+                queries.Register<InstanceManagementQuery, InstanceManagementSnapshot>(InstanceManagementContract.Query, (q, _) =>
+                    ValueTask.FromResult(XsrResult.Success(new InstanceManagementSnapshot(q.InstanceDirectory, q.InstanceDirectory, "1.21.1", [],
+                        [new("overview", "总览"), new("game", "游戏设置"), new("diagnostics", "实例诊断")], true, ""))));
+                DateTimeOffset started = DateTimeOffset.UtcNow.AddMinutes(-2); Guid sessionId = Guid.NewGuid();
+                var session = new MinecraftProcessSnapshot(sessionId, "Instance preview", 42, MinecraftProcessState.Exited, 0, started, started.AddMinutes(1))
+                { InstanceDirectory = instance, GameWindowConfirmed = true };
+                var sessionsId = f.Store.Resolve(MinecraftProcessStateComposition.SessionsKey);
+                var originalSessions = f.Store.ReadCollection<MinecraftProcessSnapshot>(sessionsId);
+                f.Store.PublishDelta(sessionsId, new XsrCollectionDelta<MinecraftProcessSnapshot, Guid>(originalSessions.Revision, [session], []));
+                var observation = new JvmHostObservation(sessionId, "Instance preview", started, started.AddMinutes(1), 812, 786432000, 810549248, 32, 4500,
+                    0, 0, 0, 0, 0, 0, 0, null, null, 0, [], [])
+                {
+                    CoreMetricsObserved = true,
+                    CpuPercentObserved = true,
+                    CpuPeakPercent = 45,
+                    RuntimePhysicalP95Bytes = 734003200,
+                    MeasuredHeapPeakBytes = null,
+                    MeasuredNativePeakBytes = null,
+                    LaunchWindowMilliseconds = 30000,
+                    SystemEventsObserved = true,
+                    SystemEvents = ["Readonly preview event; correlation does not establish a cause."]
+                };
+                var observationsId = f.Store.Resolve(JvmHostStateContract.ObservationsKey);
+                var originalObservations = f.Store.ReadCollection<JvmHostObservation>(observationsId);
+                f.Store.PublishDelta(observationsId, new XsrCollectionDelta<JvmHostObservation, Guid>(originalObservations.Revision, [observation], []));
+                var context = new DiagnosticInstanceContext(new string('A', 64), sessionId)
+                { StartedAt = started, EndedAt = started.AddMinutes(1), ExitCode = 0, LaunchDurationMilliseconds = 812 };
+                var entries = Enumerable.Range(0, 15).Select(index => new DurableDiagnosticEntry(started.AddSeconds(index), "Process",
+                    "GameLaunch", "preview-stage-" + index, DiagnosticOperationOutcome.Entered)
+                { Instance = context }).ToArray();
+                queries.Register<DurableInstanceDiagnosticHistoryQuery, IReadOnlyList<DurableDiagnosticEntry>>(DiagnosticWorkspaceContract.InstanceHistory,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success<IReadOnlyList<DurableDiagnosticEntry>>(entries)));
+                queries.Register<MinecraftLaunchPlanDiagnosticQuery, MinecraftLaunchPlanDiagnosticSnapshot>(MinecraftLaunchPlanDiagnosticContract.Query,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success(new MinecraftLaunchPlanDiagnosticSnapshot(instance, started,
+                        "Java/Temurin 21/bin/java", instance, "preview.Main", "Fabric", 4096, false,
+                        ["-Xmx4096M", "preview.Main", "--accessToken", "<redacted>"], ["libraries/preview-library.jar"], [], ["PATH", "JAVA_HOME"], false))));
+                queries.Register<InstanceLocalDocumentsQuery, InstanceLocalDocumentsSnapshot>(InstanceLocalDocumentsContract.Query,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success(new InstanceLocalDocumentsSnapshot(instance, started,
+                        [new("manifest", "versions/instance-preview/instance-preview.json", "read",
+                            Enumerable.Range(0, 70).Select(index => "preview manifest line " + index + " {data literal}").ToArray(), false)], true))));
+                using var diagnostics = new SettingsPageController(f.Shell, f.Intents, queries.Build(new NoopDispatchObserver()),
+                    f.Foundation.Commands, f.Store, f.Feedback, () => instance);
+                await diagnostics.PrepareStartupAsync(timeout.Token);
+                f.Shell.Stage.Navigation.Replace(diagnostics.Page); surface!.CommitScene();
+                await diagnostics.PrepareVisibleStartupAsync(timeout.Token); surface.CommitScene();
+                XsrUiEntityId navigation = default;
+                f.Shell.Tree.Walk(diagnostics.Page, entity =>
+                { if (f.Shell.Tree.Name(entity) == "SettingsNav.diagnostics") navigation = entity; return true; });
+                AssertTrue(navigation.IsAssigned);
+                Emit(f.Intents, "ui.settings.section", navigation); surface.CommitScene();
+                await diagnostics.PrepareVisibleStartupAsync(timeout.Token); await Task.Delay(500, timeout.Token);
+                surface.CommitScene();
+                AssertEqual("diagnostics", diagnostics.SelectedSection);
+                Capture("instance-entry");
+                var diagnosticScene = surface.Scene!;
+                ShowSettingsFixtureControl(f, diagnostics, ref diagnosticScene, "InstanceDiagnostics.Session.Value", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("instance-status");
+                ShowSettingsFixtureControl(f, diagnostics, ref diagnosticScene, "InstanceDiagnostics.Heap.Value", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("instance-resources");
+                ShowSettingsFixtureControl(f, diagnostics, ref diagnosticScene, "InstanceDiagnostics.HistorySession.Value", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("instance-history");
+                var mode = ShowSettingsFixtureControl(f, diagnostics, ref diagnosticScene, "InstanceDiagnostics.HistoryMode", f.Shell.Renderer.Viewport);
+                f.Shell.Renderer.Activate(mode.Entity); surface.CommitScene();
+                ShowSettingsFixtureControl(f, diagnostics, ref diagnosticScene, "InstanceDiagnostics.OperationStage.Value", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("instance-operations");
+                var next = ShowSettingsFixtureControl(f, diagnostics, ref diagnosticScene, "InstanceDiagnostics.OperationHistory.Next", f.Shell.Renderer.Viewport);
+                f.Shell.Renderer.Activate(next.Entity); surface.CommitScene(); Capture("instance-operations-next");
+                var read = ShowSettingsFixtureControl(f, diagnostics, ref diagnosticScene, "AdvancedLaunch.Read", f.Shell.Renderer.Viewport);
+                f.Shell.Renderer.Activate(read.Entity); surface.CommitScene(); surface.CommitScene();
+                ShowSettingsFixtureControl(f, diagnostics, ref diagnosticScene, "AdvancedLaunch.Line.Arguments", f.Shell.Renderer.Viewport);
+                f.Shell.Renderer.PointerScroll(new(600, 400), 112); surface.CommitScene(); Capture("instance-launch-plan");
+                var manifest = ShowSettingsFixtureControl(f, diagnostics, ref diagnosticScene, "AdvancedLaunch.Tab.manifest", f.Shell.Renderer.Viewport);
+                f.Shell.Renderer.Activate(manifest.Entity); surface.CommitScene(); Capture("instance-manifest");
+                var factsNext = ShowSettingsFixtureControl(f, diagnostics, ref diagnosticScene, "AdvancedLaunch.Next", f.Shell.Renderer.Viewport);
+                f.Shell.Renderer.Activate(factsNext.Entity); surface.CommitScene(); Capture("instance-manifest-next");
+                window!.Width = 820; window.UpdateLayout(); surface.CommitScene();
+                await Task.Delay(200, timeout.Token);
+                var planTab = ShowSettingsFixtureControl(f, diagnostics, ref diagnosticScene, "AdvancedLaunch.Tab.plan", f.Shell.Renderer.Viewport);
+                f.Shell.Renderer.Activate(planTab.Entity); surface.CommitScene();
+                ShowSettingsFixtureControl(f, diagnostics, ref diagnosticScene, "AdvancedLaunch.Line.Arguments", f.Shell.Renderer.Viewport);
+                f.Shell.Renderer.PointerScroll(new(500, 400), 112); surface.CommitScene(); Capture("instance-narrow-plan");
+                window.Width = 1040; window.UpdateLayout(); surface.CommitScene();
+
+                f.Store.PublishDelta(sessionsId, new XsrCollectionDelta<MinecraftProcessSnapshot, Guid>(
+                    f.Store.ReadCollection<MinecraftProcessSnapshot>(sessionsId).Revision, [], [sessionId]));
+                f.Store.PublishDelta(observationsId, new XsrCollectionDelta<JvmHostObservation, Guid>(
+                    f.Store.ReadCollection<JvmHostObservation>(observationsId).Revision, [], [sessionId]));
+                f.Shell.Stage.Navigation.Replace(controller.Page); surface.CommitScene();
+            }, timeout.Token);
             await SelectCategory("network");
             await Task.Delay(500, timeout.Token);
             await startup.InvokeAsync(() => Capture("network-top"), timeout.Token);
@@ -570,7 +677,7 @@ internal static partial class Program
                     ["page"] = "SettingsAppearance",
                     ["phase"] = phase,
                     ["theme"] = f.Shell.Renderer.ColorScheme.IsDark ? "dark" : "light",
-                    ["data"] = "temporary local settings; empty instances; Java inventory and storage locations, task/process/log, Trace and resource fixtures; runtime metrics and probe are actual native read-only captures",
+                    ["data"] = "temporary local settings; empty instances; Java inventory and storage locations, task/process/log, Trace, instance diagnostics and resource fixtures; runtime metrics and probe are actual native read-only captures",
                     ["renderer"] = "actual product NXML/controller and software Avalonia native window",
                     ["version"] = f.Shell.Version,
                     ["x"] = origin.X,

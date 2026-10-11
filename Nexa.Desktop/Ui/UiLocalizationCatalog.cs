@@ -1,3 +1,4 @@
+using Nexa.Xsr.Renderer.Nxml;
 using System.Collections.Frozen;
 using System.Globalization;
 using System.Text;
@@ -5,7 +6,7 @@ using System.Text.Json;
 
 namespace Nexa.Desktop.Ui;
 
-/// <summary>Embedded presentation data. No service calls, reflection serialization or network.</summary>
+/// <summary>External presentation data. No service calls, reflection serialization or network.</summary>
 internal sealed class UiLocalizationCatalog
 {
     private sealed record Entry(string Source, string English, string Traditional, string[]? Segments, string? EnglishOne);
@@ -14,11 +15,14 @@ internal sealed class UiLocalizationCatalog
     private readonly Dictionary<string, string> _cache = new(StringComparer.Ordinal);
     internal string Language { get; private set; } = "zh-Hans";
 
-    internal UiLocalizationCatalog()
+    internal UiLocalizationCatalog() : this(NxmlComponentLibrary.ReadFile(Path.Combine(AppContext.BaseDirectory, "Ui", "Localization", "messages.json"))) { }
+
+    internal UiLocalizationCatalog(string catalogSource)
     {
-        using var stream = typeof(UiLocalizationCatalog).Assembly.GetManifestResourceStream("Nexa.Desktop.Ui.Localization.messages.json")
-            ?? throw new InvalidOperationException("The interface language catalog is missing.");
-        using var json = JsonDocument.Parse(stream);
+        if (catalogSource.Length > 1024 * 1024) throw new InvalidDataException("Interface language catalog exceeds its character budget.");
+        using var json = JsonDocument.Parse(catalogSource);
+        if (json.RootElement.ValueKind != JsonValueKind.Array || json.RootElement.GetArrayLength() == 0)
+            throw new InvalidDataException("Interface language catalog must contain entries.");
         List<Entry> entries = [];
         foreach (var row in json.RootElement.EnumerateArray())
         {
