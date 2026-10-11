@@ -55,24 +55,17 @@ internal sealed partial class SettingsPageController : IDisposable
         _instanceDirectory = instanceDirectory;
         if (instanceDirectory is not null) _selected = "overview";
         _revisionId = store.Resolve(SettingsPolicyContract.RevisionKey);
-        var host = shell.Tree.Create("settings-loader");
-        Page = NxmlUiLoader.Load(DesktopMarkup.Load(instanceDirectory is null ? "SettingsPage.nxml" : "VersionSettingsPage.nxml"), shell.Tree, store, host);
-        shell.Tree.Detach(Page); shell.Tree.Destroy(host);
+        Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load(instanceDirectory is null ? "SettingsPage.nxml" : "VersionSettingsPage.nxml"), shell.Tree, store);
         var names = new Dictionary<string, XsrUiEntityId>();
         shell.Tree.Walk(Page, entity => { names[shell.Tree.Name(entity)] = entity; return true; });
         _navigationRoot = names["SettingsNavigation"]; _pager = names["SettingsPager"];
-        _saveStatus = names["SettingsSaveStatus"];
+        var thumb = _dynamic.Append(_navigationRoot, DesktopMarkup.Dynamic("SettingsNavigationThumb.d.nxml"));
+        _saveStatus = _dynamic.Append(names["SettingsSaveStatusSlot"], DesktopMarkup.Dynamic("SettingsSaveStatus.d.nxml",
+            new Dictionary<string, string> { ["message"] = "" }));
         shell.Tree.SetComponent(_saveStatus, new XsrUiLiveRegion(XsrUiLiveSetting.Polite));
-        Style(_saveStatus, XsrUiColor.Transparent, Muted, 0, 12);
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_saveStatus)!.TextAlignment = XsrUiTextAlignment.End;
-        shell.Tree.SetComponent(_saveStatus, new XsrUiSemantic(XsrUiSemanticRole.Status, ""));
         shell.Tree.SetComponent(_navigationRoot, new XsrUiScrollGesture());
-        shell.Tree.SetComponent(_navigationRoot, new XsrUiSemantic(XsrUiSemanticRole.RadioGroup, instanceDirectory is null ? "设置分类" : "版本设置分类"));
-        Style(_navigationRoot, XsrUiColor.Transparent, Ink, 10);
-        shell.Tree.GetComponent<XsrUiElement>(_navigationRoot)!.HorizontalAlignment = XsrUiAlignment.Stretch;
-        shell.Tree.SetComponent(_navigationRoot, new XsrUiSegmentedTrack(names["SettingsThumb"]));
-        shell.Tree.SetComponent(names["SettingsThumb"], new XsrUiTransition());
-        Style(names["SettingsThumb"], White, Ink, 8);
+        shell.Tree.SetComponent(_navigationRoot, new XsrUiSegmentedTrack(thumb));
+        shell.Tree.SetComponent(thumb, new XsrUiTransition());
         _intents.IntentEmitted += OnIntent;
         _shell.Renderer.FramePreparing += OnFrame;
     }
@@ -285,55 +278,6 @@ internal sealed partial class SettingsPageController : IDisposable
         BuildSections(navigating: true); UpdateNavigation(); UpdateEditors();
     }
 
-    private void BuildNavigation()
-    {
-        foreach (var page in Pages)
-        {
-            if (!_pages.TryGetValue(page.Id, out var body))
-            {
-                body = _dynamic.Append(_pager, DesktopMarkup.Dynamic("SettingsSection.d.nxml", new Dictionary<string, string> { ["id"] = page.Id }));
-                _shell.Tree.GetComponent<XsrUiScroll>(body)!.ShowsVerticalIndicator = true;
-                _shell.Tree.SetComponent(body, new XsrUiScrollGesture());
-                _shell.Tree.SetComponent(body, new XsrUiTransition { Key = page.Id, MovesSelf = true });
-                _pages[page.Id] = body;
-            }
-            _shell.Tree.Detach(body); _shell.Tree.Attach(body, _pager);
-            if (page.Id == _selected) _sections = body;
-            var button = Element(_navigationRoot, "SettingsNav." + page.Id, XsrUiSemanticRole.RadioButton, page.Label, width: Math.Max(64, page.Label.Length * 14 + 24), height: 36);
-            _shell.Tree.SetComponent(button, new XsrUiText(page.Label));
-            _shell.Tree.SetComponent(button, new XsrUiInput { Focusable = true, Clickable = true });
-            _shell.Tree.SetComponent(button, new XsrUiCommandBinding(Select));
-            _shell.Tree.SetComponent(button, new XsrUiSelection());
-            _navigation[button] = page.Id;
-        }
-        UpdateNavigation();
-    }
-
-    private void UpdateNavigation()
-    {
-        foreach (var pair in _navigation)
-        {
-            bool selected = pair.Value == _selected;
-            Style(pair.Key, XsrUiColor.Transparent, selected ? Blue : Ink, 8, 13, selected ? 600 : 450);
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(pair.Key)!.TextAlignment = XsrUiTextAlignment.Center;
-            if (selected) _shell.Tree.GetComponent<XsrUiSegmentedTrack>(_navigationRoot)!.Selected = pair.Key;
-            _shell.Tree.GetComponent<XsrUiSelection>(pair.Key)!.IsSelected = selected;
-        }
-    }
-
-    private void UpdateNavigationWidths()
-    {
-        foreach (var button in _navigation.Keys)
-        {
-            string label = _shell.Renderer.LocalizeText(_shell.Tree.GetComponent<XsrUiText>(button)!.Content);
-            double width = Math.Max(64, label.Sum(character => character > 127 ? 14 : 8) + 24);
-            var element = _shell.Tree.GetComponent<XsrUiElement>(button)!;
-            if (element.Width == width) continue;
-            element.Width = width;
-            _shell.Tree.MarkDirty(button, XsrUiDirtyKinds.Layout);
-        }
-    }
-
     private void BuildSections(bool navigating = false)
     {
         ResetRuntimeDiagnosticControls();
@@ -349,6 +293,7 @@ internal sealed partial class SettingsPageController : IDisposable
         if (!navigating) _scrollPositions[_selected] = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY;
         foreach (var child in _shell.Tree.Children(_sections).ToArray()) _shell.Tree.Destroy(child);
         ResetDeveloperDiagnosticControls();
+        _catalogViews.Clear(); _inheritRows.Clear(); _autoModeViews.Clear();
         _javaChoices.Clear();
         _javaInventoryGroup = default;
         _editors.Clear(); _inheritButtons.Clear(); _selectors.Clear(); _autoModes.Clear(); _argumentEditors.Clear(); _argumentActions.Clear(); _choices.Clear();
@@ -358,7 +303,7 @@ internal sealed partial class SettingsPageController : IDisposable
         _graphSearch = _graphBody = default; _graphActions.Clear();
         if (_instanceDirectory is not null && _instance is null)
         {
-            Text(_sections, "请选择要管理的实例。", 13, Muted, height: 28);
+            _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsInstanceMissing.d.nxml"));
             return;
         }
         if (_instanceDirectory is not null && _selected != "game")
@@ -376,8 +321,7 @@ internal sealed partial class SettingsPageController : IDisposable
         bool transfer = _instanceDirectory is null && _selected == "storage" || _instanceDirectory is not null && _selected == "game";
         if (_selected == "privacy")
         {
-            var notice = Text(_sections, "必要遥测始终启用，仅包含版本、系统、架构及分类运行结果。诊断信息包括脱敏错误堆栈、耗时、资源占用、算法指标、功能使用情况、模组清单、加载器版本和游戏设置变化；正式版可关闭，测试版必须启用。不上传账户、路径或日志正文。", 12, Muted, height: 72);
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(notice)!.WrapText = true;
+            _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsPrivacyNotice.d.nxml"));
         }
         var entries = _catalog!.Entries.Where(item => item.Scope == "global"
             && (item.Page == _selected || _instanceDirectory is not null && _selected == "game" && item.Page == "java")
@@ -387,10 +331,9 @@ internal sealed partial class SettingsPageController : IDisposable
             && item.SettingKey is not ("network.proxy-mode" or "network.proxy-address" or "network.proxy-user" or "network.proxy-password")).ToArray();
         if (available.Length == 0 && _selected != "advanced" && !transfer)
         {
-            Text(_sections, Pages.First(page => page.Id == _selected).Label, 20, Ink, height: 30, weight: 600);
-            Text(_sections, "此分类没有可编辑的设置。", 13, Muted, height: 24);
+            _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsCategoryEmpty.d.nxml", new Dictionary<string, string>
+            { ["label"] = Pages.First(page => page.Id == _selected).Label }));
         }
-        _shell.Tree.GetComponent<XsrUiStackPanel>(_sections)!.Spacing = 18;
         if (_instanceDirectory is not null && _selected == "game") BuildLaunchProfiles();
         foreach (var section in available.GroupBy(item => (Section: item.DeveloperOnly ? "开发者" : _instanceDirectory is not null ? InstanceSettingGroup(item) : item.Section, item.DeveloperOnly))
             .OrderBy(group => _instanceDirectory is null ? 0 : group.Key.Section switch { "启动与窗口" => 0, "Java 与内存" => 1, "服务器" => 2, _ => 3 }))
@@ -401,7 +344,7 @@ internal sealed partial class SettingsPageController : IDisposable
             {
                 BuildRow(cardContent, rows[i]);
                 if (i + 1 < rows.Length)
-                    Style(Element(cardContent, "SettingsRowDivider", XsrUiSemanticRole.None, null, height: 1), Line, Muted, 0);
+                    _dynamic.Append(cardContent, DesktopMarkup.Dynamic("SettingsCatalogDivider.d.nxml"));
             }
             if (_instanceDirectory is not null && section.Key.Section == "Java 与内存") BuildJavaInventory(cardContent);
         }
@@ -439,94 +382,6 @@ internal sealed partial class SettingsPageController : IDisposable
         var body = Stack(surface, name + ".Body", XsrUiOrientation.Vertical, spacing);
         _shell.Tree.GetComponent<XsrUiElement>(body)!.Padding = padding;
         return body;
-    }
-
-    private void BuildRow(XsrUiEntityId parent, SettingsCatalogEntry entry)
-    {
-        var row = Stack(parent, "SettingsRow." + entry.Id, XsrUiOrientation.Horizontal, 16);
-        _shell.Tree.GetComponent<XsrUiElement>(row)!.MinHeight = 40;
-        _shell.Tree.GetComponent<XsrUiElement>(row)!.Padding = new(0, 3, 0, 3);
-        var label = Stack(row, "SettingsLabel." + entry.Id, XsrUiOrientation.Vertical, 3);
-        _shell.Tree.GetComponent<XsrUiElement>(label)!.Width = entry.SettingKey == "diagnostics.telemetry" ? 240 : 176;
-        Text(label, entry.SettingKey == "diagnostics.telemetry" ? "诊断信息 · 用户体验改进计划" : DisplayLabel(entry.Label), 14, Ink, height: 22, weight: 500);
-        if (SettingHint(entry.SettingKey) is { } hint)
-        {
-            var description = Text(label, hint, 11, Muted, height: 32);
-            _shell.Tree.GetComponent<XsrUiText>(description)!.MaxLines = 2;
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(description)!.WrapText = true;
-            _shell.Tree.GetComponent<XsrUiSemantic>(description)!.Label = hint;
-        }
-        bool enabled = entry.Availability == SettingsCapabilityAvailability.Available && entry.Definition is not null;
-        if (entry.SettingKey == "diagnostics.telemetry" && TelemetryRequired)
-        {
-            Text(row, "测试版本必须启用", 12, Muted, height: 34);
-            return;
-        }
-        if (!enabled)
-        {
-            string reason = entry.Availability switch
-            {
-                SettingsCapabilityAvailability.PlatformUnsupported => "此平台不支持",
-                SettingsCapabilityAvailability.DependencyMissing => "缺少依赖",
-                SettingsCapabilityAvailability.TemporarilyUnavailable => "暂不可用",
-                _ => "尚未可用",
-            };
-            var spacer = Element(row, "SettingsUnavailableSpace", XsrUiSemanticRole.None, null);
-            _shell.Tree.GetComponent<XsrUiElement>(spacer)!.Weight = 1;
-            var unavailable = Text(row, reason, 11, Muted, height: 28);
-            var layout = _shell.Tree.GetComponent<XsrUiElement>(unavailable)!;
-            layout.Width = 76; layout.VerticalAlignment = XsrUiAlignment.Center;
-            Style(unavailable, new(245, 246, 248), Muted, 8, 11);
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(unavailable)!.TextAlignment = XsrUiTextAlignment.Center;
-            _shell.Tree.GetComponent<XsrUiSemantic>(unavailable)!.Label = _shell.Renderer.LocalizeText(DisplayLabel(entry.Label))
-                + ", " + _shell.Renderer.LocalizeText(reason);
-            _shell.Tree.GetComponent<XsrUiSemantic>(unavailable)!.Localize = false;
-            return;
-        }
-        if (_instanceDirectory is not null && entry.SettingKey != "instance.development-mode")
-        {
-            var inherit = ActionButton(row, "SettingsInherit." + entry.SettingKey, "继承", Inherit, 64);
-            _inheritButtons[inherit] = entry.SettingKey!;
-        }
-        var definition = entry.Definition!;
-        if (entry.SettingKey is "game.pre-launch" or "game.post-exit" or "game.environment" or "game.classpath-head")
-        {
-            _shell.Tree.GetComponent<XsrUiElement>(label)!.VerticalAlignment = XsrUiAlignment.Start;
-            BuildHookEditor(row, entry); return;
-        }
-        if (entry.SettingKey is "game.jvm" or "game.arguments")
-        {
-            _shell.Tree.GetComponent<XsrUiElement>(label)!.VerticalAlignment = XsrUiAlignment.Start;
-            BuildArgumentEditor(row, entry); return;
-        }
-        if (definition.Kind is SettingsValueKind.Enum or SettingsValueKind.Boolean || entry.SettingKey == "general.region")
-        {
-            var slot = Element(row, "SettingsControlSlot", XsrUiSemanticRole.None, null, height: 40);
-            _shell.Tree.GetComponent<XsrUiElement>(slot)!.Weight = 1;
-            BuildShiftSelector(slot, entry);
-            return;
-        }
-        XsrUiEntityId input = default;
-        if (definition.Kind is SettingsValueKind.Number or SettingsValueKind.Text or SettingsValueKind.Path)
-        {
-            input = Element(row, "SettingsInput." + entry.SettingKey, XsrUiSemanticRole.TextInput, entry.Label, height: 34);
-            _shell.Tree.GetComponent<XsrUiElement>(input)!.Weight = 1;
-            _shell.Tree.SetComponent(input, new XsrUiTextInput
-            {
-                MaximumLength = entry.SettingKey is "game.wrapper" or "game.pre-launch" ? 32768 : 2048,
-                Placeholder = entry.SettingKey switch
-                { "java.runtime" => "自动选择，或输入 Java 可执行文件路径", "game.memory" => "自动分配，或输入 MiB", _ => entry.Label }
-            });
-            _shell.Tree.SetComponent(input, new XsrUiInput { Focusable = true, Clickable = true });
-            Style(input, new(245, 246, 248), Ink, 9, 13);
-            _shell.Tree.GetComponent<XsrUiElement>(input)!.Padding = new(10, 0, 10, 0);
-        }
-        var button = ActionButton(row, "SettingsEdit." + entry.SettingKey, "应用", Edit, 44);
-        _editors[button] = new(entry, input, button, default);
-        if (definition.SupportsAuto)
-        {
-            BuildAutomaticMode(row, _editors[button]);
-        }
     }
 
     private static string? SettingHint(string? key) => key switch
@@ -578,9 +433,8 @@ internal sealed partial class SettingsPageController : IDisposable
         foreach (var (button, key) in _inheritButtons)
         {
             var value = _values?.Values.FirstOrDefault(item => item.Key == key);
-            var text = _shell.Tree.GetComponent<XsrUiText>(button)!;
             string label = value?.Source >= SettingsLayer.Instance ? "恢复继承" : "继承中";
-            if (text.Content != label) { text.Content = label; _shell.Tree.MarkDirty(button, XsrUiDirtyKinds.Paint); }
+            ReloadCatalog(_inheritRows[button], ("inheritLabel", label));
         }
         UpdateNavigationWidths(); UpdateShiftSelectors(); UpdateAutomaticModes(); UpdateArgumentEditors(); UpdateHookEditors();
     }
@@ -630,9 +484,7 @@ internal sealed partial class SettingsPageController : IDisposable
     {
         var text = _shell.Tree.GetComponent<XsrUiText>(_saveStatus)!;
         if (text.Content == message) return;
-        text.Content = message;
-        _shell.Tree.GetComponent<XsrUiSemantic>(_saveStatus)!.Label = message;
-        _shell.Tree.MarkDirty(_saveStatus, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+        _dynamic.Reload(_saveStatus, DesktopMarkup.Dynamic("SettingsSaveStatus.d.nxml", new Dictionary<string, string> { ["message"] = message }));
     }
 
     private XsrUiEntityId Element(XsrUiEntityId parent, string name, XsrUiSemanticRole role, string? label, double? width = null, double? height = null)

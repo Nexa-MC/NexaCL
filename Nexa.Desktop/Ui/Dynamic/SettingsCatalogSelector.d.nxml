@@ -1,0 +1,3 @@
+﻿<nxml-dynamic>
+<SettingsChoiceSlot Key="{data key}" Label="{data label}" Scroll="true" Width="{data width}" Class="settings-catalog-selector" />
+</nxml-dynamic>

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using Nexa.Services.Settings;
 using Nexa.Xsr.Renderer;
@@ -32,12 +32,10 @@ internal sealed partial class SettingsPageController
 
     private void BuildHookEditor(XsrUiEntityId parent, SettingsCatalogEntry entry)
     {
-        var panel = Stack(parent, "SettingsHook." + entry.SettingKey, XsrUiOrientation.Horizontal, 8);
-        _shell.Tree.GetComponent<XsrUiElement>(panel)!.Weight = 1;
-        var rows = Stack(panel, "SettingsHookRows." + entry.SettingKey, XsrUiOrientation.Vertical, 6);
-        _shell.Tree.GetComponent<XsrUiElement>(rows)!.Weight = 1;
-        var apply = ActionButton(panel, "SettingsEdit." + entry.SettingKey, "应用", Edit, 44);
-        _shell.Tree.GetComponent<XsrUiElement>(apply)!.VerticalAlignment = XsrUiAlignment.Start;
+        var root = _dynamic.Append(parent, DesktopMarkup.Dynamic("SettingsHook.d.nxml", new Dictionary<string, string>
+        { ["panel"] = "SettingsHook." + entry.SettingKey, ["rows"] = "SettingsHookRows." + entry.SettingKey, ["apply"] = "SettingsEdit." + entry.SettingKey }));
+        var nodes = CatalogNodes(root);
+        var rows = nodes["SettingsHookRows." + entry.SettingKey]; var apply = nodes["SettingsEdit." + entry.SettingKey];
         var editor = new HookEditor(entry, rows);
         _hookEditors[apply] = editor;
         _editors[apply] = new(entry, default, apply, default);
@@ -129,40 +127,41 @@ internal sealed partial class SettingsPageController
     private void BuildHookRows(HookEditor editor)
     {
         foreach (var key in _hookActions.Where(pair => pair.Value.Editor == editor).Select(pair => pair.Key).ToArray()) _hookActions.Remove(key);
-        foreach (var child in _shell.Tree.Children(editor.Rows).ToArray()) _shell.Tree.Destroy(child);
+        _dynamic.Clear(editor.Rows);
         editor.Inputs.Clear();
         editor.Page = Math.Clamp(editor.Page, 0, (editor.Lines.Count - 1) / HookLinesPerPage);
         int start = editor.Page * HookLinesPerPage;
         for (int index = start; index < Math.Min(editor.Lines.Count, start + HookLinesPerPage); index++)
         {
-            var row = Stack(editor.Rows, "SettingsHookRow", XsrUiOrientation.Horizontal, 6);
-            var input = Element(row, "SettingsHookLine." + editor.Entry.SettingKey + "." + index,
-                XsrUiSemanticRole.TextInput, string.Format(CultureInfo.InvariantCulture,
-                    _shell.Renderer.LocalizeText("命令行 {0}"), index + 1), height: 30);
-            _shell.Tree.GetComponent<XsrUiSemantic>(input)!.Localize = false;
-            var layout = _shell.Tree.GetComponent<XsrUiElement>(input)!; layout.Weight = 1; layout.Padding = new(8, 0, 8, 0);
-            _shell.Tree.SetComponent(input, new XsrUiTextInput { MaximumLength = 32768, PreserveTabs = true, Placeholder = "输入命令；空行也会保留" });
-            _shell.Tree.SetComponent(input, new XsrUiInput { Focusable = true, Clickable = true });
-            Style(input, new(244, 247, 251), Ink, 7, 12);
+            string inputKey = "SettingsHookLine." + editor.Entry.SettingKey + "." + index;
+            string removeKey = "SettingsHookRemove." + editor.Entry.SettingKey + "." + index;
+            var row = _dynamic.Append(editor.Rows, DesktopMarkup.Dynamic("SettingsHookRow.d.nxml", new Dictionary<string, string>
+            {
+                ["input"] = inputKey,
+                ["remove"] = removeKey,
+                ["label"] = string.Format(CultureInfo.InvariantCulture, _shell.Renderer.LocalizeText("命令行 {0}"), index + 1),
+                ["removeLabel"] = string.Format(CultureInfo.InvariantCulture, _shell.Renderer.LocalizeText("删除命令行 {0}"), index + 1),
+            }));
+            var nodes = CatalogNodes(row); var input = nodes[inputKey]; var remove = nodes[removeKey];
             _shell.Renderer.SetTextInputValue(input, editor.Lines[index].Text);
             editor.Inputs.Add((input, index, editor.Lines[index].Text, _shell.Tree.GetComponent<XsrUiTextInput>(input)!.ReadDraft()));
-            var remove = ActionButton(row, "SettingsHookRemove." + editor.Entry.SettingKey + "." + index, "×", HookRemove, 28);
-            var removeSemantic = _shell.Tree.GetComponent<XsrUiSemantic>(remove)!;
-            removeSemantic.Label = string.Format(CultureInfo.InvariantCulture,
-                _shell.Renderer.LocalizeText("删除命令行 {0}"), index + 1);
-            removeSemantic.Localize = false;
             _hookActions[remove] = (editor, index);
         }
-        var actions = Stack(editor.Rows, "SettingsHookActions", XsrUiOrientation.Horizontal, 6);
-        var add = ActionButton(actions, "SettingsHookAdd." + editor.Entry.SettingKey, "添加行", HookAdd, 72);
-        _hookActions[add] = (editor, -1);
-        if (editor.Lines.Count > HookLinesPerPage)
+        string addKey = "SettingsHookAdd." + editor.Entry.SettingKey;
+        string previousKey = "SettingsHookPrevious." + editor.Entry.SettingKey;
+        string nextKey = "SettingsHookNext." + editor.Entry.SettingKey;
+        var actions = _dynamic.Append(editor.Rows, DesktopMarkup.Dynamic("SettingsHookActions.d.nxml", new Dictionary<string, string>
         {
-            var previous = ActionButton(actions, "SettingsHookPrevious." + editor.Entry.SettingKey, "上一页", HookPage, 72);
-            var next = ActionButton(actions, "SettingsHookNext." + editor.Entry.SettingKey, "下一页", HookPage, 72);
-            _hookActions[previous] = (editor, -1); _hookActions[next] = (editor, 1);
-            Text(actions, (editor.Page + 1) + " / " + ((editor.Lines.Count - 1) / HookLinesPerPage + 1), 12, Muted, height: 30);
-        }
+            ["add"] = addKey,
+            ["previous"] = previousKey,
+            ["next"] = nextKey,
+            ["pages"] = Flag(editor.Lines.Count > HookLinesPerPage),
+            ["page"] = (editor.Page + 1) + " / " + ((editor.Lines.Count - 1) / HookLinesPerPage + 1),
+        }));
+        var actionNodes = CatalogNodes(actions);
+        _hookActions[actionNodes[addKey]] = (editor, -1);
+        if (editor.Lines.Count > HookLinesPerPage)
+        { _hookActions[actionNodes[previousKey]] = (editor, -1); _hookActions[actionNodes[nextKey]] = (editor, 1); }
         _shell.Tree.MarkDirty(editor.Rows, XsrUiDirtyKinds.Layout);
     }
 

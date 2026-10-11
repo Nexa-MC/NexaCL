@@ -16,6 +16,10 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
   The dock registers only owned slot children and reads spacing/dimensions from NSS.
 - Process log workspace and rows now load/reload fragments, preserving literal output,
   selection identity, search drafts and caret. Conditional status copy remains C#.
+- Settings catalogue rows, navigation, save status, enum/boolean selectors,
+  plain inputs, argument rows and lossless command editors now load owned fragments.
+  Their layout and visual constants live in NSS; labels/hints and option mappings
+  still include C# copy and must be externalized.
 - Resource filter overlays already use fragments. Other resource presentation is
   still imperative.
 - Shared reload preserves entity identity, nested slots, drafts, scroll, focus,
@@ -27,7 +31,7 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 
 | Area | Authoritative entry points | Remaining work |
 | --- | --- | --- |
-| Settings and instance management | `SettingsPageController.cs` and partial files | Replace all remaining row/group/editor factories, diagnostic cards, content/detail/snapshot/server/export structures and their style mutations with templates. Preserve drafts and list virtualization. |
+| Settings and instance management | `SettingsPageController.cs` and partial files | Replace remaining custom row/group factories, Java inventory, diagnostic cards, content/detail/snapshot/server/export structures and their style mutations with templates. Preserve drafts and list virtualization. |
 | Resources | `ResourcesPageController.cs` and partial files | Search toolbar, categories, virtual rows, detail/version/dependency and install confirmation layouts; content and state variants must be external. |
 | Launch and installation | `LaunchPageController.InstallCatalog.cs`, `.Installation.cs`, `.FrameProjection.cs`, `.Styles.cs`, `BedrockInstallPageController.cs` | Catalog/loader rows, state panels, choice tracks and runtime presentation styling. |
 | Version selection | `VersionSelectionController.cs`, `.Window.cs` | Row window/virtualization, directory choices/editor, popup body and selection styles. |
@@ -76,3 +80,27 @@ The overall migration remains active until all gates are evidenced for all slice
   The existing Jint IL2098 annotation warning remains in both publication paths.
 - Targeted `dotnet format whitespace` completed successfully. The full migration is
   still incomplete: use the remaining slices and completion gates above.
+
+## Settings catalogue slice validation, 2026-10-11
+
+- Desktop composition: 264 passed; NXML: 53 passed; architecture: 69 passed.
+- NXML explicitly declares PreserveTabs, MaxLines and TrimOverflow. Reload keeps
+  drafts and rejects changes to input sanitization before mutating the fragment.
+- Catalogue, editor, hook and navigation partials are covered by the no-factory
+  architecture regression. Legacy helpers remain only for unmigrated custom pages.
+- Actual Avalonia previews in both themes show catalogue controls and argument rows;
+  the native harness adds a draft argument without saving settings. Fixture data is
+  documented in the preview manifest; no live Minecraft session is claimed.
+- Windows x64 NativeAOT and full-trim publish succeeded. Both executables ran
+  --validate-shell and exited 0, including selector slots, adding argument rows,
+  retained drafts and literal command tabs. Existing Jint IL2098 remains.
+- Targeted whitespace format and diff checks passed. The full migration remains open.
+
+## Java inventory boundary for the next slice
+
+- Keep discovery, registry writes and scoped Java selection in the existing services.
+- Inventory header, runtime/missing rows, ownership labels and actions must be external
+  dynamic fragments; enable/disable uses the existing segmented-track interaction.
+- Registry generation/revision checks, picker cancellation and managed-runtime identity
+  checks must be preserved. Reload must keep row identities and focus when only the
+  selected runtime or busy state changes.

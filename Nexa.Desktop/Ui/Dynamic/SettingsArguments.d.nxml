@@ -1,0 +1,9 @@
+﻿<nxml-dynamic>
+<StackPanel Key="{data panel}" Class="settings-arguments">
+  <Dynamic Key="{data rows}" Class="settings-editor-rows" />
+  <StackPanel Class="settings-editor-actions">
+    <Button Key="{data apply}" Label="应用" Content="应用" Command="ui.settings.edit" Class="settings-catalog-action settings-catalog-apply" />
+    <Button Key="{data add}" Label="添加" Content="添加" Command="ui.settings.argument.add" Class="settings-catalog-action settings-catalog-apply" />
+  </StackPanel>
+</StackPanel>
+</nxml-dynamic>

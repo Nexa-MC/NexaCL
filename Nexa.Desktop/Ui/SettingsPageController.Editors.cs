@@ -1,4 +1,4 @@
-using Nexa.Services.Settings;
+﻿using Nexa.Services.Settings;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 
@@ -20,30 +20,14 @@ internal sealed partial class SettingsPageController
     private readonly Dictionary<XsrUiEntityId, ArgumentEditor> _argumentEditors = [];
     private readonly Dictionary<XsrUiEntityId, (ArgumentEditor Editor, int Index)> _argumentActions = [];
 
-    private XsrUiEntityId ActionButton(XsrUiEntityId parent, string name, string text, XsrSemanticId command, double width)
-    {
-        var button = Element(parent, name, XsrUiSemanticRole.Button, text, width, 34);
-        _shell.Tree.SetComponent(button, new XsrUiText(text));
-        _shell.Tree.SetComponent(button, new XsrUiInput { Focusable = true, Clickable = true });
-        _shell.Tree.SetComponent(button, new XsrUiCommandBinding(command));
-        Style(button, new(242, 245, 249), Blue, 9, 12, 500);
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(button)!.TextAlignment = XsrUiTextAlignment.Center;
-        return button;
-    }
-
     private void BuildShiftSelector(XsrUiEntityId parent, SettingsCatalogEntry entry)
     {
-        var track = Stack(parent, "SettingsSelector." + entry.SettingKey, XsrUiOrientation.Horizontal, 0);
-        _shell.Tree.SetComponent(track, new XsrUiSemantic(XsrUiSemanticRole.RadioGroup, DisplayLabel(entry.Label)));
-        Style(track, new(241, 245, 250), Ink, 9);
-        _shell.Tree.GetComponent<XsrUiElement>(track)!.Padding = new(3, 3, 3, 3);
-        _shell.Tree.GetComponent<XsrUiElement>(track)!.HorizontalAlignment = XsrUiAlignment.End;
-        var thumb = Element(track, "SettingsSelectorThumb." + entry.SettingKey, XsrUiSemanticRole.None, null);
-        _shell.Tree.GetComponent<XsrUiElement>(thumb)!.IsVisible = false;
-        Style(thumb, White, Ink, 7);
+        var track = AppendCatalog(parent, "SettingsCatalogSelector.d.nxml", new()
+        { ["key"] = "SettingsSelector." + entry.SettingKey, ["label"] = DisplayLabel(entry.Label), ["width"] = "0" });
+        var thumb = _dynamic.Append(track, DesktopMarkup.Dynamic("SettingsCatalogThumb.d.nxml", new Dictionary<string, string>
+        { ["key"] = "SettingsSelectorThumb." + entry.SettingKey }));
         _shell.Tree.SetComponent(thumb, new XsrUiTransition());
         _shell.Tree.SetComponent(track, new XsrUiSegmentedTrack(thumb));
-        _shell.Tree.SetComponent(track, new XsrUiScroll());
         _shell.Tree.SetComponent(track, new XsrUiScrollGesture());
         Dictionary<XsrUiEntityId, string> options = [];
         string[] values = entry.SettingKey == "general.region" ? ["auto", "follow-language", "zh-CN", "zh-TW", "en-US"]
@@ -84,12 +68,10 @@ internal sealed partial class SettingsPageController
             { "" => "自动", "EclipseTemurin" => "Temurin", "IbmSemeru" => "IBM Semeru", "GraalVmCommunity" => "GraalVM", "OpenJdk" => "OpenJDK", "TencentKona" => "腾讯 Kona", "Dragonwell" => "龙井 Java", "Unknown" => "其他", _ => value };
             bool nativeName = entry.SettingKey == "general.language" && value != "auto";
             double optionWidth = Math.Max(48, (nativeName ? label : _shell.Renderer.LocalizeText(label)).Sum(character => character > 127 ? 12 : 7) + 24);
-            var option = RadioOption(track, "SettingsOption." + entry.SettingKey + "." + value, label, Choice, optionWidth);
-            if (nativeName) DesktopLiteralText.Preserve(_shell.Tree, option);
-            _shell.Tree.SetComponent(option, new XsrUiSelection());
+            var option = CatalogOption(track, "SettingsOption." + entry.SettingKey + "." + value, label, !nativeName, optionWidth);
             options[option] = value; width += optionWidth;
         }
-        _shell.Tree.GetComponent<XsrUiElement>(track)!.Width = width;
+        ReloadCatalog(track, ("width", width.ToString(System.Globalization.CultureInfo.InvariantCulture)));
         var editor = new Editor(entry, default, options.Keys.First(), default);
         _editors[editor.Button] = editor;
         _selectors[editor.Button] = new(editor, track, options);
@@ -109,9 +91,7 @@ internal sealed partial class SettingsPageController
                     try
                     {
                         string name = System.Globalization.CultureInfo.GetCultureInfo(raw).NativeName;
-                        var custom = RadioOption(selector.Track, "SettingsOption.general.region." + raw, name, Choice, 48);
-                        DesktopLiteralText.Preserve(_shell.Tree, custom);
-                        _shell.Tree.SetComponent(custom, new XsrUiSelection());
+                        var custom = CatalogOption(selector.Track, "SettingsOption.general.region." + raw, name, false, 48);
                         selector.Options[custom] = raw;
                         _shell.Tree.MarkDirty(selector.Track, XsrUiDirtyKinds.Layout);
                     }
@@ -122,9 +102,8 @@ internal sealed partial class SettingsPageController
             {
                 bool selected = option.Value == raw;
                 _choices[option.Key] = (selector.Editor, option.Value);
-                _shell.Tree.GetComponent<XsrUiSelection>(option.Key)!.IsSelected = selected;
-                Style(option.Key, XsrUiColor.Transparent, selected ? Blue : Ink, 7, 12, selected ? 600 : 450);
-                _shell.Tree.GetComponent<XsrUiVisualStyle>(option.Key)!.TextAlignment = XsrUiTextAlignment.Center;
+                ReloadCatalog(option.Key, ("selected", Flag(selected)),
+                    ("style", selected ? "settings-catalog-option settings-catalog-option-selected" : "settings-catalog-option"));
                 if (selected) _shell.Tree.GetComponent<XsrUiSegmentedTrack>(selector.Track)!.Selected = option.Key;
             }
             double width = 0;
@@ -132,25 +111,25 @@ internal sealed partial class SettingsPageController
             {
                 var text = _shell.Tree.GetComponent<XsrUiText>(option)!;
                 double desired = Math.Max(48, (text.Localize ? _shell.Renderer.LocalizeText(text.Content) : text.Content).Sum(character => character > 127 ? 12 : 7) + 24);
-                var element = _shell.Tree.GetComponent<XsrUiElement>(option)!;
-                if (element.Width != desired) { element.Width = desired; _shell.Tree.MarkDirty(option, XsrUiDirtyKinds.Layout); }
+                ReloadCatalog(option, ("width", desired.ToString(System.Globalization.CultureInfo.InvariantCulture)));
                 width += desired;
             }
-            _shell.Tree.GetComponent<XsrUiElement>(selector.Track)!.Width = width;
+            ReloadCatalog(selector.Track, ("width", width.ToString(System.Globalization.CultureInfo.InvariantCulture)));
         }
     }
 
     private void BuildArgumentEditor(XsrUiEntityId parent, SettingsCatalogEntry entry)
     {
-        var panel = Stack(parent, "SettingsArguments." + entry.SettingKey, XsrUiOrientation.Horizontal, 8);
-        _shell.Tree.GetComponent<XsrUiElement>(panel)!.Weight = 1;
-        _shell.Tree.GetComponent<XsrUiElement>(panel)!.Padding = new(0, 6, 0, 6);
-        var rows = Stack(panel, "SettingsArgumentRows." + entry.SettingKey, XsrUiOrientation.Vertical, 6);
-        _shell.Tree.GetComponent<XsrUiElement>(rows)!.Weight = 1;
-        var actions = Stack(panel, "SettingsArgumentActions", XsrUiOrientation.Vertical, 6);
-        _shell.Tree.GetComponent<XsrUiElement>(actions)!.VerticalAlignment = XsrUiAlignment.Start;
-        var apply = ActionButton(actions, "SettingsEdit." + entry.SettingKey, "应用", Edit, 44);
-        var add = ActionButton(actions, "SettingsArgumentAdd." + entry.SettingKey, "添加", ArgumentAdd, 44);
+        var root = _dynamic.Append(parent, DesktopMarkup.Dynamic("SettingsArguments.d.nxml", new Dictionary<string, string>
+        {
+            ["panel"] = "SettingsArguments." + entry.SettingKey,
+            ["rows"] = "SettingsArgumentRows." + entry.SettingKey,
+            ["apply"] = "SettingsEdit." + entry.SettingKey,
+            ["add"] = "SettingsArgumentAdd." + entry.SettingKey,
+        }));
+        var nodes = CatalogNodes(root);
+        var rows = nodes["SettingsArgumentRows." + entry.SettingKey];
+        var apply = nodes["SettingsEdit." + entry.SettingKey]; var add = nodes["SettingsArgumentAdd." + entry.SettingKey];
         var editor = new ArgumentEditor(entry, rows);
         _argumentEditors[apply] = editor;
         _argumentActions[add] = (editor, -1);
@@ -164,21 +143,22 @@ internal sealed partial class SettingsPageController
     private void BuildArgumentRows(ArgumentEditor editor, IReadOnlyList<string> values)
     {
         foreach (var key in _argumentActions.Where(pair => pair.Value.Editor == editor && pair.Value.Index >= 0).Select(pair => pair.Key).ToArray()) _argumentActions.Remove(key);
-        foreach (var child in _shell.Tree.Children(editor.Rows).ToArray()) _shell.Tree.Destroy(child);
+        _dynamic.Clear(editor.Rows);
         editor.Inputs.Clear();
         for (int i = 0; i < Math.Max(1, values.Count); i++)
         {
-            var row = Stack(editor.Rows, "SettingsArgumentRow", XsrUiOrientation.Horizontal, 6);
-            var input = Element(row, "SettingsArgument." + editor.Entry.SettingKey + "." + i,
-                XsrUiSemanticRole.TextInput, editor.Entry.Label + " " + (i + 1), height: 30);
-            var layout = _shell.Tree.GetComponent<XsrUiElement>(input)!; layout.Weight = 1; layout.Padding = new(8, 0, 8, 0);
-            _shell.Tree.SetComponent(input, new XsrUiTextInput { Placeholder = "输入参数" });
-            _shell.Tree.SetComponent(input, new XsrUiInput { Focusable = true, Clickable = true });
-            Style(input, new(244, 247, 251), Ink, 7, 12);
+            string inputKey = "SettingsArgument." + editor.Entry.SettingKey + "." + i;
+            string removeKey = "SettingsArgumentRemove." + editor.Entry.SettingKey + "." + i;
+            var row = _dynamic.Append(editor.Rows, DesktopMarkup.Dynamic("SettingsArgumentRow.d.nxml", new Dictionary<string, string>
+            {
+                ["input"] = inputKey,
+                ["remove"] = removeKey,
+                ["label"] = _shell.Renderer.LocalizeText(editor.Entry.Label) + " " + (i + 1),
+                ["removeLabel"] = _shell.Renderer.LocalizeText("删除参数") + " " + (i + 1),
+            }));
+            var nodes = CatalogNodes(row); var input = nodes[inputKey]; var remove = nodes[removeKey];
             _shell.Renderer.SetTextInputValue(input, i < values.Count ? values[i] : "");
             editor.Inputs.Add(input);
-            var remove = ActionButton(row, "SettingsArgumentRemove." + editor.Entry.SettingKey + "." + i, "×", ArgumentRemove, 28);
-            _shell.Tree.GetComponent<XsrUiSemantic>(remove)!.Label = "删除参数 " + (i + 1);
             _argumentActions[remove] = (editor, i);
         }
         _shell.Tree.MarkDirty(editor.Rows, XsrUiDirtyKinds.Layout);

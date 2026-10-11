@@ -1,0 +1,6 @@
+﻿<nxml-dynamic>
+<StackPanel Key="SettingsArgumentRow" Class="settings-editor-line">
+  <TextInput Key="{data input}" Label="{data label}" Localize="false" Placeholder="输入参数" Class="settings-editor-input" />
+  <Button Key="{data remove}" Content="×" Label="{data removeLabel}" Localize="false" Command="ui.settings.argument.remove" Class="settings-catalog-action settings-editor-remove" />
+</StackPanel>
+</nxml-dynamic>

@@ -8,6 +8,17 @@ internal sealed partial class SettingsPageController
 {
     private readonly Dictionary<XsrUiEntityId, (Editor Editor, XsrUiEntityId Auto, XsrUiEntityId Manual)> _autoModes = [];
 
+    private XsrUiEntityId ActionButton(XsrUiEntityId parent, string name, string text, XsrSemanticId command, double width)
+    {
+        var button = Element(parent, name, XsrUiSemanticRole.Button, text, width, 34);
+        _shell.Tree.SetComponent(button, new XsrUiText(text));
+        _shell.Tree.SetComponent(button, new XsrUiInput { Focusable = true, Clickable = true });
+        _shell.Tree.SetComponent(button, new XsrUiCommandBinding(command));
+        Style(button, new(242, 245, 249), Blue, 9, 12, 500);
+        _shell.Tree.GetComponent<XsrUiVisualStyle>(button)!.TextAlignment = XsrUiTextAlignment.Center;
+        return button;
+    }
+
     private XsrUiEntityId RefreshIcon(XsrUiEntityId parent, string name, XsrSemanticId command)
     {
         var button = Element(parent, name, XsrUiSemanticRole.Button, "刷新", 36, 36);
@@ -18,22 +29,6 @@ internal sealed partial class SettingsPageController
         return button;
     }
 
-    private void BuildAutomaticMode(XsrUiEntityId parent, Editor editor)
-    {
-        var track = Stack(parent, "SettingsMode." + editor.Entry.SettingKey, XsrUiOrientation.Horizontal, 0);
-        _shell.Tree.GetComponent<XsrUiElement>(track)!.Width = 112;
-        _shell.Tree.SetComponent(track, new XsrUiSemantic(XsrUiSemanticRole.RadioGroup, "分配方式"));
-        Style(track, new(241, 245, 250), Ink, 9);
-        var thumb = Element(track, "SettingsModeThumb", XsrUiSemanticRole.None, null);
-        _shell.Tree.GetComponent<XsrUiElement>(thumb)!.IsVisible = false;
-        Style(thumb, White, Ink, 7); _shell.Tree.SetComponent(thumb, new XsrUiTransition());
-        _shell.Tree.SetComponent(track, new XsrUiSegmentedTrack(thumb));
-        var automatic = RadioOption(track, "SettingsAuto." + editor.Entry.SettingKey, "自动", Choice, 56);
-        var manual = RadioOption(track, "SettingsManual." + editor.Entry.SettingKey, "手动", Choice, 56);
-        _choices[automatic] = (editor, "auto"); _choices[manual] = (editor, "__manual__");
-        _autoModes[track] = (editor, automatic, manual);
-    }
-
     private void UpdateAutomaticModes()
     {
         foreach (var (track, mode) in _autoModes)
@@ -42,8 +37,7 @@ internal sealed partial class SettingsPageController
             bool auto = value?.Mode == SettingsOverrideMode.Auto || mode.Editor.Entry.SettingKey == "java.runtime" && string.IsNullOrWhiteSpace(value?.Value);
             var selected = auto ? mode.Auto : mode.Manual;
             _shell.Tree.GetComponent<XsrUiSegmentedTrack>(track)!.Selected = selected;
-            _shell.Tree.GetComponent<XsrUiSelection>(mode.Auto)!.IsSelected = auto;
-            _shell.Tree.GetComponent<XsrUiSelection>(mode.Manual)!.IsSelected = !auto;
+            ReloadCatalog(_autoModeViews[track], ("autoSelected", Flag(auto)), ("manualSelected", Flag(!auto)));
         }
     }
 

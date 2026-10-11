@@ -1,0 +1,11 @@
+﻿<nxml-dynamic>
+<StackPanel Class="settings-catalog-input-row">
+  <TextInput Key="{data input}" Label="{data label}" Placeholder="{data placeholder}" MaximumLength="{data maximum}" Class="settings-catalog-input" />
+  <Button Key="{data apply}" Label="应用" Content="应用" Command="ui.settings.edit" Class="settings-catalog-action settings-catalog-apply" />
+  <SettingsChoiceTrack Key="{data mode}" Label="分配方式" IsVisible="{data automatic}" Class="settings-catalog-mode">
+    <ContentHost Key="SettingsModeThumb" IsVisible="false" Class="settings-catalog-thumb" />
+    <SettingsChoice Key="{data auto}" Label="自动" Content="自动" Command="ui.settings.choice" Selected="{data autoSelected}" Class="settings-catalog-option settings-catalog-mode-option" />
+    <SettingsChoice Key="{data manual}" Label="手动" Content="手动" Command="ui.settings.choice" Selected="{data manualSelected}" Class="settings-catalog-option settings-catalog-mode-option" />
+  </SettingsChoiceTrack>
+</StackPanel>
+</nxml-dynamic>

@@ -3,13 +3,11 @@
     <StackPanel Key="SettingsLayout" Class="layout-SettingsPage-SettingsLayout">
       <StackPanel Key="SettingsToolbar" Class="layout-SettingsPage-SettingsToolbar">
         <ContentHost Key="SettingsNavigationSurface" Class="settings-navigation-surface">
-        <StackPanel Key="SettingsNavigation" Label="设置分类" Scroll="true" Class="layout-SettingsPage-SettingsNavigation">
-          <ContentHost Key="SettingsThumb" IsVisible="false" />
-        </StackPanel>
+        <SettingsChoiceSlot Key="SettingsNavigation" Label="版本设置分类" Scroll="true" Class="layout-SettingsPage-SettingsNavigation" />
         </ContentHost>
       </StackPanel>
       <Dynamic Layout="HorizontalPager" Key="SettingsPager" Label="设置子页面，可拖动或使用左右方向键切换" Class="layout-SettingsPage-SettingsPager" />
-      <Text Key="SettingsSaveStatus" Content="" Class="layout-SettingsPage-SettingsSaveStatus" />
+      <Dynamic Key="SettingsSaveStatusSlot" Class="layout-SettingsPage-SettingsSaveStatus" />
     </StackPanel>
   </Page>
 </nxml-page>

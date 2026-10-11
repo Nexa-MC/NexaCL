@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <StackPanel Class="settings-category-empty"><Text Content="{data label}" Class="settings-category-title" /><Text Content="此分类没有可编辑的设置。" Class="settings-category-description" /></StackPanel>
+</nxml-dynamic>

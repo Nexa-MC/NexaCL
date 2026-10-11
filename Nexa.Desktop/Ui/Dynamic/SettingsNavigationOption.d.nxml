@@ -1,0 +1,3 @@
+﻿<nxml-dynamic>
+  <SettingsChoice Key="{data key}" Content="{data label}" Label="{data label}" Selected="{data selected}" Width="{data width}" Command="ui.settings.section" Class="{data style}" />
+</nxml-dynamic>

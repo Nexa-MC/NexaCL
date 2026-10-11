@@ -1,0 +1,3 @@
+<nxml-component>
+  <Node Kind="SettingsChoiceSlot" Recipe="DynamicSlot" Role="RadioGroup" AcceptsChildren="false" Required="Key" />
+</nxml-component>

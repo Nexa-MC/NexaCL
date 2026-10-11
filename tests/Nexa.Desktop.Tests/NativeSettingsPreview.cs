@@ -144,6 +144,19 @@ internal static partial class Program
                     == "SettingsOption.appearance.theme-mode." + (dark ? "0" : "1") && node.IsSelected));
             await startup.InvokeAsync(() => Capture("theme-switch"), timeout.Token);
             await Task.Delay(1200, timeout.Token);
+            await SelectCategory("game");
+            await Task.Delay(500, timeout.Token);
+            await startup.InvokeAsync(() =>
+            {
+                Capture("catalog-game");
+                var formScene = surface!.Scene!;
+                var argument = ShowSettingsFixtureControl(f, controller, ref formScene,
+                    "SettingsArgument.game.arguments.0", f.Shell.Renderer.Viewport);
+                surface.CommitScene();
+                f.Shell.Renderer.SetTextInputValue(argument.Entity, "--demo");
+                Emit(f.Intents, "ui.settings.argument.add", FindByKey(f.Shell, surface.Scene!, "SettingsArgumentAdd.game.arguments").Entity);
+                surface.CommitScene(); Capture("catalog-arguments");
+            }, timeout.Token);
             await SelectCategory("network");
             await Task.Delay(500, timeout.Token);
             await startup.InvokeAsync(() => Capture("network-top"), timeout.Token);
@@ -329,7 +342,7 @@ internal static partial class Program
                     ["page"] = "SettingsAppearance",
                     ["phase"] = phase,
                     ["theme"] = f.Shell.Renderer.ColorScheme.IsDark ? "dark" : "light",
-                    ["data"] = "temporary local settings; empty instance inventory",
+                    ["data"] = "temporary local settings; empty instances; task/process/log and resource fixtures",
                     ["renderer"] = "actual product NXML/controller and software Avalonia native window",
                     ["version"] = f.Shell.Version,
                     ["x"] = origin.X,

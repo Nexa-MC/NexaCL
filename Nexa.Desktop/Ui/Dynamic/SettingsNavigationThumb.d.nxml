@@ -1,0 +1,3 @@
+﻿<nxml-dynamic>
+  <ContentHost Key="SettingsThumb" IsVisible="false" Class="settings-navigation-thumb" />
+</nxml-dynamic>

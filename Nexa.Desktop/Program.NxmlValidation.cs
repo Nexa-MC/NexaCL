@@ -26,6 +26,24 @@ internal static partial class Program
             || shell.Tree.GetComponent<XsrUiTextInput>(Find("SettingsInput.network.proxy-password"))?.IsPassword != true)
             throw new InvalidOperationException("Dynamic proxy template validation failed.");
         Console.WriteLine("Dynamic network validation passed: external fragment, slot, manual protocol and protected password input.");
+        intents.Emit(XsrSemanticId.Parse("ui.settings.section"), Find("SettingsNav.game"), XsrCorrelationId.Create());
+        shell.Render(new(1280, 800));
+        await settings.PrepareVisibleStartupAsync(timeout.Token).ConfigureAwait(false);
+        shell.Render(new(1280, 800));
+        var selector = Find("SettingsSelector.game.window-mode");
+        var argument = Find("SettingsArgument.game.arguments.0");
+        shell.Renderer.SetTextInputValue(argument, "--demo");
+        intents.Emit(XsrSemanticId.Parse("ui.settings.argument.add"), Find("SettingsArgumentAdd.game.arguments"), XsrCorrelationId.Create());
+        shell.Render(new(1280, 800));
+        var hook = Find("SettingsHookLine.game.pre-launch.0");
+        shell.Renderer.SetTextInputValue(hook, "fixture\targument");
+        if (shell.Tree.GetComponent<NxmlDynamicSlot>(selector) is null
+            || shell.Tree.GetComponent<XsrUiSegmentedTrack>(selector) is null
+            || shell.Tree.GetComponent<XsrUiTextInput>(Find("SettingsArgument.game.arguments.0"))?.ReadDraft() != "--demo"
+            || shell.Tree.GetComponent<XsrUiTextInput>(Find("SettingsArgument.game.arguments.1")) is null
+            || shell.Tree.GetComponent<XsrUiTextInput>(hook)?.ReadDraft() != "fixture\targument")
+            throw new InvalidOperationException("Dynamic settings editor validation failed.");
+        Console.WriteLine("Dynamic settings validation passed: selector slot, argument add/draft and lossless command tabs; no settings were saved.");
         shell.Stage.Navigation.Replace(previous);
 
         XsrUiEntityId Find(string key)

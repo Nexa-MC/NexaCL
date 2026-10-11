@@ -1,0 +1,6 @@
+﻿<nxml-dynamic>
+<StackPanel Key="{data panel}" Class="settings-hook">
+  <Dynamic Key="{data rows}" Class="settings-editor-rows" />
+  <Button Key="{data apply}" Label="应用" Content="应用" Command="ui.settings.edit" Class="settings-catalog-action settings-hook-apply" />
+</StackPanel>
+</nxml-dynamic>

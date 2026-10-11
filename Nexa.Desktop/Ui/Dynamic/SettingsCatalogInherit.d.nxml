@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Button Key="{data key}" Content="{data inheritLabel}" Label="{data inheritLabel}" Command="ui.settings.inherit" Class="settings-catalog-action settings-catalog-inherit" />
+</nxml-dynamic>
