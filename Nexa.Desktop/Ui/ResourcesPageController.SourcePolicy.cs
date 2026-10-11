@@ -1,4 +1,4 @@
-using Nexa.Services.Resources;
+﻿using Nexa.Services.Resources;
 using Nexa.Services.Settings;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
@@ -8,17 +8,10 @@ namespace Nexa.Desktop.Ui;
 internal sealed partial class ResourcesPageController
 {
     private static readonly string[] SourcePolicyOptions = ["ResourceNetwork.0", "ResourceNetwork.1"];
-    private XsrUiEntityId _sourcePolicyNote;
     private long _sourcePolicyRevision = -1;
     private bool _sourcePolicyForced;
     private string? _sourcePolicyPriority;
     private Task<XsrResult<ResourceNetworkPolicySnapshot>>? _sourcePolicyReading;
-
-    private void InitializeSourcePolicyNotice()
-    {
-        _sourcePolicyNote = Text(_entities["ResourcesLayout"], "资源站来源顺序由全局设置控制。", 11, Muted, 28);
-        E(_sourcePolicyNote).IsVisible = false;
-    }
 
     private void SelectSourceFromPage(int index)
     {
@@ -44,10 +37,6 @@ internal sealed partial class ResourcesPageController
         bool changed = _sourcePolicyPriority is not null && _sourcePolicyPriority != priority;
         _sourcePolicyPriority = priority;
         _sourcePolicyForced = priority is "official-first" or "mirrors-first";
-        string source = priority == "official-first" ? "资源站使用全局官方优先。" : "资源站使用全局镜像优先。";
-        E(_sourcePolicyNote).IsVisible = _sourcePolicyForced;
-        _shell.Tree.GetComponent<XsrUiText>(_sourcePolicyNote)!.Content = source;
-        _shell.Tree.GetComponent<XsrUiSemantic>(_sourcePolicyNote)!.Label = source;
         // A global override changes transport policy and presentation, while retaining the page's request preference.
         int selected = (_sourcePolicyForced ? priority == "mirrors-first" : _filter.MirrorFirst) ? 0 : 1;
         for (int index = 0; index < SourcePolicyOptions.Length; index++)
@@ -58,7 +47,6 @@ internal sealed partial class ResourcesPageController
             if (index == selected) _shell.Tree.GetComponent<XsrUiSegmentedTrack>(_entities["ResourceNetwork"])!.Selected = option;
             _shell.Tree.MarkDirty(option, XsrUiDirtyKinds.Paint);
         }
-        _shell.Tree.MarkDirty(_sourcePolicyNote, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
         if (changed) Search();
     }
 }

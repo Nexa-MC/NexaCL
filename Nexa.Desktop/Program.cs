@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
 using Nexa.Services.Capabilities;
@@ -510,8 +510,6 @@ internal static partial class Program
             .RunAsync("startup_local_recovery", token => installRecovery.InitialReady.WaitAsync(token)).ConfigureAwait(false);
         launchPage.Attach();
         using SettingsPageController settingsPage = new(shell, uiIntents, runtime.Queries, runtime.Commands, host.StateStore, feedback);
-        settingsPage.CopyJavaDiagnosticsTextAsync = platformActions.CopyTextAsync;
-        settingsPage.ConfigureJavaManualDownload(minecraft.Queries, minecraft.Commands, platformActions.OpenHttpsUri);
         settingsPage.OpenAboutLink = platformActions.OpenHttpsUri;
         settingsPage.OpenAdvancedSettingsFile = () =>
         {
@@ -563,12 +561,10 @@ internal static partial class Program
             var selected = ((MinecraftLibrarySnapshot?)host.StateStore.ReadAppliedValue(host.StateStore.Resolve(MinecraftLibraryService.StateKey)))?.SelectedInstance;
             return selected is null ? null : new Nexa.Services.Minecraft.Install.MinecraftInstallEditQuery(
                 Path.GetDirectoryName(Path.GetDirectoryName(selected.DirectoryPath))!, selected.Id);
-        });
+        }, installCatalog.Commands);
         using SettingsPageController versionSettings = new(shell, uiIntents, runtime.Queries, runtime.Commands, host.StateStore, feedback,
             () => ((MinecraftLibrarySnapshot?)host.StateStore.ReadAppliedValue(host.StateStore.Resolve(MinecraftLibraryService.StateKey)))?.SelectedInstance?.DirectoryPath);
         launchPage.VersionSettingsPage = versionSettings.Page;
-        versionSettings.CopyJavaDiagnosticsTextAsync = platformActions.CopyTextAsync;
-        versionSettings.ConfigureJavaManualDownload(minecraft.Queries, minecraft.Commands, platformActions.OpenHttpsUri);
         versionSettings.ExportDiagnostics = settingsPage.ExportDiagnostics;
         versionSettings.OpenManagementDirectory = platformActions.OpenDirectory;
         versionSettings.LaunchManagementInstance = launchPage.LaunchInstance;
@@ -606,7 +602,8 @@ internal static partial class Program
             setStage("validate_shell");
             host.Logging.Info("Launcher", "Headless shell validation started viewport=1280x800");
             XsrUiScene scene = shell.Render(new XsrUiSize(1280, 800));
-            Console.WriteLine($"PXML shell validated: {scene.Count} semantic nodes.");
+            await ValidateDynamicNetworkPageAsync(shell, settingsPage, uiIntents).ConfigureAwait(false);
+            Console.WriteLine($"NXML shell and dynamic network templates validated: {scene.Count} shell semantic nodes.");
             host.Logging.Info("Launcher", $"Headless shell validation completed nodes={scene.Count}");
             setStage("shutdown");
             session.Enter(XsrLifecyclePhase.Stopping);

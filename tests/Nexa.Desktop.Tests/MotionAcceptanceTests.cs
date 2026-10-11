@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer;
+﻿using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Tests;
 
@@ -44,8 +44,8 @@ internal static partial class Program
         XsrUiEntityId title = FindByKey(shell, scene, "TitleSubpage").Entity;
         XsrUiEntityId backEntity = FindByKey(shell, scene, "TitleBack").Entity;
         AssertTrue(shell.Tree.GetComponent<XsrUiTransition>(FindByKey(shell, scene, "TitleNavigation").Entity) is null);
-        AssertClose(0, shell.Renderer.GetTransitionOffset(title));
-        AssertClose(0, shell.Renderer.GetTransitionOffset(backEntity));
+        AssertTrue(shell.Renderer.GetTransitionOffset(title) > 0);
+        AssertTrue(shell.Renderer.GetTransitionOffset(backEntity) > 0);
         AssertClose(0, shell.Renderer.GetTransitionOffsetY(shell.Content));
         // Navigation must leave every control at its final hit rectangle immediately.
         for (int iteration = 0; iteration < 12; iteration++)

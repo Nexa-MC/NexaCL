@@ -1,4 +1,4 @@
-using Nexa.Desktop.Ui;
+﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Resources;
 using Nexa.Services.Settings;
 using Nexa.Xsr.Renderer;
@@ -214,95 +214,25 @@ internal static partial class Program
 
     private static void ResourceContinuousListBoundsRowsProjectsAndViewportMedia()
     {
-        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
-        List<ResourceSearchQuery> searches = [];
-        List<(CancellationToken Token, TaskCompletionSource<ResourceIconResult> Reply)> icons = [];
-        var queries = new XsrQueryRouterBuilder();
-        queries.Register<ResourceSearchQuery, ResourceSearchResult>(ResourceCatalogContract.Search, (query, _) =>
+        using var f = new ContinuousResourceHarness();
+        for (int page = 0; page < 56; page++)
         {
-            searches.Add(query);
-            var projects = ContinuousProjects("Page" + query.Page + ".", 20)
-                .Select(project => project with { IconUrl = "https://cdn.modrinth.com/data/" + project.Id + "/icon.png" }).ToArray();
-            // Null HasMore uses the page/total contract through more than twenty full pages.
-            return ValueTask.FromResult(XsrResult.Success(new ResourceSearchResult(projects, 10000, query.Page)));
-        });
-        queries.Register<ResourceIconQuery, ResourceIconResult>(ResourceCatalogContract.Icon, async (_, token) =>
-        {
-            var reply = new TaskCompletionSource<ResourceIconResult>();
-            icons.Add((token, reply)); return XsrResult.Success(await reply.Task);
-        });
-        using var page = new ResourcesPageController(fixture.Shell, fixture.Intents, queries.Build(new NoopDispatchObserver()), fixture.Store, _ => { });
-        fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(page.Page);
-        XsrUiScene scene = fixture.Shell.Render(new(1100, 700));
-        void Pump(Func<bool> done) => AssertTrue(SpinWait.SpinUntil(() =>
-        { scene = fixture.Shell.Render(new(1100, 700)); return done(); }, TimeSpan.FromSeconds(5)));
-        var list = page.Find("ResourceList");
-        int Attached() => fixture.Shell.Tree.Children(list).Count(entity => fixture.Shell.Tree.Name(entity).StartsWith("ResourceProject.", StringComparison.Ordinal));
-        Pump(() => Attached() > 0 && icons.Count > 0);
-        AssertTrue(Attached() <= 48);
-        AssertTrue(icons.Count(read => !read.Token.IsCancellationRequested) <= 48);
-        var firstIcon = scene.Nodes.First(node => fixture.Shell.Tree.Name(node.Entity) == "ResourceProjectIcon").Entity;
-        var pendingIcon = scene.Nodes.Where(node => fixture.Shell.Tree.Name(node.Entity) == "ResourceProjectIcon").Skip(1).First().Entity;
-        var png = Nexa.Core.Media.PngImage.TryCreate(Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a3ioAAAAASUVORK5CYII="))!;
-        icons[0].Reply.SetResult(new(png));
-        Pump(() => fixture.Shell.Tree.GetComponent<XsrUiImage>(firstIcon)!.Raster is not null);
-        for (int index = 1; index < 50; index++)
-        {
-            AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiInput>(page.Find("ResourceNext"))!.Enabled);
-            Emit(fixture.Intents, "ui.resources.action", page.Find("ResourceNext"));
-            Pump(() => searches.Count == index + 1 && (index == 49 || fixture.Shell.Tree.GetComponent<XsrUiInput>(page.Find("ResourceNext"))!.Enabled));
-            AssertTrue(Attached() <= 48);
-            AssertTrue(icons.Count(read => !read.Token.IsCancellationRequested) <= 48);
+            if (page > 0) f.Click("ResourceNext");
+            int current = page;
+            f.Pump(() => f.Reads.Count > current);
+            f.Complete(page, ContinuousProjects("Page" + page + ".", 20), hasMore: page < 55);
+            f.RenderFrames(3);
+            AssertTrue(f.Fixture.Shell.Tree.Children(f.Page.Find("ResourceList"))
+                .Count(entity => f.Fixture.Shell.Tree.Name(entity).StartsWith("ResourceProject.", StringComparison.Ordinal)) <= 48);
         }
-        Pump(() => HasKey(fixture.Shell, scene, "ResourceListBudget"));
-        AssertEqual(50, searches.Count);
-        AssertEqual(49, searches[^1].Page);
-        AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiInput>(page.Find("ResourceNext"))!.Enabled);
-        AssertTrue(!string.IsNullOrWhiteSpace(FindByKey(fixture.Shell, scene, "ResourceListBudget").Text));
-        var viewport = FindByKey(fixture.Shell, scene, "ResourceList").Rect;
-        AssertTrue(fixture.Shell.Renderer.PointerScroll(new(viewport.X + 20, viewport.Y + 20), 1000000));
-        Pump(() => scene.Nodes.Any(node => node.Text == "Page49.19"));
-        AssertTrue(Attached() <= 48);
-        AssertTrue(icons.Count(read => !read.Token.IsCancellationRequested) <= 48);
-        AssertTrue(icons[0].Token.IsCancellationRequested);
-        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiImage>(firstIcon)!.Raster is null);
-        AssertTrue(icons[1].Token.IsCancellationRequested);
-        icons[1].Reply.SetResult(new(png)); // The retired visible row cannot reacquire a late raster.
-        for (int index = 0; index < 4; index++) scene = fixture.Shell.Render(new(1100, 700));
-        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiImage>(pendingIcon)!.Raster is null);
-        AssertEqual(50, searches.Count);
-
-        // Nonempty duplicate-only batches continue without consuming the distinct-project budget.
-        using var duplicateFixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
-        List<int> duplicatePages = [];
-        var duplicateProject = ContinuousProject("Repeated", "Repeated project");
-        var duplicateQueries = new XsrQueryRouterBuilder();
-        duplicateQueries.Register<ResourceSearchQuery, ResourceSearchResult>(ResourceCatalogContract.Search, (query, _) =>
-        {
-            duplicatePages.Add(query.Page);
-            return ValueTask.FromResult(XsrResult.Success(new ResourceSearchResult([duplicateProject], 10000, query.Page) { HasMore = true }));
-        });
-        using var duplicatePage = new ResourcesPageController(duplicateFixture.Shell, duplicateFixture.Intents,
-            duplicateQueries.Build(new NoopDispatchObserver()), duplicateFixture.Store, _ => { });
-        duplicateFixture.Shell.Renderer.ReducedMotion = true;
-        duplicateFixture.Shell.Stage.Navigation.Replace(duplicatePage.Page);
-        var duplicateScene = duplicateFixture.Shell.Render(new(1100, 700));
-        var duplicateList = duplicatePage.Find("ResourceList");
-        for (int frame = 0; frame < 1500 && duplicatePages.Count < 500; frame++)
-        {
-            duplicateScene = duplicateFixture.Shell.Render(new(1100, 700));
-            AssertTrue(duplicatePages.Count <= 500);
-            AssertTrue(duplicateFixture.Shell.Tree.Children(duplicateList)
-                .Count(entity => duplicateFixture.Shell.Tree.Name(entity).StartsWith("ResourceProject.", StringComparison.Ordinal)) <= 1);
-        }
-        AssertEqual(500, duplicatePages.Count);
-        AssertTrue(duplicatePages.SequenceEqual(Enumerable.Range(0, 500)));
-        for (int frame = 0; frame < 6; frame++) duplicateScene = duplicateFixture.Shell.Render(new(1100, 700));
-        AssertEqual(500, duplicatePages.Count);
-        AssertFalse(duplicateFixture.Shell.Tree.GetComponent<XsrUiInput>(duplicatePage.Find("ResourceNext"))!.Enabled);
-        AssertEqual(1, duplicateScene.Nodes.Count(node => node.Text == "Repeated project"));
-        AssertEqual(duplicateFixture.Shell.Renderer.LocalizeText("已达到列表显示上限，请缩小搜索范围。"),
-            FindByKey(duplicateFixture.Shell, duplicateScene, "ResourceListBudget").Text);
+        AssertEqual(56, f.Reads.Count);
+        AssertFalse(f.NextEnabled);
+        AssertFalse(HasKey(f.Fixture.Shell, f.Scene, "ResourceListBudget"));
+        var viewport = FindByKey(f.Fixture.Shell, f.Scene, "ResourceList").Rect;
+        f.Fixture.Shell.Renderer.PointerScroll(new(viewport.X + 20, viewport.Y + 20), 1000000);
+        f.Pump(() => f.Scene.Nodes.Any(node => node.Text == "Page55.19"));
+        f.Click("ResourcePrevious");
+        f.Pump(() => f.Scene.Nodes.Any(node => node.Text == "Page0.0"));
     }
 
     private static void ResourceContinuousListRenewsEachRetainedPageWithoutReplacingOthers()
@@ -416,57 +346,6 @@ internal static partial class Program
         AssertEqual(1, restored.Reads.Count(read => read.Query.WaitForRefresh && read.Query.Page == 0));
         AssertEqual(3, restored.Reads.Count);
 
-        using var rawFixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
-        List<int> rawPages = [];
-        var repeated = Enumerable.Repeat(ContinuousProject("R", "Repeated raw fact"), 1000).ToArray();
-        var rawQueries = new XsrQueryRouterBuilder();
-        rawQueries.Register<ResourceSearchQuery, ResourceSearchResult>(ResourceCatalogContract.Search, (query, _) =>
-        {
-            rawPages.Add(query.Page);
-            return ValueTask.FromResult(XsrResult.Success(new ResourceSearchResult(repeated, 10000, query.Page) { HasMore = true }));
-        });
-        using var rawPage = new ResourcesPageController(rawFixture.Shell, rawFixture.Intents,
-            rawQueries.Build(new NoopDispatchObserver()), rawFixture.Store, _ => { });
-        rawFixture.Shell.Renderer.ReducedMotion = true; rawFixture.Shell.Stage.Navigation.Replace(rawPage.Page);
-        var rawScene = rawFixture.Shell.Render(new(1100, 700));
-        for (int frame = 0; frame < 100 && !HasKey(rawFixture.Shell, rawScene, "ResourceListBudget"); frame++)
-        {
-            rawScene = rawFixture.Shell.Render(new(1100, 700));
-            AssertTrue(rawPages.Count <= 16);
-            AssertTrue(rawFixture.Shell.Tree.Children(rawPage.Find("ResourceList"))
-                .Count(entity => rawFixture.Shell.Tree.Name(entity).StartsWith("ResourceProject.", StringComparison.Ordinal)) <= 1);
-        }
-        AssertTrue(rawPages.SequenceEqual(Enumerable.Range(0, 16)));
-        AssertEqual(1, rawScene.Nodes.Count(node => node.Text == "Repeated raw fact"));
-        AssertEqual(rawFixture.Shell.Renderer.LocalizeText("已达到列表显示上限，请缩小搜索范围。"),
-            FindByKey(rawFixture.Shell, rawScene, "ResourceListBudget").Text);
-        AssertFalse(rawFixture.Shell.Tree.GetComponent<XsrUiInput>(rawPage.Find("ResourceNext"))!.Enabled);
-        for (int frame = 0; frame < 6; frame++) rawScene = rawFixture.Shell.Render(new(1100, 700));
-        AssertEqual(16, rawPages.Count);
-
-        using var textFixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
-        int textReads = 0;
-        var oversized = ContinuousProject("Oversized", "Oversized retained text")
-            with
-        { Description = new string('x', 4 * 1024 * 1024 + 1) };
-        var textQueries = new XsrQueryRouterBuilder();
-        textQueries.Register<ResourceSearchQuery, ResourceSearchResult>(ResourceCatalogContract.Search, (query, _) =>
-        {
-            textReads++;
-            return ValueTask.FromResult(XsrResult.Success(new ResourceSearchResult([oversized], 10000, query.Page) { HasMore = true }));
-        });
-        using var textPage = new ResourcesPageController(textFixture.Shell, textFixture.Intents,
-            textQueries.Build(new NoopDispatchObserver()), textFixture.Store, _ => { });
-        textFixture.Shell.Renderer.ReducedMotion = true; textFixture.Shell.Stage.Navigation.Replace(textPage.Page);
-        var textScene = textFixture.Shell.Render(new(1100, 700));
-        for (int frame = 0; frame < 8; frame++) textScene = textFixture.Shell.Render(new(1100, 700));
-        AssertEqual(1, textReads);
-        AssertEqual(0, textFixture.Shell.Tree.Children(textPage.Find("ResourceList"))
-            .Count(entity => textFixture.Shell.Tree.Name(entity).StartsWith("ResourceProject.", StringComparison.Ordinal)));
-        AssertFalse(textScene.Nodes.Any(node => node.Text == "Oversized retained text"));
-        AssertFalse(textFixture.Shell.Tree.GetComponent<XsrUiInput>(textPage.Find("ResourceNext"))!.Enabled);
-        AssertEqual(textFixture.Shell.Renderer.LocalizeText("已达到列表显示上限，请缩小搜索范围。"),
-            FindByKey(textFixture.Shell, textScene, "ResourceListBudget").Text);
     }
 
     private static ResourceProject ContinuousProject(string id, string title, ResourceProvider provider = ResourceProvider.Modrinth) =>

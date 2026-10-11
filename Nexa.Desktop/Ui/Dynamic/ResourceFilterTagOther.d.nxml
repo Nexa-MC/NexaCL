@@ -1,0 +1,5 @@
+﻿<nxml-dynamic>
+  <StackPanel Class="resource-filter-options">
+    <Button Key="ResourceFilterOption." Content="全部分类" Command="ui.resources.action" Class="resource-filter-option" />
+  </StackPanel>
+</nxml-dynamic>

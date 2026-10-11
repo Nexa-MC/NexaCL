@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="SOCKS4 仅支持用户标识，不支持密码认证。" Class="settings-network-note" />
+</nxml-dynamic>

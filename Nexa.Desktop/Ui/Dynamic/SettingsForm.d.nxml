@@ -1,0 +1,8 @@
+<nxml-dynamic>
+  <SettingsForm Key="{data key}">
+    <Text Content="{data label}" IsVisible="{data labeled}" Class="settings-form-label" />
+    <StackPanel Key="{data surface}" Class="settings-form-surface">
+      <Dynamic Key="{data body}" Class="settings-form-body" />
+    </StackPanel>
+  </SettingsForm>
+</nxml-dynamic>

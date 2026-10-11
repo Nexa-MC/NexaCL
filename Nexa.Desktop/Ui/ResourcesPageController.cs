@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Resources;
@@ -100,34 +100,38 @@ internal sealed partial class ResourcesPageController : IDisposable
         var extensionCard = _entities["ResourceExtensionCard"];
         Style(extensionCard, Tint, Ink, 10);
         shell.Tree.SetComponent(extensionCard, new XsrUiScrollGesture());
-        Segment(_entities["ResourceCategories"], "ResourceCategory", ["收藏", "模组", "整合包", "资源包", "光影", "数据包"], index =>
-        { _favoriteMode = index == 0; if (!_favoriteMode) _filter = _filter with { Kind = (ResourceKind)(index - 1) }; Search(); }, 62, initial: 1);
+        Segment(_entities["ResourceCategories"], "ResourceCategory", ["收藏", "模组", "整合包", "资源包", "光影", "数据包", "世界"], index =>
+        { _favoriteMode = index == 0; if (!_favoriteMode) _filter = _filter with { Kind = (ResourceKind)(index - 1), Tag = "" }; ResetCategoryFilters(); Search(); }, 62, initial: 1);
         var header = _entities["ResourceCategories"];
-        E(Element(header, "ResourceHeaderSpace")).Weight = 1;
+        E(_entities["ResourceCategory"]).Width = null; E(_entities["ResourceCategory"]).Weight = 1;
         Segment(header, "ResourceOrder", ["相关", "热门", "更新"], index =>
         { _filter = _filter with { Order = (ResourceOrder)index }; Search(); }, 54);
         var toolbar = _entities["ResourceToolbar"];
         _search = Input(toolbar, "ResourceSearch", "搜索资源", 0); E(_search).Weight = 1;
-        _game = Input(toolbar, "ResourceGame", "游戏版本", 104);
-        _loader = Input(toolbar, "ResourceLoader", "加载器", 100);
+        _resourceDynamic = new(shell.Tree, store);
+        var filters = _resourceDynamic.Append(_entities["ResourceFilterSlot"], DesktopMarkup.Dynamic("ResourceFilters.d.nxml"));
+        shell.Tree.Walk(filters, entity => { _entities[shell.Tree.Name(entity)] = entity; return true; });
+        _game = _entities["ResourceGame"]; _loader = _entities["ResourceLoader"];
+        foreach (string kind in new[] { "Game", "Loader", "Provider", "Tag" })
+        { string captured = kind; _actions[_entities["Resource" + kind]] = () => OpenFilter(captured); }
         Button(toolbar, "ResourceSearchButton", "搜索", 56, () =>
         { if (_sidecarSignals?.CatchResourceSearch() != true) Search(); });
         Button(toolbar, "ResourceCurrentInstance", "当前版本", 76, UseCurrentInstance);
         Button(toolbar, "ResourceReset", "重置", 48, () =>
         {
-            foreach (var input in new[] { _search, _game, _loader }) _shell.Renderer.SetTextInputValue(input, "");
+            _shell.Renderer.SetTextInputValue(_search, "");
+            _filter = _filter with { GameVersion = "", Loader = "", Tag = "", Provider = null };
+            ResetCategoryFilters(); UpdateFilterCaptions();
             Search();
         });
         var pagination = _entities["ResourcePagination"];
         _status = Text(pagination, "Modrinth", 12, Muted, 28); E(_status).Weight = 1;
         Segment(pagination, "ResourceNetwork", ["镜像优先", "官方优先"], SelectSourceFromPage, 66);
-        InitializeSourcePolicyNotice();
         E(_entities["ResourceNetwork.0"]).Height = 28; E(_entities["ResourceNetwork.1"]).Height = 28;
-        Check(pagination, "ResourceHideInstalled", "隐藏已有", () => _hideInstalled, value => { _hideInstalled = value; ReadContext(); if (_result is not null) ShowResults(); });
-        Check(pagination, "ResourceHideLibraries", "隐藏前置", () => _hideLibraries, value => { _hideLibraries = value; if (_result is not null) ShowResults(); });
+        Check(filters, "ResourceHideInstalled", "隐藏已有", () => _hideInstalled, value => { _hideInstalled = value; ReadContext(); if (_result is not null) ShowResults(); });
+        Check(filters, "ResourceHideLibraries", "隐藏前置", () => _hideLibraries, value => { _hideLibraries = value; if (_result is not null) ShowResults(); });
         _previous = Button(pagination, "ResourcePrevious", "返回顶部", 76, ReturnToListTop);
         _next = Button(pagination, "ResourceNext", "加载更多", 76, RequestNextPage);
-        InitializeContinuousList();
         E(_previous).Height = 28; E(_next).Height = 28;
         DetailPage = Element(default, "ResourceDetailPage", XsrUiSemanticRole.Page, "资源详情");
         _detailBody = Stack(DetailPage, "ResourceDetailBody"); E(_detailBody).Weight = 1; E(_detailBody).Padding = new(0, 0, 0, 8);
@@ -158,7 +162,8 @@ internal sealed partial class ResourcesPageController : IDisposable
         }
         SyncIcons(visible ? _shell.Stage.Navigation.Current : default);
         SyncSidecarSource(_shell.Stage.Navigation.Current == Page);
-        if (!visible) return;
+        if (!visible) { CloseFilter(false); return; }
+        UpdateFilter();
         string language = DesktopResourceText.Language(_store);
         if (_resourcePresentationLanguage is { } previous && previous != language)
         {
@@ -246,12 +251,13 @@ internal sealed partial class ResourcesPageController : IDisposable
             else if (PendingQuery.Succeeded(instanceReading))
             {
                 var instance = instanceReading.Result.Value!;
-                _shell.Renderer.SetTextInputValue(_game, instance.GameVersion);
+                _filter = _filter with { GameVersion = instance.GameVersion };
                 string loader = instance.Selection.Where(item => item.Loader is InstallLoader.Fabric or InstallLoader.Quilt or InstallLoader.Forge or InstallLoader.NeoForge).Select(item => item.Loader.ToString().ToLowerInvariant()).FirstOrDefault() ?? "";
-                _shell.Renderer.SetTextInputValue(_loader, loader is "fabric" or "quilt" or "forge" or "neoforge" ? loader : "");
+                _filter = _filter with { Loader = loader is "fabric" or "quilt" or "forge" or "neoforge" ? loader : "" };
+                UpdateFilterCaptions();
                 Search();
             }
-            else _shell.Tree.SetComponent(_status, new XsrUiText("无法读取当前版本，请手动填写筛选条件。"));
+            else _shell.Tree.SetComponent(_status, new XsrUiText("无法读取当前版本，请选择筛选条件。"));
         }
         if (_shell.Stage.Navigation.Current == Page && _reading is not null) { Cancel(); _detailId = null; }
         if (_shell.Stage.Navigation.Current == Page) UpdateContinuousList();
@@ -265,7 +271,8 @@ internal sealed partial class ResourcesPageController : IDisposable
         SyncIcons(_shell.Stage.Navigation.Current == Page || _shell.Stage.Navigation.Current == DetailPage ? _shell.Stage.Navigation.Current : default);
     }
 
-    private string Draft(XsrUiEntityId entity) => _shell.Tree.GetComponent<XsrUiTextInput>(entity)!.ReadDraft().Trim();
+    private string Draft(XsrUiEntityId entity) => entity == _game ? _filter.GameVersion : entity == _loader ? _filter.Loader
+        : _shell.Tree.GetComponent<XsrUiTextInput>(entity)!.ReadDraft().Trim();
     private void ProjectSidecarCaptions()
     {
         if (_sidecarUi is null) return;
@@ -341,8 +348,8 @@ internal sealed partial class ResourcesPageController : IDisposable
         Clear(parent, actions); Text(parent, message, 14, Muted, 54);
         actions.Add(Button(parent, "ResourceRetry", "重试", 80, retry));
     }
-    internal void ConfigureInstanceFilter(XsrQueryRouter queries, Func<MinecraftInstallEditQuery?> selected)
-    { _instanceQueries = queries; _selectedInstance = selected; }
+    internal void ConfigureInstanceFilter(XsrQueryRouter queries, Func<MinecraftInstallEditQuery?> selected, XsrCommandRouter? catalogCommands = null)
+    { _instanceQueries = queries; _selectedInstance = selected; _resourceCatalogCommands = catalogCommands; }
     private void UseCurrentInstance()
     {
         if (_selectedInstance?.Invoke() is not { } query || _instanceQueries is null || !_instanceQueries.TryResolve(MinecraftInstallEditContract.Query, out var route)) return;
@@ -398,9 +405,8 @@ internal sealed partial class ResourcesPageController : IDisposable
     {
         string text = _filter.Text;
         var matches = _favorites.Projects.Where(p => text.Length == 0 || p.DisplayName.Contains(text, StringComparison.OrdinalIgnoreCase) || p.Title.Contains(text, StringComparison.OrdinalIgnoreCase) || p.DisplayDescription.Contains(text, StringComparison.OrdinalIgnoreCase)).ToArray();
-        _listBudgetReached = matches.Length > ContinuousProjectBudget;
         _listHasMore = false;
-        _result = new(matches.Take(ContinuousProjectBudget).ToArray(), matches.Length, 0) { HasMore = false };
+        _result = new(matches, matches.Length, 0) { HasMore = false };
         ShowResults(); UpdatePagination();
     }
     private bool IsSaved(ResourceProject project) => _favorites.Projects.Any(p => p.Sources.Intersect(project.Sources).Any());
@@ -683,7 +689,7 @@ internal sealed partial class ResourcesPageController : IDisposable
                 if (E(option).Width != desired) { E(option).Width = desired; _shell.Tree.MarkDirty(option, XsrUiDirtyKinds.Layout); }
                 total += desired;
             }
-            if (E(track).Width != total) { E(track).Width = total; _shell.Tree.MarkDirty(track, XsrUiDirtyKinds.Layout); }
+            if (_shell.Tree.Name(track) != "ResourceCategory" && E(track).Width != total) { E(track).Width = total; _shell.Tree.MarkDirty(track, XsrUiDirtyKinds.Layout); }
         }
     }
     public void Dispose()
@@ -691,6 +697,7 @@ internal sealed partial class ResourcesPageController : IDisposable
         if (_disposed) return;
         _disposed = true; DisposeContinuousList(); RetireSidecarSource(); _moduleSourceStop.Dispose(); _planStop.Cancel(); _planStop.Dispose(); _contextStop.Cancel(); _contextStop.Dispose(); _downloadsStop.Cancel(); _downloadsStop.Dispose();
         _iconStop.Cancel(); _iconStop.Dispose(); _translationStop.Cancel(); _translationStop.Dispose(); ReleaseIcons(); _iconDescriptors.Clear(); _icons.Clear(); _translations.Clear();
+        CloseFilter(false);
         _stop.Cancel(); _stop.Dispose(); _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame;
     }
 }

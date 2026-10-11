@@ -1,0 +1,3 @@
+<nxml-component>
+  <Node Recipe="StackLayout" Kind="SettingsChoiceTrack" Role="RadioGroup" />
+</nxml-component>

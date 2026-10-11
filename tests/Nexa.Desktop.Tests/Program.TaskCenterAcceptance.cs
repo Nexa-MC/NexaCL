@@ -1,4 +1,4 @@
-using Nexa.Desktop.Ui;
+﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
 using Nexa.Services.Foundation;
@@ -45,6 +45,17 @@ internal static partial class Program
         install.Report("游戏文件", "下载中", 0.8, 4, 5, 100);
         XsrUiScene updated = fixture.Shell.Render(new XsrUiSize(1280, 800));
         AssertFalse(ReferenceEquals(second, updated));
+
+        install.Complete();
+        using var next = tasks.Begin(new TaskCenterStart("install:2", "下一项", ["下载"]));
+        fixture.Shell.Render(new(1280, 800));
+        var list = FindByKey(fixture.Shell, fixture.Shell.Render(new(1280, 800)), "TaskCenterList").Entity;
+        AssertEqual("task-card:install:2", fixture.Shell.Tree.Name(fixture.Shell.Tree.Children(list)[0]));
+        next.Complete();
+        fixture.Shell.Render(new(1280, 800));
+        AssertEqual("task-card:install:1", fixture.Shell.Tree.Name(fixture.Shell.Tree.Children(list)[0]));
+        var settled = fixture.Shell.Render(new(1280, 800));
+        AssertTrue(ReferenceEquals(settled, fixture.Shell.Render(new(1280, 800))));
     }
 
     private static void InstallFailureLeavesTheIdleTreeClean()

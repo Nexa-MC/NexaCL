@@ -1,7 +1,8 @@
-<nxml-component>
+﻿<nxml-component>
   <ContentHost Key="LibraryDropdownLayer">
     <Button Key="LibraryDropdownDismiss" Label="关闭目录下拉框" Command="ui.versions.dismiss" />
     <StackPanel Key="LibraryDropdownCard" Class="layout-VersionDirectoryDropdown-LibraryDropdownCard">
+      <StackPanel Key="LibraryDropdownBody" Class="layout-VersionDirectoryDropdown-Body">
       <StackPanel Key="LibraryDirectoryRows" Scroll="true" Class="layout-VersionDirectoryDropdown-LibraryDirectoryRows" />
       <StackPanel Key="LibraryNameEditor" IsVisible="{state versions.rename.visible}" Class="layout-VersionDirectoryDropdown-LibraryNameEditor">
         <TextInput Key="LibraryNameInput" Label="文件夹名称，留空则显示完整路径" Placeholder="文件夹名称" Class="layout-VersionDirectoryDropdown-LibraryNameInput" />
@@ -11,6 +12,7 @@
       <StackPanel Key="LibraryPathEditor" IsVisible="{state versions.add.visible}" Class="layout-VersionDirectoryDropdown-LibraryPathEditor">
         <TextInput Key="LibraryDirectoryInput" Label="游戏目录的完整路径" Placeholder="完整文件夹路径" Class="layout-VersionDirectoryDropdown-LibraryDirectoryInput" />
         <Button Key="LibraryAddPath" Content="添加" Label="添加文件夹" Command="ui.versions.add-path" Class="layout-VersionDirectoryDropdown-LibraryAddPath" />
+      </StackPanel>
       </StackPanel>
     </StackPanel>
   </ContentHost>

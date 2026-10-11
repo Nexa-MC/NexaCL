@@ -1,0 +1,11 @@
+﻿<nxml-dynamic>
+  <StackPanel Class="resource-filter-options">
+    <Button Key="ResourceFilterOption." Content="全部加载器" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.fabric" Content="Fabric" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.forge" Content="Forge" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.neoforge" Content="NeoForge" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.quilt" Content="Quilt" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.liteloader" Content="LiteLoader" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.rift" Content="Rift" Command="ui.resources.action" Class="resource-filter-option" />
+  </StackPanel>
+</nxml-dynamic>

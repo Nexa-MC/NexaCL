@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Settings;
 using Nexa.Xsr.Renderer;
@@ -20,6 +20,7 @@ internal sealed partial class SettingsPageController : IDisposable
     private readonly Dictionary<XsrUiEntityId, string> _inheritButtons = [];
     private IReadOnlyList<SettingsCatalogPage> Pages => _instanceDirectory is null ? _catalog!.GlobalPages : ManagementPages;
     private readonly XsrUiShell _shell;
+    private readonly NxmlDynamicContent _dynamic;
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrQueryRouter _queries;
     private readonly XsrCommandRouter _commands;
@@ -50,15 +51,12 @@ internal sealed partial class SettingsPageController : IDisposable
         XsrStateStore store, DesktopFeedbackService feedback, Func<string?>? instanceDirectory = null)
     {
         _shell = shell; _intents = intents; _queries = queries; _commands = commands; _store = store; _feedback = feedback;
+        _dynamic = new(shell.Tree, store);
         _instanceDirectory = instanceDirectory;
         if (instanceDirectory is not null) _selected = "overview";
         _revisionId = store.Resolve(SettingsPolicyContract.RevisionKey);
-        using var stream = DesktopMarkup.Open("SettingsPage.nxml")!;
-        using var reader = new StreamReader(stream);
         var host = shell.Tree.Create("settings-loader");
-        string markup = reader.ReadToEnd();
-        if (instanceDirectory is not null) markup = markup.Replace("Key=\"SettingsPage\" Label=\"设置\"", "Key=\"VersionSettingsPage\" Label=\"版本设置\"", StringComparison.Ordinal);
-        Page = NxmlUiLoader.Load(DesktopMarkup.Compile(NxmlParser.Parse(markup)), shell.Tree, store, host);
+        Page = NxmlUiLoader.Load(DesktopMarkup.Load(instanceDirectory is null ? "SettingsPage.nxml" : "VersionSettingsPage.nxml"), shell.Tree, store, host);
         shell.Tree.Detach(Page); shell.Tree.Destroy(host);
         var names = new Dictionary<string, XsrUiEntityId>();
         shell.Tree.Walk(Page, entity => { names[shell.Tree.Name(entity)] = entity; return true; });
@@ -70,8 +68,8 @@ internal sealed partial class SettingsPageController : IDisposable
         shell.Tree.SetComponent(_saveStatus, new XsrUiSemantic(XsrUiSemanticRole.Status, ""));
         shell.Tree.SetComponent(_navigationRoot, new XsrUiScrollGesture());
         shell.Tree.SetComponent(_navigationRoot, new XsrUiSemantic(XsrUiSemanticRole.RadioGroup, instanceDirectory is null ? "设置分类" : "版本设置分类"));
-        Style(_navigationRoot, new(241, 245, 250), Ink, 10);
-        shell.Tree.GetComponent<XsrUiElement>(_navigationRoot)!.HorizontalAlignment = XsrUiAlignment.Start;
+        Style(_navigationRoot, XsrUiColor.Transparent, Ink, 10);
+        shell.Tree.GetComponent<XsrUiElement>(_navigationRoot)!.HorizontalAlignment = XsrUiAlignment.Stretch;
         shell.Tree.SetComponent(_navigationRoot, new XsrUiSegmentedTrack(names["SettingsThumb"]));
         shell.Tree.SetComponent(names["SettingsThumb"], new XsrUiTransition());
         Style(names["SettingsThumb"], White, Ink, 8);
@@ -175,7 +173,7 @@ internal sealed partial class SettingsPageController : IDisposable
             else { _revision = revision; _feedback.Error("无法读取设置，请重新打开设置页。"); }
         }
         UpdateHookInheritance();
-        UpdateJavaPolicyStates();
+
         UpdateLaunchProfileAdmission();
         while (_pending.TryDequeue(out var intent))
         {
@@ -236,7 +234,7 @@ internal sealed partial class SettingsPageController : IDisposable
         UpdateOnlineContent(); UpdateContentIntegrity();
         UpdateModRemovalPreview();
         UpdateContentGraph(); UpdateServers(); UpdateExport();
-        UpdateSettingsTransfer(); UpdateJavaInventory(); UpdateJavaDiagnostics(); UpdateJavaManualDownload();
+        UpdateSettingsTransfer(); UpdateJavaInventory();
         UpdateProxyPreferences(); UpdateDiskLogActions(); UpdateDiagnosticExportControls();
         int index = _shell.Tree.GetComponent<XsrUiPager>(_pager)!.PageIndex;
         if (index >= 0 && index < Pages.Count && Pages[index].Id != _selected)
@@ -293,10 +291,8 @@ internal sealed partial class SettingsPageController : IDisposable
         {
             if (!_pages.TryGetValue(page.Id, out var body))
             {
-                body = Stack(_pager, "SettingsSections", XsrUiOrientation.Vertical, 16);
-                var layout = _shell.Tree.GetComponent<XsrUiElement>(body)!;
-                layout.VerticalAlignment = XsrUiAlignment.Stretch; layout.Padding = new(0, 8, 0, 8);
-                _shell.Tree.SetComponent(body, new XsrUiScroll { ShowsVerticalIndicator = true });
+                body = _dynamic.Append(_pager, DesktopMarkup.Dynamic("SettingsSection.d.nxml", new Dictionary<string, string> { ["id"] = page.Id }));
+                _shell.Tree.GetComponent<XsrUiScroll>(body)!.ShowsVerticalIndicator = true;
                 _shell.Tree.SetComponent(body, new XsrUiScrollGesture());
                 _shell.Tree.SetComponent(body, new XsrUiTransition { Key = page.Id, MovesSelf = true });
                 _pages[page.Id] = body;
@@ -414,7 +410,7 @@ internal sealed partial class SettingsPageController : IDisposable
         if (_instanceDirectory is null && _selected == "storage") BuildContentWorkspace();
         if (transfer) BuildSettingsTransfer();
         BuildJavaInventory();
-        BuildJavaPolicyStates();
+
         BuildGeneralRuntimeStates();
         BuildDeveloperDiagnostics();
         BuildRuntimeDiagnostics();

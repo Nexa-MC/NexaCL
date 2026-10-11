@@ -1,4 +1,4 @@
-using Nexa.Services.Settings;
+﻿using Nexa.Services.Settings;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 
@@ -97,6 +97,21 @@ internal sealed partial class SettingsPageController
 
     private XsrUiEntityId FormGroup(XsrUiEntityId parent, string name, string? label = null)
     {
+        if (_shell.Tree.GetComponent<Nexa.Xsr.Renderer.Nxml.NxmlDynamicSlot>(parent) is not null)
+        {
+            var root = _dynamic.Append(parent, DesktopMarkup.Dynamic("SettingsForm.d.nxml", new Dictionary<string, string>
+            {
+                ["key"] = name,
+                ["label"] = label ?? "",
+                ["labeled"] = label is null ? "false" : "true",
+                ["surface"] = name + ".Surface",
+                ["body"] = name + ".Body",
+            }));
+            XsrUiEntityId dynamicBody = default;
+            _shell.Tree.Walk(root, entity => { if (_shell.Tree.Name(entity) == name + ".Body") dynamicBody = entity; return true; });
+            if (!dynamicBody.IsAssigned) throw new Nexa.Xsr.Renderer.Nxml.NxmlLoadException("Settings form body slot is missing.");
+            return dynamicBody;
+        }
         var group = Stack(parent, name, XsrUiOrientation.Vertical, 4);
         if (label is not null) Text(group, label, 14, Muted, 24, 500);
         var surface = Stack(group, name + ".Surface", XsrUiOrientation.Vertical, 0);

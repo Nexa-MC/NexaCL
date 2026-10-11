@@ -1,0 +1,3 @@
+﻿<nxml-dynamic>
+  <Button Key="{data key}" Content="{data title}" Label="{data title}" Command="ui.resources.action" Class="resource-filter-option" />
+</nxml-dynamic>

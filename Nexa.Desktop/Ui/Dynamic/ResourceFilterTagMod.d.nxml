@@ -1,0 +1,18 @@
+﻿<nxml-dynamic>
+  <StackPanel Class="resource-filter-options">
+    <Button Key="ResourceFilterOption." Content="全部分类" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.406/worldgen" Content="世界生成" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.412/technology" Content="科技" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.419/magic" Content="魔法" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.422/adventure" Content="冒险" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.424/decoration" Content="装饰" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.5191/utility" Content="实用" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.421/library" Content="支持库" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.6814/optimization" Content="优化" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.436/food" Content="食物" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.420/storage" Content="存储" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.434/equipment" Content="装备" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.411/mobs" Content="生物" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.414/transportation" Content="运输" Command="ui.resources.action" Class="resource-filter-option" />
+  </StackPanel>
+</nxml-dynamic>

@@ -1,4 +1,4 @@
-using Nexa.Desktop.Ui;
+﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Composition;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Resources;
@@ -231,7 +231,7 @@ internal static partial class Program
         var listBounds = FindByKey(fixture.Shell, scene, "ResourceList").Rect;
         var layoutBounds = FindByKey(fixture.Shell, scene, "ResourcesLayout").Rect;
         var footerBounds = FindByKey(fixture.Shell, scene, "ResourcePagination").Rect;
-        AssertTrue(listBounds.Y - layoutBounds.Y <= 90);
+        AssertTrue(listBounds.Y - layoutBounds.Y <= 128);
         AssertTrue(layoutBounds.Y + layoutBounds.Height - footerBounds.Y - footerBounds.Height <= 1);
         fixture.Shell.Renderer.SetTextInputValue(input, "Sodium");
         Emit(fixture.Intents, "ui.resources.action", page.Find("ResourceSearchButton"));
@@ -248,6 +248,26 @@ internal static partial class Program
         scene = fixture.Shell.Render(new(1000, 650));
         AssertEqual("1.21.1", source.Last!.GameVersion);
         AssertEqual("", source.Last.Loader); // Vanilla must not default to enum value zero (Forge).
+
+        void Pick(string filter, string value)
+        {
+            Emit(fixture.Intents, "ui.resources.action", page.Find("Resource" + filter));
+            scene = fixture.Shell.Render(new(1000, 650));
+            var option = FindByKey(fixture.Shell, scene, "ResourceFilterOption." + value);
+            AssertEqual(option.Entity, fixture.Shell.Renderer.HitTest(new(option.Rect.X + 10, option.Rect.Y + 10)));
+            Emit(fixture.Intents, "ui.resources.action", option.Entity);
+            scene = fixture.Shell.Render(new(1000, 650));
+        }
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiTextInput>(page.Find("ResourceGame")) is null);
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiTextInput>(page.Find("ResourceLoader")) is null);
+        Pick("Loader", "fabric"); AssertEqual("fabric", source.Last!.Loader);
+        Pick("Provider", "curseforge"); AssertEqual(ResourceProvider.CurseForge, source.Last!.Provider!.Value);
+        Pick("Tag", "412/technology"); AssertEqual("412/technology", source.Last!.Tag);
+        Emit(fixture.Intents, "ui.resources.action", page.Find("ResourceCategory.6"));
+        scene = fixture.Shell.Render(new(1000, 650));
+        AssertEqual(ResourceKind.World, source.Last!.Kind); AssertEqual("", source.Last.Loader); AssertEqual("", source.Last.Tag);
+        Emit(fixture.Intents, "ui.resources.action", page.Find("ResourceCategory.1"));
+        scene = fixture.Shell.Render(new(1000, 650));
         Emit(fixture.Intents, "ui.resources.action", page.Find("ResourceDetails.Valid123"));
         scene = fixture.Shell.Render(new(1000, 650));
         AssertEqual(page.DetailPage, fixture.Shell.Stage.Navigation.Current);

@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="填写 PAC 的 HTTP 或 HTTPS 地址；认证信息用于脚本选中的代理。" Class="settings-network-note" />
+</nxml-dynamic>

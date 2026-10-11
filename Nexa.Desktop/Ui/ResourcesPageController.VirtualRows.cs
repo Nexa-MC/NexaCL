@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Nexa.Services.Resources;
 using Nexa.Xsr.Renderer;
 
@@ -84,8 +84,7 @@ internal sealed partial class ResourcesPageController
             _shell.Tree.Detach(_catalogTopSpacer); _shell.Tree.Detach(_catalogBottomSpacer); _shell.Tree.Detach(_catalogEmpty);
             if (_projectProjection.Count == 0)
             {
-                SetCatalogText(_catalogEmpty, _listBudgetReached ? "已达到列表显示上限，请缩小搜索范围。"
-                    : _result.Projects.Count == 0 ? "没有找到匹配的资源。试试其他关键词或筛选条件。" : "当前筛选下没有资源。", localize: true);
+                SetCatalogText(_catalogEmpty, _result.Projects.Count == 0 ? "没有找到匹配的资源。试试其他关键词或筛选条件。" : "当前筛选下没有资源。", localize: true);
                 _shell.Tree.Attach(_catalogEmpty, list);
             }
             else

@@ -1,0 +1,8 @@
+﻿<nxml-dynamic>
+  <StackPanel Key="ResourceFilters" Class="resource-filter-row">
+    <Button Key="ResourceGame" Content="游戏版本" Icon="lucide/chevron-down" Command="ui.resources.action" Class="resource-filter-choice" />
+    <Button Key="ResourceLoader" Content="加载器" Icon="lucide/chevron-down" Command="ui.resources.action" Class="resource-filter-choice" />
+    <Button Key="ResourceProvider" Content="全部来源" Icon="lucide/chevron-down" Command="ui.resources.action" Class="resource-filter-choice" />
+    <Button Key="ResourceTag" Content="全部分类" Icon="lucide/chevron-down" Command="ui.resources.action" Class="resource-filter-choice" />
+  </StackPanel>
+</nxml-dynamic>

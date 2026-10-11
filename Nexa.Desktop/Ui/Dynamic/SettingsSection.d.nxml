@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Dynamic Key="SettingsSections" Scroll="true" TransitionKey="{data id}" Class="settings-section" />
+</nxml-dynamic>

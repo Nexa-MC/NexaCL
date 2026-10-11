@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Process;
@@ -264,9 +264,14 @@ internal sealed partial class VersionSelectionController : IDisposable
             // tall enough that the list does NOT overflow — an under-sized card makes
             // CanScrollVertically true and paints a full-height track for a two-row list.
             double height = Math.Min(
-                snapshot.Directories.Count * 48 + (4 * Math.Max(0, snapshot.Directories.Count - 1)) + 8
-                + (_editingRoot is null ? 0 : 44) + (_manualAdd ? 44 : 0),
+                snapshot.Directories.Count * 48 + (4 * Math.Max(0, snapshot.Directories.Count - 1)) + 16
+                + (_editingRoot is null ? 0 : 48) + (_manualAdd ? 48 : 0),
                 Math.Max(96, _shell.Renderer.Viewport.Height - 160));
+            var rowsScroll = _shell.Tree.GetComponent<XsrUiScroll>(_entities["LibraryDirectoryRows"])!;
+            bool needsIndicator = snapshot.Directories.Count * 48 + 4 * Math.Max(0, snapshot.Directories.Count - 1)
+                + 16 + (_editingRoot is null ? 0 : 48) + (_manualAdd ? 48 : 0) > height;
+            if (rowsScroll.ShowsVerticalIndicator != needsIndicator)
+            { rowsScroll.ShowsVerticalIndicator = needsIndicator; _shell.Tree.MarkDirty(_dropdown, XsrUiDirtyKinds.Layout); }
             XsrUiElement card = _shell.Tree.GetComponent<XsrUiElement>(_entities["LibraryDropdownCard"])!;
             if (card.Height != height) { card.Height = height; _shell.Tree.MarkDirty(_dropdown, XsrUiDirtyKinds.Layout); }
         }
@@ -434,6 +439,7 @@ internal sealed partial class VersionSelectionController : IDisposable
         { style.Hover = new(237, 243, 253); if (key is not "LibraryRow" and not "LibraryChooseDirectory" and not "LibraryDirectoryRow") { style.Background = new(240, 244, 250); style.FontSize = 13; } }
         if (key is "LibraryRowModify" or "LibraryRowSettings" or "LibraryRowDelete")
         { style.HoverExpand = true; style.CornerRadius = 16; style.Background = DesktopUiPalette.CapsuleBackground; style.Foreground = DesktopUiPalette.CapsuleForeground; style.TextAlignment = XsrUiTextAlignment.Center; }
+        if (key is "LibraryRenameSave" or "LibraryRenameCancel" or "LibraryAddPath") style.TextAlignment = XsrUiTextAlignment.Center;
         if (key == "LibraryAddPath") { style.Background = Blue; style.Foreground = new(255, 255, 255); style.Hover = new(23, 110, 225); }
         if (key == "LibraryDropdownDismiss") { style.Background = XsrUiColor.Transparent; style.Hover = XsrUiColor.Transparent; }
         if (key == "LibraryAddDirectory") { style.HoverExpand = true; style.CornerRadius = 20; style.TextAlignment = XsrUiTextAlignment.Center; }

@@ -1,0 +1,8 @@
+﻿<nxml-dynamic>
+  <StackPanel Class="resource-filter-options">
+    <Button Key="ResourceFilterOption." Content="全部分类" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption./cartoon" Content="卡通" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption./realistic" Content="写实" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption./semi-realistic" Content="半写实" Command="ui.resources.action" Class="resource-filter-option" />
+  </StackPanel>
+</nxml-dynamic>

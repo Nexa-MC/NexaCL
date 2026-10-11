@@ -1,0 +1,7 @@
+﻿<nxml-dynamic>
+  <StackPanel Class="resource-filter-options">
+    <Button Key="ResourceFilterOption." Content="全部来源" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.modrinth" Content="Modrinth" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.curseforge" Content="CurseForge" Command="ui.resources.action" Class="resource-filter-option" />
+  </StackPanel>
+</nxml-dynamic>

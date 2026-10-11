@@ -28,61 +28,49 @@ internal sealed partial class SettingsPageController
     {
         if (_instanceDirectory is not null || _selected != "network") return;
         _networkProbeActions.Clear();
-        var manual = FormGroup(_sections, "NetworkProbe", "网络故障诊断");
-        Text(manual, "探测固定来源的 HTTPS 响应，不发送账户信息。结果只表示观察时刻。", 11, Muted, 32);
-        var start = ActionButton(manual, "NetworkProbe.Start", _networkProbeReading is null ? "开始网络探测" : "正在网络探测", NetworkProbeStart, 132);
+        var root = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsNetworkDiagnostics.d.nxml"));
+        var slots = new Dictionary<string, XsrUiEntityId>(StringComparer.Ordinal);
+        _shell.Tree.Walk(root, entity => { slots[_shell.Tree.Name(entity)] = entity; return true; });
+        XsrUiEntityId Load(string slot, string fragment) => _dynamic.Append(slots[slot], DesktopMarkup.Dynamic(fragment));
+        void Observation(string slot, string value)
+        {
+            var row = _dynamic.Append(slots[slot], DesktopMarkup.Dynamic("SettingsNetworkObservation.d.nxml", new Dictionary<string, string> { ["value"] = value }));
+            DesktopLiteralText.Preserve(_shell.Tree, row);
+        }
+        void Endpoint(string slot, string host, DateTimeOffset at, int? status, double elapsed, string? error) => Observation(slot,
+            host + " · " + at.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)
+            + " · " + (status?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? error ?? "")
+            + " · " + elapsed.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + " ms");
+        var start = Load("NetworkProbe.Action", _networkProbeReading is null ? "SettingsNetworkProbeStart.d.nxml" : "SettingsNetworkProbePending.d.nxml");
         _shell.Tree.GetComponent<XsrUiInput>(start)!.Enabled = _networkProbeReading is null;
         _networkProbeActions.Add(start);
         if (_networkProbeSnapshot is { } probed)
-            foreach (var observed in probed.Endpoints) EndpointRow(manual, observed.Host, observed.ObservedAt, observed.StatusCode, observed.ElapsedMilliseconds, observed.ErrorKind);
-        var endpoints = FormGroup(_sections, "NetworkObservedEndpoints", "最近观察的 Endpoint 状态");
-        Text(endpoints, "来自最近已记录请求；不是当前健康状态。", 11, Muted, 32);
+            foreach (var observed in probed.Endpoints) Endpoint("NetworkProbe.Rows", observed.Host, observed.ObservedAt, observed.StatusCode, observed.ElapsedMilliseconds, observed.ErrorKind);
         foreach (var observed in _networkTraceRows.GroupBy(entry => entry.Host, StringComparer.Ordinal).Select(group => group.MaxBy(entry => entry.Sequence)!).Take(16))
-            EndpointRow(endpoints, observed.Host, observed.Timestamp, observed.StatusCode, observed.ElapsedMilliseconds, observed.ErrorKind);
-        if (_networkTraceRows.Count == 0) Text(endpoints, "尚未观察到请求结果。", 11, Muted, 28);
-        var mirrors = FormGroup(_sections, "NetworkMirrorResolution", "Mirror Resolution");
+            Endpoint("NetworkObservedEndpoints.Rows", observed.Host, observed.Timestamp, observed.StatusCode, observed.ElapsedMilliseconds, observed.ErrorKind);
+        if (_networkTraceRows.Count == 0) Load("NetworkObservedEndpoints.Rows", "SettingsNetworkEndpointsEmpty.d.nxml");
         ReadResourceResolution();
         string source = _values?.Values.FirstOrDefault(item => item.Key == "network.resource-source")?.Value.Value ?? "follow-request";
-        Text(mirrors, source switch
-        { "official-first" => "资源站使用官方优先；地域与来源禁用策略仍生效。", "mirrors-first" => "资源站使用镜像优先；地域与来源禁用策略仍生效。", _ => "资源站跟随页面所选来源顺序；地域与来源禁用策略仍生效。" }, 11, Muted, 32);
+        Load("NetworkMirrorResolution.Policy", source switch
+        { "official-first" => "SettingsNetworkOfficialFirst.d.nxml", "mirrors-first" => "SettingsNetworkMirrorsFirst.d.nxml", _ => "SettingsNetworkFollowRequest.d.nxml" });
         if (_resourceResolutionSnapshot?.LastResolution is { } resolution)
-        {
-            string observed = resolution.Provider + " · " + resolution.ObservedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)
-                + " · " + string.Join(" → ", resolution.CandidateHosts) + " · " + (resolution.SelectedHost ?? "—");
-            DesktopLiteralText.Preserve(_shell.Tree, Text(mirrors, observed, 11, Muted, 28));
-        }
-        else Text(mirrors, "尚未观察到资源站来源解析。", 11, Muted, 28);
-        var downloads = FormGroup(_sections, "NetworkDownloadDiagnostics", "Download Diagnostics");
-        Text(downloads, "活动传输的最近观察；完成的传输会从列表移除。", 11, Muted, 32);
-        if (_networkDownloadRows.Length == 0) Text(downloads, "当前没有活动下载。", 11, Muted, 28);
+            Observation("NetworkMirrorResolution.Rows", resolution.Provider + " · " + resolution.ObservedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)
+                + " · " + string.Join(" → ", resolution.CandidateHosts) + " · " + (resolution.SelectedHost ?? "—"));
+        else Load("NetworkMirrorResolution.Rows", "SettingsNetworkResolutionEmpty.d.nxml");
+        if (_networkDownloadRows.Length == 0) Load("NetworkDownloadDiagnostics.Rows", "SettingsNetworkDownloadsEmpty.d.nxml");
         foreach (var transfer in _networkDownloadRows)
         {
             string host = Uri.TryCreate(transfer.Source, UriKind.Absolute, out var address) && address.Scheme is "https" or "http" ? address.IdnHost : "—";
-            string row = _networkDownloadObservedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)
+            Observation("NetworkDownloadDiagnostics.Rows", _networkDownloadObservedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)
                 + " · " + host + " · " + transfer.Stage + " · " + transfer.DownloadedBytes.ToString(System.Globalization.CultureInfo.InvariantCulture)
                 + "/" + (transfer.TotalBytes >= 0 ? transfer.TotalBytes.ToString(System.Globalization.CultureInfo.InvariantCulture) : "—")
-                + " B · " + transfer.BytesPerSecond.ToString(System.Globalization.CultureInfo.InvariantCulture) + " B/s";
-            DesktopLiteralText.Preserve(_shell.Tree, Text(downloads, row, 11, Muted, 28));
+                + " B · " + transfer.BytesPerSecond.ToString(System.Globalization.CultureInfo.InvariantCulture) + " B/s");
         }
-        var panel = FormGroup(_sections, "NetworkDiagnostics", "网络诊断记录");
-        Text(panel, "开启请求记录或自动诊断后可查看。仅保留主机、结果和耗时。", 11, Muted, 32);
-        ActionButton(panel, "NetworkDiagnostics.Refresh", "刷新记录", NetworkTraceRefresh, 112);
         foreach (var entry in _networkTraceRows.Reverse().Take(32))
-        {
-            var row = Text(panel, $"{entry.Timestamp.ToLocalTime():HH:mm:ss} · {entry.Host} · {entry.Kind} · "
+            Observation("NetworkDiagnostics.Rows", $"{entry.Timestamp.ToLocalTime():HH:mm:ss} · {entry.Host} · {entry.Kind} · "
                 + (entry.StatusCode?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? entry.ErrorKind ?? "")
-                + $" · {entry.ElapsedMilliseconds:F1} ms", 11, Muted, 28);
-            DesktopLiteralText.Preserve(_shell.Tree, row);
-        }
-        if (_networkTraceLoaded && _networkTraceRows.Count == 0) Text(panel, "没有网络诊断记录。", 11, Muted, 28);
-    }
-
-    private void EndpointRow(XsrUiEntityId parent, string host, DateTimeOffset at, int? status, double elapsed, string? error)
-    {
-        string value = host + " · " + at.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)
-            + " · " + (status?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? error ?? "")
-            + " · " + elapsed.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + " ms";
-        DesktopLiteralText.Preserve(_shell.Tree, Text(parent, value, 11, Muted, 28));
+                + $" · {entry.ElapsedMilliseconds:F1} ms");
+        if (_networkTraceLoaded && _networkTraceRows.Count == 0) Load("NetworkDiagnostics.Rows", "SettingsNetworkTraceEmpty.d.nxml");
     }
 
     private void StartNetworkProbe(DesktopUiIntent intent)

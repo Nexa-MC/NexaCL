@@ -1,4 +1,4 @@
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -11,7 +11,7 @@ using Nexa.Xsr.Renderer.Backend.Avalonia;
 
 namespace Nexa.Desktop.Tests;
 
-// Separate process: actual product PXML, settings routes/controller and native backend.
+// Separate process: actual product NXML, settings routes/controller and native backend.
 // Only its temporary local data root and empty instance inventory are fixtures.
 internal static partial class Program
 {
@@ -35,6 +35,7 @@ internal static partial class Program
             cancellationToken: timeout.Token);
         LaunchPageFixture? fixture = null;
         SettingsPageController? settings = null;
+        ResourcesPageController? resources = null;
         DesktopAppearanceSession? appearance = null;
         DesktopPresentationSession? presentation = null;
         AvaloniaUiShellWindow? window = null;
@@ -74,7 +75,7 @@ internal static partial class Program
                 if (candidate.Screens.Primary is { } screen)
                     candidate.Position = new(screen.WorkingArea.X + Math.Max(0, (screen.WorkingArea.Width - (int)(1040 * candidate.RenderScaling)) / 2),
                         screen.WorkingArea.Y + Math.Max(0, (screen.WorkingArea.Height - (int)(740 * candidate.RenderScaling)) / 2));
-                candidate.UpdateLayout(); surface.CommitScene();
+                candidate.UpdateLayout(); surface!.CommitScene();
                 return surface.Scene is { Count: > 0 };
             });
             await SelectCategory("appearance");
@@ -102,15 +103,15 @@ internal static partial class Program
                 await startup.InvokeAsync(() =>
                 {
                     surface!.CommitScene();
-                    var body = FindByKey(f.Shell, surface.Scene!, "SettingsSections");
-                    bool Visible(string label) => surface.Scene!.Nodes.Any(node => node.Text == label
+                    var body = CurrentBody();
+                    bool Visible(string label) => surface!.Scene!.Nodes.Any(node => node.Text == label
                         && node.Rect.Y >= body.Rect.Y && node.Rect.Y + node.Rect.Height <= body.Rect.Y + body.Rect.Height);
                     ready = Visible("UI 动画帧率") && Visible("减少动态效果");
                     atEnd = body.Scroll is { } scroll && scroll.OffsetY >= scroll.MaximumOffsetY;
                     if (!ready && !atEnd)
                     {
                         AssertTrue(f.Shell.Renderer.PointerScroll(new(body.Rect.X + 30, body.Rect.Y + 30), 80));
-                        surface.CommitScene();
+                        surface!.CommitScene();
                     }
                 }, timeout.Token);
                 if (ready) break;
@@ -121,41 +122,110 @@ internal static partial class Program
             await Task.Delay(1200, timeout.Token);
             await startup.InvokeAsync(() =>
             {
-                var body = FindByKey(f.Shell, surface!.Scene!, "SettingsSections");
+                var body = CurrentBody();
                 var scroll = f.Shell.Tree.GetComponent<XsrUiScroll>(body.Entity)!;
                 scroll.OffsetY = body.Scroll!.Value.MaximumOffsetY;
                 f.Shell.Tree.MarkDirty(body.Entity, XsrUiDirtyKinds.Layout);
-                surface.CommitScene(); Capture("bottom");
+                surface!.CommitScene(); Capture("bottom");
             }, timeout.Token);
             await Task.Delay(1200, timeout.Token);
             await startup.InvokeAsync(() =>
             {
-                var body = FindByKey(f.Shell, surface!.Scene!, "SettingsSections");
+                var body = CurrentBody();
                 f.Shell.Tree.GetComponent<XsrUiScroll>(body.Entity)!.OffsetY = 0;
                 f.Shell.Tree.MarkDirty(body.Entity, XsrUiDirtyKinds.Layout);
-                surface.CommitScene();
-                var option = FindByKey(f.Shell, surface.Scene!, "SettingsOption.appearance.theme-mode." + (dark ? "0" : "1"));
+                surface!.CommitScene();
+                var option = FindByKey(f.Shell, surface!.Scene!, "SettingsOption.appearance.theme-mode." + (dark ? "0" : "1"));
                 Emit(f.Intents, "ui.settings.choice", option.Entity);
-                surface.CommitScene();
+                surface!.CommitScene();
             }, timeout.Token);
             await Eventually(() => !controller.SettingsWritePending && f.Shell.Renderer.ColorScheme.IsDark != dark
                 && surface!.Scene!.Nodes.Any(node => f.Shell.Tree.Name(node.Entity)
                     == "SettingsOption.appearance.theme-mode." + (dark ? "0" : "1") && node.IsSelected));
             await startup.InvokeAsync(() => Capture("theme-switch"), timeout.Token);
             await Task.Delay(1200, timeout.Token);
+            await SelectCategory("network");
+            await Task.Delay(500, timeout.Token);
+            await startup.InvokeAsync(() => Capture("network-top"), timeout.Token);
+            for (int step = 0; step < 128; step++)
+            {
+                bool ready = false;
+                await startup.InvokeAsync(() =>
+                {
+                    surface!.CommitScene();
+                    var body = CurrentBody();
+                    ready = surface.Scene!.Nodes.Any(node => f.Shell.Tree.Name(node.Entity) == "SettingsProxyMode.2"
+                        && node.Rect.Y >= body.Rect.Y && node.Rect.Y + node.Rect.Height <= body.Rect.Y + body.Rect.Height - 220);
+                    if (!ready)
+                    {
+                        f.Shell.Renderer.PointerScroll(new(body.Rect.X + 30, body.Rect.Y + 30), 80);
+                        surface.CommitScene();
+                    }
+                }, timeout.Token);
+                if (ready) break;
+                if (step == 127) throw new InvalidOperationException("Proxy controls did not enter the viewport.");
+                await Task.Delay(20, timeout.Token);
+            }
+            await startup.InvokeAsync(() =>
+            {
+                Capture("network-proxy");
+                Emit(f.Intents, "ui.settings.proxy.mode", FindByKey(f.Shell, surface!.Scene!, "SettingsProxyMode.2").Entity);
+                surface.CommitScene(); Capture("network-manual");
+            }, timeout.Token);
+            await Task.Delay(250, timeout.Token);
+            await startup.InvokeAsync(() =>
+            {
+                var queries = new Nexa.Xsr.Runtime.XsrQueryRouterBuilder();
+                queries.Register<Nexa.Services.Resources.ResourceSearchQuery, Nexa.Services.Resources.ResourceSearchResult>(
+                    Nexa.Services.Resources.ResourceCatalogContract.Search, (query, _) => new(Nexa.Xsr.XsrResult.Success(
+                        new Nexa.Services.Resources.ResourceSearchResult(ContinuousProjects("Resource", 20), 20, query.Page) { HasMore = false })));
+                resources = new(f.Shell, f.Intents, queries.Build(new NoopDispatchObserver()), f.Store, _ => { });
+                f.Controller.ResourcesPage = resources.Page;
+                Emit(f.Intents, "ui.navigation.community");
+                surface!.CommitScene(); surface.CommitScene();
+            }, timeout.Token);
+            await Task.Delay(500, timeout.Token);
+            await startup.InvokeAsync(() =>
+            {
+                Capture("resources");
+                Emit(f.Intents, "ui.resources.action", resources!.Find("ResourceLoader"));
+                surface!.CommitScene(); Capture("resources-loader");
+                Emit(f.Intents, "ui.navigation.launch"); surface.CommitScene();
+                f.Shell.Renderer.Activate(FindByKey(f.Shell, surface.Scene!, "InstanceListButton").Entity);
+                surface.CommitScene();
+                f.Shell.Renderer.Activate(FindByKey(f.Shell, surface.Scene!, "LibraryChooseDirectory").Entity);
+                surface.CommitScene();
+                var rename = surface.Scene!.Nodes.FirstOrDefault(node => f.Shell.Tree.Name(node.Entity).StartsWith("LibraryDirectoryRename:directory:", StringComparison.Ordinal));
+                if (rename.Entity.IsAssigned) { f.Shell.Renderer.Activate(rename.Entity); surface.CommitScene(); }
+            }, timeout.Token);
+            await Task.Delay(500, timeout.Token);
+            await startup.InvokeAsync(() =>
+            {
+                Capture("directories");
+                f.Shell.Stage.Navigation.Replace(controller.Page); surface!.CommitScene();
+            }, timeout.Token);
             await SelectCategory("general");
             await Task.Delay(600, timeout.Token);
             await SelectCategory("appearance");
             await Task.Delay(1000, timeout.Token);
             outcome = 0;
 
+            XsrUiSceneNode CurrentBody()
+            {
+                XsrUiEntityId pager = default;
+                f.Shell.Tree.Walk(controller.Page, entity => { if (f.Shell.Tree.Name(entity) == "SettingsPager") pager = entity; return true; });
+                var pages = f.Shell.Tree.Children(pager);
+                var current = pages[f.Shell.Tree.GetComponent<XsrUiPager>(pager)!.PageIndex];
+                return surface!.Scene!.Nodes.Single(node => node.Entity == current);
+            }
+
             async Task SelectCategory(string id)
             {
                 await startup.InvokeAsync(() =>
                 {
                     surface!.CommitScene();
-                    Emit(f.Intents, "ui.settings.section", FindByKey(f.Shell, surface.Scene!, "SettingsNav." + id).Entity);
-                    surface.CommitScene();
+                    Emit(f.Intents, "ui.settings.section", FindByKey(f.Shell, surface!.Scene!, "SettingsNav." + id).Entity);
+                    surface!.CommitScene();
                 }, timeout.Token);
                 await Eventually(() => controller.SelectedSection == id);
             }
@@ -181,7 +251,7 @@ internal static partial class Program
                 string stem = "settings-" + theme + "-" + phase;
                 frame.Save(Path.Combine(outputDirectory, stem + ".png"), PngBitmapEncoderOptions.Default);
                 var controls = new JsonArray();
-                foreach (var node in surface.Scene!.Nodes.Where(node => node.IsClickable
+                foreach (var node in surface!.Scene!.Nodes.Where(node => node.IsClickable
                     || f.Shell.Tree.Name(node.Entity) == "SettingsSections"))
                 {
                     PixelPoint point = surface.PointToScreen(new(node.Rect.X + node.Rect.Width / 2,
@@ -204,7 +274,7 @@ internal static partial class Program
                     ["phase"] = phase,
                     ["theme"] = f.Shell.Renderer.ColorScheme.IsDark ? "dark" : "light",
                     ["data"] = "temporary local settings; empty instance inventory",
-                    ["renderer"] = "actual product PXML/controller and software Avalonia native window",
+                    ["renderer"] = "actual product NXML/controller and software Avalonia native window",
                     ["version"] = f.Shell.Version,
                     ["x"] = origin.X,
                     ["y"] = origin.Y,
@@ -225,7 +295,7 @@ internal static partial class Program
         {
             void Cleanup()
             {
-                presentation?.Dispose(); appearance?.Dispose(); settings?.Dispose();
+                presentation?.Dispose(); appearance?.Dispose(); resources?.Dispose(); settings?.Dispose();
                 if (window is not null) { fixture!.Shell.Renderer.ReducedMotion = true; window.Close(); }
                 fixture?.Dispose();
             }

@@ -1,4 +1,4 @@
-
+﻿
 using Nexa.Xsr.Renderer.Nxml;
 
 
@@ -194,7 +194,7 @@ internal sealed partial class LaunchPageController
         title.Source = _titleEntities["TitleMain"];
         if (depth != _titleNavigationDepth)
         {
-            main.OffsetX = title.OffsetX = 0;
+            main.OffsetX = title.OffsetX = depth > _titleNavigationDepth ? 12 : -12;
             _titleNavigationDepth = depth;
         }
         bool subpage = _shell.Stage.Navigation.Depth > 1;
@@ -323,7 +323,7 @@ internal sealed partial class LaunchPageController
 
         // Navigation, catalog and commit action are separate spatial groups. The pager and
         // press transitions remain owned by UI.Next, preserving interruptible motion.
-        ApplyVisual(entities["JavaInstallPagerTabs"], ProfileSurface, PrimaryText,
+        ApplyVisual(entities["JavaInstallPagerTabs"], XsrUiColor.Transparent, PrimaryText,
             10);
         _shell.Tree.SetComponent(entities["JavaInstallPagerTabs"], new XsrUiSegmentedTrack(entities["JavaInstallThumb"]));
         _shell.Tree.SetComponent(entities["JavaInstallThumb"], new XsrUiTransition());

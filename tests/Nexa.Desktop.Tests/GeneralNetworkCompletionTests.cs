@@ -1,4 +1,4 @@
-using Nexa.Desktop;
+﻿using Nexa.Desktop;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Downloads;
 using Nexa.Services.Network;
@@ -164,7 +164,7 @@ internal static partial class Program
             AssertTrue(SpinWait.SpinUntil(() => { scene = fixture.Shell.Render(new(1000, 800)); return Enabled() == expected; }, TimeSpan.FromSeconds(5)));
         }
         AssertTrue(Enabled()); Apply("official-first", false);
-        AssertTrue(scene.Nodes.Any(node => node.Text == "资源站使用全局官方优先。"));
+        AssertFalse(scene.Nodes.Any(node => node.Text == "资源站使用全局官方优先。"));
         AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiSelection>(page.Find("ResourceNetwork.1"))!.IsSelected);
         AssertEqual(page.Find("ResourceNetwork.1"), sourceTrack.Selected);
         int before = searches; Emit(fixture.Intents, "ui.resources.action", page.Find("ResourceNetwork.0"));

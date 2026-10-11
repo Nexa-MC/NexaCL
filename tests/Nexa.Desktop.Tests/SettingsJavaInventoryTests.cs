@@ -1,4 +1,4 @@
-using Nexa.Desktop.Ui;
+﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Minecraft.Java;
 using Nexa.Services.Settings;
 using Nexa.Xsr.Renderer;
@@ -37,6 +37,13 @@ internal static partial class Program
             scene = fixture.Shell.Render(new(1000, 1700));
         }
         Navigate("java"); scene = fixture.Shell.Render(new(1000, 1700));
+        fixture.Shell.Tree.Walk(settings.Page, entity =>
+        {
+            string name = fixture.Shell.Tree.Name(entity);
+            AssertFalse(name.StartsWith("JavaDiagnostics", StringComparison.Ordinal)
+                || name.StartsWith("JavaManual", StringComparison.Ordinal) || name.StartsWith("JavaPolicy", StringComparison.Ordinal));
+            return true;
+        });
         Emit(fixture.Intents, "ui.settings.java.add", FindByKey(fixture.Shell, scene, "SettingsJavaAdd").Entity);
         scene = fixture.Shell.Render(new(1000, 1700));
         AssertFalse(FindByKey(fixture.Shell, scene, "SettingsJavaAdd").IsEnabled);

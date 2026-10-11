@@ -1,4 +1,4 @@
-using Nexa.Desktop.Ui;
+﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
 using Nexa.Services.Foundation;
@@ -114,12 +114,10 @@ internal static partial class Program
         ("InstanceIdentityDraftSurvivesScopedFactRebuildsAndRetiresOnNavigation", InstanceIdentityDraftSurvivesScopedFactRebuildsAndRetiresOnNavigation),
         ("DialogLiteralBodiesPreserveCatalogMatchesAndRefreshTranslationPolicy", DialogLiteralBodiesPreserveCatalogMatchesAndRefreshTranslationPolicy),
         ("ContentIntegrityDetailsShowActualFactsAndRetireScopedReads", ContentIntegrityDetailsShowActualFactsAndRetireScopedReads),
-        ("JavaPolicyStateFollowsCommittedPreferenceAndInheritanceWithoutRebuildingEditors", () => JavaPolicyStateFollowsCommittedPreferenceAndInheritanceWithoutRebuildingEditors().AsTask().GetAwaiter().GetResult()),
         ("LaunchNavigationRejectsUnknownAndUnboundWithoutChangingPage", LaunchNavigationRejectsUnknownAndUnboundWithoutChangingPage),
         ("LaunchNavigationBindingsBorrowRealPagesAndPreserveRepeatedAssignments", LaunchNavigationBindingsBorrowRealPagesAndPreserveRepeatedAssignments),
         ("DiagnosticAiWorkspaceRebuildsCommittedAdmissionAndCancelsRetiredSend", () => DiagnosticAiWorkspaceRebuildsCommittedAdmissionAndCancelsRetiredSend().AsTask().GetAwaiter().GetResult()),
         ("HardwareAdviceUsesSameCapturedEstimatePreflightAndNeverWritesConfiguration", HardwareAdviceUsesSameCapturedEstimatePreflightAndNeverWritesConfiguration),
-        ("ManualJavaWorkspaceRequiresLicenseUsesActualReceiptAndRetiresActions", ManualJavaWorkspaceRequiresLicenseUsesActualReceiptAndRetiresActions),
         ("StartupHintsConsumeCommittedChoiceAndKeepLaunchProgress", StartupHintsConsumeCommittedChoiceAndKeepLaunchProgress),
         ("ManualNetworkProbeUiCancelsAndKeepsObservedFactsLiteral", ManualNetworkProbeUiCancelsAndKeepsObservedFactsLiteral),
         ("ResourceSourcePolicyDisablesLocalOverrideAndRestoresIt", ResourceSourcePolicyDisablesLocalOverrideAndRestoresIt),
@@ -132,7 +130,6 @@ internal static partial class Program
         ("InstanceDiagnosticsJoinScopePreserveUnknownAndUseDurableHistory", InstanceDiagnosticsJoinScopePreserveUnknownAndUseDurableHistory),
         ("ReducedMotionConsumesTypedCommittedPreferenceAndLegacyOr", ReducedMotionConsumesTypedCommittedPreferenceAndLegacyOr),
         ("DeveloperRuntimeDiagnosticsCaptureActualSceneAndRemainReadOnly", DeveloperRuntimeDiagnosticsCaptureActualSceneAndRemainReadOnly),
-        ("JavaDiagnosticWorkspaceDispatchesSelectedRevisionCopiesPreviewAndRetiresReads", JavaDiagnosticWorkspaceDispatchesSelectedRevisionCopiesPreviewAndRetiresReads),
         ("BackgroundPresentationPreservesVideoPriorityAndRoutedAppearance", BackgroundPresentationPreservesVideoPriorityAndRoutedAppearance),
         ("ScreenshotWaterfallLayoutKeepsRatiosAndBoundedWindows", ScreenshotWaterfallLayoutKeepsRatiosAndBoundedWindows),
         ("ScreenshotGalleryRealizesVisibleWaterfallAndKeepsModalScroll", ScreenshotGalleryRealizesVisibleWaterfallAndKeepsModalScroll),

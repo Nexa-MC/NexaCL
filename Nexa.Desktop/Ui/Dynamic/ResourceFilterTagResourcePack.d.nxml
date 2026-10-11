@@ -1,0 +1,9 @@
+﻿<nxml-dynamic>
+  <StackPanel Class="resource-filter-options">
+    <Button Key="ResourceFilterOption." Content="全部分类" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption./realistic" Content="写实" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption./simplistic" Content="简洁" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption./fantasy" Content="奇幻" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.4483/combat" Content="战斗" Command="ui.resources.action" Class="resource-filter-option" />
+  </StackPanel>
+</nxml-dynamic>

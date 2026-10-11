@@ -1,9 +1,9 @@
-/* JavaInstallPage layout. */
+﻿/* JavaInstallPage layout. */
 .layout-JavaInstallPage-JavaInstallContent { Orientation: Vertical; Weight: 1; Spacing: 8; Padding: 0; }
 .layout-JavaInstallPage-JavaInstallEntryRow { Orientation: Horizontal; Height: 40; Spacing: 12; }
 .layout-JavaInstallPage-JavaInstallVersionInput { Weight: 1; Height: 40; }
 .layout-JavaInstallPage-JavaInstallStart { Width: 124; Height: 40; }
-.layout-JavaInstallPage-JavaInstallPagerTabs { Orientation: Horizontal; Height: 44; MaxWidth: 960; Spacing: 2; Padding: 4,0,4,0; }
+.layout-JavaInstallPage-JavaInstallPagerTabs { Orientation: Horizontal; Height: 36; Spacing: 2; Margin: 4; Padding: 0; }
 .layout-JavaInstallPage-JavaMinecraftTab { Height: 36; VerticalAlignment: Center; Width: 104; Padding: 0; }
 .layout-JavaInstallPage-JavaForgeTab { Height: 36; VerticalAlignment: Center; Width: 76; Padding: 0; }
 .layout-JavaInstallPage-JavaCleanroomTab { Height: 36; VerticalAlignment: Center; Width: 104; Padding: 0; }
@@ -57,3 +57,5 @@
 .layout-JavaInstallPage-JavaLiteLoaderPage { Orientation: Vertical; Spacing: 12; Padding: 0,4,0,0; }
 .layout-JavaInstallPage-JavaLiteLoaderPageTitle { Height: 28; }
 .layout-JavaInstallPage-JavaLoaderLiteLoader { Height: 40; }
+
+.java-install-navigation-surface { Height: 44; Background: #f1f5fa; Foreground: #2b3340; CornerRadius: 10; Surface: Solid; }

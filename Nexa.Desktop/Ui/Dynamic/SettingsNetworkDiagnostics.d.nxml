@@ -1,0 +1,51 @@
+<nxml-dynamic>
+  <StackPanel Class="settings-network-groups">
+    <SettingsForm Key="NetworkProbe">
+      <Text Content="网络故障诊断" Class="settings-form-label" />
+      <StackPanel Class="settings-form-surface">
+        <StackPanel Class="settings-form-body">
+        <Text Content="探测固定来源的 HTTPS 响应，不发送账户信息。结果只表示观察时刻。" Class="settings-network-description" />
+        <Dynamic Key="NetworkProbe.Action" />
+        <Dynamic Key="NetworkProbe.Rows" />
+        </StackPanel>
+      </StackPanel>
+    </SettingsForm>
+    <SettingsForm Key="NetworkObservedEndpoints">
+      <Text Content="最近观察的服务状态" Class="settings-form-label" />
+      <StackPanel Class="settings-form-surface">
+        <StackPanel Class="settings-form-body">
+        <Text Content="来自最近已记录请求；不是当前健康状态。" Class="settings-network-description" />
+        <Dynamic Key="NetworkObservedEndpoints.Rows" />
+        </StackPanel>
+      </StackPanel>
+    </SettingsForm>
+    <SettingsForm Key="NetworkMirrorResolution">
+      <Text Content="来源解析" Class="settings-form-label" />
+      <StackPanel Class="settings-form-surface">
+        <StackPanel Class="settings-form-body">
+        <Dynamic Key="NetworkMirrorResolution.Policy" />
+        <Dynamic Key="NetworkMirrorResolution.Rows" />
+        </StackPanel>
+      </StackPanel>
+    </SettingsForm>
+    <SettingsForm Key="NetworkDownloadDiagnostics">
+      <Text Content="下载诊断" Class="settings-form-label" />
+      <StackPanel Class="settings-form-surface">
+        <StackPanel Class="settings-form-body">
+        <Text Content="活动传输的最近观察；完成的传输会从列表移除。" Class="settings-network-description" />
+        <Dynamic Key="NetworkDownloadDiagnostics.Rows" />
+        </StackPanel>
+      </StackPanel>
+    </SettingsForm>
+    <SettingsForm Key="NetworkDiagnostics">
+      <Text Content="网络诊断记录" Class="settings-form-label" />
+      <StackPanel Class="settings-form-surface">
+        <StackPanel Class="settings-form-body">
+        <Text Content="开启请求记录或自动诊断后可查看。仅保留主机、结果和耗时。" Class="settings-network-description" />
+        <Button Key="NetworkDiagnostics.Refresh" Content="刷新记录" Command="ui.settings.network.trace.refresh" Class="settings-network-refresh" />
+        <Dynamic Key="NetworkDiagnostics.Rows" />
+        </StackPanel>
+      </StackPanel>
+    </SettingsForm>
+  </StackPanel>
+</nxml-dynamic>

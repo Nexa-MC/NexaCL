@@ -1,0 +1,11 @@
+﻿<nxml-dynamic>
+  <ContentHost Key="ResourceFilterOverlay">
+    <Button Key="ResourceFilterDismiss" Label="关闭筛选" Command="ui.resources.action" Class="resource-filter-dismiss" />
+    <StackPanel Key="ResourceFilterCard" Height="{data height}" Class="resource-filter-card">
+      <StackPanel Class="resource-filter-padding">
+        <TextInput Key="ResourceFilterSearch" Label="搜索版本" Placeholder="搜索版本" IsVisible="{data searchable}" Class="resource-filter-search" />
+        <Dynamic Key="ResourceFilterOptions" Scroll="true" Class="resource-filter-options" />
+      </StackPanel>
+    </StackPanel>
+  </ContentHost>
+</nxml-dynamic>

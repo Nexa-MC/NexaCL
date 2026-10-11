@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
 using Nexa.Xsr.Renderer.Nxml;
@@ -375,6 +375,13 @@ internal sealed class TaskCenterController : IDisposable
 
             UpdateCard(card, entry);
         }
+
+        // Keep active work reachable, preserving the collection order within each group.
+        var list = _entities["TaskCenterList"];
+        var ordered = entries.OrderBy(static entry => entry.IsTerminal)
+            .Select(entry => _cards[entry.TaskId].Root).ToArray();
+        if (!_shell.Tree.Children(list).SequenceEqual(ordered))
+            foreach (var root in ordered) _shell.Tree.Attach(root, list);
     }
 
     private PresentedCard CreateCard(TaskCenterEntry entry)

@@ -17,6 +17,9 @@ internal sealed partial class SettingsPageController
     private readonly Dictionary<string, string> _proxyCommitted = [];
     private XsrUiEntityId _proxyTrack, _proxyProtocolTrack, _proxyManual, _proxyProtocolHint;
     private readonly Dictionary<XsrUiEntityId, string> _proxyProtocols = [];
+    private static readonly XsrUiVisualStyleSnapshot ProxyOption = DesktopMarkup.Visual("settings-proxy-option").Snapshot();
+    private static readonly XsrUiVisualStyleSnapshot ProxySelectedOption = DesktopMarkup.Visual("settings-proxy-option-selected").Snapshot();
+    private string? _proxyHintTemplate;
     private string _proxyDraftProtocol = "http";
     private string _proxyDraftMode = "1";
     private string _proxyCommittedMode = "1";
@@ -39,57 +42,32 @@ internal sealed partial class SettingsPageController
 
     private void BuildProxyPreferences()
     {
-        var group = FormGroup(_sections, "SettingsProxy", "代理");
-        Text(group, "应用后对新请求生效。", 11, Muted, 24);
-        var toolbar = Stack(group, "SettingsProxyToolbar", XsrUiOrientation.Horizontal, 8);
-        _proxyTrack = Stack(toolbar, "SettingsProxyMode", XsrUiOrientation.Horizontal, 0);
-        _shell.Tree.SetComponent(_proxyTrack, new XsrUiSemantic(XsrUiSemanticRole.RadioGroup, "代理模式草稿"));
-        Style(_proxyTrack, new(241, 245, 250), Ink, 9);
-        var thumb = Element(_proxyTrack, "SettingsProxyModeThumb", XsrUiSemanticRole.None, null);
-        _shell.Tree.GetComponent<XsrUiElement>(thumb)!.IsVisible = false;
-        Style(thumb, White, Ink, 7);
-        _shell.Tree.SetComponent(thumb, new XsrUiTransition());
-        _shell.Tree.SetComponent(_proxyTrack, new XsrUiSegmentedTrack(thumb));
-        foreach (var (value, label) in new[] { ("1", "系统代理"), ("0", "无代理"), ("2", "手动代理") })
+        var root = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsProxy.d.nxml"));
+        var names = new Dictionary<string, XsrUiEntityId>(StringComparer.Ordinal);
+        _shell.Tree.Walk(root, entity => { names[_shell.Tree.Name(entity)] = entity; return true; });
+        _proxyTrack = names["SettingsProxyMode"]; _proxyProtocolTrack = names["SettingsProxyProtocol"];
+        _proxyManual = names["SettingsProxyManual"]; _proxyProtocolHint = names["SettingsProxyHint"];
+        _proxyHintTemplate = null;
+        foreach (var (track, thumb) in new[] { (_proxyTrack, names["SettingsProxyModeThumb"]), (_proxyProtocolTrack, names["SettingsProxyProtocolThumb"]) })
         {
-            var option = RadioOption(_proxyTrack, "SettingsProxyMode." + value, label, ProxyMode, 84);
-            _proxyModes[option] = value;
+            _shell.Tree.SetComponent(track, new XsrUiSegmentedTrack(thumb));
+            _shell.Tree.SetComponent(thumb, new XsrUiTransition());
         }
-        _proxyManual = Stack(group, "SettingsProxyManual", XsrUiOrientation.Vertical, 6);
-        _proxyProtocolTrack = Stack(_proxyManual, "SettingsProxyProtocol", XsrUiOrientation.Horizontal, 0);
-        _shell.Tree.SetComponent(_proxyProtocolTrack, new XsrUiSemantic(XsrUiSemanticRole.RadioGroup, "代理协议"));
-        Style(_proxyProtocolTrack, new(241, 245, 250), Ink, 9);
-        var protocolThumb = Element(_proxyProtocolTrack, "SettingsProxyProtocolThumb", XsrUiSemanticRole.None, null);
-        _shell.Tree.GetComponent<XsrUiElement>(protocolThumb)!.IsVisible = false;
-        Style(protocolThumb, White, Ink, 7); _shell.Tree.SetComponent(protocolThumb, new XsrUiTransition());
-        _shell.Tree.SetComponent(_proxyProtocolTrack, new XsrUiSegmentedTrack(protocolThumb));
+        foreach (string value in new[] { "1", "0", "2" })
+        {
+            var option = names["SettingsProxyMode." + value];
+            _proxyModes[option] = value; _shell.Tree.SetComponent(option, new XsrUiSelection());
+        }
         foreach (string protocol in new[] { "http", "https", "socks4", "socks5", "pac" })
         {
-            var option = RadioOption(_proxyProtocolTrack, "SettingsProxyProtocol." + protocol, protocol.ToUpperInvariant(), ProxyProtocol, 66);
-            _proxyProtocols[option] = protocol;
+            var option = names["SettingsProxyProtocol." + protocol];
+            _proxyProtocols[option] = protocol; _shell.Tree.SetComponent(option, new XsrUiSelection());
         }
-        _proxyProtocolHint = Text(_proxyManual, "", 11, Muted, 24);
         foreach (string key in ProxyKeys)
         {
-            string label = key switch { "network.proxy-address" => "地址", "network.proxy-user" => "用户名", _ => "密码" };
-            var row = Stack(_proxyManual, "SettingsProxyRow." + key, XsrUiOrientation.Horizontal, 12);
-            var caption = Text(row, label, 13, Ink, 34);
-            _shell.Tree.GetComponent<XsrUiElement>(caption)!.Width = 84;
-            var input = Element(row, "SettingsInput." + key, XsrUiSemanticRole.TextInput, label, height: 34);
-            _shell.Tree.GetComponent<XsrUiElement>(input)!.Weight = 1;
-            _shell.Tree.GetComponent<XsrUiElement>(input)!.Padding = new(10, 0, 10, 0);
-            _shell.Tree.SetComponent(input, new XsrUiTextInput
-            {
-                IsPassword = key == "network.proxy-password",
-                MaximumLength = key == "network.proxy-address" ? 2048 : 1024,
-                Placeholder = key == "network.proxy-address" ? "http://localhost:8080" : label
-            });
-            _shell.Tree.SetComponent(input, new XsrUiInput { Focusable = true, Clickable = true });
-            Style(input, new(245, 246, 248), Ink, 9);
+            var input = names["SettingsInput." + key];
             _proxyInputs[key] = input;
         }
-        ActionButton(toolbar, "SettingsProxyApply", "应用代理", ProxyApply, 84);
-        ActionButton(toolbar, "SettingsProxyReload", "重新读取", ProxyReload, 84);
         if (_proxySavedDrafts is not null)
         {
             foreach (var (key, input) in _proxyInputs)
@@ -140,17 +118,19 @@ internal sealed partial class SettingsPageController
             bool selected = protocol == _proxyDraftProtocol;
             _shell.Tree.GetComponent<XsrUiSelection>(option)!.IsSelected = selected;
             if (selected) _shell.Tree.GetComponent<XsrUiSegmentedTrack>(_proxyProtocolTrack)!.Selected = option;
-            Style(option, XsrUiColor.Transparent, selected ? Blue : Ink, 7, 12, selected ? 600 : 450);
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(option)!.TextAlignment = XsrUiTextAlignment.Center;
+            ApplyProxyOptionVisual(option, selected);
         }
-        string hint = _proxyDraftProtocol switch
+        string hintTemplate = _proxyDraftProtocol switch
         {
-            "socks4" => "SOCKS4 仅支持用户标识，不支持密码认证。",
-            "pac" => "填写 PAC 的 HTTP 或 HTTPS 地址；认证信息用于脚本选中的代理。",
-            _ => "用户名和密码可留空。",
+            "socks4" => "SettingsProxyHintSocks4.d.nxml",
+            "pac" => "SettingsProxyHintPac.d.nxml",
+            _ => "SettingsProxyHintDefault.d.nxml",
         };
-        var hintText = _shell.Tree.GetComponent<XsrUiText>(_proxyProtocolHint)!;
-        if (hintText.Content != hint) { hintText.Content = hint; _shell.Tree.MarkDirty(_proxyProtocolHint, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint); }
+        if (_proxyHintTemplate != hintTemplate)
+        {
+            _dynamic.Replace(_proxyProtocolHint, DesktopMarkup.Dynamic(hintTemplate));
+            _proxyHintTemplate = hintTemplate;
+        }
         var password = _proxyInputs["network.proxy-password"];
         DesktopElementVisibility.Set(_shell.Tree, _shell.Tree.Parent(password), _proxyDraftProtocol is not ("socks4"));
         foreach (var (option, value) in _proxyModes)
@@ -158,9 +138,14 @@ internal sealed partial class SettingsPageController
             bool selected = value == _proxyDraftMode;
             _shell.Tree.GetComponent<XsrUiSelection>(option)!.IsSelected = selected;
             if (selected) _shell.Tree.GetComponent<XsrUiSegmentedTrack>(_proxyTrack)!.Selected = option;
-            Style(option, XsrUiColor.Transparent, selected ? Blue : Ink, 7, 12, selected ? 600 : 450);
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(option)!.TextAlignment = XsrUiTextAlignment.Center;
+            ApplyProxyOptionVisual(option, selected);
         }
+    }
+
+    private void ApplyProxyOptionVisual(XsrUiEntityId option, bool selected)
+    {
+        if (_shell.Tree.GetComponent<XsrUiVisualStyle>(option)?.Snapshot() == (selected ? ProxySelectedOption : ProxyOption)) return;
+        _shell.Tree.SetComponent(option, DesktopMarkup.Visual(selected ? "settings-proxy-option-selected" : "settings-proxy-option"));
     }
 
     private void HandleProxyIntent(DesktopUiIntent intent)

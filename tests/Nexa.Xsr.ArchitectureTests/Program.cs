@@ -407,12 +407,26 @@ internal static partial class Program
     {
         string directory = Path.Combine(repositoryRoot, "Nexa.Xsr.Renderer", "Components");
         string[] components = Directory.GetFiles(directory, "*.c.nxml");
-        if (components.Length < 16) failures.Add("The external NXML primitive component bundle is incomplete.");
+        if (components.Length < 17) failures.Add("The external NXML primitive component bundle is incomplete.");
         foreach (string file in components)
         {
             XElement root = XDocument.Load(file).Root!;
             if (root.Name.LocalName != "nxml-component" || root.Elements().Count() != 1)
                 failures.Add($"Invalid external component wrapper: {file}");
+        }
+        string dynamicDirectory = Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", "Dynamic");
+        foreach (string file in Directory.GetFiles(dynamicDirectory, "*.d.nxml"))
+        {
+            XElement root = XDocument.Load(file).Root!;
+            if (root.Name.LocalName != "nxml-dynamic" || root.Elements().Count() != 1)
+                failures.Add($"Invalid dynamic template wrapper: {file}");
+        }
+        // Completed migrations must not regress to imperative presentation factories.
+        foreach (string name in new[] { "SettingsPageController.Network.cs", "SettingsPageController.NetworkDiagnostics.cs" })
+        {
+            string source = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", name));
+            foreach (string token in new[] { ".Tree.Create(", "new XsrUiText(", "new XsrUiVisualStyle", "new XsrUiStackPanel", "FormGroup(", "ActionButton(" })
+                if (source.Contains(token, StringComparison.Ordinal)) failures.Add($"{name}: presentation must come from dynamic NXML.");
         }
         XDocument compiler = XDocument.Load(projectPaths["Nexa.Xsr.Renderer.Nxml.Compiler"]);
         if (Elements(compiler, "ProjectReference").Any(item => item.Attribute("OutputItemType")?.Value == "Analyzer"))

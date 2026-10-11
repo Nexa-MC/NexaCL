@@ -1,0 +1,7 @@
+﻿<nxml-dynamic>
+  <StackPanel Class="resource-filter-options">
+    <Button Key="ResourceFilterOption." Content="全部加载器" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.iris" Content="Iris" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.optifine" Content="OptiFine" Command="ui.resources.action" Class="resource-filter-option" />
+  </StackPanel>
+</nxml-dynamic>

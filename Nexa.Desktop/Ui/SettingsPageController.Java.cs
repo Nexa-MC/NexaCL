@@ -1,4 +1,4 @@
-using Nexa.Services.Minecraft.Java;
+﻿using Nexa.Services.Minecraft.Java;
 using Nexa.Services.Settings;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
@@ -113,8 +113,8 @@ internal sealed partial class SettingsPageController
                 Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, managed.Executable))?.Enabled ?? true);
         }
         UpdateJavaChoices();
-        BuildJavaDiagnostics();
-        BuildJavaManualDownload();
+
+
         if (focus is not null) _shell.Tree.Walk(group, entity =>
         { if (_shell.Tree.Name(entity) == focus) _shell.Renderer.Focus(entity, showIndicator: false); return true; });
     }
@@ -256,8 +256,8 @@ internal sealed partial class SettingsPageController
 
     private void CancelJavaInventory()
     {
-        CancelJavaDiagnostics();
-        CancelJavaManualDownload();
+
+
         _javaRegistryGeneration++;
         _javaManagementStop?.Cancel(); _javaManagementStop?.Dispose(); _javaManagementStop = null;
         _javaPick = null; _javaManagementWrite = null;

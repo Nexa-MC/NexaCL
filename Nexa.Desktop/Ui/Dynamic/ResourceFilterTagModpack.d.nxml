@@ -1,0 +1,12 @@
+﻿<nxml-dynamic>
+  <StackPanel Class="resource-filter-options">
+    <Button Key="ResourceFilterOption." Content="全部分类" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.4484/" Content="多人" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.4479/challenging" Content="挑战" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.4478/quests" Content="任务" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.4481/lightweight" Content="轻量" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.4472/technology" Content="科技" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.4473/magic" Content="魔法" Command="ui.resources.action" Class="resource-filter-option" />
+    <Button Key="ResourceFilterOption.4475/adventure" Content="冒险" Command="ui.resources.action" Class="resource-filter-option" />
+  </StackPanel>
+</nxml-dynamic>

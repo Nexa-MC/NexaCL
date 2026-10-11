@@ -5,6 +5,16 @@ namespace Nexa.Desktop.Ui;
 /// <summary>Product presentation assets are independent files beside the executable.</summary>
 internal static class DesktopMarkup
 {
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, NxmlHostIr> StaticFragments = new(StringComparer.Ordinal);
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, NxmlDynamicTemplate> DynamicTemplates = new(StringComparer.Ordinal);
+    internal static NxmlHostIr Dynamic(string name, IReadOnlyDictionary<string, string>? data = null)
+    {
+        if (!name.EndsWith(".d.nxml", StringComparison.Ordinal)) throw new ArgumentException("Expected a .d.nxml fragment.", nameof(name));
+        var template = DynamicTemplates.GetOrAdd(name, static asset => new NxmlDynamicTemplate(Read(asset)));
+        return data is null || data.Count == 0
+            ? StaticFragments.GetOrAdd(name, _ => template.Compile(new Dictionary<string, string>(), NxmlComponentLibrary.Default, Styles.Value))
+            : template.Compile(data, NxmlComponentLibrary.Default, Styles.Value);
+    }
     private static readonly Lazy<NssStyleSheet> Styles = new(LoadStyles);
     private static NssStyleSheet LoadStyles()
     {
@@ -29,6 +39,6 @@ internal static class DesktopMarkup
         if (Path.GetFileName(name) != name || name.Contains(':', StringComparison.Ordinal)
             || !name.EndsWith(".nxml", StringComparison.Ordinal))
             throw new ArgumentException("Expected an NXML asset name.", nameof(name));
-        return NxmlComponentLibrary.ReadFile(Path.Combine(AppContext.BaseDirectory, "Ui", name.EndsWith(".c.nxml", StringComparison.Ordinal) ? "Components" : "", name));
+        return NxmlComponentLibrary.ReadFile(Path.Combine(AppContext.BaseDirectory, "Ui", name.EndsWith(".c.nxml", StringComparison.Ordinal) ? "Components" : name.EndsWith(".d.nxml", StringComparison.Ordinal) ? "Dynamic" : "", name));
     }
 }

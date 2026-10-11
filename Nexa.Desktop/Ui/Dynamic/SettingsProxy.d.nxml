@@ -1,0 +1,43 @@
+<nxml-dynamic>
+  <StackPanel Key="SettingsProxy" Class="settings-form-group">
+    <Text Content="代理" Class="settings-form-label" />
+    <StackPanel Class="settings-form-surface">
+      <StackPanel Key="SettingsProxy.Body" Class="settings-form-body">
+        <Text Content="应用后对新请求生效。" Class="settings-network-note" />
+        <StackPanel Key="SettingsProxyToolbar" Class="settings-proxy-toolbar">
+          <SettingsChoiceTrack Key="SettingsProxyMode" Label="代理模式草稿" Class="settings-proxy-track">
+            <ContentHost Key="SettingsProxyModeThumb" IsVisible="false" Class="settings-proxy-thumb" />
+            <SettingsChoice Key="SettingsProxyMode.1" Content="系统代理" Label="系统代理" Command="ui.settings.proxy.mode" Class="settings-proxy-option settings-proxy-mode" />
+            <SettingsChoice Key="SettingsProxyMode.0" Content="无代理" Label="无代理" Command="ui.settings.proxy.mode" Class="settings-proxy-option settings-proxy-mode" />
+            <SettingsChoice Key="SettingsProxyMode.2" Content="手动代理" Label="手动代理" Command="ui.settings.proxy.mode" Class="settings-proxy-option settings-proxy-mode" />
+          </SettingsChoiceTrack>
+          <Button Key="SettingsProxyApply" Content="应用代理" Command="ui.settings.proxy.apply" Class="settings-proxy-action" />
+          <Button Key="SettingsProxyReload" Content="重新读取" Command="ui.settings.proxy.reload" Class="settings-proxy-action" />
+        </StackPanel>
+        <StackPanel Key="SettingsProxyManual" Class="settings-proxy-manual">
+          <SettingsChoiceTrack Key="SettingsProxyProtocol" Label="代理协议" Class="settings-proxy-track">
+            <ContentHost Key="SettingsProxyProtocolThumb" IsVisible="false" Class="settings-proxy-thumb" />
+            <SettingsChoice Key="SettingsProxyProtocol.http" Content="HTTP" Label="HTTP" Command="ui.settings.proxy.protocol" Class="settings-proxy-option settings-proxy-protocol" />
+            <SettingsChoice Key="SettingsProxyProtocol.https" Content="HTTPS" Label="HTTPS" Command="ui.settings.proxy.protocol" Class="settings-proxy-option settings-proxy-protocol" />
+            <SettingsChoice Key="SettingsProxyProtocol.socks4" Content="SOCKS4" Label="SOCKS4" Command="ui.settings.proxy.protocol" Class="settings-proxy-option settings-proxy-protocol" />
+            <SettingsChoice Key="SettingsProxyProtocol.socks5" Content="SOCKS5" Label="SOCKS5" Command="ui.settings.proxy.protocol" Class="settings-proxy-option settings-proxy-protocol" />
+            <SettingsChoice Key="SettingsProxyProtocol.pac" Content="PAC" Label="PAC" Command="ui.settings.proxy.protocol" Class="settings-proxy-option settings-proxy-protocol" />
+          </SettingsChoiceTrack>
+          <Dynamic Key="SettingsProxyHint" />
+          <StackPanel Key="SettingsProxyRow.network.proxy-address" Class="settings-proxy-input-row">
+            <Text Content="地址" Class="settings-proxy-input-label" />
+            <TextInput Key="SettingsInput.network.proxy-address" Label="地址" Placeholder="http://localhost:8080" IsPassword="false" Class="settings-proxy-input" />
+          </StackPanel>
+          <StackPanel Key="SettingsProxyRow.network.proxy-user" Class="settings-proxy-input-row">
+            <Text Content="用户名" Class="settings-proxy-input-label" />
+            <TextInput Key="SettingsInput.network.proxy-user" MaximumLength="1024" Label="用户名" Placeholder="用户名" IsPassword="false" Class="settings-proxy-input" />
+          </StackPanel>
+          <StackPanel Key="SettingsProxyRow.network.proxy-password" Class="settings-proxy-input-row">
+            <Text Content="密码" Class="settings-proxy-input-label" />
+            <TextInput Key="SettingsInput.network.proxy-password" MaximumLength="1024" Label="密码" Placeholder="密码" IsPassword="true" Class="settings-proxy-input" />
+          </StackPanel>
+        </StackPanel>
+      </StackPanel>
+    </StackPanel>
+  </StackPanel>
+</nxml-dynamic>

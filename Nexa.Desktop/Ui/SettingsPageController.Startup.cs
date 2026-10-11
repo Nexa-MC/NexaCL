@@ -1,4 +1,4 @@
-using Nexa.Services.Settings;
+﻿using Nexa.Services.Settings;
 using Nexa.Xsr;
 
 namespace Nexa.Desktop.Ui;
@@ -54,7 +54,7 @@ internal sealed partial class SettingsPageController
             {
                 _reading, _catalogReading, _machineReading, _hardwareAdviceRead,
                 _identityRead, _managementRead, _storageStatusRead, _javaInventoryRead,
-                _javaDiagnosticRead, _launchProfilesReading, _runtimeTraceRead,
+                _launchProfilesReading, _runtimeTraceRead,
                 _networkTraceReading, _resourceResolutionReading, _updatePolicyReading,
             }.OfType<Task>().Where(task => !task.IsCompleted).ToArray();
             if (pending.Length == 0) return;

@@ -1,4 +1,4 @@
-using Nexa.Desktop.Ui;
+﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Settings;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
@@ -81,7 +81,11 @@ internal static partial class Program
         AssertEqual(10, fixture.Shell.Tree.Children(FindEntity(fixture.Shell, "SettingsNavigation")).Count(item => fixture.Shell.Tree.Name(item).StartsWith("SettingsNav.", StringComparison.Ordinal)));
         var nav = FindByKey(fixture.Shell, scene, "SettingsNavigation");
         var body = FindByKey(fixture.Shell, scene, "SettingsSections");
-        AssertEqual(44d, nav.Rect.Height);
+        AssertEqual(36d, nav.Rect.Height);
+        var surface = FindByKey(fixture.Shell, scene, "SettingsNavigationSurface");
+        AssertEqual(44d, surface.Rect.Height);
+        AssertClose(4, nav.Rect.X - surface.Rect.X);
+        AssertClose(8, surface.Rect.Width - nav.Rect.Width);
         AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiSegmentedTrack>(nav.Entity) is not null);
         var pager = FindByKey(fixture.Shell, scene, "SettingsPager");
         AssertEqual(10, fixture.Shell.Tree.GetComponent<XsrUiPager>(pager.Entity)!.PageCount);
