@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using Nexa.Services.Settings;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
@@ -33,22 +33,15 @@ internal sealed partial class SettingsPageController
 
     private void BuildSettingsTransfer()
     {
-        var group = FormGroup(_sections, "SettingsTransfer", "设置数据");
-        Row("SettingsImport", "导入设置", "先预览更改，确认后应用。", "选择文件", ImportSettings, _readSettingsDocument is not null);
-        Row("SettingsExport", "导出设置", "不包含账户、凭据或本机路径。", "导出", ExportSettings, _saveSettingsDocument is not null);
-        Row("SettingsReset", _instance is null ? "恢复默认" : "恢复继承", "仅重置已接入的设置，不删除版本或文件。", "恢复", ResetSettings,
-            _queries.TryResolve(SettingsPolicyContract.ResetPreviewQuery, out _) && _commands.TryResolve(SettingsPolicyContract.ResetCommand, out _));
-        void Row(string name, string label, string hint, string action, XsrSemanticId command, bool configured)
+        _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsTransfer.d.nxml", new Dictionary<string, string>
         {
-            var row = Stack(group, name + ".Row", XsrUiOrientation.Horizontal, 16);
-            _shell.Tree.GetComponent<XsrUiElement>(row)!.Padding = new(0, 6, 0, 6);
-            var labels = Stack(row, name + ".Label", XsrUiOrientation.Vertical, 3);
-            _shell.Tree.GetComponent<XsrUiElement>(labels)!.Weight = 1;
-            Text(labels, label, 14, Ink, height: 22, weight: 500);
-            Text(labels, hint, 11, Muted, height: 22);
-            var button = ActionButton(row, name, action, command, 84);
-            _shell.Tree.GetComponent<XsrUiInput>(button)!.Enabled = configured && !SettingsTransferBusy;
-        }
+            ["importEnabled"] = Flag(_readSettingsDocument is not null && !SettingsTransferBusy),
+            ["exportEnabled"] = Flag(_saveSettingsDocument is not null && !SettingsTransferBusy),
+            ["resetEnabled"] = Flag(!SettingsTransferBusy && _queries.TryResolve(SettingsPolicyContract.ResetPreviewQuery, out _)
+                && _commands.TryResolve(SettingsPolicyContract.ResetCommand, out _)),
+            ["global"] = Flag(_instance is null),
+            ["instance"] = Flag(_instance is not null),
+        }));
     }
 
     private void HandleSettingsTransfer(XsrSemanticId command, XsrUiEntityId source)

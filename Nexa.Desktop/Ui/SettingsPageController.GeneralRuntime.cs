@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer;
+﻿using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -11,11 +11,24 @@ internal sealed partial class SettingsPageController
     {
         _generalProtocolStatus = default; _generalProtocolObservation = null;
         if (_instanceDirectory is not null || _selected != "general") return;
-        var confirmation = FormGroup(_sections, "SettingsGeneral.Confirmations", "操作确认");
-        Text(confirmation, "文件修改、恢复与数据发送前保留确认。", 12, Muted, 32);
-        var protocol = FormGroup(_sections, "SettingsGeneral.Protocol", "nexacl:// URI");
-        _generalProtocolStatus = Text(protocol, "尚未观察到协议注册。", 12, Muted, 32);
-        UpdateGeneralRuntimeStates();
+        var observation = DesktopProtocolRegistration.Observation;
+        _generalProtocolStatus = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsGeneralRuntime.d.nxml", ProtocolProjection(observation)));
+        _generalProtocolObservation = observation;
+    }
+
+    private static Dictionary<string, string> ProtocolProjection(DesktopProtocolObservation observation)
+    {
+        string timestamp = observation.ObservedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture) ?? "";
+        string details = string.Join(" ", new[] { timestamp, observation.Detail }.Where(value => !string.IsNullOrEmpty(value)));
+        return new()
+        {
+            ["idle"] = Flag(!observation.Attempted),
+            ["pending"] = Flag(observation.Attempted && observation.Pending),
+            ["success"] = Flag(observation.Attempted && !observation.Pending && observation.Succeeded),
+            ["failure"] = Flag(observation.Attempted && !observation.Pending && !observation.Succeeded),
+            ["details"] = details,
+            ["hasDetails"] = Flag(details.Length > 0),
+        };
     }
 
     private void UpdateGeneralRuntimeStates()
@@ -25,15 +38,6 @@ internal sealed partial class SettingsPageController
         var observed = DesktopProtocolRegistration.Observation;
         if (Equals(_generalProtocolObservation, observed)) return;
         _generalProtocolObservation = observed;
-        string message = !observed.Attempted ? "尚未观察到协议注册。" : observed.Pending ? "正在注册 nexacl:// 协议。"
-            : observed.Succeeded ? "nexacl:// 协议注册已完成。" : "nexacl:// 协议注册未完成。";
-        var text = _shell.Tree.GetComponent<XsrUiText>(_generalProtocolStatus)!;
-        text.Localize = false;
-        text.Content = _shell.Renderer.LocalizeText(message);
-        if (observed.ObservedAt is { } timestamp) text.Content += " " + timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
-        if (observed.Detail is { Length: > 0 } detail) text.Content += " " + detail;
-        var semantic = _shell.Tree.GetComponent<XsrUiSemantic>(_generalProtocolStatus);
-        if (semantic is not null) { semantic.Label = text.Content; semantic.Localize = false; }
-        _shell.Tree.MarkDirty(_generalProtocolStatus, XsrUiDirtyKinds.Paint);
+        _dynamic.Reload(_generalProtocolStatus, DesktopMarkup.Dynamic("SettingsGeneralRuntime.d.nxml", ProtocolProjection(observed)));
     }
 }

@@ -1,4 +1,4 @@
-using Nexa.Desktop.Ui;
+﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Settings;
 using Nexa.Xsr.Renderer;
 
@@ -51,6 +51,7 @@ internal static partial class Program
         Emit(fixture.Intents, "ui.settings.management.action", export);
         scene = fixture.Shell.Render(new(1000, 1200)); AssertEqual(1, requests);
         var disabled = FindByKey(fixture.Shell, scene, "Management.导出日志").Entity;
+        AssertEqual(export, disabled); // Busy projection must not replace the action row or reset the page.
         AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiInput>(disabled)!.Enabled);
         var cancel = FindByKey(fixture.Shell, scene, "Management.取消日志导出").Entity;
         Emit(fixture.Intents, "ui.settings.management.action", cancel);

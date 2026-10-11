@@ -25,6 +25,9 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
   keep long executable paths within NXML's identity contract.
 - About content and diagnostic export controls now use external fragments and NSS;
   export/cancellation availability reloads without replacing button entities.
+- General protocol observations, storage location/cleanup controls, resolved directory
+  rows, settings import/export/reset and disk-log actions now use external fragments.
+  Disk-log busy state reloads in place instead of rebuilding the settings page.
 - Resource filter overlays already use fragments. Other resource presentation is
   still imperative.
 - Shared reload preserves entity identity, nested slots, drafts, scroll, focus,
@@ -136,3 +139,34 @@ not NXML keys; Java management controls use bounded SHA-256-derived identities.
   copyright/license/acknowledgement nodes. The existing Jint IL2098 warning remains.
 - Controller feedback/dialog wording and runtime label formatting still require the
   global copy/overlay migration. These slices do not establish whole-product completion.
+
+## General/storage/transfer boundary
+
+General protocol observation, storage location/cleanup controls, resolved directories
+and settings import/export/reset presentation move to external fragments. Service
+queries/commands, preview-before-write, cancellation, revision/scoped result rejection
+and queued-close behavior stay unchanged. Filesystem paths are literal data. The
+protocol observation uses separately localized state copy and literal timestamp/detail.
+This does not migrate backup/AI workspaces or global confirmation-dialog copy yet.
+
+Disk-log actions also move to an owned fragment. Busy state reloads the same action
+entities instead of rebuilding the settings page; export data policy is unchanged.
+
+## General/storage/transfer slice verification, 2026-10-11
+
+- Desktop composition: 264 passed. Existing storage regressions verify preview and
+  confirmation before migration/cleanup, late confirmation retirement, active-root
+  revision changes, unavailable routes and preservation of task recovery records.
+- Disk-log export now additionally verifies that a busy projection retains the same
+  button entity. Existing cancellation, shutdown and error-redaction checks pass.
+- NXML: 53 passed. Architecture: 69 projects passed; GeneralRuntime, Storage,
+  StorageLocations, Transfer and Logs are now included in the no-factory gate.
+- Actual Avalonia previews in both themes cover location/cleanup, right-aligned
+  multi-directory rows and settings transfer. Directory snapshots are fixture data;
+  no preview performs migration, cleanup or import.
+- Whitespace format and scoped diff checks passed.
+- Windows x64 NativeAOT and full-trim published successfully. Both actual binaries
+  ran --validate-shell and exited 0, including the new directory slot, cleanup and
+  settings transfer controls, and literal protocol details. Existing Jint IL2098 remains.
+- Backup/AI workspaces, platform/diagnostic cards, instance management and the other
+  product surfaces listed above remain open; this is not whole-product completion.

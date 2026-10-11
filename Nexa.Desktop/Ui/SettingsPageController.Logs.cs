@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer;
+﻿using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -9,32 +9,34 @@ internal sealed partial class SettingsPageController
     private CancellationTokenSource? _logExportStop;
     private int _logExportWriting;
     private bool _logExportUiBusy;
+    private XsrUiEntityId _diskLogActions;
 
     private void BuildDiskLogActions()
     {
         _logExportUiBusy = Volatile.Read(ref _logExportWriting) != 0;
         if (OpenLogDirectory is null && ExportLogs is null) return;
-        var card = SettingsCard("SettingsDiskLogActions", new(20, 18, 20, 18), spacing: 10);
-        Text(card, "磁盘日志", 18, Ink, height: 28, weight: 600);
-        var description = Text(card, "导出当前与保留的历史磁盘日志的时间、等级和模块。日志正文、异常、账户与路径均不会进入压缩包。", 13, Muted, height: 48);
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(description)!.WrapText = true;
-        var actions = Stack(card, "SettingsDiskLogButtons", XsrUiOrientation.Horizontal, 12);
-        if (OpenLogDirectory is not null)
-            ManagementButton(actions, "打开日志目录", OpenDiskLogDirectory, 136);
-        if (ExportLogs is not null)
-        {
-            var export = ActionButton(actions, "Management.导出日志", "导出日志", ManagementAction, 112);
-            _managementActions[export] = () => WakeOnPlatformCompletion(ExportDiskLogsAsync());
-            _shell.Tree.GetComponent<XsrUiInput>(export)!.Enabled = !_logExportUiBusy;
-            if (_logExportUiBusy)
-                ManagementButton(actions, "取消日志导出", CancelDiskLogExport, 136);
-        }
+        _diskLogActions = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsDiskLogActions.d.nxml", DiskLogProjection()));
+        var nodes = CatalogNodes(_diskLogActions);
+        _managementActions[nodes["Management.打开日志目录"]] = OpenDiskLogDirectory;
+        _managementActions[nodes["Management.导出日志"]] = () => WakeOnPlatformCompletion(ExportDiskLogsAsync());
+        _managementActions[nodes["Management.取消日志导出"]] = CancelDiskLogExport;
     }
+
+    private Dictionary<string, string> DiskLogProjection() => new()
+    {
+        ["canOpen"] = Flag(OpenLogDirectory is not null),
+        ["canExport"] = Flag(ExportLogs is not null),
+        ["exportEnabled"] = Flag(ExportLogs is not null && !_logExportUiBusy),
+        ["cancelVisible"] = Flag(ExportLogs is not null && _logExportUiBusy),
+    };
 
     private void UpdateDiskLogActions()
     {
-        if (_instanceDirectory is null && _selected == "privacy" && _logExportUiBusy != (Volatile.Read(ref _logExportWriting) != 0))
-            BuildSections();
+        if (_instanceDirectory is not null || _selected != "privacy" || !_shell.Tree.IsAlive(_diskLogActions)) return;
+        bool busy = Volatile.Read(ref _logExportWriting) != 0;
+        if (_logExportUiBusy == busy) return;
+        _logExportUiBusy = busy;
+        _dynamic.Reload(_diskLogActions, DesktopMarkup.Dynamic("SettingsDiskLogActions.d.nxml", DiskLogProjection()));
     }
 
     private void OpenDiskLogDirectory()

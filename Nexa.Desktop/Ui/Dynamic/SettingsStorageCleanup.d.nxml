@@ -1,0 +1,21 @@
+﻿<nxml-dynamic>
+  <SettingsForm Key="SettingsStorageCleanup">
+    <Text Content="安全清理" Class="settings-form-label" />
+    <StackPanel Class="settings-form-surface"><StackPanel Class="settings-form-body">
+      <StackPanel Key="SettingsStorageCleanTemporary.Row" Class="settings-storage-cleanup-row">
+        <StackPanel Class="settings-storage-labels">
+          <Text Content="过期临时文件" Class="settings-storage-label" />
+          <Text Content="仅清理 24 小时前遗留的启动器原子写入文件。" Class="settings-storage-cleanup-description" />
+        </StackPanel>
+        <Button Key="SettingsStorageCleanTemporary" Label="预览清理" Content="预览清理" Command="ui.settings.storage.cleanup-temp" Enabled="{data enabled}" Class="settings-catalog-action settings-storage-action" />
+      </StackPanel>
+      <StackPanel Key="SettingsStorageCleanTasks.Row" Class="settings-storage-cleanup-row">
+        <StackPanel Class="settings-storage-labels">
+          <Text Content="成功任务记录" Class="settings-storage-label" />
+          <Text Content="仅移除成功任务卡片，保留失败、取消、暂停及恢复数据。" Class="settings-storage-cleanup-description" />
+        </StackPanel>
+        <Button Key="SettingsStorageCleanTasks" Label="预览清理" Content="预览清理" Command="ui.settings.storage.cleanup-tasks" Enabled="{data enabled}" Class="settings-catalog-action settings-storage-action" />
+      </StackPanel>
+    </StackPanel></StackPanel>
+  </SettingsForm>
+</nxml-dynamic>

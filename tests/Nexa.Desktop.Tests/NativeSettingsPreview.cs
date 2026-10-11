@@ -1,4 +1,5 @@
-﻿using Nexa.Services.Minecraft.Java;
+﻿using Nexa.Services.Setup;
+using Nexa.Services.Minecraft.Java;
 using Nexa.Services.Settings;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
@@ -180,6 +181,16 @@ internal static partial class Program
                 { RegistryRevision = 1, ManagedRuntimes = [new(executable, javaHome, new string('A', 64))] };
                 queries.Register<JavaRuntimeInventoryQuery, JavaRuntimeInventorySnapshot>(JavaRuntimeInventoryContract.Query,
                     (_, _) => ValueTask.FromResult(XsrResult.Success(inventory)));
+                string storage = Path.GetFullPath("storage-preview"), game = Path.Combine(storage, "Games", "Minecraft");
+                var library = f.Store.Resolve(Nexa.Services.Minecraft.MinecraftLibraryContract.StateKey);
+                long revision = f.Store.Read<Nexa.Services.Minecraft.MinecraftLibrarySnapshot>(library).Value!.Revision;
+                queries.Register<StoragePreferencesQuery, StoragePreferencesStatus>(StoragePreferencesContract.Status,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success(new StoragePreferencesStatus(storage, false, false))));
+                queries.Register<StorageLocationsQuery, StorageLocationsSnapshot>(StorageLocationsContract.Query,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success(new StorageLocationsSnapshot(revision, storage,
+                        Path.Combine(storage, "settings"), Path.Combine(storage, "logs"), Path.Combine(storage, "cache"),
+                        [javaHome], [game, Path.Combine(storage, "Games", "Modpacks")], game, Path.Combine(game, "versions"),
+                        Path.Combine(game, "versions", "1.21.1-Fabric")))));
                 var commands = new XsrCommandRouterBuilder();
                 commands.Register<JavaRuntimeManageCommand>(JavaRuntimeInventoryContract.Manage,
                     (_, _) => throw new InvalidOperationException("Preview must not manage a Java runtime."));
@@ -194,6 +205,14 @@ internal static partial class Program
                 var javaScene = surface.Scene!;
                 ShowSettingsFixtureControl(f, java, ref javaScene, "SettingsJavaChoose.0", f.Shell.Renderer.Viewport);
                 surface.CommitScene(); Capture("java-inventory");
+                Emit(f.Intents, "ui.settings.section", FindByKey(f.Shell, surface.Scene!, "SettingsNav.storage").Entity);
+                surface.CommitScene(); await java.PrepareVisibleStartupAsync(timeout.Token);
+                await Task.Delay(500, timeout.Token); surface.CommitScene(); Capture("storage-top");
+                var storageScene = surface.Scene!;
+                ShowSettingsFixtureControl(f, java, ref storageScene, "SettingsStoragePath.SelectedInstance", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("storage-locations");
+                ShowSettingsFixtureControl(f, java, ref storageScene, "SettingsReset", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("storage-transfer");
                 f.Shell.Stage.Navigation.Replace(controller.Page); surface.CommitScene();
             }, timeout.Token);
             await SelectCategory("network");
@@ -381,7 +400,7 @@ internal static partial class Program
                     ["page"] = "SettingsAppearance",
                     ["phase"] = phase,
                     ["theme"] = f.Shell.Renderer.ColorScheme.IsDark ? "dark" : "light",
-                    ["data"] = "temporary local settings; empty instances; Java inventory, task/process/log and resource fixtures",
+                    ["data"] = "temporary local settings; empty instances; Java inventory and storage locations, task/process/log and resource fixtures",
                     ["renderer"] = "actual product NXML/controller and software Avalonia native window",
                     ["version"] = f.Shell.Version,
                     ["x"] = origin.X,

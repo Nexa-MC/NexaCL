@@ -1,0 +1,13 @@
+﻿<nxml-dynamic>
+  <StackPanel Key="SettingsDiskLogActions" Class="settings-disk-log-card">
+    <StackPanel Key="SettingsDiskLogActions.Body" Class="settings-disk-log-body">
+      <Text Content="磁盘日志" Class="settings-about-title" />
+      <Text Content="导出当前与保留的历史磁盘日志的时间、等级和模块。日志正文、异常、账户与路径均不会进入压缩包。" Class="settings-disk-log-description" />
+      <StackPanel Key="SettingsDiskLogButtons" Class="settings-disk-log-buttons">
+        <Button Key="Management.打开日志目录" Label="打开日志目录" Content="打开日志目录" Command="ui.settings.management.action" IsVisible="{data canOpen}" Class="settings-catalog-action settings-disk-log-wide" />
+        <Button Key="Management.导出日志" Label="导出日志" Content="导出日志" Command="ui.settings.management.action" IsVisible="{data canExport}" Enabled="{data exportEnabled}" Class="settings-catalog-action settings-disk-log-export" />
+        <Button Key="Management.取消日志导出" Label="取消日志导出" Content="取消日志导出" Command="ui.settings.management.action" IsVisible="{data cancelVisible}" Class="settings-catalog-action settings-disk-log-wide" />
+      </StackPanel>
+    </StackPanel>
+  </StackPanel>
+</nxml-dynamic>

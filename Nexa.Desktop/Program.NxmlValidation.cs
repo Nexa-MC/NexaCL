@@ -55,6 +55,19 @@ internal static partial class Program
         if (!Find("AboutCopyright").IsAssigned || !Find("AboutOpenSource").IsAssigned || !Find("AboutThanks").IsAssigned)
             throw new InvalidOperationException("External about content did not load.");
         Console.WriteLine("Dynamic about validation passed: external copyright, license and acknowledgements.");
+        intents.Emit(XsrSemanticId.Parse("ui.settings.section"), Find("SettingsNav.storage"), XsrCorrelationId.Create());
+        shell.Render(new(1280, 800));
+        if (shell.Tree.GetComponent<NxmlDynamicSlot>(Find("SettingsStorageDirectories.Body")) is null
+            || shell.Tree.GetComponent<XsrUiCommandBinding>(Find("SettingsStorageCleanTemporary")) is null
+            || shell.Tree.GetComponent<XsrUiCommandBinding>(Find("SettingsImport")) is null
+            || shell.Tree.GetComponent<XsrUiCommandBinding>(Find("SettingsReset")) is null)
+            throw new InvalidOperationException("External storage or settings transfer controls did not load.");
+        Console.WriteLine("Dynamic storage validation passed: owned directory slot, cleanup and transfer controls; no filesystem changes.");
+        intents.Emit(XsrSemanticId.Parse("ui.settings.section"), Find("SettingsNav.general"), XsrCorrelationId.Create());
+        shell.Render(new(1280, 800));
+        if (shell.Tree.GetComponent<XsrUiText>(Find("SettingsGeneral.Protocol.Details"))?.Localize != false)
+            throw new InvalidOperationException("Protocol observation details lost literal presentation.");
+        Console.WriteLine("Dynamic general validation passed: external protocol observation with literal details.");
         shell.Stage.Navigation.Replace(previous);
 
         XsrUiEntityId Find(string key)

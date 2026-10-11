@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using Nexa.Services.Setup;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
@@ -36,40 +36,29 @@ internal sealed partial class SettingsPageController
     {
         if (_instanceDirectory is not null || _selected != "storage") return;
         _storageRebuildPending = false;
-        var location = FormGroup(_sections, "SettingsStorageLocation", "启动器数据位置");
-        var value = Text(location, _storageStatus?.DataDirectory ?? "正在读取数据位置…", 12, Ink, height: 26);
-        DesktopLiteralText.Preserve(_shell.Tree, value);
-        var hint = Text(location, _storageStatus?.LocationLocked == true ? "此位置由环境变量指定。"
-            : _storageStatus?.MigrationPending == true ? "迁移已排队，重新启动后完成。"
-            : "迁移启动器设置和本地记录；Minecraft 与 Java 的独立路径保持原位置。", 11, Muted, height: 34);
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(hint)!.WrapText = true;
-        var move = ActionButton(location, "SettingsStorageMove", "选择迁移位置", MoveStorage, 112);
-        _shell.Tree.GetComponent<XsrUiInput>(move)!.Enabled = !StoragePreferencesBusy && _storageStatus is { LocationLocked: false, MigrationPending: false }
-            && _chooseStorageDirectory is not null && _closeForStorageMigration is not null
-            && _queries.TryResolve(StoragePreferencesContract.MigrationPreview, out _) && _commands.TryResolve(StoragePreferencesContract.Migrate, out _);
-        if (_storageStatus?.MigrationPending == true)
+        bool locked = _storageStatus?.LocationLocked == true;
+        bool pending = _storageStatus?.MigrationPending == true;
+        _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsStorageLocation.d.nxml", new Dictionary<string, string>
         {
-            var cancel = ActionButton(location, "SettingsStorageCancel", "取消待迁移", CancelStorageMigration, 112);
-            _shell.Tree.GetComponent<XsrUiInput>(cancel)!.Enabled = !StoragePreferencesBusy && _storageStatus.PendingTransaction is not null
-                && _commands.TryResolve(StoragePreferencesContract.CancelMigration, out _);
-        }
+            ["loading"] = Flag(_storageStatus is null),
+            ["loaded"] = Flag(_storageStatus is not null),
+            ["path"] = _storageStatus?.DataDirectory ?? "",
+            ["locked"] = Flag(locked),
+            ["pending"] = Flag(!locked && pending),
+            ["movable"] = Flag(!locked && !pending),
+            ["moveEnabled"] = Flag(!StoragePreferencesBusy && _storageStatus is { LocationLocked: false, MigrationPending: false }
+                && _chooseStorageDirectory is not null && _closeForStorageMigration is not null
+                && _queries.TryResolve(StoragePreferencesContract.MigrationPreview, out _) && _commands.TryResolve(StoragePreferencesContract.Migrate, out _)),
+            ["cancelVisible"] = Flag(pending),
+            ["cancelEnabled"] = Flag(!StoragePreferencesBusy && _storageStatus?.PendingTransaction is not null
+                && _commands.TryResolve(StoragePreferencesContract.CancelMigration, out _)),
+        }));
         BuildStorageLocations();
-        var cleanup = FormGroup(_sections, "SettingsStorageCleanup", "安全清理");
-        Row("SettingsStorageCleanTemporary", "过期临时文件", "仅清理 24 小时前遗留的启动器原子写入文件。", CleanStorageTemporary);
-        Row("SettingsStorageCleanTasks", "成功任务记录", "仅移除成功任务卡片，保留失败、取消、暂停及恢复数据。", CleanStorageTasks);
-        void Row(string name, string label, string description, XsrSemanticId command)
+        _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsStorageCleanup.d.nxml", new Dictionary<string, string>
         {
-            var row = Stack(cleanup, name + ".Row", XsrUiOrientation.Horizontal, 12);
-            _shell.Tree.GetComponent<XsrUiElement>(row)!.Padding = new(0, 6, 0, 6);
-            var labels = Stack(row, name + ".Labels", XsrUiOrientation.Vertical, 3);
-            _shell.Tree.GetComponent<XsrUiElement>(labels)!.Weight = 1;
-            Text(labels, label, 14, Ink, height: 22, weight: 500);
-            var descriptionEntity = Text(labels, description, 11, Muted, height: 32);
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(descriptionEntity)!.WrapText = true;
-            var button = ActionButton(row, name, "预览清理", command, 84);
-            _shell.Tree.GetComponent<XsrUiInput>(button)!.Enabled = !StoragePreferencesBusy
-                && _queries.TryResolve(StoragePreferencesContract.CleanupPreview, out _) && _commands.TryResolve(StoragePreferencesContract.Cleanup, out _);
-        }
+            ["enabled"] = Flag(!StoragePreferencesBusy && _queries.TryResolve(StoragePreferencesContract.CleanupPreview, out _)
+                && _commands.TryResolve(StoragePreferencesContract.Cleanup, out _)),
+        }));
     }
 
     private void HandleStoragePreferences(XsrSemanticId command, XsrUiEntityId source)

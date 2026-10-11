@@ -1,0 +1,22 @@
+﻿<nxml-dynamic>
+  <StackPanel Class="settings-runtime-groups">
+    <SettingsForm Key="SettingsGeneral.Confirmations">
+      <Text Content="操作确认" Class="settings-form-label" />
+      <StackPanel Class="settings-form-surface"><StackPanel Class="settings-form-body">
+        <Text Content="文件修改、恢复与数据发送前保留确认。" Class="settings-general-description" />
+      </StackPanel></StackPanel>
+    </SettingsForm>
+    <SettingsForm Key="SettingsGeneral.Protocol">
+      <Text Content="nexacl:// URI" Class="settings-form-label" />
+      <StackPanel Class="settings-form-surface"><StackPanel Class="settings-form-body">
+        <StackPanel Class="settings-general-protocol">
+          <Text Content="尚未观察到协议注册。" IsVisible="{data idle}" Class="settings-general-description" />
+          <Text Content="正在注册 nexacl:// 协议。" IsVisible="{data pending}" Class="settings-general-description" />
+          <Text Content="nexacl:// 协议注册已完成。" IsVisible="{data success}" Class="settings-general-description" />
+          <Text Content="nexacl:// 协议注册未完成。" IsVisible="{data failure}" Class="settings-general-description" />
+          <Text Key="SettingsGeneral.Protocol.Details" Label="{data details}" Content="{data details}" Localize="false" IsVisible="{data hasDetails}" Class="settings-general-details" />
+        </StackPanel>
+      </StackPanel></StackPanel>
+    </SettingsForm>
+  </StackPanel>
+</nxml-dynamic>

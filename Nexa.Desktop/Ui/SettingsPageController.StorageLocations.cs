@@ -1,4 +1,4 @@
-using Nexa.Services.Minecraft;
+﻿using Nexa.Services.Minecraft;
 using Nexa.Services.Setup;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
@@ -15,45 +15,32 @@ internal sealed partial class SettingsPageController
 
     private void BuildStorageLocations()
     {
-        var group = FormGroup(_sections, "SettingsStorageDirectories", "目录位置");
+        var root = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsStorageDirectories.d.nxml"));
+        var body = CatalogNodes(root)["SettingsStorageDirectories.Body"];
         if (_storageLocations is not { } locations)
         {
-            Text(group, _storageLocationsUnavailable ? "目录信息暂不可用，请重新打开此页。"
-                : _queries.TryResolve(StorageLocationsContract.Query, out _) ? "正在读取目录信息…" : "目录信息尚未接入。", 12, Muted, 30);
+            string template = _storageLocationsUnavailable ? "SettingsStorageUnavailable.d.nxml"
+                : _queries.TryResolve(StorageLocationsContract.Query, out _) ? "SettingsStorageLoading.d.nxml" : "SettingsStorageUnregistered.d.nxml";
+            _dynamic.Append(body, DesktopMarkup.Dynamic(template));
             return;
         }
-        StoragePathRow(group, "Settings", "启动器设置", [locations.SettingsDirectory]);
-        StoragePathRow(group, "Logs", "运行日志", [locations.LogDirectory]);
-        StoragePathRow(group, "MinecraftLibrary", "游戏目录", locations.MinecraftLibraryDirectories);
-        StoragePathRow(group, "ActiveMinecraft", "当前游戏目录", locations.ActiveMinecraftDirectory is { } root ? [root] : [], "尚未选择游戏目录");
-        StoragePathRow(group, "Instances", "版本目录", locations.InstancesDirectory is { } instances ? [instances] : [], "尚未选择游戏目录");
-        StoragePathRow(group, "SelectedInstance", "当前版本目录", locations.SelectedInstanceDirectory is { } instance ? [instance] : [], "尚未选择版本");
-        StoragePathRow(group, "JavaRuntimes", "托管 Java 目录", locations.JavaRuntimeDirectories);
-        StoragePathRow(group, "Cache", "下载缓存", locations.CacheDirectory is { } cache ? [cache] : []);
-    }
+        var rows = _dynamic.Append(body, DesktopMarkup.Dynamic("SettingsStoragePaths.d.nxml"));
+        var nodes = CatalogNodes(rows);
+        Paths("Settings", [locations.SettingsDirectory]);
+        Paths("Logs", [locations.LogDirectory]);
+        Paths("MinecraftLibrary", locations.MinecraftLibraryDirectories);
+        Paths("ActiveMinecraft", locations.ActiveMinecraftDirectory is { } game ? [game] : [], "SettingsStorageNoGame.d.nxml");
+        Paths("Instances", locations.InstancesDirectory is { } instances ? [instances] : [], "SettingsStorageNoGame.d.nxml");
+        Paths("SelectedInstance", locations.SelectedInstanceDirectory is { } instance ? [instance] : [], "SettingsStorageNoInstance.d.nxml");
+        Paths("JavaRuntimes", locations.JavaRuntimeDirectories);
+        Paths("Cache", locations.CacheDirectory is { } cache ? [cache] : []);
 
-    private void StoragePathRow(XsrUiEntityId parent, string key, string label, IReadOnlyList<string> paths, string absent = "未配置")
-    {
-        var row = Stack(parent, "SettingsStoragePath." + key, XsrUiOrientation.Horizontal, 16);
-        var element = _shell.Tree.GetComponent<XsrUiElement>(row)!;
-        element.Padding = new(0, 9, 0, 9);
-        var caption = Text(row, label, 13, Ink, 26, 500);
-        var captionElement = _shell.Tree.GetComponent<XsrUiElement>(caption)!;
-        captionElement.Width = 136; captionElement.Height = null;
-        var captionText = _shell.Tree.GetComponent<XsrUiText>(caption)!;
-        captionText.MaxLines = 0; captionText.TrimOverflow = false;
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(caption)!.WrapText = true;
-        var values = Stack(row, "SettingsStorageValue." + key, XsrUiOrientation.Vertical, 5);
-        _shell.Tree.GetComponent<XsrUiElement>(values)!.Weight = 1;
-        foreach (string path in paths.Count == 0 ? [absent] : paths)
+        void Paths(string key, IReadOnlyList<string> paths, string absent = "SettingsStorageUnconfigured.d.nxml")
         {
-            var text = Text(values, path, 12, Muted, 42);
-            _shell.Tree.GetComponent<XsrUiElement>(text)!.Height = null;
-            _shell.Tree.GetComponent<XsrUiText>(text)!.MaxLines = 0;
-            _shell.Tree.GetComponent<XsrUiText>(text)!.TrimOverflow = false;
-            var style = _shell.Tree.GetComponent<XsrUiVisualStyle>(text)!;
-            style.WrapText = true; style.TextAlignment = XsrUiTextAlignment.End;
-            if (paths.Count > 0) DesktopLiteralText.Preserve(_shell.Tree, text);
+            var slot = nodes["SettingsStorageValue." + key];
+            if (paths.Count == 0) _dynamic.Append(slot, DesktopMarkup.Dynamic(absent));
+            else foreach (string path in paths)
+                _dynamic.Append(slot, DesktopMarkup.Dynamic("SettingsStoragePath.d.nxml", new Dictionary<string, string> { ["path"] = path }));
         }
     }
 

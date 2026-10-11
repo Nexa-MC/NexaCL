@@ -1,0 +1,8 @@
+﻿<nxml-dynamic>
+  <SettingsForm Key="SettingsStorageDirectories">
+    <Text Content="目录位置" Class="settings-form-label" />
+    <StackPanel Class="settings-form-surface">
+      <Dynamic Key="SettingsStorageDirectories.Body" Class="settings-form-body" />
+    </StackPanel>
+  </SettingsForm>
+</nxml-dynamic>
