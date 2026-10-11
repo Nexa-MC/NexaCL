@@ -158,6 +158,45 @@ internal sealed class WardrobePageController : IDisposable
             trackWidth = capeTrack.ViewportWidth;
         if (_viewport != _shell.Renderer.Viewport || _skinOffset != skinOffset || _capeOffset != capeOffset || _trackWidth != trackWidth) _dirty = true;
         _trackWidth = trackWidth;
+        // Budget both tracks from their parent viewport, never from card-driven content extent.
+        // This keeps measurement stable while status rows appear and disappear.
+        if (_viewport == _shell.Renderer.Viewport &&
+            _shell.Renderer.TryGetScrollSnapshot(_nodes["WardrobeContent"], out var contentViewport))
+        {
+            var content = _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeContent"])!;
+            double fixedHeight = content.Padding.Vertical;
+            int visibleChildren = 0;
+            foreach (var child in _shell.Tree.Children(_nodes["WardrobeContent"]))
+            {
+                var element = _shell.Tree.GetComponent<XsrUiElement>(child)!;
+                if (!element.IsVisible) continue;
+                visibleChildren++;
+                if (child != _nodes["WardrobeSkinTrack"] && child != _nodes["WardrobeCapeTrack"])
+                    fixedHeight += (element.Height ?? 0) + element.Padding.Vertical + element.Margin.Vertical;
+            }
+            fixedHeight += Math.Max(0, visibleChildren - 1) *
+                _shell.Tree.GetComponent<XsrUiStackPanel>(_nodes["WardrobeContent"])!.Spacing;
+            double trackHeight = Math.Max(112, (contentViewport.ViewportHeight - fixedHeight) / 2);
+            double height = Math.Clamp(trackHeight - 10, 112, 270);
+            foreach (string track in new[] { "WardrobeSkinTrack", "WardrobeCapeTrack" })
+            {
+                var element = _shell.Tree.GetComponent<XsrUiElement>(_nodes[track])!;
+                if (element.Height != trackHeight)
+                {
+                    element.Height = trackHeight;
+                    element.Weight = 0;
+                    _shell.Tree.MarkDirty(_nodes[track], XsrUiDirtyKinds.Layout);
+                    _dirty = true;
+                }
+            }
+            if (Math.Abs(height - _cardHeight) > .5)
+            {
+                _cardHeight = height;
+                _cardWidth = CardWidth(height);
+                SetCardMetrics();
+                _dirty = true;
+            }
+        }
         long selections = Volatile.Read(ref _selectionEvents), rosters = Volatile.Read(ref _rosterEvents);
         if (_visible && (_loaded || _observedIdentity is null) && !_dirty && _pending.IsEmpty
             && selections == _seenSelectionEvents && rosters == _seenRosterEvents
@@ -410,6 +449,7 @@ internal sealed class WardrobePageController : IDisposable
         var profileCaption = ProfileCaption(profile);
         Text("WardrobeProfileKind", profileCaption.Content, profileCaption.Literal);
         Text("WardrobeStatus", _status); Text("WardrobeLocalStatus", _status);
+        Visible("WardrobeStatus", !_localOpen && _status != "选择皮肤或已获得的披风。" && !string.IsNullOrWhiteSpace(_status));
         Text("WardrobeClassic", (!_slim ? "✓  " : "") + "经典模型"); Text("WardrobeSlim", (_slim ? "✓  " : "") + "纤细模型");
         Text("WardrobeCurrentView", ViewCaption(_currentView), literal: true);
         Text("WardrobeSkinCount", $"{_skinCards.Count} 项"); Text("WardrobeCapeCount", $"{_capeCards.Count} 项");
@@ -575,28 +615,29 @@ internal sealed class WardrobePageController : IDisposable
         double edge = _viewport.Width >= 1500 ? 38 : _viewport.Width <= 980 ? 18 : 26;
         _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeContent"])!.Padding = new(edge, compact ? 10 : 20, edge, compact ? 10 : 24);
         _shell.Tree.GetComponent<XsrUiStackPanel>(_nodes["WardrobeContent"])!.Spacing = compact ? 4 : 8;
-        foreach (string key in new[] { "WardrobeSkinHeader", "WardrobeCapeHeader" }) _shell.Tree.GetComponent<XsrUiElement>(_nodes[key])!.Height = compact ? 22 : 28;
+        foreach (string key in new[] { "WardrobeSkinHeader", "WardrobeCapeHeader" }) _shell.Tree.GetComponent<XsrUiElement>(_nodes[key])!.Height = 32;
         _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeCapeHeader"])!.Margin = new(0, compact ? 4 : 8, 0, 0);
         _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeMainHeader"])!.Height = compact ? 30 : 34;
         _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeStatus"])!.Height = compact ? 30 : 40;
         _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeSkinSubtitle"])!.Height = compact ? 22 : 28;
         _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeCapeSubtitle"])!.Height = compact ? 26 : 30;
-        _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeSkinPager"])!.Height = compact ? 24 : 28;
-        _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeCapePager"])!.Height = compact ? 26 : 30;
+        _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeSkinPager"])!.Height = 30;
+        _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeCapePager"])!.Height = 30;
         _trackWidth = Math.Max(120, _viewport.Width - rail - edge * 2 - 32);
-        // The shell uses 100 vertical pixels. The remaining fixed content, padding and
-        // inter-row spacing use 262 compact / 370 regular pixels before the two tracks.
-        double trackHeight = Math.Clamp((_viewport.Height - (compact ? 362 : 470)) / 2, 112, 280);
-        _cardHeight = Math.Max(112, trackHeight - 6);
-        _cardWidth = _cardHeight < 216 ? Math.Clamp((_cardHeight - 18) * .65 + 116, 164, 244) : 176;
+        // First-frame estimate only; subsequent frames use the actual scroll viewport.
+        _cardHeight = Math.Clamp((_viewport.Height - (compact ? 270 : 330)) / 2 - 10, 112, 270);
+        _cardWidth = CardWidth(_cardHeight);
         var localPanel = _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeLocalPanel"])!;
         localPanel.Width = Math.Min(600, Math.Max(260, _viewport.Width - 48)) - localPanel.Padding.Horizontal;
         localPanel.MaxHeight = Math.Min(500, Math.Max(140, _viewport.Height - 100)) - localPanel.Padding.Vertical;
         SetCardMetrics(); _dirty = true; _shell.Tree.MarkDirty(Page, XsrUiDirtyKinds.Layout);
     }
+    private static double CardWidth(double height) => height < 190
+        ? Math.Clamp(Math.Clamp(height - 18, 72, 150) * .65 + 116, 164, 216)
+        : Math.Clamp((height - 90) * .65 + 88, 150, 190);
     private void SetCardMetrics()
     {
-        bool horizontal = _cardHeight < 216;
+        bool horizontal = _cardHeight < 190;
         foreach (var card in _skinCards.Concat(_capeCards))
         {
             var container = _shell.Tree.GetComponent<XsrUiElement>(card.Container)!;
@@ -605,11 +646,13 @@ internal sealed class WardrobePageController : IDisposable
             container.Height = _cardHeight - container.Padding.Vertical;
             _shell.Tree.GetComponent<XsrUiStackPanel>(card.Body)!.Direction = horizontal ? XsrUiOrientation.Horizontal : XsrUiOrientation.Vertical;
             var image = _shell.Tree.GetComponent<XsrUiElement>(card.Image)!;
-            image.Width = horizontal ? Math.Max(48, (_cardHeight - 18) * .65) : null;
-            image.Height = horizontal ? _cardHeight - 18 : Math.Max(72, _cardHeight - (card.Apply.IsAssigned ? 112 : 78));
+            image.Width = horizontal ? Math.Clamp(_cardHeight - 18, 72, 150) * .65 : null;
+            image.Height = horizontal ? Math.Clamp(_cardHeight - 18, 72, 150) : Math.Max(72, _cardHeight - (card.Apply.IsAssigned ? 112 : 78));
             image.Weight = horizontal ? 0 : 1;
             var details = _shell.Tree.GetComponent<XsrUiElement>(card.Details)!; details.Weight = horizontal ? 1 : 0; details.VerticalAlignment = XsrUiAlignment.Center;
             var labels = _shell.Tree.Children(card.Details);
+            foreach (var label in labels.Take(2))
+                _shell.Tree.GetComponent<XsrUiVisualStyle>(label)!.TextAlignment = horizontal ? XsrUiTextAlignment.Start : XsrUiTextAlignment.Center;
             _shell.Tree.GetComponent<XsrUiElement>(labels[0])!.Height = horizontal ? 20 : 25;
             _shell.Tree.GetComponent<XsrUiElement>(labels[1])!.Height = horizontal ? 18 : 22;
             _shell.Tree.GetComponent<XsrUiElement>(card.ViewButton)!.Height = horizontal ? 22 : 25;

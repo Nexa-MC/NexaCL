@@ -262,9 +262,29 @@ internal static partial class Program
             var node = scene.Nodes.Single(item => item.Entity == FindEntity(fixture.Shell, key));
             AssertTrue(node.Rect.Y + node.Rect.Height <= 600); AssertTrue(node.Rect.Width > 100);
         }
+        AssertFalse(WardrobeVisible(fixture, "WardrobeMainHeader"));
+        AssertFalse(WardrobeVisible(fixture, "WardrobeStatus"));
+        foreach (var (header, buttons) in new[]
+        {
+            ("WardrobeSkinHeader", new[] { "WardrobeRefresh", "WardrobeSkinPrevious", "WardrobeSkinNext" }),
+            ("WardrobeCapeHeader", new[] { "WardrobeCapePrevious", "WardrobeCapeNext", "WardrobeCapeClear" })
+        })
+        {
+            var bounds = scene.Nodes.Single(node => node.Entity == FindEntity(fixture.Shell, header)).Rect;
+            foreach (string button in buttons)
+            {
+                AssertContains(bounds, scene.Nodes.Single(node => node.Entity == FindEntity(fixture.Shell, button)).Rect);
+                AssertEqual("", WardrobeText(fixture, button));
+            }
+        }
         var recipe = preview.RasterImage;
         for (int frame = 0; frame < 20; frame++) fixture.Shell.Render(new(800, 600));
         AssertTrue(ReferenceEquals(recipe, fixture.Shell.Tree.GetComponent<XsrUiImage>(preview.Entity)!.Raster));
+        var settled = fixture.Shell.Render(new(800, 600));
+        var settledCard = settled.Nodes.Single(node => node.Entity == historyCard.Entity);
+        var cardPadding = fixture.Shell.Tree.GetComponent<XsrUiElement>(historyCard.Entity)!.Padding;
+        AssertTrue(settledCard.Rect.Height + cardPadding.Vertical >= 150);
+        AssertEqual(settledCard.Rect, fixture.Shell.Render(new(800, 600)).Nodes.Single(node => node.Entity == historyCard.Entity).Rect);
         string[] views = ["背面", "左侧", "右侧", "顶部", "底部", "立体", "正面"];
         foreach (string view in views)
         {
