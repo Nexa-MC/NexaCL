@@ -96,7 +96,7 @@ internal sealed partial class SettingsPageController : IDisposable
             else
             {
                 CancelContentIntegrity();
-                content.Padding = _previousContentPadding; CancelIdentityRead(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelStoragePreferences(); CancelContentWorkspace();
+                content.Padding = _previousContentPadding; CancelIdentityRead(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelDiagnosticExport(); CancelStoragePreferences(); CancelContentWorkspace();
                 ReleaseContentGraph();
                 RetireHardwareAdvice(); RetireDeveloperDiagnostics(); RetireRuntimeDiagnostics(); RetireRuntimeTrace(); CancelNetworkProbe(); CancelAdvancedWorkspace();
             }
@@ -225,7 +225,7 @@ internal sealed partial class SettingsPageController : IDisposable
         UpdateModRemovalPreview();
         UpdateContentGraph(); UpdateServers(); UpdateExport();
         UpdateSettingsTransfer(); UpdateJavaInventory(); UpdateJavaDiagnostics(); UpdateJavaManualDownload();
-        UpdateProxyPreferences(); UpdateDiskLogActions();
+        UpdateProxyPreferences(); UpdateDiskLogActions(); UpdateDiagnosticExportControls();
         int index = _shell.Tree.GetComponent<XsrUiPager>(_pager)!.PageIndex;
         if (index >= 0 && index < Pages.Count && Pages[index].Id != _selected)
             SwitchPage(Pages[index].Id);
@@ -345,7 +345,7 @@ internal sealed partial class SettingsPageController : IDisposable
         _editors.Clear(); _inheritButtons.Clear(); _selectors.Clear(); _autoModes.Clear(); _argumentEditors.Clear(); _argumentActions.Clear(); _choices.Clear();
         _hookEditors.Clear(); _hookActions.Clear();
         ResetLaunchProfileControls(); ResetIdentityControls();
-        _managementActions.Clear(); _contentSearch = default; _contentList = default; _contentWindowStart = -1;
+        _managementActions.Clear(); _diagnosticControls.Clear(); _contentSearch = default; _contentList = default; _contentWindowStart = -1;
         _graphSearch = _graphBody = default; _graphActions.Clear();
         if (_instanceDirectory is not null && _instance is null)
         {
@@ -396,7 +396,7 @@ internal sealed partial class SettingsPageController : IDisposable
             if (_instanceDirectory is not null && section.Key.Section == "Java 与内存") BuildJavaInventory(cardContent);
         }
         if (_instanceDirectory is null && _selected == "network") { BuildProxyPreferences(); BuildNetworkDiagnostics(); }
-        if (_instanceDirectory is null && _selected == "privacy") { BuildDiskLogActions(); BuildContentTrustStates(); }
+        if (_instanceDirectory is null && _selected == "privacy") { BuildDiskLogActions(); BuildPrivacyDiagnosticExport(); BuildContentTrustStates(); }
         if (_instanceDirectory is null && _selected == "storage") { BuildStoragePreferences(); BuildContentWorkspace(); }
         if (transfer) BuildSettingsTransfer();
         BuildJavaInventory();
@@ -689,6 +689,6 @@ internal sealed partial class SettingsPageController : IDisposable
     {
         CancelContentIntegrity();
         RetireHardwareAdvice(); RetireDeveloperDiagnostics(); RetireRuntimeDiagnostics(); RetireRuntimeTrace(); CancelNetworkProbe(); CancelAdvancedWorkspace();
-        _disposed = true; CancelIdentityRead(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelStoragePreferences(); CancelContentWorkspace(); _diagnosticStop.Cancel(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); _updateStop.Cancel(); _updateCheckStop?.Dispose(); _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame;
+        _disposed = true; CancelIdentityRead(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelDiagnosticExport(); CancelStoragePreferences(); CancelContentWorkspace(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); _updateStop.Cancel(); _updateCheckStop?.Dispose(); _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame;
     }
 }

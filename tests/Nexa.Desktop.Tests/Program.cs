@@ -222,6 +222,8 @@ internal static partial class Program
         ("soak state attribution excludes warmup bounds entries and retires", SoakStateAttributionExcludesWarmupBoundsEntriesAndRetires),
         ("soak allocation meter aligns counts and rejects invalid use", SoakAllocationMeterAlignsCountsAndRejectsInvalidUse),
         ("diagnostic export requires explicit click coalesces and cancels", DiagnosticExportRequiresClickCoalescesRequestsAndCancelsOnDispose),
+        ("diagnostic export shares navigation state and restores retry", DiagnosticExportSharesNavigationStateAndRestoresRetry),
+        ("diagnostic export leaving settings retires successful completion", DiagnosticExportLeavingSettingsRetiresSuccessfulCompletion),
         ("launch state projections skip idle frames and wake on change", LaunchProjectionsDoNotRepeatOnIdleFrames),
         ("language catalog covers locales templates and fallbacks", LanguageCatalogCoversLocalesTemplatesAndFallbacks),
         ("language settings switch live without rebuilding controls", LanguageSettingSwitchesLiveAndPreservesControls),

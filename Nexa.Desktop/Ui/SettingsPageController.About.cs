@@ -6,8 +6,6 @@ internal sealed partial class SettingsPageController
 {
     internal Action<Uri>? OpenAboutLink { get; set; }
     internal Func<CancellationToken, Task<bool>>? ExportDiagnostics { get; set; }
-    private readonly CancellationTokenSource _diagnosticStop = new();
-    private int _diagnosticWriting;
     private void BuildAboutPage()
     {
         DesktopLiteralText.Preserve(_shell.Tree, Text(_sections, Program.ProductDisplayTitle(_shell.Version), 24, Ink, height: 36, weight: 600));
@@ -26,28 +24,12 @@ internal sealed partial class SettingsPageController
         if (ExportDiagnostics is not null)
         {
             AboutCopy("诊断包", "导出版本、系统架构、实例与 Mod 标识、问题分类及结构化操作日志。账户、凭据、完整路径和个人文件不包含在内。诊断包保存在你选择的目录。", "AboutDiagnostics");
-            ManagementButton(_sections, "导出诊断包", () => _ = ExportDiagnosticsAsync(), 144);
+            BuildDiagnosticExportControls(_sections);
         }
         var scroll = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!;
         scroll.OffsetY = _scrollPositions.GetValueOrDefault(_selected);
         _shell.Tree.GetComponent<XsrUiTransition>(_sections)!.Key = _selected;
         _shell.Tree.MarkDirty(_sections, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-    }
-
-    private async Task ExportDiagnosticsAsync()
-    {
-        if (_disposed || ExportDiagnostics is not { } export || Interlocked.CompareExchange(ref _diagnosticWriting, 1, 0) != 0) return;
-        try
-        {
-            bool saved = await export(_diagnosticStop.Token).ConfigureAwait(false);
-            if (!_disposed && saved) _feedback.Info("诊断包已导出到所选目录。");
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        {
-            if (!_disposed) _feedback.Error("诊断包未导出，请检查保存目录是否可写。");
-        }
-        finally { Volatile.Write(ref _diagnosticWriting, 0); }
     }
 
     private void AboutCopy(string title, string content, string key)

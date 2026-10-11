@@ -48,6 +48,11 @@ separate evidence. No unused editor or unrelated observation is counted as their
 
 ## Delivered launch-policy slice
 
+[XSR-835](XSR-835-diagnostic-export-controls.md) completes the diagnostic bundle
+export controls in About and Privacy. They share busy/cancel state without
+rebuilding focused settings. Leaving Settings cancels work; failures and canceled
+pickers release the operation for retry. Disk log facts export remains separate.
+
 XSR-761 connects exact custom memory in MiB, instance Auto memory, and automatic missing
 Java acquisition. Global and instance settings use the existing durable policy store.
 Java defaults to asking before downloading. Explicit incompatible Java is not replaced.

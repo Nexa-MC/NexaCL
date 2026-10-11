@@ -1,4 +1,8 @@
 [
+  {"source":"正在取消…","zh-Hant":"正在取消…","en":"Canceling…"},
+  {"source":"取消导出","zh-Hant":"取消匯出","en":"Cancel export"},
+  {"source":"导出游戏与加载器版本、模组标识、问题分类及结构化操作日志。不包含账户、完整路径或日志正文。","zh-Hant":"匯出遊戲與載入器版本、模組識別、問題分類及結構化操作日誌。不包含帳戶、完整路徑或日誌本文。","en":"Export game and loader versions, mod identities, issue categories and structured operation logs. Accounts, full paths and log messages are excluded."},
+  {"source":"正在导出…","zh-Hant":"正在匯出…","en":"Exporting…"},
   {"source":"截图预览","en":"Screenshot preview","zh-Hant":"截圖預覽"},
   {"source":"收起裁剪","en":"Hide crop controls","zh-Hant":"收起裁切"},
   {"source":"裁剪副本","en":"Crop a copy","zh-Hant":"裁切副本"},
