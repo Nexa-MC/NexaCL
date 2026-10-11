@@ -158,8 +158,14 @@ internal static partial class Program
             var literal = "<state> {data count} {state secret}";
             var entry = dynamic.Append(body, DesktopMarkup.Dynamic("SettingsStateEntry.d.nxml", new Dictionary<string, string>
             {
-                ["row"] = "diagnostic-fixture", ["idKey"] = "diagnostic-id", ["metadataKey"] = "diagnostic-metadata", ["id"] = "fixture",
-                ["owner"] = literal, ["kind"] = "Cell", ["revision"] = "1", ["availability"] = "Available"
+                ["row"] = "diagnostic-fixture",
+                ["idKey"] = "diagnostic-id",
+                ["metadataKey"] = "diagnostic-metadata",
+                ["id"] = "fixture",
+                ["owner"] = literal,
+                ["kind"] = "Cell",
+                ["revision"] = "1",
+                ["availability"] = "Available"
             }, shell.Renderer.LocalizeText));
             XsrUiEntityId metadata = default;
             shell.Tree.Walk(entry, entity => { if (shell.Tree.Name(entity) == "diagnostic-metadata") metadata = entity; return true; });
@@ -174,8 +180,12 @@ internal static partial class Program
                 throw new InvalidOperationException("Platform group lost its owned body.");
             var platformRow = dynamic.Append(platformBody, DesktopMarkup.Dynamic("SettingsPlatformCapability.d.nxml", new Dictionary<string, string>
             {
-                ["row"] = "platform-fact", ["label"] = "fixture", ["badgeKey"] = "platform-badge", ["badge"] = literal,
-                ["badgeStyle"] = "platform-badge", ["evidence"] = "fixture"
+                ["row"] = "platform-fact",
+                ["label"] = "fixture",
+                ["badgeKey"] = "platform-badge",
+                ["badge"] = literal,
+                ["badgeStyle"] = "platform-badge",
+                ["evidence"] = "fixture"
             }));
             XsrUiEntityId badge = default;
             shell.Tree.Walk(platformRow, entity => { if (shell.Tree.Name(entity) == "platform-badge") badge = entity; return true; });
@@ -193,6 +203,58 @@ internal static partial class Program
             if (shell.Tree.GetComponent<NxmlDynamicSlot>(issues) is null)
                 throw new InvalidOperationException("Preflight issues lost their dynamic owner.");
             Console.WriteLine("Dynamic platform validation passed: owned group/issues slots, centered literal badge and named device format.");
+            var runtime = dynamic.Append(platformBody, DesktopMarkup.Dynamic("SettingsRuntimeScheduler.d.nxml"));
+            XsrUiEntityId runtimeBody = default;
+            shell.Tree.Walk(runtime, entity => { if (shell.Tree.Name(entity) == "SettingsRuntime.Scheduler.Body") runtimeBody = entity; return true; });
+            if (shell.Tree.GetComponent<NxmlDynamicSlot>(runtimeBody) is null)
+                throw new InvalidOperationException("Runtime metrics lost their owned fields.");
+            var fields = dynamic.Append(runtimeBody, DesktopMarkup.Dynamic("SettingsRuntimeSchedulerFields.d.nxml", new Dictionary<string, string>
+            {
+                ["PendingState"] = "0",
+                ["ActiveTracks"] = "0",
+                ["ClockRunning"] = literal,
+                ["TargetRate"] = "60",
+                ["ObservedRate"] = literal,
+                ["MotionPolicy"] = literal
+            }));
+            dynamic.Reload(fields, DesktopMarkup.Dynamic("SettingsRuntimeSchedulerFields.d.nxml", new Dictionary<string, string>
+            {
+                ["PendingState"] = "1",
+                ["ActiveTracks"] = "0",
+                ["ClockRunning"] = literal,
+                ["TargetRate"] = "60",
+                ["ObservedRate"] = literal,
+                ["MotionPolicy"] = literal
+            }));
+            var advanced = dynamic.Append(platformBody, DesktopMarkup.Dynamic("SettingsAdvancedDelay.d.nxml", new Dictionary<string, string> { ["enabled"] = "true" }));
+            XsrUiEntityId advancedStatus = default, probe = default;
+            shell.Tree.Walk(advanced, entity =>
+            {
+                if (shell.Tree.Name(entity) == "AdvancedWorkspace.Delay.Status") advancedStatus = entity;
+                if (shell.Tree.Name(entity) == "AdvancedWorkspace.Delay.Start") probe = entity;
+                return true;
+            });
+            dynamic.Append(advancedStatus, DesktopMarkup.Dynamic("SettingsAdvancedDelayLoading.d.nxml"));
+            dynamic.Reload(advanced, DesktopMarkup.Dynamic("SettingsAdvancedDelay.d.nxml", new Dictionary<string, string> { ["enabled"] = "false" }));
+            if (!shell.Tree.IsAlive(probe) || shell.Tree.GetComponent<XsrUiInput>(probe)?.Enabled != false)
+                throw new InvalidOperationException("Probe action lost identity during reload.");
+            var trace = dynamic.Append(platformBody, DesktopMarkup.Dynamic("SettingsRuntimeTraceEntry.d.nxml", new Dictionary<string, string>
+            {
+                ["row"] = "trace-fixture",
+                ["identityKey"] = "trace-identity",
+                ["detailKey"] = "trace-detail",
+                ["kind"] = "Operation",
+                ["semantic"] = "minecraft.fixture",
+                ["detail"] = literal,
+                ["correlation"] = "fixture",
+                ["ticks"] = "1",
+                ["result"] = "Success"
+            }, shell.Renderer.LocalizeText));
+            XsrUiEntityId traceDetail = default;
+            shell.Tree.Walk(trace, entity => { if (shell.Tree.Name(entity) == "trace-detail") traceDetail = entity; return true; });
+            if (shell.Tree.GetComponent<XsrUiText>(traceDetail) is not { Localize: false } traceText || !traceText.Content.StartsWith(literal, StringComparison.Ordinal))
+                throw new InvalidOperationException("Trace format reparsed literal metadata.");
+            Console.WriteLine("Dynamic runtime validation passed: external metrics, retained probe action, owned slots and literal trace format.");
             Console.WriteLine("Dynamic dock validation passed: overlay ownership, process template, literal text and selection reload.");
         }
         finally { shell.Tree.Destroy(page); }

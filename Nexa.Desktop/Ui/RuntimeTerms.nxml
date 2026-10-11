@@ -1,0 +1,22 @@
+<StackPanel>
+<Text Key="unavailable" Content="不可用" />
+<Text Key="clock.true" Content="运行中" />
+<Text Key="clock.false" Content="已停止" />
+<Text Key="motion.true" Content="减少动态效果" />
+<Text Key="motion.false" Content="正常动态效果" />
+<Text Key="connected.true" Content="已接入" />
+<Text Key="connected.false" Content="未接入" />
+<Text Key="renderer.scope" Content="当前渲染器，上一完成帧" />
+<Text Key="native.scope" Content="当前进程累计提交，不代表物理呈现" />
+<Text Key="trace.true" Content="成功" />
+<Text Key="trace.false" Content="失败" />
+<Text Key="route.launch" Content="启动" />
+<Text Key="route.install" Content="安装" />
+<Text Key="route.resources" Content="资源" />
+<Text Key="route.settings" Content="设置" />
+<Text Key="route.tasks" Content="任务中心" />
+<Text Key="route.java" Content="Java 管理" />
+<Text Key="route.storage" Content="存储与迁移" />
+<Text Key="route.about" Content="关于" />
+<Text Key="redacted" Content="&lt;redacted&gt;" />
+</StackPanel>

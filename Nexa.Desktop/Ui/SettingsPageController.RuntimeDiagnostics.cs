@@ -29,6 +29,7 @@ internal sealed partial class SettingsPageController
     {
         _runtimeDiagnosticActions.Clear();
         _runtimeDiagnosticBodies.Clear();
+        _runtimeDiagnosticFields.Clear();
     }
 
     private void RetireRuntimeDiagnostics()
@@ -37,77 +38,80 @@ internal sealed partial class SettingsPageController
         _runtimeDiagnosticCapture = null;
     }
 
+    private static readonly Lazy<Dictionary<string, string>> RuntimeTerms = new(() =>
+    {
+        var nodes = DesktopMarkup.Load("RuntimeTerms.nxml").Root.Children;
+        if (nodes.Any(node => node.Recipe != Nexa.Xsr.Renderer.Nxml.NxmlRuntimeRecipe.Text
+            || string.IsNullOrWhiteSpace(node.Key) || node.Content is null || node.Bindings.Count != 0 || node.Children.Count != 0))
+            throw new Nexa.Xsr.Renderer.Nxml.NxmlCompileException("Runtime terms must be keyed literal text.");
+        return nodes.ToDictionary(node => node.Key!, node => node.Content!, StringComparer.Ordinal);
+    });
+    private string RuntimeTerm(string key) => _shell.Renderer.LocalizeText(RuntimeTerms.Value[key]);
+    private readonly Dictionary<string, XsrUiEntityId> _runtimeDiagnosticFields = [];
+
     private void BuildRuntimeDiagnostics()
     {
         if (!RuntimeDiagnosticsVisible) { RetireRuntimeDiagnostics(); return; }
-        bool Available(string id) => _catalog!.Entries.Any(entry => entry.Id == id && entry.DeveloperOnly
-            && entry.Kind == SettingsCatalogEntryKind.State && entry.Availability == SettingsCapabilityAvailability.Available);
         _runtimeDiagnosticCapture ??= CaptureRuntimeDiagnostics(_shell);
-        void Card(string id, string key, string title)
+        void Card(string id, string key)
         {
-            if (!Available(id)) return;
-            var card = SettingsCard("SettingsRuntime." + key, new(20, 14, 20, 14), 8);
-            var toolbar = Stack(card, "SettingsRuntime." + key + ".Toolbar", XsrUiOrientation.Horizontal, 12);
-            var caption = Text(toolbar, title, 14, Ink, 36, 600);
-            _shell.Tree.GetComponent<XsrUiElement>(caption)!.Weight = 1;
-            var refresh = RefreshIcon(toolbar, "SettingsRuntime." + key + ".Refresh", RefreshRuntimeDiagnostics);
-            _shell.Tree.GetComponent<XsrUiSemantic>(refresh)!.Label = "捕获运行诊断";
-            _runtimeDiagnosticActions.Add(refresh);
-            _runtimeDiagnosticBodies[key] = Stack(card, "SettingsRuntime." + key + ".Body", XsrUiOrientation.Vertical, 4);
+            if (!_catalog!.Entries.Any(entry => entry.Id == id && entry.DeveloperOnly
+                && entry.Kind == SettingsCatalogEntryKind.State && entry.Availability == SettingsCapabilityAvailability.Available)) return;
+            var root = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsRuntime" + key + ".d.nxml"));
+            var nodes = CatalogNodes(root);
+            _runtimeDiagnosticActions.Add(nodes["SettingsRuntime." + key + ".Refresh"]);
+            _runtimeDiagnosticBodies[key] = nodes["SettingsRuntime." + key + ".Body"];
         }
-        Card("global.appearance.d999201ab2ad", "Renderer", "UI Renderer 信息");
-        Card("global.appearance.6357798f5b55", "LayoutPaint", "Layout / Paint 调试");
-        Card("global.appearance.d44cc0e413d3", "Scheduler", "Animation Scheduler");
-        Card("global.appearance.d1957652c919", "Performance", "UI 性能指标");
+        Card("global.appearance.d999201ab2ad", "Renderer");
+        Card("global.appearance.6357798f5b55", "LayoutPaint");
+        Card("global.appearance.d44cc0e413d3", "Scheduler");
+        Card("global.appearance.d1957652c919", "Performance");
         BuildRuntimeDiagnosticFields();
     }
 
     private void BuildRuntimeDiagnosticFields()
     {
         if (_runtimeDiagnosticCapture is not { } capture) return;
-        foreach (var body in _runtimeDiagnosticBodies.Values)
-            foreach (var child in _shell.Tree.Children(body).ToArray()) _shell.Tree.Destroy(child);
         string Number(long value) => value.ToString(CultureInfo.InvariantCulture);
-        string Known(long? value) => value.HasValue ? Number(value.Value) : _shell.Renderer.LocalizeText("不可用");
-        void Field(string key, string name, string label, string value)
-        {
-            if (!_runtimeDiagnosticBodies.TryGetValue(key, out var body)) return;
-            var row = Stack(body, "SettingsRuntime." + key + "." + name, XsrUiOrientation.Horizontal, 12);
-            var caption = Text(row, label, 12, Muted, 26);
-            _shell.Tree.GetComponent<XsrUiElement>(caption)!.Width = 180;
-            var text = DiagnosticText(row, "SettingsRuntime." + key + "." + name + ".Value", value, 12, Ink, 26);
-            _shell.Tree.GetComponent<XsrUiElement>(text)!.Weight = 1;
-        }
+        string Known(long? value) => value.HasValue ? Number(value.Value) : RuntimeTerm("unavailable");
         var renderer = capture.Renderer;
         var native = capture.Native;
-        Field("Renderer", "SceneVersion", "场景版本", Number(renderer.SceneVersion));
-        Field("Renderer", "SceneNodes", "场景节点数量", Number(renderer.SceneNodes));
-        Field("Renderer", "TreeCount", "树实体数量", Number(renderer.TreeEntities));
-        Field("Renderer", "Scope", "采样范围", _shell.Renderer.LocalizeText("当前渲染器，上一完成帧"));
-        Field("LayoutPaint", "LayoutVisits", "上次布局访问", Number(renderer.LayoutVisits));
-        Field("LayoutPaint", "SceneBuilds", "场景重建次数", Number(renderer.SceneVersion));
-        Field("LayoutPaint", "NativeCommits", "原生场景提交次数", Number(native.CommittedScenes));
-        Field("LayoutPaint", "NativePaints", "原生节点绘制回调次数", Number(native.NodePaintCallbacks));
-        Field("LayoutPaint", "Scope", "原生计数范围", _shell.Renderer.LocalizeText("当前进程累计提交，不代表物理呈现"));
-        Field("Scheduler", "PendingState", "待合并状态数量", Number(renderer.PendingStateEntries));
-        Field("Scheduler", "ActiveTracks", "原生活动动画轨道", Number(native.ActiveMotionTracks));
-        Field("Scheduler", "ClockRunning", "动画时钟", _shell.Renderer.LocalizeText(native.MotionTimerRunning ? "运行中" : "已停止"));
-        Field("Scheduler", "TargetRate", "动画时钟目标频率", Number(native.MotionTargetFramesPerSecond) + " Hz");
-        Field("Scheduler", "ObservedRate", "最近两秒时钟观测频率", native.MotionTickRate is { } rate
-            ? rate.ToString("0.0", CultureInfo.InvariantCulture) + " Hz" : _shell.Renderer.LocalizeText("不可用"));
-        Field("Scheduler", "MotionPolicy", "动态策略", _shell.Renderer.LocalizeText(capture.ReducedMotion || capture.OptionalMotionSuspended ? "减少动态效果" : "正常动态效果"));
-        Field("Performance", "PixelCharge", "解码图像像素计费字节", Number(native.RasterPixelChargeBytes));
-        Field("Performance", "AdmissionBudget", "图像准入预算字节", Number(native.RasterAdmissionBudgetBytes));
-        Field("Performance", "RasterEntries", "保留图像数量", Number(native.RasterEntries));
-        Field("Performance", "RasterLeases", "活动图像租约数量", Number(native.RasterLeases));
-        Field("Performance", "DecodeAttempts", "图像解码尝试次数", Number(native.RasterDecodeAttempts));
-        Field("Performance", "DisposedBitmaps", "已释放位图数量", Number(native.RasterDisposedBitmaps));
-        Field("Performance", "MemoryAvailable", "系统可用内存字节", Known(native.MemoryPressure.AvailableBytes));
-        Field("Performance", "MemoryLimit", "系统内存上限字节", Known(native.MemoryPressure.LimitBytes));
-        Field("Performance", "GpuResident", "已测量 GPU 驻留字节", Known(native.MemoryPressure.GpuResidentBytes));
-        Field("Performance", "MemorySource", "内存采样来源", native.MemoryPressure.Source is { Length: > 0 } source ? source : "unavailable");
-        Field("Performance", "PresentationRate", "物理呈现帧率", _shell.Renderer.LocalizeText("不可用"));
-        foreach (var body in _runtimeDiagnosticBodies.Values) _shell.Tree.MarkDirty(body, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+        var values = new Dictionary<string, string>
+        {
+            ["SceneVersion"] = Number(renderer.SceneVersion),
+            ["SceneNodes"] = Number(renderer.SceneNodes),
+            ["TreeCount"] = Number(renderer.TreeEntities),
+            ["Scope"] = RuntimeTerm("renderer.scope"),
+            ["LayoutVisits"] = Number(renderer.LayoutVisits),
+            ["SceneBuilds"] = Number(renderer.SceneVersion),
+            ["NativeCommits"] = Number(native.CommittedScenes),
+            ["NativePaints"] = Number(native.NodePaintCallbacks),
+            ["PendingState"] = Number(renderer.PendingStateEntries),
+            ["ActiveTracks"] = Number(native.ActiveMotionTracks),
+            ["ClockRunning"] = RuntimeTerm("clock." + Flag(native.MotionTimerRunning)),
+            ["TargetRate"] = Number(native.MotionTargetFramesPerSecond),
+            ["ObservedRate"] = native.MotionTickRate is { } rate ? DesktopMarkup.Dynamic("SettingsRuntimeHertz.d.nxml",
+                new Dictionary<string, string> { ["value"] = rate.ToString("0.0", CultureInfo.InvariantCulture) }).Root.Content! : RuntimeTerm("unavailable"),
+            ["MotionPolicy"] = RuntimeTerm("motion." + Flag(capture.ReducedMotion || capture.OptionalMotionSuspended)),
+            ["PixelCharge"] = Number(native.RasterPixelChargeBytes),
+            ["AdmissionBudget"] = Number(native.RasterAdmissionBudgetBytes),
+            ["RasterEntries"] = Number(native.RasterEntries),
+            ["RasterLeases"] = Number(native.RasterLeases),
+            ["DecodeAttempts"] = Number(native.RasterDecodeAttempts),
+            ["DisposedBitmaps"] = Number(native.RasterDisposedBitmaps),
+            ["MemoryAvailable"] = Known(native.MemoryPressure.AvailableBytes),
+            ["MemoryLimit"] = Known(native.MemoryPressure.LimitBytes),
+            ["GpuResident"] = Known(native.MemoryPressure.GpuResidentBytes),
+            ["MemorySource"] = native.MemoryPressure.Source is { Length: > 0 } source ? source : RuntimeTerm("unavailable"),
+            ["PresentationRate"] = RuntimeTerm("unavailable")
+        };
+        foreach (var (key, body) in _runtimeDiagnosticBodies)
+        {
+            values["Scope"] = RuntimeTerm(key == "Renderer" ? "renderer.scope" : "native.scope");
+            var fragment = DesktopMarkup.Dynamic("SettingsRuntime" + key + "Fields.d.nxml", values);
+            if (_runtimeDiagnosticFields.TryGetValue(key, out var root)) _dynamic.Reload(root, fragment);
+            else _runtimeDiagnosticFields[key] = _dynamic.Append(body, fragment);
+        }
     }
 
     private void HandleRuntimeDiagnosticsIntent(DesktopUiIntent intent)

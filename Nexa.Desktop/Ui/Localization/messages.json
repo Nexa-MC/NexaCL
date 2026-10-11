@@ -1,4 +1,5 @@
 ﻿[
+  {"source":"第 {data page} / {data pages} 页 · {data count} 项 · 环容量 {data capacity} · 已丢弃 {data dropped}","en":"Page {data page} / {data pages} · {data count} entries · Ring capacity {data capacity} · Dropped {data dropped}","zh-Hant":"第 {data page} / {data pages} 頁 · {data count} 項 · 環容量 {data capacity} · 已丟棄 {data dropped}"},
   {"source":"检测时间：{data timestamp}","en":"Detected at: {data timestamp}","zh-Hant":"檢測時間：{data timestamp}"},
   {"source":"{data name} · 可用","en":"{data name} · Available","zh-Hant":"{data name} · 可用"},
   {"source":"{data name} · 不可用","en":"{data name} · Unavailable","zh-Hant":"{data name} · 不可用"},

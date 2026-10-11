@@ -1,0 +1,6 @@
+<nxml-dynamic>
+<StackPanel Key="AdvancedWorkspace.Delay" Class="settings-diagnostics-card"><StackPanel Class="settings-advanced-body"><Text Content="调度延时探测" Class="settings-advanced-title" />
+<Button Key="AdvancedWorkspace.Delay.Start" Content="运行 200 ms 调度探测" Command="ui.settings.management.action" Class="settings-catalog-action settings-advanced-action" Enabled="{data enabled}" />
+<Dynamic Key="AdvancedWorkspace.Delay.Status" />
+</StackPanel></StackPanel>
+</nxml-dynamic>

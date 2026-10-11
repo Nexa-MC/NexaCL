@@ -422,11 +422,17 @@ internal static partial class Program
                 failures.Add($"Invalid dynamic template wrapper: {file}");
         }
         // Completed migrations must not regress to imperative presentation factories.
-        foreach (string name in new[] { "SettingsPageController.Network.cs", "SettingsPageController.NetworkDiagnostics.cs", "TaskCenterController.cs", "DesktopTaskBubblePresenter.cs", "DesktopDynamicLayer.cs", "ProcessLogPageController.cs", "LaunchPageController.Process.cs", "SettingsPageController.Catalog.cs", "SettingsPageController.Editors.cs", "SettingsPageController.Hooks.cs", "SettingsPageController.Navigation.cs", "SettingsPageController.Java.cs", "SettingsPageController.About.cs", "SettingsPageController.DiagnosticExport.cs", "SettingsPageController.GeneralRuntime.cs", "SettingsPageController.Storage.cs", "SettingsPageController.StorageLocations.cs", "SettingsPageController.Transfer.cs", "SettingsPageController.Logs.cs", "SettingsPageController.ContentWorkspace.cs", "SettingsPageController.DiagnosticAi.cs", "SettingsPageController.Diagnostics.cs", "SettingsPageController.Platform.cs", "SettingsPageController.HardwareAdvice.cs" })
+        foreach (string name in new[] { "SettingsPageController.Network.cs", "SettingsPageController.NetworkDiagnostics.cs", "TaskCenterController.cs", "DesktopTaskBubblePresenter.cs", "DesktopDynamicLayer.cs", "ProcessLogPageController.cs", "LaunchPageController.Process.cs", "SettingsPageController.Catalog.cs", "SettingsPageController.Editors.cs", "SettingsPageController.Hooks.cs", "SettingsPageController.Navigation.cs", "SettingsPageController.Java.cs", "SettingsPageController.About.cs", "SettingsPageController.DiagnosticExport.cs", "SettingsPageController.GeneralRuntime.cs", "SettingsPageController.Storage.cs", "SettingsPageController.StorageLocations.cs", "SettingsPageController.Transfer.cs", "SettingsPageController.Logs.cs", "SettingsPageController.ContentWorkspace.cs", "SettingsPageController.DiagnosticAi.cs", "SettingsPageController.Diagnostics.cs", "SettingsPageController.Platform.cs", "SettingsPageController.HardwareAdvice.cs", "SettingsPageController.RuntimeDiagnostics.cs", "SettingsPageController.RuntimeTrace.cs", "SettingsPageController.AdvancedWorkspace.cs" })
         {
             string source = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", name));
             foreach (string token in new[] { ".Tree.Create(", "new XsrUiText(", "new XsrUiVisualStyle", "new XsrUiStackPanel", "FormGroup(", "ActionButton(" })
                 if (source.Contains(token, StringComparison.Ordinal)) failures.Add($"{name}: presentation must come from dynamic NXML.");
+        }
+        foreach (string name in new[] { "SettingsPageController.RuntimeDiagnostics.cs", "SettingsPageController.RuntimeTrace.cs", "SettingsPageController.AdvancedWorkspace.cs" })
+        {
+            string source = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", name));
+            if (System.Text.RegularExpressions.Regex.IsMatch(source, @"\b(?:Stack|Text|Style|SettingsCard|ManagementFactIn|DiagnosticText)\s*\("))
+                failures.Add($"{name}: legacy helper factories cannot hide imperative presentation.");
         }
         XDocument compiler = XDocument.Load(projectPaths["Nexa.Xsr.Renderer.Nxml.Compiler"]);
         if (Elements(compiler, "ProjectReference").Any(item => item.Attribute("OutputItemType")?.Value == "Analyzer"))

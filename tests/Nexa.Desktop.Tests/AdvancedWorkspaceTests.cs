@@ -53,6 +53,37 @@ internal static partial class Program
         }
     }
 
+    private static void AdvancedWorkspaceReloadPreservesOtherCapturesAndFocus()
+    {
+        using var fixture = new DeveloperDiagnosticsFixture();
+        fixture.Select("advanced"); fixture.SetDeveloper(true);
+        fixture.Settings.CopyAdvancedSettingsTextAsync = _ => Task.CompletedTask;
+        fixture.Click("ui.settings.diagnostics.state.next", "SettingsDiagnostics.State.Next");
+        string inspectorPage = fixture.Text("SettingsDiagnostics.State.Summary");
+        var inspector = fixture.Find("SettingsDiagnostics.State.Summary");
+        var rendererValue = fixture.Find("SettingsDiagnostics.Renderer.SceneVersion.Value");
+        var read = fixture.Find("AdvancedWorkspace.Settings.Read");
+        var capture = fixture.Find("AdvancedWorkspace.Capture");
+        var delay = fixture.Find("AdvancedWorkspace.Delay.Start");
+        fixture.Shell.Render(new(1000, 12000));
+        AssertTrue(fixture.Shell.Renderer.Focus(read));
+        fixture.Click("ui.settings.management.action", "AdvancedWorkspace.Settings.Read");
+        fixture.Click("ui.settings.management.action", "AdvancedWorkspace.Settings.Next");
+        AssertEqual(read, fixture.Shell.Renderer.Focused);
+        AssertEqual(read, fixture.Find("AdvancedWorkspace.Settings.Read"));
+        fixture.Click("ui.settings.management.action", "AdvancedWorkspace.Capture");
+        fixture.Click("ui.settings.management.action", "AdvancedWorkspace.Delay.Start");
+        AssertTrue(SpinWait.SpinUntil(() =>
+        { fixture.Pump(); return fixture.Has("AdvancedWorkspace.Delay.Value"); }, TimeSpan.FromSeconds(3)));
+        AssertEqual(delay, fixture.Find("AdvancedWorkspace.Delay.Start"));
+        AssertEqual(capture, fixture.Find("AdvancedWorkspace.Capture"));
+        AssertEqual(inspector, fixture.Find("SettingsDiagnostics.State.Summary"));
+        AssertEqual(rendererValue, fixture.Find("SettingsDiagnostics.Renderer.SceneVersion.Value"));
+        AssertEqual(inspectorPage, fixture.Text("SettingsDiagnostics.State.Summary"));
+        AssertEqual(read, fixture.Shell.Renderer.Focused);
+        AssertTrue(fixture.Shell.Tree.GetComponent<Nexa.Xsr.Renderer.Nxml.NxmlDynamicSlot>(fixture.Find("AdvancedWorkspace.Settings.Rows")) is not null);
+    }
+
     private static void AdvancedSettingsSnapshotRedactsSecretsPathsCommandsAndCopiesCapturedRows()
     {
         using var fixture = new DeveloperDiagnosticsFixture();

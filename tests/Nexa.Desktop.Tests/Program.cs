@@ -128,6 +128,7 @@ internal static partial class Program
         ("AdvancedLaunchFactsPageUsesReadOnlyTypedQueriesAndPagedSnapshots", AdvancedLaunchFactsPageUsesReadOnlyTypedQueriesAndPagedSnapshots),
         ("RecoveryTimelineOrdersPersistedPointsBoundsRowsAndRetiresInstanceHistory", () => RecoveryTimelineOrdersPersistedPointsBoundsRowsAndRetiresInstanceHistory().AsTask().GetAwaiter().GetResult()),
         ("AdvancedWorkspaceDispatchesFiniteRoutesAndCancelsRetiredDelay", AdvancedWorkspaceDispatchesFiniteRoutesAndCancelsRetiredDelay),
+        ("AdvancedWorkspaceReloadPreservesOtherCapturesAndFocus", AdvancedWorkspaceReloadPreservesOtherCapturesAndFocus),
         ("AdvancedSettingsSnapshotRedactsSecretsPathsCommandsAndCopiesCapturedRows", AdvancedSettingsSnapshotRedactsSecretsPathsCommandsAndCopiesCapturedRows),
         ("RuntimeTraceWorkspaceCapturesOncePagesMetadataAndRejectsRetiredActions", RuntimeTraceWorkspaceCapturesOncePagesMetadataAndRejectsRetiredActions),
         ("InstanceDiagnosticsJoinScopePreserveUnknownAndUseDurableHistory", InstanceDiagnosticsJoinScopePreserveUnknownAndUseDurableHistory),

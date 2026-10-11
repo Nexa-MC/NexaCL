@@ -42,76 +42,127 @@ internal sealed partial class SettingsPageController
         _advancedDelayRead = null; _advancedDelayStop?.Dispose(); _advancedDelayStop = null;
         if (completed.IsCompletedSuccessfully) _advancedDelayMilliseconds = completed.Result;
         else _ = completed.Exception;
-        BuildSections(true);
+        ProjectAdvancedDelay();
     }
+
+    private XsrUiEntityId _advancedRuntimeRoot, _advancedDelayRoot, _advancedSettingsRoot;
 
     private void BuildAdvancedWorkspace()
     {
-        if (_instanceDirectory is not null || _selected != "advanced") return;
-        var navigation = FormGroup(_sections, "AdvancedWorkspace.Navigation", "自动化与安全模式");
-        Text(navigation, "导航命令只切换页面；安全模式在下次启动时使用 --safe-mode 指定。", 11, Muted, 34);
-        Text(navigation, LauncherSafeMode ? "当前会话：安全模式" : "当前会话：普通模式", 12, Ink, 28);
-        Button(navigation, "AdvancedWorkspace.Palette", "打开命令面板", () =>
-        { if (OpenAdvancedCommandPalette?.Invoke() != true) _feedback.Info("请先完成当前对话框，再打开命令面板。"); }, OpenAdvancedCommandPalette is not null);
+        _advancedRuntimeRoot = _advancedDelayRoot = _advancedSettingsRoot = default;
+        if (!AdvancedWorkspaceVisible) return;
+        var navigation = AppendCatalog(_sections, "SettingsAdvancedNavigation.d.nxml", new Dictionary<string, string>
+        { ["palette"] = Flag(OpenAdvancedCommandPalette is not null) });
+        var nodes = CatalogNodes(navigation);
+        _dynamic.Append(nodes["AdvancedWorkspace.Navigation.State"], DesktopMarkup.Dynamic(LauncherSafeMode ? "SettingsAdvancedSafe.d.nxml" : "SettingsAdvancedNormal.d.nxml"));
+        BindAdvancedAction(nodes, "AdvancedWorkspace.Palette", () =>
+        { if (OpenAdvancedCommandPalette?.Invoke() != true) _feedback.Info("请先完成当前对话框，再打开命令面板。"); }, developerOnly: false);
         foreach (var route in DesktopCommandLine.Commands)
         {
-            var row = Stack(navigation, "AdvancedWorkspace.Route." + route.Id, XsrUiOrientation.Horizontal, 8);
-            DesktopLiteralText.Preserve(_shell.Tree, Text(row, "--command=" + route.Id + " · nexacl://" + route.Id, 11, Muted, 28));
-            Button(row, "AdvancedWorkspace.Go." + route.Id, route.Label, () => NavigateAdvancedCommand?.Invoke(route), NavigateAdvancedCommand is not null);
+            var row = AppendCatalog(nodes["AdvancedWorkspace.Navigation.Routes"], "SettingsAdvancedRoute.d.nxml", new Dictionary<string, string>
+            {
+                ["row"] = "AdvancedWorkspace.Route." + route.Id,
+                ["button"] = "AdvancedWorkspace.Go." + route.Id,
+                ["id"] = route.Id,
+                ["label"] = RuntimeTerms.Value["route." + route.Id],
+                ["enabled"] = Flag(NavigateAdvancedCommand is not null)
+            });
+            BindAdvancedAction(CatalogNodes(row), "AdvancedWorkspace.Go." + route.Id, () => NavigateAdvancedCommand?.Invoke(route), developerOnly: false);
         }
         if (!_developer) return;
-        if (_advancedRuntime is not { } capture) { capture = CaptureRuntimeDiagnostics(_shell); _advancedRuntime = capture; }
-        var diagnostics = FormGroup(_sections, "AdvancedWorkspace.Diagnostics", "高级运行事实");
-        Button(diagnostics, "AdvancedWorkspace.Capture", "捕获高级状态", () => { _advancedRuntime = CaptureRuntimeDiagnostics(_shell); BuildSections(true); });
-        Fact(diagnostics, "开发者模式", _developer ? "true" : "false");
-        Fact(diagnostics, "场景节点数量", capture.Renderer.SceneNodes.ToString(CultureInfo.InvariantCulture));
-        Fact(diagnostics, "原生活动动画轨道", capture.Native.ActiveMotionTracks.ToString(CultureInfo.InvariantCulture));
-        Fact(diagnostics, "动画时钟", _shell.Renderer.LocalizeText(capture.Native.MotionTimerRunning ? "运行中" : "已停止"));
-        Fact(diagnostics, "图像准入预算字节", capture.Native.RasterAdmissionBudgetBytes.ToString(CultureInfo.InvariantCulture));
-        var flags = FormGroup(_sections, "AdvancedWorkspace.Flags", "已接入的内部能力");
-        Feature("Java 诊断", _queries.TryResolve(JavaRuntimeDiagnosticsContract.Properties, out _));
-        Feature("XSR Trace", _queries.TryResolve(RuntimeTraceContract.Read, out _));
-        Feature("受保护自动更新", _automaticUpdates is not null);
-        Feature("命令面板", OpenAdvancedCommandPalette is not null);
-        Text(flags, "这些是当前组合根的只读能力事实，不增加隐藏的可变开关。", 11, Muted, 34);
-        var scheduler = FormGroup(_sections, "AdvancedWorkspace.Delay", "调度延时探测");
-        Button(scheduler, "AdvancedWorkspace.Delay.Start", "运行 200 ms 调度探测", () =>
+        _advancedRuntime ??= CaptureRuntimeDiagnostics(_shell);
+        _advancedRuntimeRoot = AppendCatalog(_sections, "SettingsAdvancedDiagnostics.d.nxml", AdvancedRuntimeValues());
+        BindAdvancedAction(CatalogNodes(_advancedRuntimeRoot), "AdvancedWorkspace.Capture", () =>
+        {
+            _advancedRuntime = CaptureRuntimeDiagnostics(_shell);
+            _dynamic.Reload(_advancedRuntimeRoot, DesktopMarkup.Dynamic("SettingsAdvancedDiagnostics.d.nxml", AdvancedRuntimeValues()));
+        });
+        string Feature(bool value) => RuntimeTerm("connected." + Flag(value));
+        AppendCatalog(_sections, "SettingsAdvancedFlags.d.nxml", new Dictionary<string, string>
+        {
+            ["java"] = Feature(_queries.TryResolve(JavaRuntimeDiagnosticsContract.Properties, out _)),
+            ["trace"] = Feature(_queries.TryResolve(RuntimeTraceContract.Read, out _)),
+            ["updates"] = Feature(_automaticUpdates is not null),
+            ["palette"] = Feature(OpenAdvancedCommandPalette is not null)
+        });
+        _advancedDelayRoot = AppendCatalog(_sections, "SettingsAdvancedDelay.d.nxml", new Dictionary<string, string>
+        { ["enabled"] = Flag(_advancedDelayRead is null) });
+        BindAdvancedAction(CatalogNodes(_advancedDelayRoot), "AdvancedWorkspace.Delay.Start", () =>
         {
             if (_advancedDelayRead is not null) return;
             _advancedDelayStop?.Dispose(); _advancedDelayStop = new();
-            _advancedDelayRead = ProbeAdvancedDelayAsync(_advancedDelayStop.Token); ObserveTransfer(_advancedDelayRead); BuildSections(true);
-        }, _advancedDelayRead is null);
-        if (_advancedDelayRead is not null) Text(scheduler, "正在等待异步调度探测…", 12, Muted, 28);
-        if (_advancedDelayMilliseconds is { } measured) Fact(scheduler, "实际调度耗时", measured.ToString("0.##", CultureInfo.InvariantCulture) + " ms");
-        var settings = FormGroup(_sections, "AdvancedWorkspace.Settings", "只读脱敏设置快照");
-        Text(settings, "只显示有效设置的类型、来源和公开值；文本、路径、凭据与命令内容保持脱敏。", 11, Muted, 36);
-        Text(settings, "本地设置文件可能包含路径、账户和凭据。仅在本机编辑器中打开，请勿公开分享。", 11, Muted, 38);
-        Button(settings, "AdvancedWorkspace.Settings.OpenFile", "打开 settings.json", () => OpenAdvancedSettingsFile?.Invoke(), OpenAdvancedSettingsFile is not null);
-        Button(settings, "AdvancedWorkspace.Settings.Read", "捕获设置快照", () =>
+            _advancedDelayRead = ProbeAdvancedDelayAsync(_advancedDelayStop.Token); ObserveTransfer(_advancedDelayRead); ProjectAdvancedDelay();
+        });
+        ProjectAdvancedDelay();
+        _advancedSettingsRoot = AppendCatalog(_sections, "SettingsAdvancedSettings.d.nxml", new Dictionary<string, string>
+        { ["open"] = Flag(OpenAdvancedSettingsFile is not null), ["read"] = Flag(_values is not null), ["next"] = "false", ["captured"] = "false", ["copy"] = "false" });
+        var settings = CatalogNodes(_advancedSettingsRoot);
+        BindAdvancedAction(settings, "AdvancedWorkspace.Settings.OpenFile", () => OpenAdvancedSettingsFile?.Invoke());
+        BindAdvancedAction(settings, "AdvancedWorkspace.Settings.Read", () =>
         {
             if (_values is null) return;
-            _advancedSettingsRows = CaptureRedactedAdvancedSettings(_values); _advancedSettingsPage = 0; BuildSections(true);
-        }, _values is not null);
-        if (_advancedSettingsRows is not { } rows) return;
-        int pages = Math.Max(1, (rows.Length + 23) / 24); _advancedSettingsPage = Math.Clamp(_advancedSettingsPage, 0, pages - 1);
-        foreach (string line in rows.Skip(_advancedSettingsPage * 24).Take(24)) DiagnosticText(settings, "AdvancedWorkspace.Settings.Row", line, 11, Muted, 28);
-        if (pages > 1) Button(settings, "AdvancedWorkspace.Settings.Next", "下一页", () => { _advancedSettingsPage = (_advancedSettingsPage + 1) % pages; BuildSections(true); });
-        if (CopyAdvancedSettingsTextAsync is not null) Button(settings, "AdvancedWorkspace.Settings.Copy", "复制脱敏设置快照", () =>
-        { if (CopyAdvancedSettingsTextAsync is not null) ObserveTransfer(CopyAdvancedSettingsTextAsync(string.Join('\n', rows))); });
-
-        void Feature(string label, bool available) => Fact(flags, label, _shell.Renderer.LocalizeText(available ? "已接入" : "未接入"));
-        void Fact(XsrUiEntityId parent, string label, string value) => ManagementFactIn(parent, label, value, true);
-        void Button(XsrUiEntityId parent, string name, string caption, Action action, bool enabled = true)
+            _advancedSettingsRows = CaptureRedactedAdvancedSettings(_values); _advancedSettingsPage = 0; ProjectAdvancedSettings();
+        });
+        BindAdvancedAction(settings, "AdvancedWorkspace.Settings.Next", () =>
         {
-            var entity = ActionButton(parent, name, caption, ManagementAction, 180);
-            _shell.Tree.GetComponent<XsrUiInput>(entity)!.Enabled = enabled;
-            _managementActions[entity] = () =>
-            {
-                if (AdvancedWorkspaceVisible && _shell.Tree.IsAlive(entity)
-                    && _shell.Tree.GetComponent<XsrUiInput>(entity)?.Enabled == true
-                    && (name.StartsWith("AdvancedWorkspace.Go.", StringComparison.Ordinal) || name == "AdvancedWorkspace.Palette" || _developer)) action();
-            };
-        }
+            int pages = Math.Max(1, ((_advancedSettingsRows?.Length ?? 0) + 23) / 24);
+            _advancedSettingsPage = (_advancedSettingsPage + 1) % pages; ProjectAdvancedSettings();
+        });
+        BindAdvancedAction(settings, "AdvancedWorkspace.Settings.Copy", () =>
+        {
+            if (_advancedSettingsRows is { } rows && CopyAdvancedSettingsTextAsync is { } copy) ObserveTransfer(copy(string.Join('\n', rows)));
+        });
+        ProjectAdvancedSettings();
+    }
+
+    private void BindAdvancedAction(Dictionary<string, XsrUiEntityId> nodes, string key, Action action, bool developerOnly = true)
+    {
+        var entity = nodes[key];
+        _managementActions[entity] = () =>
+        {
+            if (AdvancedWorkspaceVisible && _shell.Tree.IsAlive(entity)
+                && _shell.Tree.GetComponent<XsrUiInput>(entity)?.Enabled == true && (!developerOnly || _developer)) action();
+        };
+    }
+
+    private Dictionary<string, string> AdvancedRuntimeValues()
+    {
+        var capture = _advancedRuntime!.Value;
+        return new Dictionary<string, string>
+        {
+            ["developer"] = Flag(_developer),
+            ["nodes"] = capture.Renderer.SceneNodes.ToString(CultureInfo.InvariantCulture),
+            ["tracks"] = capture.Native.ActiveMotionTracks.ToString(CultureInfo.InvariantCulture),
+            ["clock"] = RuntimeTerm("clock." + Flag(capture.Native.MotionTimerRunning)),
+            ["budget"] = capture.Native.RasterAdmissionBudgetBytes.ToString(CultureInfo.InvariantCulture)
+        };
+    }
+
+    private void ProjectAdvancedDelay()
+    {
+        if (!_shell.Tree.IsAlive(_advancedDelayRoot)) return;
+        ReloadCatalog(_advancedDelayRoot, ("enabled", Flag(_advancedDelayRead is null)));
+        var body = CatalogNodes(_advancedDelayRoot)["AdvancedWorkspace.Delay.Status"];
+        _dynamic.Clear(body);
+        if (_advancedDelayRead is not null) _dynamic.Append(body, DesktopMarkup.Dynamic("SettingsAdvancedDelayLoading.d.nxml"));
+        else if (_advancedDelayMilliseconds is { } measured)
+            _dynamic.Append(body, DesktopMarkup.Dynamic("SettingsAdvancedDelayMeasured.d.nxml", new Dictionary<string, string>
+            { ["elapsed"] = measured.ToString("0.##", CultureInfo.InvariantCulture) }, _shell.Renderer.LocalizeText));
+    }
+
+    private void ProjectAdvancedSettings()
+    {
+        if (!_shell.Tree.IsAlive(_advancedSettingsRoot)) return;
+        var rows = _advancedSettingsRows;
+        int pages = Math.Max(1, ((rows?.Length ?? 0) + 23) / 24);
+        _advancedSettingsPage = Math.Clamp(_advancedSettingsPage, 0, pages - 1);
+        ReloadCatalog(_advancedSettingsRoot, ("next", Flag(pages > 1)), ("captured", Flag(rows is not null)),
+            ("copy", Flag(CopyAdvancedSettingsTextAsync is not null)));
+        var body = CatalogNodes(_advancedSettingsRoot)["AdvancedWorkspace.Settings.Rows"];
+        _dynamic.Clear(body);
+        if (rows is null) return;
+        foreach (string line in rows.Skip(_advancedSettingsPage * 24).Take(24))
+            _dynamic.Append(body, DesktopMarkup.Dynamic("SettingsAdvancedSettingsRow.d.nxml", new Dictionary<string, string> { ["line"] = line }));
     }
 
     internal static string[] CaptureRedactedAdvancedSettings(SettingsEffectiveSnapshot snapshot)
@@ -122,8 +173,16 @@ internal sealed partial class SettingsPageController
             var definition = SettingsPolicySchema.ByKey[item.Key];
             bool expose = item.ValidationError is null && definition.Validate(item.Value) is null
                 && definition.Kind is SettingsValueKind.Boolean or SettingsValueKind.Number or SettingsValueKind.Enum;
-            string value = expose ? item.Value.Value ?? item.Value.Mode.ToString() : "<redacted>";
-            return item.Key + " | " + definition.Kind + " | " + item.Source + " | " + item.Timing + " | " + item.Value.Mode + " | " + value;
+            string value = expose ? item.Value.Value ?? item.Value.Mode.ToString() : RuntimeTerms.Value["redacted"];
+            return DesktopMarkup.Dynamic("SettingsAdvancedSnapshotLine.d.nxml", new Dictionary<string, string>
+            {
+                ["key"] = item.Key,
+                ["kind"] = definition.Kind.ToString(),
+                ["source"] = item.Source.ToString(),
+                ["timing"] = item.Timing.ToString(),
+                ["mode"] = item.Value.Mode.ToString(),
+                ["value"] = value
+            }).Root.Content!;
         }).ToArray();
     }
 

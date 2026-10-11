@@ -1,0 +1,8 @@
+<nxml-dynamic>
+<StackPanel Class="settings-diagnostics-fields">
+<StackPanel Key="SettingsRuntime.Renderer.SceneVersion" Class="settings-diagnostics-field"><Text Content="场景版本" Class="settings-runtime-label" /><Text Key="SettingsRuntime.Renderer.SceneVersion.Value" Content="{data SceneVersion}" Label="{data SceneVersion}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-value" /></StackPanel>
+<StackPanel Key="SettingsRuntime.Renderer.SceneNodes" Class="settings-diagnostics-field"><Text Content="场景节点数量" Class="settings-runtime-label" /><Text Key="SettingsRuntime.Renderer.SceneNodes.Value" Content="{data SceneNodes}" Label="{data SceneNodes}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-value" /></StackPanel>
+<StackPanel Key="SettingsRuntime.Renderer.TreeCount" Class="settings-diagnostics-field"><Text Content="树实体数量" Class="settings-runtime-label" /><Text Key="SettingsRuntime.Renderer.TreeCount.Value" Content="{data TreeCount}" Label="{data TreeCount}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-value" /></StackPanel>
+<StackPanel Key="SettingsRuntime.Renderer.Scope" Class="settings-diagnostics-field"><Text Content="采样范围" Class="settings-runtime-label" /><Text Key="SettingsRuntime.Renderer.Scope.Value" Content="{data Scope}" Label="{data Scope}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-value" /></StackPanel>
+</StackPanel>
+</nxml-dynamic>

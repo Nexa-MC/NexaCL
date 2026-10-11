@@ -1,0 +1,6 @@
+<nxml-dynamic>
+<StackPanel Key="SettingsRuntime.Renderer" Class="settings-diagnostics-card"><StackPanel Class="settings-diagnostics-body">
+<StackPanel Key="SettingsRuntime.Renderer.Toolbar" Class="settings-diagnostics-toolbar"><Text Content="UI Renderer 信息" Class="settings-diagnostics-title" /><Button Key="SettingsRuntime.Renderer.Refresh" Label="捕获运行诊断" Icon="pcl/refresh" Command="ui.settings.diagnostics.runtime.refresh" Class="settings-diagnostics-refresh" /></StackPanel>
+<Dynamic Key="SettingsRuntime.Renderer.Body" Class="settings-diagnostics-fields" />
+</StackPanel></StackPanel>
+</nxml-dynamic>

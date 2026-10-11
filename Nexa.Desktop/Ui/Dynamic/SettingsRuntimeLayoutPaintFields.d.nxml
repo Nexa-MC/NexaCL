@@ -1,0 +1,9 @@
+<nxml-dynamic>
+<StackPanel Class="settings-diagnostics-fields">
+<StackPanel Key="SettingsRuntime.LayoutPaint.LayoutVisits" Class="settings-diagnostics-field"><Text Content="上次布局访问" Class="settings-runtime-label" /><Text Key="SettingsRuntime.LayoutPaint.LayoutVisits.Value" Content="{data LayoutVisits}" Label="{data LayoutVisits}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-value" /></StackPanel>
+<StackPanel Key="SettingsRuntime.LayoutPaint.SceneBuilds" Class="settings-diagnostics-field"><Text Content="场景重建次数" Class="settings-runtime-label" /><Text Key="SettingsRuntime.LayoutPaint.SceneBuilds.Value" Content="{data SceneBuilds}" Label="{data SceneBuilds}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-value" /></StackPanel>
+<StackPanel Key="SettingsRuntime.LayoutPaint.NativeCommits" Class="settings-diagnostics-field"><Text Content="原生场景提交次数" Class="settings-runtime-label" /><Text Key="SettingsRuntime.LayoutPaint.NativeCommits.Value" Content="{data NativeCommits}" Label="{data NativeCommits}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-value" /></StackPanel>
+<StackPanel Key="SettingsRuntime.LayoutPaint.NativePaints" Class="settings-diagnostics-field"><Text Content="原生节点绘制回调次数" Class="settings-runtime-label" /><Text Key="SettingsRuntime.LayoutPaint.NativePaints.Value" Content="{data NativePaints}" Label="{data NativePaints}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-value" /></StackPanel>
+<StackPanel Key="SettingsRuntime.LayoutPaint.Scope" Class="settings-diagnostics-field"><Text Content="原生计数范围" Class="settings-runtime-label" /><Text Key="SettingsRuntime.LayoutPaint.Scope.Value" Content="{data Scope}" Label="{data Scope}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-value" /></StackPanel>
+</StackPanel>
+</nxml-dynamic>

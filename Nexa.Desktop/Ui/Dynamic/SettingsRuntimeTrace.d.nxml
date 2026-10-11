@@ -1,0 +1,13 @@
+<nxml-dynamic>
+<StackPanel Key="RuntimeTrace" Class="settings-diagnostics-card"><StackPanel Class="settings-diagnostics-body">
+<Text Content="XSR Operation / State / Launch Trace" Class="settings-diagnostics-title" />
+<Text Content="仅保留当前会话的有界身份、阶段与结果；捕获后翻页沿用快照，不读取请求或状态内容。" Class="settings-trace-hint" />
+<StackPanel Key="RuntimeTrace.Toolbar" Class="settings-trace-toolbar">
+<Button Key="RuntimeTrace.Capture" Content="捕获 Trace" Command="ui.settings.diagnostics.trace" Enabled="{data enabled}" Class="settings-catalog-action settings-trace-action" />
+<Button Key="RuntimeTrace.Operations" Content="操作" Command="ui.settings.diagnostics.trace" Enabled="{data enabled}" Class="settings-catalog-action settings-trace-action" />
+<Button Key="RuntimeTrace.State" Content="状态" Command="ui.settings.diagnostics.trace" Enabled="{data enabled}" Class="settings-catalog-action settings-trace-action" />
+<Button Key="RuntimeTrace.Launch" Content="启动" Command="ui.settings.diagnostics.trace" Enabled="{data enabled}" Class="settings-catalog-action settings-trace-action" />
+<Button Key="RuntimeTrace.Next" Content="下一页" Command="ui.settings.diagnostics.trace" Enabled="{data enabled}" Class="settings-catalog-action settings-trace-action" />
+</StackPanel><Dynamic Key="RuntimeTrace.Rows" Class="settings-trace-rows" />
+</StackPanel></StackPanel>
+</nxml-dynamic>

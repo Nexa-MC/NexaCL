@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="RuntimeTrace.Summary" Content="第 {data page} / {data pages} 页 · {data count} 项 · 环容量 {data capacity} · 已丢弃 {data dropped}" Localize="false" Class="settings-diagnostics-summary" />
+</nxml-dynamic>

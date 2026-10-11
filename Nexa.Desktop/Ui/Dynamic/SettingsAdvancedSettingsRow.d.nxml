@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="AdvancedWorkspace.Settings.Row" Content="{data line}" Label="{data line}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-advanced-metadata" />
+</nxml-dynamic>

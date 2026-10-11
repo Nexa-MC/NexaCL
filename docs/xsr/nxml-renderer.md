@@ -256,3 +256,17 @@ actual light/dark native previews. Both Windows x64 NativeAOT and full-trim exec
 the new platform template smoke and Java-panel retirement assertions, then exited 0. Existing
 Jint IL2098 remains. The whole externalization inventory is still open in
 `nxml-migration-remaining.md`.
+
+### Captured runtime / advanced tools
+
+Runtime diagnostic groups and fields, Trace controls/status/rows, advanced
+automation/routes/facts/flags, probe status and redacted settings rows are external
+assets. Each collection has an owned Dynamic slot. Refresh/reload retains controls;
+Trace paging uses its captured bounded metadata, with no request/state payloads.
+Advanced probe completion and settings paging do not reconstruct the settings
+page. Diagnostic unit/metadata formats are external literal named text; fixed
+clock/motion/availability terms and route labels come from RuntimeTerms.nxml.
+
+This closes these three controller partials only. Shared dialog feedback copy,
+instance diagnostics and other custom settings/resource/account/launch surfaces
+remain in the migration inventory.

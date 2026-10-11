@@ -282,3 +282,43 @@ Unknown facts remain unknown.
 - These are closed presentation slices. Remaining runtime/instance diagnostics, management,
   resources, install/version rows, wardrobe, accounts/OOBE, global overlays and fixed copy
   in other controllers/localization assets still require migration. The whole objective is active.
+
+## Runtime diagnostics / trace / advanced workspace boundary
+
+Runtime metric groups, field labels, unavailable/motion/clock variants, trace
+toolbar/rows/paging formats, advanced navigation/facts/flags/probe and redacted
+settings workspace move to external dynamic fragments and NSS. Captures remain
+explicit and read-only. No service query is allowed during presentation. Trace
+filters and paging operate on the bounded captured snapshot; navigation cancels
+its in-flight read and rejects retired controls. Settings export preserves the
+existing bounded, validated public-value/redaction contract. Asynchronous probe
+completion and paging must update only owned fragments without rebuilding other
+settings controls, resetting drafts, focus or scroll. Capability availability
+and developer mode remain behavioral gates; no unobserved metric is invented.
+
+## Runtime / Trace / advanced workspace validation, 2026-10-11
+
+- Desktop composition: 268 passed, 0 failed. Architecture: 69 projects passed,
+  including no-factory checks for these three partials and old helper-factory bans.
+  NXML compiler/runtime: 56 passed.
+- Runtime metric refresh retains field/action entities and remains explicit/read-only.
+  Captures do not render, drain pending state or write settings.
+- Trace tests hold the asynchronous capture pending, reject repeated capture, retain
+  toolbar entities, page the bounded captured metadata and reject cancelled late
+  results after leaving the page. Arbitrary state payloads are never formatted.
+- Advanced probe completion/capture/settings paging retain other diagnostic captures,
+  the selected inspector page and keyboard focus. Existing route dispatch, developer
+  gating, retired action and redaction/copy checks continue to pass.
+- Actual native previews captured both themes: automation navigation, probe, redacted
+  settings, renderer/layout/scheduler/performance groups and Trace pages. Runtime
+  counters/probe are actual native read-only observations; Trace is explicitly fixture
+  metadata and the settings belong to a temporary data root. No Minecraft session is
+  represented by these previews.
+- Windows x64 NativeAOT and self-contained full-trim publications succeeded. Both
+  actual executables ran --validate-shell and exited 0 with the new positive
+  Dynamic runtime validation marker (owned slots, retained probe, literal metadata).
+  The existing Jint IL2098 warning remains; it has not been suppressed.
+- Targeted whitespace format succeeded (workspace-loading warning); diff checks pass.
+  Validation logs/previews are under .tmp-cleanup-validation/runtime-*.
+- The overall migration is still incomplete. Instance/launch diagnostics, content
+  management and the other surfaces in the remaining inventory are the next work.

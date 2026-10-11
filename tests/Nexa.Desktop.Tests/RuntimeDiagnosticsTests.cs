@@ -24,7 +24,12 @@ internal static partial class Program
         AssertEqual(fixture.Shell.Renderer.LastLayoutVisits, expected.Renderer.LayoutVisits);
         AssertTrue(expected.Renderer.PendingStateEntries > 0);
         AssertEqual(scene, fixture.Shell.Renderer.SceneVersion); // Capture never renders or drains state.
+        var metric = fixture.Find("SettingsRuntime.Renderer.SceneVersion.Value");
+        var refreshControl = fixture.Find("SettingsRuntime.Renderer.Refresh");
+        AssertTrue(fixture.Shell.Tree.GetComponent<Nexa.Xsr.Renderer.Nxml.NxmlDynamicSlot>(fixture.Find("SettingsRuntime.Renderer.Body")) is not null);
         fixture.Click("ui.settings.diagnostics.runtime.refresh", "SettingsRuntime.Renderer.Refresh");
+        AssertEqual(metric, fixture.Find("SettingsRuntime.Renderer.SceneVersion.Value"));
+        AssertEqual(refreshControl, fixture.Find("SettingsRuntime.Renderer.Refresh"));
         AssertEqual(expected.Renderer.SceneVersion.ToString(CultureInfo.InvariantCulture), fixture.Text("SettingsRuntime.Renderer.SceneVersion.Value"));
         AssertEqual(expected.Renderer.SceneNodes.ToString(CultureInfo.InvariantCulture), fixture.Text("SettingsRuntime.Renderer.SceneNodes.Value"));
         AssertEqual(expected.Renderer.LayoutVisits.ToString(CultureInfo.InvariantCulture), fixture.Text("SettingsRuntime.LayoutPaint.LayoutVisits.Value"));

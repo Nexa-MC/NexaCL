@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<StackPanel Class="settings-diagnostics-field"><Text Content="实际调度耗时" Class="settings-advanced-label" /><Text Key="AdvancedWorkspace.Delay.Value" Content="{data elapsed} ms" Label="{data elapsed} ms" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-advanced-fact" /></StackPanel>
+</nxml-dynamic>

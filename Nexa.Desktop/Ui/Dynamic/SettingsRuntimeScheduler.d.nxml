@@ -1,0 +1,6 @@
+<nxml-dynamic>
+<StackPanel Key="SettingsRuntime.Scheduler" Class="settings-diagnostics-card"><StackPanel Class="settings-diagnostics-body">
+<StackPanel Key="SettingsRuntime.Scheduler.Toolbar" Class="settings-diagnostics-toolbar"><Text Content="Animation Scheduler" Class="settings-diagnostics-title" /><Button Key="SettingsRuntime.Scheduler.Refresh" Label="捕获运行诊断" Icon="pcl/refresh" Command="ui.settings.diagnostics.runtime.refresh" Class="settings-diagnostics-refresh" /></StackPanel>
+<Dynamic Key="SettingsRuntime.Scheduler.Body" Class="settings-diagnostics-fields" />
+</StackPanel></StackPanel>
+</nxml-dynamic>

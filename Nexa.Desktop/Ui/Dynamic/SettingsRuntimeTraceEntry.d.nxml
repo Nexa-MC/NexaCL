@@ -1,0 +1,6 @@
+<nxml-dynamic>
+<StackPanel Key="{data row}" Class="settings-diagnostics-entry">
+<Text Key="{data identityKey}" Content="{data kind} · {data semantic}" Localize="false" Class="settings-trace-identity" />
+<Text Key="{data detailKey}" Content="{data detail} · cid={data correlation} · ticks={data ticks} · {data result}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-trace-metadata" />
+</StackPanel>
+</nxml-dynamic>

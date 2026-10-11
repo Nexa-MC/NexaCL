@@ -1,4 +1,5 @@
 using Nexa.Services.Setup;
+using Nexa.Services.Logging;
 using Nexa.Services.Capabilities;
 using Nexa.Services.Minecraft.Java;
 using Nexa.Services.Settings;
@@ -172,6 +173,25 @@ internal static partial class Program
             await Task.Delay(500, timeout.Token);
             await startup.InvokeAsync(() =>
             {
+                var advancedScene = surface!.Scene!;
+                ShowSettingsFixtureControl(f, controller, ref advancedScene, "AdvancedWorkspace.Palette", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("advanced-navigation");
+                var delay = ShowSettingsFixtureControl(f, controller, ref advancedScene, "AdvancedWorkspace.Delay.Start", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); f.Shell.Renderer.Activate(delay.Entity); surface.CommitScene();
+            }, timeout.Token);
+            await Eventually(() => surface!.Scene!.Nodes.Any(node => f.Shell.Tree.Name(node.Entity) == "AdvancedWorkspace.Delay.Value"));
+            await startup.InvokeAsync(() =>
+            {
+                Capture("advanced-probe");
+                var advancedScene = surface!.Scene!;
+                var read = ShowSettingsFixtureControl(f, controller, ref advancedScene, "AdvancedWorkspace.Settings.Read", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); f.Shell.Renderer.Activate(read.Entity); surface.CommitScene();
+                ShowSettingsFixtureControl(f, controller, ref advancedScene, "AdvancedWorkspace.Settings.Row", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("advanced-settings");
+            }, timeout.Token);
+
+            await startup.InvokeAsync(() =>
+            {
                 var diagnosticScene = surface!.Scene!;
                 ShowSettingsFixtureControl(f, controller, ref diagnosticScene, "SettingsDiagnostics.Renderer.MotionPolicy.Value", f.Shell.Renderer.Viewport);
                 surface.CommitScene(); Capture("renderer-diagnostics");
@@ -194,6 +214,18 @@ internal static partial class Program
                     ShowSettingsFixtureControl(f, controller, ref diagnosticScene, keys[Math.Min(4, keys.Count - 1)], f.Shell.Renderer.Viewport);
                     surface.CommitScene();
                 }
+            }, timeout.Token);
+            await SelectCategory("appearance");
+            await Task.Delay(500, timeout.Token);
+            await startup.InvokeAsync(() =>
+            {
+                var runtimeScene = surface!.Scene!;
+                ShowSettingsFixtureControl(f, controller, ref runtimeScene, "SettingsRuntime.Renderer.Refresh", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("runtime-renderer");
+                ShowSettingsFixtureControl(f, controller, ref runtimeScene, "SettingsRuntime.Scheduler.MotionPolicy.Value", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("runtime-scheduler");
+                ShowSettingsFixtureControl(f, controller, ref runtimeScene, "SettingsRuntime.Performance.PresentationRate.Value", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("runtime-performance");
                 AssertTrue(f.Foundation.Host.SettingsPolicy.Set(new("developer.enabled", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "false"))).IsSuccess);
                 surface.CommitScene();
             }, timeout.Token);
@@ -261,6 +293,10 @@ internal static partial class Program
                     (_, _) => ValueTask.FromResult(XsrResult.Success(platform)));
                 queries.Register<LaunchPreflightQuery, CapabilityPreflightReport>(MachineCapabilityStateContract.PreflightQuery,
                     (_, _) => ValueTask.FromResult(XsrResult.Success(preflight)));
+                queries.Register<RuntimeTraceQuery, RuntimeTraceSnapshot>(RuntimeTraceContract.Read,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success(new RuntimeTraceSnapshot(256, 4,
+                        Enumerable.Range(0, 48).Select(index => new RuntimeTraceEntry("Operation", "minecraft.preview." + index,
+                            "preview-correlation", index, "completed {state literal}", true)).ToArray()))));
                 var commands = new XsrCommandRouterBuilder();
                 commands.Register<JavaRuntimeManageCommand>(JavaRuntimeInventoryContract.Manage,
                     (_, _) => throw new InvalidOperationException("Preview must not manage a Java runtime."));
@@ -294,8 +330,13 @@ internal static partial class Program
                 });
                 var originalLibrary = f.Store.Read<Nexa.Services.Minecraft.MinecraftLibrarySnapshot>(library).Value!;
                 var previewInstance = Instance("platform-preview");
-                f.Store.Publish(library, originalLibrary with { Revision = originalLibrary.Revision + 1,
-                    Instances = [previewInstance], SelectedInstanceId = previewInstance.Id, IsProvisional = false });
+                f.Store.Publish(library, originalLibrary with
+                {
+                    Revision = originalLibrary.Revision + 1,
+                    Instances = [previewInstance],
+                    SelectedInstanceId = previewInstance.Id,
+                    IsProvisional = false
+                });
                 Emit(f.Intents, "ui.settings.section", OwnedSection("platform"));
                 surface.CommitScene(); await java.PrepareVisibleStartupAsync(timeout.Token);
                 AssertEqual("platform", java.SelectedSection);
@@ -309,6 +350,22 @@ internal static partial class Program
                 ShowSettingsFixtureControl(f, java, ref platformScene, "PlatformCapability.minecraft.settings.resource_packs", f.Shell.Renderer.Viewport);
                 surface.CommitScene(); Capture("platform-resource-packs");
                 f.Store.Publish(library, originalLibrary);
+                AssertTrue(f.Foundation.Host.SettingsPolicy.Set(new("developer.enabled", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "true"))).IsSuccess);
+                surface.CommitScene();
+                Emit(f.Intents, "ui.settings.section", OwnedSection("privacy"));
+                surface.CommitScene(); await java.PrepareVisibleStartupAsync(timeout.Token);
+                await Task.Delay(500, timeout.Token);
+                var traceScene = surface.Scene!;
+                var captureTrace = ShowSettingsFixtureControl(f, java, ref traceScene, "RuntimeTrace.Capture", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); f.Shell.Renderer.Activate(captureTrace.Entity); surface.CommitScene(); surface.CommitScene();
+                ShowSettingsFixtureControl(f, java, ref traceScene, "RuntimeTrace.Detail.1", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("runtime-trace");
+                var nextTrace = ShowSettingsFixtureControl(f, java, ref traceScene, "RuntimeTrace.Next", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); f.Shell.Renderer.Activate(nextTrace.Entity); surface.CommitScene();
+                ShowSettingsFixtureControl(f, java, ref traceScene, "RuntimeTrace.Summary", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("runtime-trace-next");
+                AssertTrue(f.Foundation.Host.SettingsPolicy.Set(new("developer.enabled", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "false"))).IsSuccess);
+                surface.CommitScene();
                 Emit(f.Intents, "ui.settings.section", OwnedSection("storage"));
                 surface.CommitScene(); await java.PrepareVisibleStartupAsync(timeout.Token);
                 await Task.Delay(500, timeout.Token); surface.CommitScene(); Capture("storage-top");
@@ -513,7 +570,7 @@ internal static partial class Program
                     ["page"] = "SettingsAppearance",
                     ["phase"] = phase,
                     ["theme"] = f.Shell.Renderer.ColorScheme.IsDark ? "dark" : "light",
-                    ["data"] = "temporary local settings; empty instances; Java inventory and storage locations, task/process/log and resource fixtures",
+                    ["data"] = "temporary local settings; empty instances; Java inventory and storage locations, task/process/log, Trace and resource fixtures; runtime metrics and probe are actual native read-only captures",
                     ["renderer"] = "actual product NXML/controller and software Avalonia native window",
                     ["version"] = f.Shell.Version,
                     ["x"] = origin.X,
