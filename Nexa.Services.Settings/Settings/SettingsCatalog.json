@@ -1877,11 +1877,11 @@
     "scope": "global",
     "page": "storage",
     "section": "数据位置",
-    "label": "Minecraft Library",
-    "kind": "Setting",
+    "label": "游戏目录",
+    "kind": "State",
     "key": null,
     "developer": false,
-    "availability": "NotImplemented"
+    "availability": "Available"
   },
   {
     "id": "global.storage.515eb03d238d",
@@ -1889,11 +1889,11 @@
     "scope": "global",
     "page": "storage",
     "section": "数据位置",
-    "label": "实例目录",
-    "kind": "Setting",
+    "label": "版本目录",
+    "kind": "State",
     "key": null,
     "developer": false,
-    "availability": "NotImplemented"
+    "availability": "Available"
   },
   {
     "id": "global.storage.52f5b9975060",
@@ -1913,11 +1913,11 @@
     "scope": "global",
     "page": "storage",
     "section": "数据位置",
-    "label": "Java Runtime Store",
-    "kind": "Setting",
+    "label": "托管 Java 目录",
+    "kind": "State",
     "key": null,
     "developer": false,
-    "availability": "NotImplemented"
+    "availability": "Available"
   },
   {
     "id": "global.storage.c0888e611264",
@@ -1926,10 +1926,10 @@
     "page": "storage",
     "section": "数据位置",
     "label": "下载缓存",
-    "kind": "Setting",
+    "kind": "State",
     "key": null,
     "developer": false,
-    "availability": "NotImplemented"
+    "availability": "Available"
   },
   {
     "id": "global.storage.aa43fd2c91cc",

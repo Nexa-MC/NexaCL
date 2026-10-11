@@ -363,6 +363,7 @@ internal sealed partial class SettingsPageController : IDisposable
         if (_selected == "platform") { BuildPlatformCapabilities(); return; }
         if (_selected == "about") { BuildAboutPage(); return; }
         if (_selected == "advanced") BuildUpdateCard();
+        if (_instanceDirectory is null && _selected == "storage") BuildStoragePreferences();
         bool transfer = _instanceDirectory is null && _selected == "storage" || _instanceDirectory is not null && _selected == "game";
         if (_selected == "privacy")
         {
@@ -397,7 +398,7 @@ internal sealed partial class SettingsPageController : IDisposable
         }
         if (_instanceDirectory is null && _selected == "network") { BuildProxyPreferences(); BuildNetworkDiagnostics(); }
         if (_instanceDirectory is null && _selected == "privacy") { BuildDiskLogActions(); BuildPrivacyDiagnosticExport(); BuildContentTrustStates(); }
-        if (_instanceDirectory is null && _selected == "storage") { BuildStoragePreferences(); BuildContentWorkspace(); }
+        if (_instanceDirectory is null && _selected == "storage") BuildContentWorkspace();
         if (transfer) BuildSettingsTransfer();
         BuildJavaInventory();
         BuildJavaPolicyStates();

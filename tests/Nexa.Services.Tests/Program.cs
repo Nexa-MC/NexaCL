@@ -4,6 +4,10 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("StorageLocationsUseConfiguredRootsWithoutCreatingDirectories", Sync(StorageLocationsUseConfiguredRootsWithoutCreatingDirectories)),
+        ("StorageLocationsFollowSelectedRootAndPreserveMissingConfiguration", Sync(StorageLocationsFollowSelectedRootAndPreserveMissingConfiguration)),
+        ("StorageLocationsRejectForeignSelectionAndHonorCancellation", Sync(StorageLocationsRejectForeignSelectionAndHonorCancellation)),
+        ("StorageLocationsCatalogDeclaresOnlyDeliveredReadOnlyFacts", Sync(StorageLocationsCatalogDeclaresOnlyDeliveredReadOnlyFacts)),
         ("LibrarySnapshotsAreDisplayOnlyUntilReconciled", LibrarySnapshotsAreDisplayOnlyUntilReconciled),
         ("LibraryOfflineRootRaceRetainsRealSnapshotAndAcceptsEmptyRoot", LibraryOfflineRootRaceRetainsRealSnapshotAndAcceptsEmptyRoot),
         ("atomic publication preserves originals and retires scratch", AtomicFilePublicationPreservesOriginalsAndRetiresScratchOnFailure),

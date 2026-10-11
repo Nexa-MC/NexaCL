@@ -53,6 +53,7 @@ internal sealed partial class SettingsPageController
             _shell.Tree.GetComponent<XsrUiInput>(cancel)!.Enabled = !StoragePreferencesBusy && _storageStatus.PendingTransaction is not null
                 && _commands.TryResolve(StoragePreferencesContract.CancelMigration, out _);
         }
+        BuildStorageLocations();
         var cleanup = FormGroup(_sections, "SettingsStorageCleanup", "安全清理");
         Row("SettingsStorageCleanTemporary", "过期临时文件", "仅清理 24 小时前遗留的启动器原子写入文件。", CleanStorageTemporary);
         Row("SettingsStorageCleanTasks", "成功任务记录", "仅移除成功任务卡片，保留失败、取消、暂停及恢复数据。", CleanStorageTasks);
@@ -105,6 +106,7 @@ internal sealed partial class SettingsPageController
     // Run this before OnFrame's visibility return so a committed queue still closes the host after navigation.
     private void UpdateStoragePreferences()
     {
+        UpdateStorageLocations();
         bool changed = false;
         if (_instanceDirectory is null && _selected == "storage" && _storageStatus is null && _storageStatusRead is null
             && !_storageStatusUnavailable
@@ -181,6 +183,7 @@ internal sealed partial class SettingsPageController
 
     private void CancelStoragePreferences()
     {
+        CancelStorageLocations();
         Interlocked.Increment(ref _storageGeneration);
         _storageStop?.Cancel(); _storageStop?.Dispose(); _storageStop = null;
         _storagePreviewRead = null;

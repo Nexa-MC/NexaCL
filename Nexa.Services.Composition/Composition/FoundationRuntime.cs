@@ -84,6 +84,7 @@ public static class FoundationRuntimeComposer
         XsrQueryRouterBuilder queries = new();
         if (storagePreferences is not null)
         {
+            StorageLocationsRuntime.Register(queries, host, storagePreferences);
             commands.Register<StorageMigrationCommand>(StoragePreferencesContract.Migrate,
                 async (command, token) => await storagePreferences.QueueMigrationAsync(command, token).ConfigureAwait(false));
             commands.Register<StorageMigrationCancelCommand>(StoragePreferencesContract.CancelMigration,

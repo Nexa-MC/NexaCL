@@ -21,6 +21,7 @@ public sealed partial class StoragePreferencesService(AppFolders folders, string
     };
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly string _root = Normalize(folders.Root);
+    internal string DataDirectory => _root;
     private readonly string _locator = Path.GetFullPath(locatorPath);
     private string Pending => _locator + ".migration.json";
     private sealed record FileFact(string RelativePath, long Bytes, string Hash);

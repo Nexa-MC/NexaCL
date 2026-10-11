@@ -9,10 +9,16 @@ catalog has 542 positions. The value schema declares 96 definitions, with 95 mut
 contracts and 79 exportable contracts. `java.compatibility` is retained only for
 compatibility reads; writes reject because checks are mandatory. Its catalog position
 now displays that mandatory policy instead of exposing an ineffective editor.
-The raw catalog contains 398 Available, 12 PlatformUnsupported and 132 NotImplemented
-positions. The latter comprise 78 structural Group/Choice positions and 54 functional
+The raw catalog contains 402 Available, 12 PlatformUnsupported and 128 NotImplemented
+positions. The latter comprise 78 structural Group/Choice positions and 50 functional
 roadmap positions without delivered contracts. Platform conditions can further restrict
 available consumers. These counts describe IA positions, not 542 implemented capabilities.
+
+[XSR-836](XSR-836-storage-location-overview.md) connects the configured directory
+overview to a sealed Setup query: library roots, the current root and instance,
+launcher settings/logs, managed Java roots, and nullable cache configuration. The
+four dedicated directory facts become read-only State consumers; placement policies,
+temporary directory aggregation and disk estimates remain reserved.
 
 [XSR-832](XSR-832-retire-low-power-previews.md) retires launcher low-power mode at the
 user's request. Its catalog, schema and runtime consumer are removed. Existing

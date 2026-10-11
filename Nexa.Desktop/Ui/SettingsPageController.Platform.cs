@@ -94,7 +94,8 @@ internal sealed partial class SettingsPageController
 
     private MachineCapabilityQuery ResolveMachineScope()
     {
-        if (_store.ReadAppliedValue(_store.Resolve(MinecraftLibraryContract.StateKey))
+        if (!_store.TryResolve(MinecraftLibraryContract.StateKey, out var libraryState)
+            || _store.ReadAppliedValue(libraryState)
             is not MinecraftLibrarySnapshot library)
         {
             return new();
