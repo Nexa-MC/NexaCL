@@ -15,6 +15,7 @@ public enum NxmlValueKind
 {
     Literal = 0,
     StateBinding = 1,
+    DataBinding = 2,
 }
 
 /// <summary>

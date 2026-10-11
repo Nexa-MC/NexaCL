@@ -11,6 +11,10 @@ internal static partial class Program
         ("external components compose without generated CLR types", ExternalComponentsComposeWithoutGeneratedTypes),
         ("external components reject cycles and expansion bombs", ExternalComponentsRejectCyclesAndExpansionBombs),
         ("NSS cascade preserves explicit values", NssRulesPreserveCascadeAndExplicitValues),
+        ("dynamic fragments append repeat keys and preserve order", DynamicFragmentsAppendInOrder),
+        ("dynamic load failures preserve existing contents", DynamicFailuresPreserveContents),
+        ("dynamic data is literal bounded and complete", DynamicDataIsLiteralAndBounded),
+        ("dynamic slots reject stale and foreign targets", DynamicSlotsRejectStaleTargets),
         // XSR-207: NXML grammar and parser.
         ("document resource budgets are enforced before recursion", DocumentResourceBudgetsAreEnforcedBeforeRecursion),
         ("simple document parses structurally", SimpleDocumentParsesStructurally),

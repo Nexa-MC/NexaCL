@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer;
+﻿using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.State;
 
@@ -32,6 +32,10 @@ public sealed class NxmlUiLoader
         {
             throw new NxmlLoadException($"The load parent '{parent}' is not alive.");
         }
+
+        bool dynamicSlot = tree.GetComponent<NxmlDynamicSlot>(parent) is not null;
+        if (ir.IsDynamic != dynamicSlot)
+            throw new NxmlLoadException("Dynamic slots accept only .d.nxml fragments, and fragments require a Dynamic slot.");
 
         XsrUiEntityId root = tree.Create(ir.Root.Key ?? ir.Root.Kind.ToString());
         bool committed = false;
@@ -91,7 +95,7 @@ public sealed class NxmlUiLoader
         switch (node.Recipe)
         {
             case NxmlRuntimeRecipe.TextInput:
-                tree.SetComponent(entity, new XsrUiTextInput { Placeholder = node.Placeholder ?? string.Empty, IsPassword = node.IsPassword });
+                tree.SetComponent(entity, new XsrUiTextInput { Placeholder = node.Placeholder ?? string.Empty, IsPassword = node.IsPassword, MaximumLength = node.MaximumLength });
                 NxmlIrBinding? inputEnabled = node.Bindings.FirstOrDefault(binding => binding.Property == XsrUiStateProperty.Enabled);
                 tree.SetComponent(entity, new XsrUiInput
                 {
@@ -121,6 +125,15 @@ public sealed class NxmlUiLoader
 
                 tree.SetComponent(entity, progress);
                 break;
+            case NxmlRuntimeRecipe.DynamicSlot:
+                tree.SetComponent(entity, new NxmlDynamicSlot());
+                if (node.SlotLayout is NxmlRuntimeRecipe.HorizontalPager or NxmlRuntimeRecipe.VerticalPager)
+                {
+                    tree.SetComponent(entity, new XsrUiPager(node.SlotLayout == NxmlRuntimeRecipe.HorizontalPager ? XsrUiOrientation.Horizontal : XsrUiOrientation.Vertical));
+                    tree.SetComponent(entity, new XsrUiInput { Focusable = true });
+                    break;
+                }
+                goto case NxmlRuntimeRecipe.StackLayout;
             case NxmlRuntimeRecipe.StackLayout:
                 tree.SetComponent(entity, new XsrUiStackPanel(node.Orientation)
                 {

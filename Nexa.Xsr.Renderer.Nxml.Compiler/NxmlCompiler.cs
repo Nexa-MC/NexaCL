@@ -38,6 +38,25 @@ public static class NxmlCompiler
         if ((!allowsChildren || recipe is NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.Image or NxmlRuntimeRecipe.Progress or NxmlRuntimeRecipe.TextInput)
             && element.Children.Count != 0)
             throw Fail(element.Name, null, "does not accept child elements");
+        if (recipe == NxmlRuntimeRecipe.DynamicSlot && (element.Children.Count != 0 || element.FindProperty("Key") is null))
+            throw Fail(element.Name, "Key", "a Dynamic slot must be named and initially empty");
+        NxmlRuntimeRecipe slotLayout = NxmlRuntimeRecipe.StackLayout;
+        if (element.FindProperty("Layout") is not null)
+        {
+            if (recipe != NxmlRuntimeRecipe.DynamicSlot) throw Fail(element.Name, "Layout", "requires Dynamic");
+            slotLayout = Literal("Layout", "Stack") switch
+            {
+                "Stack" => NxmlRuntimeRecipe.StackLayout,
+                "HorizontalPager" => NxmlRuntimeRecipe.HorizontalPager,
+                "VerticalPager" => NxmlRuntimeRecipe.VerticalPager,
+                _ => throw Fail(element.Name, "Layout", "is not a supported slot layout"),
+            };
+        }
+        int maximumLength = 2048;
+        if (element.FindProperty("MaximumLength") is not null
+            && (recipe != NxmlRuntimeRecipe.TextInput || !int.TryParse(Literal("MaximumLength", "2048"), NumberStyles.None, CultureInfo.InvariantCulture, out maximumLength)
+                || maximumLength is < 1 or > 32768))
+            throw Fail(element.Name, "MaximumLength", "requires a text input and a length from 1 to 32768");
         NxmlControlModel model = new(Literal("Kind", "Node"), "Node", role, recipe, allowsChildren, NxmlNodeSchema.Properties);
         foreach (string required in Literal("Required", "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             if (element.FindProperty(required) is null) throw Fail(element.Name, required, "is required by this component");
@@ -55,13 +74,15 @@ public static class NxmlCompiler
 
         foreach (NxmlProperty attribute in element.Attributes)
         {
+            if (attribute.Value.Kind == NxmlValueKind.DataBinding)
+                throw Fail(element.Name, attribute.Name, "requires dynamic template data");
             if (NssStyleSheet.IsVisual(attribute.Name))
             {
                 if (attribute.Value.Kind != NxmlValueKind.Literal) throw Fail(element.Name, attribute.Name, "must be literal");
                 NssStyleSheet.SetVisual(visual ??= new(), attribute.Name, attribute.Value.Text);
                 continue;
             }
-            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class") continue;
+            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength") continue;
             if (!model.TryGetProperty(attribute.Name, out NxmlControlPropertyModel property))
             {
                 throw Fail(element.Name, attribute.Name, "is not declared by this control model");
@@ -72,7 +93,7 @@ public static class NxmlCompiler
                 NxmlIrPropertyTarget.Command or NxmlIrPropertyTarget.Clickable or NxmlIrPropertyTarget.Focusable => recipe == NxmlRuntimeRecipe.CommandInput,
                 NxmlIrPropertyTarget.Content => recipe is NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.CommandInput,
                 NxmlIrPropertyTarget.ImageSource => recipe is NxmlRuntimeRecipe.Image or NxmlRuntimeRecipe.CommandInput,
-                NxmlIrPropertyTarget.Orientation or NxmlIrPropertyTarget.Spacing or NxmlIrPropertyTarget.StretchLastChild or NxmlIrPropertyTarget.Scrollable => recipe == NxmlRuntimeRecipe.StackLayout,
+                NxmlIrPropertyTarget.Orientation or NxmlIrPropertyTarget.Spacing or NxmlIrPropertyTarget.StretchLastChild or NxmlIrPropertyTarget.Scrollable => recipe is NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
                 NxmlIrPropertyTarget.Value => recipe == NxmlRuntimeRecipe.Progress,
                 NxmlIrPropertyTarget.Placeholder or NxmlIrPropertyTarget.IsPassword or NxmlIrPropertyTarget.Enabled => recipe == NxmlRuntimeRecipe.TextInput,
                 _ => true,
@@ -111,7 +132,8 @@ public static class NxmlCompiler
 
         return builder.Build(
             [.. element.Children.Select(child => CompileNode(child, keys, styles))],
-            bindings) with { Visual = visual?.Snapshot() };
+            bindings) with
+        { Visual = visual?.Snapshot(), SlotLayout = slotLayout, MaximumLength = maximumLength };
     }
 
     private static void ApplyLiteral(

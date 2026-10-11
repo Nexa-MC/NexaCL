@@ -1,4 +1,4 @@
-# Nexa.Xsr.Renderer — external NXML and NSS
+﻿# Nexa.Xsr.Renderer — external NXML and NSS
 
 ## Boundary decision
 
@@ -107,3 +107,64 @@ pipeline without replacing service boundaries or rebuilding the visual design.
 - Windows x64 full trim/link: publish succeeded and `--validate-shell` exited 0.
 - Existing Jint IL2098 warning remains visible in both publish modes; no new renderer
   or NXML trimming warnings were observed. This is not macOS/Linux physical validation.
+
+## Dynamic content contract (2026-10-11)
+
+Pages own named `<Dynamic Key="..." />` insertion slots. A `.d.nxml` document starts
+with `<nxml-dynamic>` and contains one visual root. A dynamic fragment can itself
+contain slots for nested collections. Loading the same fragment repeatedly creates
+independent instances and appends them in insertion order; later instances appear below
+earlier ones in the default vertical slot. Keys are local to an instance, never global.
+
+The loader validates and compiles the complete fragment before attaching it. A failed
+load leaves the slot and its existing children unchanged. Replace, remove and clear
+operate on loader-owned instances and destroy their bindings with the tree. Stale slot
+or instance handles must not target a replacement entity. Controllers supply data and
+select fragment names; they must not create presentation trees or generate XML strings.
+Static labels, shapes, spacing and visual variants belong in external NXML/NSS assets.
+
+`{data name}` is a literal substitution in dynamic documents, not XML interpolation,
+script or a service lookup. It cannot select primitive recipes, roles or binding paths.
+Data is checked against the same typed property schema and size budgets as static NXML.
+State bindings remain `{state path}`. Dynamic documents require complete data before
+compilation and cannot silently reuse parameters from a previous load.
+
+Migration is complete only after controllers no longer create presentation structure;
+adding the slot API alone is not completion. Rendering primitives and platform bridges
+remain compiled code. Regression coverage must include append order, repeated keys,
+failed-load atomicity, stale handles, nested slots, data escaping and idle network frames.
+
+
+### Resource and task presentation follow-up (2026-10-11)
+
+Resource searches retain all fetched project facts for the current search, without a Desktop project-count, page-count or aggregate text display cap. Rows and media remain viewport-bounded. A duplicate-only page pauses automatic admission; the user can explicitly request the next page. Provider response validation and request limits remain in Services. Search provider and dual-provider category filters are explicit query fields and participate in cache identity. World is an additive resource kind. Dropdown presentation uses external dynamic fragments in a named page slot, and game versions reuse the install catalog service state/command.
+
+One content-update transaction owns one task, including all file downloads, validation and final replacement. Child downloads report to that task without registering additional cards. Active task cards precede terminal cards without altering task state or publication order.
+
+The Java diagnostics, manual-download workspace and policy-explanation cards are removed from Settings, including their dedicated presentation state and handlers. Java selection, inventory management and launch-time detection/download services remain available.
+
+
+### Dynamic rollout validation and remaining scope
+
+The network/proxy and network-diagnostics controllers now load external dynamic fragments;
+the architecture regression forbids imperative presentation factories in these migrated
+controllers. Settings sections can use `Dynamic Layout="HorizontalPager"`; ordinary slots
+remain vertical. The loader rejects a dynamic fragment outside a slot and rejects ordinary
+page IR inserted directly into a slot. Repeated fragment loading and clearing avoid scanning
+all owned instances for every appended row.
+
+Validation of the follow-up: 264 Desktop composition tests, 47 NXML tests and architecture
+checks across 69 projects passed. Windows x64 NativeAOT and full-trim publication both
+succeeded, and each published executable actually ran `--validate-shell` with exit 0.
+The pre-existing Jint IL2098 warning remains. Native Avalonia previews exercised light/dark
+settings and network pages, resource filters and directory renaming; resource preview data
+was a fixture, not a live upstream availability check. Targeted resource-service regressions
+also cover single-task batch success/failure, source/category cache separation and actual
+provider query mapping.
+
+This does not complete the entire static/dynamic extraction: other Settings sections,
+resource detail/list projections, installation rows, task cards and several remaining
+controllers still create presentation nodes. They must be migrated in subsequent bounded
+slices before extending the no-factory architecture rule to the entire Desktop project.
+The Dynamic API and two migrated network controllers are complete; whole-Desktop
+externalization is still in progress.

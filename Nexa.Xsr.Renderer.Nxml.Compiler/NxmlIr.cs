@@ -19,6 +19,7 @@ public enum NxmlRuntimeRecipe
     TextInput = 7,
     Progress = 8,
     HorizontalPager = 9,
+    DynamicSlot = 10,
 }
 
 /// <summary>
@@ -45,6 +46,8 @@ public sealed record NxmlIrNode
     public NxmlRuntimeRecipe Recipe { get; init; }
 
     public IReadOnlyList<NxmlIrNode> Children { get; init; } = [];
+
+    public NxmlRuntimeRecipe SlotLayout { get; init; } = NxmlRuntimeRecipe.StackLayout;
 
     public double? Width { get; init; }
 
@@ -96,6 +99,7 @@ public sealed record NxmlIrNode
     public string? ImageSource { get; init; }
     public string? Placeholder { get; init; }
     public bool IsPassword { get; init; }
+    public int MaximumLength { get; init; } = 2048;
     public bool Enabled { get; init; } = true;
     public string? TransitionKey { get; init; }
     public double TransitionOffsetX { get; init; }
@@ -117,6 +121,7 @@ public sealed record NxmlIrNode
 /// </summary>
 public sealed class NxmlHostIr(NxmlIrNode root)
 {
+    public bool IsDynamic { get; internal init; }
     public NxmlIrNode Root { get; } = root ?? throw new ArgumentNullException(nameof(root));
 }
 
