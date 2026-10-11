@@ -1,0 +1,1 @@
+<nxml-dynamic><Node Recipe="Text" Content="数据位置&#10;{data directory}&#10;&#10;必要遥测：已启用&#10;诊断信息：{data diagnostic}" Localize="false" /></nxml-dynamic>

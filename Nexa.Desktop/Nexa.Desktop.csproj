@@ -11,6 +11,7 @@
     <AssemblyMetadata Include="NexaLittleSkinClientId" Condition="'$(NexaLittleSkinClientId)' != ''" Value="$(NexaLittleSkinClientId)" />
     <Content Include="Ui/**/*.nxml;Ui/**/*.nss;Ui/Localization/messages.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="Assets/api-client.pfx" Condition="Exists('Assets/api-client.pfx')" />
+    <Content Include="Assets/icon.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="Assets/icon.png" />
     <EmbeddedResource Include="Assets/icon.ico" />
     <EmbeddedResource Include="Assets/Brand/neon-n-light.png" />

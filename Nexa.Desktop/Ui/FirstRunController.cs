@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer.Nxml;
+﻿using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Composition;
 using Nexa.Services.Setup;
 using Nexa.Xsr.Renderer;
@@ -10,7 +10,10 @@ namespace Nexa.Desktop.Ui;
 internal static class FirstRunState
 {
     public static readonly XsrSemanticId Wake = XsrSemanticId.Parse("setup.presentation.wake");
-    public static void Declare(XsrStateStoreBuilder builder) => builder.Cell<long>(Wake, "Nexa.Desktop.Setup");
+    public static readonly XsrSemanticId Step=XsrSemanticId.Parse("setup.presentation.step");
+    public static readonly XsrSemanticId NavigationVisible=XsrSemanticId.Parse("setup.presentation.navigation_visible");
+    public static void Declare(XsrStateStoreBuilder builder)
+    {builder.Cell<long>(Wake,"Nexa.Desktop.Setup");builder.Cell<string>(Step,"Nexa.Desktop.Setup");builder.Cell<bool>(NavigationVisible,"Nexa.Desktop.Setup");}
 }
 
 /// <summary>Presentation-only setup draft. Persistence crosses sealed Service routes.</summary>
@@ -30,6 +33,14 @@ internal sealed class FirstRunController : IDisposable
     private Task<string?>? _picking;
     private Task<XsrResult>? _saving;
     private int _pickStep;
+    private long _viewEpoch,_pickEpoch;
+    private bool _active=true;
+    private readonly NxmlDynamicContent _dynamic;
+    private readonly XsrUiEntityId _workspace;
+    private Dictionary<string,string> _projection=[];
+    private string _error="";
+    private static readonly Lazy<NxmlIrNode> Metrics=new(()=>DesktopMarkup.Load("FirstRunMetrics.nxml").Root);
+
     private string _directory;
     private bool _consent;
     private bool _disposed;
@@ -44,44 +55,18 @@ internal sealed class FirstRunController : IDisposable
         _store = store;
         _pickDirectory = pickDirectory; _close = close; _directory = status.DataDirectory;
         _consent = status.TelemetryRequired;
-        using var stream = DesktopMarkup.Open("FirstRunPage.nxml")!;
-        using var reader = new StreamReader(stream);
-        var host = shell.Tree.Create("setup-loader");
-        Page = NxmlUiLoader.Load(DesktopMarkup.Compile(NxmlParser.Parse(reader.ReadToEnd())), shell.Tree, store, host);
-        shell.Tree.Detach(Page); shell.Tree.Destroy(host);
-        shell.Tree.Walk(Page, entity => { _nodes[shell.Tree.Name(entity)] = entity; return true; });
-        shell.Tree.GetComponent<XsrUiElement>(shell.Navigation)!.IsVisible = false;
+        _dynamic=new(shell.Tree,store);
+        Page=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("FirstRunPage.nxml"),shell.Tree,store);
+        var slot=shell.Tree.Children(Page).Single();
+        _projection=Projection();
+        _workspace=_dynamic.Append(slot,DesktopMarkup.Dynamic("FirstRunWorkspace.d.nxml",_projection));
+        shell.Tree.Walk(_workspace,entity=>{_nodes[shell.Tree.Name(entity)]=entity;return true;});
+        _store.Publish(_store.Resolve(FirstRunState.NavigationVisible),false);
         shell.Stage.Navigation.Replace(Page);
-        foreach (var (name, entity) in _nodes)
-        {
-            if (!name.StartsWith("Setup", StringComparison.Ordinal)) continue;
-            bool button = shell.Tree.GetComponent<XsrUiInput>(entity) is not null;
-            Style(name, button ? DesktopUiPalette.CapsuleBackground : XsrUiColor.Transparent,
-                button ? DesktopUiPalette.CapsuleForeground : new(52, 61, 74), name == "SetupTitle" ? 32 : 15, name == "SetupTitle" ? 600 : 400);
-            if (shell.Tree.GetComponent<XsrUiText>(entity) is { } text) { text.MaxLines = 0; text.TrimOverflow = true; }
-            shell.Tree.GetComponent<XsrUiVisualStyle>(entity)!.WrapText = !button;
-        }
-        using (var icon = typeof(FirstRunController).Assembly.GetManifestResourceStream("Nexa.Desktop.Assets.icon.png"))
-        {
-            if (icon is not null)
-            {
-                using var bytes = new MemoryStream(); icon.CopyTo(bytes);
-                if (Nexa.Core.Media.PngImage.TryCreate(bytes.ToArray()) is { } image)
-                    shell.Tree.GetComponent<XsrUiImage>(_nodes["SetupHero"])!.Raster = new(image, []) { FitToBounds = true };
-            }
-        }
-        Style("SetupPathSurface", new(243, 246, 250), new(52, 61, 74), 14);
-        Style("SetupSummarySurface", new(243, 246, 250), new(52, 61, 74), 14);
-        // Keep progress outside the welcome centering region.
-        shell.Tree.SetComponent(_nodes["SetupStep"], new XsrUiOverlayLayer(isModal: false));
-        shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupStep"])!.VerticalAlignment = XsrUiAlignment.Start;
-        Style("SetupStep", XsrUiColor.Transparent, new(122, 138, 153), 13);
-        Style("SetupDescription", XsrUiColor.Transparent, new(96, 108, 124), 16);
-        Style("SetupError", XsrUiColor.Transparent, new(173, 48, 48), 14);
-        Style("SetupStart", new(11, 91, 203), new(255, 255, 255), 15, 600);
-        Style("SetupNext", new(11, 91, 203), new(255, 255, 255), 15, 600);
-        shell.Tree.SetComponent(_nodes["SetupTitle"], new XsrUiTransition());
-        shell.Tree.SetComponent(_nodes["SetupDescription"], new XsrUiTransition());
+        string iconPath=Path.Combine(AppContext.BaseDirectory,DesktopBootstrapText.Raw("setup.icon"));
+        if(File.Exists(iconPath) && new FileInfo(iconPath).Length<=16*1048576
+            && Nexa.Core.Media.PngImage.TryCreate(File.ReadAllBytes(iconPath)) is { } icon)
+            shell.Tree.GetComponent<XsrUiImage>(_nodes["SetupHero"])!.Raster=new(icon,[]){FitToBounds=true};
         _intents.IntentEmitted += OnIntent;
         shell.Renderer.FramePreparing += OnFrame;
         Update();
@@ -89,34 +74,24 @@ internal sealed class FirstRunController : IDisposable
 
     private void OnIntent(object? sender, DesktopUiIntentEventArgs args)
     {
-        if (!_disposed && args.Intent.Command.Value.StartsWith("ui.setup.", StringComparison.Ordinal)) _pending.Enqueue(args.Intent.Command.Value);
+        if(!_disposed && _shell.Stage.Navigation.Current==Page
+            && args.Intent.Command.Value.StartsWith("ui.setup.",StringComparison.Ordinal)
+            && (!args.Intent.Source.IsAssigned || Admitted(args.Intent.Source,args.Intent.Command)))
+            _pending.Enqueue(args.Intent.Command.Value);
     }
 
     private void OnFrame(object? sender, EventArgs args)
     {
         if (_disposed || Completed) return;
-        var frame = _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupFrame"])!;
-        double width = Math.Min(768, Math.Max(240, _shell.Renderer.Viewport.Width - 72));
-        var body = _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupBody"])!;
-        double? bodyWidth = Step == 0 ? Math.Min(600, width) : null;
-        if (body.Width != bodyWidth)
-        {
-            body.Width = bodyWidth;
-            body.HorizontalAlignment = Step == 0 ? XsrUiAlignment.Center : XsrUiAlignment.Stretch;
-            _shell.Tree.MarkDirty(_nodes["SetupBody"], XsrUiDirtyKinds.Layout);
-        }
-        if (frame.Width != width)
-        {
-            frame.Width = width;
-            _shell.Tree.MarkDirty(Page, XsrUiDirtyKinds.Layout);
-        }
+        if(_shell.Stage.Navigation.Current!=Page){if(_active){_active=false;_viewEpoch++;}return;}
+        _active=true;
         if (_picking is { IsCompleted: true } picked)
         {
             _picking = null;
-            if (Step == _pickStep)
+            if (Step == _pickStep && _pickEpoch==_viewEpoch)
             {
                 if (picked.IsCompletedSuccessfully && picked.Result is { } directory) _directory = directory;
-                else if (picked.IsFaulted) Error("无法打开文件夹选择器，请重试。");
+                else if (picked.IsFaulted) Error(Copy("setup.error.picker"));
                 Update();
             }
         }
@@ -125,13 +100,14 @@ internal sealed class FirstRunController : IDisposable
             _saving = null;
             if (PendingQuery.Succeeded(saved))
             { Completed = true; _close(); return; }
-            Error(saved.IsCompletedSuccessfully ? saved.Result.Error?.Message ?? "未能保存设置。" : "未能保存设置，请重试。");
+            Error(saved.IsCompletedSuccessfully ? saved.Result.Error?.Message ?? Copy("setup.error.save") : Copy("setup.error.retry"));
             Update();
         }
         while (_pending.TryDequeue(out string? command))
         {
             if (_saving is not null || _picking is not null) continue;
             Error("");
+            int previous=Step;
             switch (command)
             {
                 case "ui.setup.back" when Step > 0: Step--; break;
@@ -142,14 +118,17 @@ internal sealed class FirstRunController : IDisposable
                         _saving = _runtime.Commands.Dispatch(route, new FirstRunCompleteCommand(_directory, _consent), cancellationToken: _stop.Token).Completion;
                         WakeWhenCompleted(_saving);
                     }
+                    else Error(Copy("setup.error.route"));
                     break;
                 case "ui.setup.browse" when Step == 1 && !_status.LocationLocked:
-                    _pickStep = Step; _picking = PickAsync(); WakeWhenCompleted(_picking); break;
+                    _pickStep = Step; _pickEpoch=_viewEpoch; _picking = PickAsync(); WakeWhenCompleted(_picking); break;
                 case "ui.setup.private" when Step == 2 && !_status.TelemetryRequired: _consent = false; break;
                 case "ui.setup.share" when Step == 2: _consent = true; break;
             }
+            if(Step!=previous)_viewEpoch++;
             Update();
         }
+        Update();
     }
 
     private async Task<string?> PickAsync() => await _pickDirectory().ConfigureAwait(false);
@@ -157,72 +136,62 @@ internal sealed class FirstRunController : IDisposable
     {
         if (!_disposed) _store.Publish(_store.Resolve(FirstRunState.Wake), Interlocked.Increment(ref _wake));
     }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+    private string Copy(string key)=>_shell.Renderer.LocalizeText(DesktopBootstrapText.Raw(key));
+    private static string Flag(bool value)=>value?"true":"false";
+    private Dictionary<string,string> Projection()=>Project(_shell,_status,_directory,_consent,Step,_saving is not null,_picking is not null,_error);
+    internal static Dictionary<string,string> Project(XsrUiShell shell,FirstRunStatus status,string directory,
+        bool consent,int step,bool saving,bool picking,string error)
+    {
+        if(step is <0 or >3 || status.TelemetryRequired&&!consent)throw new ArgumentException("Invalid setup projection.");
+        string Copy(string key)=>shell.Renderer.LocalizeText(DesktopBootstrapText.Raw(key));
+        string Format(string key,Dictionary<string,string> data)=>DesktopBootstrapText.Format(key,data,shell.Renderer.LocalizeText);
+        var metrics=Metrics.Value;
+        if(metrics.MinWidth is not >0 || metrics.MaxWidth is not >0)throw new NxmlCompileException("First-run viewport metrics are incomplete.");
+        double width=Math.Min(metrics.MaxWidth.Value,Math.Max(metrics.MinWidth.Value,
+            shell.Renderer.Viewport.Width-metrics.Padding.Left-metrics.Padding.Right));
+        bool welcome=step==0,enabled=!saving&&!picking;
+        string stepKey=step.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        string title=Copy(step==2&&status.TelemetryRequired?"setup.title.required":"setup.title."+stepKey);
+        string description=Copy(step==1&&status.LocationLocked?"setup.description.locked"
+            :step==2&&status.TelemetryRequired?"setup.description.required":"setup.description."+stepKey);
+        string ConsentText(bool selected,string label)=>Format("Consent",new(){["marker"]=selected?"✓":"  ",["label"]=Copy(label)});
+        return new(){["frameWidth"]=width.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["bodyStyle"]="setup-base setup-body-"+(welcome?"welcome":"flow"),["heroStyle"]="setup-base setup-hero-"+(welcome?"welcome":"flow"),
+            ["formStyle"]="setup-base setup-form-"+(welcome?"welcome":"flow"),
+            ["progress"]=Format("Step",new(){["step"]=(step+1).ToString(System.Globalization.CultureInfo.InvariantCulture),["label"]=Copy("setup.label."+stepKey)}),
+            ["title"]=title,["description"]=description,["directory"]=directory,
+            ["summary"]=Format("Summary",new(){["directory"]=directory,["diagnostic"]=Copy(consent?"setup.enabled":"setup.disabled")}),
+            ["welcome"]=Flag(welcome),["flow"]=Flag(!welcome),["directoryVisible"]=Flag(step==1),["consentVisible"]=Flag(step==2),["summaryVisible"]=Flag(step==3),
+            ["browseVisible"]=Flag(!status.LocationLocked),["privateVisible"]=Flag(!status.TelemetryRequired),
+            ["privateText"]=ConsentText(!consent,"setup.consent.private"),["shareText"]=ConsentText(consent,status.TelemetryRequired?"setup.consent.required":"setup.consent.share"),
+            ["privateStyle"]="layout-FirstRunPage-SetupPrivate setup-base setup-button setup-consent-"+(!consent?"on":"off"),
+            ["shareStyle"]="layout-FirstRunPage-SetupShare setup-base setup-button setup-consent-"+(consent?"on":"off"),
+            ["nextText"]=Copy(saving?"setup.action.saving":step==3?"setup.action.finish":welcome?"setup.action.start":"setup.action.continue"),
+            ["enabled"]=Flag(enabled),["shareEnabled"]=Flag(enabled&&!status.TelemetryRequired),["error"]=error,["errorVisible"]=Flag(error.Length>0)};
+    }
     private void Update()
     {
-        var hero = _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupHero"])!;
-        hero.Width = hero.Height = Step == 0 ? 144 : 64;
-        hero.VerticalAlignment = Step == 0 ? XsrUiAlignment.Center : XsrUiAlignment.Start;
-        _shell.Tree.MarkDirty(_nodes["SetupHero"], XsrUiDirtyKinds.Layout);
-        _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupForm"])!.VerticalAlignment =
-            Step == 0 ? XsrUiAlignment.Center : XsrUiAlignment.Stretch;
-        _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupBody"])!.Margin =
-            Step == 0 ? default : new(0, 42, 0, 0);
-        _shell.Tree.MarkDirty(_nodes["SetupBody"], XsrUiDirtyKinds.Layout);
-        string[] labels = ["欢迎", "数据位置", "数据与诊断", "完成"];
-        string[] titles = ["欢迎使用 NexaCL", "为数据选择一个位置", "选择诊断信息的共享方式", "准备好了"];
-        if (_status.TelemetryRequired) titles[2] = "帮助改进测试版本";
-        string[] descriptions = ["先完成几项设置，然后开始你的 Minecraft。",
-            "账户、设置、缓存和日志将保存在这里。游戏目录单独管理。" + (_status.LocationLocked ? "\n此位置由环境变量指定。" : "\n更换位置时，请选择一个空文件夹。"),
-            "必要遥测始终启用，用于统计应用运行和更新结果。\n可选诊断信息用于用户体验改进计划，包含脱敏错误堆栈、耗时、资源占用、算法指标、功能使用情况、模组清单、加载器版本和游戏设置变化，可在设置中关闭。不上传账户、路径或日志正文。",
-            "确认以下选择。开始使用后，NexaCL 会自动重新打开。"];
-        if (_status.TelemetryRequired) descriptions[2] = "必要遥测始终启用。CI、Alpha 和 Beta 还必须启用诊断信息，用于用户体验改进计划。\n诊断包含脱敏错误堆栈、耗时、资源占用、算法指标、功能使用情况、模组清单、加载器版本和游戏设置变化，不上传账户、路径或日志正文。";
-        SetText("SetupStep", $"{Step + 1} / 4 · {_shell.Renderer.LocalizeText(labels[Step])}"); SetText("SetupTitle", titles[Step]); SetText("SetupDescription", descriptions[Step]);
-        SetText("SetupPath", _directory); SetText("SetupSummary", $"数据位置\n{_directory}\n\n必要遥测：已启用\n诊断信息：{_shell.Renderer.LocalizeText(_consent ? "已启用" : "已关闭")}");
-        DesktopLiteralText.Preserve(_shell.Tree, _nodes["SetupPath"]);
-        Show("SetupStart", Step == 0); Show("SetupFooter", Step > 0);
-        Show("SetupDirectory", Step == 1); Show("SetupConsent", Step == 2); Show("SetupSummary", Step == 3); Show("SetupSummarySurface", Step == 3); Show("SetupBack", Step > 0);
-        Show("SetupBrowse", !_status.LocationLocked);
-        Show("SetupPrivate", !_status.TelemetryRequired);
-        SetText("SetupPrivate", (!_consent ? "✓  " : "    ") + "仅共享必要遥测");
-        SetText("SetupShare", (_consent ? "✓  " : "    ") + "同时共享诊断信息");
-        foreach (string key in new[] { "SetupPrivate", "SetupShare" })
-            Style(key, ((key == "SetupShare") == _consent) ? DesktopUiPalette.CapsuleBackground : new(243, 246, 250), new(52, 61, 74), 15);
-        SetText("SetupNext", _saving is not null ? "正在保存…" : Step == 3 ? "开始使用" : Step == 0 ? "开始配置" : "继续");
-        foreach (string key in new[] { "SetupBack", "SetupNext", "SetupStart", "SetupBrowse", "SetupPrivate", "SetupShare" })
-            _shell.Tree.GetComponent<XsrUiInput>(_nodes[key])!.Enabled = _saving is null && _picking is null;
-        if (_status.TelemetryRequired)
-        {
-            SetText("SetupShare", "✓  测试版本必须启用");
-            _shell.Tree.GetComponent<XsrUiInput>(_nodes["SetupShare"])!.Enabled = false;
-        }
-        foreach (string key in new[] { "SetupTitle", "SetupDescription" })
-            _shell.Tree.GetComponent<XsrUiTransition>(_nodes[key])!.Key = Step.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        _shell.Tree.MarkDirty(Page, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+        string step=Step.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var id=_store.Resolve(FirstRunState.Step);if(!Equals(_store.ReadAppliedValue(id),step))_store.Publish(id,step);
+        var data=Projection();
+        if(data.Count==_projection.Count && data.All(pair=>_projection.GetValueOrDefault(pair.Key)==pair.Value))return;
+        _dynamic.Reload(_workspace,DesktopMarkup.Dynamic("FirstRunWorkspace.d.nxml",data));_projection=data;
     }
-    private void SetText(string key, string value)
+    private void Error(string message)=>_error=message;
+    private bool Admitted(XsrUiEntityId source,XsrSemanticId command)
     {
-        var node = _nodes[key]; _shell.Tree.GetComponent<XsrUiText>(node)!.Content = value;
-        if (_shell.Tree.GetComponent<XsrUiSemantic>(node) is { } semantic) semantic.Label = value;
-        _shell.Tree.MarkDirty(node, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+        if(!_shell.Tree.IsAlive(source) || _shell.Tree.GetComponent<XsrUiInput>(source) is not {Enabled:true}
+            || _shell.Tree.GetComponent<XsrUiCommandBinding>(source)?.Command!=command)return false;
+        for(var node=source;node.IsAssigned;node=_shell.Tree.Parent(node))
+        {if(_shell.Tree.GetComponent<XsrUiElement>(node) is {IsVisible:false})return false;if(node==_workspace)return true;}
+        return false;
     }
-    private void Show(string key, bool value) => _shell.Tree.GetComponent<XsrUiElement>(_nodes[key])!.IsVisible = value;
-    private void Error(string message) { SetText("SetupError", message); Show("SetupError", message.Length > 0); }
-    private void Style(string key, XsrUiColor background, XsrUiColor foreground, double size, double weight = 400) =>
-        _shell.Tree.SetComponent(_nodes[key], new XsrUiVisualStyle
-        {
-            Background = background,
-            Foreground = foreground,
-            FontSize = size,
-            FontWeight = weight,
-            TextAlignment = _shell.Tree.GetComponent<XsrUiInput>(_nodes[key]) is null ? XsrUiTextAlignment.Start : XsrUiTextAlignment.Center,
-            WrapText = _shell.Tree.GetComponent<XsrUiInput>(_nodes[key]) is null,
-            CornerRadius = key is "SetupNext" or "SetupStart" ? 22 : 10,
-            Hover = DesktopUiPalette.CapsuleHover,
-            Surface = XsrUiSurfaceKind.Solid
-        });
     public void Dispose()
     {
+        if(_disposed)return;
         _disposed = true; _stop.Cancel();
         _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame;
+        _dynamic.Remove(_workspace);
+        _store.Publish(_store.Resolve(FirstRunState.NavigationVisible),true);
     }
 }

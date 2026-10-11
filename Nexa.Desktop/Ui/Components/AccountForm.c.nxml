@@ -1,36 +1,36 @@
 <nxml-component>
-  <StackPanel Key="AccountForm" Scroll="true" IsVisible="{state account.form.open}" Class="layout-AccountForm-AccountForm">
-    <StackPanel Key="ProviderChoices" IsVisible="{state account.form.providers}" Class="layout-AccountForm-ProviderChoices">
-      <Button Key="ProviderMicrosoft" Label="Microsoft 账户" Content="Microsoft 账户" Command="ui.account.microsoft" Class="layout-AccountForm-ProviderMicrosoft" />
-      <Button Key="ProviderLittleSkin" Label="LittleSkin 账户" Content="LittleSkin 账户" Command="ui.account.littleskin" Class="layout-AccountForm-ProviderLittleSkin" />
-      <Button Key="ProviderThirdParty" Label="第三方账户" Content="第三方账户" Command="ui.account.third-party" Class="layout-AccountForm-ProviderThirdParty" />
-      <Button Key="ProviderOffline" Label="离线档案" Content="离线档案" Command="ui.account.offline" Class="layout-AccountForm-ProviderOffline" />
+  <StackPanel Key="AccountForm" Scroll="true" IsVisible="{state account.form.open}" Class="layout-AccountForm-AccountForm account-base">
+    <StackPanel Key="ProviderChoices" IsVisible="{state account.form.providers}" Class="layout-AccountForm-ProviderChoices account-base">
+      <Button Key="ProviderMicrosoft" Label="Microsoft 账户" Content="Microsoft 账户" Command="ui.account.microsoft" Class="layout-AccountForm-ProviderMicrosoft account-base account-button" MaxLines="1" TrimOverflow="true" />
+      <Button Key="ProviderLittleSkin" Label="LittleSkin 账户" Content="LittleSkin 账户" Command="ui.account.littleskin" Class="layout-AccountForm-ProviderLittleSkin account-base account-button" MaxLines="1" TrimOverflow="true" />
+      <Button Key="ProviderThirdParty" Label="第三方账户" Content="第三方账户" Command="ui.account.third-party" Class="layout-AccountForm-ProviderThirdParty account-base account-button" MaxLines="1" TrimOverflow="true" />
+      <Button Key="ProviderOffline" Label="离线档案" Content="离线档案" Command="ui.account.offline" Class="layout-AccountForm-ProviderOffline account-base account-button" MaxLines="1" TrimOverflow="true" />
     </StackPanel>
-    <StackPanel Key="OfflineForm" IsVisible="{state account.form.offline}" Class="layout-AccountForm-OfflineForm">
-      <Text Content="游戏名称" Class="layout-AccountForm-8" />
-      <TextInput Key="OfflineName" Label="离线游戏名称" Placeholder="Player" Enabled="{state account.form.submit}" />
-      <Text Key="OfflineHelp" Content="1–16 位英文字母、数字或下划线" Class="layout-AccountForm-OfflineHelp" />
+    <StackPanel Key="OfflineForm" IsVisible="{state account.form.offline}" Class="layout-AccountForm-OfflineForm account-base">
+      <Text Content="游戏名称" Class="layout-AccountForm-8 account-base" MaxLines="0" TrimOverflow="true" />
+      <TextInput Key="OfflineName" Label="离线游戏名称" Placeholder="Player" Enabled="{state account.form.submit}" Class="account-base account-input" />
+      <Text Key="OfflineHelp" Content="1–16 位英文字母、数字或下划线" Class="layout-AccountForm-OfflineHelp account-base account-help" MaxLines="0" TrimOverflow="true" />
     </StackPanel>
-    <StackPanel Key="ThirdPartyForm" IsVisible="{state account.form.third-party}" Class="layout-AccountForm-ThirdPartyForm">
-      <TextInput Key="AuthServer" Label="认证服务器地址" Placeholder="https://认证服务器" Enabled="{state account.form.submit}" />
-      <TextInput Key="AuthUsername" Label="登录名或邮箱" Placeholder="登录名或邮箱" Enabled="{state account.form.submit}" />
-      <TextInput Key="AuthPassword" Label="密码" Placeholder="密码" IsPassword="true" Enabled="{state account.form.submit}" />
-      <Text Key="ServerPrivacy" Content="登录信息仅发送到你填写的认证服务器。" Class="layout-AccountForm-ServerPrivacy" />
+    <StackPanel Key="ThirdPartyForm" IsVisible="{state account.form.third-party}" Class="layout-AccountForm-ThirdPartyForm account-base">
+      <TextInput Key="AuthServer" Label="认证服务器地址" Placeholder="https://认证服务器" Enabled="{state account.form.submit}" Class="account-base account-input" />
+      <TextInput Key="AuthUsername" Label="登录名或邮箱" Placeholder="登录名或邮箱" Enabled="{state account.form.submit}" Class="account-base account-input" />
+      <TextInput Key="AuthPassword" Label="密码" Placeholder="密码" IsPassword="true" Enabled="{state account.form.submit}" Class="account-base account-input" />
+      <Text Key="ServerPrivacy" Content="登录信息仅发送到你填写的认证服务器。" Class="layout-AccountForm-ServerPrivacy account-base account-help" MaxLines="0" TrimOverflow="true" />
     </StackPanel>
-    <StackPanel Key="ImportForm" IsVisible="{state account.form.import}" Class="layout-AccountForm-ImportForm">
-      <Text Key="ImportHelp" Content="导入旧 Nexa 档案，不修改旧文件。" Class="layout-AccountForm-ImportHelp" />
-      <TextInput Key="ImportPath" Label="档案文件路径" Placeholder="launch-profiles.json" Enabled="{state account.form.submit}" />
-      <Button Key="BrowseProfiles" Label="选择档案文件" Content="选择文件…" Command="ui.account.browse" Class="layout-AccountForm-BrowseProfiles" />
-      <StackPanel Key="ImportCandidates" Class="layout-AccountForm-ImportCandidates" />
+    <StackPanel Key="ImportForm" IsVisible="{state account.form.import}" Class="layout-AccountForm-ImportForm account-base">
+      <Text Key="ImportHelp" Content="导入旧 Nexa 档案，不修改旧文件。" Class="layout-AccountForm-ImportHelp account-base account-help" MaxLines="0" TrimOverflow="true" />
+      <TextInput Key="ImportPath" Label="档案文件路径" Placeholder="launch-profiles.json" Enabled="{state account.form.submit}" Class="account-base account-input" />
+      <Button Key="BrowseProfiles" Label="选择档案文件" Content="选择文件…" Command="ui.account.browse" Class="layout-AccountForm-BrowseProfiles account-base account-button" MaxLines="1" TrimOverflow="true" />
+      <Dynamic Key="ImportCandidates" Class="layout-AccountForm-ImportCandidates account-base account-base" />
     </StackPanel>
-    <StackPanel Key="DeviceCode" IsVisible="{state account.form.code}" Class="layout-AccountForm-DeviceCode">
-      <Text Key="UserCode" Content="{state account.form.user-code}" Class="layout-AccountForm-UserCode" />
-      <Button Key="OpenAuthorization" Label="在浏览器中授权" Content="在浏览器中授权" Command="ui.account.authorize" Class="layout-AccountForm-OpenAuthorization" />
-      <Button Key="CopyUserCode" Label="复制授权码" Content="复制授权码" Command="ui.account.copy-code" Class="layout-AccountForm-CopyUserCode" />
+    <StackPanel Key="DeviceCode" IsVisible="{state account.form.code}" Class="layout-AccountForm-DeviceCode account-base">
+      <Text Key="UserCode" Content="{state account.form.user-code}" Class="layout-AccountForm-UserCode account-base account-code" Localize="false" MaxLines="0" TrimOverflow="true" />
+      <Button Key="OpenAuthorization" Label="在浏览器中授权" Content="在浏览器中授权" Command="ui.account.authorize" Class="layout-AccountForm-OpenAuthorization account-base account-button account-primary" MaxLines="1" TrimOverflow="true" />
+      <Button Key="CopyUserCode" Label="复制授权码" Content="复制授权码" Command="ui.account.copy-code" Class="layout-AccountForm-CopyUserCode account-base account-button" MaxLines="1" TrimOverflow="true" />
     </StackPanel>
-    <StackPanel Key="CharacterChoices" IsVisible="{state account.form.characters}" Class="layout-AccountForm-CharacterChoices" />
-    <Text Key="FormStatus" Content="{state account.form.status}" IsVisible="{state account.form.status-visible}" Class="layout-AccountForm-FormStatus" />
-    <Button Key="FormSubmit" Label="{state account.form.submit-label}" Content="{state account.form.submit-label}" Command="ui.account.submit" IsVisible="{state account.form.submit}" Class="layout-AccountForm-FormSubmit" />
-    <Button Key="FormCancel" Label="取消登录" Content="取消" Command="ui.account.cancel" IsVisible="{state account.form.busy}" Class="layout-AccountForm-FormCancel" />
+    <Dynamic Key="CharacterChoices" IsVisible="{state account.form.characters}" Class="layout-AccountForm-CharacterChoices account-base account-base" />
+    <Text Key="FormStatus" Content="{state account.form.status}" IsVisible="{state account.form.status-visible}" Class="layout-AccountForm-FormStatus account-base account-help" Localize="false" MaxLines="0" TrimOverflow="true" />
+    <Button Key="FormSubmit" Label="{state account.form.submit-label}" Content="{state account.form.submit-label}" Command="ui.account.submit" IsVisible="{state account.form.submit}" Class="layout-AccountForm-FormSubmit account-base account-button account-primary" MaxLines="1" TrimOverflow="true" Localize="false" />
+    <Button Key="FormCancel" Label="取消登录" Content="取消" Command="ui.account.cancel" IsVisible="{state account.form.busy}" Class="layout-AccountForm-FormCancel account-base account-button" MaxLines="1" TrimOverflow="true" />
   </StackPanel>
 </nxml-component>

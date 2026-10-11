@@ -1,0 +1,57 @@
+<nxml-page><Node Recipe="Element">
+  <Node Recipe="Text" Key="account.title.offline" Content="离线档案" Localize="false" />
+  <Node Recipe="Text" Key="account.title.third-party" Content="第三方账户" Localize="false" />
+  <Node Recipe="Text" Key="account.title.import" Content="导入旧档案" Localize="false" />
+  <Node Recipe="Text" Key="account.title.littleskin" Content="LittleSkin 账户" Localize="false" />
+  <Node Recipe="Text" Key="account.title.microsoft" Content="Microsoft 账户" Localize="false" />
+  <Node Recipe="Text" Key="account.title.providers" Content="添加账户" Localize="false" />
+  <Node Recipe="Text" Key="account.submit.import" Content="确认导入" Localize="false" />
+  <Node Recipe="Text" Key="account.submit.offline" Content="创建档案" Localize="false" />
+  <Node Recipe="Text" Key="account.submit.device" Content="重新登录" Localize="false" />
+  <Node Recipe="Text" Key="account.submit.default" Content="登录并添加" Localize="false" />
+  <Node Recipe="Text" Key="account.import.choice" Content="使用已发现的旧档案" Localize="false" />
+  <Node Recipe="Text" Key="account.error.unregistered" Content="账户操作未注册。" Localize="false" />
+  <Node Recipe="Text" Key="account.error.session" Content="操作未完成，当前登录会话可能已结束，请重试。" Localize="false" />
+  <Node Recipe="Text" Key="account.error.picker" Content="无法打开文件选择器，也可以在上方填写文件路径。" Localize="false" />
+  <Node Recipe="Text" Key="account.error.address" Content="授权地址无效，请重新发起登录。" Localize="false" />
+  <Node Recipe="Text" Key="account.error.browser" Content="无法打开浏览器，请检查系统默认浏览器设置。" Localize="false" />
+  <Node Recipe="Text" Key="account.error.code" Content="授权码尚未生成，请稍后重试。" Localize="false" />
+  <Node Recipe="Text" Key="account.code.copied" Content="授权码已复制。" Localize="false" />
+  <Node Recipe="Text" Key="account.error.clipboard" Content="无法复制授权码，请手动输入。" Localize="false" />
+  <Node Recipe="Text" Key="setup.label.0" Content="欢迎" Localize="false" />
+  <Node Recipe="Text" Key="setup.label.1" Content="数据位置" Localize="false" />
+  <Node Recipe="Text" Key="setup.label.2" Content="数据与诊断" Localize="false" />
+  <Node Recipe="Text" Key="setup.label.3" Content="完成" Localize="false" />
+  <Node Recipe="Text" Key="setup.title.0" Content="欢迎使用 NexaCL" Localize="false" />
+  <Node Recipe="Text" Key="setup.title.1" Content="为数据选择一个位置" Localize="false" />
+  <Node Recipe="Text" Key="setup.title.2" Content="选择诊断信息的共享方式" Localize="false" />
+  <Node Recipe="Text" Key="setup.title.3" Content="准备好了" Localize="false" />
+  <Node Recipe="Text" Key="setup.title.required" Content="帮助改进测试版本" Localize="false" />
+  <Node Recipe="Text" Key="setup.description.0" Content="先完成几项设置，然后开始你的 Minecraft。" Localize="false" />
+  <Node Recipe="Text" Key="setup.description.1" Content="账户、设置、缓存和日志将保存在这里。游戏目录单独管理。&#10;更换位置时，请选择一个空文件夹。" Localize="false" />
+  <Node Recipe="Text" Key="setup.description.locked" Content="账户、设置、缓存和日志将保存在这里。游戏目录单独管理。&#10;此位置由环境变量指定。" Localize="false" />
+  <Node Recipe="Text" Key="setup.description.2" Content="必要遥测始终启用，用于统计应用运行和更新结果。&#10;可选诊断信息用于用户体验改进计划，包含脱敏错误堆栈、耗时、资源占用、算法指标、功能使用情况、模组清单、加载器版本和游戏设置变化，可在设置中关闭。不上传账户、路径或日志正文。" Localize="false" />
+  <Node Recipe="Text" Key="setup.description.required" Content="必要遥测始终启用。CI、Alpha 和 Beta 还必须启用诊断信息，用于用户体验改进计划。&#10;诊断包含脱敏错误堆栈、耗时、资源占用、算法指标、功能使用情况、模组清单、加载器版本和游戏设置变化，不上传账户、路径或日志正文。" Localize="false" />
+  <Node Recipe="Text" Key="setup.description.3" Content="确认以下选择。开始使用后，NexaCL 会自动重新打开。" Localize="false" />
+  <Node Recipe="Text" Key="setup.consent.private" Content="仅共享必要遥测" Localize="false" />
+  <Node Recipe="Text" Key="setup.consent.share" Content="同时共享诊断信息" Localize="false" />
+  <Node Recipe="Text" Key="setup.consent.required" Content="测试版本必须启用" Localize="false" />
+  <Node Recipe="Text" Key="setup.action.saving" Content="正在保存…" Localize="false" />
+  <Node Recipe="Text" Key="setup.action.finish" Content="开始使用" Localize="false" />
+  <Node Recipe="Text" Key="setup.action.start" Content="开始配置" Localize="false" />
+  <Node Recipe="Text" Key="setup.action.continue" Content="继续" Localize="false" />
+  <Node Recipe="Text" Key="setup.enabled" Content="已启用" Localize="false" />
+  <Node Recipe="Text" Key="setup.disabled" Content="已关闭" Localize="false" />
+  <Node Recipe="Text" Key="setup.error.picker" Content="无法打开文件夹选择器，请重试。" Localize="false" />
+  <Node Recipe="Text" Key="setup.error.save" Content="未能保存设置。" Localize="false" />
+  <Node Recipe="Text" Key="setup.error.retry" Content="未能保存设置，请重试。" Localize="false" />
+  <Node Recipe="Text" Key="setup.error.route" Content="设置保存操作尚不可用。" Localize="false" />
+  <Node Recipe="Text" Key="setup.icon" Content="Assets/icon.png" Localize="false" />
+  <Node Recipe="Text" Key="appearance.error.palette-length" Content="自定义主题不能超过 4096 个字符。" Localize="false" />
+  <Node Recipe="Text" Key="appearance.error.palette-shape" Content="主题需要 background、foreground、accent 三个颜色。" Localize="false" />
+  <Node Recipe="Text" Key="appearance.error.color" Content="主题颜色必须采用 #RRGGBB。" Localize="false" />
+  <Node Recipe="Text" Key="appearance.error.initial" Content="无法读取初始外观设置。" Localize="false" />
+  <Node Recipe="Text" Key="appearance.error.path" Content="外观图片需要本地 PNG 的绝对路径。" Localize="false" />
+  <Node Recipe="Text" Key="appearance.error.size" Content="外观图片不能超过 16 MiB。" Localize="false" />
+  <Node Recipe="Text" Key="appearance.error.dimensions" Content="外观图片尺寸不能超过 4096 × 4096。" Localize="false" />
+</Node></nxml-page>

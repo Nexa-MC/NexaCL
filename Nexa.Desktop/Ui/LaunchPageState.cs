@@ -1,4 +1,4 @@
-using Nexa.Xsr;
+﻿using Nexa.Xsr;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -52,6 +52,7 @@ internal static class LaunchPageState
     public static void DeclareState(XsrStateStoreBuilder builder)
     {
         FirstRunState.Declare(builder);
+        DesktopAppearancePresentationState.Declare(builder);
         VersionSelectionState.DeclareState(builder);
         SettingsPresentationState.DeclareState(builder);
         ResourcesPresentationState.DeclareState(builder);

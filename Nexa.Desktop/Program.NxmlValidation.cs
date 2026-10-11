@@ -470,4 +470,36 @@ internal static partial class Program
         Console.WriteLine("Dynamic version selection validation passed: owned virtual rows, literal names, retained directory draft and local anchor/viewport facts.");
     }
 
+    private static void ValidateDynamicBootstrap(XsrUiShell shell,Nexa.Xsr.State.XsrStateStore store)
+    {
+        var owner=new NxmlDynamicContent(shell.Tree,store);
+        var account=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("LaunchPage.nxml"),shell.Tree,store);
+        var setup=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("FirstRunPage.nxml"),shell.Tree,store);
+        var titleShell=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("Shell.nxml"),shell.Tree,store);
+        XsrUiEntityId Find(XsrUiEntityId root,string key)
+        {XsrUiEntityId found=default;shell.Tree.Walk(root,node=>{if(shell.Tree.Name(node)==key)found=node;return true;});return found;}
+        try
+        {
+            var form=owner.Append(Find(account,"AccountFormSlot"),DesktopMarkup.Dynamic("AccountFormWorkspace.d.nxml"));
+            var input=Find(form,"AuthPassword");var draft=shell.Tree.GetComponent<XsrUiTextInput>(input)!;shell.Renderer.SetTextInputValue(input,"fixture-secret");
+            var choice=owner.Append(Find(form,"ImportCandidates"),DesktopMarkup.Dynamic("AccountFormChoice.d.nxml",new Dictionary<string,string>
+                {["key"]="validation-account-choice",["text"]="literal <name> {state private}",["label"]="literal path"}));
+            owner.Reload(form,DesktopMarkup.Dynamic("AccountFormWorkspace.d.nxml"));
+            if(draft.ReadDraft()!="fixture-secret" || shell.Tree.GetComponent<XsrUiText>(choice)?.Content!="literal <name> {state private}")
+                throw new InvalidOperationException("Account projection replaced the draft or reparsed literal metadata.");
+            var status=new Nexa.Services.Setup.FirstRunStatus(true,"literal {state directory}",false){TelemetryRequired=true};
+            var fragment=owner.Append(shell.Tree.Children(setup).Single(),DesktopMarkup.Dynamic("FirstRunWorkspace.d.nxml",FirstRunController.Project(shell,status,status.DataDirectory,true,0,false,false,"")));
+            var transition=shell.Tree.GetComponent<XsrUiTransition>(Find(fragment,"SetupTitle"));
+            for(int step=1;step<4;step++)owner.Reload(fragment,DesktopMarkup.Dynamic("FirstRunWorkspace.d.nxml",FirstRunController.Project(shell,status,status.DataDirectory,true,step,false,false,"")));
+            if(!ReferenceEquals(transition,shell.Tree.GetComponent<XsrUiTransition>(Find(fragment,"SetupTitle")))
+                || shell.Tree.GetComponent<XsrUiText>(Find(fragment,"SetupPath"))?.Content!=status.DataDirectory)
+                throw new InvalidOperationException("Setup projection replaced motion identity or reparsed a directory.");
+            var logo=owner.Append(Find(titleShell,"CustomLauncherLogoSlot"),DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml",new Dictionary<string,string>{["visible"]="false"}));
+            owner.Reload(logo,DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml",new Dictionary<string,string>{["visible"]="true"}));
+            if(shell.Tree.GetComponent<XsrUiElement>(logo)?.IsVisible!=true)throw new InvalidOperationException("Custom logo projection did not reload.");
+            Console.WriteLine("Dynamic bootstrap validation passed: owned account/setup/logo fragments, retained secret draft and step motion, literal metadata.");
+        }
+        finally{shell.Tree.Destroy(account);shell.Tree.Destroy(setup);shell.Tree.Destroy(titleShell);}
+    }
+
 }

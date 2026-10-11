@@ -63,8 +63,6 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 | Resources | `ResourcesPageController.cs` and partial files | Search toolbar, categories, virtual rows, detail/version/dependency and install confirmation layouts; content and state variants must be external. |
 | Launch and installation | `LaunchPageController.InstallCatalog.cs`, `.Installation.cs`, `.FrameProjection.cs`, `.Styles.cs`, `BedrockInstallPageController.cs` | Catalog/loader rows, state panels, choice tracks and runtime presentation styling. |
 | Wardrobe | `WardrobePageController.cs`, `WardrobeLibraryPageController.cs` | Skin/cape cards, details, empty/loading/failure surfaces and interaction variants. |
-| Accounts and first run | `AccountFormController.cs`, `FirstRunController.cs` | Form structures, state copy, action availability and complete OOBE composition. |
-| Appearance | `CustomAppearanceSession.cs` | Separate runtime image/theme behavior from remaining fixed presentation construction. |
 
 Direct node/style/stack construction still remains across the other Desktop slices. This is a locator, not a completion metric: helpers can hide imperative layouts,
 and compiled renderer primitives/platform bridges are intentionally still code.
@@ -554,3 +552,47 @@ forget and delete continue through the existing service commands and confirmatio
   validation marker. The existing Jint IL2098 warning remains unsuppressed.
 - Scoped whitespace and diff checks pass. Artifacts: .tmp-cleanup-validation/version-nxml-*.
   Six main areas in the inventory remain open; the whole migration is still active.
+
+## Account/setup/appearance boundary
+
+Migrate the complete account onboarding form and its import/character choice collections,
+all four first-run steps and the custom title-logo presentation as one related group.
+External pages own explicit Dynamic slots; forms, choices, step projections and logo
+visibility reload from .d.nxml without replacing drafts, focus, scroll or transition
+objects. NSS declares fixed palettes, spacing and all welcome/flow/consent variants;
+viewport formulas read validated external metrics. Fixed titles, hints, confirmations,
+summary formats and validation copy are external; paths/usernames/provider errors are
+literal data localized only before substitution. Authentication/persistence remain
+sealed service routes with their existing cancellation/generation semantics. Passwords
+clear on submission and retirement; stale/hidden/foreign sources and late pickers do
+not gain authority from a new view. Preserve required test-channel diagnostics and
+necessary telemetry policy, centering, step transition, final-save admission and no
+persistence before Finish. Custom PNG/theme loading remains bounded off-thread and
+rejects stale generations; the renderer only receives immutable raster/palette data.
+
+## Account/setup/appearance verification, 2026-10-11
+
+- Full Desktop composition: 279 passed, zero failed. NXML compiler/runtime: 60
+  passed; architecture: 69 projects passed. No imperative node/style factories or
+  fixed presentation copy remain in the account, first-run or appearance controllers.
+- Account forms own their dynamic import/character rows. Language and viewport
+  updates retain entity identity, drafts, focus and caret. Hidden, retired and
+  foreign sources are rejected using applied visibility/enablement state; passwords
+  clear on retirement and submission. Discovery regressions use a controlled real
+  candidate source so background scans exercise the same reconciliation contract.
+- All four first-run steps project through one owned external workspace. Late
+  pickers cannot be adopted after leaving/returning to the same step. Required
+  test-channel diagnostics, unavailable private choice, save admission and no
+  persistence before Finish are covered. Bound step motion objects remain retained.
+- Actual Avalonia previews cover the account form and all four setup steps in both
+  themes, including an 800px viewport and forced diagnostics. The preview manifest
+  declares read-only fixture data; no account authorization or setup persistence occurs.
+- Custom logo visibility uses an owned fragment. PNG/theme decoding remains bounded,
+  asynchronous and generation-qualified; only immutable raster/palette data reaches
+  the renderer. Literal paths and provider metadata are never reparsed as markup.
+- Windows x64 NativeAOT and self-contained full-trim publications succeeded. Both
+  actual executables ran --validate-shell, exited 0 and positively emitted Dynamic
+  bootstrap validation passed. Existing Jint IL2098 remains unsuppressed.
+- Scoped whitespace formatting and diff checks pass. Artifacts are under
+  .tmp-cleanup-validation/bootstrap-*. Four main areas remain in the inventory;
+  the whole-product migration remains active.

@@ -1,5 +1,4 @@
-using System.Reflection;
-using Nexa.Xsr.Renderer.Nxml;
+﻿using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.State;
@@ -7,8 +6,8 @@ using Nexa.Xsr.State;
 namespace Nexa.Desktop.Ui;
 
 /// <summary>
-/// Loads the Desktop shell from the checked-in PXML template and adapts its compiled handles to
-/// the UI.Next shell contract. PXML owns structure and order; the platform backend owns pixels.
+/// Loads the Desktop shell from the checked-in NXML template and adapts its compiled handles to
+/// the Nexa.Xsr.Renderer shell contract. NXML owns structure and order; the platform backend owns pixels.
 /// </summary>
 public static class NxmlShellComposer
 {
@@ -40,15 +39,16 @@ public static class NxmlShellComposer
     {
         ArgumentNullException.ThrowIfNull(state);
         options ??= new XsrUiShellOptions();
+        state.Publish(state.Resolve(FirstRunState.NavigationVisible),true);
 
         // The checked-in product shell deliberately owns its four product destinations, matching
         // the legacy experimental navigation registry. A composition root must not claim a
-        // custom navigation contract when the PXML template cannot render it; future product
-        // navigation changes are explicit PXML edits.
+        // custom navigation contract when the NXML template cannot render it; future product
+        // navigation changes are explicit NXML edits.
         if (options.NavigationItems is not null)
         {
             throw new ArgumentException(
-                "The checked-in PXML product shell has a fixed navigation contract.",
+                "The checked-in NXML product shell has a fixed navigation contract.",
                 nameof(options));
         }
 
@@ -71,7 +71,7 @@ public static class NxmlShellComposer
         if (itemEntities.Length != defaults.Count)
         {
             throw new InvalidOperationException(
-                $"The PXML shell declares {itemEntities.Length} navigation items; expected {defaults.Count}.");
+                $"The NXML shell declares {itemEntities.Length} navigation items; expected {defaults.Count}.");
         }
 
         Dictionary<XsrSemanticId, XsrUiEntityId> navigationEntities = [];
@@ -79,15 +79,15 @@ public static class NxmlShellComposer
         {
             XsrUiEntityId entity = itemEntities[index];
             XsrUiSemantic semantic = tree.GetComponent<XsrUiSemantic>(entity)
-                ?? throw new InvalidOperationException("A PXML navigation item has no semantic component.");
+                ?? throw new InvalidOperationException("A NXML navigation item has no semantic component.");
             XsrUiCommandBinding command = tree.GetComponent<XsrUiCommandBinding>(entity)
-                ?? throw new InvalidOperationException("A PXML navigation item has no command binding.");
+                ?? throw new InvalidOperationException("A NXML navigation item has no command binding.");
             XsrUiShellNavigationItem expected = defaults[index];
             if (!string.Equals(semantic.Label, expected.Label, StringComparison.Ordinal)
                 || command.Command != expected.Command)
             {
                 throw new InvalidOperationException(
-                    $"PXML navigation item {index} does not match '{expected.Id}'.");
+                    $"NXML navigation item {index} does not match '{expected.Id}'.");
             }
 
             navigationEntities.Add(expected.Id, entity);
@@ -143,7 +143,7 @@ public static class NxmlShellComposer
             });
         return found.IsAssigned
             ? found
-            : throw new InvalidOperationException($"The PXML shell has no '{role}' entity.");
+            : throw new InvalidOperationException($"The NXML shell has no '{role}' entity.");
     }
 
     private static string ReadTemplate()

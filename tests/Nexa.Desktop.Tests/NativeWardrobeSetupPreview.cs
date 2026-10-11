@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Media.Imaging;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
@@ -22,6 +22,19 @@ internal static partial class Program
         await startup.InvokeAsync(async () =>
         {
             using var fixture = LibraryFixture(LaunchProfileKind.Microsoft);
+            File.WriteAllText(Path.Combine(output,"preview-data.txt"),"Actual Avalonia rendering of product controllers/templates. Skin/cape/profile identities and pending setup settings are read-only fixtures. No sign-in, account persistence, setup completion or game launch is performed.");
+            foreach(bool dark in WardrobePreviewThemes)
+            {
+                fixture.Shell.Renderer.ColorScheme=new(dark);string theme=dark?"dark":"light";
+                Emit(fixture.Intents,"ui.account.add");fixture.Shell.Render(new(1000,640));
+                await Capture(fixture.Shell,"account-providers-"+theme);
+                Emit(fixture.Intents,"ui.account.third-party");fixture.Shell.Render(new(1000,640));
+                fixture.Shell.Renderer.SetTextInputValue(FindEntity(fixture.Shell,"AuthUsername"),"literal user");
+                fixture.Shell.Renderer.SetTextInputValue(FindEntity(fixture.Shell,"AuthServer"),"https://example.invalid/auth");
+                await Capture(fixture.Shell,"account-third-party-"+theme);
+                await Capture(fixture.Shell,"account-third-party-compact-"+theme,800,600);
+                Emit(fixture.Intents,"ui.account.close");fixture.Shell.Render(new(1000,640));
+            }
             var queries = new XsrQueryRouterBuilder();
             var current = new AccountWardrobeResolvedTextures(null, null, true, null, null);
             queries.Register<AccountWardrobeQuery, AccountWardrobeSnapshot>(AccountWardrobeContract.Read, (_, _) =>
@@ -66,6 +79,17 @@ internal static partial class Program
                     await Capture(fixture.Shell, "setup-compact-" + step + "-" + (dark ? "dark" : "light"), 800, 600);
                 }
                 if (step < 3) { Emit(fixture.Intents, "ui.setup.next"); fixture.Shell.Render(new(1000, 640)); }
+            }
+            setup.Dispose();
+            using var required=new FirstRunController(fixture.Shell,fixture.Intents,fixture.Store,
+                FirstRunRuntimeComposer.Compose(service),service.Read() with {TelemetryRequired=true},()=>Task.FromResult<string?>(null),()=>{});
+            Emit(fixture.Intents,"ui.setup.next");fixture.Shell.Render(new(1000,640));
+            Emit(fixture.Intents,"ui.setup.next");fixture.Shell.Render(new(1000,640));
+            foreach(bool dark in WardrobePreviewThemes)
+            {
+                fixture.Shell.Renderer.ColorScheme=new(dark);
+                await Capture(fixture.Shell,"setup-required-"+(dark?"dark":"light"));
+                await Capture(fixture.Shell,"setup-required-compact-"+(dark?"dark":"light"),800,600);
             }
             async Task Capture(XsrUiShell shell, string name, int width = 1000, int height = 640)
             {

@@ -1,4 +1,5 @@
-using System.Globalization;
+﻿using System.Globalization;
+using Nexa.Xsr.Renderer.Nxml;
 using System.Text.Json;
 using System.Threading.Channels;
 using Nexa.Core.Media;
@@ -10,6 +11,12 @@ using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
+
+internal static class DesktopAppearancePresentationState
+{
+    internal static readonly XsrSemanticId LogoVisible=XsrSemanticId.Parse("shell.appearance.logo_visible");
+    internal static void Declare(XsrStateStoreBuilder builder)=>builder.Cell<bool>(LogoVisible,"Nexa.Desktop.Appearance");
+}
 
 /// <summary>Bounded local appearance assets are loaded off the render thread and published immutably.</summary>
 internal sealed class CustomAppearanceSession : IAsyncDisposable
@@ -24,6 +31,7 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
     private readonly CancellationToken _token;
     private readonly SemaphoreSlim _loading = new(1);
     private readonly XsrUiEntityId _logo, _background;
+    private readonly NxmlDynamicContent _dynamic;
     private readonly DesktopBackgroundPresentation _backgroundPresentation;
     private XsrUiCustomPalette? _palette;
     private string _logoPath = "", _backgroundPath = "";
@@ -44,11 +52,10 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
         _revision = state.Resolve(SettingsPolicyContract.RevisionKey);
         _background = shell.Content;
         _backgroundPresentation = DesktopBackgroundPresentation.GetOrCreate(shell.Tree, _background);
-        _logo = shell.Tree.Create("CustomLauncherLogo");
-        shell.Tree.SetComponent(_logo, new XsrUiElement { Width = 32, Height = 20, IsVisible = false });
-        XsrUiEntityId brand = default;
-        shell.Tree.Walk(shell.TitleBar, entity => { if (shell.Tree.Name(entity) == "TitleBrand") brand = entity; return true; });
-        shell.Tree.Attach(_logo, brand.IsAssigned ? brand : shell.TitleBar);
+        _dynamic=new(shell.Tree,state);
+        XsrUiEntityId slot=default;
+        shell.Tree.Walk(shell.TitleBar,entity=>{if(shell.Tree.Name(entity)=="CustomLauncherLogoSlot")slot=entity;return true;});
+        _logo=_dynamic.Append(slot,DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml",new Dictionary<string,string>{["visible"]="false"}));
         state.Changed += OnState;
         shell.Renderer.FramePreparing += OnFrame;
         _policyWorker = RunPolicyAsync(); _policy.Writer.TryWrite(true);
@@ -56,16 +63,16 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
     internal static XsrUiCustomPalette? ParsePalette(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return null;
-        if (text.Length > 4096) throw new InvalidDataException("自定义主题不能超过 4096 个字符。");
+        if (text.Length > 4096) throw new InvalidDataException(DesktopBootstrapText.Raw("appearance.error.palette-length"));
         using JsonDocument document = JsonDocument.Parse(text, new() { MaxDepth = 4 });
         if (document.RootElement.ValueKind != JsonValueKind.Object || document.RootElement.EnumerateObject().Count() != 3)
-            throw new InvalidDataException("主题需要 background、foreground、accent 三个颜色。");
+            throw new InvalidDataException(DesktopBootstrapText.Raw("appearance.error.palette-shape"));
         XsrUiColor Read(string key)
         {
             if (!document.RootElement.TryGetProperty(key, out JsonElement value) || value.ValueKind != JsonValueKind.String
                 || value.GetString() is not { Length: 7 } color || color[0] != '#'
                 || !uint.TryParse(color.AsSpan(1), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out uint rgb))
-                throw new InvalidDataException("主题颜色必须采用 #RRGGBB。");
+                throw new InvalidDataException(DesktopBootstrapText.Raw("appearance.error.color"));
             return new((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
         }
         return new(Read("background"), Read("foreground"), Read("accent"));
@@ -78,11 +85,11 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
         string Read(string key) => values.GetValueOrDefault(key) ?? "";
         try { _palette = ParsePalette(Read("appearance.custom-theme")); }
         catch (Exception error) when (error is InvalidDataException or JsonException)
-        { _palette = null; _log("自定义主题未应用：" + error.Message); }
+        { _palette = null; _log(DesktopBootstrapText.Format("PaletteFailure",new Dictionary<string,string>{["error"]=error.Message},_shell.Renderer.LocalizeText)); }
         string logo = Read("appearance.logo-path"), background = Read("appearance.background-path");
         DesktopBackgroundAppearance appearance;
         try { appearance = DesktopBackgroundAppearance.Read(values); }
-        catch (InvalidDataException error) { appearance = DesktopBackgroundAppearance.Default; _log("背景配置未应用：" + error.Message); }
+        catch (InvalidDataException error) { appearance = DesktopBackgroundAppearance.Default; _log(DesktopBootstrapText.Format("BackgroundFailure",new Dictionary<string,string>{["error"]=error.Message},_shell.Renderer.LocalizeText)); }
         _platform.PostToWindow(() => { if (!_disposed) _backgroundPresentation.SetAppearance(appearance); });
         long generation = Interlocked.Increment(ref _generation);
         _assetLoad = LoadAssetsAsync(logo, background, appearance, generation);
@@ -94,7 +101,7 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
             await foreach (bool ignored in _policy.Reader.ReadAllAsync(_token).ConfigureAwait(false))
             {
                 if (await CommittedSettingsRead.QueryAsync(_queries, _token).ConfigureAwait(false) is not { } settings)
-                { _initialReady.TrySetException(new IOException("无法读取初始外观设置。")); continue; }
+                { _initialReady.TrySetException(new IOException(DesktopBootstrapText.Raw("appearance.error.initial"))); continue; }
                 ApplyPolicy(settings);
                 await _assetLoad.ConfigureAwait(false);
                 _initialReady.TrySetResult();
@@ -125,24 +132,25 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
                 if (_disposed || generation != Volatile.Read(ref _generation)) return;
                 _logoPath = logo; _backgroundPath = background;
                 _logoImage = logoImage; _backgroundImage = backgroundImage;
-                _shell.Tree.GetComponent<XsrUiElement>(_logo)!.IsVisible = logoImage is not null;
+                _dynamic.Reload(_logo,DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml",new Dictionary<string,string>{["visible"]=logoImage is null?"false":"true"}));
+                _state.Publish(_state.Resolve(DesktopAppearancePresentationState.LogoVisible),logoImage is not null);
                 _shell.Tree.SetComponent(_logo, logoImage is null ? null : new XsrUiRasterImage(logoImage, []) { FitToBounds = true, AspectRatio = (double)logoImage.Width / logoImage.Height });
                 _backgroundPresentation.SetStatic(backgroundImage, appearance);
             });
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or OperationCanceledException)
-        { if (!_stop.IsCancellationRequested) _log("外观图片未应用：" + error.Message); }
+        { if (!_stop.IsCancellationRequested) _log(DesktopBootstrapText.Format("ImageFailure",new Dictionary<string,string>{["error"]=error.Message},_shell.Renderer.LocalizeText)); }
     }
     internal static async Task<PngImage?> LoadAsync(string path, CancellationToken token)
     {
         if (string.IsNullOrWhiteSpace(path)) return null;
         if (path.Length > 4096 || !Path.IsPathFullyQualified(path) || !path.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException("外观图片需要本地 PNG 的绝对路径。");
+            throw new InvalidDataException(DesktopBootstrapText.Raw("appearance.error.path"));
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.Asynchronous);
-        if (stream.Length is < 33 or > 16 * 1048576) throw new InvalidDataException("外观图片不能超过 16 MiB。");
+        if (stream.Length is < 33 or > 16 * 1048576) throw new InvalidDataException(DesktopBootstrapText.Raw("appearance.error.size"));
         var bytes = new byte[(int)stream.Length];
         await stream.ReadExactlyAsync(bytes, token).ConfigureAwait(false);
-        return PngImage.TryCreatePreview(bytes) ?? throw new InvalidDataException("外观图片尺寸不能超过 4096 × 4096。");
+        return PngImage.TryCreatePreview(bytes) ?? throw new InvalidDataException(DesktopBootstrapText.Raw("appearance.error.dimensions"));
     }
     public async ValueTask DisposeAsync()
     {
@@ -153,7 +161,7 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
         await _policyWorker.ConfigureAwait(false);
         await _assetLoad.ConfigureAwait(false);
         _shell.Renderer.ColorScheme = _shell.Renderer.ColorScheme with { CustomPalette = null };
-        _shell.Tree.Destroy(_logo); _backgroundPresentation.ResetStatic();
+        _dynamic.Remove(_logo); _state.Publish(_state.Resolve(DesktopAppearancePresentationState.LogoVisible),false); _backgroundPresentation.ResetStatic();
         _stop.Dispose();
     }
 }

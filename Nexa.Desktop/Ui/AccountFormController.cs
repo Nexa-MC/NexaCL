@@ -1,4 +1,6 @@
-using Nexa.Xsr.Renderer.Nxml;
+﻿using Nexa.Xsr.Renderer.Nxml;
+using System.Security.Cryptography;
+using System.Text;
 using Nexa.Services.Accounts;
 using Nexa.Services.Logging;
 using Nexa.Xsr.Renderer;
@@ -25,7 +27,7 @@ internal sealed class NativeAccountUiEffects(AvaloniaUiPlatformActions actions) 
     public Task<string?> PickProfiles() => actions.PickJsonFileAsync();
 }
 
-/// <summary>Render-thread PXML form projection and typed intent adapter. Auth workers own no tree.</summary>
+/// <summary>Render-thread NXML form projection and typed intent adapter. Auth workers own no tree.</summary>
 internal sealed class AccountFormController : IDisposable
 {
     private readonly XsrUiShell _shell;
@@ -39,7 +41,10 @@ internal sealed class AccountFormController : IDisposable
     private readonly Dictionary<string, XsrUiEntityId> _entities = [];
     private readonly Dictionary<XsrUiEntityId, string> _importRows = [];
     private readonly Dictionary<XsrUiEntityId, string> _characterRows = [];
-    private readonly NxmlHostIr _rowTemplate = Load("AccountChoiceRow.c.nxml");
+    private readonly NxmlDynamicContent _dynamic;
+    private readonly XsrUiEntityId _form;
+    private string _copyStamp="";
+    private long _characterGeneration=-1;
     private readonly CancellationTokenSource _lifetime = new();
     private long _importsRevision = -1, _charactersRevision = -1, _seenCompletion, _viewEpoch;
     private long _presentedChallengeGeneration = -1;
@@ -66,8 +71,11 @@ internal sealed class AccountFormController : IDisposable
             return true;
         });
         _fallbackFocus = fallback;
-        XsrUiEntityId form = NxmlUiLoader.Load(Load("AccountForm.c.nxml"), shell.Tree, store, accountBody);
-        shell.Tree.Walk(form, entity => { _entities[shell.Tree.Name(entity)] = entity; Style(entity); return true; });
+        _dynamic=new(shell.Tree,store);
+        XsrUiEntityId slot=default;
+        shell.Tree.Walk(accountBody,entity=>{if(shell.Tree.Name(entity)=="AccountFormSlot")slot=entity;return true;});
+        _form=_dynamic.Append(slot,DesktopMarkup.Dynamic("AccountFormWorkspace.d.nxml"));
+        shell.Tree.Walk(_form,entity=>{_entities[shell.Tree.Name(entity)]=entity;return true;});
         _projections = new UiProjectionSignal(_store, _intents);
         _intents.IntentEmitted += OnIntent;
         _shell.Renderer.FramePreparing += OnFrame;
@@ -84,11 +92,15 @@ internal sealed class AccountFormController : IDisposable
         _lifetime.Cancel();
         _lifetime.Dispose();
         ClearDrafts();
+        _dynamic.Remove(_form);
+        _importRows.Clear(); _characterRows.Clear();
     }
 
     private void OnIntent(object? sender, DesktopUiIntentEventArgs e)
     {
         string command = e.Intent.Command.ToString();
+        if(_disposed || e.Intent.Source.IsAssigned && command.StartsWith("ui.account.",StringComparison.Ordinal)
+            && !Admitted(e.Intent.Source,e.Intent.Command,command is "ui.account.add" or "ui.account.import" or "ui.account.back"))return;
         if (command == "ui.account.add" || command == "ui.account.import")
         {
             _returnFocus = e.Intent.Source;
@@ -132,7 +144,8 @@ internal sealed class AccountFormController : IDisposable
         else if (command == "ui.account.choice")
         {
             if (_importRows.TryGetValue(e.Intent.Source, out string? path)) Publish("import-path", path);
-            else if (_characterRows.TryGetValue(e.Intent.Source, out string? uuid))
+            else if (_characterRows.TryGetValue(e.Intent.Source, out string? uuid)
+                && Snapshot.Phase==AccountLoginPhase.ChoosingProfile && Snapshot.Generation==_characterGeneration)
                 _ = Dispatch(AccountOnboardingRoutes.ChooseCharacter, new AccountChooseCharacterCommand(Snapshot.Generation, uuid));
         }
     }
@@ -175,7 +188,8 @@ internal sealed class AccountFormController : IDisposable
 
     private void OnFrame(object? sender, EventArgs e)
     {
-        if (!_projections.Consume() && _pendingFocus is null) return;
+        string copy=Copy("account.title.providers"); bool copyChanged=copy!=_copyStamp; _copyStamp=copy;
+        if (!_projections.Consume() && _pendingFocus is null && !copyChanged) return;
         AccountLoginSnapshot snapshot = Snapshot;
         bool open = ReadBool("open");
         if (open && snapshot.Generation > _seenCompletion && snapshot.Phase == AccountLoginPhase.Completed)
@@ -194,12 +208,12 @@ internal sealed class AccountFormController : IDisposable
             Publish(name, open && mode == name);
         Publish("title", mode switch
         {
-            "offline" => "离线档案",
-            "third-party" => "第三方账户",
-            "import" => "导入旧档案",
-            "device" when _provider == AccountLoginProvider.LittleSkin => "LittleSkin 账户",
-            "device" => "Microsoft 账户",
-            _ => "添加账户",
+            "offline" => Copy("account.title.offline"),
+            "third-party" => Copy("account.title.third-party"),
+            "import" => Copy("account.title.import"),
+            "device" when _provider == AccountLoginProvider.LittleSkin => Copy("account.title.littleskin"),
+            "device" => Copy("account.title.microsoft"),
+            _ => Copy("account.title.providers"),
         });
         Publish("status", mode == "providers" || snapshot.Generation <= _seenCompletion ? string.Empty : snapshot.Message);
         Publish("status-visible", !string.IsNullOrWhiteSpace(ReadText("status")));
@@ -208,7 +222,7 @@ internal sealed class AccountFormController : IDisposable
         Publish("code", open && snapshot.Phase == AccountLoginPhase.AwaitingAuthorization);
         Publish("characters", open && snapshot.Phase == AccountLoginPhase.ChoosingProfile);
         Publish("submit", open && mode != "providers" && !snapshot.IsBusy);
-        Publish("submit-label", mode == "import" ? "确认导入" : mode == "offline" ? "创建档案" : mode == "device" ? "重新登录" : "登录并添加");
+        Publish("submit-label", mode == "import" ? Copy("account.submit.import") : mode == "offline" ? Copy("account.submit.offline") : mode == "device" ? Copy("account.submit.device") : Copy("account.submit.default"));
         if (open && mode == "device" && snapshot.Phase == AccountLoginPhase.AwaitingAuthorization
             && snapshot.Generation != _presentedChallengeGeneration)
         {
@@ -219,16 +233,17 @@ internal sealed class AccountFormController : IDisposable
             _ = CopyCode(snapshot.UserCode, showSuccess: false);
         }
         XsrCollectionSnapshot<AccountImportCandidate> imports = _store.ReadCollection<AccountImportCandidate>(_store.Resolve(AccountOnboardingState.Imports));
-        if (imports.Revision != _importsRevision)
+        if (imports.Revision != _importsRevision || copyChanged)
         {
-            BuildRows("ImportCandidates", _importRows, imports.Items.Select(item => (item.DisplayPath, "使用已发现的旧档案", item.DisplayPath)));
+            BuildRows("ImportCandidates", _importRows, imports.Items.Select(item => (item.DisplayPath, Copy("account.import.choice"), item.DisplayPath)));
             _importsRevision = imports.Revision;
         }
         XsrCollectionSnapshot<AccountCharacterChoice> characters = _store.ReadCollection<AccountCharacterChoice>(_store.Resolve(AccountOnboardingState.Characters));
-        if (characters.Revision != _charactersRevision)
+        if (characters.Revision != _charactersRevision || copyChanged || _characterGeneration!=snapshot.Generation)
         {
-            BuildRows("CharacterChoices", _characterRows, characters.Items.Select(item => (item.Uuid, item.Username, "选择角色 " + item.Username)));
+            BuildRows("CharacterChoices", _characterRows, characters.Items.Select(item => (item.Uuid, item.Username, DesktopBootstrapText.Format("Character",new Dictionary<string,string>{["name"]=item.Username},_shell.Renderer.LocalizeText))));
             _charactersRevision = characters.Revision;
+            _characterGeneration=snapshot.Generation;
         }
         string path = ReadText("import-path");
         if (path != _appliedPath)
@@ -242,47 +257,47 @@ internal sealed class AccountFormController : IDisposable
         }
     }
 
-    private void BuildRows(string host, Dictionary<XsrUiEntityId, string> destinations,
-        IEnumerable<(string Value, string Text, string Label)> entries)
+    private void BuildRows(string host,Dictionary<XsrUiEntityId,string> destinations,
+        IEnumerable<(string Value,string Text,string Label)> entries)
     {
-        foreach (XsrUiEntityId entity in destinations.Keys) _shell.Tree.Destroy(entity);
-        destinations.Clear();
-        foreach ((string value, string text, string label) in entries)
+        var items=entries.GroupBy(item=>item.Value,StringComparer.Ordinal).Select(group=>group.First()).ToArray();
+        var desired=new HashSet<string>(items.Select(item=>item.Value),StringComparer.Ordinal);
+        foreach(var pair in destinations.ToArray())
+            if(!desired.Contains(pair.Value)){_dynamic.Remove(pair.Key);destinations.Remove(pair.Key);}
+        List<XsrUiEntityId> order=[];
+        foreach(var item in items)
         {
-            NxmlIrNode node = _rowTemplate.Root with { Key = host + ":" + destinations.Count, Content = text, Label = label };
-            XsrUiEntityId entity = NxmlUiLoader.Load(new NxmlHostIr(node), _shell.Tree, _store, _entities[host]);
-            Style(entity);
-            destinations.Add(entity, value);
+            var row=destinations.FirstOrDefault(pair=>pair.Value==item.Value).Key;
+            var data=new Dictionary<string,string>{["key"]=host+":"+Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(item.Value))).ToLowerInvariant(),["text"]=item.Text,["label"]=item.Label};
+            var fragment=DesktopMarkup.Dynamic("AccountFormChoice.d.nxml",data);
+            if(row.IsAssigned)_dynamic.Reload(row,fragment);
+            else{row=_dynamic.Append(_entities[host],fragment);destinations[row]=item.Value;}
+            order.Add(row);
         }
+        _dynamic.Reorder(_entities[host],order);
     }
-
-    private void Style(XsrUiEntityId entity)
+    private string Copy(string key)=>_shell.Renderer.LocalizeText(DesktopBootstrapText.Raw(key));
+    private bool Admitted(XsrUiEntityId source,XsrSemanticId command,bool allowHeader)
     {
-        string name = _shell.Tree.Name(entity);
-        bool button = _shell.Tree.GetComponent<XsrUiInput>(entity)?.Clickable == true;
-        bool input = _shell.Tree.GetComponent<XsrUiTextInput>(entity) is not null;
-        bool primary = name is "FormSubmit" or "OpenAuthorization";
-        _shell.Tree.SetComponent(entity, new XsrUiVisualStyle
+        if(!_shell.Tree.IsAlive(source) || _shell.Tree.GetComponent<XsrUiInput>(source) is not {Enabled:true} input
+            || input.BoundEnabled.IsAssigned && _store.ReadAppliedValue(input.BoundEnabled) is not true
+            || _shell.Tree.GetComponent<XsrUiCommandBinding>(source)?.Command!=command)return false;
+        bool owned=false;
+        for(var node=source;node.IsAssigned;node=_shell.Tree.Parent(node))
         {
-            Surface = XsrUiSurfaceKind.Solid,
-            Background = primary ? new(11, 91, 203) : button || input ? new(244, 246, 250) : XsrUiColor.Transparent,
-            Foreground = primary ? new(255, 255, 255) : new(52, 61, 74),
-            Border = input ? new(218, 225, 235) : XsrUiColor.Transparent,
-            BorderWidth = input ? 1 : 0,
-            Hover = button ? new(115, 158, 220, 35) : XsrUiColor.Transparent,
-            CornerRadius = name == "FormBack" ? XsrUiCornerRadii.Pill(32) : XsrUiCornerRadii.Inset,
-            FontSize = name == "FormTitle" ? 18 : name == "UserCode" ? 22 : name is "FormStatus" or "ImportHelp" or "OfflineHelp" or "ServerPrivacy" ? 12 : 14,
-            FontWeight = button || name is "FormTitle" or "UserCode" ? 600 : 400,
-            TextAlignment = button || name == "UserCode" ? XsrUiTextAlignment.Center : XsrUiTextAlignment.Start,
-            WrapText = name is "FormStatus" or "ImportHelp" or "OfflineHelp" or "ServerPrivacy",
-        });
+            var box=_shell.Tree.GetComponent<XsrUiElement>(node);
+            if(box is not null && (box.BoundVisibility.IsAssigned ? _store.ReadAppliedValue(box.BoundVisibility) is not true : !box.IsVisible))return false;
+            if(node==_form)owned=true;
+            if(node==_shell.Stage.Navigation.Current)return owned||allowHeader;
+        }
+        return false;
     }
 
     private async Task Dispatch<T>(XsrSemanticId route, T command) where T : notnull
     {
-        if (!_commands.TryResolve(route, out XsrCommandId id)) { _feedback.Error("账户操作未注册。"); return; }
+        if (!_commands.TryResolve(route, out XsrCommandId id)) { _feedback.Error(Copy("account.error.unregistered")); return; }
         XsrResult result = await _commands.Dispatch(id, command, cancellationToken: _lifetime.Token).Completion.ConfigureAwait(false);
-        if (!_disposed && !result.IsSuccess) _feedback.Error("操作未完成，当前登录会话可能已结束，请重试。");
+        if (!_disposed && !result.IsSuccess) _feedback.Error(Copy("account.error.session"));
     }
 
     private async Task PickProfiles()
@@ -293,7 +308,7 @@ internal sealed class AccountFormController : IDisposable
             string? path = await RequireEffects().PickProfiles().ConfigureAwait(false);
             if (!_disposed && epoch == Interlocked.Read(ref _viewEpoch) && path is not null) Publish("import-path", path);
         }
-        catch (Exception) { if (!_disposed) _feedback.Warn("无法打开文件选择器，也可以在上方填写文件路径。"); }
+        catch (Exception) { if (!_disposed) _feedback.Warn(Copy("account.error.picker")); }
     }
 
     private async Task OpenAuthorization(AccountLoginSnapshot snapshot)
@@ -301,19 +316,19 @@ internal sealed class AccountFormController : IDisposable
         string address = snapshot.VerificationUri;
         if (!AccountVerificationContract.IsVerificationUri(_provider, address))
         {
-            if (!_disposed) _feedback.Warn("授权地址无效，请重新发起登录。");
+            if (!_disposed) _feedback.Warn(Copy("account.error.address"));
             return;
         }
 
         try { await RequireEffects().OpenAuthorization(new Uri(address)).ConfigureAwait(false); }
-        catch (Exception) { if (!_disposed) _feedback.Warn("无法打开浏览器，请检查系统默认浏览器设置。"); }
+        catch (Exception) { if (!_disposed) _feedback.Warn(Copy("account.error.browser")); }
     }
 
     private async Task CopyCode(string code, bool showSuccess)
     {
         if (string.IsNullOrWhiteSpace(code))
         {
-            if (!_disposed) _feedback.Warn("授权码尚未生成，请稍后重试。");
+            if (!_disposed) _feedback.Warn(Copy("account.error.code"));
             return;
         }
 
@@ -324,7 +339,7 @@ internal sealed class AccountFormController : IDisposable
             await RequireEffects().CopyCode(code).ConfigureAwait(false);
             _log?.Info("AccountOnboarding",
                 $"Device authorization code copied provider={_provider} mode={(showSuccess ? "manual" : "automatic")}");
-            if (showSuccess && !_disposed) _feedback.Info("授权码已复制。");
+            if (showSuccess && !_disposed) _feedback.Info(Copy("account.code.copied"));
         }
         catch (Exception error)
         {
@@ -332,7 +347,7 @@ internal sealed class AccountFormController : IDisposable
                 "AccountOnboarding",
                 $"Device authorization code copy failed provider={_provider} mode={(showSuccess ? "manual" : "automatic")}",
                 ExceptionDiagnostics.Describe(error));
-            if (!_disposed) _feedback.Warn("无法复制授权码，请手动输入。");
+            if (!_disposed) _feedback.Warn(Copy("account.error.clipboard"));
         }
     }
 
@@ -360,9 +375,5 @@ internal sealed class AccountFormController : IDisposable
     {
         if (!_returnFocus.IsAssigned || !_shell.Renderer.Focus(_returnFocus, _keyboardFocus))
             if (_fallbackFocus.IsAssigned) _shell.Renderer.Focus(_fallbackFocus, _keyboardFocus);
-    }
-    private static NxmlHostIr Load(string file)
-    {
-        return DesktopMarkup.Load(file);
     }
 }

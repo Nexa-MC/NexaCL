@@ -275,6 +275,8 @@ internal static partial class Program
         ("Java only installation guards close until stopped", JavaOnlyInstallationGuardsCloseUntilStopped),
         ("Startup install recovery owns dispatch and shutdown", StartupInstallRecoveryOwnsDispatchAndShutdown),
         ("first run keeps drafts and commits only at finish", FirstRunKeepsDraftsAndCommitsOnlyAtFinish),
+        ("account owned rows retain drafts and reject hidden sources", AccountOwnedRowsRetainDraftsAndRejectHiddenSources),
+        ("first run owned workspace retains transitions and retires picker", FirstRunOwnedWorkspaceRetainsTransitionsAndRetiresPicker),
         ("product PXML shell accepts native window metrics", ProductNxmlShellAcceptsNativeWindowMetrics),
         ("Version settings isolate overrides and restore inheritance", VersionSettingsAreScopedAndRestoreInheritance),
         ("Instance management projects content with bounded realized rows", InstanceManagementShowsContentAndBoundsRealizedRows),

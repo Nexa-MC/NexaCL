@@ -4,13 +4,14 @@
       <StackPanel Key="TitleNavigation" Class="layout-Shell-TitleNavigation">
         <StackPanel Key="TitleBrand" Class="layout-Shell-TitleBrand">
           <Text Key="TitleMain" Content="NexaCL" TransitionKey="{state launch.navigation.title}" Class="layout-Shell-TitleMain" />
+          <Dynamic Key="CustomLauncherLogoSlot" IsVisible="{state shell.appearance.logo_visible}" />
         </StackPanel>
         <Button Key="TitleBack" Label="返回上一级" Icon="lucide/arrow-left" Command="ui.page.back" IsVisible="false" TransitionKey="{state launch.navigation.title}" Class="layout-Shell-TitleBack" />
         <Text Key="TitleSubpage" Content="" IsVisible="false" TransitionKey="{state launch.navigation.title}" Class="layout-Shell-TitleSubpage" />
       </StackPanel>
     </TitleBar>
     <StackPanel StretchLastChild="true" Class="layout-Shell-8">
-      <Navigation StretchLastChild="true" Class="layout-Shell-9">
+      <Navigation IsVisible="{state setup.presentation.navigation_visible}" StretchLastChild="true" Class="layout-Shell-9">
         <NavigationItem Label="启动" Content="启动" Icon="lucide/play" Command="ui.navigation.launch" />
         <NavigationItem Label="安装" Content="安装" Icon="lucide/package-plus" Command="ui.navigation.download" />
         <NavigationItem Label="资源" Content="资源" Icon="lucide/blocks" Command="ui.navigation.community" />

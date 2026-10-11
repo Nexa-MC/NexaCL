@@ -1,0 +1,37 @@
+<nxml-dynamic>
+  <StackPanel Key="SetupFrame" Class="layout-FirstRunPage-SetupFrame setup-base" Width="{data frameWidth}">
+    <Node Recipe="Element" ModalLayer="false" Class="layout-FirstRunPage-SetupStep setup-base setup-step-layer">
+      <Text Key="SetupStep" Content="{data progress}" Class="layout-FirstRunPage-SetupStep setup-base setup-progress" Localize="false" MaxLines="0" TrimOverflow="true" />
+    </Node>
+    <StackPanel Key="SetupBody" Class="{data bodyStyle}">
+      <Image Key="SetupHero" Source="lucide/box" Label="NexaCL" Class="{data heroStyle}" />
+      <StackPanel Key="SetupForm" Scroll="true" Class="{data formStyle}" ScrollGesture="true">
+        <Text Key="SetupTitle" Content="{data title}" TransitionKey="{state setup.presentation.step}" Localize="false" MaxLines="0" TrimOverflow="true" Class="setup-base setup-title" />
+        <Text Key="SetupDescription" Content="{data description}" TransitionKey="{state setup.presentation.step}" Localize="false" MaxLines="0" TrimOverflow="true" Class="setup-base setup-description" />
+        <Button Key="SetupStart" Label="开始配置" Content="开始配置" Command="ui.setup.next" Class="layout-FirstRunPage-SetupStart setup-base setup-button setup-primary" Enabled="{data enabled}" IsVisible="{data welcome}" MaxLines="0" TrimOverflow="true" />
+        <StackPanel Key="SetupDirectory" IsVisible="{data directoryVisible}" Class="layout-FirstRunPage-SetupDirectory setup-base">
+          <Text Key="SetupDirectoryLabel" Content="启动器数据位置" Class="layout-FirstRunPage-SetupDirectoryLabel setup-base" MaxLines="0" TrimOverflow="true" />
+          <StackPanel Class="layout-FirstRunPage-12 setup-base">
+            <ContentHost Key="SetupPathSurface" Class="layout-FirstRunPage-SetupPathSurface setup-base setup-surface">
+              <Text Key="SetupPath" Content="{data directory}" Class="layout-FirstRunPage-SetupPath setup-base" Localize="false" MaxLines="0" TrimOverflow="true" />
+            </ContentHost>
+            <Button Key="SetupBrowse" Label="选择文件夹" Content="浏览" Command="ui.setup.browse" Class="layout-FirstRunPage-SetupBrowse setup-base setup-button" Enabled="{data enabled}" IsVisible="{data browseVisible}" MaxLines="0" TrimOverflow="true" />
+          </StackPanel>
+        </StackPanel>
+        <StackPanel Key="SetupConsent" IsVisible="{data consentVisible}" Class="layout-FirstRunPage-SetupConsent setup-base">
+          <Button Key="SetupPrivate" Label="仅共享必要遥测" Content="{data privateText}" Command="ui.setup.private" Class="{data privateStyle}" Enabled="{data enabled}" IsVisible="{data privateVisible}" Localize="false" />
+          <Button Key="SetupShare" Label="同时共享诊断信息" Content="{data shareText}" Command="ui.setup.share" Class="{data shareStyle}" Enabled="{data shareEnabled}" Localize="false" />
+        </StackPanel>
+        <ContentHost Key="SetupSummarySurface" IsVisible="{data summaryVisible}" Class="layout-FirstRunPage-SetupSummarySurface setup-base setup-surface">
+          <Text Key="SetupSummary" Content="{data summary}" IsVisible="{data summaryVisible}" Class="layout-FirstRunPage-SetupSummary setup-base" Localize="false" MaxLines="0" TrimOverflow="true" />
+        </ContentHost>
+        <Text Key="SetupError" Content="{data error}" IsVisible="{data errorVisible}" Localize="false" MaxLines="0" TrimOverflow="true" Class="setup-base setup-error" />
+      </StackPanel>
+    </StackPanel>
+    <StackPanel Key="SetupFooter" Class="layout-FirstRunPage-SetupFooter setup-base" IsVisible="{data flow}">
+      <Button Key="SetupBack" Label="上一步" Content="上一步" Command="ui.setup.back" IsVisible="{data flow}" Class="layout-FirstRunPage-SetupBack setup-base setup-button" Enabled="{data enabled}" MaxLines="0" TrimOverflow="true" />
+      <ContentHost Class="layout-FirstRunPage-24 setup-base" />
+      <Button Key="SetupNext" Label="{data nextText}" Content="{data nextText}" Command="ui.setup.next" Class="layout-FirstRunPage-SetupNext setup-base setup-button setup-primary" Enabled="{data enabled}" Localize="false" MaxLines="0" TrimOverflow="true" />
+    </StackPanel>
+  </StackPanel>
+</nxml-dynamic>

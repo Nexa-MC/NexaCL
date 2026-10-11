@@ -9,6 +9,7 @@
             <Button Key="AccountAdd" Label="添加账户" Content="添加" Icon="lucide/plus" Command="ui.account.add" IsVisible="{state launch.account.add-visible}" Class="layout-LaunchPage-AccountAdd" />
           </StackPanel>
           <StackPanel Key="AccountBody" Class="layout-LaunchPage-AccountBody">
+            <Dynamic Key="AccountFormSlot" IsVisible="{state account.form.open}" Class="account-form-slot" />
             <StackPanel Key="AccountSelected" IsVisible="{state launch.account.selected-visible}" Class="layout-LaunchPage-AccountSelected">
               <StackPanel Key="AccountIdentity" Class="layout-LaunchPage-AccountIdentity">
                 <StackPanel Key="AccountAvatarSurface" Class="layout-LaunchPage-AccountAvatarSurface">

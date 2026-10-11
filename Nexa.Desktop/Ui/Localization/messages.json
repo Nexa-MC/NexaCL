@@ -1,4 +1,11 @@
-﻿[
+[
+  {"source":"设置保存操作尚不可用。","en":"Saving setup is currently unavailable.","zh-Hant":"設定儲存操作尚不可用。"},
+  {"source":"无法读取初始外观设置。","en":"Could not read the initial appearance settings.","zh-Hant":"無法讀取初始外觀設定。"},
+  {"source":"背景配置未应用：{data error}","en":"Background settings were not applied: {data error}","zh-Hant":"背景設定未套用：{data error}"},
+  {"source":"选择角色 {data name}","en":"Select character {data name}","zh-Hant":"選擇角色 {data name}"},
+  {"source":"外观图片未应用：{data error}","en":"Appearance image was not applied: {data error}","zh-Hant":"外觀圖片未套用：{data error}"},
+  {"source":"自定义主题未应用：{data error}","en":"Custom theme was not applied: {data error}","zh-Hant":"自訂主題未套用：{data error}"},
+  {"source":"数据位置\n{data directory}\n\n必要遥测：已启用\n诊断信息：{data diagnostic}","en":"Data location\n{data directory}\n\nNecessary telemetry: enabled\nDiagnostics: {data diagnostic}","zh-Hant":"資料位置\n{data directory}\n\n必要遙測：已啟用\n診斷資訊：{data diagnostic}"},
   {"source":"{data count} 个版本","en":"{data count} versions","zh-Hant":"{data count} 個版本"},
   {"source":"{data count} 个版本 · 已选 {data selected} 项","en":"{data count} versions · {data selected} selected","zh-Hant":"{data count} 個版本 · 已選 {data selected} 項"},
   {"source":"{data label}，已加入拖放选择","en":"{data label}, selected for drag and drop","zh-Hant":"{data label}，已加入拖放選擇"},
