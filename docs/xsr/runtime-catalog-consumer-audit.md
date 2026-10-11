@@ -17,15 +17,15 @@ conditional boundary.
 | `global.appearance.6357798f5b55` | Layout / paint | Actual last layout visits, native scene commits and drawing callback counts; submission counters do not claim physical frames. |
 | `global.appearance.d44cc0e413d3` | Animation scheduler | Actual shared motion tracks/timer/target and bounded measured scheduler tick rate. |
 | `global.appearance.d1957652c919` | Performance | Real raster charge/admission/leases/decode/disposal and OS pressure snapshot; unsupported physical display FPS remains unavailable. |
-| `global.java.118291439447` | Automatic compatible Java | Mandatory coordinator/Java selection policy and JavaPolicy read-only explanation; automatic selection is distinct from an explicit preferred executable. |
+| `global.java.118291439447` | Automatic compatible Java | Mandatory coordinator/Java selection policy; automatic selection is distinct from an explicit preferred executable. The separate policy-explanation panel was removed on 2026-10-11. |
 | `global.java.4defce197f9a` | Compatibility check | Mandatory validation; attempts to disable the old policy are rejected. This is a State, not an editable Boolean. |
-| `global.java.dc5ff6fcd886` | Compatibility | Actual instance Java requirements/compatibility facts on Platform, plus JavaPolicy explanation of explicit incompatible-choice rejection. |
+| `global.java.dc5ff6fcd886` | Compatibility | Actual instance Java requirements/compatibility facts on Platform and mandatory rejection of incompatible launch choices. The separate explanation panel was removed on 2026-10-11. |
 | `global.java.0f6d5bc77e9b` | Set preferred | Existing ChooseJava intent commits `java.runtime` for the current settings layer. |
-| `global.java.7342ba416866` | Verify Java | Selected-inventory properties/version probe and captured executable fingerprint, with identity replacement, timeout and malformed output rejection. |
-| `global.java.38e1f8df3aa0` | Verification | Same bounded selected-runtime diagnostic workflow; it does not claim whole-runtime-tree integrity verification. |
-| `global.java.d503e51b6737` | Runtime capabilities | Actual VM/vendor/architecture/properties and module query output. The supported scope does not include invented JFR/GC/native-VM capability discovery. |
+| `global.java.7342ba416866` | Verify Java | Historical XSR-812 probe service with captured executable identity. Its Settings panel was removed on 2026-10-11; no current user action is claimed. |
+| `global.java.38e1f8df3aa0` | Verification | Historical bounded selected-runtime diagnostic service; its Settings panel was removed on 2026-10-11. It does not claim whole-runtime-tree integrity verification. |
+| `global.java.d503e51b6737` | Runtime capabilities | Inventory and Platform expose admitted runtime facts. The separate properties/modules panel was removed on 2026-10-11; service output alone is not Settings UI. |
 | `global.java.5a06021a0456` | Managed / external | Owned managed manifest inventory and guarded managed deletion; explicit runtime-source badge uses exact owned executable identity. |
-| `global.java.27cb7147cd93` | Download Java | Separate manual acquisition owner implements the bounded installer workflow; launch-required acquisition alone was not a manual UI consumer. |
+| `global.java.27cb7147cd93` | Download Java | Historical XSR-822 acquisition service. The separate manual-download panel was removed on 2026-10-11; required Java acquisition remains part of launch. |
 | `global.game.42cb17c26e70` | Memory strategy | Existing layered `game.memory` automatic/custom preference, real estimator recommendation and captured heap plan; policy facts are not additional editable strings. |
 | `global.game.603d5db0bd30` | Launch preflight | Actual immutable-plan gate, blocking/confirmation behavior and typed Platform preflight/repair UI. |
 | `global.game.dc34f9e868e6` | Resource budget check | Real RAM/commit/GPU estimate checks in that same gate. Missing measurements remain unknown. |

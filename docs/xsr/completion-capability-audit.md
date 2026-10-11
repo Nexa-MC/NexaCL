@@ -18,8 +18,8 @@ all keyless entries available. IDs below retain their full scope prefix.
 | --- | --- |
 | `instance-settings.basic.79e47f9ac834`, `.3a0d5d5aa2ac`, `.b557a4bf44aa`, `.771f820442b1`, `.595a4ca570a5`, `.1588c496fbc8`, `.fecf8ceb8303` | `SettingsPageController.Identity.cs`: revision-checked name, description, PNG icon, starred, tags/group, notes, custom launch caption editing; `InstanceIdentityService` applies persisted identity to discovery. |
 | `instance-settings.servers.693438d90d7c`, `.d6c3e6592b58`, `.da73ed798ad8`, `.5a8d8adc344f` | The same controller edits login requirement and bounded authentication/register HTTPS endpoints/display name; launch identity resolution applies policy. The separate lock row is an honored read-only lock, not an unrestricted editor. |
-| `global.java.dc1399b7a8ba`, `.4c869c02a251`, `.8236e49ebcbe`, `.1f8d2f784a60`, `.aef617d61a94` | `SettingsPageController.Java.cs` shows scanned Java version, vendor, architecture and literal executable path with managed/runtime actions. Automatic choice, compatibility and runtime probes require their own exact consumer mapping. |
-| `global.java.90551624db0d`, `.2fb41ba03e43`, `.ea5ffef60a9e` | `SettingsPageController.JavaDiagnostics.cs` + XSR-812: actual fixed properties/version probe, Java 9+ module list, and bounded redacted raw preview/copy. Java 8 module status is explicitly unsupported. These facts do not establish every JVM runtime capability. |
+| `global.java.dc1399b7a8ba`, `.4c869c02a251`, `.8236e49ebcbe`, `.1f8d2f784a60`, `.aef617d61a94` | `SettingsPageController.Java.cs` shows scanned Java version, vendor, architecture and literal executable path with managed/runtime actions. Automatic choice and mandatory compatibility remain launch policies; the separate diagnostic, manual download and policy-explanation panels were removed on 2026-10-11. |
+| `global.java.90551624db0d`, `.2fb41ba03e43`, `.ea5ffef60a9e` | XSR-812 implemented bounded runtime probes. Their Settings diagnostic panel was removed on 2026-10-11 at user request; service contracts alone do not establish a current Settings consumer. |
 | `instance.worlds.17db261a8c32`, `.777fa6b3b8a5`, `.3fff1c03d28a`, `.ee27261308f3`, `.0f68adbfffa2`, `.ae94fe88e32c`, `.faad5f3cce5e`, `.22effc520481` | `Management.cs` + `Worlds.cs`: bounded world listing, level.dat metadata/size, open, backup, copy and recycle actions with captured file identity. World health and snapshot semantics require separate evidence. |
 | `instance.screenshots.3eae7fd3de23`, `.998b17a3bbc7`, `.0a4632048b4e`, `.b4a843861188`, `.22effc520481` | `Management.cs` + `Screenshots.cs`: bounded image gallery, folder, native clipboard/share and recycle operations; timeline is not inferred from sorting alone. |
 | `instance.content.05803a333d18`, `.d0c2287854d6`, `.fc3ff537cf56`, `.2e3fd2c9385f`, `.22b442dcb594` | Installed mods/resource packs/shaders, online update identity joining, and selected transactional updates. Data packs are consumed per-world and must keep that scope explicit. |
@@ -40,14 +40,10 @@ all keyless entries available. IDs below retain their full scope prefix.
   `SettingsPageController.WorldSnapshots`; verified restoration creates a new world and preserves
   the current world. Screenshot timeline groups actual file modification dates independently of
   the gallery, with bounded pages in `SettingsPageController.ScreenshotTimeline`.
-- Java properties/version and module diagnostics now have the typed queries and real fixed
-  Platform process port in XSR-812. Only admitted inventory executables are probed; raw previews
-  are redacted, empty/malformed output is rejected, Java 8 modules are explicitly unsupported,
-  and navigation cancels queries. Catalog claims must use these exact consumers.
-- Manual Java download now has its own XSR-822 preview/license-confirm/install/cancel/status
-  workflow, reviewed-plan fingerprint revalidation, bounded metadata, real post-install probe
-  and managed registration receipt. Launch-required acquisition alone was not a sufficient
-  consumer. Inventory rows label managed/external from actual ownership records.
+- XSR-812 and XSR-822 originally added separate Java diagnostic and manual-download
+  panels. Both panels, their controller state/actions and the compatibility-explanation panel
+  were removed on 2026-10-11 at user request. These historical slices are not current Settings
+  UI. Inventory rows still label managed/external from actual ownership records.
 - The advanced workspace in XSR-817 exposes finite navigation, actual bootstrap mode, captured
   composition/runtime facts, a cancelable asynchronous scheduler probe and a redacted typed
   settings snapshot. A separate developer action opens the trusted raw settings file through
