@@ -36,6 +36,10 @@ internal static partial class Program
                 AssertEqual(2, page.Step);
                 var scene = shell.Render(new(760, 500));
                 AssertTrue(FindByKey(shell, scene, "SetupPrivate").Text!.StartsWith('✓'));
+                var roomy = shell.Render(new(1000, 640));
+                var form = FindByKey(shell, roomy, "SetupForm");
+                AssertContains(form.Rect, FindByKey(shell, roomy, "SetupShare").Rect);
+                AssertContains(form.Rect, FindByKey(shell, roomy, "SetupPrivate").Rect);
                 Click("share"); Click("back");
                 scene = shell.Render(new(760, 500));
                 AssertEqual(chosen, FindByKey(shell, scene, "SetupPath").Text);

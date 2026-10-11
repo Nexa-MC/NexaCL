@@ -62,9 +62,21 @@ internal sealed class FirstRunController : IDisposable
             if (shell.Tree.GetComponent<XsrUiText>(entity) is { } text) { text.MaxLines = 0; text.TrimOverflow = true; }
             shell.Tree.GetComponent<XsrUiVisualStyle>(entity)!.WrapText = !button;
         }
+        using (var icon = typeof(FirstRunController).Assembly.GetManifestResourceStream("Nexa.Desktop.Assets.icon.png"))
+        {
+            if (icon is not null)
+            {
+                using var bytes = new MemoryStream(); icon.CopyTo(bytes);
+                if (Nexa.Core.Media.PngImage.TryCreate(bytes.ToArray()) is { } image)
+                    shell.Tree.GetComponent<XsrUiImage>(_nodes["SetupHero"])!.Raster = new(image, []) { FitToBounds = true };
+            }
+        }
+        Style("SetupPath", new(243, 246, 250), new(52, 61, 74), 14);
+        Style("SetupSummary", new(243, 246, 250), new(52, 61, 74), 14);
         Style("SetupStep", XsrUiColor.Transparent, new(122, 138, 153), 13);
         Style("SetupDescription", XsrUiColor.Transparent, new(96, 108, 124), 16);
         Style("SetupError", XsrUiColor.Transparent, new(173, 48, 48), 14);
+        Style("SetupStart", new(11, 91, 203), new(255, 255, 255), 15, 600);
         Style("SetupNext", new(11, 91, 203), new(255, 255, 255), 15, 600);
         shell.Tree.SetComponent(_nodes["SetupTitle"], new XsrUiTransition());
         shell.Tree.SetComponent(_nodes["SetupDescription"], new XsrUiTransition());
@@ -81,6 +93,13 @@ internal sealed class FirstRunController : IDisposable
     private void OnFrame(object? sender, EventArgs args)
     {
         if (_disposed || Completed) return;
+        var frame = _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupFrame"])!;
+        double width = Math.Min(768, Math.Max(240, _shell.Renderer.Viewport.Width - 72));
+        if (frame.Width != width)
+        {
+            frame.Width = width;
+            _shell.Tree.MarkDirty(Page, XsrUiDirtyKinds.Layout);
+        }
         if (_picking is { IsCompleted: true } picked)
         {
             _picking = null;
@@ -130,6 +149,12 @@ internal sealed class FirstRunController : IDisposable
     }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     private void Update()
     {
+        var hero = _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupHero"])!;
+        hero.Width = hero.Height = Step == 0 ? 144 : 64;
+        hero.VerticalAlignment = Step == 0 ? XsrUiAlignment.Center : XsrUiAlignment.Start;
+        _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupForm"])!.VerticalAlignment =
+            Step == 0 ? XsrUiAlignment.Center : XsrUiAlignment.Stretch;
+        _shell.Tree.MarkDirty(_nodes["SetupBody"], XsrUiDirtyKinds.Layout);
         string[] labels = ["欢迎", "数据位置", "数据与诊断", "完成"];
         string[] titles = ["欢迎使用 NexaCL", "为数据选择一个位置", "选择诊断信息的共享方式", "准备好了"];
         if (_status.TelemetryRequired) titles[2] = "帮助改进测试版本";
@@ -141,6 +166,7 @@ internal sealed class FirstRunController : IDisposable
         SetText("SetupStep", $"{Step + 1} / 4 · {_shell.Renderer.LocalizeText(labels[Step])}"); SetText("SetupTitle", titles[Step]); SetText("SetupDescription", descriptions[Step]);
         SetText("SetupPath", _directory); SetText("SetupSummary", $"数据位置\n{_directory}\n\n必要遥测：已启用\n诊断信息：{_shell.Renderer.LocalizeText(_consent ? "已启用" : "已关闭")}");
         DesktopLiteralText.Preserve(_shell.Tree, _nodes["SetupPath"]);
+        Show("SetupStart", Step == 0); Show("SetupFooter", Step > 0);
         Show("SetupDirectory", Step == 1); Show("SetupConsent", Step == 2); Show("SetupSummary", Step == 3); Show("SetupBack", Step > 0);
         Show("SetupBrowse", !_status.LocationLocked);
         Show("SetupPrivate", !_status.TelemetryRequired);
@@ -148,8 +174,8 @@ internal sealed class FirstRunController : IDisposable
         SetText("SetupShare", (_consent ? "✓  " : "    ") + "同时共享诊断信息");
         foreach (string key in new[] { "SetupPrivate", "SetupShare" })
             Style(key, ((key == "SetupShare") == _consent) ? DesktopUiPalette.CapsuleBackground : new(243, 246, 250), new(52, 61, 74), 15);
-        SetText("SetupNext", _saving is not null ? "正在保存…" : Step == 3 ? "开始使用" : "继续");
-        foreach (string key in new[] { "SetupBack", "SetupNext", "SetupBrowse", "SetupPrivate", "SetupShare" })
+        SetText("SetupNext", _saving is not null ? "正在保存…" : Step == 3 ? "开始使用" : Step == 0 ? "开始配置" : "继续");
+        foreach (string key in new[] { "SetupBack", "SetupNext", "SetupStart", "SetupBrowse", "SetupPrivate", "SetupShare" })
             _shell.Tree.GetComponent<XsrUiInput>(_nodes[key])!.Enabled = _saving is null && _picking is null;
         if (_status.TelemetryRequired)
         {
@@ -177,7 +203,7 @@ internal sealed class FirstRunController : IDisposable
             FontWeight = weight,
             TextAlignment = _shell.Tree.GetComponent<XsrUiInput>(_nodes[key]) is null ? XsrUiTextAlignment.Start : XsrUiTextAlignment.Center,
             WrapText = _shell.Tree.GetComponent<XsrUiInput>(_nodes[key]) is null,
-            CornerRadius = key == "SetupNext" ? 22 : 10,
+            CornerRadius = key is "SetupNext" or "SetupStart" ? 22 : 10,
             Hover = DesktopUiPalette.CapsuleHover,
             Surface = XsrUiSurfaceKind.Solid
         });

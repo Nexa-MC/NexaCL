@@ -1,0 +1,75 @@
+using Avalonia;
+using Avalonia.Media.Imaging;
+using Nexa.Desktop.Ui;
+using Nexa.Services.Accounts;
+using Nexa.Services.Composition;
+using Nexa.Services.Setup;
+using Nexa.UI.Next;
+using Nexa.UI.Next.Backend.Avalonia;
+using Nexa.Xsr;
+using Nexa.Xsr.Runtime;
+
+namespace Nexa.Desktop.Tests;
+
+internal static partial class Program
+{
+    private static readonly bool[] WardrobePreviewThemes = [true, false];
+    private static async Task RunWardrobeSetupPreview(string output)
+    {
+        Directory.CreateDirectory(output);
+        await using var startup = await AvaloniaUiStartupSession.StartWithAppearanceAsync([], true,
+            new AvaloniaUiStartupAppearance(XsrUiThemeMode.Dark, ReducedMotion: true));
+        await startup.InvokeAsync(async () =>
+        {
+            using var fixture = LibraryFixture(LaunchProfileKind.Microsoft);
+            var queries = new XsrQueryRouterBuilder();
+            var current = new AccountWardrobeResolvedTextures(null, null, true, null, null);
+            queries.Register<AccountWardrobeQuery, AccountWardrobeSnapshot>(AccountWardrobeContract.Read, (_, _) =>
+                ValueTask.FromResult(XsrResult.Success(WardrobeDesktopSnapshot(fixture, "原版披风") with
+                {
+                    Current = current,
+                    Skins = Enumerable.Range(0, 6).Select(i => new AccountWardrobeCard("skin" + i,
+                        "MUXUE1230", "其他档案", current with { IsSlim = i % 2 == 0 }, true)).ToArray()
+                })));
+            using var wardrobe = new WardrobePageController(fixture.Shell, fixture.Intents,
+                queries.Build(new NoopDispatchObserver()), new XsrCommandRouterBuilder().Build(new NoopDispatchObserver()),
+                fixture.Store, fixture.Feedback);
+            wardrobe.ConfigureFilePicker(_ => Task.FromResult<string?>(null)); wardrobe.ConfigureLibrary(() => { });
+            fixture.Shell.Stage.Navigation.Replace(wardrobe.Page);
+            foreach (bool dark in WardrobePreviewThemes)
+            {
+                fixture.Shell.Renderer.ColorScheme = new(dark);
+                await Capture(fixture.Shell, "wardrobe-" + (dark ? "dark" : "light"));
+            }
+            wardrobe.Dispose();
+            var service = new FirstRunService(Path.Combine(output, "setup-data"), Path.Combine(output, "locator.json"));
+            using var setup = new FirstRunController(fixture.Shell, fixture.Intents, fixture.Store,
+                FirstRunRuntimeComposer.Compose(service), service.Read(), () => Task.FromResult<string?>(null), () => { });
+            for (int step = 0; step < 4; step++)
+            {
+                foreach (bool dark in WardrobePreviewThemes)
+                {
+                    fixture.Shell.Renderer.ColorScheme = new(dark);
+                    await Capture(fixture.Shell, "setup-" + step + "-" + (dark ? "dark" : "light"));
+                }
+                if (step < 3) { Emit(fixture.Intents, "ui.setup.next"); fixture.Shell.Render(new(1000, 640)); }
+            }
+            async Task Capture(XsrUiShell shell, string name)
+            {
+                shell.Renderer.ReducedMotion = true;
+                using var surface = new AvaloniaUiSceneSurface(shell);
+                var window = new Avalonia.Controls.Window { Width = 1000, Height = 640, Content = surface, ShowInTaskbar = false };
+                window.Show();
+                await Task.Delay(100);
+                surface.Width = 1000; surface.Height = 640;
+                surface.Measure(new Size(1000, 640)); surface.Arrange(new Rect(0, 0, 1000, 640));
+                for (int frame = 0; frame < 12; frame++) surface.CommitScene();
+                window.UpdateLayout(); surface.UpdateLayout();
+                await Task.Delay(100);
+                using var bitmap = new RenderTargetBitmap(new PixelSize(1000, 640), new Vector(96, 96));
+                bitmap.Render(surface); bitmap.Save(Path.Combine(output, name + ".png"), PngBitmapEncoderOptions.Default);
+                window.Close();
+            }
+        });
+    }
+}

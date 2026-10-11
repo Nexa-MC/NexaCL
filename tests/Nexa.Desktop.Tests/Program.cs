@@ -39,6 +39,11 @@ internal static partial class Program
             Environment.ExitCode = RunNativeScreenshotPreview(screenshotPreviewTheme, screenshotPreviewDirectory);
             return;
         }
+        if (args is ["--native-wardrobe-setup-preview", var output])
+        {
+            RunWardrobeSetupPreview(output).GetAwaiter().GetResult();
+            return;
+        }
         if (args is ["--native-settings-preview", var settingsPreviewTheme, var settingsPreviewDirectory])
         {
             Environment.ExitCode = RunNativeSettingsPreview(settingsPreviewTheme, settingsPreviewDirectory);
