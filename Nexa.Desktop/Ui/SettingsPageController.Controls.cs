@@ -97,12 +97,12 @@ internal sealed partial class SettingsPageController
 
     private XsrUiEntityId FormGroup(XsrUiEntityId parent, string name, string? label = null)
     {
-        var group = Stack(parent, name, XsrUiOrientation.Vertical, 8);
+        var group = Stack(parent, name, XsrUiOrientation.Vertical, 4);
         if (label is not null) Text(group, label, 14, Muted, 24, 500);
         var surface = Stack(group, name + ".Surface", XsrUiOrientation.Vertical, 0);
         Style(surface, White, Ink, 14);
-        var body = Stack(surface, name + ".Body", XsrUiOrientation.Vertical, 4);
-        _shell.Tree.GetComponent<XsrUiElement>(body)!.Padding = new(16, 8, 16, 8);
+        var body = Stack(surface, name + ".Body", XsrUiOrientation.Vertical, 0);
+        _shell.Tree.GetComponent<XsrUiElement>(body)!.Padding = new(12, 4, 12, 4);
         return body;
     }
 

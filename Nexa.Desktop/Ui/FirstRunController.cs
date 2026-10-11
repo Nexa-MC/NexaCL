@@ -51,7 +51,6 @@ internal sealed class FirstRunController : IDisposable
         shell.Tree.Detach(Page); shell.Tree.Destroy(host);
         shell.Tree.Walk(Page, entity => { _nodes[shell.Tree.Name(entity)] = entity; return true; });
         shell.Tree.GetComponent<XsrUiElement>(shell.Navigation)!.IsVisible = false;
-        shell.Tree.GetComponent<XsrUiElement>(shell.Content)!.Padding = default;
         shell.Stage.Navigation.Replace(Page);
         foreach (var (name, entity) in _nodes)
         {

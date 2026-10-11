@@ -18,7 +18,7 @@ internal static partial class Program
         fixture.Controller.SettingsPage = settings.Page;
         Emit(fixture.Intents, "ui.navigation.settings");
         var scene = fixture.Shell.Render(new(1000, 650));
-        Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.about").Entity);
+        Emit(fixture.Intents, "ui.settings.section", FindEntity(fixture.Shell, "SettingsNav.about"));
         scene = fixture.Shell.Render(new(1000, 650));
         AssertEqual(0, requests);
         var sections = FindByKey(fixture.Shell, scene, "SettingsSections").Entity;
@@ -86,7 +86,7 @@ internal static partial class Program
 
         void Render() => scene = fixture.Shell.Render(new(1000, viewportHeight));
         void Switch(string section)
-        { Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav." + section).Entity); Render(); }
+        { Emit(fixture.Intents, "ui.settings.section", FindEntity(fixture.Shell, "SettingsNav." + section)); Render(); }
     }
 
     private static void DiagnosticExportLeavingSettingsRetiresSuccessfulCompletion()

@@ -42,7 +42,7 @@ internal static partial class Program
         AssertTrue(scene.Nodes.Any(node => node.Entity == instanceValue));
         var row = Find("SettingsStoragePath.SelectedInstance");
         AssertEqual(9d, fixture.Shell.Tree.GetComponent<XsrUiElement>(row)!.Padding.Top);
-        AssertEqual(16d, fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("SettingsStorageDirectories.Body"))!.Padding.Left);
+        AssertEqual(12d, fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("SettingsStorageDirectories.Body"))!.Padding.Left);
         Publish(second, before.Revision + 2);
         Wait(() => Value("ActiveMinecraft") == second && Value("SelectedInstance") == Path.Combine(second, "versions", "same-id"));
         AssertEqual(java, Value("JavaRuntimes"));

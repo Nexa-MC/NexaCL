@@ -32,7 +32,7 @@ internal static partial class Program
         {
             var surface = fixture.Shell.Tree.Parent(fixture.Shell.Tree.Parent(row.Entity));
             var card = scene.Nodes.Single(n => n.Entity == surface);
-            AssertTrue(row.Rect.X >= card.Rect.X + 16 && row.Rect.X + row.Rect.Width <= card.Rect.X + card.Rect.Width - 16 + .1);
+            AssertTrue(row.Rect.X >= card.Rect.X + 12 && row.Rect.X + row.Rect.Width <= card.Rect.X + card.Rect.Width - 12 + .1);
         }
         AssertTrue(fixture.Shell.Renderer.Focus(toggle.Entity));
         AssertTrue(fixture.Shell.Renderer.HandleKey(XsrUiKey.Space));

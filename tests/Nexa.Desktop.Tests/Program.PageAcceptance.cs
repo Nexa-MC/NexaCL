@@ -62,9 +62,9 @@ internal static partial class Program
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
         fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();
 
-        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(1280, 800)), contentWidth: 1192, contentHeight: 716);
-        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(850, 500)), contentWidth: 762, contentHeight: 416);
-        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(810, 470)), contentWidth: 722, contentHeight: 386);
+        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(1280, 800)), contentWidth: 1120, contentHeight: 716);
+        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(850, 500)), contentWidth: 690, contentHeight: 416);
+        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(810, 470)), contentWidth: 650, contentHeight: 386);
     }
 
     private static void AssertCompactLaunchGeometry(
@@ -73,7 +73,7 @@ internal static partial class Program
         double contentWidth,
         double contentHeight)
     {
-        const double contentX = 68;
+        const double contentX = 140;
         const double contentY = 68;
         const double columnGap = 16;
         const double rightCardGap = 12;

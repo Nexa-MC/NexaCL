@@ -1,5 +1,5 @@
 <Page xmlns="https://pcln.dev/pxml/2026" Key="FirstRunPage" Label="设置 NexaCL">
-  <StackPanel Key="SetupFrame" Orientation="Vertical" Weight="1" Padding="36,24,36,24" Spacing="18" MaxWidth="840" HorizontalAlignment="Center">
+  <StackPanel Key="SetupFrame" Orientation="Vertical" Weight="1" Padding="16,8,16,8" Spacing="18" MaxWidth="840" HorizontalAlignment="Center">
     <Text Key="SetupStep" Content="1 / 4 · 欢迎" Height="24" />
     <StackPanel Key="SetupBody" Orientation="Horizontal" Weight="1" Spacing="32">
       <Image Key="SetupHero" Source="lucide/box" Label="NexaCL" Width="144" Height="144" VerticalAlignment="Center" />

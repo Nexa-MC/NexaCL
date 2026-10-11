@@ -41,7 +41,7 @@ internal static partial class Program
         page.Render(520, 650);
         AssertEqual(1, tree.Children(page.Find("ScreenshotWaterfall").Entity).Count);
         page.Render(1100, 650);
-        AssertEqual(4, tree.Children(page.Find("ScreenshotWaterfall").Entity).Count);
+        AssertEqual(3, tree.Children(page.Find("ScreenshotWaterfall").Entity).Count);
         scrolling.OffsetY = 500_000; tree.MarkDirty(sections, XsrUiDirtyKinds.Layout); page.Render(); page.Render(); AssertBounded();
         double before = scrolling.OffsetY;
         var card = page.Scene.Nodes.First(node => tree.Name(node.Entity).StartsWith("ManagementScreenshot.", StringComparison.Ordinal)

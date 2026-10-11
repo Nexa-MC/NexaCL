@@ -64,7 +64,6 @@ internal sealed class WardrobePageController : IDisposable
     private string _status = "正在读取当前账户…";
     private string? _operationNotice;
     private XsrUiSize _viewport;
-    private XsrUiThickness? _contentPadding;
     private double _skinOffset, _capeOffset, _cardWidth = 176, _cardHeight = 228, _trackWidth = 400;
     private bool Busy => _reading is not null || _previewing is not null || _writing is not null || _picking is not null;
     internal const int CapePageSize = 12; // Bounded lazy image window; the horizontal track retains every card.
@@ -159,14 +158,7 @@ internal sealed class WardrobePageController : IDisposable
     {
         if (_disposed) return;
         bool visible = _shell.Stage.Navigation.Current == Page;
-        if (!visible) { if (_visible) { Retire(); RestoreContentPadding(); } _visible = false; return; }
-        if (_contentPadding is null)
-        {
-            var content = _shell.Tree.GetComponent<XsrUiElement>(_shell.Content)!;
-            _contentPadding = content.Padding;
-            content.Padding = default;
-            _shell.Tree.MarkDirty(_shell.Content, XsrUiDirtyKinds.Layout);
-        }
+        if (!visible) { if (_visible) { Retire(); } _visible = false; return; }
         double skinOffset = Scroll("WardrobeSkins").OffsetX, capeOffset = Scroll("WardrobeCapes").OffsetX;
         double trackWidth = _trackWidth;
         if (_shell.Renderer.TryGetScrollSnapshot(_nodes["WardrobeSkins"], out var skinTrack) && skinTrack.ViewportWidth > 0)
@@ -756,17 +748,10 @@ internal sealed class WardrobePageController : IDisposable
             TextAlignment = button ? XsrUiTextAlignment.Center : XsrUiTextAlignment.Start
         });
     }
-    private void RestoreContentPadding()
-    {
-        if (_contentPadding is not { } padding) return;
-        _shell.Tree.GetComponent<XsrUiElement>(_shell.Content)!.Padding = padding;
-        _shell.Tree.MarkDirty(_shell.Content, XsrUiDirtyKinds.Layout);
-        _contentPadding = null;
-    }
     public void Dispose()
     {
         if (_disposed) return; _disposed = true;
         _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame; _store.Changed -= OnStateChanged;
-        Retire(); RestoreContentPadding(); _stop.Dispose();
+        Retire(); _stop.Dispose();
     }
 }

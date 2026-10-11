@@ -70,6 +70,7 @@ internal static partial class Program
 
     private static void SettingsPageUsesFinalNavigationAndCompactLayout()
     {
+        PageInsetsSurviveControllerTransitions();
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
         using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, fixture.Foundation.Queries, fixture.Foundation.Commands, fixture.Store, fixture.Feedback);
         fixture.Shell.Renderer.ReducedMotion = true;
@@ -77,7 +78,7 @@ internal static partial class Program
         Emit(fixture.Intents, "ui.navigation.settings");
         var scene = fixture.Shell.Render(new(1000, 650));
         AssertEqual(settings.Page, fixture.Shell.Stage.Navigation.Current);
-        AssertEqual(10, scene.Nodes.Count(item => fixture.Shell.Tree.Name(item.Entity).StartsWith("SettingsNav.", StringComparison.Ordinal)));
+        AssertEqual(10, fixture.Shell.Tree.Children(FindEntity(fixture.Shell, "SettingsNavigation")).Count(item => fixture.Shell.Tree.Name(item).StartsWith("SettingsNav.", StringComparison.Ordinal)));
         var nav = FindByKey(fixture.Shell, scene, "SettingsNavigation");
         var body = FindByKey(fixture.Shell, scene, "SettingsSections");
         AssertEqual(44d, nav.Rect.Height);
@@ -92,8 +93,8 @@ internal static partial class Program
         AssertFalse(scene.Nodes.Any(item => item.Text?.Contains("尚未迁移", StringComparison.Ordinal) == true));
         foreach (var page in SettingsCatalog.GlobalPages)
         {
-            var button = FindByKey(fixture.Shell, scene, "SettingsNav." + page.Id);
-            Emit(fixture.Intents, "ui.settings.section", button.Entity);
+            var button = FindEntity(fixture.Shell, "SettingsNav." + page.Id);
+            Emit(fixture.Intents, "ui.settings.section", button);
             scene = fixture.Shell.Render(new(1000, 650));
             AssertEqual(page.Id, settings.SelectedSection);
             if (page.Id == "about")

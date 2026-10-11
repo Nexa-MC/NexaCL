@@ -42,7 +42,6 @@ internal sealed partial class SettingsPageController : IDisposable
     private string _selected = "general";
     private bool _developer, _disposed;
     private bool _visible;
-    private XsrUiThickness _previousContentPadding;
     private long _revision = -1;
     private sealed record Editor(SettingsCatalogEntry Entry, XsrUiEntityId Input, XsrUiEntityId Button, XsrUiEntityId Thumb);
     private static readonly XsrUiColor Ink = new(43, 51, 64), Muted = new(113, 124, 140), Blue = new(11, 91, 203), White = new(255, 255, 255), Line = new(232, 236, 242);
@@ -96,12 +95,10 @@ internal sealed partial class SettingsPageController : IDisposable
         bool visible = _shell.Stage.Navigation.Current.Equals(Page);
         if (visible != _visible)
         {
-            var content = _shell.Tree.GetComponent<XsrUiElement>(_shell.Content)!;
-            if (visible) { _previousContentPadding = content.Padding; content.Padding = default; }
-            else
+            if (!visible)
             {
                 CancelContentIntegrity();
-                content.Padding = _previousContentPadding; CancelIdentityRead(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelDiagnosticExport(); CancelStoragePreferences(); CancelContentWorkspace();
+                CancelIdentityRead(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelDiagnosticExport(); CancelStoragePreferences(); CancelContentWorkspace();
                 ReleaseContentGraph();
                 RetireHardwareAdvice(); RetireDeveloperDiagnostics(); RetireRuntimeDiagnostics(); RetireRuntimeTrace(); CancelNetworkProbe(); CancelAdvancedWorkspace();
             }
@@ -448,8 +445,8 @@ internal sealed partial class SettingsPageController : IDisposable
     private void BuildRow(XsrUiEntityId parent, SettingsCatalogEntry entry)
     {
         var row = Stack(parent, "SettingsRow." + entry.Id, XsrUiOrientation.Horizontal, 16);
-        _shell.Tree.GetComponent<XsrUiElement>(row)!.MinHeight = 48;
-        _shell.Tree.GetComponent<XsrUiElement>(row)!.Padding = new(0, 6, 0, 6);
+        _shell.Tree.GetComponent<XsrUiElement>(row)!.MinHeight = 40;
+        _shell.Tree.GetComponent<XsrUiElement>(row)!.Padding = new(0, 3, 0, 3);
         var label = Stack(row, "SettingsLabel." + entry.Id, XsrUiOrientation.Vertical, 3);
         _shell.Tree.GetComponent<XsrUiElement>(label)!.Width = entry.SettingKey == "diagnostics.telemetry" ? 240 : 176;
         Text(label, entry.SettingKey == "diagnostics.telemetry" ? "诊断信息 · 用户体验改进计划" : DisplayLabel(entry.Label), 14, Ink, height: 22, weight: 500);

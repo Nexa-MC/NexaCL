@@ -108,6 +108,8 @@ internal static partial class Program
     private static void NotificationsShareLowerLeftSurfaceAndCloseManually()
     {
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
+        fixture.Shell.SetNavigationExpanded(false);
+        fixture.Shell.SetRailPresentationProgress(0);
         fixture.Shell.Renderer.ReducedMotion = true;
         XsrUiSize size = new(810, 470);
         fixture.Feedback.Info("information");

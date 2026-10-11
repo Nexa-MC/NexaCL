@@ -112,12 +112,15 @@ public static class PxmlShellComposer
             content,
             defaults,
             navigationEntities);
-        return XsrUiShellComposer.Compose(
+        var shell = XsrUiShellComposer.Compose(
             state,
             template,
             options,
             intentSink,
             runtimeContext?.StateBridge);
+        shell.SetNavigationExpanded(true);
+        shell.SetRailPresentationProgress(1);
+        return shell;
     }
 
     private static XsrUiEntityId FindDirectChild(XsrUiTree tree, XsrUiEntityId parent, XsrUiSemanticRole role) =>

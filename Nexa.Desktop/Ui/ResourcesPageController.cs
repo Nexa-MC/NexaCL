@@ -77,7 +77,6 @@ internal sealed partial class ResourcesPageController : IDisposable
     private int _detailPage;
     private bool _started, _disposed, _visible;
     private long _wake;
-    private XsrUiThickness _previousPadding;
     private string? _resourcePresentationLanguage;
     internal XsrUiEntityId Page { get; }
     internal XsrUiEntityId DetailPage { get; }
@@ -131,7 +130,7 @@ internal sealed partial class ResourcesPageController : IDisposable
         InitializeContinuousList();
         E(_previous).Height = 28; E(_next).Height = 28;
         DetailPage = Element(default, "ResourceDetailPage", XsrUiSemanticRole.Page, "资源详情");
-        _detailBody = Stack(DetailPage, "ResourceDetailBody"); E(_detailBody).Weight = 1; E(_detailBody).Padding = new(24, 20, 24, 24);
+        _detailBody = Stack(DetailPage, "ResourceDetailBody"); E(_detailBody).Weight = 1; E(_detailBody).Padding = new(0, 0, 0, 8);
         shell.Tree.SetComponent(_detailBody, new XsrUiScroll { ShowsVerticalIndicator = true });
         shell.Tree.SetComponent(_detailBody, new XsrUiScrollGesture());
         _intents.IntentEmitted += OnIntent; shell.Renderer.FramePreparing += OnFrame;
@@ -149,11 +148,9 @@ internal sealed partial class ResourcesPageController : IDisposable
         bool visible = _shell.Stage.Navigation.Current == Page || _shell.Stage.Navigation.Current == DetailPage;
         if (visible != _visible)
         {
-            var content = E(_shell.Content);
-            if (visible) { _previousPadding = content.Padding; content.Padding = default; _listMediaPaused = false; }
+            if (visible) { _listMediaPaused = false; }
             else
             {
-                content.Padding = _previousPadding;
                 PauseContinuousList();
                 Cancel(); CancelTranslations(); _planStop.Cancel(); _planning = null; _installDraft = null; _contextStop.Cancel(); _contextRequest = null; _contextReading = null;
             }
