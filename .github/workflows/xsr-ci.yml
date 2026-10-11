@@ -234,7 +234,7 @@ jobs:
       - name: Test Function Patch compile-item path identity
         run: dotnet msbuild eng/xsr/Test.FunctionPatchItems.proj -nologo
 
-      - name: Test XSR runtime kernel
+      - name: Test XSR runtime kernel and Sidecar host data plane
         run: dotnet run --project tests/Nexa.Xsr.Runtime.Tests/Nexa.Xsr.Runtime.Tests.csproj --configuration Release --no-build
 
       - name: Publish and run NativeAOT runtime tests
@@ -279,8 +279,6 @@ jobs:
       - name: Test Sidecar protocol and transport
         run: dotnet run --project tests/Nexa.Sidecar.Tests/Nexa.Sidecar.Tests.csproj --configuration Release --no-build
 
-      - name: Test Sidecar host session and data plane
-        run: dotnet run --project tests/Nexa.Xsr.Runtime.Tests/Nexa.Xsr.Runtime.Tests.csproj --configuration Release --no-build
 
       - name: Install Xvfb for the X11 probe smoke
         run: sudo apt-get install -y xvfb libx11-6

@@ -55,6 +55,5 @@
     <ProjectReference Include="../Nexa.Services.Telemetry.Contracts/Nexa.Services.Telemetry.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Services.Updates/Nexa.Services.Updates.csproj" />
     <ProjectReference Include="../Nexa.Services.Updates.Contracts/Nexa.Services.Updates.Contracts.csproj" />
-    <ProjectReference Include="../Nexa.Platform.Runtime/Nexa.Platform.Runtime.csproj" />
   </ItemGroup>
 </Project>

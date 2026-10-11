@@ -7,8 +7,6 @@ namespace Nexa.Desktop.Ui;
 internal sealed partial class SettingsPageController
 {
     internal Func<Task<string?>>? SelectDataPackFileAsync { get; set; }
-    private Task? _worldPlatformAction;
-    private string? _worldPlatformCompletionMessage;
     private Task<string?>? _worldImportPicker;
     private (string Instance, string World, string Revision) _worldImportTarget;
     private Task<XsrResult<InstanceWorldMetadata>>? _worldMetadataRead;
@@ -81,12 +79,6 @@ internal sealed partial class SettingsPageController
         if (_instance is null || _managementWrite is not null || !_commands.TryResolve(id, out var route)) return;
         _managementWriteInstance = _instance; _managementWrite = _commands.Dispatch(route, command).Completion; WakeOnPlatformCompletion(_managementWrite);
     }
-    private void StartWorldPlatformAction(Func<Task> action, string? completedMessage = null)
-    {
-        if (_worldPlatformAction is { IsCompleted: false } || _managementWrite is not null) return;
-        try { _worldPlatformCompletionMessage = completedMessage; _worldPlatformAction = action(); WakeOnPlatformCompletion(_worldPlatformAction); }
-        catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException) { _feedback.Error("世界或截图操作无法启动。"); }
-    }
     private void UpdateWorldPlatformAction()
     {
         UpdateWorldHealth();
@@ -106,10 +98,6 @@ internal sealed partial class SettingsPageController
                 DispatchWorld(InstanceWorldContract.ImportDataPack, new InstanceWorldDataPackImportCommand(_worldImportTarget.Instance, _worldImportTarget.World, source, _worldImportTarget.Revision));
             else if (!picker.IsCompletedSuccessfully) { _ = picker.Exception; _feedback.Error("无法选择数据包文件。"); }
         }
-        if (_worldPlatformAction is not { IsCompleted: true } completed) return;
-        _worldPlatformAction = null;
-        if (!completed.IsCompletedSuccessfully) { _ = completed.Exception; _feedback.Error("世界或截图操作未完成，请检查访问权限后重试。"); }
-        else { if (_worldPlatformCompletionMessage is { } message) _feedback.Info(message); RefreshManagement(); }
-        _worldPlatformCompletionMessage = null;
+
     }
 }

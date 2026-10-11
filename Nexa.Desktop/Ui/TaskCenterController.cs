@@ -568,18 +568,7 @@ internal sealed class TaskCenterController : IDisposable
         _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
     }
 
-    private void SetVisible(XsrUiEntityId entity, bool visible)
-    {
-        XsrUiElement element = _shell.Tree.GetComponent<XsrUiElement>(entity) ?? new XsrUiElement();
-        if (element.IsVisible == visible)
-        {
-            return;
-        }
-
-        element.IsVisible = visible;
-        _shell.Tree.SetComponent(entity, element);
-        _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-    }
+    private void SetVisible(XsrUiEntityId entity, bool visible) => DesktopElementVisibility.Set(_shell.Tree, entity, visible);
 
     private void SetEnabled(XsrUiEntityId entity, bool enabled)
     {

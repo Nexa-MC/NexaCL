@@ -602,19 +602,7 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
         }
     }
 
-    private void SetVisible(XsrUiEntityId entity, bool visible)
-    {
-        XsrUiElement element = _shell.Tree.GetComponent<XsrUiElement>(entity)
-            ?? new XsrUiElement();
-        if (element.IsVisible == visible)
-        {
-            return;
-        }
-
-        element.IsVisible = visible;
-        _shell.Tree.SetComponent(entity, element);
-        _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-    }
+    private void SetVisible(XsrUiEntityId entity, bool visible) => DesktopElementVisibility.Set(_shell.Tree, entity, visible);
 
     private void SetNotificationHostVisible(bool visible) => SetVisible(_notificationHost, visible);
 

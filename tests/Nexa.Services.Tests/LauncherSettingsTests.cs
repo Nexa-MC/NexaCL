@@ -19,17 +19,6 @@ internal static partial class Program
         return directory;
     }
 
-    private static SettingsService CreateLauncherService(string directory, string settingsName = "settings.json")
-    {
-        SettingsSchema schema = LauncherDefaults.CreateSchema();
-        XsrStateStoreBuilder builder = new();
-        SettingsService.DeclareState(builder, schema);
-        return new SettingsService(
-            builder.Build(),
-            schema,
-            new LauncherSettingsJsonPort(System.IO.Path.Combine(directory, settingsName), schema));
-    }
-
     internal static ValueTask LauncherSchemaMatchesLegacyDefaults()
     {
         SettingsSchema schema = LauncherDefaults.CreateSchema();

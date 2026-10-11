@@ -26,19 +26,6 @@ internal static partial class Program
     [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
     private static extern IntPtr GetConsoleWindow();
 
-    /// <summary>
-    /// The version channel (alpha, beta, ci, or release) parsed from the informational version
-    /// that Xsr.Version.props composes, e.g. 2.0.0.ci.1a2b3c.
-    /// </summary>
-    private static string? ResolveVersionChannel()
-    {
-        string version = ResolveInformationalVersion();
-        string[] segments = version.Split('.');
-        return segments.Length >= 4 && segments[3] is "alpha" or "beta" or "ci"
-            ? segments[3]
-            : null;
-    }
-
     private static string ResolveInformationalVersion() => Assembly.GetEntryAssembly()?
         .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
 

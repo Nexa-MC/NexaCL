@@ -10,8 +10,6 @@ public sealed class UpdatePackagePlanner
 {
     /// <summary>Last release line that dual-publishes v1 block maps; from 1.4.8 on only v2.</summary>
     public const string LastV1BlockMapVersion = "1.4.7";
-
-    private const string DefaultAssetNamePrefix = "PCL_N_";
     // Legacy release discovery is a wire-format compatibility adapter, not current product branding.
     private const string DefaultBinaryBaseName = "PCL-N-Edition";
 

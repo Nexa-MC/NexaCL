@@ -291,7 +291,6 @@ internal sealed partial class SettingsPageController
     }
 
     private static readonly XsrSemanticId RemediationExecuted = XsrSemanticId.Parse("ui.settings.platform.remediation");
-    private static readonly XsrSemanticId RefreshPlatformField = RefreshPlatform;
     internal Func<Task<string?>>? PickRemediationJava { get; set; }
 
     /// <summary>Remediation button activation → typed execute route; the result surfaces as
