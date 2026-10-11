@@ -6,6 +6,9 @@
     <RootNamespace>Nexa.Services</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Jint" Version="4.17.0" />
+    <None Update="ThirdPartyNotices.txt" Link="licenses/Network.ThirdPartyNotices.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Network/Pac.Substitutions.xml" LogicalName="Nexa.Services.Network.Pac.PublicationPolicy.xml" />
     <ProjectReference Include="../Nexa.Services.Network.Contracts/Nexa.Services.Network.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Contracts/Nexa.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Core/Nexa.Core.csproj" />

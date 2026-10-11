@@ -1,4 +1,12 @@
 [
+  {"source":"系统代理","en":"System proxy","zh-Hant":"系統代理"},
+  {"source":"无代理","en":"No proxy","zh-Hant":"無代理"},
+  {"source":"手动代理","en":"Manual proxy","zh-Hant":"手動代理"},
+  {"source":"代理协议","en":"Proxy protocol","zh-Hant":"代理協定"},
+  {"source":"应用后对新请求生效。","en":"Applies to new requests after saving.","zh-Hant":"套用後對新請求生效。"},
+  {"source":"SOCKS4 仅支持用户标识，不支持密码认证。","en":"SOCKS4 supports a user ID, but not password authentication.","zh-Hant":"SOCKS4 僅支援使用者識別，不支援密碼驗證。"},
+  {"source":"填写 PAC 的 HTTP 或 HTTPS 地址；认证信息用于脚本选中的代理。","en":"Enter an HTTP or HTTPS PAC URL. Credentials apply to the proxy selected by the script.","zh-Hant":"填寫 PAC 的 HTTP 或 HTTPS 位址；驗證資訊用於指令碼選取的代理。"},
+  {"source":"用户名和密码可留空。","en":"Username and password are optional.","zh-Hant":"使用者名稱和密碼可留空。"},
   {"source":"目录位置","en":"Directory locations","zh-Hant":"目錄位置"},
   {"source":"目录信息暂不可用，请重新打开此页。","en":"Directory information is temporarily unavailable. Reopen this page to try again.","zh-Hant":"目錄資訊暫時無法取得，請重新開啟此頁。"},
   {"source":"正在读取目录信息…","en":"Reading directory information…","zh-Hant":"正在讀取目錄資訊…"},

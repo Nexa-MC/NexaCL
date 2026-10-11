@@ -11,4 +11,5 @@
     <ProjectReference Include="../../Nexa.UI.Next/Nexa.UI.Next.csproj" />
     <ProjectReference Include="../../Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
   </ItemGroup>
+  <Import Project="../../eng/xsr/Xsr.Pac.targets" />
 </Project>

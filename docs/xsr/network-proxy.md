@@ -1,0 +1,19 @@
+# Network proxy policy
+
+Default remains system proxy (mode 1); direct (0) and manual (2) retain the existing atomic settings/credential policy. Manual endpoint schemes support HTTP, HTTPS, SOCKS4, SOCKS5. PAC is stored as pac+http(s)://script-url in the existing proxy-address field and has an explicit UI selector. No credential appears in the URI.
+
+A cross-platform Jint interpreter evaluates FindProxyForURL with bounded source, execution, recursion and result sizes, without CLR exposure or script/module loaders. PAC bootstrap uses a direct, cookie-free client, never the proxy it is configuring, and never sends proxy credentials. Evaluation happens on worker threads; failed PAC resolution does not silently switch to direct. Proxy authentication uses existing local settings (not exported or included in diagnostics); password inputs remain masked. PAC source is cached for five minutes, decisions are evaluated for every destination and redirect so time/DNS helpers remain current. No PAC URL/content or credentials are logged. Windows/macOS/Linux share the same code.
+
+SOCKS4 supports its protocol user identifier, not password authentication; the UI must communicate this limitation. HTTP and SOCKS5 can consume username/password.
+
+PAC route lists retain order. Failover retries only body-free GET/HEAD on connection/name-resolution failure, never HTTP errors or TLS failures. Redirects re-evaluate PAC, strip destination Authorization/Cookie/Host, reject HTTPS downgrade, and stop at ten hops. Each generation owns at most 32 endpoint pools. Bootstrap redirects are deliberately rejected; configure the final PAC URL. Parsing/evaluation limits are defense in depth inside the process, not an OS sandbox.
+
+## Publication boundary
+
+Jint 4.17.0 is private to PAC. No application, Sidecar or general scripting API may expose CLR objects through it. `JsValue`/`ClrFunction` callbacks carry only script primitives; DNS is resolved asynchronously between bounded, side-effect-free policy replays (at most eight distinct names per evaluation).
+
+NativeAOT and trimmed publication explicitly opt in from Desktop, Services.Tests, Desktop.Tests, CapabilityProbe and Minecraft.Benchmarks. There is no repository-wide Directory.Build.targets hook. Pinned substitutions disable CLR namespace exposure, CLR object conversion/wrapping, reflection writes, CLR delegate conversion, extension methods and CLR operator overload dispatch. Pure JavaScript syntax and built-ins remain available. Substitution changes are embedded as a normal Network resource so a changed policy invalidates incremental native compilation.
+
+The pinned dependency has an invalid DynamicallyAccessedMembers annotation on ReflectionAccessor.ConvertValueToSet's object parameter (IL2098). Keep this diagnostic visible as a warning in those opted-in publications; do not disable the trim/AOT analyzers or other warning-as-error checks. This is a documented upstream metadata exception, not a warning-free publication claim. Changing Jint requires reviewing these exact method signatures and repeating native/trim behavior tests. Tests and entry-point configuration are part of the same change.
+
+Local evidence: Services 731 and Desktop 265 passed before final publication integration; architecture checks cover 70 projects. Windows native proxy harness passes PAC constraints/async DNS, route validation, actual download bounds, cancellation, redirects, safe failover, SOCKS4/5 authentication and an HTTP 407 round trip without sending proxy credentials to the PAC source. Linux/macOS execution belongs to the existing three-OS NativeAOT CI matrix; local Windows evidence does not verify those hosts.

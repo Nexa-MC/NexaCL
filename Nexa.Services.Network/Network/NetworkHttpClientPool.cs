@@ -100,6 +100,10 @@ public sealed partial class NetworkHttpClientPool : IDisposable
     private static HttpMessageHandler CreateTransport(NetworkPreferences policy, bool redirects, bool mainlandChina,
         Action<SocketsHttpHandler>? configureTransport = null)
     {
+        if (policy.ProxyMode == 2 && policy.ProxyAddress.StartsWith("pac+", StringComparison.OrdinalIgnoreCase))
+            return new PacTransportHandler(new PacResolver(new Uri(policy.ProxyAddress[4..])), endpoint =>
+                CreateTransport(policy with { ProxyMode = endpoint is null ? 0 : 2, ProxyAddress = endpoint?.AbsoluteUri ?? "" },
+                    false, mainlandChina, configureTransport), redirects);
         SocketsHttpHandler handler = CreateSocketsHandler(policy, redirects);
         try { configureTransport?.Invoke(handler); }
         catch { handler.Dispose(); throw; }

@@ -5,6 +5,7 @@ internal static partial class Program
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
         ..RegisterFoundationAndContent(),
+        ..RegisterProxy(),
         ..RegisterRuntimeEvidence(),
         ..RegisterPolicyAndSecurity(),
         ..RegisterTransfersAndLaunch(),

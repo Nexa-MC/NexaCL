@@ -1,0 +1,39 @@
+<linker>
+  <assembly fullname="Jint">
+    <type fullname="Jint.Options/InteropOptions">
+      <method signature="System.Boolean get_Enabled()" body="stub" value="false" />
+      <method signature="System.Boolean get_AllowOperatorOverloading()" body="stub" value="false" />
+    </type>
+    <type fullname="Jint.Native.JsValue">
+      <method signature="Jint.Native.JsValue FromObjectWithType(Jint.Engine,System.Object,System.Type)" body="remove" />
+    </type>
+    <type fullname="Jint.Runtime.Interop.ObjectWrapper">
+      <method signature="Jint.Native.Object.ObjectInstance Create(Jint.Engine,System.Object,System.Type)" body="remove" />
+    </type>
+    <type fullname="Jint.Runtime.Interop.DefaultTypeConverter">
+      <method signature="System.Linq.Expressions.LambdaExpression BuildDelegate(System.Type,System.Func`3&lt;Jint.Native.JsValue,Jint.Native.JsValue[],Jint.Native.JsValue&gt;,System.Linq.Expressions.Expression)" body="remove" />
+    </type>
+    <type fullname="Jint.Runtime.Interop.Reflection.ExtensionMethodCache">
+      <method signature="Jint.Runtime.Interop.Reflection.ExtensionMethodCache BuildCore(System.Type[])" body="remove" />
+      <method signature="System.Boolean TryGetExtensionMethods(System.Type,System.Reflection.MethodInfo[]&amp;)" body="remove" />
+    </type>
+    <type fullname="Jint.Runtime.Interop.DefaultTypeConverter">
+      <method signature="System.Object Convert(System.Object,System.Type,System.IFormatProvider)" body="remove" />
+      <method signature="System.Boolean TryConvert(System.Object,System.Type,System.IFormatProvider,System.Object&amp;)" body="remove" />
+      <method signature="System.Void .cctor()" body="stub" />
+    </type>
+    <type fullname="Jint.Runtime.Interop.MethodInfoFunction">
+      <method signature="Jint.Native.JsValue Call(Jint.Native.JsValue,Jint.Native.JsValue[])" body="remove" />
+    </type>
+    <type fullname="Jint.Runtime.Interpreter.Expressions.JintBinaryExpression">
+      <method signature="System.Boolean TryOperatorOverloading(Jint.Runtime.Interpreter.EvaluationContext,Jint.Native.JsValue,Jint.Native.JsValue,System.String,System.Object&amp;)" body="remove" />
+    </type>
+    <type fullname="Jint.Runtime.Interpreter.Expressions.JintUnaryExpression">
+      <method signature="System.Boolean TryOperatorOverloading(Jint.Runtime.Interpreter.EvaluationContext,Jint.Native.JsValue,System.String,Jint.Native.JsValue&amp;)" body="remove" />
+    </type>
+    <type fullname="Jint.Runtime.Interop.Reflection.ReflectionAccessor">
+      <method signature="System.Object ConvertValueToSet(Jint.Engine,System.Object)" body="remove" />
+      <method signature="System.Void SetValue(Jint.Engine,System.Object,System.String,Jint.Native.JsValue)" body="remove" />
+    </type>
+  </assembly>
+</linker>

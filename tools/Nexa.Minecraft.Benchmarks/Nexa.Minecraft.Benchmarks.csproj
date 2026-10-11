@@ -6,4 +6,5 @@
     <ProjectReference Include="../../Nexa.Services/Nexa.Services.csproj" />
     <ProjectReference Include="../../Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
   </ItemGroup>
+  <Import Project="../../eng/xsr/Xsr.Pac.targets" />
 </Project>

@@ -1,0 +1,18 @@
+<Project>
+  <!-- Explicit host opt-in only. See docs/xsr/network-proxy.md for the pinned Jint boundary. -->
+  <PropertyGroup>
+    <NexaPacSubstitutions>$(MSBuildThisFileDirectory)../../Nexa.Services.Network/Network/Pac.Substitutions.xml</NexaPacSubstitutions>
+  </PropertyGroup>
+  <Target Name="ConfigureNexaPacPublication" BeforeTargets="PrepareForILLink;ComputeIlcCompileInputs"
+          Condition="'$(PublishAot)' == 'true' or '$(PublishTrimmed)' == 'true'">
+    <PropertyGroup>
+      <!-- Invalid upstream annotation on an object parameter. Keep the warning visible. -->
+      <WarningsNotAsErrors>$(WarningsNotAsErrors);IL2098</WarningsNotAsErrors>
+      <TrimmerSingleWarn>false</TrimmerSingleWarn>
+      <_ExtraTrimmerArgs Condition="'$(PublishAot)' != 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(NexaPacSubstitutions)&quot;</_ExtraTrimmerArgs>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(PublishAot)' == 'true'">
+      <IlcArg Include="--substitution:$(NexaPacSubstitutions)" />
+    </ItemGroup>
+  </Target>
+</Project>

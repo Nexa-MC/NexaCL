@@ -237,8 +237,8 @@ public sealed partial class SettingsPolicyService
             if (proxy.Value.Value == "2")
             {
                 string? address = result.Values.Single(item => item.Key == "network.proxy-address").Value.Value;
-                if (!Uri.TryCreate(address, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https" or "socks5"))
-                    throw new InvalidDataException("Custom proxy requires an HTTP, HTTPS or SOCKS5 address.");
+                if (string.IsNullOrWhiteSpace(address))
+                    throw new InvalidDataException("Manual proxy requires an endpoint or PAC URL.");
             }
         }
         merged[SettingsPolicySchema.StorageKey] = document.ToJsonString();

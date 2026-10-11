@@ -55,4 +55,5 @@
     <NexaFunctionPatchSource Include="Ui/ResourceCaptions.cs" />
   </ItemGroup>
   <Import Project="../eng/xsr/Xsr.FunctionPatches.targets" />
+  <Import Project="../eng/xsr/Xsr.Pac.targets" />
 </Project>

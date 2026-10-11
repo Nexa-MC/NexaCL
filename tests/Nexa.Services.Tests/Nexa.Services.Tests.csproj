@@ -25,4 +25,5 @@
     <ProjectReference Include="../../Nexa.Xsr.Runtime/Nexa.Xsr.Runtime.csproj" />
     <ProjectReference Include="../../Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
   </ItemGroup>
+  <Import Project="../../eng/xsr/Xsr.Pac.targets" />
 </Project>

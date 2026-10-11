@@ -137,6 +137,12 @@ jobs:
           $binary = if ($IsWindows) { './native-account-tests/Nexa.Services.Tests.exe' } else { './native-account-tests/Nexa.Services.Tests' }
           & $binary "native input probe" "Linux input"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify NativeAOT proxy and PAC routing
+        shell: pwsh
+        run: |
+          $binary = if ($IsWindows) { './native-account-tests/Nexa.Services.Tests.exe' } else { './native-account-tests/Nexa.Services.Tests' }
+          & $binary "PAC " "proxy settings" "network proxy" "SOCKS authenticated"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run Windows native protection
         if: runner.os == 'Windows'
         run: ./native-account-tests/Nexa.Services.Tests.exe "native profile protection"

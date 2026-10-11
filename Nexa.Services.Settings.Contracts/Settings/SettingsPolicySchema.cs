@@ -44,10 +44,10 @@ public sealed record SettingsPolicyDefinition(string Key, SettingsValueKind Kind
             catch (ArgumentException error) { return error.Message; }
         }
         if (Key == "network.proxy-address" && raw.Length > 0 &&
-            (!Uri.TryCreate(raw, UriKind.Absolute, out var proxy) || proxy.Scheme is not ("http" or "https" or "socks5")
-                || string.IsNullOrEmpty(proxy.Host) || proxy.UserInfo.Length != 0 || proxy.AbsolutePath != "/"
-                || proxy.Query.Length != 0 || proxy.Fragment.Length != 0 || raw.Any(char.IsControl)))
-            return "Expected a proxy endpoint without credentials, path, query or fragment.";
+            (!Uri.TryCreate(raw, UriKind.Absolute, out var proxy) || proxy.Scheme is not ("http" or "https" or "socks4" or "socks5" or "pac+http" or "pac+https")
+                || string.IsNullOrEmpty(proxy.Host) || proxy.UserInfo.Length != 0 || (proxy.Scheme is not ("pac+http" or "pac+https") && (proxy.AbsolutePath != "/" || proxy.Query.Length != 0))
+                || proxy.Fragment.Length != 0 || raw.Length > 2048 || raw.Any(char.IsControl)))
+            return "Expected an HTTP/SOCKS endpoint or PAC URL without embedded credentials or fragment.";
         if (Key is "network.proxy-user" or "network.proxy-password" && (raw.Length > 1024 || raw.Any(char.IsControl)))
             return "Proxy credentials must be at most 1024 characters without line breaks.";
         if (Key is "appearance.logo-path" or "appearance.background-path" or "appearance.video-path" or "music.path"

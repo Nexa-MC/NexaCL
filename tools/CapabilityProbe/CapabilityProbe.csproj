@@ -8,4 +8,5 @@
   <ItemGroup>
     <ProjectReference Include="../../Nexa.Services/Nexa.Services.csproj" />
   </ItemGroup>
+  <Import Project="../../eng/xsr/Xsr.Pac.targets" />
 </Project>

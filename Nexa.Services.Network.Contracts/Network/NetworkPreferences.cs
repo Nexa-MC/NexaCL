@@ -19,11 +19,16 @@ public sealed record NetworkPreferences
     public override string ToString() => $"NetworkPreferences {{ ProxyMode = {ProxyMode}, DnsOverHttps = {DnsOverHttps}, IpStack = {IpStack} }}";
 
     /// <summary>Admission shared by saved settings and transport generation creation.</summary>
-    public static bool IsValidProxyAddress(string text) => Uri.TryCreate(text, UriKind.Absolute, out Uri? uri)
-        && uri.Scheme is "http" or "https" or "socks5" && uri.Host.Length > 0
-        && uri.UserInfo.Length == 0 && uri.AbsolutePath is "" or "/"
-        && uri.Query.Length == 0 && uri.Fragment.Length == 0
-        && !text.Any(char.IsControl);
+    public static bool IsValidProxyAddress(string text)
+    {
+        if (text.Length > 2048 || text.Any(char.IsControl)
+            || !Uri.TryCreate(text, UriKind.Absolute, out var uri)
+            || uri.Host.Length == 0 || uri.UserInfo.Length != 0 || uri.Fragment.Length != 0) return false;
+        if (uri.Scheme is "pac+http" or "pac+https")
+            return Uri.TryCreate(text[4..], UriKind.Absolute, out _);
+        return uri.Scheme is "http" or "https" or "socks4" or "socks5"
+            && uri.AbsolutePath is "" or "/" && uri.Query.Length == 0;
+    }
 
     public void Validate()
     {

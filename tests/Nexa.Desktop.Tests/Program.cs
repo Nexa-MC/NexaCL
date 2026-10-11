@@ -93,6 +93,7 @@ internal static partial class Program
 
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("proxy protocols round trip PAC and compact direct mode", ProxyProtocolSelectionRoundTripsPacAndKeepsDirectModeCompact),
         ("StartupAppearanceReadsDurableThemeAndMotionPreferences", StartupAppearanceReadsDurableThemeAndMotionPreferences),
         ("StartupAppearanceRejectsInvalidDocumentsWithoutWrites", StartupAppearanceRejectsInvalidDocumentsWithoutWrites),
         ("StartupAppearanceFallbackModesApplyOnlyWithoutCommittedCells", StartupAppearanceFallbackModesApplyOnlyWithoutCommittedCells),
