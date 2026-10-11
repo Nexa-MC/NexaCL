@@ -56,7 +56,11 @@ internal sealed partial class LaunchPageController
         Publish(LaunchPageState.AccountTransitionKey, motionKey);
         if (_accountMotionKey != motionKey)
         {
-            XsrUiTransition.ConfigureIndependent(_shell.Tree, _pageEntities["AccountBody"], "account:" + motionKey);
+            var body = _pageEntities["AccountBody"];
+            var transition = _shell.Tree.GetComponent<XsrUiTransition>(body);
+            if (transition is null) _shell.Tree.SetComponent(body, transition = new XsrUiTransition());
+            transition.Key = "account:" + motionKey;
+            _shell.Tree.MarkDirty(_pageEntities["AccountBody"], XsrUiDirtyKinds.Paint);
             _accountMotionKey = motionKey;
         }
         Publish(LaunchPageState.AccountRosterVisibleKey, picker && !onboarding);

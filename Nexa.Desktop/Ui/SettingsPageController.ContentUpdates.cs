@@ -1,6 +1,7 @@
 using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Resources;
 using Nexa.UI.Next;
+using Nexa.Xsr;
 
 namespace Nexa.Desktop.Ui;
 
@@ -9,6 +10,24 @@ internal sealed partial class SettingsPageController
     private readonly HashSet<ResourceContentOnlineQuery> _selectedContentUpdates = [];
     private Task<Nexa.Xsr.XsrResult<ResourceChangelog>>? _contentChangelogRead;
     private string? _contentChangelog;
+    private static readonly XsrSemanticId ContentSelectionToggle = XsrSemanticId.Parse("ui.settings.content.select-toggle");
+    private static readonly XsrSemanticId ContentSelectionExtend = XsrSemanticId.Parse("ui.settings.content.select-range");
+    private static readonly XsrSemanticId ContentSelectionAddRange = XsrSemanticId.Parse("ui.settings.content.select-add-range");
+    private readonly Dictionary<XsrUiEntityId, (ResourceContentOnlineQuery Query, XsrUiEntityId Mark)> _contentSelectionRows = [];
+    private ResourceContentOnlineQuery? _contentSelectionAnchor;
+    private XsrUiEntityId _contentSelectionCount, _contentSelectionClear, _contentSelectionUpdate;
+
+    private static bool IsContentSelectionIntent(XsrSemanticId command) =>
+        command == ContentSelectionToggle || command == ContentSelectionExtend || command == ContentSelectionAddRange;
+
+    private void HandleContentSelectionIntent(DesktopUiIntent intent)
+    {
+        if (!_shell.Tree.IsAlive(intent.Source) || !_contentSelectionRows.TryGetValue(intent.Source, out var row)) return;
+        SelectContentRow(row.Query, intent.Command == ContentSelectionToggle ? XsrUiClickModifiers.Toggle
+            : intent.Command == ContentSelectionAddRange ? XsrUiClickModifiers.Toggle | XsrUiClickModifiers.Extend
+            : XsrUiClickModifiers.Extend);
+    }
+
 
     private void ReadContentChangelog(ResourceVersion version)
     {
@@ -32,9 +51,16 @@ internal sealed partial class SettingsPageController
     {
         if (_resourceCommands?.TryResolve(ResourceCatalogContract.UpdateContentBatch, out _) != true) return;
         var row = Stack(parent, "ContentUpdateActions", XsrUiOrientation.Horizontal, 10);
-        ManagementButton(row, "更新已选择", () => DispatchContentUpdates(selectedOnly: true), 106);
+        _contentSelectionCount = Text(row, "", 12, Muted, 32);
+        _shell.Tree.GetComponent<XsrUiElement>(_contentSelectionCount)!.Weight = 1;
+        _shell.Tree.SetComponent(_contentSelectionCount, new XsrUiLiveRegion(XsrUiLiveSetting.Polite));
+        _contentSelectionClear = ActionButton(row, "ContentSelectionClear", "清除选择", ManagementAction, 84);
+        _managementActions[_contentSelectionClear] = () =>
+        { _selectedContentUpdates.Clear(); _contentSelectionAnchor = null; UpdateContentSelectionPresentation(); };
+        _contentSelectionUpdate = ActionButton(row, "Management.更新已选择", "更新已选择", ManagementAction, 106);
+        _managementActions[_contentSelectionUpdate] = () => DispatchContentUpdates(selectedOnly: true);
         ManagementButton(row, "更新全部已识别", () => DispatchContentUpdates(selectedOnly: false), 136);
-        Text(row, "批量更新保留联合撤回记录", 12, Muted, 32);
+        UpdateContentSelectionPresentation();
     }
 
     private void DispatchContentUpdates(bool selectedOnly)
@@ -51,15 +77,69 @@ internal sealed partial class SettingsPageController
         BuildSections(true);
     }
 
-    private void BuildContentUpdateSelection(XsrUiEntityId parent, InstanceContentEntry item)
+    private void BuildContentUpdateSelection(XsrUiEntityId row, InstanceContentEntry item)
     {
         if (OnlineFile(item) is not { } query || _resourceCommands?.TryResolve(ResourceCatalogContract.UpdateContentBatch, out _) != true) return;
-        var choice = ToggleControl(parent, "ContentUpdateSelect." + item.Name, "选择", _selectedContentUpdates.Contains(query), ManagementAction, checkBox: true, width: 68);
-        RegisterContentAction(choice, () =>
+        _shell.Tree.SetComponent(row, new XsrUiInput { Clickable = true, Focusable = true });
+        _shell.Tree.SetComponent(row, new XsrUiSemantic(XsrUiSemanticRole.ListItem, item.DisplayName.Length > 0 ? item.DisplayName : item.Name));
+        _shell.Tree.SetComponent(row, new XsrUiSelection());
+        _shell.Tree.SetComponent(row, new XsrUiCommandBinding(ManagementAction));
+        _shell.Tree.SetComponent(row, new XsrUiModifiedClick(ContentSelectionToggle, ContentSelectionExtend, ContentSelectionAddRange));
+        var mark = Element(row, "ContentSelectionMark." + item.Name, XsrUiSemanticRole.None, null, 3, 28);
+        _shell.Tree.GetComponent<XsrUiElement>(mark)!.Margin = new(5, 0, 0, 0);
+        _shell.Tree.GetComponent<XsrUiElement>(mark)!.HorizontalAlignment = XsrUiAlignment.Start;
+        _shell.Tree.SetComponent(mark, new XsrUiOverlayLayer());
+        Style(mark, Blue, Blue, 1.5);
+        _contentSelectionRows[row] = (query, mark);
+        RegisterContentAction(row, () => SelectContentRow(query, XsrUiClickModifiers.None));
+    }
+
+    private void SelectContentRow(ResourceContentOnlineQuery query, XsrUiClickModifiers modifiers)
+    {
+        if (query.InstanceDirectory != _instance || query.PageId != _selected || _contentSnapshot is null) return;
+        var files = _contentSnapshot.Entries.Select(OnlineFile).OfType<ResourceContentOnlineQuery>().ToArray();
+        int target = Array.IndexOf(files, query);
+        if (target < 0) return;
+        bool extend = modifiers.HasFlag(XsrUiClickModifiers.Extend), toggle = modifiers.HasFlag(XsrUiClickModifiers.Toggle);
+        int anchor = _contentSelectionAnchor is { } previous ? Array.IndexOf(files, previous) : -1;
+        if (!toggle) _selectedContentUpdates.Clear();
+        if (extend && anchor >= 0)
         {
-            if (!_selectedContentUpdates.Remove(query)) _selectedContentUpdates.Add(query);
-            if (_shell.Tree.IsAlive(choice)) _shell.Tree.GetComponent<XsrUiToggle>(choice)!.IsChecked = _selectedContentUpdates.Contains(query);
-        });
+            for (int index = Math.Min(anchor, target); index <= Math.Max(anchor, target); index++)
+                _selectedContentUpdates.Add(files[index]);
+        }
+        else
+        {
+            if (!toggle || !_selectedContentUpdates.Remove(query)) _selectedContentUpdates.Add(query);
+            _contentSelectionAnchor = query;
+        }
+        UpdateContentSelectionPresentation();
+    }
+
+    private void UpdateContentSelectionPresentation()
+    {
+        foreach (var (entity, row) in _contentSelectionRows)
+        {
+            if (!_shell.Tree.IsAlive(entity)) continue;
+            bool selected = _selectedContentUpdates.Contains(row.Query);
+            _shell.Tree.GetComponent<XsrUiSelection>(entity)!.IsSelected = selected;
+            Style(entity, selected ? new(231, 240, 255) : White, Ink, 12);
+            _shell.Tree.GetComponent<XsrUiElement>(row.Mark)!.IsVisible = selected;
+            _shell.Tree.MarkDirty(row.Mark, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+        }
+        if (!_contentSelectionCount.IsAssigned || !_shell.Tree.IsAlive(_contentSelectionCount)) return;
+        int count = _selectedContentUpdates.Count(query => query.InstanceDirectory == _instance && query.PageId == _selected);
+        int updates = _onlineList.Count(pair => pair.Key.InstanceDirectory == _instance && pair.Key.PageId == _selected
+            && _selectedContentUpdates.Contains(pair.Key) && pair.Value.UpdateVersion is not null);
+        string caption = count == 0 ? "点击选择，Ctrl 多选，Shift 连选" : string.Format(System.Globalization.CultureInfo.CurrentCulture,
+            _shell.Renderer.LocalizeText("已选 {0} 项 · 可更新 {1} 项"), count, updates);
+        _shell.Tree.SetComponent(_contentSelectionCount, new XsrUiText(caption) { TrimOverflow = true, MaxLines = 1 });
+        _shell.Tree.SetComponent(_contentSelectionCount, new XsrUiSemantic(XsrUiSemanticRole.Status, caption));
+        _shell.Tree.GetComponent<XsrUiInput>(_contentSelectionClear)!.Enabled = count > 0;
+        _shell.Tree.GetComponent<XsrUiInput>(_contentSelectionUpdate)!.Enabled = updates > 0 && _managementWrite is null;
+        _shell.Tree.MarkDirty(_contentSelectionCount, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+        _shell.Tree.MarkDirty(_contentSelectionClear, XsrUiDirtyKinds.Paint);
+        _shell.Tree.MarkDirty(_contentSelectionUpdate, XsrUiDirtyKinds.Paint);
     }
 
     private void BuildContentUpdateHistory(InstanceManagementSnapshot snapshot)

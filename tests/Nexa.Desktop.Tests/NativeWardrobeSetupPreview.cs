@@ -43,6 +43,17 @@ internal static partial class Program
                 await Capture(fixture.Shell, "wardrobe-compact-" + (dark ? "dark" : "light"), 800, 600);
             }
             wardrobe.Dispose();
+            foreach (bool dark in WardrobePreviewThemes)
+            {
+                fixture.Shell.Renderer.ColorScheme = new(dark);
+                string theme = dark ? "dark" : "light";
+                Emit(fixture.Intents, "ui.navigation.launch");
+                await Capture(fixture.Shell, "launch-" + theme, 800, 600);
+                Emit(fixture.Intents, "ui.navigation.download");
+                await Capture(fixture.Shell, "install-" + theme, 800, 600);
+                Emit(fixture.Intents, "ui.install.java");
+                await Capture(fixture.Shell, "java-install-" + theme, 800, 600);
+            }
             var service = new FirstRunService(Path.Combine(output, "setup-data"), Path.Combine(output, "locator.json"));
             using var setup = new FirstRunController(fixture.Shell, fixture.Intents, fixture.Store,
                 FirstRunRuntimeComposer.Compose(service), service.Read(), () => Task.FromResult<string?>(null), () => { });

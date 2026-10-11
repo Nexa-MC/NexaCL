@@ -1,10 +1,10 @@
 <Page xmlns="https://pcln.dev/pxml/2026" Key="ProcessLogPage" Label="游戏日志">
-  <StackPanel Orientation="Vertical" Margin="20" Spacing="10" Weight="1">
+  <StackPanel Orientation="Vertical" Margin="0" Spacing="10" Weight="1">
     <StackPanel Orientation="Horizontal" Height="38" Spacing="8">
       <Button Key="ProcessLogPreviousSession" Content="上次运行" Label="上次运行" Command="ui.process.log.previous-session" Width="86" Height="38" />
       <Text Key="ProcessLogSession" Content="游戏日志" Weight="1" VerticalAlignment="Center" />
       <Button Key="ProcessLogNextSession" Content="下次运行" Label="下次运行" Command="ui.process.log.next-session" Width="86" Height="38" />
-      <Button Key="ProcessLogRefresh" Content="刷新" Label="刷新日志" Command="ui.process.log.refresh" Width="66" Height="38" />
+      <Button Key="ProcessLogRefresh" Icon="pcl/refresh" Label="刷新日志" Command="ui.process.log.refresh" Width="38" Height="38" />
     </StackPanel>
     <StackPanel Orientation="Horizontal" Height="36" Spacing="8">
       <TextInput Key="ProcessLogSearch" Label="搜索日志" Placeholder="搜索日志内容" Weight="1" Height="36" />

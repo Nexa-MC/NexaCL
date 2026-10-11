@@ -46,6 +46,8 @@ internal sealed partial class SettingsPageController
     private void CancelOnlineList()
     {
         _selectedContentUpdates.Clear();
+        _contentSelectionAnchor = null;
+        UpdateContentSelectionPresentation();
         _onlineListStop?.Cancel(); _onlineListStop?.Dispose(); _onlineListStop = null;
         foreach (var pending in _onlineListReads)
             _ = pending.Read.ContinueWith(task => { _ = task.Exception; }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
@@ -92,7 +94,7 @@ internal sealed partial class SettingsPageController
         }
         if (changed)
         {
-            _onlineListMatched = _onlineList.Count(pair => pair.Value.Project is not null);
+            _onlineListMatched = _onlineList.Count(pair => pair.Value.Project is not null || pair.Value.InstalledFiles.Count > 0);
             _onlineListIncomplete = _onlineList.Any(pair => pair.Value.Notice is { Length: > 0 });
             ApplyContentFilter(); UpdateContentWindow();
         }
@@ -133,10 +135,12 @@ internal sealed partial class SettingsPageController
         string label = _resourceQueries?.TryResolve(ResourceCatalogContract.ContentOnlineBatch, out _) != true ? "在线信息尚不可用"
             : _onlineList.Values.Any(value => value.IsStale) ? "正在显示缓存在线资料，后台正在刷新"
             : _onlineListReads.Count > 0 || _onlineList.Count < total ? "正在关联在线信息"
-            : _onlineListFailed || _onlineListIncomplete ? "在线信息已刷新，部分文件未能完整识别" : "在线信息已刷新";
-        string content = _shell.Renderer.LocalizeText(label) + $" · {_onlineList.Count}/{total} · " + _shell.Renderer.LocalizeText("已关联") + " " + _onlineListMatched;
+            : _onlineListFailed ? "在线信息请求失败，请刷新重试"
+            : _onlineListIncomplete ? _onlineList.Values.Select(value => value.Notice).FirstOrDefault(notice => !string.IsNullOrWhiteSpace(notice)) ?? "在线信息已刷新，部分文件未能完整识别" : "在线信息已刷新";
+        string content = _shell.Renderer.LocalizeText("已关联") + " " + _onlineListMatched + $" · {_onlineList.Count}/{total} · " + _shell.Renderer.LocalizeText(label);
         if (_shell.Tree.GetComponent<XsrUiText>(_onlineListStatus)!.Content == content) return;
-        _shell.Tree.SetComponent(_onlineListStatus, new XsrUiText(content));
+        _shell.Tree.SetComponent(_onlineListStatus, new XsrUiText(content) { TrimOverflow = true, MaxLines = 1 });
+        _shell.Tree.GetComponent<XsrUiSemantic>(_onlineListStatus)!.Label = content;
         _shell.Tree.MarkDirty(_onlineListStatus, XsrUiDirtyKinds.Paint);
     }
 

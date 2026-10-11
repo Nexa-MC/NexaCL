@@ -194,7 +194,7 @@ internal sealed partial class LaunchPageController
         title.Source = _titleEntities["TitleMain"];
         if (depth != _titleNavigationDepth)
         {
-            main.OffsetX = title.OffsetX = depth > _titleNavigationDepth ? 128 : -128;
+            main.OffsetX = title.OffsetX = 0;
             _titleNavigationDepth = depth;
         }
         bool subpage = _shell.Stage.Navigation.Depth > 1;

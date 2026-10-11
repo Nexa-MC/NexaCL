@@ -49,6 +49,8 @@ internal static partial class Program
             Environment.ExitCode = RunNativeSettingsPreview(settingsPreviewTheme, settingsPreviewDirectory);
             return;
         }
+        if (args is ["--native-content-selection-preview", var contentSelectionOutput])
+        { RunNativeContentSelectionPreview(contentSelectionOutput).GetAwaiter().GetResult(); return; }
         if (args is ["--native-resource-preview", var previewTheme, var previewDirectory])
         {
             Environment.ExitCode = RunNativeResourcePreview(previewTheme, previewDirectory);
@@ -297,7 +299,7 @@ internal static partial class Program
         ("LittleSkin onboarding selects characters with separate token kinds", LittleSkinOnboardingChoosesCharacterAndKeepsTokenKindsSeparate),
         ("account failures and stale file pickers stay in the current view", AccountFailuresAndLateFilePickerStayInCurrentView),
         ("launch page replicates the legacy card layout with bound facts", LaunchPageReplicatesLegacyLayout),
-        ("launch page matches legacy geometry across wide, default, and minimum windows", LaunchPageMatchesLegacyGeometry),
+        ("launch page uses compact gutters across wide, default, and minimum windows", LaunchPageUsesCompactGutters),
         ("navigation intents route between launch and placeholder pages", NavigationIntentsRouteBetweenPages),
         ("download and instance actions route to installation and version management", DownloadAndInstanceActionsRouteToInstallationAndVersionManagement),
         ("installation entry presents Java and Bedrock subpages with a horizontal catalog", InstallationEntryPresentsJavaAndBedrockSubpages),
@@ -335,7 +337,7 @@ internal static partial class Program
         ("profile presentation uses Apple hierarchy inside the experimental layout", ProfilePresentationUsesAppleHierarchy),
         ("account capsules and wardrobe navigation preserve geometry", AccountCapsulesAndWardrobeRoutePreserveGeometry),
         ("capsules ignore geometry-only hover moves", CapsulesIgnoreGeometryOnlyHoverMoves),
-        ("navigation retains outgoing layers and live hit geometry", NavigationMotionHasOutgoingLayersAndLiveHitGeometry),
+        ("navigation keeps controls stable and immediately reachable", NavigationKeepsControlsStableAndImmediatelyReachable),
         ("skin route publishes media through host state into the rendered profile", SkinRoutePublishesIntoRenderedProfile),
         ("delete actions persist only the requested profile and reject stale rows", DeleteActionsPersistAndRejectStaleRows),
         ("trivia yields to visibility activity and launch quiet without changing preferences", TriviaYieldsToVisibilityWindowActivityAndLaunchQuiet),
@@ -397,24 +399,24 @@ internal static partial class Program
         AssertFalse(HasKey(fixture.Shell, scene, "AccountSummary"));
     }
 
-    private static void LaunchPageMatchesLegacyGeometry()
+    private static void LaunchPageUsesCompactGutters()
     {
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
         fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();
 
-        AssertLegacyGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(1280, 800)), contentWidth: 1176, contentHeight: 700);
-        AssertLegacyGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(850, 500)), contentWidth: 746, contentHeight: 400);
-        AssertLegacyGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(810, 470)), contentWidth: 706, contentHeight: 370);
+        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(1280, 800)), contentWidth: 1192, contentHeight: 716);
+        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(850, 500)), contentWidth: 762, contentHeight: 416);
+        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(810, 470)), contentWidth: 722, contentHeight: 386);
     }
 
-    private static void AssertLegacyGeometry(
+    private static void AssertCompactLaunchGeometry(
         XsrUiShell shell,
         XsrUiScene scene,
         double contentWidth,
         double contentHeight)
     {
-        const double contentX = 76;
-        const double contentY = 76;
+        const double contentX = 68;
+        const double contentY = 68;
         const double columnGap = 16;
         const double rightCardGap = 12;
         const double versionCardHeight = 184;

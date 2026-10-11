@@ -194,7 +194,9 @@ internal sealed partial class SettingsPageController
             if (_selected is "mods" or "resourcepacks" or "shaderpacks")
             {
                 BuildContentUpdateActions(_sections);
-                _onlineListStatus = Text(_sections, "正在关联在线信息", 11, Muted, 22);
+                _onlineListStatus = Text(location, "正在关联在线信息", 11, Muted, 24);
+                _shell.Tree.GetComponent<XsrUiElement>(_onlineListStatus)!.Width = 268;
+                _shell.Tree.GetComponent<XsrUiVisualStyle>(_onlineListStatus)!.TextAlignment = XsrUiTextAlignment.End;
                 DesktopLiteralText.Preserve(_shell.Tree, _onlineListStatus);
                 UpdateOnlineListStatus();
             }
@@ -244,6 +246,7 @@ internal sealed partial class SettingsPageController
         if (_contentWindowStart == start && _contentWindowCount == count && _contentColumns == columns) return;
         _contentWindowStart = start; _contentWindowCount = count; _contentColumns = columns;
         _contentIconEntities.Clear();
+        _contentSelectionRows.Clear();
         foreach (var action in _contentActions) _managementActions.Remove(action);
         _contentActions.Clear();
         foreach (var child in _shell.Tree.Children(_contentList).ToArray()) _shell.Tree.Destroy(child);
@@ -279,16 +282,16 @@ internal sealed partial class SettingsPageController
                 }
                 if (_selected is "mods" or "resourcepacks" or "shaderpacks")
                 {
-                    BuildContentUpdateSelection(body, item);
+                    BuildContentUpdateSelection(row, item);
                     string release = _selected == "mods" ? item.Version : OnlineFile(item) is { } key && _onlineList.TryGetValue(key, out var online) ? online.InstalledVersion ?? "" : "";
                     var version = Text(body, release.Length > 0 ? release : _selected == "mods" ? "版本未标注" : "", 12, Muted, 24);
                     _shell.Tree.GetComponent<XsrUiElement>(version)!.Width = 116;
                     _shell.Tree.GetComponent<XsrUiVisualStyle>(version)!.TextAlignment = XsrUiTextAlignment.End;
                 }
-                var details = ActionButton(body, "ManagementContentDetails." + item.Name, "详情", ManagementAction, 64);
-                RegisterContentAction(details, () => OpenContentDetail(item));
+                BuildContentRowActions(body, item);
             }
         }
+        UpdateContentSelectionPresentation();
         Element(_contentList, "ManagementContentAfter", XsrUiSemanticRole.None, null, height: (rows - start - count) * rowHeight);
         _shell.Tree.MarkDirty(_contentList, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
     }
@@ -296,6 +299,9 @@ internal sealed partial class SettingsPageController
     private void ApplyContentFilter()
     {
         if (_management?.Contents.FirstOrDefault(item => item.PageId == _selected) is not { } source) return;
+        var liveFiles = source.Entries.Select(OnlineFile).OfType<Nexa.Services.Resources.ResourceContentOnlineQuery>().ToHashSet();
+        _selectedContentUpdates.RemoveWhere(query => query.InstanceDirectory == _instance && query.PageId == _selected && !liveFiles.Contains(query));
+        if (_contentSelectionAnchor is { } selectionAnchor && !liveFiles.Contains(selectionAnchor)) _contentSelectionAnchor = null;
         _contentSnapshot = source with { Entries = source.Entries.Select(LinkedContent).Where(item => (_selected != "mods" || MatchesModCategory(item, _modCategory)) && ((item.Name.Contains(_contentFilter, StringComparison.OrdinalIgnoreCase) || StripContentFormatting(item.Name).Contains(_contentFilter, StringComparison.OrdinalIgnoreCase)) || (StripContentFormatting(item.DisplayName).Contains(_contentFilter, StringComparison.OrdinalIgnoreCase) || StripContentFormatting(item.Description).Contains(_contentFilter, StringComparison.OrdinalIgnoreCase)) || item.Version.Contains(_contentFilter, StringComparison.OrdinalIgnoreCase))).ToArray() };
         if (_contentCount.IsAssigned && _shell.Tree.IsAlive(_contentCount))
             _shell.Tree.SetComponent(_contentCount, new XsrUiText($"{_contentSnapshot.Entries.Count} / {source.Entries.Count} 项" + (source.Complete ? "" : " · 未全部列出")));

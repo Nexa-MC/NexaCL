@@ -30,7 +30,7 @@ internal sealed partial class SettingsPageController : IDisposable
     private readonly Dictionary<XsrUiEntityId, Editor> _editors = [];
     private readonly Dictionary<XsrUiEntityId, (Editor Editor, string Value)> _choices = [];
     private readonly Dictionary<string, double> _scrollPositions = [];
-    private readonly XsrUiEntityId _navigationRoot, _pager;
+    private readonly XsrUiEntityId _navigationRoot, _pager, _saveStatus;
     private XsrUiEntityId _sections;
     private readonly Dictionary<string, XsrUiEntityId> _pages = [];
     private Task<XsrResult<SettingsCatalogSnapshot>>? _catalogReading;
@@ -64,6 +64,11 @@ internal sealed partial class SettingsPageController : IDisposable
         var names = new Dictionary<string, XsrUiEntityId>();
         shell.Tree.Walk(Page, entity => { names[shell.Tree.Name(entity)] = entity; return true; });
         _navigationRoot = names["SettingsNavigation"]; _pager = names["SettingsPager"];
+        _saveStatus = names["SettingsSaveStatus"];
+        shell.Tree.SetComponent(_saveStatus, new XsrUiLiveRegion(XsrUiLiveSetting.Polite));
+        Style(_saveStatus, XsrUiColor.Transparent, Muted, 0, 12);
+        shell.Tree.GetComponent<XsrUiVisualStyle>(_saveStatus)!.TextAlignment = XsrUiTextAlignment.End;
+        shell.Tree.SetComponent(_saveStatus, new XsrUiSemantic(XsrUiSemanticRole.Status, ""));
         shell.Tree.SetComponent(_navigationRoot, new XsrUiScrollGesture());
         shell.Tree.SetComponent(_navigationRoot, new XsrUiSemantic(XsrUiSemanticRole.RadioGroup, instanceDirectory is null ? "设置分类" : "版本设置分类"));
         Style(_navigationRoot, new(241, 245, 250), Ink, 10);
@@ -82,7 +87,7 @@ internal sealed partial class SettingsPageController : IDisposable
     private void OnIntent(object? sender, DesktopUiIntentEventArgs args)
     {
         if (_shell.Stage.Navigation.Current != Page) return;
-        if (IsRuntimeTraceIntent(args.Intent.Command) || IsRuntimeDiagnosticsIntent(args.Intent.Command) || args.Intent.Command == IdentityAction || args.Intent.Command == NetworkProbeStart || args.Intent.Command == NetworkTraceRefresh || args.Intent.Command == ContentWorkspaceAction || args.Intent.Command == LaunchProfileAction || IsDeveloperDiagnosticsIntent(args.Intent.Command) || IsHookIntent(args.Intent.Command) || IsProxyIntent(args.Intent.Command) || IsStoragePreferencesIntent(args.Intent.Command) || IsJavaInventoryIntent(args.Intent.Command) || IsSettingsTransferIntent(args.Intent.Command) || IsUpdateIntent(args.Intent.Command) || args.Intent.Command == ScreenshotPreviewAction || args.Intent.Command == ManagementAction || args.Intent.Command == Inherit || args.Intent.Command == Select || args.Intent.Command == Edit || args.Intent.Command == Choice || args.Intent.Command == ArgumentAdd || args.Intent.Command == ArgumentRemove || args.Intent.Command == RefreshPlatform) _pending.Enqueue(args.Intent);
+        if (IsContentSelectionIntent(args.Intent.Command) || IsRuntimeTraceIntent(args.Intent.Command) || IsRuntimeDiagnosticsIntent(args.Intent.Command) || args.Intent.Command == IdentityAction || args.Intent.Command == NetworkProbeStart || args.Intent.Command == NetworkTraceRefresh || args.Intent.Command == ContentWorkspaceAction || args.Intent.Command == LaunchProfileAction || IsDeveloperDiagnosticsIntent(args.Intent.Command) || IsHookIntent(args.Intent.Command) || IsProxyIntent(args.Intent.Command) || IsStoragePreferencesIntent(args.Intent.Command) || IsJavaInventoryIntent(args.Intent.Command) || IsSettingsTransferIntent(args.Intent.Command) || IsUpdateIntent(args.Intent.Command) || args.Intent.Command == ScreenshotPreviewAction || args.Intent.Command == ManagementAction || args.Intent.Command == Inherit || args.Intent.Command == Select || args.Intent.Command == Edit || args.Intent.Command == Choice || args.Intent.Command == ArgumentAdd || args.Intent.Command == ArgumentRemove || args.Intent.Command == RefreshPlatform) _pending.Enqueue(args.Intent);
         else if (args.Intent.Command == RemediationExecuted) OnPlatformRemediation(sender, args);
     }
     private void OnFrame(object? sender, EventArgs args)
@@ -112,6 +117,7 @@ internal sealed partial class SettingsPageController : IDisposable
         {
             CancelContentIntegrity();
             bool hadInstance = _instance is not null;
+            PresentSaveStatus("");
             CancelSettingsTransfer(); CancelJavaInventory();
             CancelIdentityRead(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots();
             CancelOnlineContent(); CancelModRemovalPreview(); CancelInstanceDiagnostics();
@@ -124,6 +130,7 @@ internal sealed partial class SettingsPageController : IDisposable
         {
             CancelContentIntegrity();
             CancelSettingsTransfer(); CancelJavaInventory();
+            PresentSaveStatus("");
             _instance = instance; _reading = null; _values = null; _revision = -1;
             ResetManagement();
             if (_catalog is not null) BuildSections(navigating: true);
@@ -144,7 +151,11 @@ internal sealed partial class SettingsPageController : IDisposable
             _catalog = result.Value!;
             BuildNavigation(); BuildSections();
         }
-        if (_writing is { IsCompleted: true }) _writing = null;
+        if (_writing is { IsCompleted: true } completedWrite)
+        {
+            PresentSaveStatus(completedWrite.IsCompletedSuccessfully && completedWrite.Result.IsSuccess ? "已保存" : "设置未保存");
+            _writing = null;
+        }
         long revision = _store.Read<long>(_revisionId).Value;
         if (_reading is null && _revision != revision && _queries.TryResolve(SettingsPolicyContract.EffectiveQuery, out var read))
             _reading = _queries.QueryAsync<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(read, new(_instance)).AsTask();
@@ -169,6 +180,7 @@ internal sealed partial class SettingsPageController : IDisposable
         UpdateLaunchProfileAdmission();
         while (_pending.TryDequeue(out var intent))
         {
+            if (IsContentSelectionIntent(intent.Command)) { HandleContentSelectionIntent(intent); continue; }
             if (intent.Command == IdentityAction && _identityWrite is null && _identityActions.TryGetValue(intent.Source, out var identityAction)) { identityAction(); continue; }
             if (intent.Command == LaunchProfileAction) { HandleLaunchProfileIntent(intent); continue; }
             if (IsDeveloperDiagnosticsIntent(intent.Command)) { HandleDeveloperDiagnosticsIntent(intent); continue; }
@@ -211,6 +223,7 @@ internal sealed partial class SettingsPageController : IDisposable
                 }
             }
         }
+        if (_writing is not null) PresentSaveStatus("正在保存…");
         UpdateLaunchProfiles();
         if (deferFactUpdates)
         {
@@ -280,9 +293,9 @@ internal sealed partial class SettingsPageController : IDisposable
         {
             if (!_pages.TryGetValue(page.Id, out var body))
             {
-                body = Stack(_pager, "SettingsSections", XsrUiOrientation.Vertical, 28);
+                body = Stack(_pager, "SettingsSections", XsrUiOrientation.Vertical, 16);
                 var layout = _shell.Tree.GetComponent<XsrUiElement>(body)!;
-                layout.VerticalAlignment = XsrUiAlignment.Stretch; layout.Padding = new(20, 16, 20, 16);
+                layout.VerticalAlignment = XsrUiAlignment.Stretch; layout.Padding = new(0, 8, 0, 8);
                 _shell.Tree.SetComponent(body, new XsrUiScroll { ShowsVerticalIndicator = true });
                 _shell.Tree.SetComponent(body, new XsrUiScrollGesture());
                 _shell.Tree.SetComponent(body, new XsrUiTransition { Key = page.Id, MovesSelf = true });
@@ -462,6 +475,8 @@ internal sealed partial class SettingsPageController : IDisposable
                 SettingsCapabilityAvailability.TemporarilyUnavailable => "暂不可用",
                 _ => "尚未可用",
             };
+            var spacer = Element(row, "SettingsUnavailableSpace", XsrUiSemanticRole.None, null);
+            _shell.Tree.GetComponent<XsrUiElement>(spacer)!.Weight = 1;
             var unavailable = Text(row, reason, 11, Muted, height: 28);
             var layout = _shell.Tree.GetComponent<XsrUiElement>(unavailable)!;
             layout.Width = 76; layout.VerticalAlignment = XsrUiAlignment.Center;
@@ -613,6 +628,15 @@ internal sealed partial class SettingsPageController : IDisposable
             : await _commands.Dispatch(route, mutation).Completion.ConfigureAwait(false);
         if (!_disposed && !result.IsSuccess) _feedback.Error("设置未保存：" + result.Error?.Message);
         return result;
+    }
+
+    private void PresentSaveStatus(string message)
+    {
+        var text = _shell.Tree.GetComponent<XsrUiText>(_saveStatus)!;
+        if (text.Content == message) return;
+        text.Content = message;
+        _shell.Tree.GetComponent<XsrUiSemantic>(_saveStatus)!.Label = message;
+        _shell.Tree.MarkDirty(_saveStatus, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
     }
 
     private XsrUiEntityId Element(XsrUiEntityId parent, string name, XsrUiSemanticRole role, string? label, double? width = null, double? height = null)

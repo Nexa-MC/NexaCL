@@ -10,13 +10,15 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static Action<LaunchPageFixture>? _captureContentSelection;
+
     private static void ContentBatchUpdatesDispatchOnlySelectedLiveFiles()
     {
         foreach (bool selectedOnly in new[] { true, false })
         {
             using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
             AssertTrue(fixture.Foundation.Host.SettingsPolicy.Set(new("general.language", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "zh-Hans"))).IsSuccess);
-            string instance = "instance-A";
+            string instance = Path.GetFullPath("instance-A");
             var queries = new XsrQueryRouterBuilder();
             fixture.Foundation.Queries.TryResolve(SettingsPolicyContract.CatalogQuery, out var catalog);
             fixture.Foundation.Queries.TryResolve(SettingsPolicyContract.EffectiveQuery, out var effective);
@@ -37,7 +39,9 @@ internal static partial class Program
                 }).ToArray()))));
             ResourceContentUpdateBatchCommand? updated = null;
             var completion = new TaskCompletionSource<XsrResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var commands = new XsrCommandRouterBuilder(); commands.Register<ResourceContentUpdateBatchCommand>(ResourceCatalogContract.UpdateContentBatch,
+            var commands = new XsrCommandRouterBuilder();
+            commands.Register<ResourceContentUpdateCommand>(ResourceCatalogContract.UpdateContent, (_, _) => ValueTask.FromResult(XsrResult.Success()));
+            commands.Register<ResourceContentUpdateBatchCommand>(ResourceCatalogContract.UpdateContentBatch,
                 async (command, _) => { updated = command; return await completion.Task; });
             using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, queries.Build(new NoopDispatchObserver()), fixture.Foundation.Commands,
                 fixture.Store, fixture.Feedback, () => instance);
@@ -48,17 +52,48 @@ internal static partial class Program
             Pump(() => scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "SettingsNav.mods"));
             Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.mods").Entity);
             Pump(() => scene.Nodes.Any(node => node.Text?.Contains("已关联 2", StringComparison.Ordinal) == true));
+            foreach (var name in new[] { "a.jar", "b.jar.disabled" })
+            {
+                foreach (var operation in new[] { "Details", "Toggle", "Remove", "Update" })
+                {
+                    var action = FindByKey(fixture.Shell, scene, "ManagementContent" + operation + "." + name);
+                    AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiVisualStyle>(action.Entity)!.HoverExpand);
+                    AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiImage>(action.Entity) is not null);
+                }
+            }
             if (selectedOnly)
             {
-                var choice = FindByKey(fixture.Shell, scene, "ContentUpdateSelect.a.jar").Entity;
-                Emit(fixture.Intents, "ui.settings.management.action", choice); scene = fixture.Shell.Render(new(1100, 900));
-                AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiToggle>(choice)!.IsChecked);
+                XsrUiSceneNode Row(string name) => scene.Nodes.Single(node => node.Role == XsrUiSemanticRole.ListItem && node.Label == name);
+                void ClickRow(string name, XsrUiClickModifiers modifiers = XsrUiClickModifiers.None)
+                {
+                    var row = Row(name); var point = new XsrUiPoint(row.Rect.X + 8, row.Rect.Y + row.Rect.Height / 2);
+                    AssertTrue(fixture.Shell.Renderer.PointerPressed(point));
+                    AssertTrue(fixture.Shell.Renderer.PointerReleased(point, modifiers));
+                    scene = fixture.Shell.Render(new(1100, 900));
+                }
+                AssertFalse(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity).StartsWith("ContentUpdateSelect.", StringComparison.Ordinal)));
+                ClickRow("a.jar"); AssertTrue(Row("a.jar").IsSelected); AssertFalse(Row("b.jar.disabled").IsSelected);
+                var retained = Row("a.jar").Entity;
+                ClickRow("b.jar.disabled", XsrUiClickModifiers.Toggle);
+                AssertTrue(Row("a.jar").IsSelected && Row("b.jar.disabled").IsSelected);
+                ClickRow("a.jar", XsrUiClickModifiers.Toggle);
+                AssertFalse(Row("a.jar").IsSelected); AssertTrue(Row("b.jar.disabled").IsSelected);
+                ClickRow("b.jar.disabled", XsrUiClickModifiers.Extend);
+                AssertTrue(Row("a.jar").IsSelected && Row("b.jar.disabled").IsSelected);
+                AssertEqual(retained, Row("a.jar").Entity);
+                _captureContentSelection?.Invoke(fixture);
+                Emit(fixture.Intents, "ui.settings.management.action", FindByKey(fixture.Shell, scene, "ContentSelectionClear").Entity);
+                scene = fixture.Shell.Render(new(1100, 900));
+                AssertFalse(Row("a.jar").IsSelected || Row("b.jar.disabled").IsSelected);
+                AssertFalse(FindByKey(fixture.Shell, scene, "Management.更新已选择").IsEnabled);
+                ClickRow("a.jar");
+                AssertTrue(FindByKey(fixture.Shell, scene, "Management.更新已选择").IsEnabled);
             }
             Emit(fixture.Intents, "ui.settings.management.action", FindByKey(fixture.Shell, scene, selectedOnly ? "Management.更新已选择" : "Management.更新全部已识别").Entity);
             Pump(() => updated is not null); AssertEqual(selectedOnly ? 1 : 2, updated!.Updates.Count);
             AssertTrue(updated.Updates.All(item => item.File.InstanceDirectory == instance && item.File.PageId == "mods"));
             AssertEqual("a.jar", updated.Updates[0].File.Name); AssertEqual(10L, updated.Updates[0].File.ExpectedSize);
-            instance = "instance-B"; Pump(() => settings.SelectedSection == "overview");
+            instance = Path.GetFullPath("instance-B"); Pump(() => settings.SelectedSection == "overview");
             completion.SetResult(XsrResult.Success()); scene = fixture.Shell.Render(new(1100, 900));
             AssertEqual("overview", settings.SelectedSection);
         }

@@ -12,6 +12,35 @@ internal sealed partial class SettingsPageController
         _contentActions.Add(entity);
     }
 
+    private void BuildContentRowActions(XsrUiEntityId parent, InstanceContentEntry item)
+    {
+        var actions = Stack(parent, "ManagementContentActions." + item.Name, XsrUiOrientation.Horizontal, 6);
+        ContentActionPill(actions, "ManagementContentDetails." + item.Name, "详情", "lucide/info", () => OpenContentDetail(item));
+        if (item.Enabled is { } enabled && _commands.TryResolve(InstanceManagementContract.SetModEnabled, out _))
+            ContentActionPill(actions, "ManagementContentToggle." + item.Name, enabled ? "禁用" : "启用",
+                enabled ? "lucide/pause" : "lucide/play", () => ToggleMod(item));
+        if (OnlineFile(item) is { } query && _onlineList.TryGetValue(query, out var online)
+            && !online.IsStale && online.UpdateVersion is { } update
+            && _resourceCommands?.TryResolve(Nexa.Services.Resources.ResourceCatalogContract.UpdateContent, out _) == true)
+            ContentActionPill(actions, "ManagementContentUpdate." + item.Name, "更新", "lucide/download", () => UpdateOnlinePack(query, update));
+        if (_commands.TryResolve(InstanceManagementContract.RemoveContent, out _))
+            ContentActionPill(actions, "ManagementContentRemove." + item.Name, "删除", "lucide/trash-2", () => RemoveContent(item));
+    }
+
+    private XsrUiEntityId ContentActionPill(XsrUiEntityId parent, string name, string label, string icon, Action action)
+    {
+        var button = ActionButton(parent, name, label, ManagementAction, 76);
+        _shell.Tree.GetComponent<XsrUiElement>(button)!.Height = 32;
+        _shell.Tree.SetComponent(button, new XsrUiImage(icon));
+        var style = _shell.Tree.GetComponent<XsrUiVisualStyle>(button)!;
+        style.HoverExpand = true; style.CornerRadius = 16;
+        style.Background = DesktopUiPalette.CapsuleBackground;
+        style.Foreground = DesktopUiPalette.CapsuleForeground;
+        _shell.Tree.GetComponent<XsrUiInput>(button)!.Enabled = _managementWrite is null;
+        RegisterContentAction(button, action);
+        return button;
+    }
+
     private void OpenContentDetail(InstanceContentEntry item)
     {
         item = LinkedContent(item);

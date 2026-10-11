@@ -10374,5 +10374,11 @@
   {"source":"次下载","en":"downloads","zh-Hant":"次下載"},
   {"source": "完整预览当前档案正在使用的皮肤与披风。", "en": "Preview the skin and cape used by this profile.", "zh-Hant": "完整預覽目前檔案正在使用的皮膚與披風。"},
   {"source": "此前更换过的皮肤和其他档案的皮肤", "en": "Previously used skins and skins from other profiles", "zh-Hant": "此前更換過的皮膚和其他檔案的皮膚"},
-  {"source": "开始配置", "en": "Set up", "zh-Hant": "開始設定"}
+  {"source": "开始配置", "en": "Set up", "zh-Hant": "開始設定"},
+  {"source": "已保存", "en": "Saved", "zh-Hant": "已儲存"},
+  {"source": "设置未保存", "en": "Settings not saved", "zh-Hant": "設定未儲存"},
+  {"source": "点击选择，Ctrl 多选，Shift 连选", "en": "Click to select; Ctrl to add, Shift for a range", "zh-Hant": "點擊選取，Ctrl 多選，Shift 連選"},
+  {"source": "已选 {0} 项 · 可更新 {1} 项", "en": "{0} selected · {1} updates", "zh-Hant": "已選 {0} 項 · 可更新 {1} 項"},
+  {"source": "已识别文件来源，项目资料或更新检查暂时不可用。", "en": "File source identified; project details or update checks are temporarily unavailable.", "zh-Hant": "已識別檔案來源，專案資料或更新檢查暫時無法使用。"},
+  {"source": "在线信息请求失败，请刷新重试", "en": "Online lookup failed. Refresh to retry.", "zh-Hant": "線上資訊請求失敗，請重新整理重試"}
 ]

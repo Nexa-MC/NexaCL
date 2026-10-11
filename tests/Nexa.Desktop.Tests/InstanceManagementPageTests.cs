@@ -143,7 +143,8 @@ internal static partial class Program
             var icon = scene.Nodes.First(node => fixture.Shell.Tree.Name(node.Entity) == "ManagementContentIcon");
             var details = FindByKey(fixture.Shell, scene, "ManagementContentDetails.00§a§lPack.zip");
             AssertTrue(Math.Abs(icon.Rect.X - firstRow.Rect.X - 16) < .01);
-            AssertTrue(Math.Abs(firstRow.Rect.X + firstRow.Rect.Width - details.Rect.X - details.Rect.Width - 16) < .01);
+            var actions = FindByKey(fixture.Shell, scene, "ManagementContentActions.00§a§lPack.zip");
+            AssertTrue(Math.Abs(firstRow.Rect.X + firstRow.Rect.Width - actions.Rect.X - actions.Rect.Width - 16) < .01);
             var formattedName = scene.Nodes.Single(node => node.Text == "Green Pack\n附加§?说明");
             AssertTrue(packTitle.Rect.Y < formattedName.Rect.Y);
             AssertEqual(2, formattedName.TextRuns!.Count);

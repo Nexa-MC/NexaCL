@@ -231,6 +231,12 @@ internal static partial class Program
         fixture.Shell.Render(new(1000, 650));
         AssertEqual("1280", fixture.Shell.Tree.GetComponent<XsrUiTextInput>(input.Entity)!.ReadDraft());
         AssertFalse(fixture.Shell.Tree.Children(input.Entity).Any());
+        AssertTrue(SpinWait.SpinUntil(() =>
+        {
+            scene = fixture.Shell.Render(new(1000, 650));
+            return FindByKey(fixture.Shell, scene, "SettingsSaveStatus").Text == "已保存";
+        }, TimeSpan.FromSeconds(5)));
+        AssertEqual(XsrUiLiveSetting.Polite, FindByKey(fixture.Shell, scene, "SettingsSaveStatus").LiveSetting);
     }
 
     private static void SettingsMemoryAutoAndJavaAcquisitionReachRoutes()

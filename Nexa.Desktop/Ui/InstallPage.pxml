@@ -1,5 +1,5 @@
 <Page xmlns="https://pcln.dev/pxml/2026" Key="InstallPage" Label="安装">
-  <StackPanel Key="InstallChoices" Orientation="Horizontal" Weight="1" Spacing="12" Padding="12,12,12,12">
+  <StackPanel Key="InstallChoices" Orientation="Horizontal" Weight="1" Spacing="12" Padding="0">
     <Button Key="InstallJavaChoice" Label="安装 Java 版 Minecraft" Command="ui.install.java" Weight="1" Padding="0">
       <StackPanel Key="InstallJavaChoiceContent" Orientation="Vertical" Weight="1" Padding="16">
         <ContentHost Key="InstallJavaArtwork" Weight="1" />

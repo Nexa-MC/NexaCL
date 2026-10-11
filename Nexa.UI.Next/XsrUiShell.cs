@@ -673,21 +673,10 @@ public sealed class XsrUiShell
     /// <summary>
     /// Runs the deterministic UI.Next layout pass for one viewport.
     /// </summary>
-    private XsrUiEntityId _motionPage;
-    private XsrSemanticId _motionDestination;
-    private int _motionDepth;
-    private long _motionRevision;
     public XsrUiScene Render(XsrUiSize viewport)
     {
-        if (Tree.GetComponent<XsrUiTransition>(Content) is { BoundKey.IsAssigned: false }
-            && (_motionPage != Stage.Navigation.Current || _motionDestination != SelectedNavigationId))
-        {
-            _motionPage = Stage.Navigation.Current;
-            _motionDestination = SelectedNavigationId;
-            XsrUiTransition.ConfigureIndependent(Tree, _motionPage, $"navigation:{++_motionRevision}",
-                Stage.Navigation.Depth < _motionDepth ? -6 : 6);
-            _motionDepth = Stage.Navigation.Depth;
-        }
+        // Navigation fades as one prepared page in the backend. Do not manufacture
+        // per-leaf motion: it delays controls and reanimates lists when revisiting them.
         Renderer.Viewport = viewport;
         return Renderer.Render();
     }

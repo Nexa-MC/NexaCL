@@ -1,5 +1,5 @@
 <Page xmlns="https://pcln.dev/pxml/2026" Key="VersionListPage" Label="选择版本">
-  <StackPanel Key="LibraryContent" Orientation="Vertical" Weight="1" Spacing="16">
+  <StackPanel Key="LibraryContent" Orientation="Vertical" Weight="1" Spacing="10">
     <StackPanel Key="LibraryDirectoryBar" Orientation="Horizontal" Height="40" Spacing="8">
       <Text Key="LibraryDirectoryCaption" Content="当前目录：" Width="76" VerticalAlignment="Center" />
       <Button Key="LibraryChooseDirectory" Label="{state versions.directory.path}" Command="ui.versions.directories" Weight="1" Height="40">

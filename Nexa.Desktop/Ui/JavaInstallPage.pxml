@@ -1,5 +1,5 @@
 <Page xmlns="https://pcln.dev/pxml/2026" Key="JavaInstallPage" Label="安装 Java 版">
-  <StackPanel Key="JavaInstallContent" Orientation="Vertical" Weight="1" Spacing="8" Padding="24,20,24,24">
+  <StackPanel Key="JavaInstallContent" Orientation="Vertical" Weight="1" Spacing="8" Padding="0">
 
 
     <StackPanel Key="JavaInstallEntryRow" Orientation="Horizontal" Height="40" Spacing="12">
