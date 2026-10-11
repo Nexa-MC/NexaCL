@@ -1,4 +1,4 @@
-using Nexa.Services.Minecraft;
+﻿using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Management;
 using Nexa.Xsr.State;
 
@@ -45,6 +45,19 @@ public sealed class ResourceContentUpdateService(ResourceContentOnlineService co
         if (command.Updates.Count is 0 or > 100 || command.Updates.Any(item => item.File.InstanceDirectory != command.Updates[0].File.InstanceDirectory)
             || command.Updates.DistinctBy(item => (item.File.PageId, item.File.Name)).Count() != command.Updates.Count)
             throw new InvalidDataException("请选择同一实例的 1 至 100 个不同内容项。");
+        using var task = downloads.BeginUpdateTask();
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken);
+        try
+        {
+            await UpdateBatchCoreAsync(command, task, linked.Token).ConfigureAwait(false);
+            task.Complete("更新完成");
+        }
+        catch (OperationCanceledException) { task.Canceled(); throw; }
+        catch (Exception e) when (e is not OutOfMemoryException and not AccessViolationException) { task.Fail(e.Message); throw; }
+    }
+
+    private async Task UpdateBatchCoreAsync(ResourceContentUpdateBatchCommand command, Nexa.Services.Tasks.ITaskCenterTask task, CancellationToken token)
+    {
         var snapshot = await InstanceManagementService.ReadAsync(new(command.Updates[0].File.InstanceDirectory), token).ConfigureAwait(false);
         List<string> stages = []; List<InstanceContentReplacement> replacements = [];
         try
@@ -60,12 +73,16 @@ public sealed class ResourceContentUpdateService(ResourceContentOnlineService co
                 for (string? path = snapshot.GameDirectory; path is not null; path = Path.GetDirectoryName(path))
                     if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0) throw new IOException("不能更新链接目录中的资源。");
                 Directory.CreateDirectory(stage); stages.Add(stage);
-                await downloads.DownloadAsync(new(update.Source.Provider, update.Source.ProjectId, update.VersionId, stage, update.File.MirrorFirst), token).ConfigureAwait(false);
+                int completed = replacements.Count;
+                await downloads.DownloadInTransactionAsync(new(update.Source.Provider, update.Source.ProjectId, update.VersionId, stage, update.File.MirrorFirst),
+                    (phase, detail, progress, _, _, speed) => task.Report(phase, detail,
+                        (completed + progress) / (command.Updates.Count + 1d), completed, command.Updates.Count, speed), token).ConfigureAwait(false);
                 string downloaded = Directory.EnumerateFiles(stage).Single();
                 await VerifySelectedFileAsync(downloaded, expected, token).ConfigureAwait(false);
                 replacements.Add(new(new(update.File.InstanceDirectory, update.File.PageId, update.File.Name, false, update.File.ExpectedSize,
                     update.File.ExpectedModifiedUtcTicks), downloaded, Path.GetFileName(downloaded)));
             }
+            task.Report("应用更新", "", command.Updates.Count / (command.Updates.Count + 1d), command.Updates.Count, command.Updates.Count, 0);
             await InstanceContentUpdateTransaction.ApplyAsync(replacements, store,
                 validate: ct => ValidateUpdatedModsAsync(replacements, snapshot, ct), token: token).ConfigureAwait(false);
         }

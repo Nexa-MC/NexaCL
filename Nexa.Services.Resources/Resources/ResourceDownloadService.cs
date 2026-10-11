@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using Nexa.Services.Downloads;
 using Nexa.Services.Tasks;
 
@@ -7,12 +7,27 @@ namespace Nexa.Services.Resources;
 public sealed class ResourceDownloadService(IResourceCatalogSource catalog, DownloadService downloads, TaskCenterService tasks, HttpClient http)
 {
     public Func<string>? SourcePriority { get; init; }
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350", Justification = "CurseForge publishes SHA1 identities; HTTPS protects metadata. Prefer SHA512 when provided.")]
     public async Task DownloadAsync(ResourceDownloadCommand command, CancellationToken token)
     {
         using var task = tasks.Begin(new("resource." + Guid.NewGuid().ToString("N"), "下载资源", ["读取版本", "下载", "校验"]));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken);
         token = linked.Token;
+        try
+        {
+            await DownloadInTransactionAsync(command, task.Report, token).ConfigureAwait(false);
+            task.Complete("下载完成");
+        }
+        catch (OperationCanceledException) { task.Canceled(); throw; }
+        catch (Exception e) when (e is not OutOfMemoryException and not AccessViolationException) { task.Fail(e.Message); throw; }
+    }
+
+    internal ITaskCenterTask BeginUpdateTask() => tasks.Begin(new("resource.update." + Guid.NewGuid().ToString("N"),
+        "更新内容", ["读取版本", "下载", "校验", "应用更新"]));
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350", Justification = "CurseForge publishes SHA1 identities; HTTPS protects metadata. Prefer SHA512 when provided.")]
+    internal async Task DownloadInTransactionAsync(ResourceDownloadCommand command,
+        Action<string, string, double, int, int, long> report, CancellationToken token)
+    {
         command = command with { Refresh = true };
         string? stage = null;
         try
@@ -38,10 +53,10 @@ public sealed class ResourceDownloadService(IResourceCatalogSource catalog, Down
                 AllowResume = false,
                 Sources = Sources(file.Url, ResourceSourcePriority.Apply(SourcePriority?.Invoke(), command.MirrorFirst)),
                 ConnectionFactory = url => new Connection(http, url, file.Size, Hash(file.Sha512, 128) ? file.Sha512! : file.Sha1!)
-            }, progress => task.Report("下载", file.Name, (double)progress.DownloadedBytes / file.Size, 0, 1, progress.BytesPerSecond), token).ConfigureAwait(false);
+            }, progress => report("下载", file.Name, (double)progress.DownloadedBytes / file.Size, 0, 1, progress.BytesPerSecond), token).ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
             if (!result.Success) throw new IOException("资源下载失败，请重试。");
-            task.Report("校验", file.Name, 1, 0, 1, 0);
+            report("校验", file.Name, 1, 0, 1, 0);
             await using (var input = new FileStream(stage, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 if (input.Length != file.Size) throw new InvalidDataException("下载文件长度不匹配。");
@@ -51,10 +66,8 @@ public sealed class ResourceDownloadService(IResourceCatalogSource catalog, Down
             }
             token.ThrowIfCancellationRequested(); CheckDirectory(directory);
             File.Move(stage, destination, overwrite: false);
-            task.Complete("已保存：" + file.Name);
+            report("校验", file.Name, 1, 1, 1, 0);
         }
-        catch (OperationCanceledException) { task.Canceled(); throw; }
-        catch (Exception e) when (e is not OutOfMemoryException and not AccessViolationException) { task.Fail(e.Message); throw; }
         finally
         {
             if (stage is not null)

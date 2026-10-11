@@ -1,4 +1,4 @@
-using Nexa.Xsr;
+﻿using Nexa.Xsr;
 
 namespace Nexa.Services.Resources;
 
@@ -23,13 +23,13 @@ public static class ResourceCatalogContract
     public const int PageSize = 20;
 }
 
-public enum ResourceKind { Mod, Modpack, ResourcePack, Shader, DataPack }
+public enum ResourceKind { Mod, Modpack, ResourcePack, Shader, DataPack, World }
 public enum ResourceOrder { Relevance, Downloads, Updated }
 public enum ResourceProvider { Modrinth, CurseForge }
 public sealed record ResourceReference(ResourceProvider Provider, string ProjectId);
 public sealed record ResourceSearchQuery(ResourceKind Kind = ResourceKind.Mod, string Text = "",
     string GameVersion = "", string Loader = "", ResourceOrder Order = ResourceOrder.Relevance, int Page = 0)
-{ public bool MirrorFirst { get; init; } = true; public bool Refresh { get; init; } public bool WaitForRefresh { get; init; } }
+{ public bool MirrorFirst { get; init; } = true; public bool Refresh { get; init; } public bool WaitForRefresh { get; init; } public ResourceProvider? Provider { get; init; } public string Tag { get; init; } = ""; }
 public sealed record ResourceProject(string Id, string Title, string Description, string Author,
     long Downloads, string Website)
 {

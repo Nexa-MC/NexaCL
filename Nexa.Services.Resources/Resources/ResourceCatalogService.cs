@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Nexa.Services.Resources;
@@ -15,13 +15,17 @@ public sealed class ResourceCatalogService(HttpClient http, ResourceProviderHttp
         if (!Enum.IsDefined(query.Kind) || !Enum.IsDefined(query.Order) || query.Page is < 0 or > 499)
             throw new ArgumentException("资源筛选无效。");
         ValidateFilter(query.Text, 200); ValidateFilter(query.GameVersion, 40); ValidateFilter(query.Loader, 40);
+        string tag = ResourceSearchCategories.ForProvider(query.Tag, ResourceProvider.Modrinth);
+        if (query.Tag.Length > 0 && tag.Length == 0) return new([], 0, query.Page);
         JsonArray facets = [];
+        if (tag.Length > 0) facets.Add((JsonNode)new JsonArray(JsonValue.Create("categories:" + tag)));
         string type = query.Kind switch
         {
             ResourceKind.Mod => "mod",
             ResourceKind.Modpack => "modpack",
             ResourceKind.ResourcePack => "resourcepack",
             ResourceKind.Shader => "shader",
+            ResourceKind.World => "world",
             _ => "mod"
         };
         facets.Add((JsonNode)new JsonArray(JsonValue.Create(query.Kind == ResourceKind.DataPack ? "all_project_types:datapack" : "project_type:" + type)));

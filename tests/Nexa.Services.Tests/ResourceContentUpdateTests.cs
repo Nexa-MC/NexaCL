@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 using Nexa.Services.Downloads;
@@ -86,6 +86,63 @@ internal static partial class Program
         }
         finally { Directory.Delete(root, true); }
     }
+    private static async Task ResourceBatchUpdatePublishesOneTask()
+    {
+        foreach (bool failDownload in new[] { false, true })
+        {
+            string root = CreateTempDirectory();
+            try
+            {
+                string instance = ResourceInstanceFixture(root);
+                Directory.CreateDirectory(Path.Combine(instance, "mods"));
+                await File.WriteAllBytesAsync(Path.Combine(instance, "mods", "iris.jar"), ResourceJar("iris"));
+                byte[] original = "old-pack"u8.ToArray(), updated = "new-pack"u8.ToArray();
+                string hash = Convert.ToHexString(SHA512.HashData(original)).ToLowerInvariant();
+                var builder = new XsrStateStoreBuilder(); DownloadService.DeclareState(builder); TaskCenterStateContract.DeclareState(builder);
+                MinecraftProcessStateComposition.DeclareState(builder);
+                var store = builder.Build(); var tasks = new TaskCenterService(store); var downloads = new DownloadService(store);
+                int files = 0;
+                using var http = new HttpClient(new ResourceHttp(request =>
+                {
+                    if (request.RequestUri!.Host == "cdn.modrinth.com")
+                    {
+                        files++;
+                        var running = store.ReadCollection<TaskCenterEntry>(store.Resolve(TaskCenterStateContract.EntriesKey)).Items;
+                        AssertEqual(1, running.Count); AssertFalse(running[0].IsTerminal);
+                        return new(failDownload ? HttpStatusCode.BadRequest : HttpStatusCode.OK) { Content = new ByteArrayContent(updated) };
+                    }
+                    return new(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent(request.RequestUri.AbsolutePath.EndsWith("version_files", StringComparison.Ordinal)
+                        ? new JsonObject { [hash] = new JsonObject { ["project_id"] = "A", ["id"] = "Old" } }.ToJsonString()
+                        : "{\"data\":{\"exactMatches\":[]}}")
+                    };
+                }));
+                var catalog = new PackUpdateCatalog(updated);
+                var service = new ResourceContentUpdateService(new(new(new(http, "")), catalog), new(catalog, downloads, tasks, http), store);
+                List<ResourceContentUpdateCommand> updates = [];
+                foreach (string page in new[] { "resourcepacks", "shaderpacks" })
+                {
+                    string directory = Path.Combine(instance, page); Directory.CreateDirectory(directory);
+                    string path = Path.Combine(directory, "old.zip"); await File.WriteAllBytesAsync(path, original);
+                    var file = new FileInfo(path);
+                    updates.Add(new(new(instance, page, file.Name, file.Length, file.LastWriteTimeUtc.Ticks), new(ResourceProvider.Modrinth, "A"), "New"));
+                }
+                bool failed = false;
+                try { await service.UpdateBatchAsync(new(updates), default); }
+                catch (IOException) { failed = true; }
+                AssertEqual(failDownload, failed);
+                var final = store.ReadCollection<TaskCenterEntry>(store.Resolve(TaskCenterStateContract.EntriesKey)).Items;
+                AssertEqual(1, final.Count); AssertTrue(final[0].IsTerminal);
+                AssertEqual(failDownload ? TaskCenterEntryState.Failed : TaskCenterEntryState.Finished, final[0].State);
+                if (!failDownload) AssertEqual(2, files);
+                foreach (var update in updates)
+                    AssertEqual(failDownload, File.Exists(Path.Combine(instance, update.File.PageId, "old.zip")));
+            }
+            finally { Directory.Delete(root, true); }
+        }
+    }
+
     private sealed class PackUpdateCatalog(byte[] bytes) : IResourceCatalogSource, IResourceFileSource
     {
         public Task<ResourceSearchResult> SearchAsync(ResourceSearchQuery query, CancellationToken token) => throw new NotSupportedException();
@@ -97,6 +154,7 @@ internal static partial class Program
     }
     private static async ValueTask ResourcePackAndShaderUpdatesKeepOriginalOnFailureAndJournalSuccess()
     {
+        await ResourceBatchUpdatePublishesOneTask();
         foreach (string page in new[] { "resourcepacks", "shaderpacks" })
             foreach (string scenario in new[] { "success", "download-error", "stale", "wrong-project", "running", "other-root" })
             {

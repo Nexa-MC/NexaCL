@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using static Nexa.Services.Resources.ResourceProviderHttp;
 
 namespace Nexa.Services.Resources;
@@ -10,12 +10,14 @@ public sealed class CurseForgeResourceCatalog(ResourceProviderHttp transport) : 
     {
         Validate(query.Text, 200); Validate(query.GameVersion, 40); Validate(query.Loader, 40);
         if (query.Page is < 0 or > 499 || !Enum.IsDefined(query.Kind) || !Enum.IsDefined(query.Order)) throw new ArgumentException("资源筛选无效。");
-        string loader = Loader(query.Loader);
+        string tag = ResourceSearchCategories.ForProvider(query.Tag, ResourceProvider.CurseForge);
+        if (query.Tag.Length > 0 && (!int.TryParse(tag, out int categoryId) || categoryId <= 0)) return new([], 0, query.Page);
+        string loader = query.Kind is ResourceKind.Mod or ResourceKind.Modpack ? Loader(query.Loader) : "";
         if (loader == "unsupported") return new([], 0, query.Page);
-        int category = query.Kind switch { ResourceKind.Mod => 6, ResourceKind.Modpack => 4471, ResourceKind.ResourcePack => 12, ResourceKind.Shader => 6552, _ => 6945 };
+        int category = query.Kind switch { ResourceKind.Mod => 6, ResourceKind.Modpack => 4471, ResourceKind.ResourcePack => 12, ResourceKind.Shader => 6552, ResourceKind.World => 17, _ => 6945 };
         int order = query.Order switch { ResourceOrder.Downloads => 6, ResourceOrder.Updated => 3, _ => 2 };
         using var doc = await transport.ReadAsync(ResourceProvider.CurseForge,
-            $"mods/search?gameId=432&classId={category}&pageSize=20&index={query.Page * 20}&sortOrder=desc&sortField={order}&searchFilter={Uri.EscapeDataString(query.Text)}" + Filters(query.GameVersion, loader), query.MirrorFirst, token).ConfigureAwait(false);
+            $"mods/search?gameId=432&classId={category}&pageSize=20&index={query.Page * 20}&sortOrder=desc&sortField={order}&searchFilter={Uri.EscapeDataString(query.Text)}" + Filters(query.GameVersion, loader) + (tag.Length == 0 ? "" : "&categoryId=" + tag), query.MirrorFirst, token).ConfigureAwait(false);
         var data = doc.RootElement.GetProperty("data");
         int total = doc.RootElement.TryGetProperty("pagination", out var page) ? (int)Math.Clamp(Number(page, "totalCount"), 0, 10000) : data.GetArrayLength();
         return new(data.EnumerateArray().Take(20).Select(item => Project(item) with { Kind = query.Kind }).ToArray(), total, query.Page);

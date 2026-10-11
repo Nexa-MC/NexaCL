@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using Nexa.Services.Downloads;
@@ -27,6 +27,20 @@ internal static partial class Program
         var result = await merged.SearchAsync(new(Text: "钠"), default);
         AssertEqual(1, result.Projects.Count); AssertEqual(2, result.Projects[0].Sources.Count);
         AssertTrue(result.Projects[0].DisplayName.Contains('钠')); AssertTrue(terms.Contains("sodium") && terms.All(term => !term.Contains('钠')));
+        var onlyMr = await merged.SearchAsync(new(Text: "sodium") { Provider = ResourceProvider.Modrinth }, default);
+        AssertTrue(onlyMr.Projects.All(project => project.Sources.All(source => source.Provider == ResourceProvider.Modrinth)));
+        var onlyCf = await merged.SearchAsync(new(Text: "sodium") { Provider = ResourceProvider.CurseForge }, default);
+        AssertTrue(onlyCf.Projects.All(project => project.Sources.All(source => source.Provider == ResourceProvider.CurseForge)));
+        var categories = new List<string>();
+        using var filtered = new MergedResourceCatalog(new CatalogStub((query, _) =>
+        {
+            categories.Add(query.Tag);
+            return Task.FromResult(new ResourceSearchResult(onlyMr.Projects, 1, 0));
+        }), new CatalogStub((_, _) => throw new InvalidOperationException("Unselected provider was queried.")));
+        await filtered.SearchAsync(new() { Provider = ResourceProvider.Modrinth, Tag = "412/technology" }, default);
+        await filtered.SearchAsync(new() { Provider = ResourceProvider.Modrinth, Tag = "419/magic" }, default);
+        AssertEqual(2, categories.Count);
+        AssertEqual("412/technology", categories[0]); AssertEqual("419/magic", categories[1]);
         var broken = new CatalogStub((_, _) => throw new HttpRequestException());
         result = await new MergedResourceCatalog(mr, broken).SearchAsync(new(), default);
         AssertEqual(1, result.Projects.Count); AssertTrue(result.Notice!.Contains("CurseForge", StringComparison.Ordinal));
@@ -73,6 +87,14 @@ internal static partial class Program
         var result = await source.SearchAsync(new(ResourceKind.Mod, "test", "1.21.1", "fabric", Page: 1), default);
         AssertEqual(30, result.Total); AssertTrue(result.Projects[0].IconUrl is not null);
         AssertTrue(requests[0].Contains("modLoaderType=4", StringComparison.Ordinal)); AssertTrue(requests[0].Contains("index=20", StringComparison.Ordinal));
+        await source.SearchAsync(new(ResourceKind.World) { Tag = "406/worldgen" }, default);
+        AssertTrue(requests[^1].Contains("classId=17", StringComparison.Ordinal));
+        AssertTrue(requests[^1].Contains("categoryId=406", StringComparison.Ordinal));
+        await source.SearchAsync(new(ResourceKind.Shader, Loader: "iris"), default);
+        AssertFalse(requests[^1].Contains("modLoaderType=", StringComparison.Ordinal));
+        int beforeUnsupported = requests.Count;
+        AssertEqual(0, (await source.SearchAsync(new() { Tag = "/technology" }, default)).Projects.Count);
+        AssertEqual(beforeUnsupported, requests.Count);
         var detail = await source.DetailAsync(new("123", "1.21.1", "fabric"), default);
         AssertEqual(2, detail.Versions.Count); AssertTrue(detail.Versions[0].File is not null); AssertTrue(detail.Versions[1].File is null);
     }

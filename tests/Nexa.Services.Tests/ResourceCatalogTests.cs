@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text;
 using System.Text.Json;
 using Nexa.Services.Resources;
@@ -63,6 +63,13 @@ internal static partial class Program
         AssertEqual("https://modrinth.com/project/Valid123/version/V1", detail.Versions[0].Website);
         await service.SearchAsync(new(ResourceKind.DataPack), default);
         AssertTrue(Uri.UnescapeDataString(requests[^1]).Contains("all_project_types:datapack", StringComparison.Ordinal));
+        await service.SearchAsync(new(ResourceKind.World), default);
+        AssertTrue(Uri.UnescapeDataString(requests[^1]).Contains("project_type:world", StringComparison.Ordinal));
+        await service.SearchAsync(new() { Tag = "412/technology" }, default);
+        AssertTrue(Uri.UnescapeDataString(requests[^1]).Contains("categories:technology", StringComparison.Ordinal));
+        int beforeUnsupported = requests.Count;
+        AssertEqual(0, (await service.SearchAsync(new() { Tag = "4484/" }, default)).Projects.Count);
+        AssertEqual(beforeUnsupported, requests.Count);
         bool invalid = false;
         try { await service.DetailAsync(new("../escape"), default); } catch (ArgumentException) { invalid = true; }
         AssertTrue(invalid);

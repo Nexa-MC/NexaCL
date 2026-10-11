@@ -1,4 +1,4 @@
-namespace Nexa.Services.Resources;
+﻿namespace Nexa.Services.Resources;
 
 /// <summary>Partial provider failures do not discard healthy results. Identity comes from the curated index.</summary>
 public sealed class MergedResourceCatalog(IResourceCatalogSource modrinth, IResourceCatalogSource curseForge, ResourceOnlineInformationCache? information = null, Func<string>? sourcePolicyIdentity = null) : IResourceCatalogSource, IResourceFileSource, IResourceChangelogSource, IDisposable
@@ -33,8 +33,10 @@ public sealed class MergedResourceCatalog(IResourceCatalogSource modrinth, IReso
     public Task<ResourceSearchResult> SearchAsync(ResourceSearchQuery query, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
+        if (query.Provider is { } provider && !Enum.IsDefined(provider)) throw new ArgumentException("资源来源无效。");
+        ResourceSearchCategories.Validate(query.Tag);
         string identity = ResourceOnlineInformationCache.Identity(Policy(query.MirrorFirst), query.Kind.ToString(), query.Text,
-            query.GameVersion, query.Loader, query.Order.ToString(), query.Page.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            query.GameVersion, query.Loader, query.Provider?.ToString() ?? "all", query.Tag, query.Order.ToString(), query.Page.ToString(System.Globalization.CultureInfo.InvariantCulture));
         return _information.ReadAsync("search", identity, ResourceOnlineInformationCache.CatalogFresh, ResourceOnlineInformationCache.CatalogRetain,
             65536, ResourceMetadataJsonContext.Default.ResourceMetadataEnvelopeResourceSearchResult,
             ct => SearchCoreAsync(query, ct), value => value.Projects.Count > 0 && value.Projects.All(ValidProject) && string.IsNullOrEmpty(value.Notice),
@@ -47,6 +49,7 @@ public sealed class MergedResourceCatalog(IResourceCatalogSource modrinth, IReso
         var calls = new List<Task<(ResourceSearchResult? Value, string? Error)>>();
         foreach (var provider in new[] { ResourceProvider.Modrinth, ResourceProvider.CurseForge })
         {
+            if (query.Provider is { } requested && requested != provider) continue;
             var source = provider == ResourceProvider.Modrinth ? modrinth : curseForge;
             var terms = matches.Select(m => provider == ResourceProvider.Modrinth ? m.Modrinth : m.CurseForge).Where(s => s.Length > 0).Distinct().ToArray();
             if (terms.Length == 0) terms = [query.Text];
