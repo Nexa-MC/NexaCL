@@ -38,6 +38,7 @@ public sealed partial class SettingsPolicyService
         {
             if (!SettingsPolicySchema.ByKey.TryGetValue(value.Key, out var definition) || !definition.InstanceOverride)
                 throw new InvalidDataException("A profile can only override instance settings: " + value.Key);
+            if (value.Key == "instance.development-mode") throw new InvalidDataException("Development mode belongs to an instance, not a launch profile.");
             if (value.Key == "java.compatibility") throw new InvalidDataException("Java compatibility checks are mandatory; this setting has no mutable consumer.");
             string? error = definition.Validate(value.Value);
             if (error is not null) throw new InvalidDataException(value.Key + ": " + error);

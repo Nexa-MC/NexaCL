@@ -150,6 +150,8 @@ public sealed partial class SettingsPolicyService
                 double gib = slider switch { <= 12 => slider * 0.1 + 0.3, <= 25 => (slider - 12) * 0.5 + 1.5, <= 33 => slider - 25 + 8, _ => (slider - 33) * 2 + 16 };
                 inherited = new(SettingsOverrideMode.Custom, Math.Max(256, (int)Math.Round(gib * 1024)).ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
+            if (definition.Key == "instance.development-mode")
+                return ResolveValue(definition, null, ReadOverride(local?[definition.Key]), null, null);
             return ResolveValue(definition, inherited, ReadOverride(local?[definition.Key]), ReadOverride(profile?[definition.Key]), temporary?.GetValueOrDefault(definition.Key));
         }).ToArray();
         return new(revision, Array.AsReadOnly(values));
@@ -268,6 +270,7 @@ public sealed partial class SettingsPolicyService
     private static string? ValidateMutation(SettingsMutation mutation)
     {
         if (!SettingsPolicySchema.ByKey.TryGetValue(mutation.Key, out var definition)) return "Unknown setting.";
+        if (mutation.Key == "instance.development-mode" && mutation.Layer != SettingsLayer.Instance) return "Development mode belongs to an instance, not a global or launch profile.";
         if (mutation.Key == "java.compatibility") return "Java compatibility checks are mandatory; this setting has no mutable consumer.";
         if (mutation.Layer is not (SettingsLayer.Global or SettingsLayer.Instance or SettingsLayer.Profile)) return "Use the temporary launch lifecycle command to edit this layer.";
         if (mutation.Layer == SettingsLayer.Instance && (!definition.InstanceOverride || mutation.InstanceId is null)) return "An instance override is not allowed or has no identity.";

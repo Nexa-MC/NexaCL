@@ -1,4 +1,5 @@
 [
+  {"id":"instance.development-mode","parent":null,"scope":"instance","page":"overview","section":"整合包开发","label":"整合包开发模式","kind":"Setting","key":"instance.development-mode","developer":false,"availability":"Available"},
   {
     "id": "instance.recovery.keep-history",
     "parent": null,

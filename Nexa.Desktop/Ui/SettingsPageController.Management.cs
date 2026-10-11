@@ -30,8 +30,8 @@ internal sealed partial class SettingsPageController
     internal Action<string>? OpenManagementDirectory { get; set; }
     internal Action? ManagementChanged { get; set; }
     private IReadOnlyList<SettingsCatalogPage> ManagementPages => _management is { } snapshot
-        ? snapshot.Pages.Select(page => new SettingsCatalogPage(page.Id, page.Label)).ToArray()
-        : [new("overview", "总览"), new("game", "游戏设置"), new("recovery", "快照与存储")];
+        ? snapshot.Pages.Where(page => InstanceDevelopmentMode || !IsDevelopmentPage(page.Id)).Select(page => new SettingsCatalogPage(page.Id, page.Label)).ToArray()
+        : [new("overview", "总览"), new("game", "游戏设置")];
 
     private void CancelManagementRead()
     {
@@ -163,6 +163,7 @@ internal sealed partial class SettingsPageController
         if (_contentDetail is { } detail) { BuildContentDetail(detail); return; }
         _shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY = _scrollPositions.GetValueOrDefault(_selected);
         var toolbar = Stack(_sections, "ManagementToolbar", XsrUiOrientation.Horizontal, 10);
+        if (_selected == "overview") BuildInstanceDevelopmentMode();
         if (_management is not { } snapshot)
         {
             Text(_sections, _managementError ?? "正在读取版本内容…", 13, Muted, 28);

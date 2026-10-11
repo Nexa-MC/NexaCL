@@ -108,6 +108,7 @@ public static class SettingsPolicySchema
         new("java.vendor", SettingsValueKind.Enum, "", true, false, null, SettingsApplyTiming.NextLaunch,
             Choices: "|EclipseTemurin|Microsoft|Zulu|Oracle|Liberica|Corretto|IbmSemeru|Dragonwell|TencentKona|OpenJdk|GraalVmCommunity|JetBrains|Unknown"),
         new("java.compatibility", SettingsValueKind.Boolean, "true", true, false, null, SettingsApplyTiming.NextLaunch),
+        new("instance.development-mode", SettingsValueKind.Boolean, "false", true, false, null, SettingsApplyTiming.Immediate, Exportable: false),
         new("recovery.keep-history", SettingsValueKind.Boolean, "false", true, false, null, SettingsApplyTiming.NextTask, Exportable: false),
         new("game.memory", SettingsValueKind.Number, "2048", true, true, null, SettingsApplyTiming.NextLaunch, "MiB", 256, 1048576),
         new("game.gpu-preference", SettingsValueKind.Enum, "auto", true, false, null, SettingsApplyTiming.NextLaunch, Choices: "auto|secondary"),

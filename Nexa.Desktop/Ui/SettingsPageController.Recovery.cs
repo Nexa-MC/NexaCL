@@ -12,7 +12,9 @@ internal sealed partial class SettingsPageController
         var policy = FormGroup(_sections, "RecoveryPolicy", "快照保留");
         if (_catalog?.Entries.FirstOrDefault(item => item.Id == "instance.recovery.keep-history") is { } setting)
             BuildRow(policy, setting);
-        Text(policy, "默认只保留最新成功快照。关闭历史保留后，下次成功采集时清理旧快照。", 12, Muted, 28);
+        Text(policy, InstanceDevelopmentMode
+            ? "开发模式会自动保留历史快照；关闭开发模式后使用此设置。"
+            : "默认只保留最新成功快照。关闭历史保留后，下次成功采集时清理旧快照。", 12, Muted, 28);
         if (snapshot.RecoveryStorage is not { } storage)
         {
             Text(_sections, "正在统计存储与读取快照…", 13, Muted, 28);

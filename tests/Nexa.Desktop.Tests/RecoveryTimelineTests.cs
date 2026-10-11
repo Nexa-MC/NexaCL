@@ -29,6 +29,8 @@ internal static partial class Program
             }
             await File.WriteAllTextAsync(Path.Combine(second, "options.txt"), "second-root");
             var other = await new RecoverySnapshotStore(second, second).CaptureAsync([new("instance", "options.txt")], fixture.Foundation.Host.SettingsPolicy.CaptureRecoverySettings(second));
+            EnableInstanceDevelopmentMode(fixture, first);
+            EnableInstanceDevelopmentMode(fixture, second);
             string selected = first;
             using var controller = new SettingsPageController(fixture.Shell, fixture.Intents, fixture.Foundation.Queries, fixture.Foundation.Commands,
                 fixture.Store, fixture.Feedback, () => selected);

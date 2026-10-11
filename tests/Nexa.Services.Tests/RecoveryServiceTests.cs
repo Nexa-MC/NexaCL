@@ -114,6 +114,16 @@ internal static partial class Program
             AssertTrue(settings.Set(new("recovery.keep-history", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "false"), instance)).IsSuccess);
             AssertTrue(await service.RecordSuccessfulExitAsync(plan, session, false));
             AssertEqual(1, (await store.ListAsync()).Count);
+            AssertTrue(settings.Set(new("instance.development-mode", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "true"), instance)).IsSuccess);
+            AssertTrue(await service.RecordSuccessfulExitAsync(plan, session, false));
+            AssertEqual(2, (await store.ListAsync()).Count);
+            AssertFalse((await store.ReadAsync())!.SettingsDocument.Contains("instance.development-mode", StringComparison.Ordinal));
+            AssertEqual("false", Effective(settings, "recovery.keep-history", instance).Value.Value);
+            AssertTrue(settings.Set(new("instance.development-mode", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "false"), instance)).IsSuccess);
+            AssertEqual(2, (await store.ListAsync()).Count); // Toggling is not a destructive cleanup operation.
+            AssertTrue(await service.RecordSuccessfulExitAsync(plan, session, false));
+            AssertEqual(1, (await store.ListAsync()).Count);
+
         }
         finally { Directory.Delete(root, true); }
     }

@@ -13,7 +13,7 @@ internal static partial class Program
     {
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
         AssertTrue(fixture.Foundation.Host.SettingsPolicy.Set(new("general.language", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "zh-Hans"))).IsSuccess);
-        string instance = "instance-A";
+        string instance = Path.Combine(fixture.TemporaryDirectory, "instance-A");
         var queries = new XsrQueryRouterBuilder();
         fixture.Foundation.Queries.TryResolve(SettingsPolicyContract.CatalogQuery, out var catalog);
         fixture.Foundation.Queries.TryResolve(SettingsPolicyContract.EffectiveQuery, out var effective);
@@ -38,6 +38,7 @@ internal static partial class Program
         var completion = new TaskCompletionSource<XsrResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         var commands = new XsrCommandRouterBuilder(); commands.Register<InstanceFileSaveCommand>(InstanceFileWorkspaceContract.Save,
             async (q, _) => { saved = q; return await completion.Task; });
+        EnableInstanceDevelopmentMode(fixture, instance);
         using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, queries.Build(new NoopDispatchObserver()), commands.Build(new NoopDispatchObserver()),
             fixture.Store, fixture.Feedback, () => instance);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
@@ -56,8 +57,8 @@ internal static partial class Program
         AssertEqual("a=2\r\nb=keep\r\n", previewed!.Text); AssertTrue(saved is null);
         Emit(fixture.Intents, "ui.settings.management.action", FindByKey(fixture.Shell, scene, "Management.确认保存配置").Entity);
         Pump(() => saved is not null); AssertEqual(previewed.Text, saved!.Preview.Text);
-        AssertEqual("instance-A", saved.Preview.Original.File.InstanceDirectory); AssertEqual("config", saved.Preview.Original.File.Area);
-        instance = "instance-B"; Pump(() => settings.SelectedSection == "overview"); completion.SetResult(XsrResult.Success());
+        AssertEqual(Path.Combine(fixture.TemporaryDirectory, "instance-A"), saved.Preview.Original.File.InstanceDirectory); AssertEqual("config", saved.Preview.Original.File.Area);
+        instance = Path.Combine(fixture.TemporaryDirectory, "instance-B"); Pump(() => settings.SelectedSection == "overview"); completion.SetResult(XsrResult.Success());
         scene = fixture.Shell.Render(new(1100, 1200)); AssertEqual("overview", settings.SelectedSection);
     }
 }

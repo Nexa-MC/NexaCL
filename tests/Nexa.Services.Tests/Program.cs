@@ -6,6 +6,7 @@ internal static partial class Program
     [
         ..RegisterFoundationAndContent(),
         ..RegisterProxy(),
+        ("instance development mode is local and recovery independent", InstanceDevelopmentModeIsLocalAndRecoveryIndependent),
         ..RegisterRuntimeEvidence(),
         ..RegisterPolicyAndSecurity(),
         ..RegisterTransfersAndLaunch(),

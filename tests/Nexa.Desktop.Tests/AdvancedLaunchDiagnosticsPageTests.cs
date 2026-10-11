@@ -38,6 +38,7 @@ internal static partial class Program
         });
         var commands = new XsrCommandRouterBuilder();
         commands.Register<InstanceIdentitySaveCommand>(InstanceIdentityContract.Save, (_, _) => { writes++; return ValueTask.FromResult(XsrResult.Success()); });
+        EnableInstanceDevelopmentMode(fixture, instance);
         using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, queries.Build(new NoopDispatchObserver()),
             commands.Build(new NoopDispatchObserver()), fixture.Store, fixture.Feedback, () => instance);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);

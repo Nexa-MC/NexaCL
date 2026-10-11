@@ -84,7 +84,7 @@ public sealed partial class SettingsPolicyService
     }
 
     private static bool RecoverySetting(string key) => SettingsPolicySchema.ByKey.TryGetValue(key, out var definition)
-        && definition.InstanceOverride && !key.StartsWith("recovery.", StringComparison.Ordinal);
+        && definition.InstanceOverride && key != "instance.development-mode" && !key.StartsWith("recovery.", StringComparison.Ordinal);
 
     internal XsrResult ApplyRecoverySettingsPlan(RecoverySettingsPlan plan, bool reverse)
     {

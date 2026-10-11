@@ -165,7 +165,9 @@ internal sealed partial class SettingsPageController : IDisposable
                 {
                     CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots();
                 }
+                bool previousDevelopmentMode = InstanceDevelopmentMode;
                 _values = reading.Result.Value!; _revision = _values.Revision;
+                if (previousDevelopmentMode != InstanceDevelopmentMode) RebuildDevelopmentMode();
                 bool developer = _values.Values.First(item => item.Key == "developer.enabled").Value.Value == "true";
                 if (developer != _developer) { _developer = developer; BuildSections(); }
                 UpdateEditors();
@@ -255,6 +257,7 @@ internal sealed partial class SettingsPageController : IDisposable
 
     private void SwitchPage(string page)
     {
+        if (!Pages.Any(item => item.Id == page)) return;
         CloseScreenshotPreview(restoreFocus: false); CancelScreenshotThumbnails();
         CancelContentIntegrity();
         RetireHardwareAdvice(); RetireDeveloperDiagnostics(); RetireRuntimeDiagnostics(); RetireRuntimeTrace(); CancelNetworkProbe(); CancelAdvancedWorkspace();
@@ -484,7 +487,7 @@ internal sealed partial class SettingsPageController : IDisposable
             _shell.Tree.GetComponent<XsrUiSemantic>(unavailable)!.Localize = false;
             return;
         }
-        if (_instanceDirectory is not null)
+        if (_instanceDirectory is not null && entry.SettingKey != "instance.development-mode")
         {
             var inherit = ActionButton(row, "SettingsInherit." + entry.SettingKey, "继承", Inherit, 64);
             _inheritButtons[inherit] = entry.SettingKey!;

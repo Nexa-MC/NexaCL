@@ -31,9 +31,11 @@ public sealed partial class InstanceRecoveryService(SettingsPolicyService settin
             {
                 var effective = settings.Read(new(instance));
                 if (!effective.IsSuccess) throw new InvalidDataException("无法读取快照保留设置。");
-                var value = effective.Value!.Values.Single(item => item.Key == "recovery.keep-history");
-                if (value.ValidationError is not null) throw new InvalidDataException("快照保留设置无效。");
-                return bool.Parse(value.Value.Value!);
+                var retention = effective.Value!.Values.Single(item => item.Key == "recovery.keep-history");
+                var development = effective.Value.Values.Single(item => item.Key == "instance.development-mode");
+                if (retention.ValidationError is not null || development.ValidationError is not null)
+                    throw new InvalidDataException("快照保留设置无效。");
+                return bool.Parse(retention.Value.Value!) || bool.Parse(development.Value.Value!);
             }
             bool keepHistory = KeepHistory();
             string baselineSettings = settings.CaptureRecoverySettings(instance);

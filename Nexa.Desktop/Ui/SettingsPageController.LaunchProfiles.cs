@@ -164,7 +164,7 @@ internal sealed partial class SettingsPageController
     private void SaveLaunchProfile(string id)
     {
         if (_values is null || _instance is null || _launchProfiles is null) return;
-        var values = _values.Values.Where(value => SettingsPolicySchema.ByKey[value.Key].InstanceOverride && value.Key != "java.compatibility")
+        var values = _values.Values.Where(value => SettingsPolicySchema.ByKey[value.Key].InstanceOverride && value.Key is not ("java.compatibility" or "instance.development-mode"))
             .ToDictionary(value => value.Key, value => value.Value, StringComparer.Ordinal);
         WriteLaunchProfile(SettingsLaunchProfileContract.Save, new SettingsLaunchProfileSaveCommand(_instance, id,
             _shell.Tree.GetComponent<XsrUiTextInput>(_launchProfileName)!.ReadDraft(), values, ReadOverlay(), _launchProfiles.Revision));

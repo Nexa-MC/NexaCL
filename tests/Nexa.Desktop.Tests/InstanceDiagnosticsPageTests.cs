@@ -15,9 +15,9 @@ internal static partial class Program
     {
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
         AssertTrue(fixture.Foundation.Host.SettingsPolicy.Set(new("general.language", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "zh-Hans"))).IsSuccess);
-        string instance = "instance-A"; DateTimeOffset started = new(2026, 2, 1, 0, 0, 0, TimeSpan.Zero); Guid ownedId = Guid.NewGuid(), otherId = Guid.NewGuid();
+        string instance = Path.Combine(fixture.TemporaryDirectory, "instance-A"); DateTimeOffset started = new(2026, 2, 1, 0, 0, 0, TimeSpan.Zero); Guid ownedId = Guid.NewGuid(), otherId = Guid.NewGuid();
         MinecraftProcessSnapshot owned = new(ownedId, "same name", 42, MinecraftProcessState.Exited, 7, started, started.AddMinutes(1)) { InstanceDirectory = instance };
-        MinecraftProcessSnapshot other = new(otherId, "same name", 43, MinecraftProcessState.Exited, 0, started.AddMinutes(2), started.AddMinutes(3)) { InstanceDirectory = "instance-B" };
+        MinecraftProcessSnapshot other = new(otherId, "same name", 43, MinecraftProcessState.Exited, 0, started.AddMinutes(2), started.AddMinutes(3)) { InstanceDirectory = Path.Combine(fixture.TemporaryDirectory, "instance-B") };
         fixture.Store.PublishDelta(fixture.Store.Resolve(MinecraftProcessStateComposition.SessionsKey), new XsrCollectionDelta<MinecraftProcessSnapshot, Guid>(0, [owned, other], []));
         JvmHostObservation observation = new(ownedId, "same name", started, started.AddMinutes(1), 123, 900, 500, 2, 80, 999999, 999999, 999999, 999999, 999999, 0, 0, null, null, 7, [], [])
         { CoreMetricsObserved = true, CpuPercentObserved = false, MeasuredHeapPeakBytes = null, MeasuredNativePeakBytes = 2048, LaunchWindowMilliseconds = 30000, SystemEventsObserved = true, SystemEvents = ["owned scoped event"] };
@@ -43,6 +43,7 @@ internal static partial class Program
             requested = q;
             return ++historyReads == 1 ? ValueTask.FromResult(XsrResult.Success<IReadOnlyList<DurableDiagnosticEntry>>([crash, unscoped, .. stages])) : new(pending.Task);
         });
+        EnableInstanceDevelopmentMode(fixture, instance);
         using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, queries.Build(new NoopDispatchObserver()), fixture.Foundation.Commands,
             fixture.Store, fixture.Feedback, () => instance);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
@@ -51,7 +52,7 @@ internal static partial class Program
         Pump(() => scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "SettingsNav.diagnostics"));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.diagnostics").Entity);
         Pump(() => scene.Nodes.Any(node => node.Text == "FixtureCrash"));
-        AssertEqual("instance-A", requested!.InstanceDirectory);
+        AssertEqual(Path.Combine(fixture.TemporaryDirectory, "instance-A"), requested!.InstanceDirectory);
         AssertEqual("123 ms", FindByKey(fixture.Shell, scene, "InstanceDiagnostics.LaunchDuration.Value").Text);
         AssertEqual("不可用", FindByKey(fixture.Shell, scene, "InstanceDiagnostics.Heap.Value").Text);
         AssertEqual("不可用", FindByKey(fixture.Shell, scene, "InstanceDiagnostics.CpuPeak.Value").Text);
@@ -67,7 +68,7 @@ internal static partial class Program
         AssertEqual(3, scene.Nodes.Count(node => fixture.Shell.Tree.Name(node.Entity) == "InstanceDiagnostics.OperationStage.Value"));
         AssertTrue(scene.Nodes.Any(node => node.Text == "fixture-stage-1"));
         Emit(fixture.Intents, "ui.settings.management.action", FindByKey(fixture.Shell, scene, "Management.刷新实例诊断").Entity);
-        Pump(() => historyReads == 2); instance = "instance-B"; Pump(() => settings.SelectedSection == "overview");
+        Pump(() => historyReads == 2); instance = Path.Combine(fixture.TemporaryDirectory, "instance-B"); Pump(() => settings.SelectedSection == "overview");
         pending.SetResult(XsrResult.Success<IReadOnlyList<DurableDiagnosticEntry>>([crash])); scene = fixture.Shell.Render(new(1100, 2400));
         AssertFalse(scene.Nodes.Any(node => node.Text == "FixtureCrash")); AssertEqual("overview", settings.SelectedSection);
     }

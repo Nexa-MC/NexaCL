@@ -12,7 +12,7 @@ internal static partial class Program
     private static void ContentGraphPageBoundsRelationsAndRetiresOldInstances()
     {
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
-        string instance = "instance-A";
+        string instance = Path.Combine(fixture.TemporaryDirectory, "instance-A");
         var pending = new List<(InstanceManagementQuery Query, CancellationToken Token, TaskCompletionSource<InstanceManagementSnapshot> Completion)>();
         var queries = new XsrQueryRouterBuilder();
         fixture.Foundation.Queries.TryResolve(SettingsPolicyContract.CatalogQuery, out var catalog);
@@ -30,6 +30,8 @@ internal static partial class Program
             var completion = new TaskCompletionSource<InstanceManagementSnapshot>(TaskCreationOptions.RunContinuationsAsynchronously);
             pending.Add((query, token, completion)); return XsrResult.Success(await completion.Task);
         });
+        EnableInstanceDevelopmentMode(fixture, instance);
+        EnableInstanceDevelopmentMode(fixture, Path.Combine(fixture.TemporaryDirectory, "instance-B"));
         using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, queries.Build(new NoopDispatchObserver()),
             fixture.Foundation.Commands, fixture.Store, fixture.Feedback, () => instance);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
@@ -43,12 +45,12 @@ internal static partial class Program
             scene = fixture.Shell.Render(new(1000, 900));
         }
         OpenGraph(); PumpUntil(() => pending.Count == 1);
-        AssertEqual("instance-A", pending[0].Query.InstanceDirectory);
-        instance = "instance-B";
+        AssertEqual(Path.Combine(fixture.TemporaryDirectory, "instance-A"), pending[0].Query.InstanceDirectory);
+        instance = Path.Combine(fixture.TemporaryDirectory, "instance-B");
         PumpUntil(() => settings.SelectedSection == "overview" && pending[0].Token.IsCancellationRequested
             && scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "SettingsNav.contentgraph"));
         var retired = new InstanceContentGraph([new(0, "retired-marker", "1", true, false, true, false, [])], 0, true, null);
-        pending[0].Completion.SetResult(Snapshot("instance-A", retired));
+        pending[0].Completion.SetResult(Snapshot(Path.Combine(fixture.TemporaryDirectory, "instance-A"), retired));
         scene = fixture.Shell.Render(new(1000, 900));
         AssertFalse(scene.Nodes.Any(node => node.Text?.Contains("retired-marker", StringComparison.Ordinal) == true));
         OpenGraph(); PumpUntil(() => pending.Count == 2);
@@ -58,7 +60,7 @@ internal static partial class Program
                     new("ambiguous-alias", "*", InstanceDependencyState.Ambiguous, Enumerable.Range(20, 16).ToArray())]
                 : [])).ToArray();
         nodes[12] = nodes[12] with { Consumers = [new(0, 0)] };
-        pending[1].Completion.SetResult(Snapshot("instance-B", new(Array.AsReadOnly(nodes), 0, true, null)));
+        pending[1].Completion.SetResult(Snapshot(Path.Combine(fixture.TemporaryDirectory, "instance-B"), new(Array.AsReadOnly(nodes), 0, true, null)));
         PumpUntil(() => scene.Nodes.Any(node => node.Graph is not null));
         XsrUiEntityId Find(string name)
         {
@@ -93,7 +95,7 @@ internal static partial class Program
         scene = fixture.Shell.Render(new(1000, 900)); PumpUntil(() => pending.Count == 3);
         instance = "instance-C";
         PumpUntil(() => pending[2].Token.IsCancellationRequested && settings.SelectedSection == "overview");
-        pending[2].Completion.SetResult(Snapshot("instance-B", new(Array.AsReadOnly(nodes), 0, true, null)));
+        pending[2].Completion.SetResult(Snapshot(Path.Combine(fixture.TemporaryDirectory, "instance-B"), new(Array.AsReadOnly(nodes), 0, true, null)));
         scene = fixture.Shell.Render(new(1000, 900)); AssertFalse(scene.Nodes.Any(node => node.Graph is not null));
     }
 }

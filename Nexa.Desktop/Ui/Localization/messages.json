@@ -1,4 +1,8 @@
 [
+  {"source":"整合包开发","en":"Modpack development","zh-Hant":"整合包開發"},
+  {"source":"整合包开发模式","en":"Modpack development mode","zh-Hant":"整合包開發模式"},
+  {"source":"显示导出、依赖网络、快照回滚和诊断工具，并自动保留历史快照。","en":"Show export, dependency graph, snapshot rollback and diagnostic tools, and retain snapshot history.","zh-Hant":"顯示匯出、相依網路、快照回復及診斷工具，並自動保留歷史快照。"},
+  {"source":"开发模式会自动保留历史快照；关闭开发模式后使用此设置。","en":"Development mode retains snapshot history automatically. This setting applies after development mode is turned off.","zh-Hant":"開發模式會自動保留歷史快照；關閉開發模式後使用此設定。"},
   {"source":"系统代理","en":"System proxy","zh-Hant":"系統代理"},
   {"source":"无代理","en":"No proxy","zh-Hant":"無代理"},
   {"source":"手动代理","en":"Manual proxy","zh-Hant":"手動代理"},

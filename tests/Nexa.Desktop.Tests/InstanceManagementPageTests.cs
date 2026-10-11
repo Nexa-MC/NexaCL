@@ -35,6 +35,7 @@ internal static partial class Program
         try
         {
             using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
+            EnableInstanceDevelopmentMode(fixture, instance);
             using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, fixture.Foundation.Queries, fixture.Foundation.Commands, fixture.Store, fixture.Feedback, () => instance);
             string? openedDirectory = null;
             settings.OpenManagementDirectory = value => openedDirectory = value;

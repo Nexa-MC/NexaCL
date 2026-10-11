@@ -13,7 +13,7 @@ internal static partial class Program
     private static void ModpackExportPagePreservesFieldsAndDispatchesSelectedScope()
     {
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
-        const string instance = "instance-A";
+        string instance = Path.Combine(fixture.TemporaryDirectory, "instance-A");
         var queries = new XsrQueryRouterBuilder();
         fixture.Foundation.Queries.TryResolve(SettingsPolicyContract.CatalogQuery, out var catalog);
         fixture.Foundation.Queries.TryResolve(SettingsPolicyContract.EffectiveQuery, out var effective);
@@ -29,6 +29,7 @@ internal static partial class Program
         var commands = new XsrCommandRouterBuilder(); InstanceModpackExportCommand? saved = null;
         commands.Register<InstanceModpackExportCommand>(InstanceModpackExportContract.Export, (c, _) =>
         { saved = c; return ValueTask.FromResult(XsrResult.Success()); });
+        EnableInstanceDevelopmentMode(fixture, instance);
         using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, queries.Build(new NoopDispatchObserver()),
             commands.Build(new NoopDispatchObserver()), fixture.Store, fixture.Feedback, () => instance);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);

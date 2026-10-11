@@ -43,7 +43,7 @@ internal static partial class Program
         AssertTrue(service.Set(new("game.arguments", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "external-change"), instance)).IsSuccess);
         AssertFalse(service.ApplyRecoverySettingsPlan(plan, reverse: true).IsSuccess);
         AssertEqual("external-change", Effective(service, "game.arguments", instance).Value.Value);
-        foreach (var keys in new[] { new[] { "recovery.keep-history" }, ["updates.channel"], ["game.jvm", "game.jvm"] })
+        foreach (var keys in new[] { new[] { "recovery.keep-history" }, ["instance.development-mode"], ["updates.channel"], ["game.jvm", "game.jvm"] })
         {
             try { service.PlanRecoverySettings(instance, baseline, keys); throw new InvalidOperationException("Invalid recovery selection accepted."); }
             catch (InvalidDataException) { }
@@ -66,7 +66,7 @@ internal static partial class Program
         AssertTrue(values["game.jvm"]!["override"] is null);
         AssertEqual("--demo", values["game.arguments"]!["override"]!["value"]!.GetValue<string>());
         AssertFalse(baseline.Contains("--other-instance", StringComparison.Ordinal));
-        AssertEqual(SettingsPolicySchema.Definitions.Count(item => item.InstanceOverride && !item.Key.StartsWith("recovery.", StringComparison.Ordinal)), values.Count);
+        AssertEqual(SettingsPolicySchema.Definitions.Count(item => item.InstanceOverride && item.Key != "instance.development-mode" && !item.Key.StartsWith("recovery.", StringComparison.Ordinal)), values.Count);
         AssertFalse(JsonNode.Parse(service.Export(new(instance)).Value!)!["values"]!.AsObject().ContainsKey("game.arguments"));
         AssertEqual(0, service.PreviewRecoverySettings(instance, baseline).Changes.Count);
 
