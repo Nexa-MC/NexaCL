@@ -1,4 +1,4 @@
-using Nexa.Services.Minecraft;
+﻿using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
@@ -7,7 +7,10 @@ namespace Nexa.Desktop.Ui;
 
 internal sealed partial class VersionSelectionController
 {
-    private const double VersionRowStride = 80;
+    private static double VersionRowHeight => Metrics.Row.Height!.Value;
+    private static double VersionRowGap => Metrics.Row.Margin.Bottom;
+    private static double VersionRowStride => VersionRowHeight + VersionRowGap;
+    private readonly List<XsrUiEntityId> _windowSpacers = [];
     private IReadOnlyList<MinecraftInstanceDescriptor>? _instanceSource;
     private IReadOnlyList<MinecraftInstanceDescriptor> _shown = [];
     private readonly Dictionary<string, int> _shownIndices = new(StringComparer.Ordinal);
@@ -25,8 +28,8 @@ internal sealed partial class VersionSelectionController
             return _shown;
         if (_shownRoot != snapshot.RootDirectory)
         {
-            foreach (XsrUiEntityId child in _shell.Tree.Children(_entities["LibraryVersionRows"]).ToArray())
-                _shell.Tree.Destroy(child);
+            foreach (var child in _shell.Tree.Children(_entities["LibraryVersionRows"]).ToArray()) _views.Remove(child);
+            _dynamic.Clear(_entities["LibraryVersionRows"]); _windowSpacers.Clear();
             _versions.Clear(); _actions.Clear(); _windowRows.Clear();
             _observedFocus = default;
         }
@@ -49,7 +52,7 @@ internal sealed partial class VersionSelectionController
         XsrUiEntityId host = _entities["LibraryVersionRows"];
         XsrUiScroll scroll = _shell.Tree.GetComponent<XsrUiScroll>(host)!;
         double viewportHeight = _shell.Renderer.TryGetScrollSnapshot(host, out var geometry)
-            ? Math.Max(1, geometry.ViewportHeight) : Math.Max(72, _shell.Renderer.Viewport.Height);
+            ? Math.Max(1, geometry.ViewportHeight) : Math.Max(VersionRowHeight, _shell.Renderer.Viewport.Height);
         XsrUiEntityId focused = _shell.Renderer.Focused;
         int focusedIndex = -1;
         for (XsrUiEntityId ancestor = focused; ancestor.IsAssigned && _shell.Tree.IsAlive(ancestor); ancestor = _shell.Tree.Parent(ancestor))
@@ -60,9 +63,9 @@ internal sealed partial class VersionSelectionController
         if (_observedFocus != focused && focusedIndex >= 0 && IsKeyboard(focused))
         {
             double top = focusedIndex * VersionRowStride;
-            double target = top < scroll.OffsetY ? top : top + 72 > scroll.OffsetY + viewportHeight
-                ? top + 72 - viewportHeight : scroll.OffsetY;
-            target = Math.Clamp(target, 0, Math.Max(0, _shown.Count * VersionRowStride - 8 - viewportHeight));
+            double target = top < scroll.OffsetY ? top : top + VersionRowHeight > scroll.OffsetY + viewportHeight
+                ? top + VersionRowHeight - viewportHeight : scroll.OffsetY;
+            target = Math.Clamp(target, 0, Math.Max(0, _shown.Count * VersionRowStride - VersionRowGap - viewportHeight));
             if (target != scroll.OffsetY)
             {
                 _shell.Renderer.FinishScrollInertia(host);
@@ -74,7 +77,7 @@ internal sealed partial class VersionSelectionController
         double offset = double.IsFinite(scroll.OffsetY) ? Math.Max(0, scroll.OffsetY) : 0;
         // Whole-shell height is a conservative bound while the page's previous geometry may
         // be stale after resize. Extra leading coverage also covers the renderer's tail clamp.
-        int viewportRows = (int)Math.Ceiling(Math.Max(72, _shell.Renderer.Viewport.Height) / VersionRowStride);
+        int viewportRows = (int)Math.Ceiling(Math.Max(VersionRowHeight, _shell.Renderer.Viewport.Height) / VersionRowStride);
         int first = Math.Max(0, (int)Math.Min(Math.Floor(offset / VersionRowStride), Math.Max(0, _shown.Count - 1)) - viewportRows - 4);
         int count = Math.Min(_shown.Count - first, viewportRows * 2 + 8);
         string? pinned = focusedIndex >= 0 && (focusedIndex < first || focusedIndex >= first + count) ? _shown[focusedIndex].Id : null;
@@ -99,55 +102,43 @@ internal sealed partial class VersionSelectionController
             if (wanted.Contains(id)) continue;
             XsrUiEntityId row = _windowRows[id];
             _shell.Tree.Walk(row, entity => { _actions.Remove(entity); return true; });
-            _versions.Remove(row); _windowRows.Remove(id); _shell.Tree.Destroy(row);
+            _versions.Remove(row); _windowRows.Remove(id); _views.Remove(row); _dynamic.Remove(row);
         }
-        foreach (XsrUiEntityId child in _shell.Tree.Children(host).ToArray())
-        {
-            if (_versions.ContainsKey(child)) _shell.Tree.Detach(child);
-            else _shell.Tree.Destroy(child);
-        }
+        foreach(var spacer in _windowSpacers) _dynamic.Remove(spacer);
+        _windowSpacers.Clear();
+        List<XsrUiEntityId> arranged = [];
         int cursor = 0;
         foreach (int index in order)
         {
-            VersionSpacer(host, (index - cursor) * VersionRowStride);
+            VersionSpacer(host,(index-cursor)*VersionRowStride,arranged);
             MinecraftInstanceDescriptor instance = _shown[index];
             bool created = !_windowRows.TryGetValue(instance.Id, out XsrUiEntityId row);
             if (created)
             {
-                row = CreateRow(host, "version:" + instance.Id, string.IsNullOrWhiteSpace(instance.Metadata.DisplayName) ? instance.Id : instance.Metadata.DisplayName,
-                    instance.MetadataError is null ? VersionKindLabel(instance.Version.Kind) + " · " + instance.VersionId : "实例信息不可用 · 请修复后启动", false, VersionIcon(instance.Version.Kind));
+                row = Append(host,"VersionSelectionRow.d.nxml",VersionRowData(instance,snapshot));
                 _windowRows.Add(instance.Id, row);
                 _versions.Add(row, (snapshot.RootDirectory, instance.Id));
                 _actions[row] = (snapshot.RootDirectory, instance.Id);
-                _shell.Tree.SetComponent(row, new XsrUiContextMenu([
-                    new("修改版本", XsrSemanticId.Parse("ui.versions.modify")),
-                    new("版本设置", XsrSemanticId.Parse("ui.versions.settings")),
-                    new("删除版本", XsrSemanticId.Parse("ui.versions.delete")),
-                ]));
                 _shell.Tree.SetComponent(row, new XsrUiModifiedClick(XsrSemanticId.Parse("ui.versions.toggle-transfer"),
                     XsrSemanticId.Parse("ui.versions.extend-transfer"), XsrSemanticId.Parse("ui.versions.add-range")));
-                _shell.Tree.Walk(row, entity =>
-                {
-                    string key = _shell.Tree.Name(entity).Split(':')[0];
-                    if (key is "LibraryRowModify" or "LibraryRowSettings" or "LibraryRowDelete") _actions[entity] = (snapshot.RootDirectory, instance.Id);
-                    return true;
-                });
+                var nodes=Nodes(row);
+                foreach(string key in new[]{"LibraryRowModify","LibraryRowSettings","LibraryRowDelete"})
+                    _actions[nodes[key+":"+RowSuffix(instance.Id)]]=(snapshot.RootDirectory,instance.Id);
             }
-            else _shell.Tree.Attach(row, host);
-            var element = _shell.Tree.GetComponent<XsrUiElement>(row)!;
-            element.Margin = new(0, 0, 0, index == _shown.Count - 1 ? 0 : 8);
+            arranged.Add(row);
             if (created || refresh) ProjectVersionRow(row, instance, snapshot);
             cursor = index + 1;
         }
-        if (cursor < _shown.Count) VersionSpacer(host, (_shown.Count - cursor) * VersionRowStride - 8);
+        if (cursor < _shown.Count) VersionSpacer(host, (_shown.Count - cursor) * VersionRowStride - VersionRowGap,arranged);
+        _dynamic.Reorder(host,arranged);
     }
 
-    private void VersionSpacer(XsrUiEntityId host, double height)
+    private void VersionSpacer(XsrUiEntityId host, double height,List<XsrUiEntityId> arranged)
     {
-        if (height <= 0) return;
-        XsrUiEntityId spacer = _shell.Tree.Create("LibraryVersionSpacer");
-        _shell.Tree.SetComponent(spacer, new XsrUiElement { Height = height });
-        _shell.Tree.Attach(spacer, host);
+        if(height<=0)return;
+        var spacer=_dynamic.Append(host,DesktopMarkup.Dynamic("VersionSelectionSpacer.d.nxml",new Dictionary<string,string>
+        { ["key"]="LibraryVersionSpacer."+Number(_windowSpacers.Count),["height"]=Number(height) }));
+        _windowSpacers.Add(spacer);arranged.Add(spacer);
     }
 
     private XsrUiEntityId NavigateVersionFocus(XsrUiEntityId origin, bool forward)
@@ -194,30 +185,14 @@ internal sealed partial class VersionSelectionController
 
     private void ProjectVersionRow(XsrUiEntityId row, MinecraftInstanceDescriptor instance, MinecraftLibrarySnapshot snapshot)
     {
-        _shell.Tree.SetComponent(row, _transferSelection.Contains(instance.Id) ? _selectedTransfer! : VersionTransfer([instance.DirectoryPath]));
-        _shell.Tree.Walk(row, entity =>
-        {
-            string key = _shell.Tree.Name(entity);
-            if (key.StartsWith("LibraryRowIcon:", StringComparison.Ordinal))
-            {
-                var image = _shell.Tree.GetComponent<XsrUiImage>(entity)!;
-                image.Source = VersionIcon(instance.Version.Kind);
-                image.Raster = instance.Icon is { } icon ? new(icon, []) { FitToBounds = true, AspectRatio = (double)icon.Width / icon.Height } : null;
-            }
-            if (key.StartsWith("LibraryRowName:", StringComparison.Ordinal))
-                _shell.Tree.GetComponent<XsrUiText>(entity)!.Content = string.IsNullOrWhiteSpace(instance.Metadata.DisplayName) ? instance.Id : instance.Metadata.DisplayName;
-            if (key.StartsWith("LibraryRowDetail:", StringComparison.Ordinal))
-                _shell.Tree.GetComponent<XsrUiText>(entity)!.Content = instance.MetadataError is null ? VersionKindLabel(instance.Version.Kind) + " · " +
-                    (instance.Version.InheritsFrom is { Length: > 0 } parent ? parent : instance.VersionId) : "实例信息不可用 · 请修复后启动";
-            return true;
-        });
-        MarkSelected(row, instance.Id == snapshot.SelectedInstanceId, "当前版本", string.IsNullOrWhiteSpace(instance.Metadata.DisplayName) ? instance.Id : instance.Metadata.DisplayName);
-        if (_transferSelection.Count == 0) return;
-        bool selected = _transferSelection.Contains(instance.Id);
-        _shell.Tree.GetComponent<XsrUiSelection>(row)!.IsSelected = selected;
-        var style = _shell.Tree.GetComponent<XsrUiVisualStyle>(row)!;
-        style.Background = selected ? Tint : Surface;
-        style.Border = selected ? new(149, 186, 239) : new(227, 233, 242);
-        if (selected) _shell.Tree.GetComponent<XsrUiSemantic>(row)!.Label += "，已加入拖放选择";
+        Reload(row,VersionRowData(instance,snapshot));
+        _shell.Tree.SetComponent(row,_transferSelection.Contains(instance.Id)?_selectedTransfer!:VersionTransfer([instance.DirectoryPath]));
+        _shell.Tree.SetComponent(row,new XsrUiContextMenu([
+            new(Copy("menu.modify"),XsrSemanticId.Parse("ui.versions.modify")),
+            new(Copy("menu.settings"),XsrSemanticId.Parse("ui.versions.settings")),
+            new(Copy("menu.delete"),XsrSemanticId.Parse("ui.versions.delete")),
+        ]));
+        var image=_shell.Tree.GetComponent<XsrUiImage>(Nodes(row)["LibraryRowIcon:"+RowSuffix(instance.Id)])!;
+        image.Raster=instance.Icon is { } icon ? new(icon,[]){FitToBounds=true,AspectRatio=(double)icon.Width/icon.Height}:null;
     }
 }

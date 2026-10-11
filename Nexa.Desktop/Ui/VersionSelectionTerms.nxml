@@ -1,0 +1,41 @@
+﻿<nxml-page>
+  <StackPanel Key="VersionSelectionTerms">
+    <Text Key="directory.official" Content="官方文件夹" />
+    <Text Key="version.current" Content="当前版本" />
+    <Text Key="directory.current" Content="当前目录" />
+    <Text Key="loading.refresh" Content="正在刷新…" />
+    <Text Key="loading.cached" Content="显示缓存版本，等待本地校验…" />
+    <Text Key="loading.reading" Content="正在读取目录中的版本…" />
+    <Text Key="list.failed" Content="无法读取此目录" />
+    <Text Key="list.empty" Content="暂无已安装版本" />
+    <Text Key="list.filtered" Content="无匹配版本" />
+    <Text Key="version.unavailable" Content="实例信息不可用 · 请修复后启动" />
+    <Text Key="delete.body" Content="版本将移入游戏目录的 .recycle 文件夹，可手动恢复。共享资源不会移除。" />
+    <Text Key="delete.accept" Content="删除" />
+    <Text Key="cancel" Content="取消" />
+    <Text Key="folder.failed" Content="无法打开目录选择器，请使用完整路径添加目录。" />
+    <Text Key="service.unavailable" Content="版本目录服务尚未就绪。" />
+    <Text Key="delete.failed" Content="无法删除此版本。" />
+    <Text Key="directory.failed" Content="无法读取此游戏目录，请检查完整路径和访问权限。" />
+    <Text Key="selection.failed" Content="未能保存版本选择，请检查设置目录是否可写。" />
+    <Text Key="menu.modify" Content="修改版本" />
+    <Text Key="menu.settings" Content="版本设置" />
+    <Text Key="menu.delete" Content="删除版本" />
+    <Text Key="kind.Release" Content="正式版" />
+    <Text Key="kind.Snapshot" Content="快照版" />
+    <Text Key="kind.Old" Content="远古版" />
+    <Text Key="kind.AprilFools" Content="愚人节版" />
+    <Text Key="icon.Snapshot" Content="nexa/version/CommandBlock" />
+    <Text Key="icon.Old" Content="nexa/version/CobbleStone" />
+    <Text Key="icon.AprilFools" Content="nexa/version/GoldBlock" />
+    <Text Key="icon.OptiFine" Content="nexa/version/GrassPath" />
+    <Text Key="icon.LiteLoader" Content="nexa/version/Egg" />
+    <Text Key="icon.Forge" Content="nexa/version/Anvil" />
+    <Text Key="icon.NeoForge" Content="nexa/version/NeoForge" />
+    <Text Key="icon.Cleanroom" Content="nexa/version/Cleanroom" />
+    <Text Key="icon.Quilt" Content="nexa/version/Quilt" />
+    <Text Key="icon.Fabric" Content="nexa/version/Fabric" />
+    <Text Key="icon.LabyMod" Content="nexa/version/LabyMod" />
+    <Text Key="icon.Release" Content="nexa/version/Grass" />
+  </StackPanel>
+</nxml-page>

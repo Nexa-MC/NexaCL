@@ -1,11 +1,11 @@
-<nxml-component>
-  <Button Key="LibraryRow" Command="ui.versions.directory" Class="layout-VersionDirectoryRow-LibraryRow">
-    <StackPanel Class="layout-VersionDirectoryRow-2">
-      <Text Key="LibraryDirectoryRowName" Class="layout-VersionDirectoryRow-LibraryDirectoryRowName" />
-      <Text Key="LibraryDirectoryRowPath" Class="layout-VersionDirectoryRow-LibraryDirectoryRowPath" />
-      <Image Key="LibraryDirectoryRowCheck" Source="lucide/check" Class="layout-VersionDirectoryRow-LibraryDirectoryRowCheck" />
-      <Button Key="LibraryDirectoryRename" Label="修改文件夹名称" Command="ui.versions.rename" Icon="pcl/pencil" Class="layout-VersionDirectoryRow-LibraryDirectoryRename" />
-      <Button Key="LibraryDirectoryForget" Label="移除目录，保留文件" Command="ui.versions.forget" Icon="lucide/x" Class="layout-VersionDirectoryRow-LibraryDirectoryForget" />
+﻿<nxml-component>
+  <Node Kind="DirectoryRow" Recipe="CommandInput" Role="Button" Key="{data row}" Label="{data accessible}" Localize="false" Command="ui.versions.directory" Clickable="true" Focusable="true" Selected="{data selected}" Class="{data style}">
+    <StackPanel Class="layout-VersionDirectoryRow-2 version-base">
+      <Text Key="{data nameKey}" Content="{data name}" Localize="false" MaxLines="1" TrimOverflow="true" Class="layout-VersionDirectoryRow-LibraryDirectoryRowName version-base" />
+      <Text Key="{data pathKey}" Content="{data path}" Localize="false" IsVisible="{data named}" MaxLines="1" TrimOverflow="true" Class="layout-VersionDirectoryRow-LibraryDirectoryRowPath version-base version-detail version-path" />
+      <Image Key="{data check}" Source="lucide/check" IsVisible="{data selected}" Class="layout-VersionDirectoryRow-LibraryDirectoryRowCheck version-base" />
+      <Button Key="{data rename}" Label="修改文件夹名称" Command="ui.versions.rename" Icon="pcl/pencil" IsVisible="{data renameVisible}" Class="layout-VersionDirectoryRow-LibraryDirectoryRename version-base version-input" />
+      <Button Key="{data forget}" Label="移除目录，保留文件" Command="ui.versions.forget" Icon="lucide/x" IsVisible="{data forgetVisible}" Class="layout-VersionDirectoryRow-LibraryDirectoryForget version-base version-input" />
     </StackPanel>
-  </Button>
+  </Node>
 </nxml-component>

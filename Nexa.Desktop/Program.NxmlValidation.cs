@@ -438,4 +438,36 @@ internal static partial class Program
         Console.WriteLine("Dynamic instance tools validation passed: retained editor/tabs, literal localized metadata and owned file/development/timeline slots.");
     }
 
+    private static void ValidateDynamicVersionSelection(XsrUiShell shell,Nexa.Xsr.State.XsrStateStore store)
+    {
+        var page=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("VersionSelectionPage.nxml"),shell.Tree,store);
+        var owner=new NxmlDynamicContent(shell.Tree,store);
+        var nodes=new Dictionary<string,XsrUiEntityId>();
+        void Index(XsrUiEntityId root)=>shell.Tree.Walk(root,entity=>{nodes[shell.Tree.Name(entity)]=entity;return true;});
+        Index(page);
+        string literal="literal <version> {data text}";
+        var workspace=owner.Append(nodes["VersionSelectionWorkspace"],DesktopMarkup.Dynamic("VersionSelectionWorkspace.d.nxml",
+            new Dictionary<string,string>{["path"]=literal,["name"]=literal,["named"]="true",["count"]="2",["status"]="",["empty"]="false"}));Index(workspace);
+        var popupData=new Dictionary<string,string>{["visible"]="false",["height"]="160",["indicator"]="false",["renameVisible"]="true",["addVisible"]="false"};
+        var popup=owner.Append(nodes["VersionDirectoryWorkspace"],DesktopMarkup.Dynamic("VersionDirectoryDropdown.d.nxml",popupData));Index(popup);
+        var rowData=new Dictionary<string,string>{["row"]="validation-version",["accessible"]=literal,["selected"]="true",["current"]="true",
+            ["check"]="validation-check",["iconKey"]="validation-icon",["icon"]=VersionSelectionController.VersionIcon(Nexa.Services.Minecraft.MinecraftVersionKind.Fabric),
+            ["nameKey"]="validation-name",["name"]=literal,["detailKey"]="validation-detail",["detail"]=literal,
+            ["modify"]="validation-modify",["settings"]="validation-settings",["delete"]="validation-delete",
+            ["style"]="layout-VersionSelectionRow-LibraryRow version-base version-row version-selected version-row-last"};
+        var row=owner.Append(nodes["LibraryVersionRows"],DesktopMarkup.Dynamic("VersionSelectionRow.d.nxml",rowData));Index(row);
+        shell.Renderer.SetTextInputValue(nodes["LibraryNameInput"],literal);
+        rowData["current"]="false";owner.Reload(row,DesktopMarkup.Dynamic("VersionSelectionRow.d.nxml",rowData));owner.Reorder(nodes["LibraryVersionRows"],[row]);
+        popupData["indicator"]="true";owner.Reload(popup,DesktopMarkup.Dynamic("VersionDirectoryDropdown.d.nxml",popupData));
+        if(shell.Tree.GetComponent<NxmlDynamicSlot>(shell.Tree.Parent(row)) is null
+            || shell.Tree.GetComponent<XsrUiStableContent>(nodes["LibraryVersionRows"]) is null
+            || shell.Tree.GetComponent<XsrUiText>(nodes["validation-name"]) is not {Localize:false} text || text.Content!=literal
+            || shell.Tree.GetComponent<XsrUiTextInput>(nodes["LibraryNameInput"])!.ReadDraft()!=literal
+            || shell.Tree.GetComponent<XsrUiScroll>(nodes["LibraryDirectoryRows"])?.ShowsVerticalIndicator!=true
+            || shell.Tree.GetComponent<XsrUiAnchoredOverlay>(nodes["LibraryDropdownCard"])?.Anchor!=nodes["LibraryChooseDirectory"])
+            throw new InvalidOperationException("Version selection lost owned rows, literal identity, editor draft or viewport/anchor facts.");
+        owner.Remove(popup);owner.Remove(workspace);shell.Tree.Destroy(page);
+        Console.WriteLine("Dynamic version selection validation passed: owned virtual rows, literal names, retained directory draft and local anchor/viewport facts.");
+    }
+
 }

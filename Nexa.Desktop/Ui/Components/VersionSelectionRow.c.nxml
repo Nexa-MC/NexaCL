@@ -1,19 +1,19 @@
 <nxml-component>
-  <Button Key="LibraryRow" Command="ui.versions.select" Class="layout-VersionSelectionRow-LibraryRow">
-    <StackPanel Class="layout-VersionSelectionRow-2">
-      <StackPanel Class="layout-VersionSelectionRow-3">
-        <Image Key="LibraryRowCheck" Source="lucide/check" Class="layout-VersionSelectionRow-LibraryRowCheck" />
+  <Node Kind="VersionRow" Recipe="CommandInput" Role="Button" Key="{data row}" Label="{data accessible}" Localize="false" Command="ui.versions.select" Clickable="true" Focusable="true" Selected="{data selected}" Class="{data style}">
+    <StackPanel Class="layout-VersionSelectionRow-2 version-base">
+      <StackPanel Class="layout-VersionSelectionRow-3 version-base">
+        <Image Key="{data check}" Source="lucide/check" IsVisible="{data current}" Class="layout-VersionSelectionRow-LibraryRowCheck version-base version-marker" />
       </StackPanel>
-      <Image Key="LibraryRowIcon" Source="lucide/blocks" Class="layout-VersionSelectionRow-LibraryRowIcon" />
-      <StackPanel Class="layout-VersionSelectionRow-6">
-        <StackPanel Class="layout-VersionSelectionRow-7">
-          <Text Key="LibraryRowName" Class="layout-VersionSelectionRow-LibraryRowName" />
+      <Image Key="{data iconKey}" Source="{data icon}" Class="layout-VersionSelectionRow-LibraryRowIcon version-base version-marker" />
+      <StackPanel Class="layout-VersionSelectionRow-6 version-base">
+        <StackPanel Class="layout-VersionSelectionRow-7 version-base">
+          <Text Key="{data nameKey}" Content="{data name}" Localize="false" MaxLines="1" TrimOverflow="true" Class="layout-VersionSelectionRow-LibraryRowName version-base version-title" />
         </StackPanel>
-        <Text Key="LibraryRowDetail" Class="layout-VersionSelectionRow-LibraryRowDetail" />
+        <Text Key="{data detailKey}" Content="{data detail}" Localize="false" MaxLines="1" TrimOverflow="true" Class="layout-VersionSelectionRow-LibraryRowDetail version-base version-detail" />
       </StackPanel>
-      <Button Key="LibraryRowModify" Icon="lucide/wrench" Content="修改" Command="ui.versions.modify" Class="layout-VersionSelectionRow-LibraryRowModify" />
-      <Button Key="LibraryRowSettings" Icon="lucide/settings" Content="设置" Command="ui.versions.settings" Class="layout-VersionSelectionRow-LibraryRowSettings" />
-      <Button Key="LibraryRowDelete" Icon="lucide/trash-2" Content="删除" Command="ui.versions.delete" Class="layout-VersionSelectionRow-LibraryRowDelete" />
+      <Button Key="{data modify}" Icon="lucide/wrench" Content="修改" Label="修改" Command="ui.versions.modify" MaxLines="1" TrimOverflow="true" Class="layout-VersionSelectionRow-LibraryRowModify version-base capsule version-row-action" />
+      <Button Key="{data settings}" Icon="lucide/settings" Content="设置" Label="设置" Command="ui.versions.settings" MaxLines="1" TrimOverflow="true" Class="layout-VersionSelectionRow-LibraryRowSettings version-base capsule version-row-action" />
+      <Button Key="{data delete}" Icon="lucide/trash-2" Content="删除" Label="删除" Command="ui.versions.delete" MaxLines="1" TrimOverflow="true" Class="layout-VersionSelectionRow-LibraryRowDelete version-base capsule version-row-action" />
     </StackPanel>
-  </Button>
+  </Node>
 </nxml-component>

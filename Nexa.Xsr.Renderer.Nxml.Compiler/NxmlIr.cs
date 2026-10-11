@@ -83,6 +83,10 @@ public sealed record NxmlIrNode
     public bool ShowsVerticalIndicator { get; init; }
     public bool StickToEnd { get; init; }
     public bool ScrollGesture { get; init; }
+    public bool StableContent { get; init; }
+    public bool? ModalLayer { get; init; }
+    public string? AnchorKey { get; init; }
+    public double AnchorGap { get; init; } = 4;
     public XsrUiOverlayMotionKind? OverlayMotion { get; init; }
     public XsrUiLiveSetting? LiveSetting { get; init; }
     public XsrSemanticId? DismissCommand { get; init; }

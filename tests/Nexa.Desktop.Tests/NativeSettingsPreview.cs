@@ -586,25 +586,42 @@ internal static partial class Program
                 surface!.CommitScene(); surface.CommitScene();
             }, timeout.Token);
             await Task.Delay(500, timeout.Token);
+            Nexa.Services.Minecraft.MinecraftLibrarySnapshot? libraryBeforeVersions=null;
             await startup.InvokeAsync(() =>
             {
                 Capture("resources");
-                Emit(f.Intents, "ui.resources.action", resources!.Find("ResourceLoader"));
-                surface!.CommitScene(); Capture("resources-loader");
-                Emit(f.Intents, "ui.navigation.launch"); surface.CommitScene();
-                f.Shell.Renderer.Activate(FindByKey(f.Shell, surface.Scene!, "InstanceListButton").Entity);
-                surface.CommitScene();
-                f.Shell.Renderer.Activate(FindByKey(f.Shell, surface.Scene!, "LibraryChooseDirectory").Entity);
-                surface.CommitScene();
-                var rename = surface.Scene!.Nodes.FirstOrDefault(node => f.Shell.Tree.Name(node.Entity).StartsWith("LibraryDirectoryRename:directory:", StringComparison.Ordinal));
-                if (rename.Entity.IsAssigned) { f.Shell.Renderer.Activate(rename.Entity); surface.CommitScene(); }
-            }, timeout.Token);
-            await Task.Delay(500, timeout.Token);
+                Emit(f.Intents,"ui.resources.action",resources!.Find("ResourceLoader"));
+                surface!.CommitScene();Capture("resources-loader");
+                Emit(f.Intents,"ui.navigation.launch");surface.CommitScene();
+                var libraryKey=f.Store.Resolve(Nexa.Services.Minecraft.MinecraftLibraryContract.StateKey);
+                libraryBeforeVersions=f.Store.Read<Nexa.Services.Minecraft.MinecraftLibrarySnapshot>(libraryKey).Value;
+                var versions=new[]{Nexa.Services.Minecraft.MinecraftVersionKind.Forge,Nexa.Services.Minecraft.MinecraftVersionKind.Fabric,
+                    Nexa.Services.Minecraft.MinecraftVersionKind.NeoForge,Nexa.Services.Minecraft.MinecraftVersionKind.Release}
+                    .Select(kind=>{var item=Instance("1.21.1-"+kind);return item with{Version=item.Version with{Kind=kind}};}).ToArray();
+                f.Store.Publish(libraryKey,libraryBeforeVersions with{Revision=libraryBeforeVersions.Revision+1,Instances=versions,SelectedInstanceId=versions[0].Id,IsLoading=false});
+                f.Shell.Renderer.Activate(FindByKey(f.Shell,surface.Scene!,"InstanceListButton").Entity);surface.CommitScene();
+            },timeout.Token);
+            await Task.Delay(350,timeout.Token);
             await startup.InvokeAsync(() =>
             {
-                Capture("directories");
-                f.Shell.Stage.Navigation.Replace(controller.Page); surface!.CommitScene();
-            }, timeout.Token);
+                surface!.CommitScene();Capture("versions");
+                var search=FindByKey(f.Shell,surface.Scene!,"LibrarySearch").Entity;
+                f.Shell.Renderer.SetTextInputValue(search,"Fabric");f.Shell.Renderer.Focus(search,showIndicator:false);
+                surface.CommitScene();Capture("versions-search");
+                f.Shell.Renderer.SetTextInputValue(search,"");surface.CommitScene();
+                f.Shell.Renderer.Activate(FindByKey(f.Shell,surface.Scene!,"LibraryChooseDirectory").Entity);surface.CommitScene();
+                var rename=surface.Scene!.Nodes.FirstOrDefault(node=>f.Shell.Tree.Name(node.Entity).StartsWith("LibraryDirectoryRename:directory:",StringComparison.Ordinal));
+                if(rename.Entity.IsAssigned){f.Shell.Renderer.Activate(rename.Entity);surface.CommitScene();}
+                window!.Width=820;window.UpdateLayout();surface.CommitScene();
+            },timeout.Token);
+            await Task.Delay(500,timeout.Token);
+            await startup.InvokeAsync(() =>
+            {
+                surface!.CommitScene();Capture("directories");
+                if(libraryBeforeVersions is not null)f.Store.Publish(f.Store.Resolve(Nexa.Services.Minecraft.MinecraftLibraryContract.StateKey),
+                    libraryBeforeVersions with{Revision=libraryBeforeVersions.Revision+2});
+                f.Shell.Stage.Navigation.Replace(controller.Page);window!.Width=1040;window.UpdateLayout();surface.CommitScene();
+            },timeout.Token);
             DesktopTaskBubblePresenter? taskBubble = null;
             TaskCenterController? taskPage = null;
             using var taskRuntime = Nexa.Services.Composition.TaskCenterRuntimeComposer.Compose(f.Foundation.Host);

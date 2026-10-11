@@ -290,3 +290,13 @@ layout recipe. ShowsVerticalIndicator, StickToEnd and ScrollGesture require Scro
 These are host presentation facts, not services or a plugin execution interface.
 Reload may update the live-region urgency but preserves input, motion and scroll
 contracts/state; incompatible projections fail atomically before mutation.
+
+## Owned virtual collections and local anchors
+
+Reorder validates a complete permutation of live, direct fragments owned by the
+same Dynamic slot before changing order. It creates no nodes and preserves fragment
+identity/state. StableContent and ModalLayer are finite Boolean renderer annotations.
+Anchor is a literal local key, validated and uniquely resolved in the closest tree
+scope after load; self/descendant anchors are invalid. All are immutable reload
+contracts. ShowsVerticalIndicator can reproject in place, retaining scroll objects
+and offset/inertia while invalidating layout so gutter and extent are recomputed.

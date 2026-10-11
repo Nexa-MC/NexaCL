@@ -1,0 +1,7 @@
+﻿<nxml-page><StackPanel Key="VersionSelectionMetrics">
+  <Node Kind="Row" Recipe="Element" Key="Row" Class="layout-VersionSelectionRow-LibraryRow version-row" />
+  <Node Kind="Directory" Recipe="Element" Key="Directory" Class="layout-VersionDirectoryRow-LibraryRow" />
+  <StackPanel Key="DirectoryRows" Class="layout-VersionDirectoryDropdown-LibraryDirectoryRows" />
+  <StackPanel Key="Popup" Class="layout-VersionDirectoryDropdown-Body version-popup-metrics" />
+  <StackPanel Key="Editor" Class="layout-VersionDirectoryDropdown-LibraryNameEditor" />
+</StackPanel></nxml-page>

@@ -299,6 +299,7 @@ internal static partial class Program
         ("Windows property store roundtrips the game AUMID", WindowPropertyStoreRoundTripsAppId),
         ("version click returns immediately and double click opens directory", VersionClickReturnsImmediatelyAndDoubleClickOpensDirectory),
         ("version transfer selection supports toggle range and filter cleanup", VersionTransferSelectionSupportsRanges),
+        (nameof(VersionTemplatesRetainDraftsRowsScopesAndLiteralNames), VersionTemplatesRetainDraftsRowsScopesAndLiteralNames),
         ("version selection bounds large lists and keeps logical transfers", VersionSelectionBoundsLargeListsAndKeepsLogicalTransfers),
         ("version selection uses the captured directory for launch and restores each selection", VersionSelectionUsesDirectoryQualifiedLaunch),
         ("version list remains compact searchable and scrollable with distinct icons", VersionListKeepsCompactGeometryAndIcons),

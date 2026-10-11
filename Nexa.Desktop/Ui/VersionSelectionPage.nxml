@@ -1,26 +1,6 @@
-<nxml-page>
+﻿<nxml-page>
   <Page Key="VersionListPage" Label="选择版本">
-    <StackPanel Key="LibraryContent" Class="layout-VersionSelectionPage-LibraryContent">
-      <StackPanel Key="LibraryDirectoryBar" Class="layout-VersionSelectionPage-LibraryDirectoryBar">
-        <Text Key="LibraryDirectoryCaption" Content="当前目录：" Class="layout-VersionSelectionPage-LibraryDirectoryCaption" />
-        <Button Key="LibraryChooseDirectory" Label="{state versions.directory.path}" Command="ui.versions.directories" Class="layout-VersionSelectionPage-LibraryChooseDirectory">
-          <StackPanel Class="layout-VersionSelectionPage-6">
-            <Text Key="LibraryDirectoryName" Content="{state versions.directory.name}" Class="layout-VersionSelectionPage-LibraryDirectoryName" />
-            <Text Key="LibraryDirectoryPath" Content="{state versions.directory.path}" IsVisible="{state versions.directory.named}" Class="layout-VersionSelectionPage-LibraryDirectoryPath" />
-            <Image Key="LibraryDirectoryChevron" Source="lucide/chevron-down" Class="layout-VersionSelectionPage-LibraryDirectoryChevron" />
-          </StackPanel>
-        </Button>
-        <Button Key="LibraryAddDirectory" Content="添加文件夹" Label="添加文件夹" Command="ui.versions.browse" Icon="lucide/plus" Class="layout-VersionSelectionPage-LibraryAddDirectory" />
-        <Button Key="LibraryRefresh" Label="刷新版本" Command="ui.versions.refresh" Icon="pcl/refresh" Class="layout-VersionSelectionPage-LibraryRefresh" />
-      </StackPanel>
-      <StackPanel Key="LibraryVersions" IsVisible="{state versions.list.visible}" Class="layout-VersionSelectionPage-LibraryVersions">
-        <StackPanel Class="layout-VersionSelectionPage-13">
-          <Text Key="LibraryCount" Content="{state versions.list.count}" Class="layout-VersionSelectionPage-LibraryCount" />
-          <TextInput Key="LibrarySearch" Label="搜索版本" Placeholder="搜索版本" Class="layout-VersionSelectionPage-LibrarySearch" />
-        </StackPanel>
-        <StackPanel Key="LibraryVersionRows" Scroll="true" Class="layout-VersionSelectionPage-LibraryVersionRows" />
-        <Text Key="LibraryEmpty" Content="{state versions.list.status}" IsVisible="{state versions.list.empty}" Class="layout-VersionSelectionPage-LibraryEmpty" />
-      </StackPanel>
-    </StackPanel>
+    <Dynamic Key="VersionSelectionWorkspace" Class="version-workspace-slot" />
+    <Dynamic Key="VersionDirectoryWorkspace" Layout="Overlay" ModalLayer="false" />
   </Page>
 </nxml-page>

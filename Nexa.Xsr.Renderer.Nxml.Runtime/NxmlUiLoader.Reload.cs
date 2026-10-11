@@ -35,6 +35,7 @@ public sealed partial class NxmlUiLoader
             Value = after.Value,
             Visual = after.Visual,
             LiveSetting = after.LiveSetting,
+            ShowsVerticalIndicator = after.ShowsVerticalIndicator,
             Children = after.Children,
             Bindings = after.Bindings,
         };
@@ -119,6 +120,8 @@ public sealed partial class NxmlUiLoader
             else tree.SetComponent<XsrUiSelection>(entity, null);
             dirty |= XsrUiDirtyKinds.Paint;
         }
+        if (before.ShowsVerticalIndicator != after.ShowsVerticalIndicator && tree.GetComponent<XsrUiScroll>(entity) is { } scroll)
+        { scroll.ShowsVerticalIndicator = after.ShowsVerticalIndicator; dirty |= XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint; }
         if (before.LiveSetting != after.LiveSetting)
         {
             if (tree.GetComponent<XsrUiLiveRegion>(entity) is { } live && after.LiveSetting is { } setting) live.Setting = setting;

@@ -1,4 +1,4 @@
-using Nexa.Xsr;
+﻿using Nexa.Xsr;
 using Nexa.Xsr.State;
 
 namespace Nexa.Xsr.Renderer;
@@ -105,6 +105,20 @@ public sealed class XsrUiTree
         parentEntity.Children.Add(child.Index);
         MarkDirty(parent, XsrUiDirtyKinds.Structure);
         MarkDirty(child, XsrUiDirtyKinds.Structure);
+    }
+
+    /// <summary>Reorders a complete child permutation without detaching nodes or replacing their live state.</summary>
+    public void ReorderChildren(XsrUiEntityId parent, IReadOnlyList<XsrUiEntityId> order)
+    {
+        ArgumentNullException.ThrowIfNull(order);
+        var owner = Require(parent);
+        var requested = order.ToArray();
+        if (requested.Length != owner.Children.Count || requested.Distinct().Count() != requested.Length
+            || requested.Any(child => !IsAlive(child) || Require(child).Parent != parent))
+            throw new InvalidOperationException("Reordering requires a complete permutation of live direct children.");
+        if (owner.Children.SequenceEqual(requested.Select(child => child.Index))) return;
+        owner.Children.Clear(); owner.Children.AddRange(requested.Select(child => child.Index));
+        MarkDirty(parent, XsrUiDirtyKinds.Structure);
     }
 
     /// <summary>

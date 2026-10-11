@@ -90,6 +90,15 @@ public static class NxmlCompiler
                 || recipe == NxmlRuntimeRecipe.DynamicSlot && slotLayout != NxmlRuntimeRecipe.StackLayout
                 || !ParseBoolean(element.Name, "Scroll", Literal("Scroll", "false"))))
             throw Fail(element.Name, "Scroll", "is required by scroll presentation facts");
+        bool stableContent = ParseBoolean(element.Name, "StableContent", Literal("StableContent", "false"));
+        bool? modalLayer = element.FindProperty("ModalLayer") is null ? null : ParseBoolean(element.Name, "ModalLayer", Literal("ModalLayer", "false"));
+        if (element.FindProperty("ModalLayer") is not null
+            && recipe != NxmlRuntimeRecipe.Element && !(recipe == NxmlRuntimeRecipe.DynamicSlot && slotLayout == NxmlRuntimeRecipe.Element))
+            throw Fail(element.Name, "ModalLayer", "requires an overlay element");
+        string? anchorKey = element.FindProperty("Anchor") is null ? null : ParseKey(element.Name, "Anchor", Literal("Anchor", ""));
+        double anchorGap = ParseDouble(element.Name, "AnchorGap", Literal("AnchorGap", "4"));
+        if (element.FindProperty("AnchorGap") is not null && anchorKey is null || anchorGap < 0)
+            throw Fail(element.Name, "AnchorGap", "requires an anchor and a nonnegative gap");
         NxmlControlModel model = new(Literal("Kind", "Node"), "Node", role, recipe, allowsChildren, NxmlNodeSchema.Properties);
         foreach (string required in Literal("Required", "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             if (element.FindProperty(required) is null) throw Fail(element.Name, required, "is required by this component");
@@ -115,7 +124,7 @@ public static class NxmlCompiler
                 NssStyleSheet.SetVisual(visual ??= new(), attribute.Name, attribute.Value.Text);
                 continue;
             }
-            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength" or "PreserveTabs" or "MaxLines" or "TrimOverflow" or "OverlayMotion" or "LiveSetting" or "DismissCommand" or "ShowsVerticalIndicator" or "StickToEnd" or "ScrollGesture") continue;
+            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength" or "PreserveTabs" or "MaxLines" or "TrimOverflow" or "OverlayMotion" or "LiveSetting" or "DismissCommand" or "ShowsVerticalIndicator" or "StickToEnd" or "ScrollGesture" or "StableContent" or "ModalLayer" or "Anchor" or "AnchorGap") continue;
             if (!model.TryGetProperty(attribute.Name, out NxmlControlPropertyModel property))
             {
                 throw Fail(element.Name, attribute.Name, "is not declared by this control model");
@@ -168,7 +177,7 @@ public static class NxmlCompiler
         return builder.Build(
             [.. element.Children.Select(child => CompileNode(child, keys, styles))],
             bindings) with
-        { Visual = visual?.Snapshot(), SlotLayout = slotLayout, MaximumLength = maximumLength, PreserveTabs = preserveTabs, MaxLines = maxLines, TrimOverflow = trimOverflow, OverlayMotion = overlayMotion, LiveSetting = liveSetting, DismissCommand = dismissCommand, ShowsVerticalIndicator = showsIndicator, StickToEnd = stickToEnd, ScrollGesture = scrollGesture };
+        { Visual = visual?.Snapshot(), SlotLayout = slotLayout, MaximumLength = maximumLength, PreserveTabs = preserveTabs, MaxLines = maxLines, TrimOverflow = trimOverflow, OverlayMotion = overlayMotion, LiveSetting = liveSetting, DismissCommand = dismissCommand, ShowsVerticalIndicator = showsIndicator, StickToEnd = stickToEnd, ScrollGesture = scrollGesture, StableContent = stableContent, ModalLayer = modalLayer, AnchorKey = anchorKey, AnchorGap = anchorGap };
     }
 
     private static void ApplyLiteral(

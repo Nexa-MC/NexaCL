@@ -55,6 +55,7 @@ public sealed partial class NxmlUiLoader
         {
             PopulateNode(ir.Root, root, tree, state);
             tree.Attach(root, parent);
+            ResolveAnchors(ir.Root, root, tree);
             committed = true;
             return root;
         }
@@ -64,6 +65,37 @@ public sealed partial class NxmlUiLoader
             {
                 tree.Destroy(root);
             }
+        }
+    }
+
+    private static void ResolveAnchors(NxmlIrNode root, XsrUiEntityId entity, XsrUiTree tree)
+    {
+        List<(XsrUiEntityId Entity, XsrUiEntityId Anchor, double Gap)> anchors = [];
+        Visit(root, entity);
+        foreach (var item in anchors) tree.SetComponent(item.Entity, new XsrUiAnchoredOverlay(item.Anchor, item.Gap));
+
+        void Visit(NxmlIrNode node, XsrUiEntityId current)
+        {
+            if (node.AnchorKey is { } key)
+            {
+                XsrUiEntityId match = default;
+                for (var scope = current; scope.IsAssigned; scope = tree.Parent(scope))
+                {
+                    int count = 0;
+                    tree.Walk(scope, candidate => { if (tree.Name(candidate) == key) { match = candidate; count++; } return true; });
+                    if (count > 1) throw new NxmlLoadException("The closest anchor scope is ambiguous.");
+                    if (count == 1)
+                    {
+                        for (var ancestor = match; ancestor.IsAssigned; ancestor = tree.Parent(ancestor))
+                            if (ancestor == current) throw new NxmlLoadException("An overlay cannot anchor to itself or its descendants.");
+                        break;
+                    }
+                }
+                if (!match.IsAssigned) throw new NxmlLoadException("The local overlay anchor is missing.");
+                anchors.Add((current, match, node.AnchorGap));
+            }
+            var children = tree.Children(current);
+            for (int index = 0; index < node.Children.Count; index++) Visit(node.Children[index], children[index]);
         }
     }
 
@@ -260,6 +292,9 @@ public sealed partial class NxmlUiLoader
 
             tree.SetComponent(entity, semantic);
         }
+
+        if (node.StableContent) tree.SetComponent(entity, new XsrUiStableContent());
+        if (node.ModalLayer is { } modal) tree.SetComponent(entity, new XsrUiOverlayLayer(isModal: modal));
 
         if (node.Selected is { } selected) tree.SetComponent(entity, new XsrUiSelection { IsSelected = selected });
 

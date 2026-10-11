@@ -38,6 +38,18 @@ public sealed class NxmlDynamicContent(XsrUiTree tree, XsrStateStore state)
         _owners[instance] = owner with { Fragment = fragment };
     }
 
+    /// <summary>Reorders only this owner's complete set of live direct fragments, without resetting nested state.</summary>
+    public void Reorder(XsrUiEntityId slot, IReadOnlyList<XsrUiEntityId> order)
+    {
+        RequireSlot(slot); ArgumentNullException.ThrowIfNull(order);
+        var requested = order.ToArray();
+        if (requested.Length != tree.Children(slot).Count || requested.Distinct().Count() != requested.Length
+            || requested.Any(instance => !_owners.TryGetValue(instance, out var owner) || owner.Slot != slot
+                || !tree.IsAlive(instance) || tree.Parent(instance) != slot))
+            throw new NxmlLoadException("Reorder requires this owner's complete permutation of live slot fragments.");
+        tree.ReorderChildren(slot, requested);
+    }
+
     public XsrUiEntityId Replace(XsrUiEntityId slot, NxmlHostIr fragment)
     {
         var instance = Append(slot, fragment);

@@ -1,4 +1,4 @@
-﻿# Remaining NXML migration
+# Remaining NXML migration
 
 Objective: migrate all product presentation to Nexa.Xsr.Renderer, external `.nxml`
 pages, `.c.nxml` components and `.nss` styles. Dynamic collections must enter named
@@ -62,7 +62,6 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 | Settings and instance management | `SettingsPageController.cs` and partial files | Replace remaining custom row/group factories, diagnostic cards, content/detail/snapshot/server/export structures and their style mutations with templates. Preserve drafts and list virtualization. |
 | Resources | `ResourcesPageController.cs` and partial files | Search toolbar, categories, virtual rows, detail/version/dependency and install confirmation layouts; content and state variants must be external. |
 | Launch and installation | `LaunchPageController.InstallCatalog.cs`, `.Installation.cs`, `.FrameProjection.cs`, `.Styles.cs`, `BedrockInstallPageController.cs` | Catalog/loader rows, state panels, choice tracks and runtime presentation styling. |
-| Version selection | `VersionSelectionController.cs`, `.Window.cs` | Row window/virtualization, directory choices/editor, popup body and selection styles. |
 | Wardrobe | `WardrobePageController.cs`, `WardrobeLibraryPageController.cs` | Skin/cape cards, details, empty/loading/failure surfaces and interaction variants. |
 | Accounts and first run | `AccountFormController.cs`, `FirstRunController.cs` | Form structures, state copy, action availability and complete OOBE composition. |
 | Appearance | `CustomAppearanceSession.cs` | Separate runtime image/theme behavior from remaining fixed presentation construction. |
@@ -504,3 +503,54 @@ external base margin and shell progress; rendering performs no service query.
 - Scoped whitespace/diff checks pass. Artifacts: .tmp-cleanup-validation/global-overlay-*.
   Other product copy/controllers and the remaining inventory are still open; the
   complete migration has not been declared finished.
+
+## Version selection boundary
+
+Migrate the entire selection workspace together: header/search, virtual version
+rows and spacers, directory chooser, rename/path editors, selection/transfer variants,
+icons, labels and confirmation copy. Every projected change enters an owned Dynamic
+slot; no controller may clone IR or mutate fixed boxes/styles. External NSS metrics
+supply row strides, popup padding/gaps and viewport reserves. Literal instance names,
+paths and provider errors never become markup or unbounded entity keys.
+
+Owned-slot Reorder accepts only a complete permutation of that owner's live direct
+children. Validate every identity before mutation and retain focus, input drafts,
+scroll, nested slots and motion. Virtualization stays bounded for 1,000/10,000 entries
+and pins focused rows; selected transfer identities remain logical across windows.
+
+Declare finite StableContent/ModalLayer and local Anchor facts in NXML. Anchor
+resolution is unique in the closest enclosing tree scope after load and rejects
+self/descendant targets; reload cannot change the anchor lifetime. The directory
+popup stays in its owned slot and is hidden/revealed without destroying editor drafts.
+Its actual height/indicator projection may change with viewport and content while
+retaining scroll/inertia. ShowsVerticalIndicator is a viewport fact, not a lifetime
+contract; other scroll/motion/anchor contracts remain immutable during Reload.
+
+Preserve immediate single-click return, native post-navigation double click,
+keyboard focus navigation, modifier/range selection, drag effects and process/root
+identity. Retire old, foreign, hidden or disabled action sources. Selection, rename,
+forget and delete continue through the existing service commands and confirmations.
+
+## Version selection verification, 2026-10-11
+
+- Full Desktop composition: 277 passed, zero failed; NXML compiler/runtime: 60
+  passed; architecture: 69 projects passed; actual Avalonia backend: 30 passed.
+- The complete workspace, bounded virtual rows/spacers, directory choices/editors,
+  state variants, icons and fixed copy now enter owned Dynamic slots from external
+  assets. No direct/hidden presentation factories remain in the three controllers.
+- Owned Reorder validates complete permutations before mutation. Regressions reject
+  foreign, stale, duplicated, incomplete and nested identities while retaining drafts,
+  focus, scroll and nested ownership. Local anchor validation rejects missing,
+  ambiguous and self/descendant targets without publishing a partial fragment.
+- Existing 1,000/10,000-row bounds, exact scroll extent, keyboard pinning, immediate
+  selection return, double-click continuation, modifier/range/drag behavior and
+  root-qualified directory/service routes pass. Language/viewport/revision updates
+  retain search/editor caret/focus, row identities, scroll and anchor contracts.
+- Actual native previews in both themes cover four version kinds, selected tick,
+  action capsules, search and directory rename at an 820px window. These manifests
+  are read-only fixture data; no installation/launch measurement is claimed.
+- Windows x64 NativeAOT and full-trim publications succeeded. Both actual executables
+  ran --validate-shell, exited 0 and produced the positive Dynamic version selection
+  validation marker. The existing Jint IL2098 warning remains unsuppressed.
+- Scoped whitespace and diff checks pass. Artifacts: .tmp-cleanup-validation/version-nxml-*.
+  Six main areas in the inventory remain open; the whole migration is still active.

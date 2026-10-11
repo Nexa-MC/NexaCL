@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using Nexa.Xsr.Renderer.Nxml;
+﻿using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Xsr.Renderer;
@@ -37,14 +36,9 @@ internal static class VersionSelectionState
     }
 }
 
-/// <summary>PXML projection and intent adapter. Directory and version truth lives in Services.</summary>
+/// <summary>NXML projection and intent adapter. Directory and version truth lives in Services.</summary>
 internal sealed partial class VersionSelectionController : IDisposable
 {
-    private static readonly XsrUiColor Ink = DesktopMarkup.Visual("palette-VersionSelectionController-Ink").Foreground;
-    private static readonly XsrUiColor Secondary = DesktopMarkup.Visual("palette-VersionSelectionController-Secondary").Foreground;
-    private static readonly XsrUiColor Blue = DesktopMarkup.Visual("palette-VersionSelectionController-Blue").Foreground;
-    private static readonly XsrUiColor Surface = DesktopMarkup.Visual("palette-VersionSelectionController-Surface").Foreground;
-    private static readonly XsrUiColor Tint = DesktopMarkup.Visual("palette-VersionSelectionController-Tint").Foreground;
     private readonly XsrUiShell _shell;
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrCommandRouter _commands;
@@ -56,8 +50,11 @@ internal sealed partial class VersionSelectionController : IDisposable
     private readonly Dictionary<XsrUiEntityId, string> _directories = [];
     private readonly Dictionary<XsrUiEntityId, string> _forget = [];
     private readonly Dictionary<XsrUiEntityId, string> _rename = [];
-    private readonly NxmlHostIr _row = Load("VersionSelectionRow.c.nxml");
-    private readonly NxmlHostIr _directoryRow = Load("VersionDirectoryRow.c.nxml");
+    private readonly NxmlDynamicContent _dynamic;
+    private readonly XsrUiEntityId _workspace;
+    private readonly Dictionary<XsrUiEntityId, (string Template, Dictionary<string,string> Data)> _views = [];
+    private string _copyStamp = "";
+    private bool _copyChanged;
     private readonly XsrUiEntityId _dropdown;
     private readonly CancellationTokenSource _lifetime = new();
     private long _revision = -1;
@@ -78,20 +75,13 @@ internal sealed partial class VersionSelectionController : IDisposable
         XsrStateStore store, DesktopFeedbackService feedback, IVersionDirectoryEffects? effects = null)
     {
         _shell = shell; _intents = intents; _commands = commands; _store = store; _feedback = feedback; _effects = effects;
-        XsrUiEntityId parent = shell.Tree.Create("version-selection-loader");
-        Page = NxmlUiLoader.Load(Load("VersionSelectionPage.nxml"), shell.Tree, store, parent);
-        shell.Tree.Detach(Page); shell.Tree.Destroy(parent);
-        shell.Tree.Walk(Page, entity => { _entities[shell.Tree.Name(entity)] = entity; Style(entity); return true; });
-        _dropdown = NxmlUiLoader.Load(Load("VersionDirectoryDropdown.c.nxml"), shell.Tree, store, Page);
-        shell.Tree.Walk(_dropdown, entity => { _entities[shell.Tree.Name(entity)] = entity; Style(entity); return true; });
-        shell.Tree.Detach(_dropdown);
-        shell.Tree.SetComponent(_entities["LibraryDropdownCard"], new XsrUiAnchoredOverlay(_entities["LibraryChooseDirectory"]));
-        shell.Tree.SetComponent(_dropdown, new XsrUiOverlayLayer(isModal: true));
-        shell.Tree.SetComponent(_dropdown, new XsrUiDismissBinding(XsrSemanticId.Parse("ui.versions.dismiss")));
-        shell.Tree.GetComponent<XsrUiInput>(_entities["LibraryDropdownDismiss"])!.Focusable = false;
-        shell.Tree.GetComponent<XsrUiScroll>(_entities["LibraryVersionRows"])!.ShowsVerticalIndicator = true;
-        shell.Tree.GetComponent<XsrUiScroll>(_entities["LibraryDirectoryRows"])!.ShowsVerticalIndicator = true;
-        shell.Tree.SetComponent(_entities["LibraryVersionRows"], new XsrUiStableContent());
+        _dynamic = new(shell.Tree,store);
+        Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("VersionSelectionPage.nxml"),shell.Tree,store);
+        var slots = Nodes(Page);
+        _workspace = Append(slots["VersionSelectionWorkspace"],"VersionSelectionWorkspace.d.nxml",new()
+        { ["path"]="",["name"]="",["named"]="false",["count"]="",["status"]="",["empty"]="false" });
+        _dropdown = Append(slots["VersionDirectoryWorkspace"],"VersionDirectoryDropdown.d.nxml",PopupData());
+        foreach(var pair in Nodes(Page)) _entities[pair.Key]=pair.Value;
         shell.Tree.SetComponent(_entities["LibraryVersionRows"], new XsrUiFocusNavigation(NavigateVersionFocus));
         Publish("list.visible", true);
         shell.Renderer.FramePreparing += OnFrame;
@@ -106,6 +96,8 @@ internal sealed partial class VersionSelectionController : IDisposable
     {
         if (_disposed || _shell.Stage.Navigation.Current != Page) return;
         string command = e.Intent.Command.Value;
+        if (command is not "ui.page.back" && !command.StartsWith("ui.navigation.",StringComparison.Ordinal)
+            && !Admitted(e.Intent.Source,e.Intent.Command)) return;
 
         if (command is "ui.versions.toggle-transfer" or "ui.versions.extend-transfer" or "ui.versions.add-range"
             && _versions.TryGetValue(e.Intent.Source, out var transferVersion))
@@ -133,8 +125,8 @@ internal sealed partial class VersionSelectionController : IDisposable
             && _actions.TryGetValue(e.Intent.Source, out var target))
         {
             if (command == "ui.versions.delete")
-                _feedback.ShowDialog("version.delete." + target.Id, "删除 " + target.Id + "？",
-                    "版本将移入游戏目录的 .recycle 文件夹，可手动恢复。共享资源不会移除。", "删除", "取消",
+                _feedback.ShowDialog("version.delete." + target.Id, Format("DeleteTitle",new(){["name"]=target.Id}),
+                    Copy("delete.body"), Copy("delete.accept"), Copy("cancel"),
                     confirmed => { if (confirmed) _pending = Dispatch(MinecraftLibraryRoutes.Delete, new MinecraftLibraryDeleteCommand(target.Root, target.Id)); });
             else
             {
@@ -181,7 +173,7 @@ internal sealed partial class VersionSelectionController : IDisposable
             MinecraftLibraryDirectory directory = Snapshot.Directories.First(item => item.Path == edited);
             if (directory.IsOfficial) return;
             _editingRoot = edited;
-            Publish("rename.visible", true);
+            Publish("rename.visible", true); ProjectPopup();
             _shell.Renderer.SetTextInputValue(_entities["LibraryNameInput"], directory.Name);
             _shell.Renderer.Focus(_entities["LibraryNameInput"], IsKeyboard(e.Intent.Source));
         }
@@ -189,14 +181,14 @@ internal sealed partial class VersionSelectionController : IDisposable
             _pending = Dispatch(MinecraftLibraryRoutes.Rename, new MinecraftLibraryRenameCommand(renamed,
                 _shell.Tree.GetComponent<XsrUiTextInput>(_entities["LibraryNameInput"])!.ReadDraft()), closeChooser: true);
         else if (command == "ui.versions.rename-cancel")
-        { _editingRoot = null; Publish("rename.visible", false); FocusDirectory(); }
+        { _editingRoot = null; Publish("rename.visible", false); ProjectPopup(); FocusDirectory(); }
     }
 
     private async Task OpenVersionDirectoryAsync(string directory)
     {
         try { await _effects!.OpenDirectoryAsync(directory).ConfigureAwait(false); }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed) _feedback.Error("无法打开版本目录：" + error.Message); }
+        { if (!_disposed) _feedback.Error(Format("FolderFailure",new(){["error"]=error.Message})); }
     }
 
     private async Task BrowseAsync()
@@ -211,14 +203,14 @@ internal sealed partial class VersionSelectionController : IDisposable
                 await Dispatch(MinecraftLibraryRoutes.Directory, new MinecraftLibraryDirectoryCommand(path, true), closeChooser: true).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed) _feedback.Error("无法打开目录选择器，请使用完整路径添加目录。"); }
+        { if (!_disposed) _feedback.Error(Copy("folder.failed")); }
         finally { _picking = false; }
     }
 
     private async Task Dispatch<T>(XsrSemanticId route, T command, bool closeChooser = false, bool returnHome = false) where T : notnull
     {
         long epoch = Interlocked.Read(ref _viewEpoch);
-        if (!_commands.TryResolve(route, out XsrCommandId id)) { _feedback.Error("版本目录服务尚未就绪。"); return; }
+        if (!_commands.TryResolve(route, out XsrCommandId id)) { _feedback.Error(Copy("service.unavailable")); return; }
         XsrResult result = await _commands.Dispatch(id, command, cancellationToken: _lifetime.Token).Completion.ConfigureAwait(false);
         if (_disposed) return;
         if (!result.IsSuccess)
@@ -226,9 +218,9 @@ internal sealed partial class VersionSelectionController : IDisposable
             if (route == MinecraftLibraryRoutes.Select) _effects?.CancelDirectoryDoubleClick();
             _pendingVersionPage = null;
             if (result.Error?.Code != XsrRuntimeErrors.Cancelled().Code)
-                _feedback.Error(route == MinecraftLibraryRoutes.Delete ? result.Error?.Message ?? "无法删除此版本。"
+                _feedback.Error(route == MinecraftLibraryRoutes.Delete ? result.Error?.Message ?? Copy("delete.failed")
                     : result.Error?.Code == MinecraftErrors.InvalidRequestCode
-                    ? "无法读取此游戏目录，请检查完整路径和访问权限。" : "未能保存版本选择，请检查设置目录是否可写。");
+                    ? Copy("directory.failed") : Copy("selection.failed"));
         }
         if (result.IsSuccess && (closeChooser || returnHome) && epoch == Interlocked.Read(ref _viewEpoch))
         {
@@ -258,23 +250,10 @@ internal sealed partial class VersionSelectionController : IDisposable
             }
         }
         MinecraftLibrarySnapshot snapshot = Snapshot;
-        if (_chooseDirectories)
-        {
-            // Rows are 48 px + 4 spacing each, plus the card's 8+8 padding: the card must be
-            // tall enough that the list does NOT overflow — an under-sized card makes
-            // CanScrollVertically true and paints a full-height track for a two-row list.
-            double height = Math.Min(
-                snapshot.Directories.Count * 48 + (4 * Math.Max(0, snapshot.Directories.Count - 1)) + 16
-                + (_editingRoot is null ? 0 : 48) + (_manualAdd ? 48 : 0),
-                Math.Max(96, _shell.Renderer.Viewport.Height - 160));
-            var rowsScroll = _shell.Tree.GetComponent<XsrUiScroll>(_entities["LibraryDirectoryRows"])!;
-            bool needsIndicator = snapshot.Directories.Count * 48 + 4 * Math.Max(0, snapshot.Directories.Count - 1)
-                + 16 + (_editingRoot is null ? 0 : 48) + (_manualAdd ? 48 : 0) > height;
-            if (rowsScroll.ShowsVerticalIndicator != needsIndicator)
-            { rowsScroll.ShowsVerticalIndicator = needsIndicator; _shell.Tree.MarkDirty(_dropdown, XsrUiDirtyKinds.Layout); }
-            XsrUiElement card = _shell.Tree.GetComponent<XsrUiElement>(_entities["LibraryDropdownCard"])!;
-            if (card.Height != height) { card.Height = height; _shell.Tree.MarkDirty(_dropdown, XsrUiDirtyKinds.Layout); }
-        }
+        string stamp = Copy("version.current");
+        _copyChanged = stamp != _copyStamp; _copyStamp = stamp;
+        if (_copyChanged) _revision=-1;
+        ProjectPopup();
         if (_root != snapshot.RootDirectory)
         {
             ClearTransferSelection();
@@ -290,19 +269,17 @@ internal sealed partial class VersionSelectionController : IDisposable
         _processRevision = processRevision;
         _revision = snapshot.Revision; _filter = filter;
         MinecraftLibraryDirectory current = snapshot.Directories.First(item => Nexa.Core.PathIdentity.Comparer.Equals(item.Path, snapshot.RootDirectory));
-        Publish("directory.name", current.DisplayName); Publish("directory.path", current.Path); Publish("directory.named", current.HasName);
-        if (_entities.TryGetValue("LibraryDirectoryName", out var directoryName))
-        {
-            if (_shell.Tree.GetComponent<XsrUiText>(directoryName) is { } nameText) nameText.Localize = current.IsOfficial;
-            if (_shell.Tree.GetComponent<XsrUiSemantic>(directoryName) is { } nameLabel) nameLabel.Localize = current.IsOfficial;
-        }
         IReadOnlyList<MinecraftInstanceDescriptor> shown = PrepareShownVersions(snapshot, filter);
-        Publish("list.count", snapshot.IsLoading ? "正在刷新…" : _transferSelection.Count > 0
-            ? $"{shown.Count} 个版本 · 已选 {_transferSelection.Count} 项" : $"{shown.Count} 个版本");
-        Publish("list.empty", shown.Count == 0);
-        Publish("list.status", snapshot.IsProvisional ? "显示缓存版本，等待本地校验…" : snapshot.IsLoading ? "正在读取目录中的版本…" : snapshot.Error is not null
-            ? "无法读取此目录" : snapshot.Instances.Count == 0
-            ? "暂无已安装版本" : "无匹配版本");
+        string name = DirectoryName(current);
+        string count = snapshot.IsLoading ? Copy("loading.refresh") : _transferSelection.Count > 0
+            ? Format("TransferCount",new(){["count"]=Number(shown.Count),["selected"]=Number(_transferSelection.Count)})
+            : Format("Count",new(){["count"]=Number(shown.Count)});
+        string status = Copy(snapshot.IsProvisional ? "loading.cached" : snapshot.IsLoading ? "loading.reading"
+            : snapshot.Error is not null ? "list.failed" : snapshot.Instances.Count==0 ? "list.empty" : "list.filtered");
+        Reload(_workspace,new(){["path"]=current.Path,["name"]=name,["named"]=Flag(current.HasName),
+            ["count"]=count,["status"]=status,["empty"]=Flag(shown.Count==0)});
+        Publish("directory.name",name); Publish("directory.path",current.Path); Publish("directory.named",current.HasName);
+        Publish("list.count",count);Publish("list.empty",shown.Count==0);Publish("list.status",status);
         ReconcileRows(snapshot);
     }
 
@@ -313,8 +290,7 @@ internal sealed partial class VersionSelectionController : IDisposable
         _manualAdd = manualAdd;
         _editingRoot = null;
         Publish("add.visible", manualAdd); Publish("rename.visible", false);
-        if (!_chooseDirectories) _shell.Tree.Attach(_dropdown, _entities["LibraryContent"]);
-        _chooseDirectories = true; _revision = -1;
+        _chooseDirectories = true; _revision = -1; ProjectPopup();
         if (manualAdd) _shell.Renderer.Focus(_entities["LibraryDirectoryInput"], keyboard);
         else FocusDirectory();
     }
@@ -329,9 +305,8 @@ internal sealed partial class VersionSelectionController : IDisposable
     private void CloseDropdown(bool restoreFocus = true)
     {
         if (!_chooseDirectories) return;
-        _shell.Tree.Detach(_dropdown);
         _chooseDirectories = false; _editingRoot = null; _manualAdd = false;
-        Publish("rename.visible", false); Publish("add.visible", false);
+        Publish("rename.visible", false); Publish("add.visible", false); ProjectPopup();
         if (restoreFocus) _shell.Renderer.Focus(_entities["LibraryChooseDirectory"], _keyboardDropdown);
     }
 
@@ -341,137 +316,10 @@ internal sealed partial class VersionSelectionController : IDisposable
         if (row.IsAssigned) _shell.Renderer.Focus(row, _keyboardDropdown);
     }
 
-    private void ReconcileRows(MinecraftLibrarySnapshot snapshot)
-    {
-        XsrUiEntityId focused = _shell.Renderer.Focused;
-        SyncVersionWindow(snapshot, refresh: true);
-        // Directory rows stay attached while their selected marker changes.
-        if (!_directories.Values.SequenceEqual(snapshot.Directories.Select(item => item.Path)))
-        {
-            foreach (XsrUiEntityId entity in _directories.Keys) _shell.Tree.Destroy(entity);
-            _directories.Clear(); _forget.Clear(); _rename.Clear();
-            foreach (MinecraftLibraryDirectory directory in snapshot.Directories)
-            {
-                NxmlIrNode Project(NxmlIrNode node) => node with
-                { Key = node.Key + ":directory:" + directory.Path, Children = [.. node.Children.Select(Project)] };
-                XsrUiEntityId row = NxmlUiLoader.Load(new(Project(_directoryRow.Root)), _shell.Tree, _store, _entities["LibraryDirectoryRows"]);
-                _shell.Tree.SetComponent(row, new XsrUiSelection());
-                _directories[row] = directory.Path;
-                _shell.Tree.Walk(row, entity =>
-                {
-                    Style(entity);
-                    string key = _shell.Tree.Name(entity);
-                    if (key.StartsWith("LibraryDirectoryForget:", StringComparison.Ordinal)) _forget[entity] = directory.Path;
-                    if (key.StartsWith("LibraryDirectoryRename:", StringComparison.Ordinal)) _rename[entity] = directory.Path;
-                    return true;
-                });
-            }
-        }
-        foreach (var (row, root) in _directories)
-        {
-            MinecraftLibraryDirectory directory = snapshot.Directories.First(item => item.Path == root);
-            MarkSelected(row, Nexa.Core.PathIdentity.Comparer.Equals(root, snapshot.RootDirectory), "当前目录", directory.DisplayName);
-            _shell.Tree.Walk(row, entity =>
-            {
-                string key = _shell.Tree.Name(entity).Split(':')[0];
-                if (key == "LibraryDirectoryRowName")
-                {
-                    var text = _shell.Tree.GetComponent<XsrUiText>(entity)!;
-                    text.Content = directory.DisplayName; text.Localize = directory.IsOfficial;
-                }
-                if (key == "LibraryDirectoryRowPath")
-                { _shell.Tree.GetComponent<XsrUiText>(entity)!.Content = root; DesktopLiteralText.Preserve(_shell.Tree, entity); _shell.Tree.GetComponent<XsrUiElement>(entity)!.IsVisible = directory.HasName; }
-                if (key == "LibraryDirectoryRename") _shell.Tree.GetComponent<XsrUiElement>(entity)!.IsVisible = !directory.IsOfficial;
-                if (key == "LibraryDirectoryForget") _shell.Tree.GetComponent<XsrUiElement>(entity)!.IsVisible = snapshot.Directories.Count > 1;
-                return true;
-            });
-        }
-        if (_chooseDirectories && !_shell.Tree.IsAlive(focused)) FocusDirectory();
-    }
-
-    private XsrUiEntityId CreateRow(XsrUiEntityId parent, string key, string name, string detail, bool directory, string? icon = null)
-    {
-        NxmlIrNode Project(NxmlIrNode node) => node with
-        {
-            Key = node.Key + ":" + key,
-            Content = node.Key switch { "LibraryRowName" => name, "LibraryRowDetail" => detail, _ => node.Content },
-            ImageSource = node.Key == "LibraryRowIcon" ? directory ? "pcl/folder" : icon : node.ImageSource,
-            Command = node.Key == "LibraryRow" && directory ? XsrSemanticId.Parse("ui.versions.directory") : node.Command,
-            Children = [.. node.Children.Select(Project)],
-        };
-        XsrUiEntityId row = NxmlUiLoader.Load(new(Project(_row.Root)), _shell.Tree, _store, parent);
-        _shell.Tree.SetComponent(row, new XsrUiSelection());
-        _shell.Tree.Walk(row, entity => { Style(entity); if (_shell.Tree.Name(entity).StartsWith("LibraryRowName:", StringComparison.Ordinal)) DesktopLiteralText.Preserve(_shell.Tree, entity); return true; });
-        return row;
-    }
-
-    private void MarkSelected(XsrUiEntityId row, bool selected, string marker, string name)
-    {
-        _shell.Tree.GetComponent<XsrUiSelection>(row)!.IsSelected = selected;
-        XsrUiVisualStyle style = _shell.Tree.GetComponent<XsrUiVisualStyle>(row)!;
-        style.Background = selected ? Tint : Surface; style.Border = selected ? new(149, 186, 239) : new(227, 233, 242); style.BorderWidth = 1;
-        _shell.Tree.GetComponent<XsrUiSemantic>(row)!.Label = selected ? $"{name}，{marker}" : $"选择 {name}";
-        _shell.Tree.Walk(row, entity =>
-        {
-            string key = _shell.Tree.Name(entity);
-            if (key.StartsWith("LibraryRowCheck:", StringComparison.Ordinal) || key.StartsWith("LibraryRowSelected:", StringComparison.Ordinal)
-                || key.StartsWith("LibraryDirectoryRowCheck:", StringComparison.Ordinal))
-            {
-                _shell.Tree.GetComponent<XsrUiElement>(entity)!.IsVisible = selected;
-                if (_shell.Tree.GetComponent<XsrUiText>(entity) is { } text) text.Content = marker;
-            }
-            return true;
-        });
-        _shell.Tree.MarkDirty(row, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-    }
-
-    private void Style(XsrUiEntityId entity)
-    {
-        string key = _shell.Tree.Name(entity).Split(':')[0];
-        XsrUiVisualStyle style = new() { Foreground = Ink, FontSize = 14, FontWeight = 400, CornerRadius = 12 };
-        if (key is "LibraryChooseDirectory" or "LibraryRow" or "LibraryDropdownCard") { style.Background = new(255, 255, 255); style.Border = new(227, 233, 242); style.BorderWidth = 1; }
-        if (key is "LibraryListTitle" or "LibraryDirectoriesTitle" or "LibraryRowName") { style.FontSize = 16; style.FontWeight = 600; }
-        if (key is "LibraryRowDetail" or "LibraryCount" or "LibraryEmpty" or "LibraryDirectoryPath" or "LibraryDirectoryRowPath") { style.Foreground = Secondary; style.FontSize = 12; }
-        if (key is "LibraryDirectoryPath" or "LibraryDirectoryRowPath") style.TextAlignment = XsrUiTextAlignment.End;
-        if (key == "LibraryEmpty") style.WrapText = true;
-        if (key is "LibraryRowSelected" or "LibraryRowCheck" or "LibraryFolderIcon" or "LibraryRowIcon") { style.Foreground = Blue; style.FontSize = 12; style.FontWeight = 600; }
-        if (_shell.Tree.GetComponent<XsrUiInput>(entity) is not null)
-        { style.Hover = new(237, 243, 253); if (key is not "LibraryRow" and not "LibraryChooseDirectory" and not "LibraryDirectoryRow") { style.Background = new(240, 244, 250); style.FontSize = 13; } }
-        if (key is "LibraryRowModify" or "LibraryRowSettings" or "LibraryRowDelete")
-        { style.HoverExpand = true; style.CornerRadius = 16; style.Background = DesktopUiPalette.CapsuleBackground; style.Foreground = DesktopUiPalette.CapsuleForeground; style.TextAlignment = XsrUiTextAlignment.Center; }
-        if (key is "LibraryRenameSave" or "LibraryRenameCancel" or "LibraryAddPath") style.TextAlignment = XsrUiTextAlignment.Center;
-        if (key == "LibraryAddPath") { style.Background = Blue; style.Foreground = new(255, 255, 255); style.Hover = new(23, 110, 225); }
-        if (key == "LibraryDropdownDismiss") { style.Background = XsrUiColor.Transparent; style.Hover = XsrUiColor.Transparent; }
-        if (key == "LibraryAddDirectory") { style.HoverExpand = true; style.CornerRadius = 20; style.TextAlignment = XsrUiTextAlignment.Center; }
-        if (key == "LibraryRefresh") { style.CornerRadius = 20; style.Background = DesktopUiPalette.CapsuleBackground; style.Foreground = DesktopUiPalette.CapsuleForeground; style.Hover = DesktopUiPalette.CapsuleHover; }
-        if (key == "LibraryAddDirectory") { style.Background = DesktopUiPalette.CapsuleBackground; style.Foreground = DesktopUiPalette.CapsuleForeground; style.Hover = DesktopUiPalette.CapsuleHover; style.FontWeight = 600; }
-        _shell.Tree.SetComponent(entity, style);
-        if (_shell.Tree.GetComponent<XsrUiText>(entity) is { } text && key != "LibraryEmpty") { text.MaxLines = 1; text.TrimOverflow = true; }
-    }
-
-    internal static string VersionIcon(MinecraftVersionKind kind) => "nexa/version/" + (kind switch
-    {
-        MinecraftVersionKind.Snapshot => "CommandBlock",
-        MinecraftVersionKind.Old => "CobbleStone",
-        MinecraftVersionKind.AprilFools => "GoldBlock",
-        MinecraftVersionKind.OptiFine => "GrassPath",
-        MinecraftVersionKind.LiteLoader => "Egg",
-        MinecraftVersionKind.Forge => "Anvil",
-        MinecraftVersionKind.NeoForge => "NeoForge",
-        MinecraftVersionKind.Cleanroom => "Cleanroom",
-        MinecraftVersionKind.Quilt => "Quilt",
-        MinecraftVersionKind.Fabric => "Fabric",
-        MinecraftVersionKind.LabyMod => "LabyMod",
-        _ => "Grass",
-    });
-    private static string VersionKindLabel(MinecraftVersionKind kind) => kind switch
-    {
-        MinecraftVersionKind.Release => "正式版",
-        MinecraftVersionKind.Snapshot => "快照版",
-        MinecraftVersionKind.Old => "远古版",
-        MinecraftVersionKind.AprilFools => "愚人节版",
-        _ => kind.ToString(),
-    };
+    internal static string VersionIcon(MinecraftVersionKind kind) => DesktopVersionText.Find("icon."+kind)
+        ?? DesktopVersionText.Raw("icon.Release");
+    private string VersionKindLabel(MinecraftVersionKind kind) => DesktopVersionText.Find("kind."+kind) is { } term
+        ? _shell.Renderer.LocalizeText(term) : kind.ToString();
 
     private bool IsKeyboard(XsrUiEntityId entity) => _shell.Tree.IsAlive(entity) && _shell.Tree.GetComponent<XsrUiInput>(entity)?.IsFocusVisible == true;
     private void Publish<T>(string name, T value)
@@ -486,7 +334,7 @@ internal sealed partial class VersionSelectionController : IDisposable
         if (_shell.Tree.IsAlive(_entities["LibraryVersionRows"]))
             _shell.Tree.SetComponent<XsrUiFocusNavigation>(_entities["LibraryVersionRows"], null);
         CloseDropdown(false);
-        _shell.Tree.Destroy(_dropdown);
+        _dynamic.Remove(_dropdown); _dynamic.Remove(_workspace); _views.Clear();
         _disposed = true; Interlocked.Increment(ref _viewEpoch); _lifetime.Cancel();
         _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame; _lifetime.Dispose();
     }

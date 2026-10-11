@@ -1,4 +1,10 @@
 ﻿[
+  {"source":"{data count} 个版本","en":"{data count} versions","zh-Hant":"{data count} 個版本"},
+  {"source":"{data count} 个版本 · 已选 {data selected} 项","en":"{data count} versions · {data selected} selected","zh-Hant":"{data count} 個版本 · 已選 {data selected} 項"},
+  {"source":"{data label}，已加入拖放选择","en":"{data label}, selected for drag and drop","zh-Hant":"{data label}，已加入拖放選擇"},
+  {"source":"删除 {data name}？","en":"Delete {data name}?","zh-Hant":"刪除 {data name}？"},
+  {"source":"无法打开版本目录：{data error}","en":"Could not open the instance folder: {data error}","zh-Hant":"無法開啟版本目錄：{data error}"},
+  {"source":"选择 {data name}","en":"Select {data name}","zh-Hant":"選擇 {data name}"},
   {"source":"关闭 {data level} 通知","en":"Dismiss {data level} notification","zh-Hant":"關閉 {data level} 通知"},
   {"source":"{data level}：{data message}。按下可查看完整内容","en":"{data level}: {data message}. Open to read the full message","zh-Hant":"{data level}：{data message}。按下可查看完整內容"},
   {"source":"{data level} 通知","en":"{data level} notification","zh-Hant":"{data level} 通知"},

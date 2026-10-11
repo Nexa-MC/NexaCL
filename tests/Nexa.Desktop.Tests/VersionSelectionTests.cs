@@ -1,4 +1,4 @@
-using Nexa.Desktop.Ui;
+﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Composition;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Process;
@@ -205,8 +205,25 @@ internal static partial class Program
         AssertEqual(second, ReadCell(fixture.Store, LaunchPageState.InstanceDirectoryKey));
         AssertTrue(shell.Renderer.Activate(FindByKey(shell, scene, "LibraryChooseDirectory").Entity));
         scene = shell.Render(size);
-        AssertTrue(FindByKey(shell, scene, "LibraryRow:directory:" + second).IsSelected);
-        AssertTrue(shell.Renderer.Activate(FindByKey(shell, scene, "LibraryRow:directory:" + original).Entity));
+        // Directory identity is literal data; long paths use bounded NXML keys.
+        XsrUiEntityId DirectoryRow(string path)
+        {
+            foreach (var node in scene.Nodes.Where(node => shell.Tree.Name(node.Entity).StartsWith("LibraryRow:directory:", StringComparison.Ordinal)))
+            {
+                bool matches = false;
+                shell.Tree.Walk(node.Entity, entity =>
+                {
+                    if (shell.Tree.Name(entity).StartsWith("LibraryDirectoryRowPath:", StringComparison.Ordinal)
+                        && shell.Tree.GetComponent<XsrUiText>(entity)?.Content == path) matches = true;
+                    return true;
+                });
+                if (matches) return node.Entity;
+            }
+            throw new InvalidOperationException("The expected directory row is missing.");
+        }
+        var secondRow = DirectoryRow(second);
+        AssertTrue(scene.Nodes.Single(node => node.Entity == secondRow).IsSelected);
+        AssertTrue(shell.Renderer.Activate(DirectoryRow(original)));
         fixture.Controller.Versions.WaitUntilIdle().GetAwaiter().GetResult();
         scene = shell.Render(size);
         AssertEqual("chosen", ReadCell(fixture.Store, LaunchPageState.SelectedInstanceKey));
@@ -214,10 +231,16 @@ internal static partial class Program
         // Forgetting only removes registration; it never selects the removed row or deletes files.
         AssertTrue(shell.Renderer.Activate(FindByKey(shell, scene, "LibraryChooseDirectory").Entity));
         scene = shell.Render(size);
-        AssertTrue(shell.Renderer.Activate(FindByKey(shell, scene, "LibraryDirectoryForget:directory:" + second).Entity));
+        XsrUiEntityId forget = default;
+        shell.Tree.Walk(secondRow, entity =>
+        {
+            if (shell.Tree.GetComponent<XsrUiCommandBinding>(entity)?.Command.Value == "ui.versions.forget") forget = entity;
+            return true;
+        });
+        AssertTrue(shell.Renderer.Activate(forget));
         fixture.Controller.Versions.WaitUntilIdle().GetAwaiter().GetResult();
         scene = shell.Render(size);
-        AssertFalse(HasKey(shell, scene, "LibraryRow:directory:" + second));
+        AssertFalse(shell.Tree.IsAlive(secondRow));
         AssertTrue(File.Exists(Path.Combine(second, "keep.txt")));
         Emit(fixture.Intents, "ui.page.back");
         AssertEqual(entry, shell.Renderer.Focused);
