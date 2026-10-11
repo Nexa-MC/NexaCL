@@ -84,12 +84,22 @@ internal static partial class Program
         var input = FindByKey(fixture.Shell, scene, "SettingsInput.java.runtime").Entity;
         var choice = FindByKey(fixture.Shell, scene, "SettingsJavaChoose.0");
         AssertEqual(XsrUiSemanticRole.RadioButton, choice.Role);
+        XsrUiEntityId inventoryBody = default;
+        fixture.Shell.Tree.Walk(settings.Page, entity =>
+        { if (fixture.Shell.Tree.Name(entity) == "SettingsJavaInventory.Body") inventoryBody = entity; return true; });
+        AssertTrue(fixture.Shell.Tree.GetComponent<Nexa.Xsr.Renderer.Nxml.NxmlDynamicSlot>(inventoryBody) is not null);
+        fixture.Shell.Renderer.Focus(choice.Entity, showIndicator: true);
         Emit(fixture.Intents, "ui.settings.java.choose", choice.Entity);
         AssertTrue(SpinWait.SpinUntil(() =>
         {
             scene = fixture.Shell.Render(new(1000, 1700));
             return FindByKey(fixture.Shell, scene, "SettingsJavaChoose.0").IsSelected;
         }, TimeSpan.FromSeconds(5)));
+        AssertEqual(choice.Entity, FindByKey(fixture.Shell, scene, "SettingsJavaChoose.0").Entity);
+        fixture.Shell.Renderer.Focus(choice.Entity, showIndicator: true);
+        scene = fixture.Shell.Render(new(1000, 1700));
+        AssertEqual(choice.Entity, fixture.Shell.Renderer.Focused);
+        AssertEqual("已选", FindByKey(fixture.Shell, scene, "SettingsJavaChoose.0").Text);
         AssertEqual(runtime.JavaExecutablePath, fixture.Foundation.Host.SettingsPolicy.Read(new(instance)).Value!.Values.Single(v => v.Key == "java.runtime").Value.Value);
         AssertEqual(global, fixture.Foundation.Host.SettingsPolicy.Read(new()).Value!.Values.Single(v => v.Key == "java.runtime").Value.Value);
         AssertEqual(input, FindByKey(fixture.Shell, scene, "SettingsInput.java.runtime").Entity);

@@ -22,6 +22,7 @@ internal sealed partial class SettingsPageController
     private XsrUiEntityId _javaInventoryGroup;
     private bool _javaInventoryRequested, _javaInventoryFailed;
     private readonly Dictionary<XsrUiEntityId, JavaRuntimeCandidate> _javaChoices = [];
+    private readonly Dictionary<XsrUiEntityId, (string Template, bool Selected, bool Enabled)> _javaChoiceViews = [];
     private static bool IsJavaInventoryIntent(XsrSemanticId command) => command == ScanJava || command == ChooseJava || command == AddJava;
     private bool IsJavaInventoryPage => _instanceDirectory is null ? _selected == "java" : _selected == "game";
 
@@ -29,104 +30,114 @@ internal sealed partial class SettingsPageController
     {
         if (!IsJavaInventoryPage || !_queries.TryResolve(JavaRuntimeInventoryContract.Query, out _)) return;
         string? focus = _shell.Tree.IsAlive(_shell.Renderer.Focused) ? _shell.Tree.Name(_shell.Renderer.Focused) : null;
-        if (!_shell.Tree.IsAlive(_javaInventoryGroup)) _javaInventoryGroup = Stack(parent.IsAssigned ? parent : _sections, "SettingsJavaInventory", XsrUiOrientation.Vertical, 10);
-        var group = _javaInventoryGroup;
-        _shell.Tree.SetComponent(group, new XsrUiSemantic(XsrUiSemanticRole.RadioGroup, "Java 运行时"));
-        _shell.Tree.SetComponent(group, new XsrUiSelectionGroup(isSelectionRequired: false));
-        foreach (var child in _shell.Tree.Children(group).ToArray())
+        var projection = new Dictionary<string, string>
         {
-            _shell.Tree.Walk(child, entity => { _managementActions.Remove(entity); _contentActions.Remove(entity); return true; });
-            _shell.Tree.Destroy(child);
-        }
-        _javaChoices.Clear();
-        var header = Stack(group, "SettingsJavaInventory.Header", XsrUiOrientation.Horizontal, 16);
-        var label = Text(header, "已安装 Java", _instanceDirectory is null ? 18 : 14, Ink, height: 28, weight: 600);
-        _shell.Tree.GetComponent<XsrUiElement>(label)!.Weight = 1;
-        if (_instanceDirectory is null && PickRemediationJava is not null && _commands.TryResolve(JavaRuntimeInventoryContract.Manage, out _))
+            ["titleStyle"] = "settings-java-title" + (_instanceDirectory is null ? "" : " settings-java-instance-title"),
+            ["addVisible"] = Flag(_instanceDirectory is null && PickRemediationJava is not null && _commands.TryResolve(JavaRuntimeInventoryContract.Manage, out _)),
+            ["addEnabled"] = Flag(!JavaManagementBusy && _javaInventoryRead is null && _javaInventory is not null),
+            ["scanEnabled"] = Flag(_javaInventoryRead is null && !JavaManagementBusy),
+        };
+        if (!_shell.Tree.IsAlive(_javaInventoryGroup))
         {
-            var add = ActionButton(header, "SettingsJavaAdd", "添加 Java", AddJava, 84);
-            _shell.Tree.GetComponent<XsrUiInput>(add)!.Enabled = !JavaManagementBusy && _javaInventoryRead is null && _javaInventory is not null;
+            _javaInventoryGroup = _dynamic.Append(parent.IsAssigned ? parent : _sections, DesktopMarkup.Dynamic("SettingsJavaInventory.d.nxml", projection));
+            _shell.Tree.SetComponent(_javaInventoryGroup, new XsrUiSelectionGroup(isSelectionRequired: false));
         }
-        var scan = RefreshIcon(header, "SettingsJavaScan", ScanJava);
-        _shell.Tree.GetComponent<XsrUiInput>(scan)!.Enabled = _javaInventoryRead is null && !JavaManagementBusy;
-        if (focus is "SettingsJavaScan" or "SettingsJavaAdd") _shell.Tree.Walk(header, entity =>
-        { if (_shell.Tree.Name(entity) == focus) _shell.Renderer.Focus(entity, showIndicator: false); return true; });
-        var divider = Element(group, "SettingsGroupDivider", XsrUiSemanticRole.None, null, height: 1); Style(divider, Line, Muted, 0);
+        else _dynamic.Reload(_javaInventoryGroup, DesktopMarkup.Dynamic("SettingsJavaInventory.d.nxml", projection));
+        var nodes = CatalogNodes(_javaInventoryGroup);
+        var body = nodes["SettingsJavaInventory.Body"];
+        _shell.Tree.Walk(body, entity => { _managementActions.Remove(entity); _contentActions.Remove(entity); return true; });
+        _dynamic.Clear(body);
+        _javaChoices.Clear(); _javaChoiceViews.Clear();
         if (_javaInventory is null)
+            _dynamic.Append(body, DesktopMarkup.Dynamic(_javaInventoryFailed ? "SettingsJavaFailed.d.nxml" : "SettingsJavaLoading.d.nxml"));
+        else
         {
-            Text(group, _javaInventoryFailed ? "无法扫描 Java，请重试。" : "正在扫描 Java…", 12, Muted, height: 24);
-            return;
-        }
-        if (_javaInventory.Runtimes.Count == 0) Text(group, "未找到可用的 Java。", 12, Muted, height: 24);
-        int index = 0;
-        foreach (var candidate in _javaInventory.Runtimes)
-        {
-            var runtime = candidate.Installation;
-            var row = Stack(group, "SettingsJavaRuntime." + index, XsrUiOrientation.Horizontal, 16);
-            var labels = Stack(row, "SettingsJavaRuntime.Label." + index, XsrUiOrientation.Vertical, 4);
-            _shell.Tree.GetComponent<XsrUiElement>(labels)!.Weight = 1;
-            string brand = runtime.Brand switch
+            if (_javaInventory.Runtimes.Count == 0) _dynamic.Append(body, DesktopMarkup.Dynamic("SettingsJavaEmpty.d.nxml"));
+            int index = 0;
+            foreach (var candidate in _javaInventory.Runtimes)
             {
-                JavaBrand.EclipseTemurin => "Temurin",
-                JavaBrand.IbmSemeru => "IBM Semeru",
-                JavaBrand.OpenJdk => "OpenJDK",
-                JavaBrand.GraalVmCommunity => "GraalVM",
-                JavaBrand.JetBrains => "JetBrains",
-                JavaBrand.TencentKona => "Tencent Kona",
-                JavaBrand.Unknown => _shell.Renderer.LocalizeText("未知发行方"),
-                _ => runtime.Brand.ToString()
-            };
-            string architecture = runtime.Architecture switch
-            { JavaArchitecture.X86 => "x86", JavaArchitecture.X64 => "x64", JavaArchitecture.Arm => "ARM", JavaArchitecture.Arm64 => "ARM64", _ => _shell.Renderer.LocalizeText("未知架构") };
-            var name = Text(labels, $"Java {runtime.Version} · {brand} · {architecture}", 14, Ink, height: 22, weight: 500);
-            DesktopLiteralText.Preserve(_shell.Tree, name);
-            var path = Text(labels, runtime.JavaExecutablePath, 11, Muted, height: 32);
-            DesktopLiteralText.Preserve(_shell.Tree, path);
-            bool managedRuntime = _javaInventory.ManagedRuntimes.Any(entry => Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, runtime.JavaExecutablePath));
-            Text(labels, managedRuntime ? "启动器托管" : "外部运行时", 11, Muted, height: 22);
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(path)!.WrapText = true;
-            _shell.Tree.GetComponent<XsrUiText>(path)!.MaxLines = 2;
-            var choose = RadioOption(row, "SettingsJavaChoose." + index++, "使用", ChooseJava, 64);
-            _javaChoices[choose] = candidate;
-            BuildJavaManagement(row, candidate.Installation.JavaExecutablePath, candidate.IsEnabled);
+                var runtime = candidate.Installation;
+                string brand = runtime.Brand switch
+                {
+                    JavaBrand.EclipseTemurin => "Temurin",
+                    JavaBrand.IbmSemeru => "IBM Semeru",
+                    JavaBrand.OpenJdk => "OpenJDK",
+                    JavaBrand.GraalVmCommunity => "GraalVM",
+                    JavaBrand.JetBrains => "JetBrains",
+                    JavaBrand.TencentKona => "Tencent Kona",
+                    JavaBrand.Unknown => _shell.Renderer.LocalizeText("未知发行方"),
+                    _ => runtime.Brand.ToString()
+                };
+                string architecture = runtime.Architecture switch
+                { JavaArchitecture.X86 => "x86", JavaArchitecture.X64 => "x64", JavaArchitecture.Arm => "ARM", JavaArchitecture.Arm64 => "ARM64", _ => _shell.Renderer.LocalizeText("未知架构") };
+                bool managed = _javaInventory.ManagedRuntimes.Any(entry => Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, runtime.JavaExecutablePath));
+                var row = _dynamic.Append(body, DesktopMarkup.Dynamic("SettingsJavaRuntime.d.nxml", new Dictionary<string, string>
+                {
+                    ["row"] = "SettingsJavaRuntime." + index,
+                    ["labels"] = "SettingsJavaRuntime.Label." + index,
+                    ["name"] = $"Java {runtime.Version} · {brand} · {architecture}",
+                    ["path"] = runtime.JavaExecutablePath,
+                    ["managed"] = Flag(managed),
+                    ["external"] = Flag(!managed),
+                }));
+                var rowNodes = CatalogNodes(row);
+                var choose = _dynamic.Append(rowNodes["SettingsJavaRuntime.Choice"], DesktopMarkup.Dynamic("SettingsJavaChoiceAvailable.d.nxml", new Dictionary<string, string>
+                { ["key"] = "SettingsJavaChoose." + index++, ["selected"] = "false", ["enabled"] = "false" }));
+                _javaChoices[choose] = candidate;
+                BuildJavaManagement(rowNodes["SettingsJavaRuntime.Management"], runtime.JavaExecutablePath, candidate.IsEnabled);
+            }
+            foreach (var entry in _javaInventory.Registrations.Where(entry => entry.Custom && !_javaInventory.Runtimes.Any(candidate =>
+                Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, candidate.Installation.JavaExecutablePath))))
+                AppendMissingJava(body, "SettingsJavaMissing", entry.Executable, entry.Enabled, managed: false);
+            foreach (var managed in _javaInventory.ManagedRuntimes.Where(entry => !_javaInventory.Runtimes.Any(candidate =>
+                Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, candidate.Installation.JavaExecutablePath))
+                && !_javaInventory.Registrations.Any(registered => registered.Custom && Nexa.Core.PathIdentity.Comparer.Equals(registered.Executable, entry.Executable))))
+                AppendMissingJava(body, "SettingsJavaManagedMissing", managed.Executable, _javaInventory.Registrations.FirstOrDefault(entry =>
+                    Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, managed.Executable))?.Enabled ?? true, managed: true);
+            UpdateJavaChoices();
         }
-        foreach (var entry in _javaInventory.Registrations.Where(entry => entry.Custom && !_javaInventory.Runtimes.Any(candidate =>
-            Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, candidate.Installation.JavaExecutablePath))))
-        {
-            var row = Stack(group, "SettingsJavaMissing", XsrUiOrientation.Horizontal, 12);
-            var labels = Stack(row, "SettingsJavaMissing.Label", XsrUiOrientation.Vertical, 3);
-            _shell.Tree.GetComponent<XsrUiElement>(labels)!.Weight = 1;
-            Text(labels, "未找到可用的 Java", 13, Muted, 24);
-            DesktopLiteralText.Preserve(_shell.Tree, Text(labels, entry.Executable, 11, Muted, 32));
-            BuildJavaManagement(row, entry.Executable, entry.Enabled);
-        }
-        foreach (var managed in _javaInventory.ManagedRuntimes.Where(entry => !_javaInventory.Runtimes.Any(candidate =>
-            Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, candidate.Installation.JavaExecutablePath))
-            && !_javaInventory.Registrations.Any(registered => registered.Custom && Nexa.Core.PathIdentity.Comparer.Equals(registered.Executable, entry.Executable))))
-        {
-            var row = Stack(group, "SettingsJavaManagedMissing", XsrUiOrientation.Horizontal, 12);
-            var labels = Stack(row, "SettingsJavaManagedMissing.Label", XsrUiOrientation.Vertical, 3);
-            _shell.Tree.GetComponent<XsrUiElement>(labels)!.Weight = 1;
-            Text(labels, "托管 Java 不可用", 13, Muted, 24);
-            DesktopLiteralText.Preserve(_shell.Tree, Text(labels, managed.Executable, 11, Muted, 32));
-            BuildJavaManagement(row, managed.Executable, _javaInventory.Registrations.FirstOrDefault(entry =>
-                Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, managed.Executable))?.Enabled ?? true);
-        }
-        UpdateJavaChoices();
-
-
-        if (focus is not null) _shell.Tree.Walk(group, entity =>
+        if (focus is not null) _shell.Tree.Walk(_javaInventoryGroup, entity =>
         { if (_shell.Tree.Name(entity) == focus) _shell.Renderer.Focus(entity, showIndicator: false); return true; });
     }
+
+    private void AppendMissingJava(XsrUiEntityId body, string key, string executable, bool enabled, bool managed)
+    {
+        var row = _dynamic.Append(body, DesktopMarkup.Dynamic("SettingsJavaMissing.d.nxml", new Dictionary<string, string>
+        { ["row"] = key, ["path"] = executable, ["managed"] = Flag(managed), ["external"] = Flag(!managed) }));
+        BuildJavaManagement(CatalogNodes(row)["SettingsJavaRuntime.Management"], executable, enabled);
+    }
+
+    internal static string JavaRuntimeControlKey(string action, string executable)
+        => "SettingsJava" + action + "." + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(executable)));
 
     private void BuildJavaManagement(XsrUiEntityId row, string executable, bool enabled)
     {
         if (_instanceDirectory is not null || _javaInventory is null || !_commands.TryResolve(JavaRuntimeInventoryContract.Manage, out _)) return;
-        BuildBinaryChoice(row, "SettingsJavaEnabled." + executable, "允许使用 Java", enabled,
-            value => ManageJava(executable, value ? JavaRuntimeManagementAction.Enable : JavaRuntimeManagementAction.Disable));
+        bool interactive = !JavaManagementBusy && _javaInventoryRead is null;
+        string key = JavaRuntimeControlKey("Enabled", executable);
+        const string optionStyle = "settings-catalog-option settings-java-enabled-option";
+        var controls = _dynamic.Append(row, DesktopMarkup.Dynamic("SettingsJavaManagement.d.nxml", new Dictionary<string, string>
+        {
+            ["track"] = key,
+            ["on"] = key + ".true",
+            ["off"] = key + ".false",
+            ["isOn"] = Flag(enabled),
+            ["isOff"] = Flag(!enabled),
+            ["enabled"] = Flag(interactive),
+            ["onStyle"] = optionStyle + (enabled ? " settings-catalog-option-selected" : ""),
+            ["offStyle"] = optionStyle + (!enabled ? " settings-catalog-option-selected" : ""),
+        }));
+        var nodes = CatalogNodes(controls);
+        var thumb = nodes["SettingsJavaEnabled.Thumb"];
+        _shell.Tree.SetComponent(thumb, new XsrUiTransition());
+        _shell.Tree.SetComponent(nodes[key], new XsrUiSegmentedTrack(thumb) { Selected = nodes[key + (enabled ? ".true" : ".false")] });
+        RegisterContentAction(nodes[key + ".true"], () => { if (!enabled) ManageJava(executable, JavaRuntimeManagementAction.Enable); });
+        RegisterContentAction(nodes[key + ".false"], () => { if (enabled) ManageJava(executable, JavaRuntimeManagementAction.Disable); });
+        var actions = nodes["SettingsJavaManagement.Actions"];
         if (_javaInventory.Registrations.Any(entry => entry.Custom && Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, executable)))
         {
-            var remove = ActionButton(row, "SettingsJavaRemove." + executable, "移除登记", ManagementAction, 84);
+            var remove = _dynamic.Append(actions, DesktopMarkup.Dynamic("SettingsJavaRemove.d.nxml", new Dictionary<string, string>
+            { ["key"] = JavaRuntimeControlKey("Remove", executable), ["enabled"] = Flag(interactive) }));
             RegisterContentAction(remove, () =>
             {
                 long revision = _javaInventory.RegistryRevision;
@@ -141,7 +152,8 @@ internal sealed partial class SettingsPageController
         }
         if (_javaInventory.ManagedRuntimes.FirstOrDefault(entry => Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, executable)) is { } managed)
         {
-            var remove = ActionButton(row, "SettingsJavaDelete." + executable, "删除托管 Java", ManagementAction, 108);
+            var remove = _dynamic.Append(actions, DesktopMarkup.Dynamic("SettingsJavaDelete.d.nxml", new Dictionary<string, string>
+            { ["key"] = JavaRuntimeControlKey("Delete", executable), ["enabled"] = Flag(interactive) }));
             RegisterContentAction(remove, () =>
             {
                 long revision = _javaInventory.RegistryRevision;
@@ -155,11 +167,7 @@ internal sealed partial class SettingsPageController
                     });
             });
         }
-        _shell.Tree.Walk(row, entity =>
-        {
-            if (_shell.Tree.GetComponent<XsrUiInput>(entity) is { } input) input.Enabled = !JavaManagementBusy && _javaInventoryRead is null;
-            return true;
-        });
+
     }
 
     private void ManageJava(string executable, JavaRuntimeManagementAction action, long? expectedRevision = null, string? managedIdentity = null)
@@ -244,26 +252,27 @@ internal sealed partial class SettingsPageController
         string? selected = _values?.Values.FirstOrDefault(value => value.Key == "java.runtime")?.Value.Value;
         foreach (var (entity, candidate) in _javaChoices)
         {
-            bool available = candidate.IsEnabled && candidate.IsAvailable;
-            string label = !candidate.IsAvailable ? "不可用" : !candidate.IsEnabled ? "已禁用" : string.Equals(candidate.Installation.JavaExecutablePath, selected,
-                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) ? "已选" : "使用";
-            var text = _shell.Tree.GetComponent<XsrUiText>(entity)!;
-            _shell.Tree.GetComponent<XsrUiSelection>(entity)!.IsSelected = label == "已选";
-            if (text.Content != label) { text.Content = label; _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Paint); }
-            _shell.Tree.GetComponent<XsrUiInput>(entity)!.Enabled = available && _writing is null && _javaInventoryRead is null && !JavaManagementBusy;
+            bool selectedRuntime = candidate.IsAvailable && candidate.IsEnabled && string.Equals(candidate.Installation.JavaExecutablePath, selected,
+                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            string template = !candidate.IsAvailable ? "SettingsJavaChoiceUnavailable.d.nxml" : !candidate.IsEnabled ? "SettingsJavaChoiceDisabled.d.nxml"
+                : selectedRuntime ? "SettingsJavaChoiceSelected.d.nxml" : "SettingsJavaChoiceAvailable.d.nxml";
+            bool enabled = candidate.IsEnabled && candidate.IsAvailable && _writing is null && _javaInventoryRead is null && !JavaManagementBusy;
+            var view = (template, selectedRuntime, enabled);
+            if (_javaChoiceViews.TryGetValue(entity, out var previous) && previous == view) continue;
+            _dynamic.Reload(entity, DesktopMarkup.Dynamic(template, new Dictionary<string, string>
+            { ["key"] = _shell.Tree.Name(entity), ["selected"] = Flag(selectedRuntime), ["enabled"] = Flag(enabled) }));
+            _javaChoiceViews[entity] = view;
         }
     }
 
     private void CancelJavaInventory()
     {
-
-
         _javaRegistryGeneration++;
         _javaManagementStop?.Cancel(); _javaManagementStop?.Dispose(); _javaManagementStop = null;
         _javaPick = null; _javaManagementWrite = null;
         _javaInventoryStop?.Cancel(); _javaInventoryStop?.Dispose(); _javaInventoryStop = null;
         _javaInventoryRead = null; _javaInventory = null; _javaInventoryRequested = _javaInventoryFailed = false;
-        _javaChoices.Clear();
+        _javaChoices.Clear(); _javaChoiceViews.Clear();
         int pending = _pending.Count;
         for (int i = 0; i < pending && _pending.TryDequeue(out var intent); i++)
             if (!IsJavaInventoryIntent(intent.Command)) _pending.Enqueue(intent);

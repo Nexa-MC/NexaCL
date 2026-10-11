@@ -1,0 +1,6 @@
+﻿<nxml-dynamic>
+  <StackPanel Key="DiagnosticExportActions" Class="settings-about-actions">
+    <Button Key="Management.导出诊断包" Label="正在导出…" Content="正在导出…" Command="ui.settings.management.action" Enabled="{data enabled}" Class="settings-catalog-action settings-diagnostic-export" />
+    <Button Key="Management.取消诊断包导出" Label="取消导出" Content="取消导出" Command="ui.settings.management.action" IsVisible="true" Enabled="true" Class="settings-catalog-action settings-about-link" />
+  </StackPanel>
+</nxml-dynamic>

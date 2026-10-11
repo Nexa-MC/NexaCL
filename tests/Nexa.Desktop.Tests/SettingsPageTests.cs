@@ -19,13 +19,20 @@ internal static partial class Program
             current = fixture.Shell.Render(size);
             var profiles = FindTree("LaunchProfiles");
             var baseChoice = FindTree("LaunchProfileBase");
-            return FindTree(key).IsAssigned && !settings.SettingsWritePending
+            var pager = FindTree("SettingsPager");
+            var selectedBody = fixture.Shell.Tree.Children(pager)[fixture.Shell.Tree.GetComponent<XsrUiPager>(pager)!.PageIndex];
+            return current.Nodes.Any(node => node.Entity == selectedBody)
+                && FindTree(key).IsAssigned && !settings.SettingsWritePending
                 && (!profiles.IsAssigned || baseChoice.IsAssigned
                     && fixture.Shell.Tree.GetComponent<XsrUiInput>(baseChoice)?.Enabled == true);
         }, TimeSpan.FromSeconds(5)));
         for (int step = -1; step < 512; step++)
         {
-            var container = FindByKey(fixture.Shell, current, "SettingsSections");
+            // During a horizontal page transition both bodies may be visible.
+            // Scroll only the pager's selected body, not a scene-wide name match.
+            var pager = FindTree("SettingsPager");
+            var body = fixture.Shell.Tree.Children(pager)[fixture.Shell.Tree.GetComponent<XsrUiPager>(pager)!.PageIndex];
+            var container = current.Nodes.Single(node => node.Entity == body);
             var target = current.Nodes.FirstOrDefault(node => fixture.Shell.Tree.Name(node.Entity) == key);
             if (target.Entity.IsAssigned && target.Rect.Y >= container.Rect.Y
                 && target.Rect.Y + target.Rect.Height <= container.Rect.Y + container.Rect.Height + .01)

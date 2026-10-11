@@ -1,0 +1,11 @@
+﻿<nxml-dynamic>
+  <SettingsForm Key="SettingsDiagnosticExport">
+    <Text Content="诊断包" Class="settings-form-label" />
+    <StackPanel Class="settings-form-surface">
+      <StackPanel Class="settings-form-body">
+        <Text Content="导出游戏与加载器版本、模组标识、问题分类及结构化操作日志。不包含账户、完整路径或日志正文。" Class="settings-diagnostic-description" />
+        <Dynamic Key="SettingsDiagnosticExport.Actions" />
+      </StackPanel>
+    </StackPanel>
+  </SettingsForm>
+</nxml-dynamic>

@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer;
+﻿using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -6,29 +6,25 @@ internal sealed partial class SettingsPageController
 {
     private CancellationTokenSource? _diagnosticStop;
     private int _diagnosticWriting;
-    private readonly List<(XsrUiEntityId Export, XsrUiEntityId Cancel)> _diagnosticControls = [];
+    private readonly List<(XsrUiEntityId Root, XsrUiEntityId Export, XsrUiEntityId Cancel)> _diagnosticControls = [];
+    private readonly Dictionary<XsrUiEntityId, (string Template, bool Enabled)> _diagnosticViews = [];
     internal bool DiagnosticExportInProgress => Volatile.Read(ref _diagnosticWriting) != 0;
 
     private void BuildPrivacyDiagnosticExport()
     {
         if (ExportDiagnostics is null) return;
-        var group = FormGroup(_sections, "SettingsDiagnosticExport", "诊断包");
-        var hint = Text(group, "导出游戏与加载器版本、模组标识、问题分类及结构化操作日志。不包含账户、完整路径或日志正文。", 12, Muted, height: 64);
-        var copy = _shell.Tree.GetComponent<XsrUiText>(hint)!;
-        copy.MaxLines = 0;
-        copy.TrimOverflow = false;
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(hint)!.WrapText = true;
-        BuildDiagnosticExportControls(group);
+        var root = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsDiagnosticExport.d.nxml"));
+        BuildDiagnosticExportControls(CatalogNodes(root)["SettingsDiagnosticExport.Actions"]);
     }
 
     private void BuildDiagnosticExportControls(XsrUiEntityId parent)
     {
-        var row = Stack(parent, "DiagnosticExportActions", XsrUiOrientation.Horizontal, 10);
-        var export = ActionButton(row, "Management.导出诊断包", "导出诊断包", ManagementAction, 144);
-        var cancel = ActionButton(row, "Management.取消诊断包导出", "取消导出", ManagementAction, 96);
+        var row = _dynamic.Append(parent, DesktopMarkup.Dynamic("SettingsDiagnosticActionsIdle.d.nxml", new Dictionary<string, string> { ["enabled"] = "false" }));
+        var nodes = CatalogNodes(row);
+        var export = nodes["Management.导出诊断包"]; var cancel = nodes["Management.取消诊断包导出"];
         _managementActions[export] = () => WakeOnPlatformCompletion(ExportDiagnosticsAsync());
         _managementActions[cancel] = CancelDiagnosticExport;
-        _diagnosticControls.Add((export, cancel));
+        _diagnosticControls.Add((row, export, cancel));
         UpdateDiagnosticExportControls();
     }
 
@@ -36,20 +32,14 @@ internal sealed partial class SettingsPageController
     {
         bool busy = DiagnosticExportInProgress;
         bool cancelling = Volatile.Read(ref _diagnosticStop)?.IsCancellationRequested == true;
-        foreach (var (export, cancel) in _diagnosticControls)
+        string template = busy ? cancelling ? "SettingsDiagnosticActionsCancelling.d.nxml" : "SettingsDiagnosticActionsBusy.d.nxml" : "SettingsDiagnosticActionsIdle.d.nxml";
+        bool enabled = ExportDiagnostics is not null && !busy;
+        foreach (var (root, export, cancel) in _diagnosticControls)
         {
-            if (!_shell.Tree.IsAlive(export) || !_shell.Tree.IsAlive(cancel)) continue;
-            var input = _shell.Tree.GetComponent<XsrUiInput>(export)!;
-            var text = _shell.Tree.GetComponent<XsrUiText>(export)!;
-            var cancelLayout = _shell.Tree.GetComponent<XsrUiElement>(cancel)!;
-            var cancelInput = _shell.Tree.GetComponent<XsrUiInput>(cancel)!;
-            string label = busy ? cancelling ? "正在取消…" : "正在导出…" : "导出诊断包";
-            bool enabled = ExportDiagnostics is not null && !busy;
-            if (input.Enabled == enabled && text.Content == label && cancelLayout.IsVisible == busy && cancelInput.Enabled == (busy && !cancelling)) continue;
-            input.Enabled = enabled; text.Content = label; cancelLayout.IsVisible = busy; cancelInput.Enabled = busy && !cancelling;
-            _shell.Tree.GetComponent<XsrUiSemantic>(export)!.Label = label;
-            _shell.Tree.MarkDirty(export, XsrUiDirtyKinds.Paint);
-            _shell.Tree.MarkDirty(cancel, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+            if (!_shell.Tree.IsAlive(root) || !_shell.Tree.IsAlive(export) || !_shell.Tree.IsAlive(cancel)) continue;
+            if (_diagnosticViews.TryGetValue(root, out var previous) && previous == (template, enabled)) continue;
+            _dynamic.Reload(root, DesktopMarkup.Dynamic(template, new Dictionary<string, string> { ["enabled"] = Flag(enabled) }));
+            _diagnosticViews[root] = (template, enabled);
         }
     }
 

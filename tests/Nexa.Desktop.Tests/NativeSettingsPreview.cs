@@ -1,4 +1,8 @@
-﻿using System.Text.Json.Nodes;
+﻿using Nexa.Services.Minecraft.Java;
+using Nexa.Services.Settings;
+using Nexa.Xsr;
+using Nexa.Xsr.Runtime;
+using System.Text.Json.Nodes;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -156,6 +160,41 @@ internal static partial class Program
                 f.Shell.Renderer.SetTextInputValue(argument.Entity, "--demo");
                 Emit(f.Intents, "ui.settings.argument.add", FindByKey(f.Shell, surface.Scene!, "SettingsArgumentAdd.game.arguments").Entity);
                 surface.CommitScene(); Capture("catalog-arguments");
+            }, timeout.Token);
+            await SelectCategory("about");
+            await Task.Delay(500, timeout.Token);
+            await startup.InvokeAsync(() => Capture("about"), timeout.Token);
+            await startup.InvokeAsync(async () =>
+            {
+                var queries = new XsrQueryRouterBuilder();
+                f.Foundation.Queries.TryResolve(SettingsPolicyContract.CatalogQuery, out var catalog);
+                f.Foundation.Queries.TryResolve(SettingsPolicyContract.EffectiveQuery, out var effective);
+                queries.Register<SettingsCatalogQuery, SettingsCatalogSnapshot>(SettingsPolicyContract.CatalogQuery,
+                    (q, ct) => f.Foundation.Queries.QueryAsync<SettingsCatalogQuery, SettingsCatalogSnapshot>(catalog, q, cancellationToken: ct));
+                queries.Register<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(SettingsPolicyContract.EffectiveQuery,
+                    (q, ct) => f.Foundation.Queries.QueryAsync<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(effective, q, cancellationToken: ct));
+                string javaHome = Path.GetFullPath("java-preview/Temurin 21");
+                string executable = Path.Combine(javaHome, "bin", "java.exe");
+                var runtime = new JavaRuntimeCandidate(new JavaInstallation(javaHome, executable, null, new Version(21, 0, 8), JavaBrand.EclipseTemurin, JavaArchitecture.X64, true, true));
+                var inventory = new JavaRuntimeInventorySnapshot([runtime])
+                { RegistryRevision = 1, ManagedRuntimes = [new(executable, javaHome, new string('A', 64))] };
+                queries.Register<JavaRuntimeInventoryQuery, JavaRuntimeInventorySnapshot>(JavaRuntimeInventoryContract.Query,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success(inventory)));
+                var commands = new XsrCommandRouterBuilder();
+                commands.Register<JavaRuntimeManageCommand>(JavaRuntimeInventoryContract.Manage,
+                    (_, _) => throw new InvalidOperationException("Preview must not manage a Java runtime."));
+                using var java = new SettingsPageController(f.Shell, f.Intents, queries.Build(new NoopDispatchObserver()),
+                    commands.Build(new NoopDispatchObserver()), f.Store, f.Feedback)
+                { PickRemediationJava = () => Task.FromResult<string?>(null) };
+                await java.PrepareStartupAsync(timeout.Token);
+                f.Shell.Stage.Navigation.Replace(java.Page); surface!.CommitScene();
+                Emit(f.Intents, "ui.settings.section", FindByKey(f.Shell, surface.Scene!, "SettingsNav.java").Entity);
+                surface.CommitScene(); await java.PrepareVisibleStartupAsync(timeout.Token);
+                await Task.Delay(500, timeout.Token); surface.CommitScene();
+                var javaScene = surface.Scene!;
+                ShowSettingsFixtureControl(f, java, ref javaScene, "SettingsJavaChoose.0", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("java-inventory");
+                f.Shell.Stage.Navigation.Replace(controller.Page); surface.CommitScene();
             }, timeout.Token);
             await SelectCategory("network");
             await Task.Delay(500, timeout.Token);
@@ -342,7 +381,7 @@ internal static partial class Program
                     ["page"] = "SettingsAppearance",
                     ["phase"] = phase,
                     ["theme"] = f.Shell.Renderer.ColorScheme.IsDark ? "dark" : "light",
-                    ["data"] = "temporary local settings; empty instances; task/process/log and resource fixtures",
+                    ["data"] = "temporary local settings; empty instances; Java inventory, task/process/log and resource fixtures",
                     ["renderer"] = "actual product NXML/controller and software Avalonia native window",
                     ["version"] = f.Shell.Version,
                     ["x"] = origin.X,

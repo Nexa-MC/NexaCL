@@ -44,6 +44,17 @@ internal static partial class Program
             || shell.Tree.GetComponent<XsrUiTextInput>(hook)?.ReadDraft() != "fixture\targument")
             throw new InvalidOperationException("Dynamic settings editor validation failed.");
         Console.WriteLine("Dynamic settings validation passed: selector slot, argument add/draft and lossless command tabs; no settings were saved.");
+        intents.Emit(XsrSemanticId.Parse("ui.settings.section"), Find("SettingsNav.java"), XsrCorrelationId.Create());
+        shell.Render(new(1280, 800));
+        var inventoryBody = Find("SettingsJavaInventory.Body");
+        if (shell.Tree.GetComponent<NxmlDynamicSlot>(inventoryBody) is null)
+            throw new InvalidOperationException("Java inventory did not use its external dynamic body.");
+        Console.WriteLine("Dynamic Java validation passed: external inventory header and owned body slot; no registry changes.");
+        intents.Emit(XsrSemanticId.Parse("ui.settings.section"), Find("SettingsNav.about"), XsrCorrelationId.Create());
+        shell.Render(new(1280, 800));
+        if (!Find("AboutCopyright").IsAssigned || !Find("AboutOpenSource").IsAssigned || !Find("AboutThanks").IsAssigned)
+            throw new InvalidOperationException("External about content did not load.");
+        Console.WriteLine("Dynamic about validation passed: external copyright, license and acknowledgements.");
         shell.Stage.Navigation.Replace(previous);
 
         XsrUiEntityId Find(string key)

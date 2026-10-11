@@ -1,4 +1,4 @@
-using Nexa.Desktop.Ui;
+﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Minecraft.Java;
 using Nexa.Services.Settings;
 using Nexa.Xsr.Renderer;
@@ -47,7 +47,7 @@ internal static partial class Program
         }
         void Delete()
         {
-            var button = FindByKey(fixture.Shell, scene, "SettingsJavaDelete." + executable);
+            var button = FindByKey(fixture.Shell, scene, SettingsPageController.JavaRuntimeControlKey("Delete", executable));
             AssertTrue(button.IsEnabled && button.IsClickable);
             var visible = button.ClipRect ?? button.Rect;
             AssertEqual(button.Entity, fixture.Shell.Renderer.HitTest(new(visible.X + visible.Width / 2, visible.Y + visible.Height / 2)));
@@ -61,8 +61,8 @@ internal static partial class Program
             AssertTrue(FindByKey(fixture.Shell, scene, "DialogMessage").Text!.Contains(home, StringComparison.Ordinal));
         }
         Navigate("java");
-        AssertFalse(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "SettingsJavaDelete." + external));
-        AssertTrue(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "SettingsJavaRemove." + external));
+        AssertFalse(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == SettingsPageController.JavaRuntimeControlKey("Delete", external)));
+        AssertTrue(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == SettingsPageController.JavaRuntimeControlKey("Remove", external)));
         Delete(); AssertTrue(fixture.Shell.Renderer.HandleKey(XsrUiKey.Escape));
         scene = fixture.Shell.Render(new(1200, 2100)); AssertEqual(0, writes.Count);
         Delete();

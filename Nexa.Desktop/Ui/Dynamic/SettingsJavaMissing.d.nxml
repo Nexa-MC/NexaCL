@@ -1,0 +1,10 @@
+﻿<nxml-dynamic>
+  <StackPanel Key="{data row}" Class="settings-java-missing-row">
+    <StackPanel Class="settings-java-labels settings-java-missing-labels">
+      <Text Content="未找到可用的 Java" IsVisible="{data external}" Class="settings-java-missing-title" />
+      <Text Content="托管 Java 不可用" IsVisible="{data managed}" Class="settings-java-missing-title" />
+      <Text Content="{data path}" Localize="false" MaxLines="2" TrimOverflow="true" Class="settings-java-path" />
+    </StackPanel>
+    <Dynamic Key="SettingsJavaRuntime.Management" Class="settings-java-actions" />
+  </StackPanel>
+</nxml-dynamic>

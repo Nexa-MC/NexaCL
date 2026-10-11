@@ -1,0 +1,35 @@
+﻿<nxml-dynamic>
+  <StackPanel Key="SettingsAbout" Class="settings-about">
+    <Text Content="{data product}" Localize="false" Class="settings-about-product" />
+    <StackPanel Key="AboutCopyright" Class="settings-about-section">
+      <Text Content="版权信息" Class="settings-about-title" />
+      <Text Content="Copyright © 2025 muxue。Nexa 项目贡献者保留各自贡献的版权。" Class="settings-about-copy" />
+    </StackPanel>
+    <StackPanel Key="AboutOpenSource" Class="settings-about-section">
+      <Text Content="开源声明" Class="settings-about-title" />
+      <Text Content="Nexa Host 采用 Apache License 2.0。源代码、许可证及贡献记录：&#10;https://github.com/PCL-N-Edition/PCL-N&#10;随附 LICENSE 为完整授权条款；独立 Sidecar、插件与第三方依赖按各自许可证发布。" Class="settings-about-copy settings-about-license" />
+    </StackPanel>
+    <StackPanel Key="AboutLinks" IsVisible="{data links}" Class="settings-about-actions">
+      <Button Key="Management.源代码" Label="源代码" Content="源代码" Command="ui.settings.management.action" Class="settings-catalog-action settings-about-link" />
+      <Button Key="Management.完整许可证" Label="完整许可证" Content="完整许可证" Command="ui.settings.management.action" Class="settings-catalog-action settings-about-license-link" />
+      <Button Key="Management.贡献者" Label="贡献者" Content="贡献者" Command="ui.settings.management.action" Class="settings-catalog-action settings-about-link" />
+    </StackPanel>
+    <StackPanel Key="AboutTrademarks" Class="settings-about-section">
+      <Text Content="商标声明" Class="settings-about-title" />
+      <Text Content="Minecraft 是 Mojang / Microsoft 的商标。本项目由社区独立维护，与 Mojang / Microsoft 无隶属或官方认可关系。" Class="settings-about-copy" />
+    </StackPanel>
+    <StackPanel Key="AboutThanks" Class="settings-about-section">
+      <Text Content="鸣谢" Class="settings-about-title" />
+      <Text Content="感谢所有代码、翻译、测试和文档贡献者，以及 .NET、Avalonia、SkiaSharp、Bouncy Castle 等开源项目。感谢 Mojang 提供的游戏接口，以及 Modrinth、CurseForge、Fabric、Forge、NeoForge、Quilt 和 LittleSkin 的生态服务。" Class="settings-about-copy" />
+    </StackPanel>
+    <StackPanel Key="AboutMainland" Class="settings-about-section">
+      <Text Content="中国大陆下载服务" Class="settings-about-title" />
+      <Text Content="感谢 BMCLAPI（bangbang93）、MCIM 与相关镜像维护者。中国大陆优化仅在中国大陆地区策略启用时使用。" Class="settings-about-copy" />
+    </StackPanel>
+    <StackPanel Key="AboutDiagnostics" IsVisible="{data diagnostics}" Class="settings-about-section">
+      <Text Content="诊断包" Class="settings-about-title" />
+      <Text Content="导出版本、系统架构、实例与 Mod 标识、问题分类及结构化操作日志。账户、凭据、完整路径和个人文件不包含在内。诊断包保存在你选择的目录。" Class="settings-about-copy" />
+    </StackPanel>
+    <Dynamic Key="AboutDiagnosticActions" />
+  </StackPanel>
+</nxml-dynamic>

@@ -1,0 +1,3 @@
+﻿<nxml-dynamic>
+  <SettingsChoice Key="{data key}" Label="使用" Content="使用" Command="ui.settings.java.choose" Selected="{data selected}" Enabled="{data enabled}" Class="settings-java-choice" />
+</nxml-dynamic>

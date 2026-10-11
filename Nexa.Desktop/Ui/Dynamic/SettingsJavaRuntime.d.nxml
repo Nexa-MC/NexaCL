@@ -1,0 +1,12 @@
+﻿<nxml-dynamic>
+  <StackPanel Key="{data row}" Class="settings-java-row">
+    <StackPanel Key="{data labels}" Class="settings-java-labels">
+      <Text Content="{data name}" Localize="false" Class="settings-java-name" />
+      <Text Content="{data path}" Localize="false" MaxLines="2" TrimOverflow="true" Class="settings-java-path" />
+      <Text Content="启动器托管" IsVisible="{data managed}" Class="settings-java-origin" />
+      <Text Content="外部运行时" IsVisible="{data external}" Class="settings-java-origin" />
+    </StackPanel>
+    <Dynamic Key="SettingsJavaRuntime.Choice" Class="settings-java-choice-slot" />
+    <Dynamic Key="SettingsJavaRuntime.Management" Class="settings-java-actions" />
+  </StackPanel>
+</nxml-dynamic>

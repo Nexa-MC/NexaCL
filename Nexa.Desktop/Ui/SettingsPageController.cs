@@ -294,12 +294,12 @@ internal sealed partial class SettingsPageController : IDisposable
         foreach (var child in _shell.Tree.Children(_sections).ToArray()) _shell.Tree.Destroy(child);
         ResetDeveloperDiagnosticControls();
         _catalogViews.Clear(); _inheritRows.Clear(); _autoModeViews.Clear();
-        _javaChoices.Clear();
+        _javaChoices.Clear(); _javaChoiceViews.Clear();
         _javaInventoryGroup = default;
         _editors.Clear(); _inheritButtons.Clear(); _selectors.Clear(); _autoModes.Clear(); _argumentEditors.Clear(); _argumentActions.Clear(); _choices.Clear();
         _hookEditors.Clear(); _hookActions.Clear();
         ResetLaunchProfileControls(); ResetIdentityControls();
-        _managementActions.Clear(); _diagnosticControls.Clear(); _contentSearch = default; _contentList = default; _contentWindowStart = -1;
+        _managementActions.Clear(); _diagnosticControls.Clear(); _diagnosticViews.Clear(); _contentSearch = default; _contentList = default; _contentWindowStart = -1;
         _graphSearch = _graphBody = default; _graphActions.Clear();
         if (_instanceDirectory is not null && _instance is null)
         {

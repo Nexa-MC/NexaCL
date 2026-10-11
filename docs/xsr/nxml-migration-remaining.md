@@ -20,6 +20,11 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
   plain inputs, argument rows and lossless command editors now load owned fragments.
   Their layout and visual constants live in NSS; labels/hints and option mappings
   still include C# copy and must be externalized.
+- Installed Java inventory, runtime/missing rows, selection states and management
+  actions now load/reload fragments. Paths remain literal data; bounded derived keys
+  keep long executable paths within NXML's identity contract.
+- About content and diagnostic export controls now use external fragments and NSS;
+  export/cancellation availability reloads without replacing button entities.
 - Resource filter overlays already use fragments. Other resource presentation is
   still imperative.
 - Shared reload preserves entity identity, nested slots, drafts, scroll, focus,
@@ -31,7 +36,7 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 
 | Area | Authoritative entry points | Remaining work |
 | --- | --- | --- |
-| Settings and instance management | `SettingsPageController.cs` and partial files | Replace remaining custom row/group factories, Java inventory, diagnostic cards, content/detail/snapshot/server/export structures and their style mutations with templates. Preserve drafts and list virtualization. |
+| Settings and instance management | `SettingsPageController.cs` and partial files | Replace remaining custom row/group factories, diagnostic cards, content/detail/snapshot/server/export structures and their style mutations with templates. Preserve drafts and list virtualization. |
 | Resources | `ResourcesPageController.cs` and partial files | Search toolbar, categories, virtual rows, detail/version/dependency and install confirmation layouts; content and state variants must be external. |
 | Launch and installation | `LaunchPageController.InstallCatalog.cs`, `.Installation.cs`, `.FrameProjection.cs`, `.Styles.cs`, `BedrockInstallPageController.cs` | Catalog/loader rows, state panels, choice tracks and runtime presentation styling. |
 | Version selection | `VersionSelectionController.cs`, `.Window.cs` | Row window/virtualization, directory choices/editor, popup body and selection styles. |
@@ -96,7 +101,7 @@ The overall migration remains active until all gates are evidenced for all slice
   retained drafts and literal command tabs. Existing Jint IL2098 remains.
 - Targeted whitespace format and diff checks passed. The full migration remains open.
 
-## Java inventory boundary for the next slice
+## Java inventory boundary
 
 - Keep discovery, registry writes and scoped Java selection in the existing services.
 - Inventory header, runtime/missing rows, ownership labels and actions must be external
@@ -104,3 +109,30 @@ The overall migration remains active until all gates are evidenced for all slice
 - Registry generation/revision checks, picker cancellation and managed-runtime identity
   checks must be preserved. Reload must keep row identities and focus when only the
   selected runtime or busy state changes.
+
+## About and diagnostic export boundary
+
+About copy, hierarchy, links and optional diagnostic section move to external
+fragments without changing license text or link targets. Diagnostic export action
+states (idle/exporting/cancelling) reload in place; cancellation and privacy/export
+service boundaries remain unchanged. Runtime executable paths are literal data,
+not NXML keys; Java management controls use bounded SHA-256-derived identities.
+
+## Java inventory and About slice validation, 2026-10-11
+
+- Full Desktop composition: 264 passed. Architecture: 69 projects passed, with
+  no-presentation-factory checks added for Java, About and DiagnosticExport partials.
+- Java tests cover asynchronous scan cancellation, stale picker completion, instance
+  isolation, captured managed-runtime identity and retired deletion confirmations.
+  Selection reload preserves entity identity; selected rows retain keyboard focus
+  across unchanged projections. A pending write may intentionally disable the control.
+- Diagnostic export tests cover coalescing, navigation, cancellation, retry and disposal.
+- Actual Avalonia previews captured both themes for the About page and Java inventory.
+  The Java entries are explicitly declared fixtures and never modify a real registry.
+  The scrolling harness selects the actual pager body, since transitions can present
+  both outgoing and incoming bodies at once.
+- Windows x64 NativeAOT and full-trim publications succeeded; both actual executables
+  ran --validate-shell and exited 0, including external Java body ownership and About
+  copyright/license/acknowledgement nodes. The existing Jint IL2098 warning remains.
+- Controller feedback/dialog wording and runtime label formatting still require the
+  global copy/overlay migration. These slices do not establish whole-product completion.

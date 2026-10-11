@@ -1,0 +1,3 @@
+﻿<nxml-dynamic>
+  <Button Key="{data key}" Label="删除托管 Java" Content="删除托管 Java" Command="ui.settings.management.action" Enabled="{data enabled}" Class="settings-catalog-action settings-java-delete" />
+</nxml-dynamic>

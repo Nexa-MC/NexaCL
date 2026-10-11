@@ -1,0 +1,3 @@
+﻿<nxml-dynamic>
+  <Button Key="{data key}" Label="移除登记" Content="移除登记" Command="ui.settings.management.action" Enabled="{data enabled}" Class="settings-catalog-action settings-java-add" />
+</nxml-dynamic>
