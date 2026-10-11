@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Nexa.Xsr;
 using Nexa.Xsr.State;
 
@@ -21,7 +21,12 @@ public sealed partial class XsrUiRenderer
         for (int index = _scene.Count - 1; index >= 0; index--)
         {
             XsrUiSceneNode node = _scene[index];
-            if (node.IsAccessible && node.Rect.Contains(point) && (node.ClipRect is null || node.ClipRect.Value.Contains(point)))
+            // Transparent nonmodal composition layers do not become hit targets merely
+            // because they span the viewport. Their real children remain reachable.
+            bool passThrough = _tree.GetComponent<XsrUiOverlayLayer>(node.Entity) is { IsModal:false }
+                && node.Role == XsrUiSemanticRole.None && !node.IsClickable && !node.IsFocusable
+                && node.Text is null && node.ImageSource is null && node.VisualStyle.Background.Alpha == 0;
+            if (!passThrough && node.IsAccessible && node.Rect.Contains(point) && (node.ClipRect is null || node.ClipRect.Value.Contains(point)))
             {
                 return node.Entity;
             }

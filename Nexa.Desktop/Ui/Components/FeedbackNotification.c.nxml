@@ -1,11 +1,11 @@
-<nxml-component>
-  <Notification Key="Notification" Label="Info 通知" Class="layout-Notification-Notification">
-    <StackPanel Key="NotificationAccent" Class="layout-Notification-NotificationAccent" />
-    <Image Key="NotificationIcon" Label="Info" Source="lucide/info" Class="layout-Notification-NotificationIcon" />
+﻿<nxml-component>
+  <Node Kind="Notification" Recipe="StackLayout" Role="Status" Key="{data key}" Label="{data label}" Localize="false" Command="ui.feedback.notification.open" Clickable="true" Focusable="true" Enabled="{data enabled}" LiveSetting="{data urgency}" OverlayMotion="Notification" Class="{data style}">
+    <StackPanel Key="NotificationAccent" Class="{data accent-style}" />
+    <Node Kind="Image" Recipe="Image" Key="NotificationIcon" Source="{data icon}" Class="{data icon-style}" />
     <StackPanel Key="NotificationCopy" Class="layout-Notification-NotificationCopy">
-      <Text Key="NotificationLevel" Content="Info" Class="layout-Notification-NotificationLevel" />
-      <Text Key="NotificationMessage" Content="通知内容" />
+      <Node Kind="Text" Recipe="Text" Key="NotificationLevel" Content="{data level}" Localize="false" Class="{data level-style}" />
+      <Node Kind="Text" Recipe="Text" Key="NotificationMessage" Content="{data message}" Localize="false" MaxLines="2" TrimOverflow="true" Class="feedback-notification-message" />
     </StackPanel>
-    <Button Key="NotificationClose" Label="关闭 Info 通知" Icon="lucide/x" Command="ui.feedback.notification.dismiss" Class="layout-Notification-NotificationClose" />
-  </Notification>
+    <Button Key="NotificationClose" Label="{data close-label}" Localize="false" Icon="lucide/x" Enabled="{data enabled}" Command="ui.feedback.notification.dismiss" Class="{data close-style}" />
+  </Node>
 </nxml-component>

@@ -422,7 +422,7 @@ internal static partial class Program
                 failures.Add($"Invalid dynamic template wrapper: {file}");
         }
         // Completed migrations must not regress to imperative presentation factories.
-        foreach (string name in new[] { "SettingsPageController.Network.cs", "SettingsPageController.NetworkDiagnostics.cs", "TaskCenterController.cs", "DesktopTaskBubblePresenter.cs", "DesktopDynamicLayer.cs", "ProcessLogPageController.cs", "LaunchPageController.Process.cs", "SettingsPageController.Catalog.cs", "SettingsPageController.Editors.cs", "SettingsPageController.Hooks.cs", "SettingsPageController.Navigation.cs", "SettingsPageController.Java.cs", "SettingsPageController.About.cs", "SettingsPageController.DiagnosticExport.cs", "SettingsPageController.GeneralRuntime.cs", "SettingsPageController.Storage.cs", "SettingsPageController.StorageLocations.cs", "SettingsPageController.Transfer.cs", "SettingsPageController.Logs.cs", "SettingsPageController.ContentWorkspace.cs", "SettingsPageController.DiagnosticAi.cs", "SettingsPageController.Diagnostics.cs", "SettingsPageController.Platform.cs", "SettingsPageController.HardwareAdvice.cs", "SettingsPageController.RuntimeDiagnostics.cs", "SettingsPageController.RuntimeTrace.cs", "SettingsPageController.AdvancedWorkspace.cs", "SettingsPageController.InstanceDiagnostics.cs", "SettingsPageController.InstanceDiagnostics.History.cs", "SettingsPageController.InstanceDiagnostics.Operations.cs", "SettingsPageController.AdvancedLaunchDiagnostics.cs", "SettingsPageController.InstanceTools.cs", "SettingsPageController.DevelopmentMode.cs", "SettingsPageController.OfflineReadiness.cs", "SettingsPageController.RecoveryTimeline.cs", "SettingsPageController.FileWorkspace.cs", "SettingsPageController.FileWorkspace.Projection.cs" })
+        foreach (string name in new[] { "SettingsPageController.Network.cs", "SettingsPageController.NetworkDiagnostics.cs", "TaskCenterController.cs", "DesktopTaskBubblePresenter.cs", "DesktopDynamicLayer.cs", "ProcessLogPageController.cs", "LaunchPageController.Process.cs", "SettingsPageController.Catalog.cs", "SettingsPageController.Editors.cs", "SettingsPageController.Hooks.cs", "SettingsPageController.Navigation.cs", "SettingsPageController.Java.cs", "SettingsPageController.About.cs", "SettingsPageController.DiagnosticExport.cs", "SettingsPageController.GeneralRuntime.cs", "SettingsPageController.Storage.cs", "SettingsPageController.StorageLocations.cs", "SettingsPageController.Transfer.cs", "SettingsPageController.Logs.cs", "SettingsPageController.ContentWorkspace.cs", "SettingsPageController.DiagnosticAi.cs", "SettingsPageController.Diagnostics.cs", "SettingsPageController.Platform.cs", "SettingsPageController.HardwareAdvice.cs", "SettingsPageController.RuntimeDiagnostics.cs", "SettingsPageController.RuntimeTrace.cs", "SettingsPageController.AdvancedWorkspace.cs", "SettingsPageController.InstanceDiagnostics.cs", "SettingsPageController.InstanceDiagnostics.History.cs", "SettingsPageController.InstanceDiagnostics.Operations.cs", "SettingsPageController.AdvancedLaunchDiagnostics.cs", "SettingsPageController.InstanceTools.cs", "SettingsPageController.DevelopmentMode.cs", "SettingsPageController.OfflineReadiness.cs", "SettingsPageController.RecoveryTimeline.cs", "SettingsPageController.FileWorkspace.cs", "SettingsPageController.FileWorkspace.Projection.cs", "DesktopCommandPalette.cs", "DesktopFeedbackPresenter.cs" })
         {
             string source = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", name));
             foreach (string token in new[] { ".Tree.Create(", "new XsrUiText(", "new XsrUiVisualStyle", "new XsrUiStackPanel", "FormGroup(", "ActionButton(" })
@@ -434,11 +434,18 @@ internal static partial class Program
             if (System.Text.RegularExpressions.Regex.IsMatch(source, @"\b(?:Stack|Text|Style|SettingsCard|ManagementFactIn|DiagnosticText|ManagementButton)\s*\("))
                 failures.Add($"{name}: legacy helper factories cannot hide imperative presentation.");
         }
-        foreach (string name in new[] { "TaskCenterController.cs", "DesktopTaskBubblePresenter.cs", "ProcessLogPageController.cs", "LaunchPageController.Process.cs" })
+        foreach (string name in new[] { "TaskCenterController.cs", "DesktopTaskBubblePresenter.cs", "ProcessLogPageController.cs", "LaunchPageController.Process.cs", "DesktopCommandPalette.cs", "DesktopFeedbackPresenter.cs", "DesktopOverlayText.cs" })
         {
             string source = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", name));
             if (System.Text.RegularExpressions.Regex.IsMatch(source, "[\\u4e00-\\u9fff]"))
                 failures.Add($"{name}: fixed operation copy and formats must be external.");
+        }
+        foreach (string name in new[] { "DesktopCommandPalette.cs", "DesktopFeedbackPresenter.cs" })
+        {
+            string source = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", name));
+            if (source.Contains(".SetComponent", StringComparison.Ordinal) || source.Contains("new NxmlIrNode", StringComparison.Ordinal)
+                || source.Contains("new NxmlHostIr", StringComparison.Ordinal))
+                failures.Add($"{name}: presentation primitives and IR construction belong to external templates.");
         }
         string textProjection = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", "DesktopPresentationText.cs"));
         if (textProjection.Contains(".Tree.Create(", StringComparison.Ordinal) || textProjection.Contains("new NxmlNode", StringComparison.Ordinal))

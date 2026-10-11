@@ -12,7 +12,7 @@
           <Text Key="TaskCenterEmptyTitle" Content="暂无任务" Class="layout-TaskCenterPage-TaskCenterEmptyTitle" />
           <Text Key="TaskCenterEmptyHint" Content="安装和下载进度会显示在这里。" Class="layout-TaskCenterPage-TaskCenterEmptyHint" />
         </StackPanel>
-        <Dynamic Key="TaskCenterList" IsVisible="{data has-tasks}" Scroll="true" Class="layout-TaskCenterPage-TaskCenterList" />
+        <Dynamic Key="TaskCenterList" IsVisible="{data has-tasks}" Scroll="true" ScrollGesture="true" Class="layout-TaskCenterPage-TaskCenterList" />
       </ContentHost>
     </StackPanel>
 </nxml-dynamic>

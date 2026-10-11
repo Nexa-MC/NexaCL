@@ -156,7 +156,9 @@ public sealed partial class NxmlUiLoader
                 });
                 if (node.Scrollable)
                 {
-                    tree.SetComponent(entity, new XsrUiScroll());
+                    tree.SetComponent(entity, new XsrUiScroll
+                    { ShowsVerticalIndicator = node.ShowsVerticalIndicator, StickToEnd = node.StickToEnd });
+                    if (node.ScrollGesture) tree.SetComponent(entity, new XsrUiScrollGesture());
                 }
 
                 break;
@@ -219,6 +221,21 @@ public sealed partial class NxmlUiLoader
             default:
                 throw new NxmlLoadException($"The runtime recipe '{node.Recipe}' is unsupported.");
         }
+
+        if (node.Recipe is NxmlRuntimeRecipe.Element or NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot
+            && (node.Clickable || node.Focusable || node.Command is not null))
+        {
+            var enabled = node.Bindings.FirstOrDefault(binding => binding.Property == XsrUiStateProperty.Enabled);
+            tree.SetComponent(entity, new XsrUiInput
+            {
+                Clickable = node.Clickable, Focusable = node.Focusable, Enabled = node.Enabled,
+                BoundEnabled = enabled is null ? default : ResolveState(state, enabled.State),
+            });
+            if (node.Command is { } command) tree.SetComponent(entity, new XsrUiCommandBinding(command));
+        }
+        if (node.OverlayMotion is { } motion) tree.SetComponent(entity, new XsrUiOverlayMotion(motion));
+        if (node.LiveSetting is { } live) tree.SetComponent(entity, new XsrUiLiveRegion(live));
+        if (node.DismissCommand is { } dismiss) tree.SetComponent(entity, new XsrUiDismissBinding(dismiss));
 
         NxmlIrBinding? transitionBinding = node.Bindings.FirstOrDefault(binding => binding.Property == XsrUiStateProperty.TransitionKey);
         if (node.TransitionKey is not null || transitionBinding is not null)

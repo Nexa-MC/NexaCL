@@ -153,6 +153,7 @@ internal static partial class Program
         ("CommandLineAdmitsOnlyFiniteNavigationAndExplicitSafeMode", CommandLineAdmitsOnlyFiniteNavigationAndExplicitSafeMode),
         ("FileWorkspaceRequiresPreviewBeforeExplicitSaveAndPreservesOtherLines", FileWorkspaceRequiresPreviewBeforeExplicitSaveAndPreservesOtherLines),
         ("FileWorkspaceRetiresLateReadsPreservesPagingAndRejectsEditedPreview", FileWorkspaceRetiresLateReadsPreservesPagingAndRejectsEditedPreview),
+        ("GlobalOverlaysRetainOwnedSlotsFocusDraftsAndMotion", GlobalOverlaysRetainOwnedSlotsFocusDraftsAndMotion),
         ("OperationCopyLocalizesFormatsAndPreservesLiteralMetadata", OperationCopyLocalizesFormatsAndPreservesLiteralMetadata),
         ("OperationCopyRetainsTaskAndLogIdentityAcrossLanguageChanges", OperationCopyRetainsTaskAndLogIdentityAcrossLanguageChanges),
         ("OfflineReadinessCoalescesRetiresScopesAndInvalidatesSettingsRevision", OfflineReadinessCoalescesRetiresScopesAndInvalidatesSettingsRevision),

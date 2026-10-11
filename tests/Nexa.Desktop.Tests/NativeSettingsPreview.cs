@@ -661,6 +661,40 @@ internal static partial class Program
                 f.Shell.Stage.Navigation.Replace(controller.Page); logs.Dispose();
                 PublishLogSessions(f); surface.CommitScene();
             }, timeout.Token);
+            Guid[] overlayNotifications = [];
+            DesktopCommandPalette? overlayPalette = null;
+            await startup.InvokeAsync(() =>
+            {
+                overlayNotifications = [f.Feedback.Info("更新已就绪，重启后安装。"), f.Feedback.Warn("部分资源暂时无法连接。"),
+                    f.Feedback.Error("示例错误：literal <metadata> {state secret}")];
+                surface!.CommitScene();
+            },timeout.Token);
+            await Task.Delay(500,timeout.Token);
+            await startup.InvokeAsync(() =>
+            {
+                surface!.CommitScene(); Capture("global-notifications");
+                foreach (var notification in overlayNotifications) f.Feedback.DismissNotification(notification);
+                surface.CommitScene();
+                f.Feedback.ShowDialog("native.global.fixture", "选择 Java", string.Join('\n', Enumerable.Range(1,18)
+                    .Select(index => "预览记录 " + index + "：literal <metadata> {data text}")), "自动下载", "取消", static _=>{},
+                    "选择 Java", static ()=>{}, localizeMessage:false);
+                window!.Width=820; window.UpdateLayout(); surface.CommitScene();
+            }, timeout.Token);
+            await Task.Delay(350,timeout.Token);
+            await startup.InvokeAsync(() =>
+            {
+                surface!.CommitScene(); Capture("global-dialog-narrow");
+                f.Feedback.ResolveDialog(f.Feedback.Snapshot().Dialog!.Id,false);surface.CommitScene();
+            },timeout.Token);
+            await Eventually(() => !f.FeedbackPresenter.PresentedDialogRoot.IsAssigned);
+            await startup.InvokeAsync(() =>
+            {
+                overlayPalette=new(f.Shell,f.Intents,f.Store,actions,static _=>{});
+                AssertTrue(overlayPalette.Open());surface!.CommitScene();
+                f.Shell.Renderer.SetTextInputValue(overlayPalette.Find("CommandPaletteSearch"),"设置");surface.CommitScene();
+                Capture("global-palette-narrow");overlayPalette.Close();overlayPalette.Dispose();
+                window!.Width=1040;window.UpdateLayout();surface.CommitScene();
+            },timeout.Token);
             await SelectCategory("general");
             await Task.Delay(600, timeout.Token);
             await SelectCategory("appearance");

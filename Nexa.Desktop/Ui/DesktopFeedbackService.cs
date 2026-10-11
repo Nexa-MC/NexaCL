@@ -1,4 +1,4 @@
-using Nexa.Xsr;
+﻿using Nexa.Xsr;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -201,12 +201,13 @@ internal sealed class DesktopFeedbackService : IDisposable
         string key,
         string title,
         string message,
-        string acceptLabel = "OK",
+        string? acceptLabel = null,
         bool localizeMessage = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        acceptLabel ??= DesktopOverlayText.Raw("common.ok");
         ArgumentException.ThrowIfNullOrWhiteSpace(acceptLabel);
         return ShowDialogCore(key, title, message, acceptLabel, cancelLabel: null, static _ => { }, localizeMessage: localizeMessage);
     }
@@ -238,7 +239,7 @@ internal sealed class DesktopFeedbackService : IDisposable
             if (_disposed || _dialog?.Id != dialogId) return false;
             _dialog = _dialog with { Message = message, AlternateLabel = alternateLabel, Alternate = alternate };
             if (actionLabel is not null && action is not null)
-                _dialog = _dialog with { AcceptLabel = actionLabel, CancelLabel = "关闭", Resolve = accepted => { if (accepted) action(); } };
+                _dialog = _dialog with { AcceptLabel = actionLabel, CancelLabel = DesktopOverlayText.Raw("common.close"), Resolve = accepted => { if (accepted) action(); } };
         }
         RaiseChanged();
         return true;

@@ -1,4 +1,4 @@
-using Nexa.Desktop.Ui;
+﻿using Nexa.Desktop.Ui;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr.State;
@@ -46,7 +46,7 @@ internal static partial class Program
         shell.Render(new(1100, 750));
         var previous = shell.NavigationEntities.Values.First(); shell.Renderer.Focus(previous);
         var selected = new List<string>();
-        using var palette = new DesktopCommandPalette(shell, fixture.Intents, platform, route => selected.Add(route.Id));
+        using var palette = new DesktopCommandPalette(shell, fixture.Intents, fixture.Store, platform, route => selected.Add(route.Id));
         AssertTrue(platform.CommandPaletteOpenRequested!.Invoke());
         var scene = shell.Render(new(1100, 750));
         AssertTrue(scene.Nodes.Any(node => node.Text == "Command palette"));
@@ -105,7 +105,7 @@ internal static partial class Program
     {
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
         var shell = fixture.Shell; var platform = new AvaloniaUiPlatformActions();
-        using var palette = new DesktopCommandPalette(shell, fixture.Intents, platform, _ => throw new InvalidOperationException("Unexpected navigation."));
+        using var palette = new DesktopCommandPalette(shell, fixture.Intents, fixture.Store, platform, _ => throw new InvalidOperationException("Unexpected navigation."));
         var dialog = shell.Tree.Create("ExistingModal"); shell.Tree.SetComponent(dialog, new XsrUiElement()); shell.Stage.Show(dialog, modal: true);
         AssertFalse(palette.Open()); shell.Stage.Dismiss(dialog); shell.Tree.Destroy(dialog);
         AssertTrue(palette.Open()); var row = palette.Find("CommandPaletteCommand.about");

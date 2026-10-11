@@ -14,7 +14,7 @@
       </StackPanel>
       <Text Key="ProcessLogStatus" Localize="false" Content="{data ProcessLogStatus}" Class="layout-ProcessLogPage-ProcessLogStatus process-log-text" />
       <Text Key="ProcessLogEmpty" IsVisible="{data ProcessLogEmpty.visible}" Content="{data ProcessLogEmpty}" Class="layout-ProcessLogPage-ProcessLogEmpty process-log-text" />
-      <Dynamic Key="ProcessLogRows" Scroll="true" Class="layout-ProcessLogPage-ProcessLogRows process-log-text" />
+      <Dynamic Key="ProcessLogRows" Scroll="true" ShowsVerticalIndicator="true" Class="layout-ProcessLogPage-ProcessLogRows process-log-text" />
       <StackPanel Class="layout-ProcessLogPage-16 process-log-text">
         <Button Key="ProcessLogPrevious" Enabled="{data ProcessLogPrevious.enabled}" Content="上一页" Label="上一页日志" Command="ui.process.log.previous" Class="layout-ProcessLogPage-ProcessLogPrevious process-log-control process-log-text" />
         <Text Key="ProcessLogPageNumber" Localize="false" Content="{data ProcessLogPageNumber}" Class="layout-ProcessLogPage-ProcessLogPageNumber process-log-text" />

@@ -80,6 +80,12 @@ public sealed record NxmlIrNode
     public bool StretchLastChild { get; init; }
 
     public bool Scrollable { get; init; }
+    public bool ShowsVerticalIndicator { get; init; }
+    public bool StickToEnd { get; init; }
+    public bool ScrollGesture { get; init; }
+    public XsrUiOverlayMotionKind? OverlayMotion { get; init; }
+    public XsrUiLiveSetting? LiveSetting { get; init; }
+    public XsrSemanticId? DismissCommand { get; init; }
 
     public string? Content { get; init; }
 

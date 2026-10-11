@@ -1,3 +1,4 @@
+﻿using Nexa.Desktop.Ui;
 namespace Nexa.Desktop;
 
 /// <summary>One safe product destination, shared by CLI and the command palette.</summary>
@@ -9,14 +10,14 @@ internal readonly record struct DesktopCommandLineRequest(bool IsSuccess, bool L
 internal static class DesktopCommandLine
 {
     private static readonly IReadOnlyList<DesktopCommandRoute> Catalog = Array.AsReadOnly<DesktopCommandRoute>([
-        new("launch", "启动", "ui.navigation.launch"),
-        new("install", "安装", "ui.navigation.download"),
-        new("resources", "资源", "ui.navigation.community"),
-        new("settings", "设置", "ui.navigation.settings"),
-        new("tasks", "任务中心", "ui.tasks.open"),
-        new("java", "Java 管理", "ui.navigation.settings", "java"),
-        new("storage", "存储与迁移", "ui.navigation.settings", "storage"),
-        new("about", "关于", "ui.navigation.settings", "about"),
+        new("launch", DesktopOverlayText.Raw("command.launch"), "ui.navigation.launch"),
+        new("install", DesktopOverlayText.Raw("command.install"), "ui.navigation.download"),
+        new("resources", DesktopOverlayText.Raw("command.resources"), "ui.navigation.community"),
+        new("settings", DesktopOverlayText.Raw("command.settings"), "ui.navigation.settings"),
+        new("tasks", DesktopOverlayText.Raw("command.tasks"), "ui.tasks.open"),
+        new("java", DesktopOverlayText.Raw("command.java"), "ui.navigation.settings", "java"),
+        new("storage", DesktopOverlayText.Raw("command.storage"), "ui.navigation.settings", "storage"),
+        new("about", DesktopOverlayText.Raw("command.about"), "ui.navigation.settings", "about"),
     ]);
 
     internal static IReadOnlyList<DesktopCommandRoute> Commands => Catalog;
@@ -32,31 +33,31 @@ internal static class DesktopCommandLine
         ArgumentNullException.ThrowIfNull(arguments);
         bool listing = false, safe = false;
         DesktopCommandRoute? command = null;
-        if (arguments.Count > 128) return Invalid("命令行参数过多。");
+        if (arguments.Count > 128) return Invalid(DesktopOverlayText.Raw("command.error.count"));
         foreach (string argument in arguments)
         {
             if (argument is null || argument.Length > 8192 || argument.Any(char.IsControl))
-                return Invalid("命令行参数无效。");
+                return Invalid(DesktopOverlayText.Raw("command.error.invalid"));
             if (argument == "--list-commands")
             {
-                if (listing) return Invalid("请只指定一次命令列表选项。");
+                if (listing) return Invalid(DesktopOverlayText.Raw("command.error.list"));
                 listing = true;
             }
             else if (argument == "--safe-mode")
             {
-                if (safe) return Invalid("请只指定一次安全模式选项。");
+                if (safe) return Invalid(DesktopOverlayText.Raw("command.error.safe"));
                 safe = true;
             }
             else if (argument.StartsWith("--command=", StringComparison.Ordinal))
             {
-                if (command is not null) return Invalid("请只指定一个导航命令。");
-                if (!TryResolve(argument[10..], out command)) return Invalid("未知导航命令；使用 --list-commands 查看可用命令。");
+                if (command is not null) return Invalid(DesktopOverlayText.Raw("command.error.navigation"));
+                if (!TryResolve(argument[10..], out command)) return Invalid(DesktopOverlayText.Raw("command.error.unknown"));
             }
             else if (argument == "--command" || argument.StartsWith("--list-commands=", StringComparison.Ordinal)
                 || argument.StartsWith("--safe-mode=", StringComparison.Ordinal))
-                return Invalid("命令行选项格式无效。");
+                return Invalid(DesktopOverlayText.Raw("command.error.format"));
         }
-        if (listing && command is not null) return Invalid("命令列表与导航命令不能同时使用。");
+        if (listing && command is not null) return Invalid(DesktopOverlayText.Raw("command.error.conflict"));
         return new(true, listing, safe, command, null);
     }
 

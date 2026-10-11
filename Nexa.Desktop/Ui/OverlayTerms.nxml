@@ -1,0 +1,26 @@
+﻿<StackPanel>
+  <Text Key="command.launch" Content="启动" />
+  <Text Key="command.install" Content="安装" />
+  <Text Key="command.resources" Content="资源" />
+  <Text Key="command.settings" Content="设置" />
+  <Text Key="command.tasks" Content="任务中心" />
+  <Text Key="command.java" Content="Java 管理" />
+  <Text Key="command.storage" Content="存储与迁移" />
+  <Text Key="command.about" Content="关于" />
+  <Text Key="command.error.count" Content="命令行参数过多。" />
+  <Text Key="command.error.invalid" Content="命令行参数无效。" />
+  <Text Key="command.error.list" Content="请只指定一次命令列表选项。" />
+  <Text Key="command.error.safe" Content="请只指定一次安全模式选项。" />
+  <Text Key="command.error.navigation" Content="请只指定一个导航命令。" />
+  <Text Key="command.error.unknown" Content="未知导航命令；使用 --list-commands 查看可用命令。" />
+  <Text Key="command.error.format" Content="命令行选项格式无效。" />
+  <Text Key="command.error.conflict" Content="命令列表与导航命令不能同时使用。" />
+  <Text Key="notification.info" Content="Info" />
+  <Text Key="notification.warn" Content="Warn" />
+  <Text Key="notification.error" Content="Error" />
+  <Text Key="notification.icon.info" Content="lucide/info" />
+  <Text Key="notification.icon.warn" Content="lucide/triangle-alert" />
+  <Text Key="notification.icon.error" Content="lucide/circle-x" />
+  <Text Key="common.close" Content="关闭" />
+  <Text Key="common.ok" Content="OK" />
+</StackPanel>

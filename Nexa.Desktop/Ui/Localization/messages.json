@@ -1,4 +1,7 @@
 ﻿[
+  {"source":"关闭 {data level} 通知","en":"Dismiss {data level} notification","zh-Hant":"關閉 {data level} 通知"},
+  {"source":"{data level}：{data message}。按下可查看完整内容","en":"{data level}: {data message}. Open to read the full message","zh-Hant":"{data level}：{data message}。按下可查看完整內容"},
+  {"source":"{data level} 通知","en":"{data level} notification","zh-Hant":"{data level} 通知"},
   {"source":"{data active} 个任务进行中 · {data percent}%","en":"{data active} tasks in progress · {data percent}%","zh-Hant":"{data active} 個任務進行中 · {data percent}%"},
   {"source":"{data header} · 剩余 {data remaining} 个文件","en":"{data header} · {data remaining} files remaining","zh-Hant":"{data header} · 剩餘 {data remaining} 個檔案"},
   {"source":"{data completed}/{data total} 个文件","en":"{data completed}/{data total} files","zh-Hant":"{data completed}/{data total} 個檔案"},

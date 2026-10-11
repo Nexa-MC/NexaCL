@@ -24,6 +24,8 @@ internal static partial class Program
         ("dynamic text localizes only formats before literal substitution", DynamicTextFormatsLocalizeBeforeLiteralSubstitution),
         ("dynamic text rejects unsupported grammar and expansion", DynamicTextFormatsRejectUnsupportedGrammarAndExpansion),
         ("dynamic text reload preserves identity", DynamicTextFormatReloadPreservesIdentity),
+        ("declarative overlay facts retain runtime state", DeclarativeOverlayFactsRetainRuntimeState),
+        ("declarative overlay facts reject invalid values and contract changes", DeclarativeOverlayFactsRejectInvalidValuesAndContractChanges),
         // XSR-207: NXML grammar and parser.
         ("document resource budgets are enforced before recursion", DocumentResourceBudgetsAreEnforcedBeforeRecursion),
         ("simple document parses structurally", SimpleDocumentParsesStructurally),

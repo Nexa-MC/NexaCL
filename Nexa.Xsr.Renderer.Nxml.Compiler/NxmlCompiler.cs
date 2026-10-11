@@ -70,6 +70,26 @@ public static class NxmlCompiler
         bool trimOverflow = ParseBoolean(element.Name, "TrimOverflow", Literal("TrimOverflow", "false"));
         if (element.FindProperty("TrimOverflow") is not null && recipe is not (NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.CommandInput))
             throw Fail(element.Name, "TrimOverflow", "requires text");
+        T? NamedEnum<T>(string name) where T : struct, Enum
+        {
+            if (element.FindProperty(name) is null) return null;
+            string value = Literal(name, "");
+            if (!Enum.TryParse(value, out T parsed) || !Enum.IsDefined(parsed) || value != parsed.ToString())
+                throw Fail(element.Name, name, "requires a named finite renderer value");
+            return parsed;
+        }
+        var overlayMotion = NamedEnum<XsrUiOverlayMotionKind>("OverlayMotion");
+        var liveSetting = NamedEnum<XsrUiLiveSetting>("LiveSetting");
+        XsrSemanticId? dismissCommand = element.FindProperty("DismissCommand") is null ? null
+            : ParseSemanticId(element.Name, "DismissCommand", Literal("DismissCommand", ""));
+        bool showsIndicator = ParseBoolean(element.Name, "ShowsVerticalIndicator", Literal("ShowsVerticalIndicator", "false"));
+        bool stickToEnd = ParseBoolean(element.Name, "StickToEnd", Literal("StickToEnd", "false"));
+        bool scrollGesture = ParseBoolean(element.Name, "ScrollGesture", Literal("ScrollGesture", "false"));
+        if (element.Attributes.Any(attribute => attribute.Name is "ShowsVerticalIndicator" or "StickToEnd" or "ScrollGesture")
+            && (recipe is not (NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot)
+                || recipe == NxmlRuntimeRecipe.DynamicSlot && slotLayout != NxmlRuntimeRecipe.StackLayout
+                || !ParseBoolean(element.Name, "Scroll", Literal("Scroll", "false"))))
+            throw Fail(element.Name, "Scroll", "is required by scroll presentation facts");
         NxmlControlModel model = new(Literal("Kind", "Node"), "Node", role, recipe, allowsChildren, NxmlNodeSchema.Properties);
         foreach (string required in Literal("Required", "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             if (element.FindProperty(required) is null) throw Fail(element.Name, required, "is required by this component");
@@ -95,7 +115,7 @@ public static class NxmlCompiler
                 NssStyleSheet.SetVisual(visual ??= new(), attribute.Name, attribute.Value.Text);
                 continue;
             }
-            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength" or "PreserveTabs" or "MaxLines" or "TrimOverflow") continue;
+            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength" or "PreserveTabs" or "MaxLines" or "TrimOverflow" or "OverlayMotion" or "LiveSetting" or "DismissCommand" or "ShowsVerticalIndicator" or "StickToEnd" or "ScrollGesture") continue;
             if (!model.TryGetProperty(attribute.Name, out NxmlControlPropertyModel property))
             {
                 throw Fail(element.Name, attribute.Name, "is not declared by this control model");
@@ -103,14 +123,14 @@ public static class NxmlCompiler
 
             bool supported = property.Target switch
             {
-                NxmlIrPropertyTarget.Command or NxmlIrPropertyTarget.Clickable or NxmlIrPropertyTarget.Focusable => recipe == NxmlRuntimeRecipe.CommandInput,
+                NxmlIrPropertyTarget.Command or NxmlIrPropertyTarget.Clickable or NxmlIrPropertyTarget.Focusable => recipe is NxmlRuntimeRecipe.CommandInput or NxmlRuntimeRecipe.Element or NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
                 NxmlIrPropertyTarget.Content => recipe is NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.CommandInput,
                 NxmlIrPropertyTarget.ImageSource => recipe is NxmlRuntimeRecipe.Image or NxmlRuntimeRecipe.CommandInput,
                 NxmlIrPropertyTarget.Orientation or NxmlIrPropertyTarget.Spacing or NxmlIrPropertyTarget.StretchLastChild or NxmlIrPropertyTarget.Scrollable => recipe is NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
                 NxmlIrPropertyTarget.Value => recipe == NxmlRuntimeRecipe.Progress,
                 NxmlIrPropertyTarget.Placeholder or NxmlIrPropertyTarget.IsPassword => recipe == NxmlRuntimeRecipe.TextInput,
                 NxmlIrPropertyTarget.Selected => recipe == NxmlRuntimeRecipe.CommandInput,
-                NxmlIrPropertyTarget.Enabled => recipe is NxmlRuntimeRecipe.TextInput or NxmlRuntimeRecipe.CommandInput,
+                NxmlIrPropertyTarget.Enabled => recipe is NxmlRuntimeRecipe.TextInput or NxmlRuntimeRecipe.CommandInput or NxmlRuntimeRecipe.Element or NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
                 _ => true,
             };
             if (!supported) throw Fail(element.Name, attribute.Name, "is not supported by this renderer primitive");
@@ -148,7 +168,7 @@ public static class NxmlCompiler
         return builder.Build(
             [.. element.Children.Select(child => CompileNode(child, keys, styles))],
             bindings) with
-        { Visual = visual?.Snapshot(), SlotLayout = slotLayout, MaximumLength = maximumLength, PreserveTabs = preserveTabs, MaxLines = maxLines, TrimOverflow = trimOverflow };
+        { Visual = visual?.Snapshot(), SlotLayout = slotLayout, MaximumLength = maximumLength, PreserveTabs = preserveTabs, MaxLines = maxLines, TrimOverflow = trimOverflow, OverlayMotion = overlayMotion, LiveSetting = liveSetting, DismissCommand = dismissCommand, ShowsVerticalIndicator = showsIndicator, StickToEnd = stickToEnd, ScrollGesture = scrollGesture };
     }
 
     private static void ApplyLiteral(

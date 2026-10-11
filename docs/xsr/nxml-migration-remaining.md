@@ -65,7 +65,6 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 | Version selection | `VersionSelectionController.cs`, `.Window.cs` | Row window/virtualization, directory choices/editor, popup body and selection styles. |
 | Wardrobe | `WardrobePageController.cs`, `WardrobeLibraryPageController.cs` | Skin/cape cards, details, empty/loading/failure surfaces and interaction variants. |
 | Accounts and first run | `AccountFormController.cs`, `FirstRunController.cs` | Form structures, state copy, action availability and complete OOBE composition. |
-| Global overlays | `DesktopCommandPalette.cs`, `DesktopFeedbackPresenter.cs` | Palette, notification/dialog collections and actions, keyboard focus and dismiss behavior. |
 | Appearance | `CustomAppearanceSession.cs` | Separate runtime image/theme behavior from remaining fixed presentation construction. |
 
 Direct node/style/stack construction still remains across the other Desktop slices. This is a locator, not a completion metric: helpers can hide imperative layouts,
@@ -460,3 +459,48 @@ The read/cancel/dismiss/process termination and Java-selection routes are unchan
 - Scoped formatting and diff checks pass. Legacy lifecycle/helper primitives and the
   remaining global overlays/other inventory still need the full-product audit; this
   closes the operation copy group and does not complete the overall migration.
+
+## Global overlay boundary
+
+Migrate the command palette, notification host/cards and all dialog variants as one
+related group. Static overlay layers are external pages with owned Dynamic slots;
+workspace/card/row updates enter those slots through .d.nxml. A shown modal layer
+retains its slot parent; Stage.Show must not detach an owned fragment. Preserve
+route admission, retired-source rejection, notification expiry, out-of-flow exit,
+modal pointer blocking, Escape, focus restoration and full literal dialog bodies.
+Language changes retain search drafts, caret, scroll and overlay motion objects.
+
+NXML may declare finite renderer facts for OverlayMotion, LiveSetting,
+DismissCommand, ShowsVerticalIndicator, StickToEnd and ScrollGesture. Named finite
+values and semantic routes are validated before tree mutation; scroll facts require
+scroll containers. Input/command facts may compose with element/stack primitives,
+without a product-specific CLR control. Reload preserves motion/input/scroll state
+and rejects changes to their lifetime contracts. NSS holds all fixed dimensions,
+palettes, margins and text presentation. Runtime rail position is computed from the
+external base margin and shell progress; rendering performs no service query.
+
+## Global overlay verification, 2026-10-11
+
+- Full Desktop composition: 276 passed, zero failed; NXML compiler/runtime: 58
+  passed; architecture: 69 projects passed; actual Avalonia backend: 30 passed.
+- Palette, notification and all dialog variants enter owned Dynamic slots from
+  external assets. Finite motion, live-region, dismiss and scroll facts are compiler
+  validated; numeric/unknown enums and incompatible reload contracts are rejected
+  before mutation. The controllers have no direct or hidden presentation factories.
+- Regressions retain search/caret/focus, nested slot identity, notification/dialog
+  motion and message scroll across languages. Literal metadata is not reparsed.
+  Hidden, foreign and retired action sources cannot resolve the current dialog.
+- Public hit testing now passes through an empty transparent nonmodal layer, while
+  interactive notification children and modal scrims still participate. The four
+  existing click regressions and an explicit empty-layer check pass.
+- Actual native previews cover notifications, a three-action dialog and filtered
+  palette in both themes and an 820px window. Visual inspection corrected title
+  visibility, button contrast and aligned palette padding. The harness waits for
+  real dialog exit before opening the next modal; it does not bypass that lifetime.
+  Message/session/settings data are read-only fixtures, not a Minecraft run.
+- Windows x64 NativeAOT and full-trim publish succeeded. Both actual executables
+  ran --validate-shell with exit 0 and the positive Dynamic global overlay validation
+  marker. The existing Jint IL2098 warning remains unsuppressed.
+- Scoped whitespace/diff checks pass. Artifacts: .tmp-cleanup-validation/global-overlay-*.
+  Other product copy/controllers and the remaining inventory are still open; the
+  complete migration has not been declared finished.

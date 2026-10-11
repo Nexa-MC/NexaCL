@@ -1,0 +1,3 @@
+﻿<nxml-dynamic>
+  <Dynamic Key="notification-host" Scroll="true" StickToEnd="true" Margin="{data margin}" IsVisible="{data visible}" Class="feedback-notification-host" />
+</nxml-dynamic>

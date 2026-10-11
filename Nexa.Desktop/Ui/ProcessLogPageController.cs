@@ -52,7 +52,6 @@ internal sealed class ProcessLogPageController : IDisposable
         Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("ProcessLogPage.nxml"), shell.Tree, store);
         _workspace = _dynamic.Append(shell.Tree.Children(Page).Single(), DesktopMarkup.Dynamic("ProcessLogWorkspace.d.nxml", _view));
         shell.Tree.Walk(Page, entity => { _entities[shell.Tree.Name(entity)] = entity; return true; });
-        shell.Tree.GetComponent<XsrUiScroll>(_entities["ProcessLogRows"])!.ShowsVerticalIndicator = true;
         shell.Renderer.FramePreparing += OnFrame;
         intents.IntentEmitted += OnIntent;
     }

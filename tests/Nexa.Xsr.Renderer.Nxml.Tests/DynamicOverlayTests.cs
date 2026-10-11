@@ -15,6 +15,7 @@ internal static partial class Program
         stage.Show(slot);
         stage.Renderer.Render();
         AssertTrue(tree.GetComponent<XsrUiStackPanel>(slot) is null);
+        AssertEqual(stage.Navigation.Current, stage.Renderer.HitTest(new(10,10)));
         AssertTrue(stage.Renderer.PointerPressed(new(10, 10))); AssertTrue(stage.Renderer.PointerReleased(new(10, 10)));
         AssertEqual(1, intents.Count);
         var content = new NxmlDynamicContent(tree, store);

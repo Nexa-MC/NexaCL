@@ -101,7 +101,6 @@ internal sealed class TaskCenterController : IDisposable
 
             return true;
         });
-        _shell.Tree.SetComponent(entities["TaskCenterList"], new XsrUiScrollGesture());
         return (page, entities);
     }
 

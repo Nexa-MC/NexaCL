@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer;
+﻿using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 namespace Nexa.Xsr.Renderer.Nxml.Tests;
 
@@ -224,7 +224,7 @@ internal static partial class Program
             """));
         AssertThrows<NxmlCompileException>(() => Compile("""
             <Page xmlns="N">
-              <StackPanel Command="app.x" />
+              <Text Command="app.x" />
             </Page>
             """));
     }

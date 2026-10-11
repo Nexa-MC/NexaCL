@@ -34,6 +34,7 @@ public sealed partial class NxmlUiLoader
             TrimOverflow = after.TrimOverflow,
             Value = after.Value,
             Visual = after.Visual,
+            LiveSetting = after.LiveSetting,
             Children = after.Children,
             Bindings = after.Bindings,
         };
@@ -116,6 +117,12 @@ public sealed partial class NxmlUiLoader
                 else tree.SetComponent(entity, new XsrUiSelection { IsSelected = selected });
             }
             else tree.SetComponent<XsrUiSelection>(entity, null);
+            dirty |= XsrUiDirtyKinds.Paint;
+        }
+        if (before.LiveSetting != after.LiveSetting)
+        {
+            if (tree.GetComponent<XsrUiLiveRegion>(entity) is { } live && after.LiveSetting is { } setting) live.Setting = setting;
+            else tree.SetComponent(entity, after.LiveSetting is { } value ? new XsrUiLiveRegion(value) : null);
             dirty |= XsrUiDirtyKinds.Paint;
         }
         if (before.Visual != after.Visual)

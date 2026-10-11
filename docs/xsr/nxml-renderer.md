@@ -1,4 +1,4 @@
-# Nexa.Xsr.Renderer — external NXML and NSS
+﻿# Nexa.Xsr.Renderer — external NXML and NSS
 
 ## Boundary decision
 
@@ -280,3 +280,13 @@ before asynchronous work, retire it on navigation, and require the preview to ma
 the current lossless draft before dispatching save. Terms and mixed localized
 metadata formats are external assets; file names and source contents stay literal.
 See nxml-migration-remaining.md for the related parity and publication evidence.
+
+## Declarative overlay and scroll facts
+
+OverlayMotion (None/Notification/DialogScrim/Dialog), LiveSetting
+(Off/Polite/Assertive) and DismissCommand use finite renderer primitives and validated
+semantic IDs. Element/stack nodes may compose command input without changing their
+layout recipe. ShowsVerticalIndicator, StickToEnd and ScrollGesture require Scroll.
+These are host presentation facts, not services or a plugin execution interface.
+Reload may update the live-region urgency but preserves input, motion and scroll
+contracts/state; incompatible projections fail atomically before mutation.

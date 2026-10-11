@@ -605,6 +605,7 @@ internal static partial class Program
             await ValidateDynamicNetworkPageAsync(shell, settingsPage, uiIntents).ConfigureAwait(false);
             ValidateDynamicTaskPage(shell, taskCenterPage, host.Tasks, uiIntents);
             ValidateDynamicDock(shell, host.StateStore);
+            ValidateDynamicGlobalOverlays(shell, host.StateStore, uiIntents, feedback);
             Console.WriteLine($"NXML shell and dynamic network templates validated: {scene.Count} shell semantic nodes.");
             host.Logging.Info("Launcher", $"Headless shell validation completed nodes={scene.Count}");
             setStage("shutdown");
@@ -638,7 +639,7 @@ internal static partial class Program
         platformActions.CloseRequested = () => installExit.CanClose() && launchExit.CanClose();
         await using var desktopIntegration = new DesktopIntegrationSession(shell, uiIntents, host.StateStore, platformActions, instance, args,
             message => { host.Logging.Warn("Desktop", message); feedback.Warn(message); }, openFile: dropController.OpenFile, registerProtocol: !safeMode);
-        using var commandPalette = new DesktopCommandPalette(shell, uiIntents, platformActions,
+        using var commandPalette = new DesktopCommandPalette(shell, uiIntents, host.StateStore, platformActions,
             route => desktopIntegration.ActivateProtocol("nexacl://" + route.Id));
         settingsPage.LauncherSafeMode = safeMode;
         settingsPage.NavigateAdvancedCommand = route => desktopIntegration.ActivateProtocol("nexacl://" + route.Id);

@@ -342,6 +342,47 @@ internal static partial class Program
         finally { shell.Tree.Destroy(page); }
     }
 
+    private static void ValidateDynamicGlobalOverlays(XsrUiShell shell, Nexa.Xsr.State.XsrStateStore store,
+        DesktopUiIntentSink intents, DesktopFeedbackService feedback)
+    {
+        bool reduced = shell.Renderer.ReducedMotion; shell.Renderer.ReducedMotion = true;
+        using var palette = new DesktopCommandPalette(shell, intents, store,
+            new Nexa.Xsr.Renderer.Backend.Avalonia.AvaloniaUiPlatformActions(), _ => throw new InvalidOperationException("Validation cannot navigate."));
+        try
+        {
+            if (!palette.Open()) throw new InvalidOperationException("Palette cannot open during validation.");
+            shell.Render(new(810, 470));
+            var search = palette.Find("CommandPaletteSearch");
+            shell.Renderer.SetTextInputValue(search, "settings");
+            shell.Render(new(810, 470));
+            if (shell.Tree.GetComponent<XsrUiTextInput>(search)?.ReadDraft() != "settings"
+                || shell.Tree.GetComponent<NxmlDynamicSlot>(shell.Tree.Parent(palette.Find("CommandPalette"))) is null)
+                throw new InvalidOperationException("Palette lost its owned workspace or search draft.");
+            palette.Close();
+            string literal = "literal <global> {data text} {state secret}";
+            Guid notification = feedback.Info(literal); var scene = shell.Render(new(810, 470));
+            var root = scene.Nodes.Single(node => shell.Tree.Name(node.Entity) == "notification:" + notification.ToString("N")).Entity;
+            if (shell.Tree.GetComponent<XsrUiOverlayMotion>(root)?.Kind != XsrUiOverlayMotionKind.Notification
+                || shell.Tree.GetComponent<NxmlDynamicSlot>(shell.Tree.Parent(root)) is null)
+                throw new InvalidOperationException("Notification lost its declared motion or owned slot.");
+            feedback.DismissNotification(notification); shell.Render(new(810, 470));
+            bool? resolved = null;
+            feedback.ShowDialog("global.validation", "settings", literal, "accept", "cancel", value => resolved = value,
+                "alternate", static () => { }, localizeMessage:false);
+            scene = shell.Render(new(810, 470));
+            var layer = scene.Nodes.Single(node => shell.Tree.Name(node.Entity) == "DialogLayer").Entity;
+            var viewport = scene.Nodes.Single(node => shell.Tree.Name(node.Entity) == "DialogMessageViewport").Entity;
+            var body = scene.Nodes.Single(node => shell.Tree.Name(node.Entity) == "DialogMessage");
+            if (shell.Tree.GetComponent<NxmlDynamicSlot>(shell.Tree.Parent(layer)) is null || body.Text != literal
+                || shell.Tree.GetComponent<XsrUiScroll>(viewport)?.ShowsVerticalIndicator != true
+                || !shell.Renderer.HandleKey(XsrUiKey.Escape) || resolved != false)
+                throw new InvalidOperationException("Dialog lost literal body, owned modal scope or Escape routing.");
+            shell.Render(new(810, 470));
+            Console.WriteLine("Dynamic global overlay validation passed: owned modal/notification slots, retained palette draft, declared motion and literal dialog body.");
+        }
+        finally { palette.Close(); shell.Renderer.ReducedMotion = reduced; }
+    }
+
     private static void ValidateDynamicInstanceTools(XsrUiShell shell, XsrUiEntityId slot, NxmlDynamicContent dynamic)
     {
         var data = new Dictionary<string, string>

@@ -1,0 +1,11 @@
+﻿<nxml-dynamic>
+  <Node Kind="CommandPalette" Recipe="Element" Role="Dialog" Key="CommandPalette" Label="命令面板" Clickable="true" DismissCommand="ui.command-palette.dismiss" Class="command-palette-scrim">
+    <StackPanel Key="CommandPaletteCard" Scroll="true" Class="command-palette-card">
+      <Text Key="CommandPaletteTitle" Content="命令面板" Class="command-palette-title" />
+      <TextInput Key="CommandPaletteSearch" Label="筛选导航命令" Placeholder="按名称或命令 ID 筛选" MaximumLength="128" Class="command-palette-search" />
+      <Dynamic Key="CommandPaletteRows" Class="command-palette-rows" />
+      <Text Key="CommandPaletteEmpty" Content="没有匹配的导航命令。" IsVisible="{data empty}" Class="command-palette-empty" />
+      <Button Key="CommandPaletteClose" Content="关闭命令面板" Command="ui.command-palette.dismiss" Class="command-palette-close" />
+    </StackPanel>
+  </Node>
+</nxml-dynamic>

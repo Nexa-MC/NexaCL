@@ -1,0 +1,3 @@
+﻿<nxml-dynamic>
+  <Button Key="{data key}" Label="{data label}" Content="{data label}" Command="ui.command-palette.execute" IsVisible="{data visible}" Enabled="{data visible}" Class="command-palette-row" />
+</nxml-dynamic>
