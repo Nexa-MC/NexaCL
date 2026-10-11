@@ -58,6 +58,12 @@ internal static partial class Program
                 AssertEqual("在线中文名称", result.Project!.DisplayName); AssertEqual("1.0.0", result.InstalledVersion!);
                 AssertEqual(page == "mods" ? "fabric" : "", catalog.LastQuery!.Loader);
                 AssertEqual("1.21.1", catalog.LastQuery.GameVersion); AssertEqual(2, catalog.LastQuery.Sources.Count);
+                catalog.FailDetails = true;
+                result = await service.ReadAsync(query, default);
+                AssertTrue(result.Project is null && result.InstalledFiles.Count == 2 && result.UpdateAvailable is null);
+                var partial = await service.ReadBatchAsync(new([query]), default);
+                AssertTrue(partial.Matches[0].Content.InstalledFiles.Count == 2 && partial.Matches[0].Content.UpdateVersion is null);
+                catalog.FailDetails = false;
                 corruptCf = true; result = await service.ReadAsync(query with { Refresh = true }, default);
                 AssertEqual(1, catalog.LastQuery.Sources.Count); // A Murmur fingerprint alone never proves a match.
                 corruptCf = false;
@@ -80,10 +86,12 @@ internal static partial class Program
     private sealed class OnlineCatalog : IResourceCatalogSource, IResourceFileSource
     {
         internal ResourceDetailQuery? LastQuery;
+        internal bool FailDetails;
         public Task<ResourceSearchResult> SearchAsync(ResourceSearchQuery query, CancellationToken token) => throw new NotSupportedException();
         public Task<ResourceDetail> DetailAsync(ResourceDetailQuery query, CancellationToken token)
         {
             LastQuery = query;
+            if (FailDetails) throw new IOException("fixture detail unavailable");
             return Task.FromResult(new ResourceDetail(new("A", "Name", "Summary", "Author", 12345, "https://modrinth.com/project/A") { ChineseName = "在线中文名称", Sources = query.Sources }, "MIT",
                 [new("A1", "Version", "1.0.0", "正式版", ["1.21.1"], ["fabric"], "", "https://modrinth.com/project/A") { ProjectId = "A" }]));
         }

@@ -53,7 +53,22 @@ public sealed class ResourceContentOnlineService(ResourceInstanceService instanc
                 matches[i] = new(file, content with { Versions = content.Versions.Take(1).ToArray() });
             }
             catch (Exception error) when (!ct.IsCancellationRequested && error is IOException or InvalidDataException or UnauthorizedAccessException or HttpRequestException or System.Text.Json.JsonException or InvalidOperationException or KeyNotFoundException or OperationCanceledException)
-            { matches[i] = new(file, new(null, null, [], "暂时无法识别在线信息，已保留本地资料。")); }
+            {
+                // Deadline failures after fingerprint matching retain identity only if the same file still exists.
+                ResourceInstalledFile[] retained = [];
+                try
+                {
+                    var metadata = await new MinecraftInstanceMetadataStore().LoadAsync(file.InstanceDirectory, ct).ConfigureAwait(false);
+                    string game = metadata.InstanceIsolation ? file.InstanceDirectory : Directory.GetParent(file.InstanceDirectory)!.Parent!.FullName;
+                    var current = new FileInfo(Path.Combine(game, file.PageId, file.Name));
+                    CheckLinks(current.FullName); CheckIdentity(current, file);
+                    retained = identity.Files.Select(match => match with { FileName = file.Name, Enabled = eligible[file].Enabled }).ToArray();
+                }
+                catch (Exception changed) when (changed is IOException or UnauthorizedAccessException) { }
+                matches[i] = new(file, new(null, null, [], retained.Length > 0
+                    ? "已识别文件来源，项目资料或更新检查暂时不可用。" : "暂时无法识别在线信息，已保留本地资料。")
+                { InstalledFiles = Array.AsReadOnly(retained), IsStale = identity.IsStale });
+            }
         }).ConfigureAwait(false);
         return new ResourceContentOnlineBatch(Array.AsReadOnly(matches));
     }, token);
@@ -84,59 +99,69 @@ public sealed class ResourceContentOnlineService(ResourceInstanceService instanc
         if (fingerprint is null) throw new IOException("文件已变化，请刷新后重试。");
         var identified = preloaded ?? await instances.IdentifyAsync(fingerprint, query.MirrorFirst, token, refresh, query.WaitForRefresh).ConfigureAwait(false);
         if (preloaded is not null) identified = identified with { Files = identified.Files.Select(match => match with { FileName = file.Name, Enabled = fingerprint.Enabled }).ToArray() };
-        if (identified.Files.Length == 0) return new ResourceContentOnline(null, null, [], identified.Complete ? "模组站尚未收录此文件，已保留本地信息。" : "暂时无法连接模组站，已保留本地信息。");
-        var edit = await MinecraftInstallEditService.ReadAsync(new(versions.Parent.FullName, Path.GetFileName(instance)), token).ConfigureAwait(false);
-        string loader = kind == ResourceKind.Mod ? edit.Selection.Select(selection => selection.Loader switch
-        { InstallLoader.Fabric or InstallLoader.LegacyFabric => "fabric", InstallLoader.Quilt => "quilt", InstallLoader.Forge or InstallLoader.Cleanroom => "forge", InstallLoader.NeoForge => "neoforge", _ => "" }).FirstOrDefault(value => value.Length > 0) ?? "" : "";
-        var sources = identified.Files.Select(match => match.Source).Distinct().ToArray();
-        var detail = await catalog.DetailAsync(new(sources[0].ProjectId, edit.GameVersion, loader) { Sources = sources, MirrorFirst = query.MirrorFirst, Refresh = refresh, WaitForRefresh = query.WaitForRefresh }, token).ConfigureAwait(false);
-        var project = detail.Project with { Kind = kind };
-        string? translationNotice = null;
-        // List batches only project name/version/update facts. Translate descriptions when the detail consumes them.
-        if (preloaded is null && translations is not null && string.IsNullOrWhiteSpace(project.ChineseDescription))
+        if (identified.Files.Length == 0) return new ResourceContentOnline(null, null, [], identified.Complete ? "模组站尚未收录此文件，已保留本地信息。" : "暂时无法连接模组站，已保留本地信息。") { IsStale = identified.IsStale };
+        try
         {
-            var translated = await translations.ReadAsync(new(sources[0], project.Description), token).ConfigureAwait(false);
-            project = project with { ChineseDescription = translated.Description };
-            translationNotice = translated.Notice;
+            var edit = await MinecraftInstallEditService.ReadAsync(new(versions.Parent.FullName, Path.GetFileName(instance)), token).ConfigureAwait(false);
+            string loader = kind == ResourceKind.Mod ? edit.Selection.Select(selection => selection.Loader switch
+            { InstallLoader.Fabric or InstallLoader.LegacyFabric => "fabric", InstallLoader.Quilt => "quilt", InstallLoader.Forge or InstallLoader.Cleanroom => "forge", InstallLoader.NeoForge => "neoforge", _ => "" }).FirstOrDefault(value => value.Length > 0) ?? "" : "";
+            var sources = identified.Files.Select(match => match.Source).Distinct().ToArray();
+            var detail = await catalog.DetailAsync(new(sources[0].ProjectId, edit.GameVersion, loader) { Sources = sources, MirrorFirst = query.MirrorFirst, Refresh = refresh, WaitForRefresh = query.WaitForRefresh }, token).ConfigureAwait(false);
+            var project = detail.Project with { Kind = kind };
+            string? translationNotice = null;
+            // List batches only project name/version/update facts. Translate descriptions when the detail consumes them.
+            if (preloaded is null && translations is not null && string.IsNullOrWhiteSpace(project.ChineseDescription))
+            {
+                var translated = await translations.ReadAsync(new(sources[0], project.Description), token).ConfigureAwait(false);
+                project = project with { ChineseDescription = translated.Description };
+                translationNotice = translated.Notice;
+            }
+            List<ResourceVersion> installed = [];
+            bool versionUnavailable = false;
+            foreach (var match in identified.Files)
+            {
+                var version = detail.Versions.FirstOrDefault(v => v.Id == match.VersionId && v.Provider == match.Source.Provider && v.ProjectId == match.Source.ProjectId);
+                if (version is null && catalog is IResourceFileSource files)
+                    try { version = await files.ReadVersionAsync(new(match.Source.Provider, match.Source.ProjectId, match.VersionId, "", query.MirrorFirst), token).ConfigureAwait(false); }
+                    catch (Exception error) when (!token.IsCancellationRequested && ResourceOnlineInformationCache.Recoverable(error)) { versionUnavailable = true; }
+                if (version is not null && version.Id == match.VersionId && version.Provider == match.Source.Provider && version.ProjectId == match.Source.ProjectId)
+                    installed.Add(version);
+            }
+            string? installedName = installed.FirstOrDefault()?.Number;
+            ResourceVersion? update = null;
+            bool? updateAvailable = null;
+            // Display numbers and filenames are not ordered version identities. Unknown chronology
+            // remains unknown; identical bytes on a second provider are never offered as an update.
+            if (edit.GameVersion.Length > 0 && (kind != ResourceKind.Mod || loader.Length > 0)
+                && installed.Count == identified.Files.Length && installed.All(v => Publication(v) is not null))
+            {
+                var latestInstalled = installed.Max(v => Publication(v)!.Value);
+                update = detail.Versions.Where(v => v.File is not null && sources.Contains(new(v.Provider, v.ProjectId))
+                    && v.Games.Contains(edit.GameVersion, StringComparer.OrdinalIgnoreCase)
+                    && (kind != ResourceKind.Mod || loader.Length > 0 && v.Loaders.Contains(loader, StringComparer.OrdinalIgnoreCase))
+                    && !identified.Files.Any(f => f.Source.Provider == v.Provider && f.Source.ProjectId == v.ProjectId && f.VersionId == v.Id)
+                    && !string.Equals(v.File.Sha512, fingerprint.Sha512, StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(v.File.Sha1, fingerprint.Sha1, StringComparison.OrdinalIgnoreCase)
+                    && Publication(v) is { } published && published > latestInstalled)
+                    .OrderByDescending(v => Publication(v)).FirstOrDefault();
+                updateAvailable = update is not null ? true : identified.Complete && string.IsNullOrWhiteSpace(detail.Notice) ? false : null;
+            }
+            file.Refresh(); CheckIdentity(file, query); CheckLinks(file.FullName);
+            bool stale = identified.IsStale || detail.IsStale || detail.Notice?.Contains(ResourceOnlineInformationCache.StaleNotice, StringComparison.Ordinal) == true;
+            string? notice = identified.IsStale ? ResourceOnlineInformationCache.Notice(detail.Notice) : detail.Notice;
+            if (!identified.Complete || versionUnavailable) notice = string.IsNullOrEmpty(notice) ? "部分来源暂时无法连接。" : notice + " 部分来源暂时无法连接。";
+            if (translationNotice is not null) notice = string.IsNullOrEmpty(notice) ? translationNotice : notice + " " + translationNotice;
+            var versionsWithInstalled = installed.Concat(detail.Versions).DistinctBy(version => (version.Provider, version.ProjectId, version.Id)).ToArray();
+            return new ResourceContentOnline(project, installedName, versionsWithInstalled, notice)
+            { InstalledFiles = Array.AsReadOnly(identified.Files), UpdateVersion = stale ? null : update, UpdateAvailable = stale ? null : updateAvailable, IsStale = stale };
         }
-        List<ResourceVersion> installed = [];
-        bool versionUnavailable = false;
-        foreach (var match in identified.Files)
+        catch (Exception error) when (!token.IsCancellationRequested && ResourceOnlineInformationCache.Recoverable(error))
         {
-            var version = detail.Versions.FirstOrDefault(v => v.Id == match.VersionId && v.Provider == match.Source.Provider && v.ProjectId == match.Source.ProjectId);
-            if (version is null && catalog is IResourceFileSource files)
-                try { version = await files.ReadVersionAsync(new(match.Source.Provider, match.Source.ProjectId, match.VersionId, "", query.MirrorFirst), token).ConfigureAwait(false); }
-                catch (Exception error) when (!token.IsCancellationRequested && ResourceOnlineInformationCache.Recoverable(error)) { versionUnavailable = true; }
-            if (version is not null && version.Id == match.VersionId && version.Provider == match.Source.Provider && version.ProjectId == match.Source.ProjectId)
-                installed.Add(version);
+            // A detail/version failure must not erase the independently verified hash match.
+            file.Refresh(); CheckIdentity(file, query); CheckLinks(file.FullName);
+            return new(null, null, [], "已识别文件来源，项目资料或更新检查暂时不可用。")
+            { InstalledFiles = Array.AsReadOnly(identified.Files), IsStale = identified.IsStale };
         }
-        string? installedName = installed.FirstOrDefault()?.Number;
-        ResourceVersion? update = null;
-        bool? updateAvailable = null;
-        // Display numbers and filenames are not ordered version identities. Unknown chronology
-        // remains unknown; identical bytes on a second provider are never offered as an update.
-        if (edit.GameVersion.Length > 0 && (kind != ResourceKind.Mod || loader.Length > 0)
-            && installed.Count == identified.Files.Length && installed.All(v => Publication(v) is not null))
-        {
-            var latestInstalled = installed.Max(v => Publication(v)!.Value);
-            update = detail.Versions.Where(v => v.File is not null && sources.Contains(new(v.Provider, v.ProjectId))
-                && v.Games.Contains(edit.GameVersion, StringComparer.OrdinalIgnoreCase)
-                && (kind != ResourceKind.Mod || loader.Length > 0 && v.Loaders.Contains(loader, StringComparer.OrdinalIgnoreCase))
-                && !identified.Files.Any(f => f.Source.Provider == v.Provider && f.Source.ProjectId == v.ProjectId && f.VersionId == v.Id)
-                && !string.Equals(v.File.Sha512, fingerprint.Sha512, StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(v.File.Sha1, fingerprint.Sha1, StringComparison.OrdinalIgnoreCase)
-                && Publication(v) is { } published && published > latestInstalled)
-                .OrderByDescending(v => Publication(v)).FirstOrDefault();
-            updateAvailable = update is not null ? true : identified.Complete && string.IsNullOrWhiteSpace(detail.Notice) ? false : null;
-        }
-        file.Refresh(); CheckIdentity(file, query); CheckLinks(file.FullName);
-        bool stale = identified.IsStale || detail.IsStale || detail.Notice?.Contains(ResourceOnlineInformationCache.StaleNotice, StringComparison.Ordinal) == true;
-        string? notice = identified.IsStale ? ResourceOnlineInformationCache.Notice(detail.Notice) : detail.Notice;
-        if (!identified.Complete || versionUnavailable) notice = string.IsNullOrEmpty(notice) ? "部分来源暂时无法连接。" : notice + " 部分来源暂时无法连接。";
-        if (translationNotice is not null) notice = string.IsNullOrEmpty(notice) ? translationNotice : notice + " " + translationNotice;
-        var versionsWithInstalled = installed.Concat(detail.Versions).DistinctBy(version => (version.Provider, version.ProjectId, version.Id)).ToArray();
-        return new ResourceContentOnline(project, installedName, versionsWithInstalled, notice)
-        { InstalledFiles = Array.AsReadOnly(identified.Files), UpdateVersion = stale ? null : update, UpdateAvailable = stale ? null : updateAvailable, IsStale = stale };
     }, token);
 
     private static DateTimeOffset? Publication(ResourceVersion version) => DateTimeOffset.TryParse(version.Published,
