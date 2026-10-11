@@ -343,7 +343,8 @@ internal static partial class Program
             string runtimeRoot = Path.Combine(root, "runtime");
             string home = Path.Combine(runtimeRoot, "java-runtime-gamma");
             string relative = "bin/" + (OperatingSystem.IsWindows() ? "java.exe" : "java");
-            string executable = Path.Combine(home, relative);
+            // TargetPath uses the same canonical platform separators as the real package planner.
+            string executable = Path.GetFullPath(Path.Combine(home, relative));
             Directory.CreateDirectory(Path.GetDirectoryName(executable)!);
             byte[] payload = "owned java"u8.ToArray(); await File.WriteAllBytesAsync(executable, payload);
             var plan = new JavaRuntimeDownloadPlan("java-runtime-gamma", "21", "https://example.test/manifest.json", home,

@@ -216,10 +216,13 @@ internal static partial class Program
                 @echo off
                 start "" /b cmd.exe /d /c child.cmd
                 for /L %%i in (1,1,2) do (
-                  if exist child-ready.txt exit /b {{exitCode}}
+                  if exist child-ready.txt goto ready
                   ping -n 2 127.0.0.1 > nul
                 )
                 exit /b 29
+                :ready
+                rem Exit outside the FOR block: cmd otherwise discards the requested code.
+                exit /b {{exitCode}}
                 """.Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal));
             return "background.cmd";
         }
