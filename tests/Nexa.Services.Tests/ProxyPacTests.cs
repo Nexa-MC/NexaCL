@@ -45,7 +45,8 @@ internal static partial class Program
         }
         using var stop = new CancellationTokenSource(); stop.Cancel();
         bool canceled = false; try { await PacEvaluator.EvaluateAsync("function FindProxyForURL(){return 'DIRECT';}", destination, stop.Token); }
-        catch (OperationCanceledException) { canceled = true; } AssertTrue(canceled);
+        catch (OperationCanceledException) { canceled = true; }
+        AssertTrue(canceled);
     }
 
     private static void ProxySettingsAndTransportSchemesAgree()
@@ -82,9 +83,11 @@ internal static partial class Program
             content.Headers.ContentLength = 1;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = content });
         }));
-        bool rejected = false; try { await oversized.ResolveAsync(new("https://example.test"), default); } catch (HttpRequestException) { rejected = true; } AssertTrue(rejected);
+        bool rejected = false; try { await oversized.ResolveAsync(new("https://example.test"), default); } catch (HttpRequestException) { rejected = true; }
+        AssertTrue(rejected);
         using var stop = new CancellationTokenSource(); stop.Cancel();
-        bool canceled = false; try { await resolver.ResolveAsync(new("https://example.test"), stop.Token); } catch (OperationCanceledException) { canceled = true; } AssertTrue(canceled);
+        bool canceled = false; try { await resolver.ResolveAsync(new("https://example.test"), stop.Token); } catch (OperationCanceledException) { canceled = true; }
+        AssertTrue(canceled);
     }
 
     private static async ValueTask PacRedirectSelectsRoutesAndStripsCredentials()
