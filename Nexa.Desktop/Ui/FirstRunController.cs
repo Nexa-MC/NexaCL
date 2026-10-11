@@ -73,6 +73,9 @@ internal sealed class FirstRunController : IDisposable
         }
         Style("SetupPathSurface", new(243, 246, 250), new(52, 61, 74), 14);
         Style("SetupSummarySurface", new(243, 246, 250), new(52, 61, 74), 14);
+        // Keep progress outside the welcome centering region.
+        shell.Tree.SetComponent(_nodes["SetupStep"], new XsrUiOverlayLayer(isModal: false));
+        shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupStep"])!.VerticalAlignment = XsrUiAlignment.Start;
         Style("SetupStep", XsrUiColor.Transparent, new(122, 138, 153), 13);
         Style("SetupDescription", XsrUiColor.Transparent, new(96, 108, 124), 16);
         Style("SetupError", XsrUiColor.Transparent, new(173, 48, 48), 14);
@@ -163,6 +166,8 @@ internal sealed class FirstRunController : IDisposable
         _shell.Tree.MarkDirty(_nodes["SetupHero"], XsrUiDirtyKinds.Layout);
         _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupForm"])!.VerticalAlignment =
             Step == 0 ? XsrUiAlignment.Center : XsrUiAlignment.Stretch;
+        _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupBody"])!.Margin =
+            Step == 0 ? default : new(0, 42, 0, 0);
         _shell.Tree.MarkDirty(_nodes["SetupBody"], XsrUiDirtyKinds.Layout);
         string[] labels = ["欢迎", "数据位置", "数据与诊断", "完成"];
         string[] titles = ["欢迎使用 NexaCL", "为数据选择一个位置", "选择诊断信息的共享方式", "准备好了"];

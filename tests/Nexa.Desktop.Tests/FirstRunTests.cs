@@ -29,7 +29,10 @@ internal static partial class Program
                 bool closed = false;
                 using var page = new FirstRunController(shell, intents, store, FirstRunRuntimeComposer.Compose(service), service.Read(), () => Task.FromResult<string?>(chosen), () => closed = true);
                 void Click(string command) { Emit(intents, "ui.setup." + command); shell.Render(new(760, 500)); }
-                shell.Render(new(760, 500));
+                var welcome = shell.Render(new(760, 500));
+                var frame = FindByKey(shell, welcome, "SetupFrame").Rect;
+                var hero = FindByKey(shell, welcome, "SetupHero").Rect;
+                AssertTrue(Math.Abs(hero.Y + hero.Height / 2 - frame.Y - frame.Height / 2) < .5);
                 AssertFalse(File.Exists(locator));
                 Click("next"); Click("browse"); shell.Render(new(760, 500));
                 Click("next");
