@@ -9,13 +9,14 @@ public static class NxmlWellKnown
 }
 
 /// <summary>
-/// Classifies one attribute value: a literal, or a state binding path wrapped in `{state ...}`.
+/// Classifies a literal, a state/data binding, or bounded mixed dynamic text.
 /// </summary>
 public enum NxmlValueKind
 {
     Literal = 0,
     StateBinding = 1,
     DataBinding = 2,
+    DataText = 3,
 }
 
 /// <summary>

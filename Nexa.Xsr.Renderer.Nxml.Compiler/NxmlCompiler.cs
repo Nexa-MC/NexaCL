@@ -87,7 +87,7 @@ public static class NxmlCompiler
 
         foreach (NxmlProperty attribute in element.Attributes)
         {
-            if (attribute.Value.Kind == NxmlValueKind.DataBinding)
+            if (attribute.Value.Kind is NxmlValueKind.DataBinding or NxmlValueKind.DataText)
                 throw Fail(element.Name, attribute.Name, "requires dynamic template data");
             if (NssStyleSheet.IsVisual(attribute.Name))
             {

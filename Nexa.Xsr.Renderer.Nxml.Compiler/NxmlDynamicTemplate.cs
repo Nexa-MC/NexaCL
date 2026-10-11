@@ -12,22 +12,41 @@ public sealed class NxmlDynamicTemplate
     }
 
     public NxmlHostIr Compile(IReadOnlyDictionary<string, string> data, NxmlComponentLibrary components, NssStyleSheet? styles = null)
+        => CompileCore(data, components, styles, null);
+
+    /// <summary>Localizes format literals before inserting data; parameter names must be preserved.</summary>
+    public NxmlHostIr CompileLocalized(IReadOnlyDictionary<string, string> data, NxmlComponentLibrary components,
+        Func<string, string> localize, NssStyleSheet? styles = null)
+    {
+        ArgumentNullException.ThrowIfNull(localize);
+        return CompileCore(data, components, styles, localize);
+    }
+
+    private NxmlHostIr CompileCore(IReadOnlyDictionary<string, string> data, NxmlComponentLibrary components,
+        NssStyleSheet? styles, Func<string, string>? localize)
     {
         ArgumentNullException.ThrowIfNull(data);
         if (data.Count > 256 || data.Sum(pair => (long)pair.Value.Length) > 1024 * 1024)
             throw new NxmlCompileException("Dynamic data exceeds its budget.");
         long remaining = 1024 * 1024;
         var expanded = components.Expand(new NxmlDocument(_document.Root.Children[0]));
-        var document = new NxmlDocument(Bind(expanded.Root, data, ref remaining));
+        var document = new NxmlDocument(Bind(expanded.Root, data, localize, ref remaining));
         var compiled = NxmlCompiler.Compile(document, components, styles);
         return new(compiled.Root) { IsDynamic = true };
     }
 
-    private static NxmlElement Bind(NxmlElement node, IReadOnlyDictionary<string, string> data, ref long remaining)
+    private static NxmlElement Bind(NxmlElement node, IReadOnlyDictionary<string, string> data, Func<string, string>? localize, ref long remaining)
     {
         List<NxmlProperty> attributes = [];
         foreach (var attribute in node.Attributes)
         {
+            if (attribute.Value.Kind == NxmlValueKind.DataText)
+            {
+                if (attribute.Name is not ("Content" or "Label" or "Placeholder"))
+                    throw new NxmlCompileException("Mixed dynamic data cannot change non-text properties.");
+                attributes.Add(new(attribute.Name, NxmlValue.Literal(NxmlTextFormat.Expand(attribute.Value.Text, data, localize, ref remaining))));
+                continue;
+            }
             if (attribute.Value.Kind != NxmlValueKind.DataBinding) { attributes.Add(attribute); continue; }
             if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Layout")
                 throw new NxmlCompileException("Dynamic data cannot change primitive metadata.");
@@ -38,7 +57,7 @@ public sealed class NxmlDynamicTemplate
             attributes.Add(new(attribute.Name, NxmlValue.Literal(value)));
         }
         List<NxmlElement> children = [];
-        foreach (var child in node.Children) children.Add(Bind(child, data, ref remaining));
+        foreach (var child in node.Children) children.Add(Bind(child, data, localize, ref remaining));
         return new(node.Name, attributes.AsReadOnly(), children.AsReadOnly()) { DefaultProperties = node.DefaultProperties };
     }
 }

@@ -220,3 +220,19 @@ never from template Content. `PreserveTabs` is a text-input contract (default fa
 while `MaxLines` (0 means unrestricted) and `TrimOverflow` declare text presentation.
 Reload may update text clipping but cannot change input sanitization contracts.
 These host-internal properties do not change service or plugin contracts.
+
+## Literal dynamic text formats
+
+A dynamic template may mix static text with named `{data name}` placeholders only
+in Content, Label and Placeholder. Exact data bindings keep their existing semantics.
+Keys, commands, styles and primitive metadata cannot use mixed formats. Expansion
+runs once on the parsed format: supplied data is never parsed as XML, markup or a
+binding. Each format allows at most 256 placeholders. Output consumes the existing 1 MiB expanded-data budget, including repeated
+parameters and static text. Missing parameters and malformed braces fail before
+loading or reloading a tree.
+
+CompileLocalized is additive to Compile. It translates the static format before
+substitution; translated formats must preserve exactly the same named parameter
+set. Product formatted text declares Localize=false to avoid translating user data
+after substitution. The Desktop adapter does not cache language-specific compiled
+fragments across localizers. This is text formatting, not an expression language.
