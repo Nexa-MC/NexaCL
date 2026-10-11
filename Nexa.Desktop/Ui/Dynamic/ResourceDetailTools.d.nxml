@@ -1,0 +1,6 @@
+<nxml-dynamic>
+  <StackPanel Key="ResourceDetailTools" Class="resource-row">
+    <Text Content="{data info}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-detail-info" />
+    <Button Key="ResourceWebsite" Content="项目主页 ↗" Command="ui.resources.action" Class="resource-base resource-button resource-website" Label="项目主页 ↗" />
+  </StackPanel>
+</nxml-dynamic>

@@ -539,4 +539,59 @@ internal static partial class Program
         finally {shell.Tree.Destroy(page);shell.Tree.Destroy(library);}
     }
 
+    private static void ValidateDynamicResources(XsrUiShell shell, Nexa.Xsr.State.XsrStateStore store, DesktopUiIntentSink intents)
+    {
+        string literal = "literal <resource> {state private}";
+        var project = new Nexa.Services.Resources.ResourceProject("validation", literal, literal, literal, 1200, "https://modrinth.com/project/validation");
+        var queries = new Nexa.Xsr.Runtime.XsrQueryRouterBuilder();
+        int reads = 0;
+        queries.Register<Nexa.Services.Resources.ResourceSearchQuery, Nexa.Services.Resources.ResourceSearchResult>(
+            Nexa.Services.Resources.ResourceCatalogContract.Search, (_, _) =>
+            { reads++; return ValueTask.FromResult(XsrResult.Success(new Nexa.Services.Resources.ResourceSearchResult([project], 1, 0))); });
+        queries.Register<Nexa.Services.Resources.ResourceDetailQuery, Nexa.Services.Resources.ResourceDetail>(
+            Nexa.Services.Resources.ResourceCatalogContract.Detail, (_, _) => ValueTask.FromResult(XsrResult.Success(new Nexa.Services.Resources.ResourceDetail(project, "MIT", []))));
+        using var controller = new ResourcesPageController(shell, intents, queries.Build(new ValidationDispatchObserver()), store, _ => { });
+        var previous = shell.Stage.Navigation.Current;
+        try
+        {
+            shell.Stage.Navigation.Replace(controller.Page);
+            for (int frame = 0; frame < 4; frame++) shell.Render(new(1100, 700));
+            var search = controller.Find("ResourceSearch");
+            shell.Renderer.SetTextInputValue(search, literal); shell.Renderer.Focus(search, showIndicator: false);
+            shell.Renderer.EditText(XsrUiTextEdit.Left);
+            var draft = shell.Tree.GetComponent<XsrUiTextInput>(search)!; int caret = draft.SelectionEnd;
+            var list = controller.Find("ResourceList"); var scroll = shell.Tree.GetComponent<XsrUiScroll>(list);
+            shell.Render(new(810, 500));
+            var row = controller.Find("ResourceProject.validation");
+            if (reads != 1 || !shell.Tree.IsAlive(row) || shell.Tree.GetComponent<NxmlDynamicSlot>(shell.Tree.Parent(row)) is null
+                || shell.Renderer.Focused != search || draft.ReadDraft() != literal || draft.SelectionEnd != caret
+                || !ReferenceEquals(scroll, shell.Tree.GetComponent<XsrUiScroll>(list)))
+                throw new InvalidOperationException("Resources lost owned rows, input identity or literal metadata.");
+            intents.Emit(XsrSemanticId.Parse("ui.resources.action"), controller.Find("ResourceLoader"), XsrCorrelationId.Create());
+            shell.Render(new(810, 500));
+            var card = controller.Find("ResourceFilterCard"); var overlay = controller.Find("ResourceFilterOverlay");
+            if (shell.Tree.GetComponent<XsrUiOverlayLayer>(overlay)?.IsModal != true
+                || shell.Tree.GetComponent<XsrUiAnchoredOverlay>(card)?.Anchor != controller.Find("ResourceLoader"))
+                throw new InvalidOperationException("Resource filter lost its declared modal/anchor contract.");
+            intents.Emit(XsrSemanticId.Parse("ui.resources.action"), controller.Find("ResourceFilterDismiss"), XsrCorrelationId.Create());
+            shell.Render(new(810, 500));
+            intents.Emit(XsrSemanticId.Parse("ui.resources.action"), controller.Find("ResourceDetails.validation"), XsrCorrelationId.Create());
+            for (int frame = 0; frame < 4; frame++) shell.Render(new(810, 500));
+            if (shell.Stage.Navigation.Current != controller.DetailPage || !shell.Tree.IsAlive(controller.Find("ResourceDetailHeading")))
+                throw new InvalidOperationException("Resource detail did not project through its owned slot.");
+            Console.WriteLine("Dynamic resources validation passed: retained input/rows/scroll, literal metadata, modal filters and detail projection.");
+        }
+        finally
+        {
+            shell.Stage.Navigation.Replace(previous);
+            controller.Dispose();
+            if (shell.Tree.IsAlive(controller.Page)) shell.Tree.Destroy(controller.Page);
+            if (shell.Tree.IsAlive(controller.DetailPage)) shell.Tree.Destroy(controller.DetailPage);
+        }
+    }
+
+    private sealed class ValidationDispatchObserver : Nexa.Xsr.Runtime.IXsrDispatchObserver
+    {
+        public void OnCompleted(Nexa.Xsr.Runtime.XsrDispatchObservation observation) { }
+    }
 }

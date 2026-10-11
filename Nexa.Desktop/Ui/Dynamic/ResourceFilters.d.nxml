@@ -1,8 +1,10 @@
-﻿<nxml-dynamic>
+<nxml-dynamic>
   <StackPanel Key="ResourceFilters" Class="resource-filter-row">
-    <Button Key="ResourceGame" Content="游戏版本" Icon="lucide/chevron-down" Command="ui.resources.action" Class="resource-filter-choice" />
-    <Button Key="ResourceLoader" Content="加载器" Icon="lucide/chevron-down" Command="ui.resources.action" Class="resource-filter-choice" />
-    <Button Key="ResourceProvider" Content="全部来源" Icon="lucide/chevron-down" Command="ui.resources.action" Class="resource-filter-choice" />
-    <Button Key="ResourceTag" Content="全部分类" Icon="lucide/chevron-down" Command="ui.resources.action" Class="resource-filter-choice" />
+    <Button Key="ResourceGame" Content="{data game}" Label="{data game}" Localize="false" MaxLines="1" TrimOverflow="true" Icon="lucide/chevron-down" Command="ui.resources.action" Class="resource-filter-choice" />
+    <Button Key="ResourceLoader" Content="{data loader}" Label="{data loader}" Localize="false" MaxLines="1" TrimOverflow="true" IsVisible="{data loaderVisible}" Icon="lucide/chevron-down" Command="ui.resources.action" Class="resource-filter-choice" />
+    <Button Key="ResourceProvider" Content="{data provider}" Label="{data provider}" Localize="false" MaxLines="1" TrimOverflow="true" Icon="lucide/chevron-down" Command="ui.resources.action" Class="resource-filter-choice" />
+    <Button Key="ResourceTag" Content="{data tag}" Label="{data tag}" Localize="false" MaxLines="1" TrimOverflow="true" Icon="lucide/chevron-down" Command="ui.resources.action" Class="resource-filter-choice" />
+    <Button Key="ResourceHideInstalled" Content="{data hideInstalled}" Localize="false" Command="ui.resources.action" Class="resource-base resource-check" Label="{data hideInstalled}" />
+    <Button Key="ResourceHideLibraries" Content="{data hideLibraries}" Localize="false" Command="ui.resources.action" Class="resource-base resource-check" Label="{data hideLibraries}" />
   </StackPanel>
 </nxml-dynamic>

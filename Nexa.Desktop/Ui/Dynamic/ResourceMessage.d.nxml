@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="{data key}" Content="{data message}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-message" />
+</nxml-dynamic>

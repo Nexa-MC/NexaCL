@@ -1,0 +1,69 @@
+<nxml-page>
+  <Page>
+    <Node Recipe="Text" Kind="ResourceTerm" Key="alpha-style" Content="resource-base resource-version-type resource-version-alpha" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="beta-style" Content="resource-base resource-version-type resource-version-beta" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="checked-marker" Content="✓" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.0260b97dada7" Content="暂时无法加载资源。请检查网络后重试。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.057f07d84234" Content="✓ 隐藏前置" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.088ef6d8a832" Content="无法读取游戏版本，请稍后重试。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.25efb3d5b616" Content="全部版本" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.288a3a86d3d7" Content="当前选择已改变，请重新选择筛选。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.2ab252189eb7" Content="部分在线信息暂时不可用，可稍后重试。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.2fd0a4f8db55" Content="暂时无法加载详情。请重试。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.34cbc1b5c274" Content="正在读取当前版本…" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.3efa6b72a5b3" Content="循环依赖会一起安装。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.40f9b4605c33" Content="□ 选择" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.41a78f1cca57" Content="无法解析依赖，请重试。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.4210925779f6" Content="✓ 隐藏已有" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.44ce7ae909bb" Content="搜索" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.4673a2306165" Content="下载" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.4953eb4500a9" Content="请先在主页选择要安装模组的版本。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.4ad4d42b0706" Content="正在显示缓存资料，后台正在刷新…" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.4d050d55d8aa" Content="正在加载更多资源…" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.55c561dc5546" Content="前往下载" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.5eab7ff6cfb1" Content="资源下载失败：" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.60a53514eb92" Content="收藏" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.64fd5c67620e" Content="无法读取或保存收藏夹，请重试。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.661ae707311c" Content="当前筛选下没有资源。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.7a2bd8b6cb0e" Content="加载器" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.7e74cabf57c0" Content="正在加载详情…" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.801a5ce37776" Content="资源来源暂时不可用。请检查网络后重试。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.80731f640cea" Content="无法读取当前版本，请选择筛选条件。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.8924c7887461" Content="重试加载" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.8a899b4fa4e8" Content="模组安装失败。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.8be216be7a84" Content="游戏版本" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.93a48223a516" Content="正式版" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.9f357adb6100" Content="全部来源" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.a1054434857f" Content="全部分类" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.acafb089bdb9" Content="正在加载资源…" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.af90a08fec8e" Content="加载更多" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.b55ae05faf55" Content="□ 隐藏已有" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.c5ba3bfa576f" Content=" · 部分在线信息暂时不可用，可稍后重试。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.cea8420e2779" Content="资源下载失败。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.cedf91a64972" Content="□ 隐藏前置" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.d1d044826a45" Content="加载失败" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.d2f5277505a4" Content="✓ 已选择" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.da0d228992f9" Content="正在搜索双源目录…" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.dca60869e7d2" Content="取消收藏" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.e551e8501b20" Content="没有符合筛选条件的可下载版本，请打开详情选择。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.e5b3a998b012" Content="正在显示缓存资料。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="copy.f104ec7d2e97" Content="没有找到匹配的资源。试试其他关键词或筛选条件。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="favorite-active-style" Content="resource-base resource-button capsule resource-icon-button resource-favorite-active" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="favorite-idle-style" Content="resource-base resource-button capsule resource-icon-button" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="release-style" Content="resource-base resource-version-type resource-version-release" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="unchecked-marker" Content="□" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="icon-mod" Content="lucide/blocks" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="icon-shader" Content="nexa/content-shader" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="icon-package" Content="nexa/content-package" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="icon-release" Content="lucide/circle-check" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="icon-beta" Content="lucide/flask-conical" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="icon-alpha" Content="lucide/test-tube" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="icon-link" Content="lucide/arrow-up-right" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="icon-download" Content="lucide/download" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="downloads-b" Content="b" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="downloads-m" Content="m" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="downloads-k" Content="k" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="downloads-single-format" Content="0" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="downloads-scaled-format" Content="0.0" />
+  </Page>
+</nxml-page>

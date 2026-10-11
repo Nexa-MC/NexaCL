@@ -1,4 +1,4 @@
-namespace Nexa.Desktop.Ui;
+﻿namespace Nexa.Desktop.Ui;
 
 internal sealed partial class ResourcesPageController
 {
@@ -23,7 +23,7 @@ internal sealed partial class ResourcesPageController
     internal void SetStartupOffline()
     {
         if (_shell.Stage.Navigation.Current != Page && _shell.Stage.Navigation.Current != DetailPage) return;
-        PauseContinuousList(); _listMediaPaused = true; _listFailure = "部分在线信息暂时不可用，可稍后重试。";
+        PauseContinuousList(); _listMediaPaused = true; _listFailure = DesktopResourcesText.Raw("copy.2ab252189eb7");
         Cancel(); CancelIcons(); CancelTranslations();
         // Keep the resolved placeholder state until navigation or an explicit retry. A final
         // preparation frame must not re-admit the icon requests that just exhausted its budget.
@@ -35,12 +35,12 @@ internal sealed partial class ResourcesPageController
             _result = _result with
             {
                 Notice = string.IsNullOrWhiteSpace(_result.Notice)
-                ? "部分在线信息暂时不可用，可稍后重试。" : _result.Notice + " · 部分在线信息暂时不可用，可稍后重试。"
+                ? DesktopResourcesText.Raw("copy.2ab252189eb7") : _result.Notice + DesktopResourcesText.Raw("copy.c5ba3bfa576f")
             };
             UpdatePagination();
             return;
         }
-        ShowFailure(_entities["ResourceList"], "资源来源暂时不可用。请检查网络后重试。",
+        ShowFailure(_entities["ResourceList"], DesktopResourcesText.Raw("copy.801a5ce37776"),
             RequestNextPage, _listActions);
         UpdatePagination();
     }

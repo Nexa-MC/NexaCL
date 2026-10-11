@@ -1,0 +1,6 @@
+<nxml-dynamic>
+  <StackPanel Class="resource-column">
+    <Text Key="ResourceFailureText" Content="{data message}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-message" />
+    <Button Key="ResourceRetry" Content="重试" Command="ui.resources.action" Class="resource-base resource-button resource-retry" Label="重试" />
+  </StackPanel>
+</nxml-dynamic>

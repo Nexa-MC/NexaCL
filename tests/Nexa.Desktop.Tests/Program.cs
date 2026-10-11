@@ -105,6 +105,8 @@ internal static partial class Program
         ("StartupReadinessBoundsOfflineWorkAndKeepsCancellation", StartupReadinessBoundsOfflineWorkAndKeepsCancellation),
         ("StartupReadinessPropagatesMandatoryFailure", StartupReadinessPropagatesMandatoryFailure),
         ("StartupSettingsMetadataPreparesRetainedPageBeforeNavigation", StartupSettingsMetadataPreparesRetainedPageBeforeNavigation),
+        ("ResourceOwnedWorkspaceRetainsDraftCaretTracksAndScrollAcrossProjection", ResourceOwnedWorkspaceRetainsDraftCaretTracksAndScrollAcrossProjection),
+        ("ResourceVersionFilterKeepsLiteralAuthorityAndDraftAcrossResize", ResourceVersionFilterKeepsLiteralAuthorityAndDraftAcrossResize),
         ("ResourcePagesRenewCachedMetadataOnceAndRetireLateDetail", ResourcePagesRenewCachedMetadataOnceAndRetireLateDetail),
         ("ResourceContinuousListAppendsOnceAndRetainsRowsScrollAndDraft", ResourceContinuousListAppendsOnceAndRetainsRowsScrollAndDraft),
         ("ResourceContinuousListPreservesRowsAndExplicitlyRetriesTheSamePage", ResourceContinuousListPreservesRowsAndExplicitlyRetriesTheSamePage),

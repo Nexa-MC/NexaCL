@@ -6,8 +6,11 @@ namespace Nexa.Desktop.Ui;
 
 internal sealed partial class ResourcesPageController
 {
-    private const double CatalogRowHeight = 80, CatalogRowPitch = 86;
-    private const int CatalogAttachedRows = 48, CatalogOverscan = 4;
+    private static readonly double CatalogRowHeight = DesktopResourcesText.Metric("virtual").Height!.Value;
+    private static readonly double CatalogRowSpacing = DesktopResourcesText.Metric("virtual").Spacing;
+    private static readonly double CatalogRowPitch = CatalogRowHeight + CatalogRowSpacing;
+    private static readonly int CatalogAttachedRows = (int)DesktopResourcesText.Metric("virtual").Width!.Value;
+    private static readonly int CatalogOverscan = (int)DesktopResourcesText.Metric("virtual").Padding.Left;
     private readonly Dictionary<string, CatalogRowView> _catalogRows = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _catalogRowNames = new(StringComparer.Ordinal);
     private readonly List<CatalogRowView> _attachedRows = [];
@@ -52,9 +55,11 @@ internal sealed partial class ResourcesPageController
         if (!_catalogTopSpacer.IsAssigned)
         {
             Clear(_entities["ResourceList"], _listActions);
-            _catalogTopSpacer = Element(default, "ResourceListTopSpacer");
-            _catalogBottomSpacer = Element(default, "ResourceListBottomSpacer");
-            _catalogEmpty = Text(default, "当前筛选下没有资源。", 14, Muted, 54);
+            var parking = _entities["ResourceRowParking"];
+            _catalogTopSpacer = AppendResource(parking, "ResourceSpacer.d.nxml", new() { ["key"] = "ResourceListTopSpacer", ["height"] = "0" });
+            _catalogBottomSpacer = AppendResource(parking, "ResourceSpacer.d.nxml", new() { ["key"] = "ResourceListBottomSpacer", ["height"] = "0" });
+            _catalogEmpty = AppendResource(parking, "ResourceMessage.d.nxml", new() { ["key"] = "ResourceListEmpty", ["message"] = L(DesktopResourcesText.Raw("copy.661ae707311c")) });
+            RegisterResourceText(_catalogEmpty, _catalogEmpty, "message");
             _windowDirty = true;
         }
         if (changed) _windowDirty = true;
@@ -67,7 +72,7 @@ internal sealed partial class ResourcesPageController
         if (_shell.Stage.Navigation.Current != Page) { DeactivateListMedia(); return; }
         var list = _entities["ResourceList"];
         double offset = _shell.Tree.GetComponent<XsrUiScroll>(list)!.OffsetY;
-        double viewport = 600;
+        double viewport = DesktopResourcesText.Metric("virtual").MaxHeight!.Value;
         if (_shell.Renderer.TryGetScrollSnapshot(list, out var snapshot)) viewport = Math.Max(1, snapshot.ViewportHeight);
         int start = Math.Clamp((int)Math.Floor(Math.Max(0, offset) / CatalogRowPitch) - CatalogOverscan, 0, _projectProjection.Count);
         int count = Math.Min(CatalogAttachedRows, (int)Math.Ceiling(viewport / CatalogRowPitch) + CatalogOverscan * 2);
@@ -78,30 +83,30 @@ internal sealed partial class ResourcesPageController
             foreach (var old in _attachedRows)
             {
                 if (!wanted.Contains(old.Key)) { DeactivateRowMedia(old); old.Attached = false; }
-                _shell.Tree.Detach(old.Row);
+                _resourceDynamic.Move(old.Row, _entities["ResourceRowParking"]);
             }
             _attachedRows.Clear();
-            _shell.Tree.Detach(_catalogTopSpacer); _shell.Tree.Detach(_catalogBottomSpacer); _shell.Tree.Detach(_catalogEmpty);
+            foreach (var fragment in new[] { _catalogTopSpacer, _catalogBottomSpacer, _catalogEmpty }) _resourceDynamic.Move(fragment, _entities["ResourceRowParking"]);
             if (_projectProjection.Count == 0)
             {
-                SetCatalogText(_catalogEmpty, _result.Projects.Count == 0 ? "没有找到匹配的资源。试试其他关键词或筛选条件。" : "当前筛选下没有资源。", localize: true);
-                _shell.Tree.Attach(_catalogEmpty, list);
+                SetCatalogText(_catalogEmpty, _result.Projects.Count == 0 ? DesktopResourcesText.Raw("copy.f104ec7d2e97") : DesktopResourcesText.Raw("copy.661ae707311c"), localize: true);
+                _resourceDynamic.Move(_catalogEmpty, list);
             }
             else
             {
                 if (start > 0)
-                { E(_catalogTopSpacer).Height = start * CatalogRowPitch - 6; _shell.Tree.Attach(_catalogTopSpacer, list); }
+                { ReloadResource(_catalogTopSpacer, ("height", Number(start * CatalogRowPitch - CatalogRowSpacing))); _resourceDynamic.Move(_catalogTopSpacer, list); }
                 for (int index = start; index < end; index++)
                 {
                     var project = _projectProjection[index]; string key = CatalogProjectKey(project);
                     if (!_catalogRows.TryGetValue(key, out var row))
                     { row = CreateCatalogRow(key, project); _catalogRows.Add(key, row); }
                     UpdateCatalogRow(row, project);
-                    row.Attached = true; _shell.Tree.Attach(row.Row, list); _attachedRows.Add(row);
+                    row.Attached = true; _resourceDynamic.Move(row.Row, list); _attachedRows.Add(row);
                 }
                 int remaining = _projectProjection.Count - end;
                 if (remaining > 0)
-                { E(_catalogBottomSpacer).Height = remaining * CatalogRowPitch - 6; _shell.Tree.Attach(_catalogBottomSpacer, list); }
+                { ReloadResource(_catalogBottomSpacer, ("height", Number(remaining * CatalogRowPitch - CatalogRowSpacing))); _resourceDynamic.Move(_catalogBottomSpacer, list); }
             }
             _windowStart = start; _windowEnd = end; _windowDirty = false;
             _shell.Tree.MarkDirty(list, XsrUiDirtyKinds.Layout);
@@ -111,34 +116,25 @@ internal sealed partial class ResourcesPageController
 
     private CatalogRowView CreateCatalogRow(string key, ResourceProject project)
     {
-        string name = project.Id;
-        int suffix = _catalogRows.Count;
+        string name = ResourceIdentity(project.Id); int suffix = _catalogRows.Count;
         while (_catalogRowNames.TryGetValue(name, out var owner) && owner != key)
-            name = project.Id + "." + (suffix++).ToString(CultureInfo.InvariantCulture);
+            name = ResourceIdentity(project.Id) + "." + (suffix++).ToString(CultureInfo.InvariantCulture);
         _catalogRowNames[name] = key;
-        var body = Card(default, "ResourceProject." + name);
-        var row = _shell.Tree.Parent(body);
-        E(row).Height = CatalogRowHeight; E(body).Height = CatalogRowHeight;
-        var icon = Element(body, "ResourceProjectIcon"); E(icon).Width = 48; E(icon).Height = 48; E(icon).VerticalAlignment = XsrUiAlignment.Center;
-        Style(icon, Tint, Muted, 12);
-        _shell.Tree.SetComponent(icon, new XsrUiImage(project.Kind switch
-        { ResourceKind.Mod => "lucide/blocks", ResourceKind.Shader => "nexa/content-shader", _ => "nexa/content-package" }));
-        var copy = Stack(body, "ResourceProjectCopy"); E(copy).Weight = 1;
-        var title = LiteralText(copy, "", 15, Ink, 22, 600);
-        var description = LiteralText(copy, "", 12, Muted, 20);
-        var metadata = LiteralText(copy, "", 11, Muted, 18);
-        var view = new CatalogRowView(key, project, row, icon, title, description, metadata);
-        view.Details = IconButton(body, "ResourceDetails." + name, "详情", "lucide/info", () =>
+        var row = AppendResource(_entities["ResourceRowParking"], "ResourceProject.d.nxml", new()
+        { ["row"] = "ResourceProject." + name, ["body"] = "ResourceProject." + name + ".Body", ["title"] = "", ["description"] = "", ["metadata"] = "",
+          ["icon"] = project.Kind switch { ResourceKind.Mod => DesktopResourcesText.Raw("icon-mod"), ResourceKind.Shader => DesktopResourcesText.Raw("icon-shader"), _ => DesktopResourcesText.Raw("icon-package") },
+          ["details"] = "ResourceDetails." + name, ["download"] = "ResourceQuickDownload." + name });
+        var view = new CatalogRowView(key, project, row, _entities["ResourceProjectIcon"], _entities["ResourceProjectTitle"],
+            _entities["ResourceProjectDescription"], _entities["ResourceProjectMetadata"]);
+        RegisterResourceText(view.Title, row, "title"); RegisterResourceText(view.Description, row, "description"); RegisterResourceText(view.Metadata, row, "metadata");
+        view.Details = BindResource("ResourceDetails." + name, () =>
         {
             if (!view.Attached || _shell.Stage.Navigation.Current != Page) return;
             _detailProject = view.Project; _detailPage = 0;
             DeactivateListMedia(); _shell.Stage.Navigation.Push(DetailPage); ReadDetail(view.Project.Id);
-        });
-        view.Download = IconButton(body, "ResourceQuickDownload." + name, "下载", "lucide/download", () =>
-        {
-            if (view.Attached && _shell.Stage.Navigation.Current == Page) _ = DownloadProjectAsync(view.Project);
-        });
-        _listActions.Add(view.Details); _listActions.Add(view.Download);
+        }, _listActions);
+        view.Download = BindResource("ResourceQuickDownload." + name, () =>
+        { if (view.Attached && _shell.Stage.Navigation.Current == Page) _ = DownloadProjectAsync(view.Project); }, _listActions);
         return view;
     }
 
@@ -147,22 +143,15 @@ internal sealed partial class ResourcesPageController
         string language = DesktopResourceText.Language(_store);
         if (row.Language == language && CatalogFactsEqual(row.Project, project)) return;
         DeactivateRowMedia(row); row.Project = project; row.Language = language;
-        SetCatalogText(row.Title, ProjectTitle(DesktopResourceText.Name(project, _store)));
-        SetCatalogText(row.Description, DesktopResourceText.Description(project, _store));
         string count = FormatDownloads(Math.Max(0, ResourceCaptions.DownloadCount(_functionPatches.Runtime, _functionPatches.DownloadCount, project.Downloads)));
-        SetCatalogText(row.Metadata, project.SourceLabel + "  ·  " + project.Author + "  ·  " + count + " " + _shell.Renderer.LocalizeText("次下载"));
+        ReloadResource(row.Row, ("title", ProjectTitle(DesktopResourceText.Name(project, _store))), ("description", DesktopResourceText.Description(project, _store)),
+            ("metadata", ResourceFormat("ProjectMetadata", ("source", project.SourceLabel), ("author", project.Author), ("downloads", count))));
     }
 
     private static bool CatalogFactsEqual(ResourceProject left, ResourceProject right) =>
         left.Sources.SequenceEqual(right.Sources) && (left with { Sources = right.Sources }) == right;
 
-    private void SetCatalogText(XsrUiEntityId entity, string text, bool localize = false)
-    {
-        var old = _shell.Tree.GetComponent<XsrUiText>(entity)!;
-        _shell.Tree.SetComponent(entity, new XsrUiText(text) { Localize = localize, MaxLines = old.MaxLines, TrimOverflow = true });
-        _shell.Tree.SetComponent(entity, new XsrUiSemantic(XsrUiSemanticRole.Text, text) { Localize = localize });
-        _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Paint);
-    }
+    private void SetCatalogText(XsrUiEntityId entity, string text, bool localize = false) => SetResourceText(entity, localize ? _shell.Renderer.LocalizeText(text) : text);
 
     private void ActivateRowMedia(CatalogRowView row)
     {
@@ -198,7 +187,7 @@ internal sealed partial class ResourcesPageController
             _actions.Remove(action); _listActions.Remove(action);
             foreach (var name in _entities.Where(item => item.Value == action).Select(item => item.Key).ToArray()) _entities.Remove(name);
         }
-        if (_shell.Tree.IsAlive(row.Row)) _shell.Tree.Destroy(row.Row);
+        if (_shell.Tree.IsAlive(row.Row)) RemoveResource(row.Row);
         _windowDirty = true;
     }
 
@@ -206,7 +195,7 @@ internal sealed partial class ResourcesPageController
     {
         foreach (var row in _catalogRows.Values.ToArray()) RemoveCatalogRow(row);
         foreach (var spacer in new[] { _catalogTopSpacer, _catalogBottomSpacer, _catalogEmpty })
-            if (spacer.IsAssigned && _shell.Tree.IsAlive(spacer)) _shell.Tree.Destroy(spacer);
+            if (spacer.IsAssigned && _shell.Tree.IsAlive(spacer)) RemoveResource(spacer);
         _catalogTopSpacer = _catalogBottomSpacer = _catalogEmpty = default;
         _catalogRows.Clear(); _catalogRowNames.Clear(); _attachedRows.Clear(); _projectProjection.Clear();
         _windowStart = _windowEnd = -1; _windowDirty = true;

@@ -1,0 +1,6 @@
+<nxml-dynamic>
+  <StackPanel Class="resource-column">
+    <Text Content="{data title}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-extension-title" Label="{data title}" />
+    <Text Content="{data body}" Localize="false" Class="resource-base resource-extension-body" Label="{data body}" />
+  </StackPanel>
+</nxml-dynamic>

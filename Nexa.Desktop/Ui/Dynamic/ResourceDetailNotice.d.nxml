@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="ResourceDetailNotice" Content="{data notice}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-detail-notice" />
+</nxml-dynamic>

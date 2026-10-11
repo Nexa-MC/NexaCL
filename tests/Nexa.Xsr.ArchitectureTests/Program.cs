@@ -459,6 +459,16 @@ internal static partial class Program
             foreach(string token in new[]{"NxmlUiLoader.Load(","new NxmlIrNode","new NxmlHostIr","new XsrUiElement",".Background =",".Height =",".Width =",".Margin =",".Content =","Style(","GetComponent<XsrUiVisualStyle>"})
                 if(source.Contains(token,StringComparison.Ordinal))failures.Add($"{name}: bootstrap presentation must use owned templates.");
         }
+        foreach (string path in Directory.GetFiles(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui"), "ResourcesPageController*.cs")
+            .Append(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", "DesktopResourcesText.cs")))
+        {
+            string source = File.ReadAllText(path);
+            foreach (string token in new[] { ".Tree.Create(", ".Tree.Attach(", ".Tree.Detach(", ".Tree.Destroy(", "new XsrUiText(", "new XsrUiSemantic(", "new XsrUiVisualStyle", "new XsrUiElement", "new XsrUiStackPanel", "new NxmlIrNode", "new NxmlHostIr", "NxmlUiLoader.Load(", ".Background =", ".Height =", ".Width =", ".Margin =", ".Content =", "GetComponent<XsrUiVisualStyle>" })
+                if (source.Contains(token, StringComparison.Ordinal)) failures.Add($"{Path.GetFileName(path)}: resource presentation must use owned external templates.");
+            if (System.Text.RegularExpressions.Regex.IsMatch(source, @"\b(?:Element|Stack|Card|Text|Button|Input|Style|LiteralText|ProjectIcon|IconButton)\s*\(")
+                || System.Text.RegularExpressions.Regex.IsMatch(source, "[\\u4e00-\\u9fff]"))
+                failures.Add($"{Path.GetFileName(path)}: resource presentation/copy cannot hide in helper factories.");
+        }
         string textProjection = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", "DesktopPresentationText.cs"));
         if (textProjection.Contains(".Tree.Create(", StringComparison.Ordinal) || textProjection.Contains("new NxmlNode", StringComparison.Ordinal))
             failures.Add("External text projection must not hide an imperative UI factory.");

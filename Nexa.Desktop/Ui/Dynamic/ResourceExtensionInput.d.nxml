@@ -1,0 +1,9 @@
+<nxml-dynamic>
+  <StackPanel Class="resource-column">
+    <Text Key="{data labelKey}" Content="{data label}" Localize="false" IsVisible="{data visible}" MaxLines="1" TrimOverflow="true" Class="resource-base resource-extension-label" Label="{data label}" />
+    <StackPanel Class="resource-search-surface resource-extension-input-surface" IsVisible="{data visible}">
+      <TextInput Key="{data key}" Label="{data label}" Placeholder="{data label}" Localize="false" MaximumLength="512" Enabled="{data enabled}" Class="resource-base resource-search" IsVisible="{data visible}" />
+    </StackPanel>
+    <Button Key="{data submit}" Content="提交" Command="ui.resources.action" IsVisible="{data visible}" Enabled="{data enabled}" Class="resource-base resource-button resource-extension-submit" Label="提交" />
+  </StackPanel>
+</nxml-dynamic>

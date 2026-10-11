@@ -42,8 +42,7 @@ internal sealed partial class ResourcesPageController
         for (int index = 0; index < SourcePolicyOptions.Length; index++)
         {
             var option = _entities[SourcePolicyOptions[index]];
-            _shell.Tree.GetComponent<XsrUiInput>(option)!.Enabled = !_sourcePolicyForced;
-            _shell.Tree.GetComponent<XsrUiSelection>(option)!.IsSelected = index == selected;
+            WorkspaceResource((SourcePolicyOptions[index] + "_enabled", Flag(!_sourcePolicyForced)), (SourcePolicyOptions[index] + "_selected", Flag(index == selected)));
             if (index == selected) _shell.Tree.GetComponent<XsrUiSegmentedTrack>(_entities["ResourceNetwork"])!.Selected = option;
             _shell.Tree.MarkDirty(option, XsrUiDirtyKinds.Paint);
         }

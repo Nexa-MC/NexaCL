@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="将安装 {data count} 个模组及必需依赖。{data cycles}" Localize="false" />
+</nxml-dynamic>

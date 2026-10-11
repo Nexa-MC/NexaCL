@@ -1,0 +1,1 @@
+<nxml-page><Page><Node Recipe="StackLayout" Kind="ResourceMetrics" Key="virtual" Class="resource-metric-virtual" /><Node Recipe="StackLayout" Kind="ResourceMetrics" Key="selector" Class="resource-metric-selector" /><Node Recipe="StackLayout" Kind="ResourceMetrics" Key="overlay" Class="resource-metric-overlay" /></Page></nxml-page>

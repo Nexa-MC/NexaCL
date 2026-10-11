@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Image Key="{data key}" Label="{data caption}" Localize="false" Source="lucide/image" IsVisible="{data visible}" Class="resource-extension-image" />
+</nxml-dynamic>

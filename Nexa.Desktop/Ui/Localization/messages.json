@@ -1,4 +1,12 @@
 [
+  {"source":"正在显示缓存资料，后台正在刷新…","en":"Showing cached information. Refreshing in the background…","zh-Hant":"正在顯示快取資料，背景正在重新整理…"},
+  {"source":" · 部分在线信息暂时不可用，可稍后重试。","en":" · Some online information is temporarily unavailable. Try again later.","zh-Hant":" · 部分線上資訊暫時無法使用，請稍後重試。"},
+  {"source":"{data source}  ·  {data downloads} 次下载  ·  {data license}","en":"{data source}  ·  {data downloads} downloads  ·  {data license}","zh-Hant":"{data source}  ·  {data downloads} 次下載  ·  {data license}"},
+  {"source":"版本  ·  {data count} 个","en":"Versions  ·  {data count}","zh-Hant":"版本  ·  {data count} 個"},
+  {"source":"版本  ·  {data count} 个  ·  Minecraft {data game}","en":"Versions  ·  {data count}  ·  Minecraft {data game}","zh-Hant":"版本  ·  {data count} 個  ·  Minecraft {data game}"},
+  {"source":"将安装 {data count} 个模组及必需依赖。{data cycles}","en":"Install {data count} mods and required dependencies. {data cycles}","zh-Hant":"將安裝 {data count} 個模組及必需依賴。{data cycles}"},
+  {"source":"{data source}  ·  {data author}  ·  {data downloads} 次下载","en":"{data source}  ·  {data author}  ·  {data downloads} downloads","zh-Hant":"{data source}  ·  {data author}  ·  {data downloads} 次下載"},
+  {"source":"已加载 {data count} 项","en":"{data count} items loaded","zh-Hant":"已載入 {data count} 項"},
   {"source":"{data count} 项","en":"{data count} items","zh-Hant":"{data count} 項"},
   {"source":"第三方 · {data host}","en":"Third-party · {data host}","zh-Hant":"第三方 · {data host}"},
   {"source":"{data view} · 切换视角","en":"{data view} · Change view","zh-Hant":"{data view} · 切換視角"},

@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Content="{data title}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-detail-versions-title" />
+</nxml-dynamic>

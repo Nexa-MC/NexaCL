@@ -1,0 +1,51 @@
+<nxml-page>
+  <Page>
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.0_selected" Content="false" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.0_enabled" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.0_width" Content="62" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.1_selected" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.1_enabled" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.1_width" Content="62" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.2_selected" Content="false" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.2_enabled" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.2_width" Content="62" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.3_selected" Content="false" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.3_enabled" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.3_width" Content="62" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.4_selected" Content="false" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.4_enabled" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.4_width" Content="62" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.5_selected" Content="false" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.5_enabled" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.5_width" Content="62" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.6_selected" Content="false" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.6_enabled" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceCategory.6_width" Content="62" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceOrder_width" Content="162" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceOrder.0_selected" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceOrder.0_enabled" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceOrder.0_width" Content="54" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceOrder.1_selected" Content="false" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceOrder.1_enabled" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceOrder.1_width" Content="54" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceOrder.2_selected" Content="false" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceOrder.2_enabled" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceOrder.2_width" Content="54" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceNetwork_width" Content="132" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceNetwork.0_selected" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceNetwork.0_enabled" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceNetwork.0_width" Content="66" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceNetwork.1_selected" Content="false" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceNetwork.1_enabled" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceNetwork.1_width" Content="66" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="searchCaption" Content="搜索" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="currentEnabled" Content="false" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="extensionVisible" Content="false" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="status" Content="Modrinth" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="previousEnabled" Content="false" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="nextCaption" Content="加载更多" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="nextEnabled" Content="true" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="overlayVisible" Content="false" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="searchLocalize" Content="true" />
+  </Page>
+</nxml-page>

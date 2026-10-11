@@ -1,0 +1,14 @@
+<nxml-dynamic>
+  <StackPanel Key="{data row}" Class="resource-base resource-project">
+    <StackPanel Key="{data body}" Class="resource-card-body resource-project-body">
+      <Image Key="ResourceProjectIcon" Label="{data title}" Localize="false" Source="{data icon}" Class="resource-base resource-project-icon" />
+      <StackPanel Key="ResourceProjectCopy" Class="resource-copy">
+        <Text Key="ResourceProjectTitle" Content="{data title}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-project-title" />
+        <Text Key="ResourceProjectDescription" Content="{data description}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-project-description" />
+        <Text Key="ResourceProjectMetadata" Content="{data metadata}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-project-metadata" />
+      </StackPanel>
+      <Button Key="{data details}" Content="详情" Command="ui.resources.action" Icon="lucide/info" Class="resource-base resource-button capsule resource-icon-button" Label="详情" />
+      <Button Key="{data download}" Content="下载" Command="ui.resources.action" Icon="lucide/download" Class="resource-base resource-button capsule resource-icon-button" Label="下载" />
+    </StackPanel>
+  </StackPanel>
+</nxml-dynamic>

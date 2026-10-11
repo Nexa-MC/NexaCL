@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
 using Avalonia.Input.Raw;
+using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Nexa.Desktop.Ui;
@@ -69,6 +70,10 @@ internal static partial class Program
             XsrUiEntityId list = h.Page.Find("ResourceList");
             await startup.InvokeAsync(() => AssertEqual(theme == "dark", h.Fixture.Shell.Renderer.ColorScheme.IsDark), timeout.Token);
             await CaptureStage("list-initial");
+            double originalWidth = 0;
+            await startup.InvokeAsync(() => { originalWidth = nativeWindow.Width; nativeWindow.Width = 800; nativeWindow.UpdateLayout(); nativeSurface.CommitScene(); }, timeout.Token);
+            await CaptureStage("list-narrow");
+            await startup.InvokeAsync(() => { nativeWindow.Width = originalWidth; nativeWindow.UpdateLayout(); nativeSurface.CommitScene(); }, timeout.Token);
             await ScrollUntilPage(1);
             await CaptureStage("append-loading");
             double firstOffset = 0;
@@ -188,6 +193,9 @@ internal static partial class Program
                     PixelPoint origin = nativeWindow.PointToScreen(default);
                     int width = (int)Math.Ceiling(nativeWindow.ClientSize.Width * nativeWindow.RenderScaling);
                     int height = (int)Math.Ceiling(nativeWindow.ClientSize.Height * nativeWindow.RenderScaling);
+                    using var frame = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96 * nativeWindow.RenderScaling, 96 * nativeWindow.RenderScaling));
+                    frame.Render(nativeWindow);
+                    frame.Save(Path.Combine(outputDirectory, stage + ".png"), PngBitmapEncoderOptions.Default);
                     marker = string.Join('\t', stage, origin.X.ToString(CultureInfo.InvariantCulture), origin.Y.ToString(CultureInfo.InvariantCulture),
                         width.ToString(CultureInfo.InvariantCulture), height.ToString(CultureInfo.InvariantCulture), theme) + "\n";
                 }, timeout.Token);
@@ -195,8 +203,6 @@ internal static partial class Program
                 string temporary = path + ".tmp";
                 await File.WriteAllTextAsync(temporary, marker!, timeout.Token); File.Move(temporary, path, overwrite: true);
                 Console.WriteLine("RESOURCE_PREVIEW_STAGE\t" + marker!.TrimEnd());
-                string acknowledgement = Path.Combine(outputDirectory, stage + ".capture-ok");
-                while (!File.Exists(acknowledgement)) await Task.Delay(20, timeout.Token);
                 // This is preview choreography after capture, not a test timing assertion.
                 await Task.Delay(800, timeout.Token);
             }
@@ -223,7 +229,7 @@ internal static partial class Program
             else { appearance?.Dispose(); harness?.Dispose(); pointer?.Dispose(); }
             if (nativeLifetime is not null) AssertEqual(0, await nativeLifetime.WaitAsync(TimeSpan.FromSeconds(5)));
         }
-        Console.WriteLine(outcome == 0 ? "PASS: native resource preview with controlled fixture data and screen-capture barriers." : "FAIL: resource preview did not complete.");
+        Console.WriteLine(outcome == 0 ? "PASS: native resource preview with controlled fixture data and native render captures." : "FAIL: resource preview did not complete.");
         return outcome;
     }
 

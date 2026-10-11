@@ -1,4 +1,4 @@
-using Nexa.Sidecar.Protocol;
+﻿using Nexa.Sidecar.Protocol;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
@@ -11,6 +11,7 @@ internal sealed partial class ResourcesPageController
     private readonly Dictionary<ushort, XsrUiEntityId> _moduleSubmits = [];
     private readonly Dictionary<ushort, XsrUiEntityId> _moduleLabels = [];
     private readonly Dictionary<ushort, XsrUiNodeView> _moduleViews = [];
+    private readonly Dictionary<ushort, XsrUiEntityId> _moduleFragments = [];
     private readonly List<XsrUiEntityId> _moduleActions = [];
     private CancellationTokenSource _moduleSourceStop = new();
     private bool _moduleSourceVisible;
@@ -34,7 +35,7 @@ internal sealed partial class ResourcesPageController
     {
         _moduleSourceStop.Cancel();
         foreach (var entity in _moduleActions) _actions.Remove(entity);
-        _moduleActions.Clear(); _moduleNodes.Clear(); _moduleSubmits.Clear(); _moduleLabels.Clear(); _moduleViews.Clear();
+        _moduleActions.Clear(); _moduleNodes.Clear(); _moduleSubmits.Clear(); _moduleLabels.Clear(); _moduleViews.Clear(); _moduleFragments.Clear();
     }
     private void ProjectSidecarModules()
     {
@@ -44,17 +45,15 @@ internal sealed partial class ResourcesPageController
         _moduleRevision = snapshot.Revision;
         var module = snapshot.Value?.ModuleAt(_sidecarUi.CardIndex);
         var slot = _entities["ResourceExtensionCard"];
-        E(slot).IsVisible = module is not null;
+        WorkspaceResource(("extensionVisible", Flag(module is not null)));
         if (_moduleActivation != (module?.Activation ?? Guid.Empty))
         {
             RetireSidecarSource(); _moduleSourceStop.Dispose(); _moduleSourceStop = new();
             _moduleActivation = module?.Activation ?? Guid.Empty;
-            foreach (var child in _shell.Tree.Children(slot).ToArray()) _shell.Tree.Destroy(child);
+            Clear(slot, _moduleActions);
             if (module is not null)
             {
-                LiteralText(slot, module.Card.Title, 14, Ink, 22, 600);
-                var body = LiteralText(slot, module.Card.Body, 13, Muted, 0, lines: 0);
-                E(body).Height = null; _shell.Tree.GetComponent<XsrUiVisualStyle>(body)!.WrapText = true;
+                AppendResource(slot, "ResourceExtensionHeading.d.nxml", new() { ["title"] = module.Card.Title, ["body"] = module.Card.Body });
                 foreach (var node in module.Nodes) CreateSidecarNode(module.Activation, node, node.Parent == 0 ? slot : _moduleNodes[node.Parent]);
             }
             _shell.Tree.GetComponent<XsrUiScroll>(slot)!.OffsetY = 0;
@@ -66,57 +65,46 @@ internal sealed partial class ResourcesPageController
     private void CreateSidecarNode(Guid activation, XsrUiNodeView node, XsrUiEntityId parent)
     {
         string name = "ResourcePluginNode." + node.Id;
-        XsrUiEntityId entity;
-        switch (node.Kind)
+        string template = node.Kind switch
         {
-            case SidecarUiNodeKind.Stack or SidecarUiNodeKind.Row:
-                entity = Stack(parent, name, node.Kind == SidecarUiNodeKind.Row); break;
-            case SidecarUiNodeKind.Button or SidecarUiNodeKind.Toggle:
-                entity = Button(parent, name, node.Label, 150, () => RunSidecarAction(activation, node.Id));
-                _moduleActions.Add(entity); DesktopLiteralText.Preserve(_shell.Tree, entity); break;
-            case SidecarUiNodeKind.TextInput:
-                _moduleLabels[node.Id] = LiteralText(parent, node.Label, 12, Muted, 22);
-                entity = Input(parent, name, node.Label, 220);
-                DesktopLiteralText.Preserve(_shell.Tree, entity);
-                _shell.Tree.SetComponent(entity, new XsrUiTextInput { MaximumLength = 512 });
-                _shell.Renderer.SetTextInputValue(entity, node.Value);
-                var submit = Button(parent, name + ".Submit", "提交", 68, () => RunSidecarAction(activation, node.Id));
-                _moduleActions.Add(submit); _moduleSubmits[node.Id] = submit; break;
-            case SidecarUiNodeKind.Image:
-                entity = Element(parent, name, XsrUiSemanticRole.Image, node.Label); E(entity).Width = 160; E(entity).Height = 120;
-                DesktopLiteralText.Preserve(_shell.Tree, entity);
-                if (node.Image is { } image)
-                    _shell.Tree.SetComponent(entity, new XsrUiImage("")
-                    {
-                        Raster = new(image,
-                        [new(new(0, 0, image.Width, image.Height), new(0, 0, 1, 1))])
-                        { FitToBounds = true }
-                    });
-                break;
-            default:
-                entity = LiteralText(parent, node.Label, 13, Ink, 28); break;
+            SidecarUiNodeKind.Stack => "ResourceExtensionStack.d.nxml",
+            SidecarUiNodeKind.Row => "ResourceExtensionRow.d.nxml",
+            SidecarUiNodeKind.Button or SidecarUiNodeKind.Toggle => "ResourceExtensionButton.d.nxml",
+            SidecarUiNodeKind.TextInput => "ResourceExtensionInput.d.nxml",
+            SidecarUiNodeKind.Image => "ResourceExtensionImage.d.nxml",
+            _ => "ResourceExtensionText.d.nxml",
+        };
+        var fragment = AppendResource(parent, template, new()
+        { ["key"] = name, ["labelKey"] = name + ".Label", ["label"] = node.Label, ["caption"] = node.Label,
+          ["submit"] = name + ".Submit", ["visible"] = Flag(node.Visible), ["enabled"] = Flag(node.Enabled) });
+        var entity = _entities[name]; _moduleFragments[node.Id] = fragment;
+        if (node.Kind is SidecarUiNodeKind.Button or SidecarUiNodeKind.Toggle)
+            BindResource(name, () => RunSidecarAction(activation, node.Id), _moduleActions);
+        if (node.Kind == SidecarUiNodeKind.TextInput)
+        {
+            _moduleLabels[node.Id] = _entities[name + ".Label"];
+            _shell.Renderer.SetTextInputValue(entity, node.Value);
+            _moduleSubmits[node.Id] = BindResource(name + ".Submit", () => RunSidecarAction(activation, node.Id), _moduleActions);
         }
+        if (node.Kind == SidecarUiNodeKind.Image && node.Image is { } image)
+            _shell.Tree.GetComponent<XsrUiImage>(entity)!.Raster = new(image,
+                [new(new(0, 0, image.Width, image.Height), new(0, 0, 1, 1))]) { FitToBounds = true };
         _moduleNodes[node.Id] = entity;
     }
     private void UpdateSidecarNode(XsrUiNodeView node)
     {
         var entity = _moduleNodes[node.Id];
-        E(entity).IsVisible = node.Visible;
-        if (_moduleLabels.TryGetValue(node.Id, out var label)) E(label).IsVisible = node.Visible;
-        if (_shell.Tree.GetComponent<XsrUiInput>(entity) is { } input) input.Enabled = node.Enabled;
+        ReloadResource(_moduleFragments[node.Id], ("visible", Flag(node.Visible)), ("enabled", Flag(node.Enabled)), ("label", node.Label));
         if (_moduleSubmits.TryGetValue(node.Id, out var submit))
         {
-            E(submit).IsVisible = node.Visible;
-            _shell.Tree.GetComponent<XsrUiInput>(submit)!.Enabled = node.Enabled;
             if (!_moduleViews.TryGetValue(node.Id, out var previous) || previous.Value != node.Value)
                 _shell.Renderer.SetTextInputValue(entity, node.Value);
         }
         else if (node.Kind is SidecarUiNodeKind.Text or SidecarUiNodeKind.Button or SidecarUiNodeKind.Toggle)
         {
-            string caption = node.Kind == SidecarUiNodeKind.Toggle ? (node.ToggleValue ? "✓ " : "□ ") + node.Label
-                : node.Value.Length == 0 ? node.Label : node.Label.Length == 0 ? node.Value : node.Label + " " + node.Value;
-            _shell.Tree.SetComponent(entity, new XsrUiText(caption) { Localize = false });
-            _shell.Tree.SetComponent(entity, new XsrUiSemantic(node.Kind == SidecarUiNodeKind.Text ? XsrUiSemanticRole.Text : XsrUiSemanticRole.Button, caption) { Localize = false });
+            string caption = node.Kind == SidecarUiNodeKind.Toggle ? ResourceFormat("Toggle", ("marker", DesktopResourcesText.Raw(node.ToggleValue ? "checked-marker" : "unchecked-marker")), ("label", node.Label))
+                : node.Value.Length == 0 ? node.Label : node.Label.Length == 0 ? node.Value : ResourceFormat("LabelValue", ("label", node.Label), ("value", node.Value));
+            ReloadResource(_moduleFragments[node.Id], ("caption", caption));
         }
         _moduleViews[node.Id] = node;
         _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);

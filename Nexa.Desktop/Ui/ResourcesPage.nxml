@@ -1,15 +1,1 @@
-﻿<nxml-page>
-  <Page Key="ResourcesPage" Label="资源">
-    <ContentHost Key="ResourcesContent">
-    <StackPanel Key="ResourcesLayout" Class="layout-ResourcesPage-ResourcesLayout">
-      <StackPanel Key="ResourceCategories" Class="layout-ResourcesPage-ResourceCategories" />
-      <StackPanel Key="ResourceToolbar" Class="layout-ResourcesPage-ResourceToolbar" />
-      <Dynamic Key="ResourceFilterSlot" />
-      <StackPanel Key="ResourceExtensionCard" IsVisible="false" Scroll="true" Class="layout-ResourcesPage-ResourceExtensionCard" />
-      <StackPanel Key="ResourceList" Scroll="true" Class="layout-ResourcesPage-ResourceList" />
-      <StackPanel Key="ResourcePagination" Class="layout-ResourcesPage-ResourcePagination" />
-    </StackPanel>
-      <Dynamic Key="ResourceOverlaySlot" IsVisible="false" />
-    </ContentHost>
-  </Page>
-</nxml-page>
+<nxml-page><Page Key="ResourcesPage" Label="资源"><ContentHost Key="ResourcesContent"><Dynamic Key="ResourceWorkspaceSlot" Class="resource-workspace-slot" /></ContentHost></Page></nxml-page>

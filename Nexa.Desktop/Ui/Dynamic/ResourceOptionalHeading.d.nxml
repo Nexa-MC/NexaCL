@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<StackPanel Class="resource-column"><Text Content="选择可选依赖" MaxLines="1" TrimOverflow="true" Class="resource-base resource-optional-title" /><Text Content="{data summary}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-optional-summary" /></StackPanel>
+</nxml-dynamic>

@@ -1,0 +1,47 @@
+<nxml-dynamic>
+  <ContentHost Key="ResourceWorkspace" Class="resource-workspace">
+    <StackPanel Key="ResourcesLayout" Class="layout-ResourcesPage-ResourcesLayout">
+      <StackPanel Key="ResourceCategories" Class="layout-ResourcesPage-ResourceCategories">
+        <StackPanel Key="ResourceCategory" Scroll="true" ScrollGesture="true" Class="resource-base resource-track resource-track-fill">
+          <ContentHost Key="ResourceCategoryThumb" IsVisible="false" TransitionKey="ResourceCategoryThumb" Class="resource-thumb" />
+          <Button Key="ResourceCategory.0" Content="收藏" Command="ui.resources.action" Selected="{data ResourceCategory.0_selected}" Enabled="{data ResourceCategory.0_enabled}" Width="{data ResourceCategory.0_width}" Class="resource-base resource-option" Label="收藏" />
+          <Button Key="ResourceCategory.1" Content="模组" Command="ui.resources.action" Selected="{data ResourceCategory.1_selected}" Enabled="{data ResourceCategory.1_enabled}" Width="{data ResourceCategory.1_width}" Class="resource-base resource-option" Label="模组" />
+          <Button Key="ResourceCategory.2" Content="整合包" Command="ui.resources.action" Selected="{data ResourceCategory.2_selected}" Enabled="{data ResourceCategory.2_enabled}" Width="{data ResourceCategory.2_width}" Class="resource-base resource-option" Label="整合包" />
+          <Button Key="ResourceCategory.3" Content="资源包" Command="ui.resources.action" Selected="{data ResourceCategory.3_selected}" Enabled="{data ResourceCategory.3_enabled}" Width="{data ResourceCategory.3_width}" Class="resource-base resource-option" Label="资源包" />
+          <Button Key="ResourceCategory.4" Content="光影" Command="ui.resources.action" Selected="{data ResourceCategory.4_selected}" Enabled="{data ResourceCategory.4_enabled}" Width="{data ResourceCategory.4_width}" Class="resource-base resource-option" Label="光影" />
+          <Button Key="ResourceCategory.5" Content="数据包" Command="ui.resources.action" Selected="{data ResourceCategory.5_selected}" Enabled="{data ResourceCategory.5_enabled}" Width="{data ResourceCategory.5_width}" Class="resource-base resource-option" Label="数据包" />
+          <Button Key="ResourceCategory.6" Content="世界" Command="ui.resources.action" Selected="{data ResourceCategory.6_selected}" Enabled="{data ResourceCategory.6_enabled}" Width="{data ResourceCategory.6_width}" Class="resource-base resource-option" Label="世界" />
+        </StackPanel>
+        <StackPanel Key="ResourceOrder" Scroll="true" ScrollGesture="true" Class="resource-base resource-track" Width="{data ResourceOrder_width}">
+          <ContentHost Key="ResourceOrderThumb" IsVisible="false" TransitionKey="ResourceOrderThumb" Class="resource-thumb" />
+          <Button Key="ResourceOrder.0" Content="相关" Command="ui.resources.action" Selected="{data ResourceOrder.0_selected}" Enabled="{data ResourceOrder.0_enabled}" Width="{data ResourceOrder.0_width}" Class="resource-base resource-option" Label="相关" />
+          <Button Key="ResourceOrder.1" Content="热门" Command="ui.resources.action" Selected="{data ResourceOrder.1_selected}" Enabled="{data ResourceOrder.1_enabled}" Width="{data ResourceOrder.1_width}" Class="resource-base resource-option" Label="热门" />
+          <Button Key="ResourceOrder.2" Content="更新" Command="ui.resources.action" Selected="{data ResourceOrder.2_selected}" Enabled="{data ResourceOrder.2_enabled}" Width="{data ResourceOrder.2_width}" Class="resource-base resource-option" Label="更新" />
+        </StackPanel>
+      </StackPanel>
+      <StackPanel Key="ResourceToolbar" Class="layout-ResourcesPage-ResourceToolbar">
+        <StackPanel Class="resource-search-surface">
+          <TextInput Key="ResourceSearch" Label="搜索资源" Placeholder="搜索资源" Class="resource-base resource-search" />
+        </StackPanel>
+        <Button Key="ResourceSearchButton" Content="{data searchCaption}" Localize="{data searchLocalize}" Command="ui.resources.action" Class="resource-base resource-button resource-search-button" Label="{data searchCaption}" />
+        <Button Key="ResourceCurrentInstance" Content="当前版本" Enabled="{data currentEnabled}" Command="ui.resources.action" Class="resource-base resource-button resource-current" Label="当前版本" />
+        <Button Key="ResourceReset" Content="重置" Command="ui.resources.action" Class="resource-base resource-button resource-reset" Label="重置" />
+      </StackPanel>
+      <Dynamic Key="ResourceFilterSlot" />
+      <Dynamic Key="ResourceExtensionCard" IsVisible="{data extensionVisible}" Scroll="true" ScrollGesture="true" Class="layout-ResourcesPage-ResourceExtensionCard resource-base resource-extension" />
+      <Dynamic Key="ResourceList" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="false" StableContent="true" Class="layout-ResourcesPage-ResourceList" />
+      <StackPanel Key="ResourcePagination" Class="layout-ResourcesPage-ResourcePagination">
+        <Text Key="ResourceStatus" Content="{data status}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-status" Label="{data status}" />
+        <StackPanel Key="ResourceNetwork" Scroll="true" ScrollGesture="true" Class="resource-base resource-track" Width="{data ResourceNetwork_width}">
+          <ContentHost Key="ResourceNetworkThumb" IsVisible="false" TransitionKey="ResourceNetworkThumb" Class="resource-thumb" />
+          <Button Key="ResourceNetwork.0" Content="镜像优先" Command="ui.resources.action" Selected="{data ResourceNetwork.0_selected}" Enabled="{data ResourceNetwork.0_enabled}" Width="{data ResourceNetwork.0_width}" Class="resource-base resource-option resource-option-small" Label="镜像优先" />
+          <Button Key="ResourceNetwork.1" Content="官方优先" Command="ui.resources.action" Selected="{data ResourceNetwork.1_selected}" Enabled="{data ResourceNetwork.1_enabled}" Width="{data ResourceNetwork.1_width}" Class="resource-base resource-option resource-option-small" Label="官方优先" />
+        </StackPanel>
+        <Button Key="ResourcePrevious" Content="返回顶部" Command="ui.resources.action" Enabled="{data previousEnabled}" Class="resource-base resource-button resource-page-button" Label="返回顶部" />
+        <Button Key="ResourceNext" Content="{data nextCaption}" Localize="false" Command="ui.resources.action" Enabled="{data nextEnabled}" Class="resource-base resource-button resource-page-button" Label="{data nextCaption}" />
+      </StackPanel>
+    </StackPanel>
+    <Dynamic Key="ResourceRowParking" IsVisible="false" />
+    <Dynamic Key="ResourceOverlaySlot" IsVisible="{data overlayVisible}" />
+  </ContentHost>
+</nxml-dynamic>

@@ -1,4 +1,4 @@
-# Remaining NXML migration
+﻿# Remaining NXML migration
 
 Objective: migrate all product presentation to Nexa.Xsr.Renderer, external `.nxml`
 pages, `.c.nxml` components and `.nss` styles. Dynamic collections must enter named
@@ -48,8 +48,9 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
   complete entry validation remain enforced.
 - Literal named text formats support localization before substitution, reject non-text
   placement and enforce both output and placeholder budgets. Data is never reparsed.
-- Resource filter overlays already use fragments. Other resource presentation is
-  still imperative.
+- Resource discovery, selectors, virtual projects, detail/version pages, optional
+  dependency choices and finite Sidecar UI kinds now use complete owned external
+  workspaces, fragments, NSS and named text formats.
 - Shared reload preserves entity identity, nested slots, drafts, scroll, focus,
   progress and transition objects; it validates the complete projection first.
 - Bootstrap of detached pages is now owned by the NXML loader, not a temporary
@@ -60,7 +61,6 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 | Area | Authoritative entry points | Remaining work |
 | --- | --- | --- |
 | Settings and instance management | `SettingsPageController.cs` and partial files | Replace remaining custom row/group factories, diagnostic cards, content/detail/snapshot/server/export structures and their style mutations with templates. Preserve drafts and list virtualization. |
-| Resources | `ResourcesPageController.cs` and partial files | Search toolbar, categories, virtual rows, detail/version/dependency and install confirmation layouts; content and state variants must be external. |
 | Launch and installation | `LaunchPageController.InstallCatalog.cs`, `.Installation.cs`, `.FrameProjection.cs`, `.Styles.cs`, `BedrockInstallPageController.cs` | Catalog/loader rows, state panels, choice tracks and runtime presentation styling. |
 
 Direct node/style/stack construction still remains across the other Desktop slices. This is a locator, not a completion metric: helpers can hide imperative layouts,
@@ -643,3 +643,63 @@ reset their view merely to regroup rows. Anchor relocation remains unsupported.
 - Scoped whitespace and diff checks passed. Evidence is under
   .tmp-cleanup-validation/wardrobe-*; three main areas remain in the inventory.
   The overall migration remains active.
+
+## Resources boundary
+
+Migrate the complete discovery workspace, categories/order/network selectors,
+search/filter controls, extension card, virtual projects, detail/version pages and
+optional dependency confirmation together. Fixed variants/copy/formats and geometry
+are external NXML/NSS; provider metadata remains literal. Owned slots retain search
+and extension input drafts, caret/focus, scroll and selected tracks when projections
+change. Sidecar finite node kinds use explicit external templates and owned nested
+slots; the binary/authenticated module boundary and retirement remain unchanged.
+
+Virtualization retains its finite attached window, exact scroll extent and per-row
+media lease. Park offscreen owned fragments in a hidden slot of the same workspace;
+owned Move/Reorder controls admission/order without controller reparenting. Recycling
+must not publish obsolete translation/icon completions or authorize retired actions.
+Filter overlay modality, dismissal, local anchor and scroll are declarative lifetime
+facts; resize/reload changes only finite viewport height/indicator facts and preserves
+the search draft. Optional plans preserve chosen identities, cancellation, dependency
+ordering and service authority. Do not turn the migration into new download behavior.
+
+## Resources verification, 2026-10-11
+
+- Full Desktop composition: 283 passed, zero failed. Resource regressions: 24
+  passed. NXML compiler/runtime: 62 passed; architecture: 69 projects passed;
+  actual Avalonia backend: 30 passed. Resource controller partials and their text
+  projection helper reject imperative presentation factories and fixed C# copy.
+- Entire discovery/detail/dependency/extension workspaces are external. Source-qualified
+  row identities, attached-window bounds, exact 10,000-project scroll extent, media
+  leases, cache renewal, late-generation rejection and typed download behavior pass.
+  Hidden parked rows stay cached and cannot invoke actions. Sidecar finite templates
+  keep binary routing and activation-qualified action admission.
+- Language/viewport/state reload retains search and filter drafts, caret/focus, row,
+  track and scroll objects. Unsafe/long provider version names use bounded UI keys
+  while service queries retain the exact literal identity. Filter modality, dismissal,
+  anchor and viewport/indicator facts remain declarative. Narrow filters fit within
+  available width; all selectable dark accents pass card text contrast checks.
+- Actual native window previews cover both themes, continued loading, failed-page
+  retry, detail and return. Native wheel routing passes with normal teardown. Images
+  are Avalonia renders of the real test window, using controlled read-only catalog
+  fixtures; they are not screen-compositor captures or online service measurements.
+- Windows x64 NativeAOT and self-contained full-trim publications succeed. Both actual
+  final executables ran --validate-shell, exited 0 and emitted the positive Dynamic
+  resources validation passed marker. Existing Jint IL2098 remains unsuppressed.
+- Scoped whitespace and diff checks pass. Evidence lives under
+  .tmp-cleanup-validation/resources-*. Settings/instance management and launch/install
+  remain open; the whole-product migration is still active.
+
+## Remaining settings/instance boundary
+
+Migrate the remaining complete custom settings and instance workspaces, rather than
+replacing legacy factories with generic compatibility helpers. Fixed copy, state
+variants, card/row/tool layouts, metrics, selection controls and preview styles must
+be external. Collections use explicit owned slots; finite action projections reload
+without changing draft/caret/focus, scroll, image leases or transition identity.
+Instance and document scope changes retire old identities, pending callbacks and
+results before admission. Keep confirmations, typed service authority, developer-mode
+visibility, formatting spans and bounded realization unchanged. Configuration values,
+filenames, module metadata, paths and provider data remain literal; translate named
+formats before data substitution. Leave a shared legacy helper only while documented
+remaining callers exist, and remove it when its last caller is migrated.

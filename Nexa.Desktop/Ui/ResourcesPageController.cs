@@ -19,7 +19,6 @@ internal static class ResourcesPresentationState
 internal sealed partial class ResourcesPageController : IDisposable
 {
     private static readonly XsrSemanticId Action = XsrSemanticId.Parse("ui.resources.action");
-    private static readonly XsrUiColor Ink = new(43, 51, 64), Muted = new(113, 124, 140), Blue = new(11, 91, 203), Tint = new(241, 245, 250), White = new(255, 255, 255);
     private readonly XsrUiShell _shell;
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrQueryRouter _queries;
@@ -89,54 +88,35 @@ internal sealed partial class ResourcesPageController : IDisposable
         _functionPatches = functionPatches ?? new();
         _sidecarSignals = sidecarSignals;
         _sidecarUi = sidecarUi;
-        using var stream = DesktopMarkup.Open("ResourcesPage.nxml")!;
-        using var reader = new StreamReader(stream);
-        var host = shell.Tree.Create("resources-loader");
-        Page = NxmlUiLoader.Load(DesktopMarkup.Compile(NxmlParser.Parse(reader.ReadToEnd())), shell.Tree, store, host);
-        shell.Tree.Detach(Page); shell.Tree.Destroy(host);
-        shell.Tree.Walk(Page, entity => { _entities[shell.Tree.Name(entity)] = entity; return true; });
-        shell.Tree.SetComponent(_entities["ResourceList"], new XsrUiScrollGesture());
-        shell.Tree.SetComponent(_entities["ResourceList"], new XsrUiStableContent());
-        var extensionCard = _entities["ResourceExtensionCard"];
-        Style(extensionCard, Tint, Ink, 10);
-        shell.Tree.SetComponent(extensionCard, new XsrUiScrollGesture());
-        Segment(_entities["ResourceCategories"], "ResourceCategory", ["收藏", "模组", "整合包", "资源包", "光影", "数据包", "世界"], index =>
-        { _favoriteMode = index == 0; if (!_favoriteMode) _filter = _filter with { Kind = (ResourceKind)(index - 1), Tag = "" }; ResetCategoryFilters(); Search(); }, 62, initial: 1);
-        var header = _entities["ResourceCategories"];
-        E(_entities["ResourceCategory"]).Width = null; E(_entities["ResourceCategory"]).Weight = 1;
-        Segment(header, "ResourceOrder", ["相关", "热门", "更新"], index =>
-        { _filter = _filter with { Order = (ResourceOrder)index }; Search(); }, 54);
-        var toolbar = _entities["ResourceToolbar"];
-        _search = Input(toolbar, "ResourceSearch", "搜索资源", 0); E(_search).Weight = 1;
         _resourceDynamic = new(shell.Tree, store);
-        var filters = _resourceDynamic.Append(_entities["ResourceFilterSlot"], DesktopMarkup.Dynamic("ResourceFilters.d.nxml"));
-        shell.Tree.Walk(filters, entity => { _entities[shell.Tree.Name(entity)] = entity; return true; });
-        _game = _entities["ResourceGame"]; _loader = _entities["ResourceLoader"];
+        Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("ResourcesPage.nxml"), shell.Tree, store);
+        IndexResources(Page);
+        _workspace = AppendResource(_entities["ResourceWorkspaceSlot"], "ResourceWorkspace.d.nxml", DesktopResourcesText.Defaults());
+        _filters = AppendResource(_entities["ResourceFilterSlot"], "ResourceFilters.d.nxml", new()
+        { ["game"] = L(DesktopResourcesText.Raw("copy.8be216be7a84")), ["loader"] = L(DesktopResourcesText.Raw("copy.7a2bd8b6cb0e")), ["provider"] = L(DesktopResourcesText.Raw("copy.9f357adb6100")), ["tag"] = L(DesktopResourcesText.Raw("copy.a1054434857f")),
+          ["loaderVisible"] = "true", ["hideInstalled"] = L(DesktopResourcesText.Raw("copy.b55ae05faf55")), ["hideLibraries"] = L(DesktopResourcesText.Raw("copy.cedf91a64972")) });
+        _search = _entities["ResourceSearch"]; _game = _entities["ResourceGame"]; _loader = _entities["ResourceLoader"];
+        InitializeResourceTrack("ResourceCategory", index =>
+        { _favoriteMode = index == 0; if (!_favoriteMode) _filter = _filter with { Kind = (ResourceKind)(index - 1), Tag = "" }; ResetCategoryFilters(); Search(); });
+        InitializeResourceTrack("ResourceOrder", index => { _filter = _filter with { Order = (ResourceOrder)index }; Search(); });
+        InitializeResourceTrack("ResourceNetwork", SelectSourceFromPage);
         foreach (string kind in new[] { "Game", "Loader", "Provider", "Tag" })
-        { string captured = kind; _actions[_entities["Resource" + kind]] = () => OpenFilter(captured); }
-        Button(toolbar, "ResourceSearchButton", "搜索", 56, () =>
-        { if (_sidecarSignals?.CatchResourceSearch() != true) Search(); });
-        Button(toolbar, "ResourceCurrentInstance", "当前版本", 76, UseCurrentInstance);
-        Button(toolbar, "ResourceReset", "重置", 48, () =>
+        { string captured = kind; BindResource("Resource" + kind, () => OpenFilter(captured)); }
+        BindResource("ResourceSearchButton", () => { if (_sidecarSignals?.CatchResourceSearch() != true) Search(); });
+        BindResource("ResourceCurrentInstance", UseCurrentInstance);
+        BindResource("ResourceReset", () =>
         {
             _shell.Renderer.SetTextInputValue(_search, "");
             _filter = _filter with { GameVersion = "", Loader = "", Tag = "", Provider = null };
-            ResetCategoryFilters(); UpdateFilterCaptions();
-            Search();
+            ResetCategoryFilters(); UpdateFilterCaptions(); Search();
         });
-        var pagination = _entities["ResourcePagination"];
-        _status = Text(pagination, "Modrinth", 12, Muted, 28); E(_status).Weight = 1;
-        Segment(pagination, "ResourceNetwork", ["镜像优先", "官方优先"], SelectSourceFromPage, 66);
-        E(_entities["ResourceNetwork.0"]).Height = 28; E(_entities["ResourceNetwork.1"]).Height = 28;
-        Check(filters, "ResourceHideInstalled", "隐藏已有", () => _hideInstalled, value => { _hideInstalled = value; ReadContext(); if (_result is not null) ShowResults(); });
-        Check(filters, "ResourceHideLibraries", "隐藏前置", () => _hideLibraries, value => { _hideLibraries = value; if (_result is not null) ShowResults(); });
-        _previous = Button(pagination, "ResourcePrevious", "返回顶部", 76, ReturnToListTop);
-        _next = Button(pagination, "ResourceNext", "加载更多", 76, RequestNextPage);
-        E(_previous).Height = 28; E(_next).Height = 28;
-        DetailPage = Element(default, "ResourceDetailPage", XsrUiSemanticRole.Page, "资源详情");
-        _detailBody = Stack(DetailPage, "ResourceDetailBody"); E(_detailBody).Weight = 1; E(_detailBody).Padding = new(0, 0, 0, 8);
-        shell.Tree.SetComponent(_detailBody, new XsrUiScroll { ShowsVerticalIndicator = true });
-        shell.Tree.SetComponent(_detailBody, new XsrUiScrollGesture());
+        BindResource("ResourceHideInstalled", () => { _hideInstalled = !_hideInstalled; UpdateResourceChecks(); ReadContext(); if (_result is not null) ShowResults(); });
+        BindResource("ResourceHideLibraries", () => { _hideLibraries = !_hideLibraries; UpdateResourceChecks(); if (_result is not null) ShowResults(); });
+        _status = _entities["ResourceStatus"];
+        _previous = BindResource("ResourcePrevious", ReturnToListTop);
+        _next = BindResource("ResourceNext", RequestNextPage);
+        DetailPage = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("ResourceDetailPage.nxml"), shell.Tree, store);
+        IndexResources(DetailPage); _detailBody = _entities["ResourceDetailBody"];
         _intents.IntentEmitted += OnIntent; shell.Renderer.FramePreparing += OnFrame;
     }
 
@@ -167,6 +147,8 @@ internal sealed partial class ResourcesPageController : IDisposable
         string language = DesktopResourceText.Language(_store);
         if (_resourcePresentationLanguage is { } previous && previous != language)
         {
+            UpdateFilterCaptions(); UpdateResourceChecks(); _captionRevision = -1;
+            if (_sidecarUi is null) WorkspaceResource(("searchCaption", L(DesktopResourcesText.Raw("copy.44ce7ae909bb"))));
             CancelTranslations();
             if (_shell.Stage.Navigation.Current == Page && _result is not null)
             { if (_favoriteMode) ShowFavorites(); else ShowResults(); }
@@ -195,7 +177,7 @@ internal sealed partial class ResourcesPageController : IDisposable
                 if (_favoriteMode && _shell.Stage.Navigation.Current == Page) ShowFavorites();
                 else if (_shell.Stage.Navigation.Current == DetailPage && _detail is not null) UpdateFavoriteButton();
             }
-            else _feedback?.Error("无法读取或保存收藏夹，请重试。");
+            else _feedback?.Error(DesktopResourcesText.Raw("copy.64fd5c67620e"));
         }
         if (_planning is { IsCompleted: true } planned)
         {
@@ -210,7 +192,7 @@ internal sealed partial class ResourcesPageController : IDisposable
                     ShowOptionalDependencies(plan);
                 }
             }
-            else _feedback?.Error(planned.IsCompletedSuccessfully ? planned.Result.Error?.Message ?? "无法解析依赖，请重试。" : "无法解析依赖，请重试。");
+            else _feedback?.Error(planned.IsCompletedSuccessfully ? planned.Result.Error?.Message ?? DesktopResourcesText.Raw("copy.41a78f1cca57") : DesktopResourcesText.Raw("copy.41a78f1cca57"));
         }
         for (int i = _translations.Count - 1; i >= 0; i--)
         {
@@ -219,12 +201,10 @@ internal sealed partial class ResourcesPageController : IDisposable
             _translations.RemoveAt(i);
             if (DesktopResourceText.UsesChinese(_store) && PendingQuery.Succeeded(read) && read.Result.Value?.Description is { } description)
             {
-                var text = _shell.Tree.GetComponent<XsrUiText>(entity);
-                if (text is null) continue;
-                if (read.Result.Value.Notice is { } notice) description += " · " + _shell.Renderer.LocalizeText(notice);
-                _shell.Tree.SetComponent(entity, new XsrUiText(description) { MaxLines = text.MaxLines, TrimOverflow = true, Localize = false });
-                _shell.Tree.SetComponent(entity, new XsrUiSemantic(XsrUiSemanticRole.Text, description) { Localize = false });
-                _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Paint);
+                if (!_shell.Tree.IsAlive(entity) || !_resourceTexts.ContainsKey(entity)) continue;
+                if (read.Result.Value.Notice is { } notice)
+                    description = ResourceFormat("Notice", ("text", description), ("notice", _shell.Renderer.LocalizeText(notice)));
+                SetResourceText(entity, description);
             }
         }
         for (int i = _icons.Count - 1; i >= 0; i--)
@@ -240,14 +220,14 @@ internal sealed partial class ResourcesPageController : IDisposable
                 _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Paint);
             }
         }
-        _shell.Tree.GetComponent<XsrUiInput>(_entities["ResourceCurrentInstance"])!.Enabled = _instanceReading is null && _selectedInstance?.Invoke() is not null;
+        WorkspaceResource(("currentEnabled", Flag(_instanceReading is null && _selectedInstance?.Invoke() is not null)));
         if (!_started) { _started = true; ReadFavorites(); Search(); }
-        while (_pending.TryDequeue(out var source)) if (_actions.TryGetValue(source, out var action)) action();
+        while (_pending.TryDequeue(out var source)) if (AdmitResource(source) && _actions.TryGetValue(source, out var action)) action();
         if (_instanceReading is { IsCompleted: true } instanceReading)
         {
             _instanceReading = null;
             if (_instanceRequest != _selectedInstance?.Invoke())
-                _shell.Tree.SetComponent(_status, new XsrUiText("当前选择已改变，请重新选择筛选。"));
+                WorkspaceResource(("status", L(DesktopResourcesText.Raw("copy.288a3a86d3d7"))));
             else if (PendingQuery.Succeeded(instanceReading))
             {
                 var instance = instanceReading.Result.Value!;
@@ -257,7 +237,7 @@ internal sealed partial class ResourcesPageController : IDisposable
                 UpdateFilterCaptions();
                 Search();
             }
-            else _shell.Tree.SetComponent(_status, new XsrUiText("无法读取当前版本，请选择筛选条件。"));
+            else WorkspaceResource(("status", L(DesktopResourcesText.Raw("copy.80731f640cea"))));
         }
         if (_shell.Stage.Navigation.Current == Page && _reading is not null) { Cancel(); _detailId = null; }
         if (_shell.Stage.Navigation.Current == Page) UpdateContinuousList();
@@ -266,7 +246,7 @@ internal sealed partial class ResourcesPageController : IDisposable
         {
             _reading = null;
             if (PendingQuery.Succeeded(reading)) { _detail = reading.Result.Value!; ShowDetail(); RenewCatalogDetailIfStale(); }
-            else if (!_catalogDetailRenewed || _detail is null) ShowFailure(_detailBody, "暂时无法加载详情。请重试。", () => ReadDetail(_detailId!), _detailActions);
+            else if (!_catalogDetailRenewed || _detail is null) ShowFailure(_detailBody, DesktopResourcesText.Raw("copy.2fd0a4f8db55"), () => ReadDetail(_detailId!), _detailActions);
         }
         SyncIcons(_shell.Stage.Navigation.Current == Page || _shell.Stage.Navigation.Current == DetailPage ? _shell.Stage.Navigation.Current : default);
     }
@@ -281,9 +261,7 @@ internal sealed partial class ResourcesPageController : IDisposable
         _captionRevision = snapshot.Revision;
         string? caption = snapshot.Value?.CaptionAt(_sidecarUi.SearchIndex);
         var button = _entities["ResourceSearchButton"];
-        _shell.Tree.SetComponent(button, new XsrUiText(caption ?? "搜索") { Localize = caption is null });
-        _shell.Tree.SetComponent(button, new XsrUiSemantic(XsrUiSemanticRole.Button, caption ?? "搜索") { Localize = caption is null });
-        _shell.Tree.MarkDirty(button, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+        WorkspaceResource(("searchCaption", caption ?? DesktopResourcesText.Raw("copy.44ce7ae909bb")), ("searchLocalize", Flag(caption is null)));
     }
     private void Search() => BeginContinuousSearch();
 
@@ -292,7 +270,8 @@ internal sealed partial class ResourcesPageController : IDisposable
     private void ReadDetail(string id)
     {
         Cancel(); _detailId = id; _detail = null;
-        Clear(_detailBody, _detailActions); Text(_detailBody, "正在加载详情…", 14, Muted, 54);
+        Clear(_detailBody, _detailActions);
+        AppendResource(_detailBody, "ResourceMessage.d.nxml", new() { ["key"] = "ResourceDetailLoading", ["message"] = L(DesktopResourcesText.Raw("copy.7e74cabf57c0")) });
         string loader = _filter.Kind == ResourceKind.DataPack ? "datapack" : _filter.Kind == ResourceKind.ResourcePack ? "" : _filter.Loader;
         if (_queries.TryResolve(ResourceCatalogContract.Detail, out var route))
         {
@@ -305,39 +284,61 @@ internal sealed partial class ResourcesPageController : IDisposable
     {
         Clear(_detailBody, _detailActions);
         var detail = _detail!;
-        var heading = Stack(_detailBody, "ResourceDetailHeading", true);
-        ProjectIcon(heading, "ResourceDetailIcon", detail.Project, 64);
-        var headingCopy = Stack(heading, "ResourceDetailHeadingCopy"); E(headingCopy).Weight = 1;
-        LiteralText(headingCopy, ProjectTitle(DesktopResourceText.Name(detail.Project, _store)), 25, Ink, 36, 650);
-        LiteralText(headingCopy, detail.Project.Author + " · " + detail.Project.SourceLabel, 12, Muted, 24);
-        _detailActions.Add(IconButton(heading, "ResourceFavorite", IsSaved(detail.Project) ? "取消收藏" : "收藏", "lucide/star", () => ToggleFavorite(detail.Project)));
-        Translate(LiteralText(_detailBody, DesktopResourceText.Description(detail.Project, _store), 14, Muted, 68, lines: 3), detail.Project);
-        if (!string.IsNullOrEmpty(detail.Notice)) Text(_detailBody, detail.Notice, 12, Muted, 24);
-        var tools = Stack(_detailBody, "ResourceDetailTools", horizontal: true);
-        var info = Text(tools, $"{detail.Project.SourceLabel}  ·  {FormatDownloads(Math.Max(0, ResourceCaptions.DownloadCount(_functionPatches.Runtime, _functionPatches.DownloadCount, detail.Project.Downloads)))} 次下载  ·  {detail.License}", 12, Muted, 34); E(info).Weight = 1;
-        _detailActions.Add(Button(tools, "ResourceWebsite", "项目主页 ↗", 110, () => _open(new Uri(detail.Project.Website))));
-        Text(_detailBody, $"版本  ·  {detail.Versions.Count} 个" + (_filter.GameVersion.Length > 0 ? "  ·  Minecraft " + _filter.GameVersion : ""), 16, Ink, 36, 600);
-        if (detail.Versions.Count == 0) Text(_detailBody, "没有符合当前筛选条件的版本。", 14, Muted, 48);
+        _detailHeading = AppendResource(_detailBody, "ResourceDetailHeading.d.nxml", new()
+        {
+            ["title"] = ProjectTitle(DesktopResourceText.Name(detail.Project, _store)),
+            ["author"] = ResourceFormat("Author", ("author", detail.Project.Author), ("source", detail.Project.SourceLabel)),
+            ["favorite"] = L(IsSaved(detail.Project) ? DesktopResourcesText.Raw("copy.dca60869e7d2") : DesktopResourcesText.Raw("copy.60a53514eb92")),
+            ["favoriteClass"] = FavoriteClass(IsSaved(detail.Project))
+        });
+        TrackIcon(_entities["ResourceDetailIcon"], detail.Project, DetailPage);
+        BindResource("ResourceFavorite", () => ToggleFavorite(detail.Project), _detailActions);
+        var description = AppendResource(_detailBody, "ResourceDetailDescription.d.nxml", new()
+        { ["description"] = DesktopResourceText.Description(detail.Project, _store) });
+        RegisterResourceText(_entities["ResourceDetailDescription"], description, "description");
+        Translate(_entities["ResourceDetailDescription"], detail.Project);
+        if (!string.IsNullOrEmpty(detail.Notice))
+            AppendResource(_detailBody, "ResourceDetailNotice.d.nxml", new() { ["notice"] = _shell.Renderer.LocalizeText(detail.Notice) });
+        AppendResource(_detailBody, "ResourceDetailTools.d.nxml", new()
+        {
+            ["info"] = ResourceFormat("DetailInfo", ("source", detail.Project.SourceLabel),
+                ("downloads", FormatDownloads(Math.Max(0, ResourceCaptions.DownloadCount(_functionPatches.Runtime, _functionPatches.DownloadCount, detail.Project.Downloads)))),
+                ("license", detail.License))
+        });
+        BindResource("ResourceWebsite", () => _open(new Uri(detail.Project.Website)), _detailActions);
+        AppendResource(_detailBody, "ResourceDetailVersionsTitle.d.nxml", new()
+        { ["title"] = ResourceFormat(_filter.GameVersion.Length > 0 ? "VersionsGame" : "Versions",
+            ("count", detail.Versions.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)), ("game", _filter.GameVersion)) });
+        if (detail.Versions.Count == 0) AppendResource(_detailBody, "ResourceDetailEmpty.d.nxml", new());
         foreach (var version in detail.Versions.Skip(_detailPage * 20).Take(20))
         {
-            var row = Card(_detailBody, "ResourceVersion." + version.Id);
-            var type = Element(row, "ResourceVersionType", XsrUiSemanticRole.Image, version.Channel);
-            E(type).Width = 22; E(type).Height = 22; E(type).VerticalAlignment = XsrUiAlignment.Center;
-            _shell.Tree.SetComponent(type, new XsrUiImage(version.Channel == "正式版" ? "lucide/circle-check" : version.Channel == "Beta" ? "lucide/flask-conical" : "lucide/test-tube"));
-            Style(type, XsrUiColor.Transparent, version.Channel == "正式版" ? new(40, 135, 90) : version.Channel == "Beta" ? Blue : new(188, 125, 42), 0);
-            var copy = Stack(row, "ResourceVersionCopy"); E(copy).Weight = 1;
-            LiteralText(copy, version.Name, 15, Ink, 28, 550);
-            Text(copy, $"{version.Provider}  ·  {version.Channel}  ·  {string.Join(" / ", version.Loaders)}  ·  Minecraft {string.Join(", ", version.Games)}", 12, Muted, 34, lines: 2);
-            _detailActions.Add(IconButton(row, "ResourceDownload." + version.Id, version.File is null ? "前往下载" : "下载", version.File is null ? "lucide/arrow-up-right" : "lucide/download", () => { if (version.File is null) _open(new Uri(version.Website)); else _ = DownloadAsync(version); }));
+            bool release = version.Channel == DesktopResourcesText.Raw("copy.93a48223a516"), beta = version.Channel == "Beta";
+            string id = ResourceIdentity(version.Id);
+            AppendResource(_detailBody, "ResourceVersion.d.nxml", new()
+            {
+                ["row"] = "ResourceVersion." + id, ["channel"] = version.Channel,
+                ["icon"] = release ? DesktopResourcesText.Raw("icon-release") : beta ? DesktopResourcesText.Raw("icon-beta") : DesktopResourcesText.Raw("icon-alpha"),
+                ["typeClass"] = DesktopResourcesText.Raw(release ? "release-style" : beta ? "beta-style" : "alpha-style"),
+                ["name"] = version.Name,
+                ["metadata"] = ResourceFormat("Version", ("provider", version.Provider.ToString()), ("channel", version.Channel),
+                    ("loaders", string.Join(" / ", version.Loaders)), ("games", string.Join(", ", version.Games))),
+                ["download"] = "ResourceDownload." + id,
+                ["downloadCaption"] = L(version.File is null ? DesktopResourcesText.Raw("copy.55c561dc5546") : DesktopResourcesText.Raw("copy.4673a2306165")),
+                ["downloadIcon"] = version.File is null ? DesktopResourcesText.Raw("icon-link") : DesktopResourcesText.Raw("icon-download")
+            });
+            BindResource("ResourceDownload." + id, () =>
+            { if (version.File is null) _open(new Uri(version.Website)); else _ = DownloadAsync(version); }, _detailActions);
         }
         if (detail.Versions.Count > 20)
         {
-            var pages = Stack(_detailBody, "ResourceVersionPages", horizontal: true);
-            var previous = Button(pages, "ResourceVersionPrevious", "上一页", 68, () => { _detailPage--; ShowDetail(); });
-            var next = Button(pages, "ResourceVersionNext", "下一页", 68, () => { _detailPage++; ShowDetail(); });
-            _detailActions.Add(previous); _detailActions.Add(next);
-            _shell.Tree.GetComponent<XsrUiInput>(previous)!.Enabled = _detailPage > 0; _shell.Tree.GetComponent<XsrUiInput>(next)!.Enabled = (_detailPage + 1) * 20 < detail.Versions.Count;
-            Text(pages, $"{_detailPage + 1} / {(detail.Versions.Count + 19) / 20}", 12, Muted, 34);
+            AppendResource(_detailBody, "ResourceVersionPages.d.nxml", new()
+            {
+                ["previous"] = Flag(_detailPage > 0), ["next"] = Flag((_detailPage + 1) * 20 < detail.Versions.Count),
+                ["page"] = ResourceFormat("Page", ("page", (_detailPage + 1).ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                    ("pages", ((detail.Versions.Count + 19) / 20).ToString(System.Globalization.CultureInfo.InvariantCulture)))
+            });
+            BindResource("ResourceVersionPrevious", () => { _detailPage--; ShowDetail(); }, _detailActions);
+            BindResource("ResourceVersionNext", () => { _detailPage++; ShowDetail(); }, _detailActions);
         }
         _shell.Tree.GetComponent<XsrUiScroll>(_detailBody)!.OffsetY = 0;
     }
@@ -345,8 +346,9 @@ internal sealed partial class ResourcesPageController : IDisposable
     private void UpdatePagination() => UpdateContinuousStatus();
     private void ShowFailure(XsrUiEntityId parent, string message, Action retry, List<XsrUiEntityId> actions)
     {
-        Clear(parent, actions); Text(parent, message, 14, Muted, 54);
-        actions.Add(Button(parent, "ResourceRetry", "重试", 80, retry));
+        Clear(parent, actions);
+        AppendResource(parent, "ResourceFailure.d.nxml", new() { ["message"] = _shell.Renderer.LocalizeText(message) });
+        BindResource("ResourceRetry", retry, actions);
     }
     internal void ConfigureInstanceFilter(XsrQueryRouter queries, Func<MinecraftInstallEditQuery?> selected, XsrCommandRouter? catalogCommands = null)
     { _instanceQueries = queries; _selectedInstance = selected; _resourceCatalogCommands = catalogCommands; }
@@ -356,7 +358,7 @@ internal sealed partial class ResourcesPageController : IDisposable
         Cancel();
         _instanceRequest = query;
         _instanceReading = _instanceQueries.QueryAsync<MinecraftInstallEditQuery, MinecraftInstallEditSnapshot>(route, query, cancellationToken: _stop.Token).AsTask();
-        _shell.Tree.SetComponent(_status, new XsrUiText("正在读取当前版本…"));
+        WorkspaceResource(("status", L(DesktopResourcesText.Raw("copy.34cbc1b5c274"))));
         Wake(_instanceReading);
     }
     internal void ConfigureDownloads(XsrCommandRouter commands, Func<Task<string?>> picker, DesktopFeedbackService feedback)
@@ -373,10 +375,10 @@ internal sealed partial class ResourcesPageController : IDisposable
             try { folder = await _pickDownload(); } finally { _picking = false; }
             if (folder is null || _disposed) return;
             var result = await _commands.Dispatch(route, new ResourceDownloadCommand(version.Provider, version.ProjectId, version.Id, folder, _filter.MirrorFirst), cancellationToken: _downloadsStop.Token).Completion.ConfigureAwait(false);
-            if (!_disposed && !result.IsSuccess && result.Error?.Code != XsrRuntimeErrors.Cancelled().Code) _feedback?.Error(result.Error?.Message ?? "资源下载失败。");
+            if (!_disposed && !result.IsSuccess && result.Error?.Code != XsrRuntimeErrors.Cancelled().Code) _feedback?.Error(result.Error?.Message ?? DesktopResourcesText.Raw("copy.cea8420e2779"));
         }
         catch (OperationCanceledException) { }
-        catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException) { if (!_disposed) _feedback?.Error("资源下载失败：" + error.Message); }
+        catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException) { if (!_disposed) _feedback?.Error(DesktopResourcesText.Raw("copy.5eab7ff6cfb1") + error.Message); }
     }
     private void Translate(XsrUiEntityId entity, ResourceProject project, CancellationToken lease = default)
     {
@@ -412,12 +414,9 @@ internal sealed partial class ResourcesPageController : IDisposable
     private bool IsSaved(ResourceProject project) => _favorites.Projects.Any(p => p.Sources.Intersect(project.Sources).Any());
     private void UpdateFavoriteButton()
     {
-        if (_detail is null || !_entities.TryGetValue("ResourceFavorite", out var button)) return;
-        string label = IsSaved(_detail.Project) ? "取消收藏" : "收藏";
-        _shell.Tree.SetComponent(button, new XsrUiText(label));
-        _shell.Tree.SetComponent(button, new XsrUiSemantic(XsrUiSemanticRole.Button, label));
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(button)!.Foreground = IsSaved(_detail.Project) ? new(188, 125, 42) : Blue;
-        _shell.Tree.MarkDirty(button, XsrUiDirtyKinds.Paint);
+        if (_detail is null || !_detailHeading.IsAssigned || !_shell.Tree.IsAlive(_detailHeading)) return;
+        ReloadResource(_detailHeading, ("favorite", L(IsSaved(_detail.Project) ? DesktopResourcesText.Raw("copy.dca60869e7d2") : DesktopResourcesText.Raw("copy.60a53514eb92"))),
+            ("favoriteClass", FavoriteClass(IsSaved(_detail.Project))));
     }
     private void ToggleFavorite(ResourceProject project)
     {
@@ -443,7 +442,7 @@ internal sealed partial class ResourcesPageController : IDisposable
             if (!_queries.TryResolve(ResourceCatalogContract.Detail, out var route)) return;
             var result = await _queries.QueryAsync<ResourceDetailQuery, ResourceDetail>(route, new(project.Id, _filter.GameVersion, project.Kind == ResourceKind.DataPack ? "datapack" : project.Kind == ResourceKind.ResourcePack ? "" : _filter.Loader) { Sources = project.Sources, MirrorFirst = _filter.MirrorFirst }, cancellationToken: _downloadsStop.Token).ConfigureAwait(false);
             var version = result.Value?.Versions.FirstOrDefault(v => v.File is not null);
-            if (!result.IsSuccess || version is null) { _feedback?.Error("没有符合筛选条件的可下载版本，请打开详情选择。"); return; }
+            if (!result.IsSuccess || version is null) { _feedback?.Error(DesktopResourcesText.Raw("copy.e551e8501b20")); return; }
             await DownloadAsync(version, project.Kind);
         }
         catch (OperationCanceledException) { }
@@ -452,7 +451,7 @@ internal sealed partial class ResourcesPageController : IDisposable
     private Task InstallModAsync(ResourceReference source, string? version, XsrCommandId route)
     {
         var instance = CurrentInstance();
-        if (instance is null) { _feedback?.Error("请先在主页选择要安装模组的版本。"); return Task.CompletedTask; }
+        if (instance is null) { _feedback?.Error(DesktopResourcesText.Raw("copy.4953eb4500a9")); return Task.CompletedTask; }
         var command = new ResourceModInstallCommand(source, version, instance);
         if (!_queries.TryResolve(ResourceCatalogContract.PlanMod, out _)) return RunInstallAsync(command);
         _optionalSelection.Clear(); _installReturnDetail = _shell.Stage.Navigation.Current == DetailPage;
@@ -463,7 +462,7 @@ internal sealed partial class ResourcesPageController : IDisposable
         Cancel();
         _planStop.Cancel(); _planStop.Dispose(); _planStop = new(); _installDraft = command;
         if (_optionalInstall.IsAssigned && _shell.Tree.IsAlive(_optionalInstall))
-            _shell.Tree.GetComponent<XsrUiInput>(_optionalInstall)!.Enabled = false;
+            ReloadResource(_optionalActions, ("enabled", "false"));
         if (!_queries.TryResolve(ResourceCatalogContract.PlanMod, out var route)) return;
         _planning = _queries.QueryAsync<ResourceModPlanQuery, ResourceInstallPlan>(route, new(command), cancellationToken: _planStop.Token).AsTask(); Wake(_planning);
     }
@@ -471,27 +470,29 @@ internal sealed partial class ResourcesPageController : IDisposable
     {
         _optionalVisible = true;
         Clear(_detailBody, _detailActions);
-        Text(_detailBody, "选择可选依赖", 24, Ink, 38, 650);
-        Text(_detailBody, $"将安装 {plan.Versions.Count} 个模组及必需依赖。" + (plan.HasCycles ? "循环依赖会一起安装。" : ""), 13, Muted, 36);
+        AppendResource(_detailBody, "ResourceOptionalHeading.d.nxml", new()
+        { ["summary"] = ResourceFormat("OptionalSummary", ("count", plan.Versions.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            ("cycles", plan.HasCycles ? L(DesktopResourcesText.Raw("copy.3efa6b72a5b3")) : "")) });
         foreach (var option in plan.Optional)
         {
-            var row = Card(_detailBody, "ResourceOptional." + option.Source.ProjectId);
-            var name = LiteralText(row, option.Name, 14, Ink, 32); E(name).Weight = 1;
-            _detailActions.Add(Button(row, "ResourceOptionalToggle." + option.Source.ProjectId, _optionalSelection.Contains(option.Source) ? "✓ 已选择" : "□ 选择", 86, () =>
+            string id = ResourceIdentity(option.Source.ProjectId);
+            AppendResource(_detailBody, "ResourceOptionalRow.d.nxml", new()
+            { ["row"] = "ResourceOptional." + id, ["name"] = option.Name, ["toggle"] = "ResourceOptionalToggle." + id,
+                ["selected"] = L(_optionalSelection.Contains(option.Source) ? DesktopResourcesText.Raw("copy.d2f5277505a4") : DesktopResourcesText.Raw("copy.40f9b4605c33")) });
+            BindResource("ResourceOptionalToggle." + id, () =>
             {
                 if (!_optionalSelection.Add(option.Source)) _optionalSelection.Remove(option.Source);
                 StartInstallPlan(_installDraft! with { OptionalDependencies = _optionalSelection.ToArray() });
-            }));
+            }, _detailActions);
         }
-        var actions = Stack(_detailBody, "ResourceOptionalActions", true);
-        _detailActions.Add(Button(actions, "ResourceOptionalCancel", "取消", 76, () => { _planStop.Cancel(); _planning = null; _installDraft = null; CloseOptionalPage(); }));
-        _optionalInstall = IconButton(actions, "ResourceOptionalInstall", "安装", "lucide/download", () =>
+        _optionalActions = AppendResource(_detailBody, "ResourceOptionalActions.d.nxml", new() { ["enabled"] = "true" });
+        BindResource("ResourceOptionalCancel", () => { _planStop.Cancel(); _planning = null; _installDraft = null; CloseOptionalPage(); }, _detailActions);
+        _optionalInstall = BindResource("ResourceOptionalInstall", () =>
         {
             if (_planning is not null || _installDraft is null) return;
             var command = _installDraft with { OptionalDependencies = _optionalSelection.ToArray() }; _installDraft = null;
             CloseOptionalPage(); _ = RunInstallAsync(command);
-        });
-        _detailActions.Add(_optionalInstall);
+        }, _detailActions);
     }
     private void CloseOptionalPage() { _optionalVisible = false; if (_installReturnDetail && _detail is not null) ShowDetail(); else _shell.Stage.Navigation.Pop(); }
     private async Task RunInstallAsync(ResourceModInstallCommand command)
@@ -501,7 +502,7 @@ internal sealed partial class ResourcesPageController : IDisposable
         {
             var result = await _commands.Dispatch(route, command, cancellationToken: _downloadsStop.Token).Completion.ConfigureAwait(false);
             if (_disposed) return;
-            if (!result.IsSuccess && result.Error?.Code != XsrRuntimeErrors.Cancelled().Code) _feedback?.Error(result.Error?.Message ?? "模组安装失败。");
+            if (!result.IsSuccess && result.Error?.Code != XsrRuntimeErrors.Cancelled().Code) _feedback?.Error(result.Error?.Message ?? DesktopResourcesText.Raw("copy.8a899b4fa4e8"));
             _presentation.Enqueue(() => { _contextRequest = null; _context = null; ReadContext(); }); Wake(Task.CompletedTask);
         }
         catch (OperationCanceledException) { }
@@ -510,29 +511,8 @@ internal sealed partial class ResourcesPageController : IDisposable
     internal static string FormatDownloads(long value)
     {
         double divisor = value >= 1_000_000_000 ? 1_000_000_000 : value >= 1_000_000 ? 1_000_000 : value >= 1_000 ? 1_000 : 1;
-        string suffix = divisor == 1_000_000_000 ? "b" : divisor == 1_000_000 ? "m" : divisor == 1_000 ? "k" : "";
-        return (value / divisor).ToString(divisor == 1 ? "0" : "0.0", System.Globalization.CultureInfo.InvariantCulture) + suffix;
-    }
-    private void Check(XsrUiEntityId parent, string name, string label, Func<bool> read, Action<bool> write)
-    {
-        XsrUiEntityId button = default;
-        button = Button(parent, name, "□ " + label, 84, () => { write(!read()); _shell.Tree.SetComponent(button, new XsrUiText((read() ? "✓ " : "□ ") + label)); });
-        E(button).Height = 28; Style(button, XsrUiColor.Transparent, Muted, 6, 12);
-    }
-    private XsrUiEntityId IconButton(XsrUiEntityId parent, string name, string label, string icon, Action action)
-    {
-        var entity = Button(parent, name, label, 76, action);
-        _shell.Tree.SetComponent(entity, new XsrUiImage(icon));
-        var style = _shell.Tree.GetComponent<XsrUiVisualStyle>(entity)!;
-        style.HoverExpand = true; style.Background = DesktopUiPalette.CapsuleBackground; style.Foreground = DesktopUiPalette.CapsuleForeground;
-        return entity;
-    }
-    private XsrUiEntityId ProjectIcon(XsrUiEntityId parent, string name, ResourceProject project, double size)
-    {
-        var icon = Element(parent, name, XsrUiSemanticRole.Image, DesktopResourceText.Name(project, _store)); E(icon).Width = size; E(icon).Height = size;
-        Style(icon, Tint, Muted, 14); _shell.Tree.SetComponent(icon, new XsrUiImage("lucide/blocks"));
-        TrackIcon(icon, project, DetailPage);
-        return icon;
+        string suffix = divisor == 1_000_000_000 ? DesktopResourcesText.Raw("downloads-b") : divisor == 1_000_000 ? DesktopResourcesText.Raw("downloads-m") : divisor == 1_000 ? DesktopResourcesText.Raw("downloads-k") : "";
+        return (value / divisor).ToString(DesktopResourcesText.Raw(divisor == 1 ? "downloads-single-format" : "downloads-scaled-format"), System.Globalization.CultureInfo.InvariantCulture) + suffix;
     }
     private void Cancel() { ResetCatalogRenewal(); _stop.Cancel(); _stop.Dispose(); _stop = new(); _reading = null; _instanceReading = null; }
     private void CancelIcons() { _iconStop.Cancel(); _iconStop.Dispose(); _iconStop = new(); _icons.Clear(); _iconPage = default; }
@@ -576,122 +556,14 @@ internal sealed partial class ResourcesPageController : IDisposable
     }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     private void Clear(XsrUiEntityId parent, List<XsrUiEntityId> actions)
     {
-        foreach (var action in actions)
-        {
-            _actions.Remove(action);
-            foreach (var key in _entities.Where(pair => pair.Value == action).Select(pair => pair.Key).ToArray()) _entities.Remove(key);
-        }
-        actions.Clear();
+        foreach (var action in actions) _actions.Remove(action); actions.Clear();
         var removed = new HashSet<XsrUiEntityId>();
-        foreach (var child in _shell.Tree.Children(parent).ToArray())
-        { _shell.Tree.Walk(child, entity => { removed.Add(entity); return true; }); _shell.Tree.Destroy(child); }
-        _translations.RemoveAll(item => removed.Contains(item.Entity)); _icons.RemoveAll(item => removed.Contains(item.Entity));
-        _iconDescriptors.RemoveAll(item => removed.Contains(item.Entity));
+        foreach (var child in _shell.Tree.Children(parent)) _shell.Tree.Walk(child, entity => { removed.Add(entity); return true; });
+        _resourceDynamic.Clear(parent); ForgetResourceViews(removed);
+        _translations.RemoveAll(item => removed.Contains(item.Entity)); _icons.RemoveAll(item => removed.Contains(item.Entity)); _iconDescriptors.RemoveAll(item => removed.Contains(item.Entity));
     }
-    private XsrUiElement E(XsrUiEntityId entity) => _shell.Tree.GetComponent<XsrUiElement>(entity)!;
-    private XsrUiEntityId Element(XsrUiEntityId parent, string name, XsrUiSemanticRole role = XsrUiSemanticRole.None, string? label = null)
-    {
-        var entity = _shell.Tree.Create(name); if (parent.IsAssigned) _shell.Tree.Attach(entity, parent);
-        _shell.Tree.SetComponent(entity, new XsrUiElement()); _shell.Tree.SetComponent(entity, new XsrUiSemantic(role, label)); return entity;
-    }
-    private XsrUiEntityId Stack(XsrUiEntityId parent, string name, bool horizontal = false)
-    {
-        var entity = Element(parent, name); _shell.Tree.SetComponent(entity, new XsrUiStackPanel(horizontal ? XsrUiOrientation.Horizontal : XsrUiOrientation.Vertical) { Spacing = horizontal ? 12 : 2 }); return entity;
-    }
-    private XsrUiEntityId Card(XsrUiEntityId parent, string name)
-    {
-        var surface = Stack(parent, name); Style(surface, White, Ink, 10);
-        var body = Stack(surface, name + ".Body", true); E(body).Padding = new(12, 8, 12, 8); return body;
-    }
-    private XsrUiEntityId LiteralText(XsrUiEntityId parent, string value, double size, XsrUiColor color, double height, double weight = 400, int lines = 1) =>
-        DesktopLiteralText.Preserve(_shell.Tree, Text(parent, value, size, color, height, weight, lines));
     private string ProjectTitle(string title) => ResourceCaptions.ProjectTitle(_functionPatches.Runtime, _functionPatches.ProjectTitle, title);
-
-    private XsrUiEntityId Text(XsrUiEntityId parent, string value, double size, XsrUiColor color, double height, double weight = 400, int lines = 1)
-    {
-        var entity = Element(parent, "ResourceText", XsrUiSemanticRole.Text, value); E(entity).Height = height;
-        _shell.Tree.SetComponent(entity, new XsrUiText(value) { MaxLines = lines, TrimOverflow = true }); Style(entity, XsrUiColor.Transparent, color, 0, size, weight); return entity;
-    }
-    private XsrUiEntityId Button(XsrUiEntityId parent, string name, string label, double width, Action action)
-    {
-        var entity = Element(parent, name, XsrUiSemanticRole.Button, label); E(entity).Height = 34;
-        _shell.Tree.SetComponent(entity, new XsrUiText(label));
-        // Stable names for acceptance tests and keyboard navigation.
-        _entities[name] = entity;
-        E(entity).Width = width; E(entity).VerticalAlignment = XsrUiAlignment.Center;
-        _shell.Tree.SetComponent(entity, new XsrUiInput { Focusable = true, Clickable = true });
-        _shell.Tree.SetComponent(entity, new XsrUiCommandBinding(Action)); Style(entity, Tint, Blue, 17);
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(entity)!.TextAlignment = XsrUiTextAlignment.Center;
-        _actions[entity] = action; return entity;
-    }
     internal XsrUiEntityId Find(string key) => _entities[key];
-    private XsrUiEntityId Input(XsrUiEntityId parent, string name, string placeholder, double width)
-    {
-        var surface = Stack(parent, name + ".Surface"); Style(surface, Tint, Ink, 10);
-        if (width > 0) E(surface).Width = width; else E(surface).Weight = 1;
-        var entity = Element(surface, name, XsrUiSemanticRole.TextInput, placeholder); E(entity).Height = 34; E(entity).Padding = new(10, 0, 10, 0);
-        _shell.Tree.SetComponent(entity, new XsrUiInput { Focusable = true, Clickable = true });
-        _shell.Tree.SetComponent(entity, new XsrUiTextInput { Placeholder = placeholder }); Style(entity, XsrUiColor.Transparent, Ink, 0);
-        return entity;
-    }
-    private void Segment(XsrUiEntityId parent, string name, string[] labels, Action<int> selected, double width = 84, int initial = 0)
-    {
-        var track = Stack(parent, name, true); _shell.Tree.GetComponent<XsrUiStackPanel>(track)!.Spacing = 0; E(track).Width = width * labels.Length;
-        _entities[name] = track;
-        _segments.Add((track, width));
-        E(track).MaxWidth = 960;
-        _shell.Tree.SetComponent(track, new XsrUiScroll());
-        _shell.Tree.SetComponent(track, new XsrUiScrollGesture());
-        Style(track, Tint, Ink, 10);
-        var thumb = Element(track, name + "Thumb"); E(thumb).IsVisible = false; Style(thumb, White, Ink, 8);
-        _shell.Tree.SetComponent(thumb, new XsrUiTransition()); _shell.Tree.SetComponent(track, new XsrUiSegmentedTrack(thumb));
-        List<XsrUiEntityId> options = [];
-        for (int i = 0; i < labels.Length; i++)
-        {
-            int index = i;
-            var option = Button(track, name + "." + i, labels[i], width, () =>
-            {
-                if (name == "ResourceNetwork" && _sourcePolicyForced) return;
-                for (int j = 0; j < options.Count; j++) _shell.Tree.GetComponent<XsrUiSelection>(options[j])!.IsSelected = j == index;
-                _shell.Tree.GetComponent<XsrUiSegmentedTrack>(track)!.Selected = options[index]; selected(index);
-            });
-            options.Add(option); Style(option, XsrUiColor.Transparent, Ink, 8);
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(option)!.TextAlignment = XsrUiTextAlignment.Center;
-            _shell.Tree.SetComponent(option, new XsrUiSelection { IsSelected = i == initial });
-        }
-        _shell.Tree.GetComponent<XsrUiSegmentedTrack>(track)!.Selected = options[initial];
-    }
-    private void Style(XsrUiEntityId entity, XsrUiColor background, XsrUiColor foreground, double radius, double size = 13, double weight = 400)
-    {
-        _shell.Tree.SetComponent(entity, new XsrUiVisualStyle
-        {
-            Background = background,
-            Foreground = foreground,
-            CornerRadius = radius,
-            FontSize = size,
-            FontWeight = weight,
-            Surface = XsrUiSurfaceKind.Solid,
-            Hover = DesktopUiPalette.CapsuleHover
-        });
-        _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Paint);
-    }
-
-    private void UpdateSegmentWidths()
-    {
-        foreach (var (track, minimum) in _segments)
-        {
-            double total = 0;
-            foreach (var option in _shell.Tree.Children(track))
-            {
-                if (_shell.Tree.GetComponent<XsrUiText>(option) is not { } caption) continue;
-                string text = _shell.Renderer.LocalizeText(caption.Content);
-                double desired = Math.Max(minimum, text.Sum(character => character > 127 ? 13 : 7) + 20);
-                if (E(option).Width != desired) { E(option).Width = desired; _shell.Tree.MarkDirty(option, XsrUiDirtyKinds.Layout); }
-                total += desired;
-            }
-            if (_shell.Tree.Name(track) != "ResourceCategory" && E(track).Width != total) { E(track).Width = total; _shell.Tree.MarkDirty(track, XsrUiDirtyKinds.Layout); }
-        }
-    }
     public void Dispose()
     {
         if (_disposed) return;

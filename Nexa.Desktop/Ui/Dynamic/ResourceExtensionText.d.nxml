@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="{data key}" Content="{data caption}" Localize="false" IsVisible="{data visible}" MaxLines="1" TrimOverflow="true" Class="resource-base resource-extension-text" />
+</nxml-dynamic>

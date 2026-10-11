@@ -1,0 +1,6 @@
+<nxml-dynamic>
+  <StackPanel Key="ResourceOptionalActions" Class="resource-row">
+    <Button Key="ResourceOptionalCancel" Content="取消" Command="ui.resources.action" Class="resource-base resource-button resource-optional-cancel" Label="取消" />
+    <Button Key="ResourceOptionalInstall" Content="安装" Icon="lucide/download" Enabled="{data enabled}" Command="ui.resources.action" Class="resource-base resource-button capsule resource-icon-button" Label="安装" />
+  </StackPanel>
+</nxml-dynamic>

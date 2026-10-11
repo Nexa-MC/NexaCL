@@ -1,0 +1,1 @@
+<nxml-page><Page Key="ResourceDetailPage" Label="资源详情"><Dynamic Key="ResourceDetailBody" Scroll="true" ShowsVerticalIndicator="true" ScrollGesture="true" Class="resource-detail-body" /></Page></nxml-page>

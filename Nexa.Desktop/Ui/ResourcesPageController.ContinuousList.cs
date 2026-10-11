@@ -35,7 +35,7 @@ internal sealed partial class ResourcesPageController
         _shell.Tree.GetComponent<XsrUiScroll>(_entities["ResourceList"])!.OffsetY = 0;
         _listLayoutVersion = _shell.Renderer.SceneVersion;
         if (_favoriteMode) { ShowFavorites(); return; }
-        Text(_entities["ResourceList"], "正在加载资源…", 14, Muted, 54);
+        AppendResource(_entities["ResourceList"], "ResourceMessage.d.nxml", new() { ["key"] = "ResourceLoading", ["message"] = L(DesktopResourcesText.Raw("copy.acafb089bdb9")) });
         RequestNextPage();
     }
 
@@ -45,7 +45,7 @@ internal sealed partial class ResourcesPageController
             || !_listHasMore) return;
         _listFailure = null; _listMediaPaused = false;
         if (!_queries.TryResolve(ResourceCatalogContract.Search, out var route))
-        { _listFailure = "暂时无法加载资源。请检查网络后重试。"; UpdateContinuousStatus(); return; }
+        { _listFailure = DesktopResourcesText.Raw("copy.0260b97dada7"); UpdateContinuousStatus(); return; }
         _listRequest = _filter with { Page = _nextCatalogPage, WaitForRefresh = false };
         _requestGeneration = _listGeneration;
         _searching = _queries.QueryAsync<ResourceSearchQuery, ResourceSearchResult>(route, _listRequest,
@@ -79,7 +79,7 @@ internal sealed partial class ResourcesPageController
             }
             else if (matching)
             {
-                _listFailure = "暂时无法加载资源。请检查网络后重试。";
+                _listFailure = DesktopResourcesText.Raw("copy.0260b97dada7");
                 if (_result is null) ShowFailure(_entities["ResourceList"], _listFailure, RequestNextPage, _listActions);
             }
             UpdateContinuousStatus();
@@ -180,25 +180,19 @@ internal sealed partial class ResourcesPageController
     private void UpdateContinuousStatus()
     {
         bool refreshing = _retainedPages.Values.Any(page => page.Renewal is not null);
-        string status = _searching is not null ? _result is null ? "正在搜索双源目录…" : "正在加载更多资源…"
-            : _listFailure ?? (_result is null ? "加载失败" : string.Format(CultureInfo.InvariantCulture,
-                _shell.Renderer.LocalizeText("已加载 {0} 项"), _result.Projects.Count));
+        string status = _searching is not null ? _result is null ? L(DesktopResourcesText.Raw("copy.da0d228992f9")) : L(DesktopResourcesText.Raw("copy.4d050d55d8aa"))
+            : _listFailure is { } failure ? _shell.Renderer.LocalizeText(failure)
+            : _result is null ? L(DesktopResourcesText.Raw("copy.d1d044826a45")) : ResourceFormat("Loaded", ("count", _result.Projects.Count.ToString(CultureInfo.InvariantCulture)));
         if (_result is not null && _searching is null && _listFailure is null)
         {
-            if (refreshing) status += " · " + _shell.Renderer.LocalizeText("正在显示缓存资料，后台正在刷新…");
-            else if (_result.IsStale) status += " · " + _shell.Renderer.LocalizeText("正在显示缓存资料。");
-            if (!string.IsNullOrWhiteSpace(_result.Notice)) status += " · " + _shell.Renderer.LocalizeText(_result.Notice);
+            if (refreshing) status = ResourceFormat("Notice", ("text", status), ("notice", L(DesktopResourcesText.Raw("copy.4ad4d42b0706"))));
+            else if (_result.IsStale) status = ResourceFormat("Notice", ("text", status), ("notice", L(DesktopResourcesText.Raw("copy.e5b3a998b012"))));
+            if (!string.IsNullOrWhiteSpace(_result.Notice)) status = ResourceFormat("Notice", ("text", status), ("notice", _shell.Renderer.LocalizeText(_result.Notice)));
         }
         // Localize finite status fragments before appending provider notices/counts.
-        bool literal = _result is not null && _searching is null && _listFailure is null;
-        _shell.Tree.SetComponent(_status, new XsrUiText(status) { Localize = !literal, MaxLines = 1, TrimOverflow = true });
-        _shell.Tree.GetComponent<XsrUiInput>(_previous)!.Enabled = _result?.Projects.Count > 0;
-        _shell.Tree.GetComponent<XsrUiInput>(_next)!.Enabled = _searching is null && !_favoriteMode && _listHasMore;
-        string label = _listFailure is null ? "加载更多" : "重试加载";
-        _shell.Tree.GetComponent<XsrUiText>(_next)!.Content = label;
-        _shell.Tree.GetComponent<XsrUiSemantic>(_next)!.Label = label;
-        _shell.Tree.MarkDirty(_status, XsrUiDirtyKinds.Paint);
-        _shell.Tree.MarkDirty(_next, XsrUiDirtyKinds.Paint);
+        WorkspaceResource(("status", status), ("previousEnabled", Flag(_result?.Projects.Count > 0)),
+            ("nextEnabled", Flag(_searching is null && !_favoriteMode && _listHasMore)),
+            ("nextCaption", L(_listFailure is null ? DesktopResourcesText.Raw("copy.af90a08fec8e") : DesktopResourcesText.Raw("copy.8924c7887461"))));
     }
 
     private void ReturnToListTop()

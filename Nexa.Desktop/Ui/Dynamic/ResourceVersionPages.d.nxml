@@ -1,0 +1,7 @@
+<nxml-dynamic>
+  <StackPanel Key="ResourceVersionPages" Class="resource-row">
+    <Button Key="ResourceVersionPrevious" Content="上一页" Command="ui.resources.action" Enabled="{data previous}" Class="resource-base resource-button resource-version-page" Label="上一页" />
+    <Button Key="ResourceVersionNext" Content="下一页" Command="ui.resources.action" Enabled="{data next}" Class="resource-base resource-button resource-version-page" Label="下一页" />
+    <Text Content="{data page}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-version-page-text" />
+  </StackPanel>
+</nxml-dynamic>

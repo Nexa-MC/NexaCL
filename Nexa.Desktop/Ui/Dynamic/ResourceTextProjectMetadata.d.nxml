@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="{data source}  ·  {data author}  ·  {data downloads} 次下载" Localize="false" />
+</nxml-dynamic>

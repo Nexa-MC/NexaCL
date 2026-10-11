@@ -1,0 +1,8 @@
+<nxml-dynamic>
+  <StackPanel Key="{data row}" Class="resource-base resource-card">
+    <StackPanel Class="resource-card-body">
+      <Text Content="{data name}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-optional-name" />
+      <Button Key="{data toggle}" Content="{data selected}" Localize="false" Command="ui.resources.action" Class="resource-base resource-button resource-optional-toggle" Label="{data selected}" />
+    </StackPanel>
+  </StackPanel>
+</nxml-dynamic>

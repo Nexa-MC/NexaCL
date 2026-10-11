@@ -1,0 +1,10 @@
+<nxml-dynamic>
+  <StackPanel Key="ResourceDetailHeading" Class="resource-row">
+    <Image Key="ResourceDetailIcon" Label="{data title}" Localize="false" Source="lucide/blocks" Class="resource-base resource-detail-icon" />
+    <StackPanel Key="ResourceDetailHeadingCopy" Class="resource-copy">
+      <Text Content="{data title}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-detail-title" />
+      <Text Content="{data author}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-detail-author" />
+    </StackPanel>
+    <Button Key="ResourceFavorite" Content="{data favorite}" Localize="false" Icon="lucide/star" Command="ui.resources.action" Class="{data favoriteClass}" Label="{data favorite}" />
+  </StackPanel>
+</nxml-dynamic>

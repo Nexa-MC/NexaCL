@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="ResourceDetailDescription" Content="{data description}" Localize="false" MaxLines="3" TrimOverflow="true" Class="resource-base resource-detail-description" />
+</nxml-dynamic>

@@ -609,6 +609,7 @@ internal static partial class Program
             ValidateDynamicVersionSelection(shell,host.StateStore);
             ValidateDynamicBootstrap(shell,host.StateStore);
             ValidateDynamicWardrobe(shell,host.StateStore);
+            ValidateDynamicResources(shell,host.StateStore,uiIntents);
             Console.WriteLine($"NXML shell and dynamic network templates validated: {scene.Count} shell semantic nodes.");
             host.Logging.Info("Launcher", $"Headless shell validation completed nodes={scene.Count}");
             setStage("shutdown");
