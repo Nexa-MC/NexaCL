@@ -12,6 +12,10 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 - Task Center cards and nested steps now load/reload owned fragments; their layout
   and visual constants are in NSS. Controller-owned node/style construction is gone.
   Remaining conditional copy and status formatting are still projected by C#.
+- Task/launch/process bubbles and Java choices now use external dynamic fragments.
+  The dock registers only owned slot children and reads spacing/dimensions from NSS.
+- Process log workspace and rows now load/reload fragments, preserving literal output,
+  selection identity, search drafts and caret. Conditional status copy remains C#.
 - Resource filter overlays already use fragments. Other resource presentation is
   still imperative.
 - Shared reload preserves entity identity, nested slots, drafts, scroll, focus,
@@ -29,13 +33,12 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 | Version selection | `VersionSelectionController.cs`, `.Window.cs` | Row window/virtualization, directory choices/editor, popup body and selection styles. |
 | Wardrobe | `WardrobePageController.cs`, `WardrobeLibraryPageController.cs` | Skin/cape cards, details, empty/loading/failure surfaces and interaction variants. |
 | Accounts and first run | `AccountFormController.cs`, `FirstRunController.cs` | Form structures, state copy, action availability and complete OOBE composition. |
-| Process and dock | `LaunchPageController.Process.cs`, `ProcessLogPageController.cs`, `DesktopTaskBubblePresenter.cs` | Process controls, log rows, bubble structure/style and state projections. Retain existing dock motion/interaction. |
+| Process and dock copy | `LaunchPageController.Process.cs`, `ProcessLogPageController.cs`, `DesktopTaskBubblePresenter.cs` | Layouts and visual constants are external; migrate remaining conditional labels and formatting, then audit all lifecycle paths. |
 | Global overlays | `DesktopCommandPalette.cs`, `DesktopFeedbackPresenter.cs` | Palette, notification/dialog collections and actions, keyboard focus and dismiss behavior. |
 | Appearance | `CustomAppearanceSession.cs` | Separate runtime image/theme behavior from remaining fixed presentation construction. |
 | Task copy | `TaskCenterController.cs` | Externalize conditional labels, icons and text formatting as fragment variants/data formatting, not C# literals. |
 
-The current source scan still finds direct node/style/stack construction in 19 Desktop
-files. This is a locator, not a completion metric: helpers can hide imperative layouts,
+Direct node/style/stack construction still remains across the other Desktop slices. This is a locator, not a completion metric: helpers can hide imperative layouts,
 and compiled renderer primitives/platform bridges are intentionally still code.
 
 ## Completion gates
@@ -57,3 +60,19 @@ and compiled renderer primitives/platform bridges are intentionally still code.
    historical docs separately, format changes, commit in reviewable slices and push.
 
 The overall migration remains active until all gates are evidenced for all slices.
+
+## Dock and process slice validation, 2026-10-11
+
+- Desktop composition: 264 passed; NXML: 52 passed; architecture: 69 projects passed.
+- Overlay ownership and empty-layer pointer pass-through have executable regressions.
+- Log selection retains row identity and raw text; workspace reload retains the search
+  draft, focus and caret. Existing session cancellation/copy/redaction tests still pass.
+- Java choice visibility and launch progress continue to pass their existing regression.
+- Actual Avalonia previews were captured in both themes after transition settling:
+  task dock, process dock and selected process-log rows. The process entries and logs
+  are fixtures, not a real Minecraft session; service launch validation is not claimed.
+- Windows x64 NativeAOT and full-trim publish each succeeded. Both executables ran
+  `--validate-shell`, including dynamic network/task/dock checks, and exited 0.
+  The existing Jint IL2098 annotation warning remains in both publication paths.
+- Targeted `dotnet format whitespace` completed successfully. The full migration is
+  still incomplete: use the remaining slices and completion gates above.

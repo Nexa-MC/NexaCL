@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Composition;
 using Nexa.Services.Logging;
@@ -92,6 +92,19 @@ internal static partial class Program
         scene = fixture.Shell.Render(new(1000, 700));
         AssertEqual(1, fixture.Shell.Tree.Children(rows).Count);
         AssertEqual("[stdout] needle {state fake.key}", FindByKey(fixture.Shell, scene, "ProcessLogEntry:37").Text);
+        var input = fixture.Shell.Tree.GetComponent<XsrUiTextInput>(search)!;
+        fixture.Shell.Renderer.Focus(search, showIndicator: false);
+        fixture.Shell.Renderer.EditText(XsrUiTextEdit.Left);
+        int caret = input.SelectionEnd;
+        var literalRow = FindByKey(fixture.Shell, scene, "ProcessLogEntry:37").Entity;
+        AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiText>(literalRow)!.Localize);
+        Emit(fixture.Intents, "ui.process.log.select", literalRow);
+        scene = fixture.Shell.Render(new(1000, 700));
+        AssertEqual(literalRow, FindByKey(fixture.Shell, scene, "ProcessLogEntry:37").Entity);
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiSelection>(literalRow)!.IsSelected);
+        AssertTrue(ReferenceEquals(input, fixture.Shell.Tree.GetComponent<XsrUiTextInput>(search)));
+        AssertEqual("NEEDLE", input.ReadDraft()); AssertEqual(caret, input.SelectionEnd);
+        AssertEqual(search, fixture.Shell.Renderer.Focused);
         Emit(fixture.Intents, "ui.process.log.stderr");
         scene = fixture.Shell.Render(new(1000, 700));
         AssertEqual(0, fixture.Shell.Tree.Children(rows).Count);

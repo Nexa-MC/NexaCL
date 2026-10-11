@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer;
+﻿using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -6,28 +6,26 @@ namespace Nexa.Desktop.Ui;
 /// <summary>One compact bottom-up dock for shell bubbles. Exiting items release their slot immediately.</summary>
 internal static class DesktopBubbleLayout
 {
-    private sealed class Slot(int order)
+    private sealed class Slot(int order, XsrUiThickness margin)
     {
         public int Order { get; } = order;
+        public XsrUiThickness BaseMargin { get; } = margin;
         public DateTimeOffset? ExitAt { get; set; }
         public bool DestroyOnExit { get; set; }
         public ITimer? Timer { get; set; }
     }
 
-    public static XsrUiVisualStyle Style() => new()
+    private sealed class Registry
     {
-        Surface = XsrUiSurfaceKind.Solid,
-        Background = DesktopUiPalette.CapsuleBackground,
-        Foreground = DesktopUiPalette.CapsuleForeground,
-        Hover = DesktopUiPalette.CapsuleHover,
-        CornerRadius = 24,
-        HoverExpand = true,
-        FontSize = 13,
-    };
+        public List<XsrUiEntityId> Entries { get; } = [];
+    }
 
     public static void Register(XsrUiShell shell, XsrUiEntityId entity, int order)
     {
-        shell.Tree.SetComponent(entity, new Slot(order));
+        var registry = shell.Tree.GetComponent<Registry>(shell.Stage.Root);
+        if (registry is null) { registry = new(); shell.Tree.SetComponent(shell.Stage.Root, registry); }
+        registry.Entries.Add(entity);
+        shell.Tree.SetComponent(entity, new Slot(order, shell.Tree.GetComponent<XsrUiElement>(entity)!.Margin));
         shell.Tree.SetComponent(entity, new XsrUiOverlayMotion(XsrUiOverlayMotionKind.Notification));
     }
 
@@ -63,10 +61,11 @@ internal static class DesktopBubbleLayout
 
     public static void Arrange(XsrUiShell shell)
     {
-        double bottom = 18;
-        foreach (var entity in shell.Tree.Children(shell.Stage.Root)
-            .Where(entity => shell.Tree.GetComponent<Slot>(entity) is not null)
-            .OrderBy(entity => shell.Tree.GetComponent<Slot>(entity)!.Order).ToArray())
+        var registry = shell.Tree.GetComponent<Registry>(shell.Stage.Root);
+        if (registry is null) return;
+        registry.Entries.RemoveAll(entity => !shell.Tree.IsAlive(entity));
+        double height = 0;
+        foreach (var entity in registry.Entries.OrderBy(entity => shell.Tree.GetComponent<Slot>(entity)!.Order).ToArray())
         {
             var slot = shell.Tree.GetComponent<Slot>(entity)!;
             var element = shell.Tree.GetComponent<XsrUiElement>(entity)!;
@@ -79,13 +78,14 @@ internal static class DesktopBubbleLayout
                 shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
             }
             if (!element.IsVisible || shell.Tree.GetComponent<XsrUiOverlayMotion>(entity)!.IsClosing) continue;
-            var margin = new XsrUiThickness(0, 0, 18, bottom);
+            var basis = slot.BaseMargin;
+            var margin = basis with { Bottom = basis.Bottom + height };
             if (element.Margin != margin)
             {
                 element.Margin = margin;
                 shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout);
             }
-            bottom += (element.Height ?? 48) + 10;
+            height += element.Height.GetValueOrDefault() + basis.Top;
         }
     }
 }

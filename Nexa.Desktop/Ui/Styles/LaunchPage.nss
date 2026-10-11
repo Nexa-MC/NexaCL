@@ -1,4 +1,4 @@
-/* LaunchPage layout. */
+﻿/* LaunchPage layout. */
 .layout-LaunchPage-2 { Orientation: Horizontal; Spacing: 16; }
 .layout-LaunchPage-CardAccount { Orientation: Vertical; Weight: 0.92; MinWidth: 240; MaxWidth: 360; }
 .layout-LaunchPage-AccountContent { Orientation: Vertical; Weight: 1; Margin: 20,18,20,18; }
@@ -54,3 +54,6 @@
 .layout-LaunchPage-WidgetTriviaDot { Width: 6; Height: 6; HorizontalAlignment: Center; VerticalAlignment: Center; }
 .layout-LaunchPage-WidgetEchoIndicator { Width: 6; Height: 6; }
 .layout-LaunchPage-WidgetEchoDot { Width: 6; Height: 6; HorizontalAlignment: Center; VerticalAlignment: Center; }
+
+#LaunchButtonProgress { Surface: Solid; Background: #0b5bcb; CornerRadius: 20; }
+.layout-LaunchPage-LaunchButtonText { Foreground: #ffffff; FontSize: 15; FontWeight: 600; }

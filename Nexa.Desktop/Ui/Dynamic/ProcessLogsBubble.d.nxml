@@ -1,0 +1,3 @@
+﻿<nxml-dynamic>
+  <Button Key="{data key}" Class="desktop-bubble process-bubble capsule" IsVisible="false" Command="{data command}" Icon="lucide/menu" Content="{data caption}" Label="{data caption}" />
+</nxml-dynamic>

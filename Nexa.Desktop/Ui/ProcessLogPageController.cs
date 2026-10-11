@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer.Nxml;
+﻿using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Xsr.Renderer;
@@ -18,8 +18,10 @@ internal static class ProcessLogPresentationState
 internal sealed class ProcessLogPageController : IDisposable
 {
     internal const int PageSize = 24;
-    private static readonly XsrUiColor Ink = DesktopMarkup.Visual("palette-ProcessLogPageController-Ink").Foreground, Muted = DesktopMarkup.Visual("palette-ProcessLogPageController-Muted").Foreground, Tint = DesktopMarkup.Visual("palette-ProcessLogPageController-Tint").Foreground;
     private readonly XsrUiShell _shell;
+    private readonly NxmlDynamicContent _dynamic;
+    private readonly XsrUiEntityId _workspace;
+    private readonly Dictionary<string, string> _view = InitialView();
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrQueryRouter _queries;
     private readonly XsrStateStore _store;
@@ -45,32 +47,11 @@ internal sealed class ProcessLogPageController : IDisposable
         XsrStateStore store, DesktopFeedbackService feedback, Func<string, Task>? copy = null)
     {
         _shell = shell; _intents = intents; _queries = queries; _store = store; _feedback = feedback; _copy = copy;
-        using Stream source = DesktopMarkup.Open("ProcessLogPage.nxml")
-            ?? throw new InvalidOperationException("Missing process log page.");
-        using StreamReader reader = new(source);
-        var template = DesktopMarkup.Compile(NxmlParser.Parse(reader.ReadToEnd()));
-        var parent = shell.Tree.Create("process-log-loader");
-        Page = NxmlUiLoader.Load(template, shell.Tree, store, parent);
-        shell.Tree.Detach(Page); shell.Tree.Destroy(parent);
-        shell.Tree.Walk(Page, entity =>
-        {
-            _entities[shell.Tree.Name(entity)] = entity;
-            bool interactive = shell.Tree.GetComponent<XsrUiInput>(entity) is not null;
-            shell.Tree.SetComponent(entity, new XsrUiVisualStyle
-            {
-                Foreground = Ink,
-                FontSize = 13,
-                CornerRadius = 10,
-                Background = interactive ? DesktopUiPalette.CapsuleBackground : XsrUiColor.Transparent,
-                Hover = DesktopUiPalette.CapsuleHover,
-            });
-            return true;
-        });
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_entities["ProcessLogStatus"])!.WrapText = true;
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_entities["ProcessLogStatus"])!.Foreground = Muted;
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_entities["ProcessLogEmpty"])!.WrapText = true;
+        _dynamic = new(shell.Tree, store);
+        Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("ProcessLogPage.nxml"), shell.Tree, store);
+        _workspace = _dynamic.Append(shell.Tree.Children(Page).Single(), DesktopMarkup.Dynamic("ProcessLogWorkspace.d.nxml", _view));
+        shell.Tree.Walk(Page, entity => { _entities[shell.Tree.Name(entity)] = entity; return true; });
         shell.Tree.GetComponent<XsrUiScroll>(_entities["ProcessLogRows"])!.ShowsVerticalIndicator = true;
-        DesktopLiteralText.Preserve(shell.Tree, _entities["ProcessLogSession"]);
         shell.Renderer.FramePreparing += OnFrame;
         intents.IntentEmitted += OnIntent;
     }
@@ -275,7 +256,7 @@ internal sealed class ProcessLogPageController : IDisposable
             : _snapshot?.Entries.Count == 0 ? "本次运行尚未产生可读取的标准输出或标准错误。"
             : _filtered.Length == 0 ? "没有符合搜索条件的日志。" : "";
         Text("ProcessLogEmpty", empty);
-        _shell.Tree.GetComponent<XsrUiElement>(_entities["ProcessLogEmpty"])!.IsVisible = empty.Length > 0;
+        _view["ProcessLogEmpty.visible"] = Flag(empty.Length > 0);
         Enable("ProcessLogPrevious", _page > 0);
         Enable("ProcessLogNext", _page + 1 < pages);
         Enable("ProcessLogClearSelection", _selected.Count > 0);
@@ -284,48 +265,55 @@ internal sealed class ProcessLogPageController : IDisposable
         foreach (var choice in new[] { ("ProcessLogAll", (MinecraftProcessOutputChannel?)null),
             ("ProcessLogStdout", (MinecraftProcessOutputChannel?)MinecraftProcessOutputChannel.Stdout),
             ("ProcessLogStderr", (MinecraftProcessOutputChannel?)MinecraftProcessOutputChannel.Stderr) })
-            _shell.Tree.SetComponent(_entities[choice.Item1], new XsrUiSelection { IsSelected = _stream == choice.Item2 });
+            _view[choice.Item1 + ".selected"] = Flag(_stream == choice.Item2);
+        _dynamic.Reload(_workspace, DesktopMarkup.Dynamic("ProcessLogWorkspace.d.nxml", _view));
         var entries = _filtered.Skip(_page * PageSize).Take(PageSize).ToArray();
         if (!_rows.Values.SequenceEqual(entries.Select(entry => entry.Sequence))) ClearRows();
         foreach (var entry in entries)
         {
             var row = _rows.FirstOrDefault(pair => pair.Value == entry.Sequence).Key;
+            var fragment = DesktopMarkup.Dynamic("ProcessLogRow.d.nxml", new Dictionary<string, string>
+            {
+                ["key"] = "ProcessLogEntry:" + entry.Sequence,
+                ["text"] = Display(entry),
+                ["selected"] = Flag(_selected.Contains(entry.Sequence)),
+                ["style"] = _selected.Contains(entry.Sequence) ? "process-log-row process-log-row-selected" : "process-log-row",
+            });
             if (!row.IsAssigned)
             {
-                row = _shell.Tree.Create("ProcessLogEntry:" + entry.Sequence);
-                _shell.Tree.SetComponent(row, new XsrUiElement { MinHeight = 38, Padding = new(12, 10, 12, 10) });
-                _shell.Tree.SetComponent(row, new XsrUiInput { Clickable = true, Focusable = true });
-                _shell.Tree.SetComponent(row, new XsrUiCommandBinding(XsrSemanticId.Parse("ui.process.log.select")));
-                _shell.Tree.Attach(row, _entities["ProcessLogRows"]); _rows[row] = entry.Sequence;
+                row = _dynamic.Append(_entities["ProcessLogRows"], fragment);
+                _rows[row] = entry.Sequence;
             }
-            _shell.Tree.SetComponent(row, new XsrUiText(Display(entry)) { Localize = false });
-            _shell.Tree.SetComponent(row, new XsrUiSemantic(XsrUiSemanticRole.Button, Display(entry)) { Localize = false });
-            _shell.Tree.SetComponent(row, new XsrUiSelection { IsSelected = _selected.Contains(entry.Sequence) });
-            _shell.Tree.SetComponent(row, new XsrUiVisualStyle
-            {
-                Foreground = Ink,
-                FontSize = 13,
-                WrapText = true,
-                CornerRadius = 8,
-                Background = _selected.Contains(entry.Sequence) ? Tint : DesktopUiPalette.CapsuleBackground,
-                Hover = DesktopUiPalette.CapsuleHover,
-            });
+            else _dynamic.Reload(row, fragment);
         }
-        _shell.Tree.MarkDirty(Page, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
     }
 
     private void ClearRows()
     {
-        foreach (var row in _rows.Keys) _shell.Tree.Destroy(row);
+        _dynamic.Clear(_entities["ProcessLogRows"]);
         _rows.Clear();
         _shell.Tree.GetComponent<XsrUiScroll>(_entities["ProcessLogRows"])!.OffsetY = 0;
     }
 
-    private void Text(string key, string text) => _shell.Tree.GetComponent<XsrUiText>(_entities[key])!.Content = text;
-    private void Enable(string key, bool enabled)
+    private static string Flag(bool value) => value ? "true" : "false";
+    private void Text(string key, string text) => _view[key] = text;
+    private void Enable(string key, bool enabled) => _view[key + ".enabled"] = Flag(enabled);
+    private static Dictionary<string, string> InitialView()
     {
-        var input = _shell.Tree.GetComponent<XsrUiInput>(_entities[key])!;
-        input.Clickable = input.Focusable = enabled;
+        var values = new Dictionary<string, string>
+        {
+            ["ProcessLogSession"] = "游戏日志",
+            ["ProcessLogPageNumber"] = "1 / 1",
+            ["ProcessLogStatus"] = "正在读取日志…",
+            ["ProcessLogEmpty"] = "",
+            ["ProcessLogEmpty.visible"] = "false",
+            ["ProcessLogAll.selected"] = "true",
+            ["ProcessLogStdout.selected"] = "false",
+            ["ProcessLogStderr.selected"] = "false",
+        };
+        foreach (string key in new[] { "ProcessLogPreviousSession", "ProcessLogNextSession", "ProcessLogRefresh", "ProcessLogPrevious",
+            "ProcessLogNext", "ProcessLogClearSelection", "ProcessLogCopySelected", "ProcessLogCopyPage" }) values[key + ".enabled"] = "false";
+        return values;
     }
 
     public void Dispose()

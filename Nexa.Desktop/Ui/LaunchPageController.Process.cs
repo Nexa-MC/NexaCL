@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer.Nxml;
+﻿using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Crash;
 using Nexa.Services.Minecraft.Launch;
@@ -15,9 +15,11 @@ internal sealed partial class LaunchPageController
     private readonly HashSet<Guid> _shownFailures = [];
     private XsrUiEntityId _javaChoicePage;
     private int _showJavaChoices, _returnFromJavaChoice;
-    private bool _processPresentationInitialized;
+    private NxmlDynamicContent? _javaChoiceContent;
+    private XsrUiEntityId _javaChoiceWorkspace;
     private long _processRevision = -1;
     private ProcessLogPageController? _processLogPage;
+    private DesktopDynamicLayer? _processLayer;
     internal Func<string, Task>? CopyProcessLogText { get; set; }
     internal Task WaitForProcessLogsAsync() => _processLogPage?.WaitUntilIdle() ?? Task.CompletedTask;
 
@@ -33,44 +35,20 @@ internal sealed partial class LaunchPageController
         { _shell.Stage.Navigation.Pop(); _returnFocus.TryPop(out _); UpdateTitleBar(); }
         if (Interlocked.Exchange(ref _showJavaChoices, 0) != 0)
         {
+            var choices = _store.ReadAppliedValue(_store.Resolve(MinecraftLaunchProgressState.JavaChoicesKey)) as IReadOnlyList<int>;
+            var data = new Dictionary<string, string>();
+            foreach (int major in new[] { 8, 16, 17, 21, 25 })
+                data["visible" + major] = (choices is null || choices.Contains(major)) ? "true" : "false";
+            var fragment = DesktopMarkup.Dynamic("JavaChoices.d.nxml", data);
             if (!_javaChoicePage.IsAssigned)
             {
-                var parent = _shell.Tree.Create("java-choice-loader");
-                var template = DesktopMarkup.Compile(NxmlParser.Parse(ReadEmbeddedResource("Ui.JavaChoicePage.nxml")));
-                _javaChoicePage = NxmlUiLoader.Load(template, _shell.Tree, _store, parent);
-                _shell.Tree.Detach(_javaChoicePage);
-                _shell.Tree.Destroy(parent);
-                _shell.Tree.Walk(_javaChoicePage, entity =>
-                {
-                    _shell.Tree.SetComponent(entity, new XsrUiVisualStyle
-                    {
-                        Foreground = PrimaryText,
-                        FontSize = 15,
-                        Background = _shell.Tree.GetComponent<XsrUiInput>(entity) is null ? XsrUiColor.Transparent : DesktopUiPalette.CapsuleBackground,
-                        Hover = DesktopUiPalette.CapsuleHover,
-                        CornerRadius = 12
-                    });
-                    return true;
-                });
+                _javaChoicePage = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("JavaChoicePage.nxml"), _shell.Tree, _store);
+                _javaChoiceContent = new(_shell.Tree, _store);
+                _javaChoiceWorkspace = _javaChoiceContent.Append(_shell.Tree.Children(_javaChoicePage).Single(), fragment);
             }
-            var choices = _store.ReadAppliedValue(_store.Resolve(MinecraftLaunchProgressState.JavaChoicesKey)) as IReadOnlyList<int>;
-            _shell.Tree.Walk(_javaChoicePage, entity =>
-            {
-                string name = _shell.Tree.Name(entity);
-                if (name.StartsWith("JavaChoice", StringComparison.Ordinal) && int.TryParse(name[10..], out int major))
-                    _shell.Tree.GetComponent<XsrUiElement>(entity)!.IsVisible = choices is null || choices.Contains(major);
-                return true;
-            });
-            _shell.Tree.MarkDirty(_javaChoicePage, XsrUiDirtyKinds.Layout);
+            else _javaChoiceContent!.Reload(_javaChoiceWorkspace, fragment);
             DismissAcquisitionDialog();
             OpenSubpage(_javaChoicePage, _launchingPage);
-        }
-        if (!_processPresentationInitialized && _pageEntities.TryGetValue("LaunchButtonProgress", out var fill))
-        {
-            _processPresentationInitialized = true;
-            _shell.Tree.SetComponent(fill, new XsrUiVisualStyle { Surface = XsrUiSurfaceKind.Solid, Background = LaunchButtonBackground, CornerRadius = 20 });
-            var text = _pageEntities["LaunchButtonText"];
-            _shell.Tree.SetComponent(text, new XsrUiVisualStyle { Foreground = new(255, 255, 255), FontSize = 15, FontWeight = 600 });
         }
         if (!_store.TryResolve(MinecraftProcessStateComposition.SessionsKey, out var sessionsId)) return;
         var sessions = _store.ReadCollection<MinecraftProcessSnapshot>(sessionsId);
@@ -92,8 +70,8 @@ internal sealed partial class LaunchPageController
                 var session = visibleSessions[i];
                 if (!_processDocks.TryGetValue(session.SessionId, out var dock))
                 {
-                    dock = (CreateProcessButton(session, "power", "结束游戏", "stop"),
-                        CreateProcessButton(session, "menu", "日志", "logs"));
+                    dock = (CreateProcessButton(session, "结束游戏", "stop"),
+                        CreateProcessButton(session, "日志", "logs"));
                     _processDocks.Add(session.SessionId, dock);
                 }
             }
@@ -127,25 +105,17 @@ internal sealed partial class LaunchPageController
         else DesktopBubbleLayout.SetVisible(_shell, _store, entity, false, destroy: true);
     }
 
-    private XsrUiEntityId CreateProcessButton(MinecraftProcessSnapshot session, string icon, string label, string action)
+    private XsrUiEntityId CreateProcessButton(MinecraftProcessSnapshot session, string label, string action)
     {
-        var entity = _shell.Tree.Create("process-" + action + "-" + session.SessionId);
-        _shell.Tree.SetComponent(entity, new XsrUiElement
-        {
-            Width = 280,
-            Height = 48,
-            HorizontalAlignment = XsrUiAlignment.End,
-            VerticalAlignment = XsrUiAlignment.End,
-            Margin = new(0, 0, 76, 18)
-        });
-        _shell.Tree.SetComponent(entity, new XsrUiInput { Clickable = true, Focusable = true });
-        _shell.Tree.SetComponent(entity, new XsrUiSemantic(XsrUiSemanticRole.Button, session.InstanceId + " · " + label));
-        _shell.Tree.SetComponent(entity, new XsrUiCommandBinding(XsrSemanticId.Parse("ui.process." + action + "." + session.SessionId.ToString("N"))));
-        _shell.Tree.SetComponent(entity, DesktopBubbleLayout.Style());
+        _processLayer ??= new(_shell, _store, "ShellBubbleLayer.nxml");
+        var entity = _processLayer.Append(action == "stop" ? "ProcessStopBubble.d.nxml" : "ProcessLogsBubble.d.nxml",
+            new Dictionary<string, string>
+            {
+                ["key"] = "process-" + action + "-" + session.SessionId,
+                ["command"] = "ui.process." + action + "." + session.SessionId.ToString("N"),
+                ["caption"] = session.InstanceId + " · " + label,
+            });
         DesktopBubbleLayout.Register(_shell, entity, 2);
-        _shell.Tree.SetComponent(entity, new XsrUiImage("lucide/" + icon));
-        _shell.Tree.SetComponent(entity, new XsrUiText(session.InstanceId + " · " + label));
-        _shell.Stage.Show(entity);
         return entity;
     }
 

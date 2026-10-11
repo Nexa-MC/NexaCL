@@ -77,4 +77,29 @@ internal static partial class Program
         }
     }
 
+    private static void ValidateDynamicDock(XsrUiShell shell, Nexa.Xsr.State.XsrStateStore store)
+    {
+        using var layer = new DesktopDynamicLayer(shell, store, "ShellBubbleLayer.nxml");
+        var process = layer.Append("ProcessStopBubble.d.nxml", new Dictionary<string, string>
+        { ["key"] = "validation-power", ["command"] = "ui.validation.power", ["caption"] = "验证进程" });
+        if (shell.Tree.GetComponent<NxmlDynamicSlot>(shell.Tree.Parent(process)) is null)
+            throw new InvalidOperationException("The process bubble left its dynamic owner.");
+        var page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("ProcessLogPage.nxml"), shell.Tree, store);
+        try
+        {
+            var dynamic = new NxmlDynamicContent(shell.Tree, store);
+            var data = new Dictionary<string, string>
+            { ["key"] = "validation-log", ["text"] = "[stdout] {state literal}", ["selected"] = "false", ["style"] = "process-log-row" };
+            var row = dynamic.Append(shell.Tree.Children(page).Single(), DesktopMarkup.Dynamic("ProcessLogRow.d.nxml", data));
+            data["selected"] = "true";
+            dynamic.Reload(row, DesktopMarkup.Dynamic("ProcessLogRow.d.nxml", data));
+            if (shell.Tree.GetComponent<XsrUiSelection>(row)?.IsSelected != true
+                || shell.Tree.GetComponent<XsrUiText>(row)?.Localize != false
+                || shell.Tree.GetComponent<XsrUiText>(row)?.Content != data["text"])
+                throw new InvalidOperationException("Literal log row projection failed.");
+            Console.WriteLine("Dynamic dock validation passed: overlay ownership, process template, literal text and selection reload.");
+        }
+        finally { shell.Tree.Destroy(page); }
+    }
+
 }

@@ -604,6 +604,7 @@ internal static partial class Program
             XsrUiScene scene = shell.Render(new XsrUiSize(1280, 800));
             await ValidateDynamicNetworkPageAsync(shell, settingsPage, uiIntents).ConfigureAwait(false);
             ValidateDynamicTaskPage(shell, taskCenterPage, host.Tasks, uiIntents);
+            ValidateDynamicDock(shell, host.StateStore);
             Console.WriteLine($"NXML shell and dynamic network templates validated: {scene.Count} shell semantic nodes.");
             host.Logging.Info("Launcher", $"Headless shell validation completed nodes={scene.Count}");
             setStage("shutdown");

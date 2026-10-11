@@ -1,0 +1,27 @@
+﻿<nxml-dynamic>
+    <StackPanel Class="layout-ProcessLogPage-2 process-log-text">
+      <StackPanel Class="layout-ProcessLogPage-3 process-log-text">
+        <Button Key="ProcessLogPreviousSession" Enabled="{data ProcessLogPreviousSession.enabled}" Content="上次运行" Label="上次运行" Command="ui.process.log.previous-session" Class="layout-ProcessLogPage-ProcessLogPreviousSession process-log-control process-log-text" />
+        <Text Key="ProcessLogSession" Localize="false" Content="{data ProcessLogSession}" Class="layout-ProcessLogPage-ProcessLogSession process-log-text" />
+        <Button Key="ProcessLogNextSession" Enabled="{data ProcessLogNextSession.enabled}" Content="下次运行" Label="下次运行" Command="ui.process.log.next-session" Class="layout-ProcessLogPage-ProcessLogNextSession process-log-control process-log-text" />
+        <Button Key="ProcessLogRefresh" Enabled="{data ProcessLogRefresh.enabled}" Icon="pcl/refresh" Label="刷新日志" Command="ui.process.log.refresh" Class="layout-ProcessLogPage-ProcessLogRefresh process-log-control process-log-text" />
+      </StackPanel>
+      <StackPanel Class="layout-ProcessLogPage-8 process-log-text">
+        <TextInput Key="ProcessLogSearch" Label="搜索日志" Placeholder="搜索日志内容" Class="layout-ProcessLogPage-ProcessLogSearch process-log-control process-log-text" />
+        <Button Key="ProcessLogAll" Selected="{data ProcessLogAll.selected}" Content="全部" Label="全部输出" Command="ui.process.log.all" Class="layout-ProcessLogPage-ProcessLogAll process-log-control process-log-text" />
+        <Button Key="ProcessLogStdout" Selected="{data ProcessLogStdout.selected}" Content="stdout" Label="标准输出" Command="ui.process.log.stdout" Class="layout-ProcessLogPage-ProcessLogStdout process-log-control process-log-text" />
+        <Button Key="ProcessLogStderr" Selected="{data ProcessLogStderr.selected}" Content="stderr" Label="标准错误" Command="ui.process.log.stderr" Class="layout-ProcessLogPage-ProcessLogStderr process-log-control process-log-text" />
+      </StackPanel>
+      <Text Key="ProcessLogStatus" Content="{data ProcessLogStatus}" Class="layout-ProcessLogPage-ProcessLogStatus process-log-text" />
+      <Text Key="ProcessLogEmpty" IsVisible="{data ProcessLogEmpty.visible}" Content="{data ProcessLogEmpty}" Class="layout-ProcessLogPage-ProcessLogEmpty process-log-text" />
+      <Dynamic Key="ProcessLogRows" Scroll="true" Class="layout-ProcessLogPage-ProcessLogRows process-log-text" />
+      <StackPanel Class="layout-ProcessLogPage-16 process-log-text">
+        <Button Key="ProcessLogPrevious" Enabled="{data ProcessLogPrevious.enabled}" Content="上一页" Label="上一页日志" Command="ui.process.log.previous" Class="layout-ProcessLogPage-ProcessLogPrevious process-log-control process-log-text" />
+        <Text Key="ProcessLogPageNumber" Content="{data ProcessLogPageNumber}" Class="layout-ProcessLogPage-ProcessLogPageNumber process-log-text" />
+        <Button Key="ProcessLogNext" Enabled="{data ProcessLogNext.enabled}" Content="下一页" Label="下一页日志" Command="ui.process.log.next" Class="layout-ProcessLogPage-ProcessLogNext process-log-control process-log-text" />
+        <Button Key="ProcessLogClearSelection" Enabled="{data ProcessLogClearSelection.enabled}" Content="清除选择" Label="清除日志选择" Command="ui.process.log.clear-selection" Class="layout-ProcessLogPage-ProcessLogClearSelection process-log-control process-log-text" />
+        <Button Key="ProcessLogCopySelected" Enabled="{data ProcessLogCopySelected.enabled}" Content="复制所选" Label="复制所选日志" Command="ui.process.log.copy-selected" Class="layout-ProcessLogPage-ProcessLogCopySelected process-log-control process-log-text" />
+        <Button Key="ProcessLogCopyPage" Enabled="{data ProcessLogCopyPage.enabled}" Content="复制本页" Label="复制本页日志" Command="ui.process.log.copy-page" Class="layout-ProcessLogPage-ProcessLogCopyPage process-log-control process-log-text" />
+      </StackPanel>
+    </StackPanel>
+</nxml-dynamic>

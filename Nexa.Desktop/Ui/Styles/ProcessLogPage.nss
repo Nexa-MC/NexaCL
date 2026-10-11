@@ -1,4 +1,4 @@
-/* ProcessLogPage layout. */
+﻿/* ProcessLogPage layout. */
 .layout-ProcessLogPage-2 { Orientation: Vertical; Margin: 0; Spacing: 10; Weight: 1; }
 .layout-ProcessLogPage-3 { Orientation: Horizontal; Height: 38; Spacing: 8; }
 .layout-ProcessLogPage-ProcessLogPreviousSession { Width: 86; Height: 38; }
@@ -20,3 +20,10 @@
 .layout-ProcessLogPage-ProcessLogClearSelection { Width: 88; Height: 36; }
 .layout-ProcessLogPage-ProcessLogCopySelected { Width: 88; Height: 36; }
 .layout-ProcessLogPage-ProcessLogCopyPage { Width: 88; Height: 36; }
+
+.process-log-text { Foreground: #263141; FontSize: 13; CornerRadius: 10; Hover: #cfe1fe; }
+.process-log-control { Background: #e0eafd; }
+.layout-ProcessLogPage-ProcessLogStatus { Foreground: #5e6e82; WrapText: true; }
+.layout-ProcessLogPage-ProcessLogEmpty { WrapText: true; }
+.process-log-row { MinHeight: 38; Padding: 12,10,12,10; Foreground: #263141; FontSize: 13; WrapText: true; CornerRadius: 8; Background: #e0eafd; Hover: #cfe1fe; }
+.process-log-row-selected { Background: #e7f0ff; }

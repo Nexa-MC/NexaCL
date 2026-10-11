@@ -422,7 +422,7 @@ internal static partial class Program
                 failures.Add($"Invalid dynamic template wrapper: {file}");
         }
         // Completed migrations must not regress to imperative presentation factories.
-        foreach (string name in new[] { "SettingsPageController.Network.cs", "SettingsPageController.NetworkDiagnostics.cs", "TaskCenterController.cs" })
+        foreach (string name in new[] { "SettingsPageController.Network.cs", "SettingsPageController.NetworkDiagnostics.cs", "TaskCenterController.cs", "DesktopTaskBubblePresenter.cs", "DesktopDynamicLayer.cs", "ProcessLogPageController.cs", "LaunchPageController.Process.cs" })
         {
             string source = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", name));
             foreach (string token in new[] { ".Tree.Create(", "new XsrUiText(", "new XsrUiVisualStyle", "new XsrUiStackPanel", "FormGroup(", "ActionButton(" })

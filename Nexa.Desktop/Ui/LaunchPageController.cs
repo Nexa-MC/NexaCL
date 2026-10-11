@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
@@ -348,7 +348,7 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
         _lifetimeCancellation.Cancel();
         Versions.Dispose();
         _processLogPage?.Dispose();
-        foreach (var dock in _processDocks.Values) { _shell.Tree.Destroy(dock.Power); _shell.Tree.Destroy(dock.Logs); }
+        _processLayer?.Dispose();
         _processDocks.Clear();
         if (_javaChoicePage.IsAssigned) _shell.Tree.Destroy(_javaChoicePage);
         DismissAcquisitionDialog();

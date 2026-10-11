@@ -223,7 +223,42 @@ internal static partial class Program
             {
                 Capture("tasks");
                 f.Shell.Stage.Navigation.Replace(controller.Page);
-                taskPage!.Dispose(); taskBubble!.Dispose(); surface!.CommitScene();
+                taskPage!.Dispose(); taskBubble!.SetPageVisible(false); surface!.CommitScene();
+            }, timeout.Token);
+            await Task.Delay(500, timeout.Token);
+            await startup.InvokeAsync(() => { Capture("dock"); taskBubble!.Dispose(); }, timeout.Token);
+            Guid logSession = Guid.NewGuid();
+            using var logRuntime = ProcessLogRuntime((query, _) => ValueTask.FromResult(Nexa.Xsr.XsrResult.Success(
+                new Nexa.Services.Minecraft.Process.MinecraftProcessOutputSnapshot(query.SessionId, "Minecraft 1.21.1",
+                    Nexa.Services.Minecraft.Process.MinecraftProcessState.Running, 4, 0,
+                    [new(1, Nexa.Services.Minecraft.Process.MinecraftProcessOutputChannel.Stdout, "Starting Minecraft 1.21.1"),
+                     new(2, Nexa.Services.Minecraft.Process.MinecraftProcessOutputChannel.Stdout, "Loading resources…"),
+                     new(3, Nexa.Services.Minecraft.Process.MinecraftProcessOutputChannel.Stderr, "[Example] fixture warning; {state literal}"),
+                     new(4, Nexa.Services.Minecraft.Process.MinecraftProcessOutputChannel.Stdout, "Ready")]))));
+            ProcessLogPageController? logs = null;
+            await startup.InvokeAsync(() =>
+            {
+                PublishLogSessions(f, new Nexa.Services.Minecraft.Process.MinecraftProcessSnapshot(logSession, "Minecraft 1.21.1", 123, Nexa.Services.Minecraft.Process.MinecraftProcessState.Running,
+                    null, DateTimeOffset.UtcNow, null));
+                surface!.CommitScene();
+            }, timeout.Token);
+            await Task.Delay(500, timeout.Token);
+            await startup.InvokeAsync(() =>
+            {
+                Capture("process-dock");
+                logs = new(f.Shell, f.Intents, logRuntime.Queries, f.Store, f.Feedback, _ => Task.CompletedTask);
+                f.Shell.Stage.Navigation.Replace(logs.Page); logs.Open(logSession);
+            }, timeout.Token);
+            await logs!.WaitUntilIdle();
+            await Task.Delay(500, timeout.Token);
+            await startup.InvokeAsync(() =>
+            {
+                surface!.CommitScene();
+                var row = FindByKey(f.Shell, surface.Scene!, "ProcessLogEntry:3").Entity;
+                Emit(f.Intents, "ui.process.log.select", row); surface.CommitScene();
+                Capture("process-logs");
+                f.Shell.Stage.Navigation.Replace(controller.Page); logs.Dispose();
+                PublishLogSessions(f); surface.CommitScene();
             }, timeout.Token);
             await SelectCategory("general");
             await Task.Delay(600, timeout.Token);
