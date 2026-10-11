@@ -58,6 +58,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
             }
             if (_node.Text is { Length: > 0 }) DrawText(context, style, 32);
         }
+        if (_node.IsPressed) DrawHoverOverlay(context, rect, style with { CornerRadius = 6 });
         if (_node.IsFocusVisible)
             context.DrawRectangle(null, new Pen(Brush(_node.ColorScheme.AccentText), 2),
                 new RoundedRect(rect.Deflate(1), new CornerRadius(_node.Role == XsrUiSemanticRole.Switch ? 16 : 6)));

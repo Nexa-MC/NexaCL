@@ -22,6 +22,7 @@ internal static partial class Program
 {
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("shared press feedback is immediate bounded and available without motion", SharedPressFeedbackIsImmediateBoundedAndAvailableWithoutMotion),
         ("neon theme selection honors explicit and system modes", NeonThemeSelectionHonorsExplicitAndSystemModes),
         ("StartupMediaWarmupSettlesMissingLocalAsset", StartupMediaWarmupSettlesMissingLocalAsset),
         ("ScreenshotCodecCropsActualPixelsAndPreservesSource", ScreenshotCodecCropsActualPixelsAndPreservesSource),

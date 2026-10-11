@@ -16,6 +16,27 @@ internal sealed partial class AvaloniaUiSceneNodeControl
         Background = new(255, 255, 255, 245),
     }.Snapshot();
 
+    internal double PresentedInteractionScale => _pressScale.ScaleX;
+
+    // Geometry remains fixed for hit testing; presentation feedback must not pull a wide row away.
+    internal static double InteractionScale(XsrUiSceneNode node, bool reducedMotion)
+    {
+        if (!node.IsEnabled || !node.IsPressed || reducedMotion || node.TextInput is not null) return 1;
+        double extent = Math.Max(node.Rect.Width, node.Rect.Height);
+        return 1 - Math.Min(1 - AvaloniaMotionTokens.PressScale, 2 / Math.Max(1, extent));
+    }
+
+    internal static XsrUiColor InteractionColor(XsrUiSceneNode node, XsrUiVisualStyleSnapshot style)
+    {
+        if (!node.IsEnabled) return XsrUiColor.Transparent;
+        if (style.Hover.Alpha > 0) return node.IsPressed
+            ? style.Hover with { Alpha = (byte)Math.Min(255, style.Hover.Alpha + 20) }
+            : style.Hover;
+        return node.IsClickable && node.TextInput is null
+            ? node.ColorScheme.AccentText with { Alpha = node.IsPressed ? (byte)32 : (byte)16 }
+            : XsrUiColor.Transparent;
+    }
+
     private XsrUiColor ToggleFill(XsrUiVisualStyleSnapshot style)
     {
         XsrUiColor original = style.Border.Alpha > 0 ? style.Border : style.Foreground;

@@ -36,7 +36,8 @@ internal static class AvaloniaMotionTokens
     /// Page/content enter: a coordinated fade keeps text inside its measured line box.
     /// Retargeting continues from the presented opacity, without descendant staggering.
     /// </summary>
-    public const int PageEnterMilliseconds = 240;
+    public const int PageEnterMilliseconds = 160;
+    public const double PageEnterInitialOpacity = .8;
 
     /// <summary>Individual controls enter in reading order, without delaying direct manipulation.</summary>
     public const int PageEnterStaggerMilliseconds = 14;

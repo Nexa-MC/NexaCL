@@ -889,14 +889,19 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
 
     internal IReadOnlyList<AvaloniaUiSceneNodeControl> SelectionItems => _selectionItems;
 
+    private bool _lastReducedMotion;
+
     public void Apply(XsrUiSceneNode node, XsrUiSize? viewport = null)
     {
-        if (_applied && _node == node && _rasterViewport == viewport && !_presentationReleased)
+        bool reducedMotion = _reducedMotion();
+        bool motionPolicyChanged = _lastReducedMotion != reducedMotion;
+        if (_applied && _node == node && _rasterViewport == viewport && !_presentationReleased && !motionPolicyChanged)
         {
             if (_rasterCapacityBlocked) UpdateRaster(node.RasterImage, node.Rect.Width, node.Rect.Height);
             return;
         }
         _presentationReleased = false;
+        _lastReducedMotion = reducedMotion;
         _rasterViewport = viewport;
         XsrUiSceneNode previous = _node;
         _node = node;
@@ -994,9 +999,10 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
             }
         }
 
-        if (!_applied || previous.IsPressed != node.IsPressed)
+        if (!_applied || previous.IsPressed != node.IsPressed || previous.IsEnabled != node.IsEnabled
+            || previous.Rect.Width != node.Rect.Width || previous.Rect.Height != node.Rect.Height || motionPolicyChanged)
         {
-            double scale = node.IsPressed ? AvaloniaMotionTokens.PressScale : 1;
+            double scale = InteractionScale(node, _reducedMotion());
             SetPressScale(scale);
         }
 
@@ -1047,7 +1053,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
         }
 
         // Keep rapid retargets continuous instead of flashing back to transparent.
-        if (EnterProgress >= 1) SetValue(EnterProgressProperty, 0);
+        if (EnterProgress >= 1) SetValue(EnterProgressProperty, AvaloniaMotionTokens.PageEnterInitialOpacity);
         AvaloniaUiMotion.Animate(
             this,
             "enter",
@@ -1199,7 +1205,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
 
     private void SetPressScale(double scale)
     {
-        if (_reducedMotion() || scale < 1)
+        if (_reducedMotion() || !_node.IsEnabled || scale < 1)
         {
             AvaloniaUiMotion.Cancel(this, ScaleTransform.ScaleXProperty);
             AvaloniaUiMotion.Cancel(this, ScaleTransform.ScaleYProperty);
@@ -1375,7 +1381,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
                     ? 0
                     : Math.Max(0, (Bounds.Width - iconSize) / 2);
             double iconY = Math.Max(0, (Bounds.Height - iconSize) / 2);
-            IBrush iconBrush = Brush(style.Foreground) ?? Brushes.White;
+            IBrush iconBrush = ForegroundBrush(style);
             Pen iconPen = new(iconBrush, AvaloniaUiIcons.StrokeWidth)
             {
                 LineCap = PenLineCap.Round,
@@ -1422,14 +1428,15 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
 
     private void DrawHoverOverlay(DrawingContext context, Rect rect, XsrUiVisualStyleSnapshot style)
     {
-        double opacity = HoverOpacity;
-        if (opacity <= 0 || style.Hover.Alpha == 0)
+        double opacity = _node.IsEnabled ? (_node.IsPressed ? 1 : HoverOpacity) : 0;
+        XsrUiColor color = InteractionColor(_node, style);
+        if (opacity <= 0 || color.Alpha == 0)
         {
             return;
         }
 
-        byte alpha = (byte)Math.Round(style.Hover.Alpha * Math.Clamp(opacity, 0, 1));
-        IBrush hover = new SolidColorBrush(Color.FromArgb(alpha, style.Hover.Red, style.Hover.Green, style.Hover.Blue));
+        byte alpha = (byte)Math.Round(color.Alpha * Math.Clamp(opacity, 0, 1));
+        IBrush hover = new SolidColorBrush(Color.FromArgb(alpha, color.Red, color.Green, color.Blue));
         context.DrawRectangle(
             hover,
             null,
@@ -1462,7 +1469,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
             return;
         }
 
-        IBrush foreground = Brush(style.Foreground) ?? Brushes.White;
+        IBrush foreground = ForegroundBrush(style);
         // Explicit visual-style typography wins; otherwise the semantic role decides, mirroring
         // the legacy sizes (17 px title, 12 px rail items, 14 px body text).
         double fontSize = style.FontSize > 0 ? style.FontSize : FontSizeFor(_node);
@@ -1578,6 +1585,8 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
             pillBorder,
             new RoundedRect(pillRect, new CornerRadius(pillHeight / 2)));
 
+        if (_node.IsPressed) DrawHoverOverlay(context, pillRect, style with { CornerRadius = pillHeight / 2 });
+
         // Keep the icon anchored at the trailing edge throughout expansion and reversal.
         double iconX = rect.Right - (pillHeight + NavigationIconSize) / 2;
         double iconY = Math.Max(0, (rect.Height - NavigationIconSize) / 2);
@@ -1585,7 +1594,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
             && AvaloniaUiIcons.TryGetGeometry(iconSource, out IReadOnlyList<Geometry> iconPaths))
         {
             double scale = NavigationIconSize / AvaloniaUiIcons.ViewBoxSize;
-            IBrush iconBrush = Brush(style.Foreground) ?? Brushes.White;
+            IBrush iconBrush = ForegroundBrush(style);
             Pen iconPen = new(iconBrush, AvaloniaUiIcons.StrokeWidth)
             {
                 LineCap = PenLineCap.Round,
@@ -1602,7 +1611,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
         }
         else if (_node.Text is { Length: > 0 } glyph)
         {
-            IBrush glyphBrush = Brush(style.Foreground) ?? Brushes.White;
+            IBrush glyphBrush = ForegroundBrush(style);
             FormattedText glyphText = new(
                 glyph,
                 CultureInfo.CurrentUICulture,
@@ -1683,6 +1692,9 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
     private static readonly Dictionary<XsrUiColor, IBrush> BrushesByColor = [];
     private static Typeface CachedTypeface(FontWeight weight, FontStyle style = FontStyle.Normal) =>
         AvaloniaUiTypefaceCache.GetDefault(weight, style);
+    internal static IBrush ForegroundBrush(XsrUiVisualStyleSnapshot style) =>
+        Brush(style.Foreground) ?? (style.IsDefined ? Brushes.Transparent : Brushes.White);
+
     private static IBrush? Brush(XsrUiColor color)
     {
         if (color.Alpha == 0) return null;
