@@ -1,4 +1,4 @@
-namespace Nexa.Xsr.Renderer.Nxml;
+﻿namespace Nexa.Xsr.Renderer.Nxml;
 
 /// <summary>External dynamic markup with literal data, never interpolated XML or executable code.</summary>
 public sealed class NxmlDynamicTemplate
@@ -17,7 +17,8 @@ public sealed class NxmlDynamicTemplate
         if (data.Count > 256 || data.Sum(pair => (long)pair.Value.Length) > 1024 * 1024)
             throw new NxmlCompileException("Dynamic data exceeds its budget.");
         long remaining = 1024 * 1024;
-        var document = new NxmlDocument(Bind(_document.Root.Children[0], data, ref remaining));
+        var expanded = components.Expand(new NxmlDocument(_document.Root.Children[0]));
+        var document = new NxmlDocument(Bind(expanded.Root, data, ref remaining));
         var compiled = NxmlCompiler.Compile(document, components, styles);
         return new(compiled.Root) { IsDynamic = true };
     }
@@ -38,6 +39,6 @@ public sealed class NxmlDynamicTemplate
         }
         List<NxmlElement> children = [];
         foreach (var child in node.Children) children.Add(Bind(child, data, ref remaining));
-        return new(node.Name, attributes.AsReadOnly(), children.AsReadOnly());
+        return new(node.Name, attributes.AsReadOnly(), children.AsReadOnly()) { DefaultProperties = node.DefaultProperties };
     }
 }

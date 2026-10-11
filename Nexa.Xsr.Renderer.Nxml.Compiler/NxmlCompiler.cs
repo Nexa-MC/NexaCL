@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 
@@ -95,7 +95,8 @@ public static class NxmlCompiler
                 NxmlIrPropertyTarget.ImageSource => recipe is NxmlRuntimeRecipe.Image or NxmlRuntimeRecipe.CommandInput,
                 NxmlIrPropertyTarget.Orientation or NxmlIrPropertyTarget.Spacing or NxmlIrPropertyTarget.StretchLastChild or NxmlIrPropertyTarget.Scrollable => recipe is NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
                 NxmlIrPropertyTarget.Value => recipe == NxmlRuntimeRecipe.Progress,
-                NxmlIrPropertyTarget.Placeholder or NxmlIrPropertyTarget.IsPassword or NxmlIrPropertyTarget.Enabled => recipe == NxmlRuntimeRecipe.TextInput,
+                NxmlIrPropertyTarget.Placeholder or NxmlIrPropertyTarget.IsPassword => recipe == NxmlRuntimeRecipe.TextInput,
+                NxmlIrPropertyTarget.Enabled => recipe is NxmlRuntimeRecipe.TextInput or NxmlRuntimeRecipe.CommandInput,
                 _ => true,
             };
             if (!supported) throw Fail(element.Name, attribute.Name, "is not supported by this renderer primitive");

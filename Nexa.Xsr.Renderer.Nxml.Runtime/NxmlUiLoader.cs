@@ -17,8 +17,20 @@ public sealed class NxmlLoadException(string message) : InvalidOperationExceptio
 /// command bindings. The loader is a fixed mapping over closed IR data — no reflection, no
 /// runtime parsing.
 /// </summary>
-public sealed class NxmlUiLoader
+public sealed partial class NxmlUiLoader
 {
+    public static XsrUiEntityId LoadDetached(NxmlHostIr ir, XsrUiTree tree, XsrStateStore state)
+    {
+        var host = tree.Create("nxml-page-loader");
+        try
+        {
+            var page = Load(ir, tree, state, host);
+            tree.Detach(page);
+            return page;
+        }
+        finally { tree.Destroy(host); }
+    }
+
     public static XsrUiEntityId Load(
         NxmlHostIr ir,
         XsrUiTree tree,
@@ -116,6 +128,7 @@ public sealed class NxmlUiLoader
                 break;
             case NxmlRuntimeRecipe.Progress:
                 XsrUiProgress progress = new();
+                progress.SetTarget(node.Value);
                 NxmlIrBinding? valueBinding = node.Bindings.FirstOrDefault(
                     binding => binding.Property == XsrUiStateProperty.Value);
                 if (valueBinding is not null)
@@ -162,6 +175,7 @@ public sealed class NxmlUiLoader
                 {
                     Focusable = node.Focusable,
                     Clickable = node.Clickable,
+                    Enabled = node.Enabled,
                 };
                 NxmlIrBinding? enabledBinding = node.Bindings.FirstOrDefault(
                     binding => binding.Property == XsrUiStateProperty.Enabled);
@@ -230,24 +244,7 @@ public sealed class NxmlUiLoader
         }
 
         if (node.Visual is { } visual)
-            tree.SetComponent(entity, new XsrUiVisualStyle
-            {
-                Background = visual.Background,
-                Foreground = visual.Foreground,
-                Border = visual.Border,
-                Hover = visual.Hover,
-                HoverExpand = visual.HoverExpand,
-                NavigationLayout = visual.NavigationLayout,
-                WrapText = visual.WrapText,
-                Surface = visual.Surface,
-                Opacity = visual.Opacity,
-                CornerRadius = visual.CornerRadius,
-                BorderWidth = visual.BorderWidth,
-                BlurRadius = visual.BlurRadius,
-                FontSize = visual.FontSize,
-                FontWeight = visual.FontWeight,
-                TextAlignment = visual.TextAlignment,
-            });
+            tree.SetComponent(entity, CreateVisual(visual));
 
         foreach (NxmlIrBinding binding in node.Bindings)
         {

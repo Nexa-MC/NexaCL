@@ -9,8 +9,9 @@ public sealed class NxmlDynamicSlot;
 /// <summary>Owns fragments attached to one page slot; operations run on the render thread.</summary>
 public sealed class NxmlDynamicContent(XsrUiTree tree, XsrStateStore state)
 {
-    private readonly Dictionary<XsrUiEntityId, XsrUiEntityId> _owners = [];
+    private readonly Dictionary<XsrUiEntityId, OwnedFragment> _owners = [];
     private int _nextPruneAt = 64;
+    private sealed record OwnedFragment(XsrUiEntityId Slot, NxmlHostIr Fragment);
 
     public XsrUiEntityId Append(XsrUiEntityId slot, NxmlHostIr fragment)
     {
@@ -20,14 +21,27 @@ public sealed class NxmlDynamicContent(XsrUiTree tree, XsrStateStore state)
         if (_owners.Count >= _nextPruneAt)
         { Prune(); _nextPruneAt = Math.Max(64, _owners.Count * 2); }
         var instance = NxmlUiLoader.Load(fragment, tree, state, slot);
-        _owners.Add(instance, slot);
+        _owners.Add(instance, new(slot, fragment));
         return instance;
+    }
+
+    /// <summary>Reprojects template data without resetting focus, drafts, animation or nested slots.</summary>
+    public void Reload(XsrUiEntityId instance, NxmlHostIr fragment)
+    {
+        ArgumentNullException.ThrowIfNull(fragment);
+        if (!_owners.TryGetValue(instance, out var owner) || !tree.IsAlive(instance)
+            || tree.Parent(instance) != owner.Slot || !fragment.IsDynamic)
+            throw new NxmlLoadException("Reload requires a live owned dynamic instance.");
+        RequireSlot(owner.Slot);
+        NxmlUiLoader.ValidateReload(owner.Fragment.Root, fragment.Root, instance, tree);
+        NxmlUiLoader.ApplyReload(owner.Fragment.Root, fragment.Root, instance, tree);
+        _owners[instance] = owner with { Fragment = fragment };
     }
 
     public XsrUiEntityId Replace(XsrUiEntityId slot, NxmlHostIr fragment)
     {
         var instance = Append(slot, fragment);
-        foreach (var previous in _owners.Where(pair => pair.Value == slot && pair.Key != instance).Select(pair => pair.Key).ToArray())
+        foreach (var previous in _owners.Where(pair => pair.Value.Slot == slot && pair.Key != instance).Select(pair => pair.Key).ToArray())
             RemoveCore(previous);
         Prune();
         return instance;
@@ -42,8 +56,8 @@ public sealed class NxmlDynamicContent(XsrUiTree tree, XsrStateStore state)
 
     private bool RemoveCore(XsrUiEntityId instance)
     {
-        if (!_owners.Remove(instance, out var slot)) return false;
-        if (!tree.IsAlive(instance) || tree.Parent(instance) != slot) return false;
+        if (!_owners.Remove(instance, out var owner)) return false;
+        if (!tree.IsAlive(instance) || tree.Parent(instance) != owner.Slot) return false;
         tree.Destroy(instance);
         return true;
     }
@@ -51,7 +65,7 @@ public sealed class NxmlDynamicContent(XsrUiTree tree, XsrStateStore state)
     public void Clear(XsrUiEntityId slot)
     {
         RequireSlot(slot);
-        foreach (var instance in _owners.Where(pair => pair.Value == slot).Select(pair => pair.Key).ToArray()) RemoveCore(instance);
+        foreach (var instance in _owners.Where(pair => pair.Value.Slot == slot).Select(pair => pair.Key).ToArray()) RemoveCore(instance);
         Prune();
     }
 

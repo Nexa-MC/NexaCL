@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer;
+﻿using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.State;
 
@@ -15,6 +15,9 @@ internal static partial class Program
         ("dynamic load failures preserve existing contents", DynamicFailuresPreserveContents),
         ("dynamic data is literal bounded and complete", DynamicDataIsLiteralAndBounded),
         ("dynamic slots reject stale and foreign targets", DynamicSlotsRejectStaleTargets),
+        ("dynamic reload preserves interactive state and idles cleanly", DynamicReloadRetainsInteractiveState),
+        ("dynamic reload rejects invalid projections atomically", DynamicReloadRejectsEntireInvalidProjection),
+        ("dynamic component data binds after bounded expansion", DynamicComponentDataIsExpandedBeforeBinding),
         // XSR-207: NXML grammar and parser.
         ("document resource budgets are enforced before recursion", DocumentResourceBudgetsAreEnforcedBeforeRecursion),
         ("simple document parses structurally", SimpleDocumentParsesStructurally),
