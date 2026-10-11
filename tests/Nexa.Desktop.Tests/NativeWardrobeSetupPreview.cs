@@ -40,6 +40,7 @@ internal static partial class Program
             {
                 fixture.Shell.Renderer.ColorScheme = new(dark);
                 await Capture(fixture.Shell, "wardrobe-" + (dark ? "dark" : "light"));
+                await Capture(fixture.Shell, "wardrobe-compact-" + (dark ? "dark" : "light"), 800, 600);
             }
             wardrobe.Dispose();
             var service = new FirstRunService(Path.Combine(output, "setup-data"), Path.Combine(output, "locator.json"));
@@ -51,22 +52,23 @@ internal static partial class Program
                 {
                     fixture.Shell.Renderer.ColorScheme = new(dark);
                     await Capture(fixture.Shell, "setup-" + step + "-" + (dark ? "dark" : "light"));
+                    await Capture(fixture.Shell, "setup-compact-" + step + "-" + (dark ? "dark" : "light"), 800, 600);
                 }
                 if (step < 3) { Emit(fixture.Intents, "ui.setup.next"); fixture.Shell.Render(new(1000, 640)); }
             }
-            async Task Capture(XsrUiShell shell, string name)
+            async Task Capture(XsrUiShell shell, string name, int width = 1000, int height = 640)
             {
                 shell.Renderer.ReducedMotion = true;
                 using var surface = new AvaloniaUiSceneSurface(shell);
-                var window = new Avalonia.Controls.Window { Width = 1000, Height = 640, Content = surface, ShowInTaskbar = false };
+                var window = new Avalonia.Controls.Window { Width = width, Height = height, Content = surface, ShowInTaskbar = false };
                 window.Show();
                 await Task.Delay(100);
-                surface.Width = 1000; surface.Height = 640;
-                surface.Measure(new Size(1000, 640)); surface.Arrange(new Rect(0, 0, 1000, 640));
+                surface.Width = width; surface.Height = height;
+                surface.Measure(new Size(width, height)); surface.Arrange(new Rect(0, 0, width, height));
                 for (int frame = 0; frame < 12; frame++) surface.CommitScene();
                 window.UpdateLayout(); surface.UpdateLayout();
                 await Task.Delay(100);
-                using var bitmap = new RenderTargetBitmap(new PixelSize(1000, 640), new Vector(96, 96));
+                using var bitmap = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96, 96));
                 bitmap.Render(surface); bitmap.Save(Path.Combine(output, name + ".png"), PngBitmapEncoderOptions.Default);
                 window.Close();
             }

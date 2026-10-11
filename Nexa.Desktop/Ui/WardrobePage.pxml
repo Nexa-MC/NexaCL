@@ -1,22 +1,22 @@
 <Page xmlns="https://pcln.dev/pxml/2026" Key="AccountWardrobePage" Label="更衣橱">
   <StackPanel Key="WardrobeRoot" Orientation="Horizontal" Weight="1">
     <ContentHost Key="WardrobeRailSurface" Width="300">
-    <StackPanel Key="WardrobeProfileRail" Orientation="Vertical" Width="300" Padding="22,18,22,22" Spacing="8" Scroll="true">
-      <Text Key="WardrobeCurrentTitle" Content="当前外观" Height="28" />
-      <Text Key="WardrobeCurrentSubtitle" Content="完整预览当前档案正在使用的皮肤与披风。" Height="24" />
-      <StackPanel Key="WardrobeCurrentCard" Orientation="Vertical" Weight="1" MinHeight="160" Padding="16,12,16,16" Spacing="6">
-        <ContentHost Key="WardrobeCurrentPreview" Weight="1" MinHeight="120">
-          <Image Key="WardrobePlayerPreview" Label="当前皮肤与披风全身预览" Source="lucide/image" Weight="1" />
-          <Button Key="WardrobeCurrentView" Label="切换当前外观视角" Content="" Icon="pcl/refresh" Command="ui.wardrobe.view.current" Width="24" Height="24" HorizontalAlignment="End" VerticalAlignment="Start" />
-        </ContentHost>
-        <Text Key="WardrobeIdentity" Content="更衣橱" Height="28" />
-        <Text Key="WardrobeProfileKind" Content="请先选择账户" Height="24" />
+      <StackPanel Key="WardrobeProfileRail" Orientation="Vertical" Width="300" Padding="22,18,22,22" Spacing="8" Scroll="true">
+        <Text Key="WardrobeCurrentTitle" Content="当前外观" Height="32" />
+        <Text Key="WardrobeCurrentSubtitle" Content="完整预览当前档案正在使用的皮肤与披风。" Height="24" />
+        <StackPanel Key="WardrobeCurrentCard" Orientation="Vertical" Weight="1" MinHeight="160" Padding="16,12,16,16" Spacing="6">
+          <ContentHost Key="WardrobeCurrentPreview" Weight="1" MinHeight="120">
+            <Image Key="WardrobePlayerPreview" Label="当前皮肤与披风全身预览" Source="lucide/image" Weight="1" />
+            <Button Key="WardrobeCurrentView" Label="切换当前外观视角" Content="" Icon="pcl/refresh" Command="ui.wardrobe.view.current" Width="24" Height="24" Margin="0,4,4,0" HorizontalAlignment="End" VerticalAlignment="Start" />
+          </ContentHost>
+          <Text Key="WardrobeIdentity" Content="更衣橱" Height="28" />
+          <Text Key="WardrobeProfileKind" Content="请先选择账户" Height="24" />
+        </StackPanel>
+        <Button Key="WardrobeBrowse" Label="选择本地皮肤" Content="选择本地皮肤" Command="ui.wardrobe.browse" Height="42" />
+        <Button Key="WardrobeLibrary" Label="打开皮肤库" Content="皮肤库" Command="ui.wardrobe.library" Height="42" />
+        <Button Key="WardrobeManage" Label="打开账户皮肤站" Content="打开账户皮肤站" Command="ui.wardrobe.manage" Icon="lucide/external-link" Height="38" IsVisible="false" />
+        <Button Key="WardrobeCancel" Label="取消更衣橱操作" Content="取消操作" Command="ui.wardrobe.cancel" Height="34" IsVisible="false" />
       </StackPanel>
-      <Button Key="WardrobeBrowse" Label="选择本地皮肤" Content="选择本地皮肤" Command="ui.wardrobe.browse" Height="42" />
-      <Button Key="WardrobeLibrary" Label="打开皮肤库" Content="皮肤库" Command="ui.wardrobe.library" Height="42" />
-      <Button Key="WardrobeManage" Label="打开账户皮肤站" Content="打开账户皮肤站" Command="ui.wardrobe.manage" Icon="lucide/external-link" Height="38" IsVisible="false" />
-      <Button Key="WardrobeCancel" Label="取消更衣橱操作" Content="取消操作" Command="ui.wardrobe.cancel" Height="34" IsVisible="false" />
-    </StackPanel>
     </ContentHost>
     <StackPanel Key="WardrobeContent" Orientation="Vertical" Weight="1" Padding="26,20,26,24" Spacing="8" Scroll="true">
       <StackPanel Key="WardrobeMainHeader" Orientation="Horizontal" Spacing="10" Height="34" IsVisible="false">

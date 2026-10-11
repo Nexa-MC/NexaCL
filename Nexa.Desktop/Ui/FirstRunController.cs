@@ -71,8 +71,8 @@ internal sealed class FirstRunController : IDisposable
                     shell.Tree.GetComponent<XsrUiImage>(_nodes["SetupHero"])!.Raster = new(image, []) { FitToBounds = true };
             }
         }
-        Style("SetupPath", new(243, 246, 250), new(52, 61, 74), 14);
-        Style("SetupSummary", new(243, 246, 250), new(52, 61, 74), 14);
+        Style("SetupPathSurface", new(243, 246, 250), new(52, 61, 74), 14);
+        Style("SetupSummarySurface", new(243, 246, 250), new(52, 61, 74), 14);
         Style("SetupStep", XsrUiColor.Transparent, new(122, 138, 153), 13);
         Style("SetupDescription", XsrUiColor.Transparent, new(96, 108, 124), 16);
         Style("SetupError", XsrUiColor.Transparent, new(173, 48, 48), 14);
@@ -95,6 +95,14 @@ internal sealed class FirstRunController : IDisposable
         if (_disposed || Completed) return;
         var frame = _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupFrame"])!;
         double width = Math.Min(768, Math.Max(240, _shell.Renderer.Viewport.Width - 72));
+        var body = _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupBody"])!;
+        double? bodyWidth = Step == 0 ? Math.Min(600, width) : null;
+        if (body.Width != bodyWidth)
+        {
+            body.Width = bodyWidth;
+            body.HorizontalAlignment = Step == 0 ? XsrUiAlignment.Center : XsrUiAlignment.Stretch;
+            _shell.Tree.MarkDirty(_nodes["SetupBody"], XsrUiDirtyKinds.Layout);
+        }
         if (frame.Width != width)
         {
             frame.Width = width;
@@ -152,6 +160,7 @@ internal sealed class FirstRunController : IDisposable
         var hero = _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupHero"])!;
         hero.Width = hero.Height = Step == 0 ? 144 : 64;
         hero.VerticalAlignment = Step == 0 ? XsrUiAlignment.Center : XsrUiAlignment.Start;
+        _shell.Tree.MarkDirty(_nodes["SetupHero"], XsrUiDirtyKinds.Layout);
         _shell.Tree.GetComponent<XsrUiElement>(_nodes["SetupForm"])!.VerticalAlignment =
             Step == 0 ? XsrUiAlignment.Center : XsrUiAlignment.Stretch;
         _shell.Tree.MarkDirty(_nodes["SetupBody"], XsrUiDirtyKinds.Layout);
@@ -167,7 +176,7 @@ internal sealed class FirstRunController : IDisposable
         SetText("SetupPath", _directory); SetText("SetupSummary", $"数据位置\n{_directory}\n\n必要遥测：已启用\n诊断信息：{_shell.Renderer.LocalizeText(_consent ? "已启用" : "已关闭")}");
         DesktopLiteralText.Preserve(_shell.Tree, _nodes["SetupPath"]);
         Show("SetupStart", Step == 0); Show("SetupFooter", Step > 0);
-        Show("SetupDirectory", Step == 1); Show("SetupConsent", Step == 2); Show("SetupSummary", Step == 3); Show("SetupBack", Step > 0);
+        Show("SetupDirectory", Step == 1); Show("SetupConsent", Step == 2); Show("SetupSummary", Step == 3); Show("SetupSummarySurface", Step == 3); Show("SetupBack", Step > 0);
         Show("SetupBrowse", !_status.LocationLocked);
         Show("SetupPrivate", !_status.TelemetryRequired);
         SetText("SetupPrivate", (!_consent ? "✓  " : "    ") + "仅共享必要遥测");

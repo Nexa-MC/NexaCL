@@ -605,13 +605,13 @@ internal sealed class WardrobePageController : IDisposable
         string prefix = card.Kind == AccountWardrobeTextureKind.Cape ? "WardrobeCape" : "WardrobeSkin";
         var container = Element(parent, prefix + "Card." + card.Id, XsrUiOrientation.Vertical, 0);
         var border = _shell.Tree.GetComponent<XsrUiVisualStyle>(container)!; border.Background = new(255, 255, 255); border.CornerRadius = 18; border.Hover = new(242, 247, 253);
-        var body = Element(container, prefix + "Body." + card.Id, XsrUiOrientation.Vertical, 8);
+        var body = Element(container, prefix + "Body." + card.Id, XsrUiOrientation.Vertical, 12);
         _shell.Tree.GetComponent<XsrUiElement>(body)!.Weight = 1;
         var image = _shell.Tree.Create(prefix + "Preview." + card.Id); _shell.Tree.Attach(image, body);
         _shell.Tree.SetComponent(image, new XsrUiElement { Height = 140, Weight = 1 });
         _shell.Tree.SetComponent(image, new XsrUiImage("lucide/image"));
         _shell.Tree.SetComponent(image, new XsrUiSemantic(XsrUiSemanticRole.Image, card.Title) { Localize = false });
-        var details = Element(body, prefix + "Details." + card.Id, XsrUiOrientation.Vertical, 3);
+        var details = Element(body, prefix + "Details." + card.Id, XsrUiOrientation.Vertical, 6);
         var title = Label(details, prefix + "Title." + card.Id, card.Title, 25, true);
         _shell.Tree.GetComponent<XsrUiVisualStyle>(title)!.FontWeight = 600;
         Label(details, prefix + "Source." + card.Id, card.Source, 22, false);
@@ -619,7 +619,7 @@ internal sealed class WardrobePageController : IDisposable
         _shell.Tree.SetComponent(viewButton, new XsrUiImage("pcl/refresh"));
         _shell.Tree.SetComponent(viewButton, new XsrUiOverlayLayer(isModal: false));
         var viewElement = _shell.Tree.GetComponent<XsrUiElement>(viewButton)!;
-        viewElement.Width = 22; viewElement.HorizontalAlignment = XsrUiAlignment.End; viewElement.VerticalAlignment = XsrUiAlignment.Start;
+        viewElement.Margin = new(0, 4, 4, 0); viewElement.Width = 22; viewElement.HorizontalAlignment = XsrUiAlignment.End; viewElement.VerticalAlignment = XsrUiAlignment.Start;
         _shell.Tree.GetComponent<XsrUiVisualStyle>(viewButton)!.Background = XsrUiColor.Transparent;
         _shell.Tree.GetComponent<XsrUiVisualStyle>(viewButton)!.BorderWidth = 0;
         XsrUiEntityId apply = default;
@@ -683,7 +683,7 @@ internal sealed class WardrobePageController : IDisposable
         SetCardMetrics(); _dirty = true; _shell.Tree.MarkDirty(Page, XsrUiDirtyKinds.Layout);
     }
     private static double CardWidth(double height) => height < 240
-        ? Math.Clamp(Math.Clamp(height - 18, 72, 150) * .65 + 116, 164, 216)
+        ? Math.Clamp(Math.Clamp(height - 18, 72, 150) * .65 + 140, 220, 244)
         : Math.Clamp((height - 90) * .65 + 88, 150, 190);
     private void SetCardMetrics()
     {
@@ -691,7 +691,9 @@ internal sealed class WardrobePageController : IDisposable
         foreach (var card in _skinCards.Concat(_capeCards))
         {
             var container = _shell.Tree.GetComponent<XsrUiElement>(card.Container)!;
-            container.Padding = horizontal ? new(10, 8, 10, 8) : new(14, 10, 14, 12);
+            // Paint the whole card; inset the body instead of shrinking the painted surface.
+            container.Padding = default;
+            _shell.Tree.GetComponent<XsrUiElement>(card.Body)!.Margin = new(12, 10, 12, 10);
             container.Width = container.MinWidth = _cardWidth - container.Padding.Horizontal;
             container.Height = _cardHeight - container.Padding.Vertical;
             _shell.Tree.GetComponent<XsrUiStackPanel>(card.Body)!.Direction = horizontal ? XsrUiOrientation.Horizontal : XsrUiOrientation.Vertical;
@@ -699,6 +701,7 @@ internal sealed class WardrobePageController : IDisposable
             image.Width = horizontal ? Math.Clamp(_cardHeight - 18, 72, 150) * .65 : null;
             image.Height = horizontal ? Math.Clamp(_cardHeight - 18, 72, 150) : Math.Max(72, _cardHeight - (card.Apply.IsAssigned ? 90 : 56));
             image.Weight = horizontal ? 0 : 1;
+            image.VerticalAlignment = horizontal ? XsrUiAlignment.Center : XsrUiAlignment.Stretch;
             var details = _shell.Tree.GetComponent<XsrUiElement>(card.Details)!; details.Weight = horizontal ? 1 : 0; details.VerticalAlignment = XsrUiAlignment.Center;
             var labels = _shell.Tree.Children(card.Details);
             foreach (var label in labels.Take(2))
@@ -706,7 +709,7 @@ internal sealed class WardrobePageController : IDisposable
             _shell.Tree.GetComponent<XsrUiElement>(labels[0])!.Height = horizontal ? 20 : 25;
             _shell.Tree.GetComponent<XsrUiElement>(labels[1])!.Height = horizontal ? 18 : 22;
             _shell.Tree.GetComponent<XsrUiElement>(card.ViewButton)!.Height = 22;
-            if (card.Apply.IsAssigned) _shell.Tree.GetComponent<XsrUiElement>(card.Apply)!.Height = horizontal ? 26 : 30;
+            if (card.Apply.IsAssigned) _shell.Tree.GetComponent<XsrUiElement>(card.Apply)!.Height = 32;
             _shell.Tree.MarkDirty(card.Container, XsrUiDirtyKinds.Layout);
         }
     }

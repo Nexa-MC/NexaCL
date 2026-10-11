@@ -18,3 +18,5 @@ Desktop regressions cover localized accessible view captions, profile isolation,
 `Nexa.Desktop.Tests --native-wardrobe-setup-preview <output-directory>` mounts real Avalonia surfaces and captures both themes for wardrobe and all four setup stages. The wardrobe inventory is deterministic fixture data (six skin entries and one cape), not evidence of a successful live provider response. The harness never completes setup or changes the user's data location.
 
 These changes use existing scene primitives and sealed services; no new reflection, native interop or AOT-only code path is introduced.
+
+Layout refinement: card surfaces paint their full bounds while child bodies provide inset spacing; previews center vertically next to wider metadata and 32px actions. First-run path and summary surfaces wrap padded text, with the browse action vertically centered. Native preview coverage includes 1000x640 and 800x600 in both themes.
