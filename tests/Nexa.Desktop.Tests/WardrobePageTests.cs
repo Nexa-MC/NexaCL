@@ -252,7 +252,7 @@ internal static partial class Program
         AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiText>(FindEntity(fixture.Shell, "WardrobeSkinTitle.history"))!.Localize);
         var scene = fixture.Shell.Render(new(800, 600));
         var preview = scene.Nodes.Single(node => node.Entity == FindEntity(fixture.Shell, "WardrobePlayerPreview"));
-        AssertTrue(preview.Rect.Width > 100 && preview.Rect.Height >= 80);
+        AssertTrue(preview.Rect.Width > 100 && preview.Rect.Height >= 180);
         AssertTrue(preview.RasterImage!.Layers.Count > 2); AssertEqual(.65, preview.RasterImage.AspectRatio);
         var historyCard = scene.Nodes.Single(node => node.Entity == FindEntity(fixture.Shell, "WardrobeSkinCard.history"));
         var historyApply = scene.Nodes.Single(node => node.Entity == FindEntity(fixture.Shell, "WardrobeSkinApply.history"));
@@ -289,11 +289,11 @@ internal static partial class Program
         foreach (string view in views)
         {
             WardrobeEmit(fixture, "ui.wardrobe.view.current", "WardrobeCurrentView"); fixture.Shell.Render(new(800, 600));
-            AssertEqual(view + " · 切换视角", WardrobeText(fixture, "WardrobeCurrentView"));
+            AssertEqual(view + " · 切换视角", fixture.Shell.Tree.GetComponent<XsrUiSemantic>(FindEntity(fixture.Shell, "WardrobeCurrentView"))!.Label);
             AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiImage>(preview.Entity)!.Raster!.Layers.Count > 0);
         }
         WardrobeEmit(fixture, "ui.wardrobe.view.card", "WardrobeSkinView.history"); fixture.Shell.Render(new(800, 600));
-        AssertEqual("背面 · 切换视角", WardrobeText(fixture, "WardrobeSkinView.history"));
+        AssertEqual("背面 · 切换视角", fixture.Shell.Tree.GetComponent<XsrUiSemantic>(FindEntity(fixture.Shell, "WardrobeSkinView.history"))!.Label);
         WardrobeEmit(fixture, "ui.wardrobe.library", "WardrobeLibrary"); fixture.Shell.Render(new(800, 600));
         AssertEqual(1, libraries); AssertEqual(FindEntity(fixture.Shell, "WardrobeLibrary"), page.LibraryButton);
         double contentWidth = scene.Nodes.Single(node => node.Entity == FindEntity(fixture.Shell, "WardrobeContent")).Rect.Width;

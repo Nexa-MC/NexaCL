@@ -10371,5 +10371,8 @@
   {"source":"正在加载更多资源…","en":"Loading more resources…","zh-Hant":"正在載入更多資源…"},
   {"source":"正在显示缓存资料。","en":"Showing cached information.","zh-Hant":"正在顯示快取資料。"},
   {"source":"已达到列表显示上限，请缩小搜索范围。","en":"The list display limit has been reached. Refine your search.","zh-Hant":"已達到列表顯示上限，請縮小搜尋範圍。"},
-  {"source":"次下载","en":"downloads","zh-Hant":"次下載"}
+  {"source":"次下载","en":"downloads","zh-Hant":"次下載"},
+  {"source": "完整预览当前档案正在使用的皮肤与披风。", "en": "Preview the skin and cape used by this profile.", "zh-Hant": "完整預覽目前檔案正在使用的皮膚與披風。"},
+  {"source": "此前更换过的皮肤和其他档案的皮肤", "en": "Previously used skins and skins from other profiles", "zh-Hant": "此前更換過的皮膚和其他檔案的皮膚"},
+  {"source": "开始配置", "en": "Set up", "zh-Hant": "開始設定"}
 ]

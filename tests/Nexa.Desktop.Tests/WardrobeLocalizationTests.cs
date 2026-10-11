@@ -71,8 +71,8 @@ internal static partial class Program
             AssertEqual("搜索皮肤", FindByKey(fixture.Shell, scene, "WardrobeSkinTitle.literal").Text);
             AssertEqual(locale == "en" ? "2 items" : "2 項", FindByKey(fixture.Shell, scene, "WardrobeSkinCount").Text);
             AssertEqual(locale == "en" ? "Other profiles" : "其他檔案", FindByKey(fixture.Shell, scene, "WardrobeSkinSource.other").Text);
-            AssertEqual(locale == "en" ? "Front · Change view" : "正面 · 切換視角", FindByKey(fixture.Shell, scene, "WardrobeCurrentView").Text);
-            AssertEqual(locale == "en" ? "Open the skin library" : "打開皮膚庫", FindByKey(fixture.Shell, scene, "WardrobeLibrary").Text);
+            AssertEqual(locale == "en" ? "Front · Change view" : "正面 · 切換視角", FindByKey(fixture.Shell, scene, "WardrobeCurrentView").Label);
+            AssertEqual(locale == "en" ? "Skin library" : "皮膚庫", FindByKey(fixture.Shell, scene, "WardrobeLibrary").Text);
             AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiText>(FindEntity(fixture.Shell, "WardrobeIdentity"))!.Localize);
             using var library = new WardrobeLibraryPageController(fixture.Shell, fixture.Intents, router, commands, fixture.Store, fixture.Feedback);
             fixture.Shell.Stage.Navigation.Replace(library.Page);

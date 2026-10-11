@@ -1,19 +1,23 @@
 <Page xmlns="https://pcln.dev/pxml/2026" Key="AccountWardrobePage" Label="更衣橱">
   <StackPanel Key="WardrobeRoot" Orientation="Horizontal" Weight="1">
+    <ContentHost Key="WardrobeRailSurface" Width="300">
     <StackPanel Key="WardrobeProfileRail" Orientation="Vertical" Width="300" Padding="22,18,22,22" Spacing="8" Scroll="true">
       <Text Key="WardrobeCurrentTitle" Content="当前外观" Height="28" />
-      <Text Key="WardrobeCurrentSubtitle" Content="皮肤与披风跟随当前选中的账户。" Height="38" />
+      <Text Key="WardrobeCurrentSubtitle" Content="完整预览当前档案正在使用的皮肤与披风。" Height="24" />
       <StackPanel Key="WardrobeCurrentCard" Orientation="Vertical" Weight="1" MinHeight="160" Padding="16,12,16,16" Spacing="6">
-        <Image Key="WardrobePlayerPreview" Label="当前皮肤与披风全身预览" Source="lucide/image" Weight="1" MinHeight="80" />
-        <Button Key="WardrobeCurrentView" Label="切换当前外观视角" Content="正面 · 切换视角" Command="ui.wardrobe.view.current" Height="28" />
+        <ContentHost Key="WardrobeCurrentPreview" Weight="1" MinHeight="120">
+          <Image Key="WardrobePlayerPreview" Label="当前皮肤与披风全身预览" Source="lucide/image" Weight="1" />
+          <Button Key="WardrobeCurrentView" Label="切换当前外观视角" Content="" Icon="pcl/refresh" Command="ui.wardrobe.view.current" Width="24" Height="24" HorizontalAlignment="End" VerticalAlignment="Start" />
+        </ContentHost>
         <Text Key="WardrobeIdentity" Content="更衣橱" Height="28" />
         <Text Key="WardrobeProfileKind" Content="请先选择账户" Height="24" />
       </StackPanel>
-      <Button Key="WardrobeBrowse" Label="选择本地皮肤" Content="选择本地皮肤" Command="ui.wardrobe.browse" Icon="lucide/image" Height="38" />
-      <Button Key="WardrobeLibrary" Label="打开皮肤库" Content="打开皮肤库" Command="ui.wardrobe.library" Icon="lucide/shirt" Height="38" />
+      <Button Key="WardrobeBrowse" Label="选择本地皮肤" Content="选择本地皮肤" Command="ui.wardrobe.browse" Height="42" />
+      <Button Key="WardrobeLibrary" Label="打开皮肤库" Content="皮肤库" Command="ui.wardrobe.library" Height="42" />
       <Button Key="WardrobeManage" Label="打开账户皮肤站" Content="打开账户皮肤站" Command="ui.wardrobe.manage" Icon="lucide/external-link" Height="38" IsVisible="false" />
       <Button Key="WardrobeCancel" Label="取消更衣橱操作" Content="取消操作" Command="ui.wardrobe.cancel" Height="34" IsVisible="false" />
     </StackPanel>
+    </ContentHost>
     <StackPanel Key="WardrobeContent" Orientation="Vertical" Weight="1" Padding="26,20,26,24" Spacing="8" Scroll="true">
       <StackPanel Key="WardrobeMainHeader" Orientation="Horizontal" Spacing="10" Height="34" IsVisible="false">
         <Text Key="WardrobePageTitle" Content="更衣橱" Weight="1" />
@@ -23,12 +27,12 @@
         <Text Key="WardrobeSkinTitle" Content="皮肤" Weight="1" />
         <Text Key="WardrobeSkinCount" Content="0 项" Width="48" />
         <StackPanel Key="WardrobeSkinPager" Orientation="Horizontal" Height="30" Spacing="4">
-          <Button Key="WardrobeSkinPrevious" Content="" Label="向左浏览皮肤" Command="ui.wardrobe.skin.previous" Icon="lucide/chevron-left" Width="30" Height="30" />
+          <Button Key="WardrobeSkinPrevious" Content="" Label="向左浏览皮肤" Command="ui.wardrobe.skin.previous" Icon="lucide/arrow-left" Width="30" Height="30" />
           <Button Key="WardrobeSkinNext" Content="" Label="向右浏览皮肤" Command="ui.wardrobe.skin.next" Icon="lucide/chevron-right" Width="30" Height="30" />
         </StackPanel>
-        <Button Key="WardrobeRefresh" Content="" Label="刷新更衣橱" Command="ui.wardrobe.refresh" Icon="lucide/refresh-cw" Width="30" Height="30" />
+        <Button Key="WardrobeRefresh" Content="" Label="刷新更衣橱" Command="ui.wardrobe.refresh" Icon="pcl/refresh" Width="30" Height="30" />
       </StackPanel>
-      <Text Key="WardrobeSkinSubtitle" Content="此前使用、其他档案与当前账户衣柜中的皮肤。" Height="28" />
+      <Text Key="WardrobeSkinSubtitle" Content="此前更换过的皮肤和其他档案的皮肤" Height="28" />
       <StackPanel Key="WardrobeSkinTrack" Orientation="Vertical" Weight="1" MinHeight="112">
         <StackPanel Key="WardrobeSkins" Orientation="Horizontal" Weight="1" Spacing="12" Scroll="true" />
         <Text Key="WardrobeSkinsEmpty" Content="还没有发现可展示的皮肤。可以选择本地皮肤或打开皮肤库。" Height="58" IsVisible="false" />
@@ -37,9 +41,9 @@
         <Text Key="WardrobeCapeTitle" Content="披风" Weight="1" />
         <Text Key="WardrobeCapeCount" Content="0 项" Width="48" />
         <StackPanel Key="WardrobeCapePager" Orientation="Horizontal" Height="30" Spacing="4">
-          <Button Key="WardrobeCapePrevious" Content="" Label="向左浏览披风" Command="ui.wardrobe.cape.previous" Icon="lucide/chevron-left" Width="30" Height="30" />
+          <Button Key="WardrobeCapePrevious" Content="" Label="向左浏览披风" Command="ui.wardrobe.cape.previous" Icon="lucide/arrow-left" Width="30" Height="30" />
           <Button Key="WardrobeCapeNext" Content="" Label="向右浏览披风" Command="ui.wardrobe.cape.next" Icon="lucide/chevron-right" Width="30" Height="30" />
-          <Button Key="WardrobeCapeClear" Content="" Label="关闭当前披风" Command="ui.wardrobe.cape.clear" Icon="lucide/ban" Width="30" Height="30" />
+          <Button Key="WardrobeCapeClear" Content="" Label="关闭当前披风" Command="ui.wardrobe.cape.clear" Icon="lucide/circle-minus" Width="30" Height="30" />
         </StackPanel>
       </StackPanel>
       <Text Key="WardrobeCapeSubtitle" Content="当前、历史和其他档案中发现的披风。" Height="30" />
