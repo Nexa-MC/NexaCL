@@ -20,10 +20,11 @@ internal sealed partial class SettingsPageController
     private readonly Dictionary<XsrUiEntityId, XsrSemanticId> _developerDiagnosticActions = [];
     private RendererDiagnosticsCapture? _rendererDiagnostics;
     private StateInspectorCapture? _stateInspector;
-    private string? _stateInspectorError;
+    private bool _stateInspectorError;
     private bool _developerDiagnosticsCaptured;
     private int _stateInspectorPage;
-    private XsrUiEntityId _rendererDiagnosticsBody, _stateInspectorBody, _stateInspectorPrevious, _stateInspectorNext;
+    private XsrUiEntityId _rendererDiagnosticsBody, _rendererDiagnosticsFields, _stateInspectorBody, _stateInspectorCard;
+    private readonly Dictionary<string, XsrUiEntityId> _rendererDiagnosticVariants = [];
 
     private sealed record RendererDiagnosticsCapture(long SceneVersion, int LayoutVisits, int TreeCount,
         XsrUiColorScheme ColorScheme, bool ReducedMotion, bool OptionalMotionSuspended, bool EffectiveReducedMotion);
@@ -36,13 +37,14 @@ internal sealed partial class SettingsPageController
     private void ResetDeveloperDiagnosticControls()
     {
         _developerDiagnosticActions.Clear();
-        _rendererDiagnosticsBody = _stateInspectorBody = _stateInspectorPrevious = _stateInspectorNext = default;
+        _rendererDiagnosticsBody = _rendererDiagnosticsFields = _stateInspectorBody = _stateInspectorCard = default;
+        _rendererDiagnosticVariants.Clear();
     }
 
     private void RetireDeveloperDiagnostics()
     {
         ResetDeveloperDiagnosticControls();
-        _rendererDiagnostics = null; _stateInspector = null; _stateInspectorError = null;
+        _rendererDiagnostics = null; _stateInspector = null; _stateInspectorError = false;
         _developerDiagnosticsCaptured = false; _stateInspectorPage = 0;
     }
 
@@ -81,102 +83,94 @@ internal sealed partial class SettingsPageController
 
     private void CaptureStateInspector()
     {
-        _stateInspectorPage = 0; _stateInspectorError = null;
+        _stateInspectorPage = 0; _stateInspectorError = false;
         try { _stateInspector = CaptureDeveloperStateMetadata(_store); }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { _stateInspector = null; _stateInspectorError = "无法读取状态元数据，请重试。"; }
+        { _stateInspector = null; _stateInspectorError = true; }
     }
 
     private void BuildRendererDiagnostics()
     {
-        var card = SettingsCard("SettingsDiagnostics.Renderer", new(20, 14, 20, 14), 8);
-        var toolbar = Stack(card, "SettingsDiagnostics.Renderer.Toolbar", XsrUiOrientation.Horizontal, 12);
-        var title = Text(toolbar, "Renderer Diagnostics", 14, Ink, 36, 600);
-        _shell.Tree.GetComponent<XsrUiElement>(title)!.Weight = 1;
-        var refresh = RefreshIcon(toolbar, "SettingsDiagnostics.Renderer.Refresh", RefreshRendererDiagnostics);
-        _shell.Tree.GetComponent<XsrUiSemantic>(refresh)!.Label = "刷新渲染器诊断";
-        _developerDiagnosticActions[refresh] = RefreshRendererDiagnostics;
-        Text(card, "场景与布局为上一帧，其余为捕获时信息；点击刷新更新。", 11, Muted, 24);
-        _rendererDiagnosticsBody = Stack(card, "SettingsDiagnostics.Renderer.Body", XsrUiOrientation.Vertical, 4);
+        var card = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsRendererDiagnostics.d.nxml"));
+        var nodes = CatalogNodes(card);
+        _developerDiagnosticActions[nodes["SettingsDiagnostics.Renderer.Refresh"]] = RefreshRendererDiagnostics;
+        _rendererDiagnosticsBody = nodes["SettingsDiagnostics.Renderer.Body"];
+        _rendererDiagnosticsFields = default;
+        _rendererDiagnosticVariants.Clear();
         BuildRendererDiagnosticFields();
     }
 
     private void BuildRendererDiagnosticFields()
     {
         if (_rendererDiagnostics is not { } snapshot) return;
-        foreach (var child in _shell.Tree.Children(_rendererDiagnosticsBody).ToArray()) _shell.Tree.Destroy(child);
-        void Field(string name, string label, string value)
+        var fields = DesktopMarkup.Dynamic("SettingsRendererFields.d.nxml", new Dictionary<string, string>
         {
-            var row = Stack(_rendererDiagnosticsBody, "SettingsDiagnostics.Renderer." + name, XsrUiOrientation.Horizontal, 12);
-            var caption = Text(row, label, 12, Muted, 26);
-            _shell.Tree.GetComponent<XsrUiElement>(caption)!.Width = 144;
-            var text = DiagnosticText(row, "SettingsDiagnostics.Renderer." + name + ".Value", value, 12, Ink, 26);
-            _shell.Tree.GetComponent<XsrUiElement>(text)!.Weight = 1;
+            ["SceneVersion"] = snapshot.SceneVersion.ToString(CultureInfo.InvariantCulture),
+            ["LayoutVisits"] = snapshot.LayoutVisits.ToString(CultureInfo.InvariantCulture),
+            ["TreeCount"] = snapshot.TreeCount.ToString(CultureInfo.InvariantCulture)
+        });
+        if (_shell.Tree.IsAlive(_rendererDiagnosticsFields)) _dynamic.Reload(_rendererDiagnosticsFields, fields);
+        else _rendererDiagnosticsFields = _dynamic.Append(_rendererDiagnosticsBody, fields);
+        var nodes = CatalogNodes(_rendererDiagnosticsFields);
+        Project("ColorScheme", snapshot.ColorScheme.IsDark ? "SettingsRendererColorDark.d.nxml" : "SettingsRendererColorLight.d.nxml",
+            new Dictionary<string, string> { ["accent"] = snapshot.ColorScheme.Accent.ToString() });
+        Project("Motion", snapshot.EffectiveReducedMotion ? "SettingsRendererMotionReduced.d.nxml" : "SettingsRendererMotionNormal.d.nxml");
+        Project("MotionPolicy", (snapshot.ReducedMotion, snapshot.OptionalMotionSuspended) switch
+        {
+            (false, false) => "SettingsRendererPolicy00.d.nxml",
+            (false, true) => "SettingsRendererPolicy01.d.nxml",
+            (true, false) => "SettingsRendererPolicy10.d.nxml",
+            _ => "SettingsRendererPolicy11.d.nxml"
+        });
+        void Project(string name, string template, Dictionary<string, string>? data = null)
+        {
+            var fragment = DesktopMarkup.Dynamic(template, data, _shell.Renderer.LocalizeText);
+            if (_rendererDiagnosticVariants.TryGetValue(name, out var root)) _dynamic.Reload(root, fragment);
+            else _rendererDiagnosticVariants[name] = _dynamic.Append(nodes["SettingsDiagnostics.Renderer." + name + ".Slot"], fragment);
         }
-        Field("SceneVersion", "场景版本", snapshot.SceneVersion.ToString(CultureInfo.InvariantCulture));
-        Field("LayoutVisits", "上次布局访问", snapshot.LayoutVisits.ToString(CultureInfo.InvariantCulture));
-        Field("TreeCount", "树实体数量", snapshot.TreeCount.ToString(CultureInfo.InvariantCulture));
-        Field("ColorScheme", "确认的颜色方案", _shell.Renderer.LocalizeText(snapshot.ColorScheme.IsDark ? "深色" : "浅色") + " · " + snapshot.ColorScheme.Accent);
-        Field("Motion", "动态效果", _shell.Renderer.LocalizeText(snapshot.EffectiveReducedMotion ? "减少动态效果" : "正常动态效果"));
-        Field("MotionPolicy", "动态策略", _shell.Renderer.LocalizeText("用户减少动态：") + _shell.Renderer.LocalizeText(snapshot.ReducedMotion ? "是" : "否")
-            + " · " + _shell.Renderer.LocalizeText("暂停可选动态：") + _shell.Renderer.LocalizeText(snapshot.OptionalMotionSuspended ? "是" : "否"));
     }
 
     private void BuildStateInspector()
     {
-        var card = SettingsCard("SettingsDiagnostics.State", new(20, 14, 20, 14), 8);
-        var toolbar = Stack(card, "SettingsDiagnostics.State.Toolbar", XsrUiOrientation.Horizontal, 12);
-        var title = Text(toolbar, "XSR State Inspector", 14, Ink, 36, 600);
-        _shell.Tree.GetComponent<XsrUiElement>(title)!.Weight = 1;
-        var refresh = RefreshIcon(toolbar, "SettingsDiagnostics.State.Refresh", RefreshStateDiagnostics);
-        _shell.Tree.GetComponent<XsrUiSemantic>(refresh)!.Label = "刷新状态元数据";
-        _developerDiagnosticActions[refresh] = RefreshStateDiagnostics;
-        Text(card, "只读元数据；翻页沿用当前快照，点击刷新后重新读取。", 11, Muted, 24);
-        var paging = Stack(card, "SettingsDiagnostics.State.Paging", XsrUiOrientation.Horizontal, 12);
-        _stateInspectorPrevious = ActionButton(paging, "SettingsDiagnostics.State.Previous", "上一页", PreviousStateDiagnostics, 76);
-        _stateInspectorNext = ActionButton(paging, "SettingsDiagnostics.State.Next", "下一页", NextStateDiagnostics, 76);
-        _developerDiagnosticActions[_stateInspectorPrevious] = PreviousStateDiagnostics;
-        _developerDiagnosticActions[_stateInspectorNext] = NextStateDiagnostics;
-        _stateInspectorBody = Stack(card, "SettingsDiagnostics.State.Body", XsrUiOrientation.Vertical, 6);
+        _stateInspectorCard = AppendCatalog(_sections, "SettingsStateInspector.d.nxml", new Dictionary<string, string>
+        { ["previous"] = "false", ["next"] = "false" });
+        var nodes = CatalogNodes(_stateInspectorCard);
+        _developerDiagnosticActions[nodes["SettingsDiagnostics.State.Refresh"]] = RefreshStateDiagnostics;
+        _developerDiagnosticActions[nodes["SettingsDiagnostics.State.Previous"]] = PreviousStateDiagnostics;
+        _developerDiagnosticActions[nodes["SettingsDiagnostics.State.Next"]] = NextStateDiagnostics;
+        _stateInspectorBody = nodes["SettingsDiagnostics.State.Body"];
         BuildStateInspectorPage();
     }
 
     private void BuildStateInspectorPage()
     {
-        foreach (var child in _shell.Tree.Children(_stateInspectorBody).ToArray()) _shell.Tree.Destroy(child);
         var snapshot = _stateInspector;
         int count = snapshot?.Rows.Count ?? 0;
         int pages = Math.Max(1, (count + StateInspectorPageSize - 1) / StateInspectorPageSize);
         _stateInspectorPage = Math.Clamp(_stateInspectorPage, 0, pages - 1);
-        _shell.Tree.GetComponent<XsrUiInput>(_stateInspectorPrevious)!.Enabled = _stateInspectorPage > 0;
-        _shell.Tree.GetComponent<XsrUiInput>(_stateInspectorNext)!.Enabled = _stateInspectorPage + 1 < pages;
-        string summary = _stateInspectorError
-            ?? (snapshot is null ? "暂无状态元数据。" : $"第 {_stateInspectorPage + 1} / {pages} 页 · 共 {snapshot.Total} 项"
-            + (count < snapshot.Total ? $"，显示前 {StateInspectorMaximumRows} 项" : ""));
-        DiagnosticText(_stateInspectorBody, "SettingsDiagnostics.State.Summary", _shell.Renderer.LocalizeText(summary), 12, Muted, 26);
-        if (snapshot is null) return;
+        ReloadCatalog(_stateInspectorCard, ("previous", Flag(_stateInspectorPage > 0)), ("next", Flag(_stateInspectorPage + 1 < pages)));
+        _dynamic.Clear(_stateInspectorBody);
+        if (_stateInspectorError || snapshot is null)
+        {
+            _dynamic.Append(_stateInspectorBody, DesktopMarkup.Dynamic(_stateInspectorError ? "SettingsStateError.d.nxml" : "SettingsStateEmpty.d.nxml"));
+            return;
+        }
+        _dynamic.Append(_stateInspectorBody, DesktopMarkup.Dynamic(count < snapshot.Total ? "SettingsStateSummaryLimited.d.nxml" : "SettingsStateSummary.d.nxml",
+            new Dictionary<string, string>
+            {
+                ["page"] = (_stateInspectorPage + 1).ToString(CultureInfo.InvariantCulture), ["pages"] = pages.ToString(CultureInfo.InvariantCulture),
+                ["total"] = snapshot.Total.ToString(CultureInfo.InvariantCulture), ["limit"] = StateInspectorMaximumRows.ToString(CultureInfo.InvariantCulture)
+            }, _shell.Renderer.LocalizeText));
         foreach (var entry in snapshot.Rows.Skip(_stateInspectorPage * StateInspectorPageSize).Take(StateInspectorPageSize))
         {
             string name = "SettingsDiagnostics.State.Entry." + entry.SemanticId;
-            var row = Stack(_stateInspectorBody, name, XsrUiOrientation.Vertical, 2);
-            DiagnosticText(row, name + ".Id", entry.SemanticId, 12, Ink, 24);
-            var metadata = DiagnosticText(row, name + ".Metadata", _shell.Renderer.LocalizeText("拥有者：") + entry.Owner
-                + " · " + _shell.Renderer.LocalizeText("类型：") + entry.Kind
-                + " · " + _shell.Renderer.LocalizeText("修订：") + entry.Revision.ToString(CultureInfo.InvariantCulture)
-                + " · " + _shell.Renderer.LocalizeText("可用性：") + entry.Availability, 11, Muted, 36);
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(metadata)!.WrapText = true;
-            _shell.Tree.GetComponent<XsrUiText>(metadata)!.MaxLines = 2;
+            _dynamic.Append(_stateInspectorBody, DesktopMarkup.Dynamic("SettingsStateEntry.d.nxml", new Dictionary<string, string>
+            {
+                ["row"] = name, ["idKey"] = name + ".Id", ["metadataKey"] = name + ".Metadata",
+                ["id"] = entry.SemanticId, ["owner"] = entry.Owner, ["kind"] = entry.Kind,
+                ["revision"] = entry.Revision.ToString(CultureInfo.InvariantCulture), ["availability"] = entry.Availability
+            }, _shell.Renderer.LocalizeText));
         }
-        _shell.Tree.MarkDirty(_stateInspectorBody, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-    }
-
-    private XsrUiEntityId DiagnosticText(XsrUiEntityId parent, string name, string content, double size, XsrUiColor ink, double height)
-    {
-        var entity = Element(parent, name, XsrUiSemanticRole.Text, content, height: height);
-        _shell.Tree.SetComponent(entity, new XsrUiText(content) { MaxLines = 1, TrimOverflow = true, Localize = false });
-        _shell.Tree.GetComponent<XsrUiSemantic>(entity)!.Localize = false;
-        Style(entity, XsrUiColor.Transparent, ink, 0, size);
-        return entity;
     }
 
     private void HandleDeveloperDiagnosticsIntent(DesktopUiIntent intent)

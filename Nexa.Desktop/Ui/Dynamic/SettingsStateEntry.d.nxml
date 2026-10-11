@@ -1,0 +1,6 @@
+<nxml-dynamic>
+<StackPanel Key="{data row}" Class="settings-diagnostics-entry">
+  <Text Key="{data idKey}" Content="{data id}" Label="{data id}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-id" />
+  <Text Key="{data metadataKey}" Content="拥有者：{data owner} · 类型：{data kind} · 修订：{data revision} · 可用性：{data availability}" Label="拥有者：{data owner} · 类型：{data kind} · 修订：{data revision} · 可用性：{data availability}" Localize="false" MaxLines="2" TrimOverflow="true" Class="settings-diagnostics-metadata" />
+</StackPanel>
+</nxml-dynamic>

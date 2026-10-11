@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="SettingsDiagnostics.State.Summary" Content="无法读取状态元数据，请重试。" Label="无法读取状态元数据，请重试。" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-summary" />
+</nxml-dynamic>

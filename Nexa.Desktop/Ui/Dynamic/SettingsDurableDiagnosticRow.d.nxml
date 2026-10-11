@@ -1,3 +1,3 @@
 <nxml-dynamic>
-<Text Content="{data text}" Localize="false" Class="settings-workspace-history" />
+<Text Content="{data timestamp} · {data module} / {data operation} / {data stage} · {data outcome}" Localize="false" Class="settings-workspace-history" />
 </nxml-dynamic>

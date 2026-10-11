@@ -122,4 +122,14 @@ internal sealed partial class SettingsPageController
         "game.jvm" or "game.arguments" => "高级参数",
         _ => "启动与窗口",
     };
+    // Legacy callers in the remaining diagnostics slices; the developer inspector no longer uses this factory.
+    private XsrUiEntityId DiagnosticText(XsrUiEntityId parent, string name, string content, double size, XsrUiColor ink, double height)
+    {
+        var entity = Element(parent, name, XsrUiSemanticRole.Text, content, height: height);
+        _shell.Tree.SetComponent(entity, new XsrUiText(content) { MaxLines = 1, TrimOverflow = true, Localize = false });
+        _shell.Tree.GetComponent<XsrUiSemantic>(entity)!.Localize = false;
+        Style(entity, XsrUiColor.Transparent, ink, 0, size);
+        return entity;
+    }
+
 }

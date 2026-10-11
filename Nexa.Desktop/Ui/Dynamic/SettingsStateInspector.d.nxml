@@ -1,0 +1,16 @@
+<nxml-dynamic>
+<StackPanel Key="SettingsDiagnostics.State" Class="settings-diagnostics-card">
+  <StackPanel Class="settings-diagnostics-body">
+  <StackPanel Key="SettingsDiagnostics.State.Toolbar" Class="settings-diagnostics-toolbar">
+    <Text Content="XSR State Inspector" Class="settings-diagnostics-title" />
+    <Button Key="SettingsDiagnostics.State.Refresh" Label="刷新状态元数据" Icon="pcl/refresh" Command="ui.settings.diagnostics.state.refresh" Class="settings-diagnostics-refresh" />
+  </StackPanel>
+  <Text Content="只读元数据；翻页沿用当前快照，点击刷新后重新读取。" Class="settings-diagnostics-hint" />
+  <StackPanel Key="SettingsDiagnostics.State.Paging" Class="settings-diagnostics-toolbar">
+    <Button Key="SettingsDiagnostics.State.Previous" Content="上一页" Label="上一页" Command="ui.settings.diagnostics.state.previous" Enabled="{data previous}" Class="settings-catalog-action settings-diagnostics-page" />
+    <Button Key="SettingsDiagnostics.State.Next" Content="下一页" Label="下一页" Command="ui.settings.diagnostics.state.next" Enabled="{data next}" Class="settings-catalog-action settings-diagnostics-page" />
+  </StackPanel>
+  <Dynamic Key="SettingsDiagnostics.State.Body" Class="settings-diagnostics-rows" />
+  </StackPanel>
+</StackPanel>
+</nxml-dynamic>

@@ -7,10 +7,12 @@ internal static class DesktopMarkup
 {
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, NxmlHostIr> StaticFragments = new(StringComparer.Ordinal);
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, NxmlDynamicTemplate> DynamicTemplates = new(StringComparer.Ordinal);
-    internal static NxmlHostIr Dynamic(string name, IReadOnlyDictionary<string, string>? data = null)
+    internal static NxmlHostIr Dynamic(string name, IReadOnlyDictionary<string, string>? data = null, Func<string, string>? localize = null)
     {
         if (!name.EndsWith(".d.nxml", StringComparison.Ordinal)) throw new ArgumentException("Expected a .d.nxml fragment.", nameof(name));
         var template = DynamicTemplates.GetOrAdd(name, static asset => new NxmlDynamicTemplate(Read(asset)));
+        if (localize is not null)
+            return template.CompileLocalized(data ?? new Dictionary<string, string>(), NxmlComponentLibrary.Default, localize, Styles.Value);
         return data is null || data.Count == 0
             ? StaticFragments.GetOrAdd(name, _ => template.Compile(new Dictionary<string, string>(), NxmlComponentLibrary.Default, Styles.Value))
             : template.Compile(data, NxmlComponentLibrary.Default, Styles.Value);

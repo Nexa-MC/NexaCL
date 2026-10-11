@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="SettingsDiagnostics.State.Summary" Content="暂无状态元数据。" Label="暂无状态元数据。" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-summary" />
+</nxml-dynamic>

@@ -50,10 +50,14 @@ internal sealed partial class SettingsPageController
         if (_contentStoreStatistics is { } stats)
             _dynamic.Append(nodes["ContentWorkspace.Summary"], DesktopMarkup.Dynamic("SettingsContentStats.d.nxml", new Dictionary<string, string>
             {
-                ["summary"] = $"{stats.Backups} 个备份 · {stats.Objects} 个对象 · 实际 {stats.PhysicalBytes} 字节 · 逻辑 {stats.LogicalBytes} 字节 · 可回收 {stats.ReclaimableBytes} 字节",
-                ["saved"] = string.Format(System.Globalization.CultureInfo.CurrentCulture, _shell.Renderer.LocalizeText("备份内容去重节省：{0} 字节；不含清单及文件系统开销。"), Math.Max(0, stats.LogicalBytes - stats.ReferencedBytes)),
+                ["backups"] = stats.Backups.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["objects"] = stats.Objects.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["physical"] = stats.PhysicalBytes.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["logical"] = stats.LogicalBytes.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["reclaimableBytes"] = stats.ReclaimableBytes.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["savedBytes"] = Math.Max(0, stats.LogicalBytes - stats.ReferencedBytes).ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ["reclaimable"] = Flag(stats.ReclaimableBytes > 0), ["clean"] = Flag(stats.ReclaimableBytes == 0)
-            }));
+            }, _shell.Renderer.LocalizeText));
         else _dynamic.Append(nodes["ContentWorkspace.Summary"], DesktopMarkup.Dynamic("SettingsContentIntro.d.nxml"));
         foreach (var (name, kind) in new[] { ("Refresh", "refresh"), ("Capture", "capture"), ("Import", "import"), ("Prune", "prune") })
             RegisterWorkspaceAction(nodes, name, kind);
@@ -66,11 +70,12 @@ internal sealed partial class SettingsPageController
             {
                 ["row"] = "ContentWorkspace.Backup." + manifest.Identity,
                 ["actions"] = "ContentWorkspace.Actions." + manifest.Identity,
-                ["caption"] = manifest.Label + $" · {manifest.Files.Count} " + _shell.Renderer.LocalizeText("个文件") + $" · {manifest.CreatedAt.ToLocalTime():yyyy-MM-dd HH:mm}",
+                ["name"] = manifest.Label, ["files"] = manifest.Files.Count.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["created"] = manifest.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.CurrentCulture),
                 ["verify"] = "ContentWorkspace.Verify." + manifest.Identity,
                 ["restore"] = "ContentWorkspace.Restore." + manifest.Identity,
                 ["export"] = "ContentWorkspace.Export." + manifest.Identity
-            }));
+            }, _shell.Renderer.LocalizeText));
             var actions = CatalogNodes(row);
             foreach (var (name, kind) in new[] { ("Verify", "verify"), ("Restore", "restore"), ("Export", "export") })
                 RegisterWorkspaceAction(actions, name + "." + manifest.Identity, kind, manifest.Identity);
@@ -82,7 +87,10 @@ internal sealed partial class SettingsPageController
         RegisterWorkspaceAction(diagnosticNodes, "Raw", "raw");
         foreach (var entry in _durableDiagnosticRows.Take(12))
             _dynamic.Append(diagnosticNodes["DurableDiagnosticWorkspace.History"], DesktopMarkup.Dynamic("SettingsDurableDiagnosticRow.d.nxml", new Dictionary<string, string>
-            { ["text"] = $"{entry.Timestamp.ToLocalTime():MM-dd HH:mm} · {entry.Module} / {entry.Operation} / {entry.Stage} · {entry.Outcome}" }));
+            {
+                ["timestamp"] = entry.Timestamp.ToLocalTime().ToString("MM-dd HH:mm", System.Globalization.CultureInfo.CurrentCulture),
+                ["module"] = entry.Module, ["operation"] = entry.Operation, ["stage"] = entry.Stage, ["outcome"] = entry.Outcome.ToString()
+            }));
         BuildDiagnosticAiWorkspace();
         if (_contentWorkspaceMessage is { } message)
             _dynamic.Append(nodes["ContentWorkspace.Message"], DesktopMarkup.Dynamic("SettingsContentMessage.d.nxml", new Dictionary<string, string> { ["text"] = message }));

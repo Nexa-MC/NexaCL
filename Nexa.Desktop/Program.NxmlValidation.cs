@@ -143,6 +143,21 @@ internal static partial class Program
                 || shell.Tree.GetComponent<XsrUiText>(row)?.Localize != false
                 || shell.Tree.GetComponent<XsrUiText>(row)?.Content != data["text"])
                 throw new InvalidOperationException("Literal log row projection failed.");
+            var inspector = dynamic.Append(shell.Tree.Children(page).Single(), DesktopMarkup.Dynamic("SettingsStateInspector.d.nxml",
+                new Dictionary<string, string> { ["previous"] = "false", ["next"] = "true" }));
+            XsrUiEntityId body = default;
+            shell.Tree.Walk(inspector, entity => { if (shell.Tree.Name(entity) == "SettingsDiagnostics.State.Body") body = entity; return true; });
+            var literal = "<state> {data count} {state secret}";
+            var entry = dynamic.Append(body, DesktopMarkup.Dynamic("SettingsStateEntry.d.nxml", new Dictionary<string, string>
+            {
+                ["row"] = "diagnostic-fixture", ["idKey"] = "diagnostic-id", ["metadataKey"] = "diagnostic-metadata", ["id"] = "fixture",
+                ["owner"] = literal, ["kind"] = "Cell", ["revision"] = "1", ["availability"] = "Available"
+            }, shell.Renderer.LocalizeText));
+            XsrUiEntityId metadata = default;
+            shell.Tree.Walk(entry, entity => { if (shell.Tree.Name(entity) == "diagnostic-metadata") metadata = entity; return true; });
+            if (shell.Tree.GetComponent<XsrUiText>(metadata) is not { Localize: false } text || !text.Content.Contains(literal, StringComparison.Ordinal))
+                throw new InvalidOperationException("Diagnostic format did not preserve literal metadata.");
+            Console.WriteLine("Dynamic diagnostic validation passed: external inspector, named text format and literal metadata.");
             Console.WriteLine("Dynamic dock validation passed: overlay ownership, process template, literal text and selection reload.");
         }
         finally { shell.Tree.Destroy(page); }

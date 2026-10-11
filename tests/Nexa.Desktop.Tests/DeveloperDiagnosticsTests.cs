@@ -113,10 +113,15 @@ internal static partial class Program
         AssertEqual(scene, fixture.Text("SettingsDiagnostics.Renderer.SceneVersion.Value"));
         AssertEqual(scheme, fixture.Text("SettingsDiagnostics.Renderer.ColorScheme.Value"));
         AssertEqual(policy, fixture.Text("SettingsDiagnostics.Renderer.MotionPolicy.Value"));
+        var retainedValue = fixture.Find("SettingsDiagnostics.Renderer.SceneVersion.Value");
+        var retainedScheme = fixture.Find("SettingsDiagnostics.Renderer.ColorScheme.Value");
+        AssertTrue(fixture.Shell.Tree.GetComponent<Nexa.Xsr.Renderer.Nxml.NxmlDynamicSlot>(fixture.Find("SettingsDiagnostics.Renderer.Body")) is not null);
         long expectedScene = fixture.Shell.Renderer.SceneVersion;
         int expectedVisits = fixture.Shell.Renderer.LastLayoutVisits;
         int expectedCount = fixture.Shell.Tree.Count;
         fixture.Click("ui.settings.diagnostics.renderer.refresh", "SettingsDiagnostics.Renderer.Refresh");
+        AssertEqual(retainedValue, fixture.Find("SettingsDiagnostics.Renderer.SceneVersion.Value"));
+        AssertEqual(retainedScheme, fixture.Find("SettingsDiagnostics.Renderer.ColorScheme.Value"));
         AssertEqual(expectedScene.ToString(CultureInfo.InvariantCulture), fixture.Text("SettingsDiagnostics.Renderer.SceneVersion.Value"));
         AssertEqual(expectedVisits.ToString(CultureInfo.InvariantCulture), fixture.Text("SettingsDiagnostics.Renderer.LayoutVisits.Value"));
         AssertEqual(expectedCount.ToString(CultureInfo.InvariantCulture), fixture.Text("SettingsDiagnostics.Renderer.TreeCount.Value"));
@@ -165,6 +170,27 @@ internal static partial class Program
         AssertEqual("Available", snapshot.Rows[0].Availability);
         AssertEqual("Stale", SettingsPageController.CaptureDeveloperStateMetadata(store).Rows[0].Availability);
         AssertEqual(0, secret.FormatCalls);
+    }
+
+    private static void DeveloperDiagnosticFormatsFollowLanguageWithoutLocalizingMetadata()
+    {
+        using var fixture = new DeveloperDiagnosticsFixture();
+        UiLocalizationCatalog localization = new();
+        fixture.Shell.Renderer.TextLocalizer = localization.Translate;
+        fixture.SetDeveloper(true); fixture.Select("advanced");
+        foreach (string language in new[] { "en", "zh-Hant", "zh-Hans" })
+        {
+            localization.SetLanguage(language);
+            var refresh = fixture.Find("SettingsDiagnostics.State.Refresh");
+            fixture.Click("ui.settings.diagnostics.state.refresh", "SettingsDiagnostics.State.Refresh");
+            AssertEqual(refresh, fixture.Find("SettingsDiagnostics.State.Refresh"));
+            string summary = fixture.Text("SettingsDiagnostics.State.Summary");
+            AssertTrue(summary.StartsWith(language == "en" ? "Page 1 / " : "第 1 / ", StringComparison.Ordinal));
+            string metadata = fixture.Text("SettingsDiagnostics.State.Entry.AAADiagnostic000.Metadata");
+            AssertTrue(metadata.Contains("DeveloperDiagnosticTests", StringComparison.Ordinal));
+            AssertTrue(metadata.StartsWith(language switch { "en" => "Owner:", "zh-Hant" => "擁有者：", _ => "拥有者：" }, StringComparison.Ordinal));
+        }
+        AssertEqual(0, fixture.Secret.FormatCalls);
     }
 
     private sealed class DeveloperDiagnosticSecret

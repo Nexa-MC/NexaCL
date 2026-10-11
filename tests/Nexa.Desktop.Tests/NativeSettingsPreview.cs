@@ -162,6 +162,40 @@ internal static partial class Program
                 Emit(f.Intents, "ui.settings.argument.add", FindByKey(f.Shell, surface.Scene!, "SettingsArgumentAdd.game.arguments").Entity);
                 surface.CommitScene(); Capture("catalog-arguments");
             }, timeout.Token);
+            await startup.InvokeAsync(() =>
+            {
+                AssertTrue(f.Foundation.Host.SettingsPolicy.Set(new("developer.enabled", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "true"))).IsSuccess);
+                surface!.CommitScene();
+            }, timeout.Token);
+            await SelectCategory("advanced");
+            await Task.Delay(500, timeout.Token);
+            await startup.InvokeAsync(() =>
+            {
+                var diagnosticScene = surface!.Scene!;
+                ShowSettingsFixtureControl(f, controller, ref diagnosticScene, "SettingsDiagnostics.Renderer.MotionPolicy.Value", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("renderer-diagnostics");
+                ShowSettingsFixtureControl(f, controller, ref diagnosticScene, "SettingsDiagnostics.State.Next", f.Shell.Renderer.Viewport);
+                ShowStateRows();
+                surface.CommitScene(); Capture("state-inspector");
+                var nextStatePage = ShowSettingsFixtureControl(f, controller, ref diagnosticScene, "SettingsDiagnostics.State.Next", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); f.Shell.Renderer.Activate(nextStatePage.Entity);
+                surface.CommitScene(); ShowStateRows(); Capture("state-inspector-next");
+                void ShowStateRows()
+                {
+                    List<string> keys = [];
+                    f.Shell.Tree.Walk(controller.Page, entity =>
+                    {
+                        string key = f.Shell.Tree.Name(entity);
+                        if (key.StartsWith("SettingsDiagnostics.State.Entry.", StringComparison.Ordinal) && key.EndsWith(".Metadata", StringComparison.Ordinal)) keys.Add(key);
+                        return true;
+                    });
+                    AssertTrue(keys.Count > 0);
+                    ShowSettingsFixtureControl(f, controller, ref diagnosticScene, keys[Math.Min(4, keys.Count - 1)], f.Shell.Renderer.Viewport);
+                    surface.CommitScene();
+                }
+                AssertTrue(f.Foundation.Host.SettingsPolicy.Set(new("developer.enabled", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "false"))).IsSuccess);
+                surface.CommitScene();
+            }, timeout.Token);
             await SelectCategory("about");
             await Task.Delay(500, timeout.Token);
             await startup.InvokeAsync(() => Capture("about"), timeout.Token);

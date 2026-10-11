@@ -116,6 +116,7 @@ internal static partial class Program
         ("ContentIntegrityDetailsShowActualFactsAndRetireScopedReads", ContentIntegrityDetailsShowActualFactsAndRetireScopedReads),
         ("LaunchNavigationRejectsUnknownAndUnboundWithoutChangingPage", LaunchNavigationRejectsUnknownAndUnboundWithoutChangingPage),
         ("LaunchNavigationBindingsBorrowRealPagesAndPreserveRepeatedAssignments", LaunchNavigationBindingsBorrowRealPagesAndPreserveRepeatedAssignments),
+        ("developer diagnostic formats follow language without translating metadata", DeveloperDiagnosticFormatsFollowLanguageWithoutLocalizingMetadata),
         ("DiagnosticAiWorkspaceRebuildsCommittedAdmissionAndCancelsRetiredSend", () => DiagnosticAiWorkspaceRebuildsCommittedAdmissionAndCancelsRetiredSend().AsTask().GetAwaiter().GetResult()),
         ("HardwareAdviceUsesSameCapturedEstimatePreflightAndNeverWritesConfiguration", HardwareAdviceUsesSameCapturedEstimatePreflightAndNeverWritesConfiguration),
         ("StartupHintsConsumeCommittedChoiceAndKeepLaunchProgress", StartupHintsConsumeCommittedChoiceAndKeepLaunchProgress),

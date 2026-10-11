@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="SettingsDiagnostics.Renderer.MotionPolicy.Value" Content="用户减少动态：否 · 暂停可选动态：否" Label="用户减少动态：否 · 暂停可选动态：否" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-value" />
+</nxml-dynamic>

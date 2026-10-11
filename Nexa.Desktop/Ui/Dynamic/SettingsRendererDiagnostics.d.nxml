@@ -1,0 +1,12 @@
+<nxml-dynamic>
+<StackPanel Key="SettingsDiagnostics.Renderer" Class="settings-diagnostics-card">
+  <StackPanel Class="settings-diagnostics-body">
+  <StackPanel Key="SettingsDiagnostics.Renderer.Toolbar" Class="settings-diagnostics-toolbar">
+    <Text Content="Renderer Diagnostics" Class="settings-diagnostics-title" />
+    <Button Key="SettingsDiagnostics.Renderer.Refresh" Label="刷新渲染器诊断" Icon="pcl/refresh" Command="ui.settings.diagnostics.renderer.refresh" Class="settings-diagnostics-refresh" />
+  </StackPanel>
+  <Text Content="场景与布局为上一帧，其余为捕获时信息；点击刷新更新。" Class="settings-diagnostics-hint" />
+  <Dynamic Key="SettingsDiagnostics.Renderer.Body" Class="settings-diagnostics-fields" />
+  </StackPanel>
+</StackPanel>
+</nxml-dynamic>

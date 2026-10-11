@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Key="SettingsDiagnostics.State.Summary" Content="第 {data page} / {data pages} 页 · 共 {data total} 项" Label="第 {data page} / {data pages} 页 · 共 {data total} 项" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-summary" />
+</nxml-dynamic>

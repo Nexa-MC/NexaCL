@@ -28,6 +28,13 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 - General protocol observations, storage location/cleanup controls, resolved directory
   rows, settings import/export/reset and disk-log actions now use external fragments.
   Disk-log busy state reloads in place instead of rebuilding the settings page.
+- Backup, migration and AI workspaces use external fragments. Backup statistics,
+  captions and diagnostic history formats now live in NXML rather than C# sentences.
+- Developer renderer diagnostics and state inspector use external fragments, fixed
+  field/condition templates, NSS and named text formats. Renderer refresh preserves
+  field entities; inspector paging replaces only its owned row slot.
+- Literal named text formats support localization before substitution, reject non-text
+  placement and enforce both output and placeholder budgets. Data is never reparsed.
 - Resource filter overlays already use fragments. Other resource presentation is
   still imperative.
 - Shared reload preserves entity identity, nested slots, drafts, scroll, focus,
@@ -47,6 +54,7 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 | Accounts and first run | `AccountFormController.cs`, `FirstRunController.cs` | Form structures, state copy, action availability and complete OOBE composition. |
 | Process and dock copy | `LaunchPageController.Process.cs`, `ProcessLogPageController.cs`, `DesktopTaskBubblePresenter.cs` | Layouts and visual constants are external; migrate remaining conditional labels and formatting, then audit all lifecycle paths. |
 | Global overlays | `DesktopCommandPalette.cs`, `DesktopFeedbackPresenter.cs` | Palette, notification/dialog collections and actions, keyboard focus and dismiss behavior. |
+| Localization assets | `UiLocalizationCatalog.cs` and `Nexa.Desktop.csproj` | Audit embedded translation data and move the remaining static language payload into the external asset bundle. |
 | Appearance | `CustomAppearanceSession.cs` | Separate runtime image/theme behavior from remaining fixed presentation construction. |
 | Task copy | `TaskCenterController.cs` | Externalize conditional labels, icons and text formatting as fragment variants/data formatting, not C# literals. |
 
@@ -198,3 +206,33 @@ confirmation copy remain a separate text-projection migration item.
 - Remaining: formatted summary/caption copy and confirmation dialogs still need the
   text-projection migration; platform/diagnostic panels and other product surfaces
   above still need migration. This does not close the whole-product objective.
+
+## Developer diagnostic boundary
+
+Renderer diagnostics and state inspector move to external fragments. Refresh reloads
+renderer fields without replacing entities; state pagination replaces only its owned
+row slot and retains the toolbar/body. Metadata capture remains bounded and read-only:
+never read or format arbitrary state values. Format sentences live in NXML and localize
+before literal data substitution. Developer admission and stale intent rejection remain.
+
+## Developer diagnostics and named text verification, 2026-10-11
+
+- Desktop composition: 265 passed. Added checks retain renderer field entities across
+  refresh, preserve inspector controls while paging/refreshing, translate format
+  sentences in en/zh-Hant/zh-Hans and never format arbitrary state payloads.
+- NXML: 56 passed. Added mixed-format localization, unchanged parameter sets, literal
+  XML/state-like data, non-text grammar rejection, 256-placeholder and 1 MiB output
+  budgets, and reload identity/failed-projection preservation regressions.
+- Architecture: 69 projects passed. Diagnostics.cs joins the no-factory gate. Its old
+  DiagnosticText helper remains explicitly in Controls.cs for unmigrated runtime,
+  instance, hardware, integrity and trace panels; these callers are still open.
+- Actual Avalonia previews in both themes cover the complete renderer diagnostic card
+  and rendered state rows after activation of Next. Nested surfaces preserve the
+  original padding and radius. Preview metadata comes from the temporary fixture host.
+- Windows x64 NativeAOT and full trim both publish and run --validate-shell with exit 0.
+  The shipped inspector template and localized named format preserve XML/state-like
+  metadata as literal text. Existing Jint IL2098 remains.
+- Scope remains open: platform capabilities/preflight, advanced launch/runtime/instance
+  diagnostics, remaining catalogue copy, global dialogs and the other product surfaces
+  listed above. The reusable formatter removes the prior blocker for external copy;
+  it does not imply all remaining copy has migrated.

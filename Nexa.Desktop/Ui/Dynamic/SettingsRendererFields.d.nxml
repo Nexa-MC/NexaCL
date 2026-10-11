@@ -1,0 +1,10 @@
+<nxml-dynamic>
+<StackPanel Class="settings-diagnostics-fields">
+<StackPanel Key="SettingsDiagnostics.Renderer.SceneVersion" Class="settings-diagnostics-field"><Text Content="场景版本" Class="settings-diagnostics-label" /><Text Key="SettingsDiagnostics.Renderer.SceneVersion.Value" Content="{data SceneVersion}" Label="{data SceneVersion}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-value" /></StackPanel>
+<StackPanel Key="SettingsDiagnostics.Renderer.LayoutVisits" Class="settings-diagnostics-field"><Text Content="上次布局访问" Class="settings-diagnostics-label" /><Text Key="SettingsDiagnostics.Renderer.LayoutVisits.Value" Content="{data LayoutVisits}" Label="{data LayoutVisits}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-value" /></StackPanel>
+<StackPanel Key="SettingsDiagnostics.Renderer.TreeCount" Class="settings-diagnostics-field"><Text Content="树实体数量" Class="settings-diagnostics-label" /><Text Key="SettingsDiagnostics.Renderer.TreeCount.Value" Content="{data TreeCount}" Label="{data TreeCount}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-diagnostics-value" /></StackPanel>
+<StackPanel Key="SettingsDiagnostics.Renderer.ColorScheme" Class="settings-diagnostics-field"><Text Content="确认的颜色方案" Class="settings-diagnostics-label" /><Dynamic Key="SettingsDiagnostics.Renderer.ColorScheme.Slot" Class="settings-diagnostics-value-slot" /></StackPanel>
+<StackPanel Key="SettingsDiagnostics.Renderer.Motion" Class="settings-diagnostics-field"><Text Content="动态效果" Class="settings-diagnostics-label" /><Dynamic Key="SettingsDiagnostics.Renderer.Motion.Slot" Class="settings-diagnostics-value-slot" /></StackPanel>
+<StackPanel Key="SettingsDiagnostics.Renderer.MotionPolicy" Class="settings-diagnostics-field"><Text Content="动态策略" Class="settings-diagnostics-label" /><Dynamic Key="SettingsDiagnostics.Renderer.MotionPolicy.Slot" Class="settings-diagnostics-value-slot" /></StackPanel>
+</StackPanel>
+</nxml-dynamic>
