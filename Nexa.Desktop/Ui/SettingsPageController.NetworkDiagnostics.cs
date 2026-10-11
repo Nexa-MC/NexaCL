@@ -1,7 +1,7 @@
 using Nexa.Services.Downloads;
 using Nexa.Services.Network;
 using Nexa.Services.Resources;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 
 namespace Nexa.Desktop.Ui;

@@ -1,0 +1,19 @@
+<nxml-page>
+  <Page Key="BedrockInstallPage" Label="安装 Bedrock 版">
+    <ContentHost Key="BedrockInstallHost" Label="Minecraft for Windows 官方安装入口">
+      <StackPanel Key="BedrockInstallCard" Class="layout-BedrockInstallPage-BedrockInstallCard">
+        <Image Key="BedrockInstallIcon" Label="Bedrock 版图标" Source="lucide/box" Class="layout-BedrockInstallPage-BedrockInstallIcon" />
+        <StackPanel Key="BedrockInstallHeader" Class="layout-BedrockInstallPage-BedrockInstallHeader">
+          <Text Key="BedrockInstallTitle" Content="安装 Minecraft for Windows" Class="layout-BedrockInstallPage-BedrockInstallTitle" />
+          <Text Key="BedrockInstallDescription" Content="Bedrock 版 Windows 客户端由 Microsoft Store 提供。购买、许可证和安装由商店处理。" Class="layout-BedrockInstallPage-BedrockInstallDescription" />
+        </StackPanel>
+        <Text Key="BedrockInstallStatus" Content="打开 Microsoft Store，继续获取或安装游戏。" Class="layout-BedrockInstallPage-BedrockInstallStatus" />
+        <StackPanel Key="BedrockInstallActions" Class="layout-BedrockInstallPage-BedrockInstallActions">
+          <Button Key="BedrockInstallStore" Label="打开 Microsoft Store 中的 Minecraft for Windows" Content="打开 Microsoft Store" Icon="lucide/shopping-bag" Command="ui.bedrock.install.store" Class="layout-BedrockInstallPage-BedrockInstallStore" />
+          <Button Key="BedrockInstallWebsite" Label="打开 Minecraft for Windows 官方产品页" Content="官方产品页" Icon="lucide/external-link" Command="ui.bedrock.install.website" Class="layout-BedrockInstallPage-BedrockInstallWebsite" />
+        </StackPanel>
+        <Text Key="BedrockInstallReturn" Content="使用左上角返回，可继续选择 Java 版安装。" Class="layout-BedrockInstallPage-BedrockInstallReturn" />
+      </StackPanel>
+    </ContentHost>
+  </Page>
+</nxml-page>

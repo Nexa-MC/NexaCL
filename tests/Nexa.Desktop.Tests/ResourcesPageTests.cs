@@ -3,7 +3,7 @@ using Nexa.Services.Composition;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Resources;
 using Nexa.Services.Settings;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 

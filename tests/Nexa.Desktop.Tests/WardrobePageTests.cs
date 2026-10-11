@@ -1,7 +1,7 @@
 using Nexa.Core.Media;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 
@@ -613,8 +613,8 @@ internal static partial class Program
 
     private static PngImage WardrobeDesktopSkin()
     {
-        using var resource = typeof(Nexa.UI.Next.Backend.Avalonia.AvaloniaUiShellHost).Assembly
-            .GetManifestResourceStream("Nexa.UI.Next.Backend.Avalonia.Assets.Avatars.Steve.png")!;
+        using var resource = typeof(Nexa.Xsr.Renderer.Backend.Avalonia.AvaloniaUiShellHost).Assembly
+            .GetManifestResourceStream("Nexa.Xsr.Renderer.Backend.Avalonia.Assets.Avatars.Steve.png")!;
         using var buffer = new MemoryStream(); resource.CopyTo(buffer); return PngImage.TryCreate(buffer.ToArray())!;
     }
     private static string WardrobeText(LaunchPageFixture fixture, string key)

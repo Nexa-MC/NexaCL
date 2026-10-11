@@ -3,7 +3,7 @@ using Nexa.Desktop;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Files;
 using Nexa.Services.Settings;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Tests;
@@ -17,7 +17,7 @@ internal static partial class Program
         AssertEqual("NexaCL Firefly v2.0.0.ci.abcdef", Nexa.Desktop.Program.ProductDisplayTitle("2.0.0.ci.abcdef"));
         AssertEqual("NexaCL Firefly v2.0.0", Nexa.Desktop.Program.ProductDisplayTitle("2.0.0"));
         XsrStateStoreBuilder builder = new(); LaunchPageState.DeclareState(builder);
-        var shell = PxmlShellComposer.Compose(builder.Build(), new XsrUiShellOptions
+        var shell = NxmlShellComposer.Compose(builder.Build(), new XsrUiShellOptions
         { Title = "NexaCL", Version = "2.0.0.alpha.6" });
         var scene = shell.Render(new(1024, 600));
         AssertEqual("NexaCL", shell.Title);
@@ -171,7 +171,7 @@ internal static partial class Program
         var store = new XsrStateStoreBuilder().Build();
         var shell = XsrUiShellComposer.Compose(store);
         var intents = new DesktopUiIntentSink();
-        var platform = new Nexa.UI.Next.Backend.Avalonia.AvaloniaUiPlatformActions();
+        var platform = new Nexa.Xsr.Renderer.Backend.Avalonia.AvaloniaUiPlatformActions();
         var mediaCommand = Nexa.Xsr.XsrSemanticId.Parse("ui.media.play-pause");
         shell.Tree.SetComponent(shell.Root, new XsrUiContextMenu([new("音乐播放 / 暂停", mediaCommand)]));
         List<string> opened = [];

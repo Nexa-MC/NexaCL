@@ -1,6 +1,6 @@
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Minecraft.Install;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 
@@ -64,15 +64,7 @@ internal sealed partial class LaunchPageController
     private readonly Dictionary<string, XsrUiEntityId> _catalogStatus = [];
     private static readonly XsrSemanticId CatalogSelect = XsrSemanticId.Parse("ui.install.catalog.select");
     private static readonly XsrSemanticId CatalogRetry = XsrSemanticId.Parse("ui.install.catalog.retry");
-    private static readonly PxmlHostIr CatalogRowTemplate = PxmlCompiler.Compile(PxmlParser.Parse("""
-        <Button xmlns="https://pcln.dev/pxml/2026" Key="CatalogRow" Label="选择版本" Command="ui.install.catalog.select" Height="48">
-          <StackPanel Orientation="Horizontal" Spacing="12" Weight="1" Margin="12,0,12,0">
-            <Image Key="CatalogCheck" Source="lucide/check" Width="18" Height="18" VerticalAlignment="Center" />
-            <Text Key="CatalogName" Weight="1" Height="24" VerticalAlignment="Center" />
-            <Text Key="CatalogDetail" Width="160" Height="20" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-        """));
+    private static readonly NxmlHostIr CatalogRowTemplate = DesktopMarkup.Load("CatalogRow.c.nxml");
     private InstallLoader? ActiveCatalogLoader => (_activeJavaInstallPage == "JavaOptiFabricPage" ? "OptiFabric" : _activeJavaInstallPage == "JavaFabricApiPage" ? "Fabric API" : _activeJavaInstallPage == "JavaQslPage" ? "QSL" : JavaInstallSubpages.First(p => p.PageKey == _activeJavaInstallPage).Loader) switch
     {
         "Fabric API" => InstallLoader.FabricApi,
@@ -314,7 +306,7 @@ internal sealed partial class LaunchPageController
             bool selected = _installGameChosen && (snapshot.Loader is null ? version.Id == _selectedInstallVersion : _selectedInstallBuilds.GetValueOrDefault(snapshot.Loader.Value) == version.Id);
             string? conflict = snapshot.Loader is { } kind ? eligibility?.Builds.GetValueOrDefault(version.Id)?.Conflict : null;
             string detail = _editingInstall && snapshot.Loader is null ? "不可更改" : conflict ?? (snapshot.Loader is not null ? version.Detail : version.Stable ? "正式版" : "测试版");
-            PxmlIrNode Project(PxmlIrNode node) => node with
+            NxmlIrNode Project(NxmlIrNode node) => node with
             {
                 Key = node.Key + ":" + key,
                 Label = node.Key == "CatalogRow" ? (selected ? "已选择 " : "选择 ") + version.Id : node.Label,
@@ -325,7 +317,7 @@ internal sealed partial class LaunchPageController
             if (retained.TryGetValue(version.Id, out row)) _shell.Tree.Attach(row, host);
             else
             {
-                row = PxmlUiLoader.Load(new(Project(CatalogRowTemplate.Root)), _shell.Tree, _store, host);
+                row = NxmlUiLoader.Load(new(Project(CatalogRowTemplate.Root)), _shell.Tree, _store, host);
                 _shell.Tree.GetComponent<XsrUiElement>(row)!.Margin = new XsrUiThickness(0, 0, 0, 2);
             }
             _shell.Tree.GetComponent<XsrUiSemantic>(row)!.Label = _editingInstall && snapshot.Loader is null

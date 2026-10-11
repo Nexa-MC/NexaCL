@@ -1,7 +1,0 @@
-schema=1
-id=1
-name=Broken
-role=Text
-recipe=Text
-children=false
-property=Width|String|Width|None|None|false|

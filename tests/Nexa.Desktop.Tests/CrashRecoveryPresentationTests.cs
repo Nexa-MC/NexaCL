@@ -2,7 +2,7 @@ using Nexa.Desktop.Ui;
 using Nexa.Services.Minecraft.Crash;
 using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Minecraft.Process;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Tests;

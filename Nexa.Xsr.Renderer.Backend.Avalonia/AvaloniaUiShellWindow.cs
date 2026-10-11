@@ -1,0 +1,584 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Chrome;
+using Avalonia.Controls.Templates;
+using Avalonia.Input;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Styling;
+using Avalonia.Threading;
+using Nexa.Xsr.Renderer;
+
+namespace Nexa.Xsr.Renderer.Backend.Avalonia;
+
+/// <summary>
+/// Composited window around an opaque UI.Next scene. Native decorations retain platform animation,
+/// resize and fullscreen behavior. macOS keeps its system traffic lights; Windows uses DWM.
+/// The host reserves shadow space outside the scene and clips its presentation to rounded corners.
+/// </summary>
+public sealed partial class AvaloniaUiShellWindow : Window
+{
+    // Shadow space outside the preserved scene viewport, expressed in DIPs.
+    private const double ChromeMargin = 24;
+    // The compositor owns the large radius; opaque fallback uses the same native region.
+    private const double ChromeCornerRadius = 24;
+    private const double CloseIconSize = 112;
+
+
+    private readonly XsrUiShell _shell;
+    private readonly AvaloniaUiSceneSurface _surface;
+    private readonly AvaloniaNativeWindowActions _windowActions;
+    private readonly Border _shadowSurface;
+    private readonly Border _chromeSurface;
+    private XsrUiColor? _committedTitleBackground;
+    private XsrUiColor? _committedWindowBackground;
+    private readonly Grid _maskedContent;
+    private readonly Grid _root;
+    private Bitmap? _closeIcon;
+    private EllipseGeometry? _revealMask;
+    private ScaleTransform? _closeIconScale;
+    private bool _awaitingFirstSceneCommit;
+    private bool _closeAnimationStarted;
+    private bool _explicitCloseRequested;
+    private bool _hasOpened;
+    private bool _disposed;
+    private bool _updatingChrome;
+    private bool _nativeFrameUpdateQueued;
+    private double _restoredFrameInset;
+    internal bool UsesCompositedEdges => ActualTransparencyLevel == WindowTransparencyLevel.Transparent
+        && !AvaloniaWindowsFrame.IsLayered(this);
+
+    public AvaloniaUiShellWindow(XsrUiShell shell, Stream? iconStream = null)
+    {
+        ArgumentNullException.ThrowIfNull(shell);
+        _shell = shell;
+        Title = shell.Title;
+        _restoredFrameInset = OperatingSystem.IsMacOS() ? 0 : ChromeMargin;
+        Width = 850 + _restoredFrameInset * 2;
+        Height = 500 + _restoredFrameInset * 2;
+        MinWidth = 810 + _restoredFrameInset * 2;
+        MinHeight = 470 + _restoredFrameInset * 2;
+        CanResize = true;
+        ShowInTaskbar = true;
+        WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        // Keep WS_CAPTION / resizable-window styles on Windows so DWM owns native min/max
+        // transitions. Only suppress Avalonia's drawn decorations, not the native capability.
+        WindowDecorations = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? WindowDecorations.Full : WindowDecorations.None;
+        if (OperatingSystem.IsWindows())
+        {
+            // Extension can create and style decorations synchronously. Bind their theme
+            // explicitly first; a later resource cannot replace a cached implicit theme.
+            WindowDecorationsTheme = new ControlTheme
+            {
+                TargetType = typeof(WindowDrawnDecorations),
+                Setters = { new Setter(WindowDrawnDecorations.TemplateProperty, new EmptyWindowDecorationsTemplate()) },
+            };
+        }
+        ExtendClientAreaToDecorationsHint = true;
+        // Transparent edge pixels are composited; the inner surface remains fully opaque.
+        // A layered Win32 fallback is rejected after the platform handle becomes available.
+        Background = Brushes.Transparent;
+        TransparencyBackgroundFallback = new SolidColorBrush(Color.FromRgb(shell.Palette.WindowBackground.Red, shell.Palette.WindowBackground.Green, shell.Palette.WindowBackground.Blue));
+        TransparencyLevelHint = [WindowTransparencyLevel.Transparent, WindowTransparencyLevel.None];
+        ExtendClientAreaTitleBarHeightHint = XsrUiShell.TitleBarHeight;
+        InitializeBranding(iconStream);
+
+        _shadowSurface = new Border
+        {
+            Margin = new Thickness(0),
+            CornerRadius = new CornerRadius(ChromeCornerRadius),
+            BoxShadow = default,
+            Background = TransparencyBackgroundFallback,
+            IsHitTestVisible = false,
+        };
+        _chromeSurface = new Border
+        {
+            Margin = new Thickness(0),
+            CornerRadius = new CornerRadius(ChromeCornerRadius),
+            ClipToBounds = true,
+        };
+
+        _surface = new AvaloniaUiSceneSurface(shell);
+        _surface.TitleBarDragRequested += OnTitleBarDragRequested;
+        _surface.SceneCommitted += OnSceneCommitted;
+        _windowActions = new AvaloniaNativeWindowActions(_surface, () => _shell.Renderer.EffectiveReducedMotion,
+            _shell.Renderer.LocalizeText)
+        {
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+        };
+        _windowActions.MinimizeRequested += (_, _) => RequestMinimize();
+        _windowActions.MaximizeRequested += OnMaximizeRequested;
+        _windowActions.CloseRequested += (_, _) => RequestWindowClose();
+
+        // This overlay has no application layout. The scene surface below remains the sole
+        // projection of PXML/UI.Next entities; these controls are native window affordances.
+        Grid chrome = new();
+        chrome.Children.Add(_surface);
+        if (OperatingSystem.IsMacOS()) chrome.Children.Add(new NativeTitleBarHitRegion(_surface));
+        if (!OperatingSystem.IsMacOS()) chrome.Children.Add(_windowActions);
+        _chromeSurface.Child = chrome;
+
+        // Close clips this subtree while its icon remains above it. Startup only decorates
+        // the prepared scene and leaves its complete native shape and input regions intact.
+        _maskedContent = new Grid();
+        _maskedContent.Children.Add(_shadowSurface);
+        _maskedContent.Children.Add(_chromeSurface);
+        foreach (Border grip in OperatingSystem.IsMacOS() ? [] : CreateResizeGrips())
+        {
+            _maskedContent.Children.Add(grip);
+        }
+
+        _root = new Grid();
+        _root.Children.Add(_maskedContent);
+
+        Content = _root;
+        _root.SizeChanged += (_, _) => UpdateChromeForState(WindowState is WindowState.Maximized or WindowState.FullScreen);
+        ScalingChanged += (_, _) => UpdateChromeForState(WindowState is WindowState.Maximized or WindowState.FullScreen);
+        PropertyChanged += OnWindowPropertyChanged;
+    }
+
+    /// <summary>
+    /// Raised once the finite startup entrance has finished or was skipped under reduced motion.
+    /// </summary>
+    public event EventHandler? StartupRevealCompleted;
+
+    internal AvaloniaUiSceneSurface Surface => _surface;
+
+    // Native hit testing owns title-bar double-click preferences, including macOS zoom/minimize.
+    // Interactive scene nodes remain above this behavior logically: the hit region excludes them.
+    private sealed class NativeTitleBarHitRegion : Control, global::Avalonia.Rendering.ICustomHitTest
+    {
+        private readonly AvaloniaUiSceneSurface _surface;
+        internal NativeTitleBarHitRegion(AvaloniaUiSceneSurface surface)
+        {
+            _surface = surface;
+            WindowDecorationProperties.SetElementRole(this, WindowDecorationsElementRole.TitleBar);
+        }
+        public bool HitTest(Point point) => _surface.IsNativeTitleBarPoint(new(point.X, point.Y));
+    }
+
+    private sealed class EmptyWindowDecorationsTemplate : IWindowDrawnDecorationsTemplate
+    {
+        public TemplateResult<WindowDrawnDecorationsContent> Build() =>
+            new(new WindowDrawnDecorationsContent(), new NameScope());
+
+        object ITemplate.Build() => Build().Result;
+    }
+
+    protected override void OnOpened(EventArgs e)
+    {
+        // Native Show reapplies Avalonia's DWM frame even when restoring a hidden normal
+        // window. Repair every opening, before observers, independently of first entrance.
+        UpdateChromeForState(WindowState is WindowState.Maximized or WindowState.FullScreen);
+        if (_hasOpened && !_showingForTrayRestore) CancelTrayVisibility();
+        base.OnOpened(e);
+        _surface.SetRasterPresentationEnabled(WindowState != WindowState.Minimized);
+        _shell.PublishWindowActivity(IsActive, WindowState == WindowState.Minimized);
+        if (_hasOpened) return;
+        _hasOpened = true;
+        if (_shell.Renderer.ReducedMotion)
+        {
+            OnStartupRevealCompleted();
+            return;
+        }
+
+        // Entrance decorates the actual prepared scene, never an empty native window.
+        if (_surface.Scene is not null)
+        {
+            RunStartupReveal();
+        }
+        else
+        {
+            _awaitingFirstSceneCommit = true;
+        }
+    }
+
+    internal Func<bool>? CloseGuard { get; set; }
+    internal Func<bool>? HideToTrayRequested { get; set; }
+
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        base.OnClosing(e);
+        if (e.Cancel) return;
+        if (!_explicitCloseRequested && !_closeAnimationStarted && HideToTrayRequested?.Invoke() == true) { e.Cancel = true; return; }
+        if (!_closeAnimationStarted && CloseGuard?.Invoke() == false) { e.Cancel = true; return; }
+        CancelTrayVisibility();
+        if (_closeAnimationStarted || _shell.Renderer.EffectiveReducedMotion)
+        {
+            return;
+        }
+
+        // System-initiated closes (Alt+F4, taskbar) arrive here; the window-action close button
+        // routes through RequestClose because a programmatic Close bypasses this override on
+        // some platforms. Either way the collapse plays once before the real close.
+        e.Cancel = true;
+        _closeAnimationStarted = true;
+        PlayCloseCollapse();
+    }
+
+    /// <summary>
+    /// Plays the close collapse and then closes for real. The collapse runs exactly once; a
+    /// close request that arrives while it plays falls through to the plain close.
+    /// </summary>
+    internal void RequestClose()
+    {
+        if (!_closeAnimationStarted && CloseGuard?.Invoke() == false) return;
+        _explicitCloseRequested = true;
+        CancelTrayVisibility();
+        if (_closeAnimationStarted || _shell.Renderer.EffectiveReducedMotion)
+        {
+            Close();
+            return;
+        }
+
+        _closeAnimationStarted = true;
+        PlayCloseCollapse();
+    }
+
+    internal void RequestWindowClose()
+    {
+        if (!_closeAnimationStarted && HideToTrayRequested?.Invoke() == true) return;
+        RequestClose();
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _disposed = true;
+        CancelTrayVisibility();
+        CancelStartupEntrance();
+        AvaloniaUiMotion.CancelAll(this);
+        PropertyChanged -= OnWindowPropertyChanged;
+        _surface.TitleBarDragRequested -= OnTitleBarDragRequested;
+        _surface.SceneCommitted -= OnSceneCommitted;
+        _surface.Dispose();
+        _windowActions.Dispose();
+        DisposeBranding();
+        base.OnClosed(e);
+    }
+
+    private void PlayCloseCollapse()
+    {
+        // The circular reveal clips scene content, not the system's outside shadow.
+        _awaitingFirstSceneCommit = false;
+        double? presentedRadius = _revealMask?.RadiusX;
+        CancelStartupEntrance();
+        _closeIconScale = new ScaleTransform(0, 0);
+        _shadowSurface.IsVisible = false;
+        _shadowSurface.BoxShadow = default;
+        double width = _root.Bounds.Width;
+        double height = _root.Bounds.Height;
+        if (width <= 0 || height <= 0)
+        {
+            Close();
+            return;
+        }
+
+        // Preserve the existing close sequence: content contracts to radius zero while the
+        // current product icon appears above it, then the icon folds away before native close.
+        Point center = new(width / 2, height / 2);
+        double fullRadius = Math.Sqrt((width * width) + (height * height)) / 2;
+        EllipseGeometry mask = new()
+        {
+            Center = center,
+            RadiusX = presentedRadius ?? fullRadius,
+            RadiusY = presentedRadius ?? fullRadius,
+        };
+        _revealMask = mask;
+        _maskedContent.Clip = mask;
+        ApplyNativeShape();
+
+        int piecesRemaining = _closeIcon is null ? 1 : 2;
+        void OnCollapsePieceCompleted()
+        {
+            piecesRemaining--;
+            if (piecesRemaining != 0 || _disposed)
+            {
+                return;
+            }
+
+            AvaloniaUiMotion.Animate(
+                this,
+                "close-icon-fold",
+                () => _closeIconScale?.ScaleX ?? 0,
+                value =>
+                {
+                    if (_closeIconScale is not null)
+                    {
+                        _closeIconScale.ScaleX = value;
+                        _closeIconScale.ScaleY = value;
+                        ApplyNativeShape();
+                    }
+                },
+                0,
+                _closeIconScale is null ? 1 : AvaloniaMotionTokens.IconCollapseMilliseconds,
+                AvaloniaUiMotion.EaseIn,
+                completed: () =>
+                {
+                    // Keep the zero-radius mask until native destruction; restoring the
+                    // full region here flashes the window for one final compositor frame.
+                    Close();
+                },
+                reducedMotion: () => _shell.Renderer.EffectiveReducedMotion);
+        }
+
+        AvaloniaUiMotion.Animate(
+            this,
+            "close-collapse",
+            () => mask.RadiusX,
+            value =>
+            {
+                mask.RadiusX = value;
+                mask.RadiusY = value;
+                ApplyNativeShape();
+                _maskedContent.InvalidateVisual();
+            },
+            0,
+            AvaloniaMotionTokens.CloseCollapseMilliseconds,
+            AvaloniaUiMotion.EaseIn,
+            completed: OnCollapsePieceCompleted,
+            reducedMotion: () => _shell.Renderer.EffectiveReducedMotion);
+
+        if (_closeIcon is not null)
+        {
+            Image iconOverlay = new()
+            {
+                Source = _closeIcon,
+                Width = CloseIconSize,
+                Height = CloseIconSize,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                IsHitTestVisible = false,
+                RenderTransform = _closeIconScale,
+                RenderTransformOrigin = RelativePoint.Center,
+            };
+            _root.Children.Add(iconOverlay);
+            ScaleTransform scale = _closeIconScale;
+            AvaloniaUiMotion.Animate(
+                this, ("close-icon", "up"), () => scale.ScaleX, value =>
+                {
+                    scale.ScaleX = value;
+                    scale.ScaleY = value;
+                    ApplyNativeShape();
+                },
+                1.12,
+                AvaloniaMotionTokens.CloseCollapseMilliseconds / 2,
+                AvaloniaUiMotion.EaseOut,
+                completed: () => AvaloniaUiMotion.Animate(
+                    this, ("close-icon", "settle"), () => scale.ScaleX, value =>
+                    {
+                        scale.ScaleX = value;
+                        scale.ScaleY = value;
+                        ApplyNativeShape();
+                    },
+                    1,
+                    AvaloniaMotionTokens.CloseCollapseMilliseconds / 2,
+                    AvaloniaUiMotion.EaseIn,
+                    completed: OnCollapsePieceCompleted,
+                    reducedMotion: () => _shell.Renderer.EffectiveReducedMotion));
+        }
+    }
+
+    private IEnumerable<Border> CreateResizeGrips()
+    {
+        // Invisible edge and corner grips hand the press to the native resize loop, which keeps
+        // Aero Snap and system resize behaviour intact.
+        (HorizontalAlignment Horizontal, VerticalAlignment Vertical, double Width, double Height, Thickness Margin, StandardCursorType Cursor, WindowEdge Edge)[] grips =
+        [
+            (HorizontalAlignment.Stretch, VerticalAlignment.Top, double.NaN, 8, new Thickness(8, 0, 8, 0), StandardCursorType.SizeNorthSouth, WindowEdge.North),
+            (HorizontalAlignment.Stretch, VerticalAlignment.Bottom, double.NaN, 8, new Thickness(8, 0, 8, 0), StandardCursorType.SizeNorthSouth, WindowEdge.South),
+            (HorizontalAlignment.Left, VerticalAlignment.Stretch, 8, double.NaN, new Thickness(0, 8, 0, 8), StandardCursorType.SizeWestEast, WindowEdge.West),
+            (HorizontalAlignment.Right, VerticalAlignment.Stretch, 8, double.NaN, new Thickness(0, 8, 0, 8), StandardCursorType.SizeWestEast, WindowEdge.East),
+            (HorizontalAlignment.Left, VerticalAlignment.Top, 8, 8, new Thickness(0), StandardCursorType.TopLeftCorner, WindowEdge.NorthWest),
+            (HorizontalAlignment.Right, VerticalAlignment.Top, 8, 8, new Thickness(0), StandardCursorType.TopRightCorner, WindowEdge.NorthEast),
+            (HorizontalAlignment.Left, VerticalAlignment.Bottom, 8, 8, new Thickness(0), StandardCursorType.BottomLeftCorner, WindowEdge.SouthWest),
+            (HorizontalAlignment.Right, VerticalAlignment.Bottom, 8, 8, new Thickness(0), StandardCursorType.BottomRightCorner, WindowEdge.SouthEast),
+        ];
+
+        foreach ((HorizontalAlignment horizontal, VerticalAlignment vertical, double width, double height,
+                     Thickness margin, StandardCursorType cursor, WindowEdge edge) in grips)
+        {
+            Border grip = new()
+            {
+                Background = Brushes.Transparent,
+                HorizontalAlignment = horizontal,
+                VerticalAlignment = vertical,
+                Width = width,
+                Height = height,
+                Margin = margin,
+                Cursor = new Cursor(cursor),
+                Tag = edge,
+                ZIndex = 1000,
+            };
+            grip.PointerPressed += OnResizeGripPressed;
+            yield return grip;
+        }
+    }
+
+    private void OnResizeGripPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is Border { Tag: WindowEdge edge }
+            && CanResize
+            && WindowState == WindowState.Normal
+            && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            BeginResizeDrag(edge, e);
+            e.Handled = true;
+        }
+    }
+
+    private void OnWindowPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == CanResizeProperty) _windowActions.SetResizeEnabled(CanResize);
+        if (e.Property == WindowStateProperty || e.Property == IsVisibleProperty)
+            _surface.SetRasterPresentationEnabled(IsVisible && WindowState != WindowState.Minimized);
+        if (e.Property == IsActiveProperty || e.Property == WindowStateProperty || e.Property == IsVisibleProperty)
+            _shell.PublishWindowActivity(IsActive && IsVisible, !IsVisible || WindowState == WindowState.Minimized);
+        // Avalonia 12 has no public Visual.RenderScalingProperty; the scaling fact lives on
+        // TopLevel as a plain property, so subscribe to the TypedVisualTreeMutation/Bounds
+        // signals that accompany a DPI change instead — Bounds covers the common reflow, and
+        // UpdateChromeForState re-reads RenderScaling at call time anyway.
+        if (e.Property == BoundsProperty || e.Property == Window.WindowStateProperty || e.Property == ActualTransparencyLevelProperty)
+            UpdateChromeForState(WindowState is WindowState.Maximized or WindowState.FullScreen);
+        if (e.Property == Window.WindowStateProperty)
+        {
+            if (WindowState != WindowState.Minimized) _lastNonMinimizedState = WindowState;
+            bool maximized = e.NewValue is WindowState state && state is WindowState.Maximized or WindowState.FullScreen;
+            _windowActions.SetMaximized(maximized);
+            UpdateChromeForState(maximized);
+            _ = AvaloniaWindowsFrame.SuppressBorder(this);
+        }
+    }
+
+    /// <summary>
+    /// A maximized frameless window is flush with the screen edges: no shadow margin and no
+    /// rounding, exactly like the legacy chrome.
+    /// </summary>
+    private void UpdateChromeForState(bool maximized)
+    {
+        if (_updatingChrome) return;
+        _updatingChrome = true;
+        try
+        {
+            if (AvaloniaWindowsFrame.IsLayered(this)) TransparencyLevelHint = [WindowTransparencyLevel.None];
+            bool composited = UsesCompositedEdges;
+            double restoredInset = composited && !OperatingSystem.IsMacOS() ? ChromeMargin : 0;
+            double delta = restoredInset - _restoredFrameInset;
+            _restoredFrameInset = restoredInset;
+            MinWidth = 810 + restoredInset * 2;
+            MinHeight = 470 + restoredInset * 2;
+            if (delta != 0 && WindowState == WindowState.Normal)
+            {
+                Width += delta * 2;
+                Height += delta * 2;
+            }
+            double inset = maximized ? 0 : restoredInset;
+            _shell.PublishWindowMetrics(AvaloniaMacWindow.ConfigureAndMeasure(this), WindowState == WindowState.FullScreen, 0);
+            // An opaque native window still paints behind the rounded scene clip. Match the
+            // title region as well as the body so DWM's smaller corner mask reveals no white rim.
+            var title = _committedTitleBackground ?? _shell.Palette.TitleBarBackground;
+            var body = _committedWindowBackground ?? _shell.Palette.WindowBackground;
+            double split = Math.Clamp(XsrUiShell.TitleBarHeight / Math.Max(1, Bounds.Height), 0, 1);
+            var opaqueBackground = new LinearGradientBrush
+            {
+                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
+                GradientStops = new GradientStops
+            {
+                new(Color.FromRgb(title.Red, title.Green, title.Blue), 0),
+                new(Color.FromRgb(title.Red, title.Green, title.Blue), split),
+                new(Color.FromRgb(body.Red, body.Green, body.Blue), split),
+                new(Color.FromRgb(body.Red, body.Green, body.Blue), 1),
+            },
+            };
+            Background = composited ? Brushes.Transparent : opaqueBackground;
+            TransparencyBackgroundFallback = opaqueBackground;
+            _chromeSurface.Background = opaqueBackground;
+            _shadowSurface.Background = opaqueBackground;
+            CornerRadius radius = maximized ? new CornerRadius(0) : new CornerRadius(ChromeCornerRadius);
+            _shadowSurface.Margin = new Thickness(inset);
+            _shadowSurface.CornerRadius = radius;
+            _shadowSurface.BoxShadow = composited && inset > 0 && !_closeAnimationStarted
+                ? new BoxShadows(new BoxShadow { Blur = 16, OffsetY = 4, Color = Color.FromArgb(64, 0, 0, 0) }) : default;
+            _chromeSurface.Margin = new Thickness(inset);
+            _chromeSurface.CornerRadius = radius;
+            _chromeSurface.Clip = new RectangleGeometry
+            {
+                Rect = new Rect(0, 0, Math.Max(0, _root.Bounds.Width - inset * 2), Math.Max(0, _root.Bounds.Height - inset * 2)),
+                RadiusX = maximized ? 0 : ChromeCornerRadius,
+                RadiusY = maximized ? 0 : ChromeCornerRadius,
+            };
+            _windowActions.Margin = new Thickness(0, 0, 12, 0);
+            _ = AvaloniaWindowsFrame.SuppressBorder(this);
+            ApplyNativeShape();
+            // Avalonia reapplies its native frame after WindowState notifications return.
+            // Restore our decoration policy after that platform transition has completed.
+            if (!_nativeFrameUpdateQueued)
+            {
+                _nativeFrameUpdateQueued = true;
+                Dispatcher.UIThread.Post(() =>
+                {
+                    _nativeFrameUpdateQueued = false;
+                    if (_disposed) return;
+                    _ = AvaloniaWindowsFrame.SuppressBorder(this);
+                    ApplyNativeShape();
+                }, DispatcherPriority.Render);
+            }
+        }
+        finally { _updatingChrome = false; }
+    }
+
+    private void ApplyNativeShape()
+    {
+        if (UsesCompositedEdges) { AvaloniaWindowsFrame.ClearShape(this); return; }
+        AvaloniaWindowsFrame.ApplyCornerRadius(
+        this,
+        ChromeCornerRadius,
+        _revealMask?.RadiusX,
+        _revealMask is null ? null : _closeIcon is null ? 0 : CloseIconSize * .56
+            * (_closeIconScale?.ScaleX ?? 0));
+    }
+
+    private void OnMaximizeRequested(object? sender, EventArgs e) => ToggleMaximized();
+
+    private void ToggleMaximized()
+    {
+        if (CanResize) WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+    }
+
+    private void OnSceneCommitted(object? sender, AvaloniaUiSceneCommittedEventArgs e)
+    {
+        ApplyCommittedBranding(e.Scene);
+        var title = e.Scene.Nodes.FirstOrDefault(node => node.Role == XsrUiSemanticRole.TitleBar).VisualStyle.Background;
+        var body = e.Scene.Nodes.FirstOrDefault(node => node.Entity == _shell.Root).VisualStyle.Background;
+        if (!_disposed && (title != _committedTitleBackground || body != _committedWindowBackground))
+        {
+            _committedTitleBackground = title;
+            _committedWindowBackground = body;
+            UpdateChromeForState(WindowState is WindowState.Maximized or WindowState.FullScreen);
+        }
+        if (_awaitingFirstSceneCommit && !_disposed)
+        {
+            _awaitingFirstSceneCommit = false;
+            RunStartupReveal();
+        }
+    }
+
+    private void OnTitleBarDragRequested(object? sender, PointerPressedEventArgs e)
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            if (e.ClickCount == 1) BeginMoveDrag(e);
+            return; // The native title-bar role owns the system double-click preference.
+        }
+        if (e.ClickCount == 2)
+        {
+            ToggleMaximized();
+            e.Handled = true;
+            return;
+        }
+
+        BeginMoveDrag(e);
+    }
+}

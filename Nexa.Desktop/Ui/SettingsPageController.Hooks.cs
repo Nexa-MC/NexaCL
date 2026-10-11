@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Nexa.Services.Settings;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 
 namespace Nexa.Desktop.Ui;

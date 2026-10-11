@@ -1,6 +1,6 @@
 using Nexa.Desktop.Ui;
 using Nexa.Services.Settings;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 
 namespace Nexa.Desktop.Tests;
@@ -50,7 +50,7 @@ internal static partial class Program
         }
     }
 
-    private static void ProductPxmlShellAcceptsNativeWindowMetrics()
+    private static void ProductNxmlShellAcceptsNativeWindowMetrics()
     {
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
         var shell = fixture.Shell;
@@ -334,9 +334,9 @@ internal static partial class Program
         var scene = fixture.Shell.Render(new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         fixture.Shell.Render(new(1000, 650));
-        Nexa.UI.Next.XsrUiEntityId Find(string name)
+        Nexa.Xsr.Renderer.XsrUiEntityId Find(string name)
         {
-            Nexa.UI.Next.XsrUiEntityId found = default;
+            Nexa.Xsr.Renderer.XsrUiEntityId found = default;
             fixture.Shell.Tree.Walk(settings.Page, entity => { if (fixture.Shell.Tree.Name(entity) == name) found = entity; return true; });
             AssertTrue(found.IsAssigned); return found;
         }

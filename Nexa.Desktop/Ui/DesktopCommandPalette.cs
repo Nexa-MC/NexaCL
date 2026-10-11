@@ -1,5 +1,5 @@
-using Nexa.UI.Next;
-using Nexa.UI.Next.Backend.Avalonia;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr;
 
 namespace Nexa.Desktop.Ui;

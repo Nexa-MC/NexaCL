@@ -1,5 +1,4 @@
 using System.Text;
-using Nexa.Pxml;
 using Nexa.Services.Accounts;
 using Nexa.Services.Capabilities;
 using Nexa.Services.Composition;
@@ -9,8 +8,9 @@ using Nexa.Services.Foundation;
 using Nexa.Services.Logging;
 using Nexa.Services.Settings;
 using Nexa.Services.Telemetry;
-using Nexa.UI.Next;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -38,27 +38,27 @@ internal static partial class Program
 
     private static XsrUiTree Tree { get; } = new();
 
-    private static PxmlIrNode TextNode(string semantic, string content) => new()
+    private static NxmlIrNode TextNode(string semantic, string content) => new()
     {
-        Kind = PxmlIrNodeKind.Text,
-        Recipe = PxmlRuntimeRecipe.Text,
+        Kind = "Text",
+        Recipe = NxmlRuntimeRecipe.Text,
         Content = content,
         Bindings =
         [
-            new PxmlIrBinding(
+            new NxmlIrBinding(
                 XsrSemanticId.Parse(semantic),
                 XsrUiStateProperty.Text,
                 XsrUiDirtyKinds.Paint | XsrUiDirtyKinds.State),
         ],
     };
 
-    private static PxmlIrNode ElementNode(string semantic) => new()
+    private static NxmlIrNode ElementNode(string semantic) => new()
     {
-        Kind = PxmlIrNodeKind.StackPanel,
-        Recipe = PxmlRuntimeRecipe.Element,
+        Kind = "StackPanel",
+        Recipe = NxmlRuntimeRecipe.Element,
         Bindings =
         [
-            new PxmlIrBinding(
+            new NxmlIrBinding(
                 XsrSemanticId.Parse(semantic),
                 XsrUiStateProperty.Visibility,
                 XsrUiDirtyKinds.State),
@@ -154,9 +154,9 @@ internal static partial class Program
         AssertTrue(runtime.Queries.TryResolve(FoundationRouteIds.SettingsGet, out XsrQueryId queryId));
 
         // The page: one PXML text bound to settings.theme renders "light" before the command.
-        PxmlHostIr ir = new(TextNode("settings.theme", "light"));
+        NxmlHostIr ir = new(TextNode("settings.theme", "light"));
         XsrUiEntityId page = tree.Create("page-root");
-        XsrUiEntityId textEntity = PxmlUiLoader.Load(ir, tree, host.StateStore, page);
+        XsrUiEntityId textEntity = NxmlUiLoader.Load(ir, tree, host.StateStore, page);
         XsrUiRenderer renderer = new(tree, host.StateStore);
         renderer.SetRoot(page);
         XsrUiScene beforeScene = renderer.Render();
@@ -263,10 +263,10 @@ internal static partial class Program
 
         // One PXML page binds state from four capabilities; loading resolves every binding
         // through the shared store without identifier collisions.
-        PxmlIrNode page = new()
+        NxmlIrNode page = new()
         {
-            Kind = PxmlIrNodeKind.Page,
-            Recipe = PxmlRuntimeRecipe.Element,
+            Kind = "Page",
+            Recipe = NxmlRuntimeRecipe.Element,
             Children =
             [
                 TextNode("settings.theme", "light"),
@@ -277,7 +277,7 @@ internal static partial class Program
             ],
         };
         XsrUiEntityId root = tree.Create("cross-page");
-        XsrUiEntityId loaded = PxmlUiLoader.Load(new PxmlHostIr(page), tree, store, root);
+        XsrUiEntityId loaded = NxmlUiLoader.Load(new NxmlHostIr(page), tree, store, root);
 
         // Clear the seeding publications so the drain observes exactly one command.
         logging.FlushPending(); // Production publishes log state in batches.

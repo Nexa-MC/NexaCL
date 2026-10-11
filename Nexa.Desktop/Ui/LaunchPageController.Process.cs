@@ -1,9 +1,9 @@
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Crash;
 using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Process;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 
@@ -36,8 +36,8 @@ internal sealed partial class LaunchPageController
             if (!_javaChoicePage.IsAssigned)
             {
                 var parent = _shell.Tree.Create("java-choice-loader");
-                var template = PxmlCompiler.Compile(PxmlParser.Parse(ReadEmbeddedResource("Ui.JavaChoicePage.pxml")));
-                _javaChoicePage = PxmlUiLoader.Load(template, _shell.Tree, _store, parent);
+                var template = DesktopMarkup.Compile(NxmlParser.Parse(ReadEmbeddedResource("Ui.JavaChoicePage.nxml")));
+                _javaChoicePage = NxmlUiLoader.Load(template, _shell.Tree, _store, parent);
                 _shell.Tree.Detach(_javaChoicePage);
                 _shell.Tree.Destroy(parent);
                 _shell.Tree.Walk(_javaChoicePage, entity =>

@@ -4,7 +4,7 @@ using Nexa.Services.Composition;
 using Nexa.Services.Logging;
 using Nexa.Services.Settings;
 using Nexa.Services.Setup;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Tests;
 

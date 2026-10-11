@@ -1,6 +1,6 @@
 using System.Globalization;
 using Nexa.Desktop.Ui;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 
 namespace Nexa.Desktop.Tests;

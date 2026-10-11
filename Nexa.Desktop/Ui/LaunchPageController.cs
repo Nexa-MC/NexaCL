@@ -1,5 +1,5 @@
 using System.Globalization;
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
 using Nexa.Services.Foundation;
@@ -8,7 +8,7 @@ using Nexa.Services.Minecraft.Install;
 
 using Nexa.Services.Minecraft.Launch;
 
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
@@ -83,26 +83,26 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
     private static readonly XsrSemanticId DownloadNavigationId = XsrSemanticId.Parse("navigation.download");
 
     // The legacy experimental launch-home palette (light theme).
-    private static readonly XsrUiColor CardBackground = new(255, 255, 255, 241);
-    private static readonly XsrUiColor CardBorder = new(224, 234, 253);
-    private static readonly XsrUiColor PickerBackground = new(238, 242, 247);
-    private static readonly XsrUiColor PrimaryText = new(52, 61, 74);
-    private static readonly XsrUiColor SecondaryText = new(122, 138, 153);
-    private static readonly XsrUiColor BadgeBackground = new(224, 234, 253);
-    private static readonly XsrUiColor BadgeText = new(11, 91, 203);
-    private static readonly XsrUiColor LaunchButtonBackground = new(11, 91, 203);
-    private static readonly XsrUiColor LaunchButtonHover = new(19, 112, 243);
-    private static readonly XsrUiColor ProfileSecondaryText = new(96, 108, 124);
-    private static readonly XsrUiColor ProfileSurface = new(244, 246, 250);
-    private static readonly XsrUiColor LaunchProgressTrack = new(224, 234, 253);
-    private static readonly XsrUiColor LaunchProgressFill = new(11, 91, 203);
-    private static readonly XsrUiColor InstallJavaTint = new(229, 239, 255);
-    private static readonly XsrUiColor InstallJavaAccent = new(28, 97, 210);
-    private static readonly XsrUiColor InstallJavaHover = new(214, 231, 255);
-    private static readonly XsrUiColor InstallBedrockTint = new(235, 244, 233);
-    private static readonly XsrUiColor InstallBedrockAccent = new(57, 105, 69);
-    private static readonly XsrUiColor InstallBedrockHover = new(222, 238, 219);
-    private static readonly XsrUiColor InstallSelectedBorder = new(128, 172, 239);
+    private static readonly XsrUiColor CardBackground = DesktopMarkup.Visual("launch-card-background").Foreground;
+    private static readonly XsrUiColor CardBorder = DesktopMarkup.Visual("launch-card-border").Foreground;
+    private static readonly XsrUiColor PickerBackground = DesktopMarkup.Visual("launch-picker-background").Foreground;
+    private static readonly XsrUiColor PrimaryText = DesktopMarkup.Visual("launch-primary-text").Foreground;
+    private static readonly XsrUiColor SecondaryText = DesktopMarkup.Visual("launch-secondary-text").Foreground;
+    private static readonly XsrUiColor BadgeBackground = DesktopMarkup.Visual("launch-badge-background").Foreground;
+    private static readonly XsrUiColor BadgeText = DesktopMarkup.Visual("launch-badge-text").Foreground;
+    private static readonly XsrUiColor LaunchButtonBackground = DesktopMarkup.Visual("launch-launch-button-background").Foreground;
+    private static readonly XsrUiColor LaunchButtonHover = DesktopMarkup.Visual("launch-launch-button-hover").Foreground;
+    private static readonly XsrUiColor ProfileSecondaryText = DesktopMarkup.Visual("launch-profile-secondary-text").Foreground;
+    private static readonly XsrUiColor ProfileSurface = DesktopMarkup.Visual("launch-profile-surface").Foreground;
+    private static readonly XsrUiColor LaunchProgressTrack = DesktopMarkup.Visual("launch-launch-progress-track").Foreground;
+    private static readonly XsrUiColor LaunchProgressFill = DesktopMarkup.Visual("launch-launch-progress-fill").Foreground;
+    private static readonly XsrUiColor InstallJavaTint = DesktopMarkup.Visual("launch-install-java-tint").Foreground;
+    private static readonly XsrUiColor InstallJavaAccent = DesktopMarkup.Visual("launch-install-java-accent").Foreground;
+    private static readonly XsrUiColor InstallJavaHover = DesktopMarkup.Visual("launch-install-java-hover").Foreground;
+    private static readonly XsrUiColor InstallBedrockTint = DesktopMarkup.Visual("launch-install-bedrock-tint").Foreground;
+    private static readonly XsrUiColor InstallBedrockAccent = DesktopMarkup.Visual("launch-install-bedrock-accent").Foreground;
+    private static readonly XsrUiColor InstallBedrockHover = DesktopMarkup.Visual("launch-install-bedrock-hover").Foreground;
+    private static readonly XsrUiColor InstallSelectedBorder = DesktopMarkup.Visual("launch-install-selected-border").Foreground;
 
     private static readonly JavaInstallSubpage[] JavaInstallSubpages =
     [
@@ -201,8 +201,8 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
     private readonly Dictionary<string, XsrUiEntityId> _pageEntities;
     private readonly Dictionary<int, XsrUiEntityId> _accountRowEntities = [];
     private readonly Dictionary<XsrUiEntityId, int> _accountRowIndexes = [];
-    private readonly PxmlHostIr _accountRowTemplate = PxmlCompiler.Compile(
-        PxmlParser.Parse(ReadEmbeddedResource("Ui.AccountProfileRow.pxml")));
+    private readonly NxmlHostIr _accountRowTemplate = DesktopMarkup.Compile(
+        NxmlParser.Parse(ReadEmbeddedResource("Ui.AccountProfileRow.c.nxml")));
     private long _accountRosterRevision = -1;
     private int _presentedAccountIndex = -2;
     private bool? _presentedAccountPicker;

@@ -1,0 +1,3 @@
+<nxml-component>
+  <Node Kind="VerticalPager" Recipe="VerticalPager" Role="Content" AcceptsChildren="true" IsVisible="true" />
+</nxml-component>

@@ -1,7 +1,7 @@
 using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Minecraft.Process;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 

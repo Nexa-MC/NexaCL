@@ -6,8 +6,8 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Nexa.Desktop.Ui;
-using Nexa.UI.Next;
-using Nexa.UI.Next.Backend.Avalonia;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 
 namespace Nexa.Desktop.Tests;
 

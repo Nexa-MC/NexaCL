@@ -1,5 +1,5 @@
 using Nexa.Sidecar.Protocol;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Ui;

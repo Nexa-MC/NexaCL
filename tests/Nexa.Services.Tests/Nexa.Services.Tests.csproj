@@ -12,16 +12,16 @@
 
   <ItemGroup>
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
-    <EmbeddedResource Include="../../Nexa.UI.Next.Backend.Avalonia/Assets/Avatars/Steve.png" LogicalName="Fixtures.Steve.png" />
+    <EmbeddedResource Include="../../Nexa.Xsr.Renderer.Backend.Avalonia/Assets/Avatars/Steve.png" LogicalName="Fixtures.Steve.png" />
     <EmbeddedResource Include="Fixtures/ReleaseManifest.json" LogicalName="Fixtures.ReleaseManifest.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../Nexa.Pxml.Compiler/Nexa.Pxml.Compiler.csproj" />
-    <ProjectReference Include="../../Nexa.Pxml.Runtime/Nexa.Pxml.Runtime.csproj" />
+    <ProjectReference Include="../../Nexa.Xsr.Renderer.Nxml.Compiler/Nexa.Xsr.Renderer.Nxml.Compiler.csproj" />
+    <ProjectReference Include="../../Nexa.Xsr.Renderer.Nxml.Runtime/Nexa.Xsr.Renderer.Nxml.Runtime.csproj" />
     <ProjectReference Include="../../Nexa.Services/Nexa.Services.csproj" />
     <ProjectReference Include="../../Nexa.Services.Composition/Nexa.Services.Composition.csproj" />
-    <ProjectReference Include="../../Nexa.UI.Next/Nexa.UI.Next.csproj" />
+    <ProjectReference Include="../../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
     <ProjectReference Include="../../Nexa.Xsr.Runtime/Nexa.Xsr.Runtime.csproj" />
     <ProjectReference Include="../../Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
   </ItemGroup>

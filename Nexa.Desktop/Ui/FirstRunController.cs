@@ -1,7 +1,7 @@
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Composition;
 using Nexa.Services.Setup;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.State;
 
@@ -44,10 +44,10 @@ internal sealed class FirstRunController : IDisposable
         _store = store;
         _pickDirectory = pickDirectory; _close = close; _directory = status.DataDirectory;
         _consent = status.TelemetryRequired;
-        using var stream = typeof(FirstRunController).Assembly.GetManifestResourceStream("Nexa.Desktop.Ui.FirstRunPage.pxml")!;
+        using var stream = DesktopMarkup.Open("FirstRunPage.nxml")!;
         using var reader = new StreamReader(stream);
         var host = shell.Tree.Create("setup-loader");
-        Page = PxmlUiLoader.Load(PxmlCompiler.Compile(PxmlParser.Parse(reader.ReadToEnd())), shell.Tree, store, host);
+        Page = NxmlUiLoader.Load(DesktopMarkup.Compile(NxmlParser.Parse(reader.ReadToEnd())), shell.Tree, store, host);
         shell.Tree.Detach(Page); shell.Tree.Destroy(host);
         shell.Tree.Walk(Page, entity => { _nodes[shell.Tree.Name(entity)] = entity; return true; });
         shell.Tree.GetComponent<XsrUiElement>(shell.Navigation)!.IsVisible = false;

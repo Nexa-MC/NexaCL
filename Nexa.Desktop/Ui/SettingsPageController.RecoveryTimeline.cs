@@ -17,7 +17,7 @@ internal sealed partial class SettingsPageController
         InstanceRecoverySnapshotSummary? previous = null;
         foreach (var point in points)
         {
-            var row = Stack(group, "RecoveryTimeline." + point.Revision, Nexa.UI.Next.XsrUiOrientation.Vertical, 3);
+            var row = Stack(group, "RecoveryTimeline." + point.Revision, Nexa.Xsr.Renderer.XsrUiOrientation.Vertical, 3);
             string label = point.CapturedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.CurrentCulture)
                 + " · " + point.Files.ToString(CultureInfo.InvariantCulture) + " " + _shell.Renderer.LocalizeText("个文件")
                 + " · " + RecoverySize(point.ContentBytes);

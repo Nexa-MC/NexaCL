@@ -1,0 +1,18 @@
+<nxml-page>
+  <Page Key="InstallPage" Label="安装">
+    <StackPanel Key="InstallChoices" Class="layout-InstallPage-InstallChoices">
+      <Button Key="InstallJavaChoice" Label="安装 Java 版 Minecraft" Command="ui.install.java" Class="layout-InstallPage-InstallJavaChoice">
+        <StackPanel Key="InstallJavaChoiceContent" Class="layout-InstallPage-InstallJavaChoiceContent">
+          <ContentHost Key="InstallJavaArtwork" Class="layout-InstallPage-InstallJavaArtwork" />
+          <Text Key="InstallJavaTitle" Content="Java" Class="layout-InstallPage-InstallJavaTitle" />
+        </StackPanel>
+      </Button>
+      <Button Key="InstallBedrockChoice" Label="安装 Bedrock 版 Minecraft" Command="ui.install.bedrock" Class="layout-InstallPage-InstallBedrockChoice">
+        <StackPanel Key="InstallBedrockChoiceContent" Class="layout-InstallPage-InstallBedrockChoiceContent">
+          <ContentHost Key="InstallBedrockArtwork" Class="layout-InstallPage-InstallBedrockArtwork" />
+          <Text Key="InstallBedrockTitle" Content="Bedrock" Class="layout-InstallPage-InstallBedrockTitle" />
+        </StackPanel>
+      </Button>
+    </StackPanel>
+  </Page>
+</nxml-page>

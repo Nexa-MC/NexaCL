@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
 using System.Globalization;
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Accounts;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
@@ -66,11 +66,11 @@ internal sealed class WardrobeLibraryPageController : IDisposable
         XsrQueryRouter queries, XsrCommandRouter commands, XsrStateStore store, DesktopFeedbackService feedback)
     {
         _shell = shell; _intents = intents; _queries = queries; _commands = commands; _store = store; _feedback = feedback;
-        using var stream = typeof(WardrobeLibraryPageController).Assembly.GetManifestResourceStream("Nexa.Desktop.Ui.WardrobeLibraryPage.pxml")
+        using var stream = DesktopMarkup.Open("WardrobeLibraryPage.nxml")
             ?? throw new InvalidOperationException("Missing wardrobe library page.");
         using var reader = new StreamReader(stream);
         var host = shell.Tree.Create("wardrobe-library-loader");
-        try { Page = PxmlUiLoader.Load(PxmlCompiler.Compile(PxmlParser.Parse(reader.ReadToEnd())), shell.Tree, store, host); shell.Tree.Detach(Page); }
+        try { Page = NxmlUiLoader.Load(DesktopMarkup.Compile(NxmlParser.Parse(reader.ReadToEnd())), shell.Tree, store, host); shell.Tree.Detach(Page); }
         finally { shell.Tree.Destroy(host); }
         shell.Tree.Walk(Page, entity =>
         {

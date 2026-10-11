@@ -28,7 +28,7 @@
 - **XSR-04 — Keep services independent of presentation.** New services must not reference Avalonia, Desktop, renderer internals, ViewModels, or service locators. They receive commands/queries and publish state/events.
   **Why:** Explicit inputs and outputs keep service behavior testable without a UI or hidden dependency resolution.
 
-- **XSR-05 — Keep the renderer on the state/intent boundary.** `Nexa.UI.Next` is the canonical renderer. It reads state and emits intent; it must not resolve concrete services or call a Sidecar directly.
+- **XSR-05 — Keep the renderer on the state/intent boundary.** `Nexa.Xsr.Renderer` is the canonical renderer. It reads state and emits intent; it must not resolve concrete services or call a Sidecar directly.
   **Why:** Routing work through state and intent prevents renderer code from bypassing service and process boundaries.
 
 - **XSR-06 — Preserve the Sidecar data plane.** Sidecar hot paths use generated numeric dispatch and an extensible binary protocol. Do not add synchronous IPC, JSON data-plane messages, reflection dispatch, or CLR object exchange across the process boundary.

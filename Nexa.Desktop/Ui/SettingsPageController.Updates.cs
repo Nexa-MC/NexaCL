@@ -1,6 +1,6 @@
 using Nexa.Services.Settings;
 using Nexa.Services.Updates;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 

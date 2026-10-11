@@ -1,5 +1,5 @@
 
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 
 
 
@@ -7,7 +7,7 @@ using Nexa.Pxml;
 using Nexa.Services.Minecraft.Install;
 
 
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 
 
@@ -227,7 +227,7 @@ internal sealed partial class LaunchPageController
     private (XsrUiEntityId Page, Dictionary<string, XsrUiEntityId> Entities) LoadInstallPage()
     {
         (XsrUiEntityId page, Dictionary<string, XsrUiEntityId> entities) = LoadStandalonePage(
-            "Ui.InstallPage.pxml", "install-page-loader");
+            "Ui.InstallPage.nxml", "install-page-loader");
         StyleInstallPage(entities);
         return (page, entities);
     }
@@ -236,7 +236,7 @@ internal sealed partial class LaunchPageController
     private (XsrUiEntityId Page, Dictionary<string, XsrUiEntityId> Entities) LoadJavaInstallPage()
     {
         (XsrUiEntityId page, Dictionary<string, XsrUiEntityId> entities) = LoadStandalonePage(
-            "Ui.JavaInstallPage.pxml", "java-install-page-loader");
+            "Ui.JavaInstallPage.nxml", "java-install-page-loader");
         StyleJavaInstallPage(entities);
         _ = _shell.Renderer.SetTextInputValue(entities["JavaInstallVersionInput"], _selectedInstallVersion);
         StyleInstallChoices(
@@ -258,7 +258,7 @@ internal sealed partial class LaunchPageController
     private XsrUiEntityId LoadBedrockInstallPage()
     {
         (XsrUiEntityId page, Dictionary<string, XsrUiEntityId> entities) = LoadStandalonePage(
-            "Ui.BedrockInstallPage.pxml", "bedrock-install-page-loader");
+            "Ui.BedrockInstallPage.nxml", "bedrock-install-page-loader");
         StyleBedrockInstallPage(entities);
         return page;
     }
@@ -268,9 +268,9 @@ internal sealed partial class LaunchPageController
         string resource,
         string hostKey)
     {
-        PxmlHostIr ir = PxmlCompiler.Compile(PxmlParser.Parse(ReadEmbeddedResource(resource)));
+        NxmlHostIr ir = DesktopMarkup.Compile(NxmlParser.Parse(ReadEmbeddedResource(resource)));
         XsrUiEntityId host = _shell.Tree.Create(hostKey);
-        XsrUiEntityId page = PxmlUiLoader.Load(ir, _shell.Tree, _store, host);
+        XsrUiEntityId page = NxmlUiLoader.Load(ir, _shell.Tree, _store, host);
         _shell.Tree.Detach(page);
         _shell.Tree.Destroy(host);
 
@@ -616,10 +616,10 @@ internal sealed partial class LaunchPageController
     /// </summary>
     private (XsrUiEntityId Page, Dictionary<string, XsrUiEntityId> Entities) LoadLaunchingPage()
     {
-        PxmlDocument document = PxmlParser.Parse(ReadEmbeddedResource("Ui.LaunchingPage.pxml"));
-        PxmlHostIr ir = PxmlCompiler.Compile(document);
+        NxmlDocument document = NxmlParser.Parse(ReadEmbeddedResource("Ui.LaunchingPage.nxml"));
+        NxmlHostIr ir = DesktopMarkup.Compile(document);
         XsrUiEntityId parent = _shell.Tree.Create("launching-page-loader");
-        XsrUiEntityId page = PxmlUiLoader.Load(ir, _shell.Tree, _store, parent);
+        XsrUiEntityId page = NxmlUiLoader.Load(ir, _shell.Tree, _store, parent);
         _shell.Tree.Detach(page);
         _shell.Tree.Destroy(parent);
 

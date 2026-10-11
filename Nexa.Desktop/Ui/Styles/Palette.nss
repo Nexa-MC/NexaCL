@@ -1,0 +1,23 @@
+/* Shared controller palette for dynamic state projections. */
+.palette-TaskCenterController-CardBackground { Foreground: #ffffff; }
+.palette-TaskCenterController-CardBorder { Foreground: #e4e9f0; }
+.palette-TaskCenterController-TitleInk { Foreground: #28303c; }
+.palette-TaskCenterController-SecondaryInk { Foreground: #707c8a; }
+.palette-TaskCenterController-RunningAccent { Foreground: #1370f3; }
+.palette-TaskCenterController-FinishedAccent { Foreground: #228054; }
+.palette-TaskCenterController-FailedAccent { Foreground: #c44036; }
+.palette-TaskCenterController-CanceledAccent { Foreground: #707c8a; }
+.palette-TaskCenterController-HoverTint { Foreground: #1370f316; }
+.palette-VersionSelectionController-Ink { Foreground: #263141; }
+.palette-VersionSelectionController-Secondary { Foreground: #5e6e82; }
+.palette-VersionSelectionController-Blue { Foreground: #0b5bcb; }
+.palette-VersionSelectionController-Surface { Foreground: #fffffff5; }
+.palette-VersionSelectionController-Tint { Foreground: #e7f0ff; }
+.palette-ProcessLogPageController-Ink { Foreground: #263141; }
+.palette-ProcessLogPageController-Muted { Foreground: #5e6e82; }
+.palette-ProcessLogPageController-Tint { Foreground: #e7f0ff; }
+.palette-SettingsPageController-Ink { Foreground: #2b3340; }
+.palette-SettingsPageController-Muted { Foreground: #717c8c; }
+.palette-SettingsPageController-Blue { Foreground: #0b5bcb; }
+.palette-SettingsPageController-White { Foreground: #ffffff; }
+.palette-SettingsPageController-Line { Foreground: #e8ecf2; }

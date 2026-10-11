@@ -2,7 +2,7 @@ using Nexa.Desktop.Ui;
 using Nexa.Services.Composition;
 using Nexa.Services.Files;
 using Nexa.Services.Setup;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Tests;
 

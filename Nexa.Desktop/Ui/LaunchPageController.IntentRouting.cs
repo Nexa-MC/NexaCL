@@ -1,5 +1,5 @@
 using System.Globalization;
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
 using Nexa.Services.Foundation;
@@ -8,7 +8,7 @@ using Nexa.Services.Minecraft.Install;
 
 using Nexa.Services.Minecraft.Launch;
 
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;

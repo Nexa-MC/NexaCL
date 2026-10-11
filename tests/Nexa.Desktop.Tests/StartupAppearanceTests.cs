@@ -3,8 +3,8 @@ using System.Text.Json.Nodes;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Files;
 using Nexa.Services.Settings;
-using Nexa.UI.Next;
-using Nexa.UI.Next.Backend.Avalonia;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Tests;

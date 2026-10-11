@@ -1,7 +1,7 @@
 using System.Buffers;
 using System.Globalization;
 using Nexa.Core.Media;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 

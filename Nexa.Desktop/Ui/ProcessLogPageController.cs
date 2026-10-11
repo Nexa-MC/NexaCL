@@ -1,7 +1,7 @@
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Process;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
@@ -18,7 +18,7 @@ internal static class ProcessLogPresentationState
 internal sealed class ProcessLogPageController : IDisposable
 {
     internal const int PageSize = 24;
-    private static readonly XsrUiColor Ink = new(38, 49, 65), Muted = new(94, 110, 130), Tint = new(231, 240, 255);
+    private static readonly XsrUiColor Ink = DesktopMarkup.Visual("palette-ProcessLogPageController-Ink").Foreground, Muted = DesktopMarkup.Visual("palette-ProcessLogPageController-Muted").Foreground, Tint = DesktopMarkup.Visual("palette-ProcessLogPageController-Tint").Foreground;
     private readonly XsrUiShell _shell;
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrQueryRouter _queries;
@@ -45,12 +45,12 @@ internal sealed class ProcessLogPageController : IDisposable
         XsrStateStore store, DesktopFeedbackService feedback, Func<string, Task>? copy = null)
     {
         _shell = shell; _intents = intents; _queries = queries; _store = store; _feedback = feedback; _copy = copy;
-        using Stream source = typeof(ProcessLogPageController).Assembly.GetManifestResourceStream("Nexa.Desktop.Ui.ProcessLogPage.pxml")
+        using Stream source = DesktopMarkup.Open("ProcessLogPage.nxml")
             ?? throw new InvalidOperationException("Missing process log page.");
         using StreamReader reader = new(source);
-        var template = PxmlCompiler.Compile(PxmlParser.Parse(reader.ReadToEnd()));
+        var template = DesktopMarkup.Compile(NxmlParser.Parse(reader.ReadToEnd()));
         var parent = shell.Tree.Create("process-log-loader");
-        Page = PxmlUiLoader.Load(template, shell.Tree, store, parent);
+        Page = NxmlUiLoader.Load(template, shell.Tree, store, parent);
         shell.Tree.Detach(Page); shell.Tree.Destroy(parent);
         shell.Tree.Walk(Page, entity =>
         {

@@ -1,0 +1,90 @@
+namespace Nexa.Xsr.Renderer.Backend.Avalonia;
+
+/// <summary>
+/// The single source of truth for product motion timing, classified per the oil-motion runtime
+/// contract. Every animation is one of three controllers and must not grow page-local constants:
+/// - <c>segment-play</c>: input selects a state, the motion then completes on its own and a
+///   reverse input cancels the running play before retracing from the currently presented
+///   value (hover, press, selection, rail expansion, launch card swaps);
+/// - <c>scrub</c>: an input value maps continuously onto the presented state (the rail
+///   presentation progress pumped by the shell);
+/// - <c>autonomous</c>: the motion advances by time alone (startup reveal, close collapse,
+///   page enter, icon bounce), with the contract's static state as the reduced-motion
+///   fallback.
+/// Fast repeated inputs keep only the newest target: every track is replaceable and
+/// cancellable, and each track carries the live reduced-motion policy.
+/// </summary>
+internal static class AvaloniaMotionTokens
+{
+    /// <summary>The loading card fades once, then remains static throughout readiness and retry.</summary>
+    public const int SplashAppearanceMilliseconds = 180;
+
+    /// <summary>
+    /// One finite mint/cyan N light trace decorates the prepared scene without changing input geometry.
+    /// </summary>
+    public const int StartupRevealMilliseconds = 420;
+    public const double StartupSceneInitialOpacity = .88;
+
+    /// <summary>Tray visibility retargets the retained content without changing native geometry.</summary>
+    public const int TrayHideMilliseconds = 220;
+    public const int TrayRestoreMilliseconds = 260;
+
+    /// <summary>The existing close sequence contracts the content to radius zero.</summary>
+    public const int CloseCollapseMilliseconds = 280;
+
+    /// <summary>
+    /// Page/content enter: a coordinated fade keeps text inside its measured line box.
+    /// Retargeting continues from the presented opacity, without descendant staggering.
+    /// </summary>
+    public const int PageEnterMilliseconds = 160;
+    public const double PageEnterInitialOpacity = .8;
+
+    /// <summary>Individual controls enter in reading order, without delaying direct manipulation.</summary>
+    public const int PageEnterStaggerMilliseconds = 14;
+    public const int PageEnterMaximumStaggerIndex = 16;
+
+    /// <summary>The close icon folds away after the content has contracted.</summary>
+    public const int IconCollapseMilliseconds = 190;
+
+    /// <summary>Press responds on pointer-down; the release settles without a bounce.</summary>
+    public const double PressScale = 0.97;
+
+    public const int PressMilliseconds = 120;
+
+    /// <summary>Hover feedback is a fast symmetric mirrored fade.</summary>
+    public const int HoverMilliseconds = 120;
+
+    public const int HoverOutMilliseconds = 180;
+    public const double CapsuleSpringResponseSeconds = .3;
+
+    public const int SelectionInMilliseconds = 300;
+
+    public const int SelectionOutMilliseconds = 120;
+
+    public const double RailSpringResponseSeconds = .34;
+    public const double NavigationSpringResponseSeconds = .36;
+    public const double ContentSpringResponseSeconds = .32;
+    public const double PagerSpringResponseSeconds = .34;
+    public const double SegmentScrollSpringResponseSeconds = .34;
+
+    /// <summary>Window-internal notices lift without overshoot and remain interruptible.</summary>
+    public const double NotificationSpringResponseSeconds = .3;
+
+    /// <summary>Modal material settles slightly more deliberately than a small notice.</summary>
+    public const double DialogSpringResponseSeconds = .34;
+
+    /// <summary>Existing notices retain their presented position while the stack reflows.</summary>
+    public const double NotificationReflowSpringResponseSeconds = .26;
+
+    /// <summary>One wheel unit maps to a continuous logical-pixel delta; fractions are retained.</summary>
+    public const double ContinuousScrollPixelsPerWheelUnit = 40;
+
+    /// <summary>
+    /// The launch progress fill catches up to its state target with a smooth ease-out per
+    /// target change, mirroring the legacy incremental catch-up cadence.
+    /// </summary>
+    public const int ProgressFillMilliseconds = 240;
+
+    /// <summary>The splash and hover fade clocks tick at display cadence.</summary>
+    public const int FrameMilliseconds = 16;
+}

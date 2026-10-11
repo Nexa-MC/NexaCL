@@ -1,5 +1,5 @@
 using Nexa.Services.Minecraft.Install;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 namespace Nexa.Desktop.Tests;
 
 internal static partial class Program

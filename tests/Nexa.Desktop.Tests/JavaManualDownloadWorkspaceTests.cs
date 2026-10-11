@@ -1,6 +1,6 @@
 using Nexa.Desktop.Ui;
 using Nexa.Services.Minecraft.Java;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 

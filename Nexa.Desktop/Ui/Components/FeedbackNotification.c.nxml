@@ -1,0 +1,11 @@
+<nxml-component>
+  <Notification Key="Notification" Label="Info 通知" Class="layout-Notification-Notification">
+    <StackPanel Key="NotificationAccent" Class="layout-Notification-NotificationAccent" />
+    <Image Key="NotificationIcon" Label="Info" Source="lucide/info" Class="layout-Notification-NotificationIcon" />
+    <StackPanel Key="NotificationCopy" Class="layout-Notification-NotificationCopy">
+      <Text Key="NotificationLevel" Content="Info" Class="layout-Notification-NotificationLevel" />
+      <Text Key="NotificationMessage" Content="通知内容" />
+    </StackPanel>
+    <Button Key="NotificationClose" Label="关闭 Info 通知" Icon="lucide/x" Command="ui.feedback.notification.dismiss" Class="layout-Notification-NotificationClose" />
+  </Notification>
+</nxml-component>

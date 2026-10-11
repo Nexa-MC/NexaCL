@@ -60,14 +60,13 @@
     <Project Path="Nexa.Services.Updates.Contracts/Nexa.Services.Updates.Contracts.csproj" />
   </Folder>
   <Folder Name="/Renderer/">
-    <Project Path="Nexa.UI.Next/Nexa.UI.Next.csproj" />
-    <Project Path="Nexa.UI.Next.Backend.Avalonia/Nexa.UI.Next.Backend.Avalonia.csproj" />
-    <Project Path="Nexa.UI.Next.Benchmarks/Nexa.UI.Next.Benchmarks.csproj" />
+    <Project Path="Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
+    <Project Path="Nexa.Xsr.Renderer.Backend.Avalonia/Nexa.Xsr.Renderer.Backend.Avalonia.csproj" />
+    <Project Path="Nexa.Xsr.Renderer.Benchmarks/Nexa.Xsr.Renderer.Benchmarks.csproj" />
   </Folder>
-  <Folder Name="/PXML/">
-    <Project Path="Nexa.Pxml.Compiler/Nexa.Pxml.Compiler.csproj" />
-    <Project Path="Nexa.Pxml.Runtime/Nexa.Pxml.Runtime.csproj" />
-    <Project Path="Nexa.Pxml.Generators/Nexa.Pxml.Generators.csproj" />
+  <Folder Name="/NXML/">
+    <Project Path="Nexa.Xsr.Renderer.Nxml.Compiler/Nexa.Xsr.Renderer.Nxml.Compiler.csproj" />
+    <Project Path="Nexa.Xsr.Renderer.Nxml.Runtime/Nexa.Xsr.Renderer.Nxml.Runtime.csproj" />
   </Folder>
   <Folder Name="/Sidecar/">
     <Project Path="Nexa.Sidecar.Protocol/Nexa.Sidecar.Protocol.csproj" />
@@ -81,9 +80,9 @@
   <Folder Name="/Tests/">
     <Project Path="tests/Nexa.Xsr.ArchitectureTests/Nexa.Xsr.ArchitectureTests.csproj" />
     <Project Path="tests/Nexa.Xsr.Runtime.Tests/Nexa.Xsr.Runtime.Tests.csproj" />
-    <Project Path="tests/Nexa.UI.Next.Tests/Nexa.UI.Next.Tests.csproj" />
-    <Project Path="tests/Nexa.UI.Next.Backend.Avalonia.Tests/Nexa.UI.Next.Backend.Avalonia.Tests.csproj" />
-    <Project Path="tests/Nexa.Pxml.Tests/Nexa.Pxml.Tests.csproj" />
+    <Project Path="tests/Nexa.Xsr.Renderer.Tests/Nexa.Xsr.Renderer.Tests.csproj" />
+    <Project Path="tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.csproj" />
+    <Project Path="tests/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj" />
     <Project Path="tests/Nexa.Sidecar.Tests/Nexa.Sidecar.Tests.csproj" />
     <Project Path="tests/Nexa.Services.Tests/Nexa.Services.Tests.csproj" />
     <Project Path="tests/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj" />

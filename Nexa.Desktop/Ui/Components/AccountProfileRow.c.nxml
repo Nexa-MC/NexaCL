@@ -1,0 +1,12 @@
+<nxml-component>
+  <Button Key="AccountRow" Command="ui.account.select" Class="layout-AccountProfileRow-AccountRow">
+    <StackPanel Class="layout-AccountProfileRow-2">
+      <Image Key="ProfileAvatar" Source="pcl/avatar/steve" Class="layout-AccountProfileRow-ProfileAvatar" />
+      <StackPanel Class="layout-AccountProfileRow-4">
+        <Text Key="ProfileName" Content="" Class="layout-AccountProfileRow-ProfileName" />
+        <Text Key="ProfileDetail" Content="" Class="layout-AccountProfileRow-ProfileDetail" />
+      </StackPanel>
+      <Button Key="ProfileDelete" Label="删除档案" Icon="lucide/trash-2" Command="ui.account.delete" Class="layout-AccountProfileRow-ProfileDelete" />
+    </StackPanel>
+  </Button>
+</nxml-component>

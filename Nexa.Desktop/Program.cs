@@ -9,8 +9,8 @@ using Nexa.Services.Logging;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Settings;
 using Nexa.Services.Setup;
-using Nexa.UI.Next;
-using Nexa.UI.Next.Backend.Avalonia;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
@@ -425,7 +425,7 @@ internal static partial class Program
 
         setStage("load_pxml_shell");
         host.Logging.Info("Launcher", "Loading embedded PXML shell and attaching the host state bridge.");
-        XsrUiShell shell = PxmlShellComposer.Compose(
+        XsrUiShell shell = NxmlShellComposer.Compose(
             runtime.Host.StateStore,
             uiRuntime,
             new XsrUiShellOptions
@@ -705,7 +705,7 @@ internal static partial class Program
         LaunchPageState.DeclareState(builder);
         var store = builder.Build(context.StateBridge);
         DesktopUiIntentSink intents = new();
-        var shell = PxmlShellComposer.Compose(store, context, new XsrUiShellOptions
+        var shell = NxmlShellComposer.Compose(store, context, new XsrUiShellOptions
         { Title = "NexaCL", Version = ResolveInformationalVersion() }, intents);
         using var languageSession = new DesktopLanguageSession(shell, store);
         var runtime = FirstRunRuntimeComposer.Compose(service);

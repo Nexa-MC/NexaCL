@@ -89,7 +89,7 @@ internal static partial class Program
         settings.PrepareStartupAsync(default).GetAwaiter().GetResult();
         fixture.Controller.SettingsPage = settings.Page;
         fixture.Intents.Emit(XsrSemanticId.Parse("ui.navigation.settings"), default, XsrCorrelationId.Create());
-        var scene = fixture.Shell.Render(new Nexa.UI.Next.XsrUiSize(850, 500));
+        var scene = fixture.Shell.Render(new Nexa.Xsr.Renderer.XsrUiSize(850, 500));
         AssertTrue(scene.Count > 0 && fixture.Shell.Stage.Navigation.Current == settings.Page);
     }
 }

@@ -8,7 +8,7 @@ using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Services.Settings;
 using Nexa.Services.Tasks;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
@@ -61,7 +61,7 @@ internal static partial class Program
                 imports ?? new LegacyProfileImport(() => []), microsoft: microsoft);
             Store = host.StateStore;
             Intents = new DesktopUiIntentSink();
-            Shell = PxmlShellComposer.Compose(Store, uiRuntime, intentSink: Intents);
+            Shell = NxmlShellComposer.Compose(Store, uiRuntime, intentSink: Intents);
             Feedback = new DesktopFeedbackService(timeProvider);
             FeedbackPresenter = new DesktopFeedbackPresenter(Shell, Intents, Feedback, Store, timeProvider);
             Minecraft = minecraft ?? MinecraftRuntimeComposer.Compose();

@@ -1,10 +1,10 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Composition;
 using Nexa.Services.Tasks;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
@@ -19,8 +19,8 @@ namespace Nexa.Desktop.Ui;
 /// </summary>
 internal sealed class TaskCenterController : IDisposable
 {
-    private const string PageResource = "Ui.TaskCenterPage.pxml";
-    private const string CardResource = "Ui.TaskCard.pxml";
+    private const string PageResource = "Ui.TaskCenterPage.nxml";
+    private const string CardResource = "Ui.TaskCard.c.nxml";
 
     private static readonly XsrSemanticId DetailsCommand = XsrSemanticId.Parse("ui.tasks.card.details");
     private readonly ConcurrentQueue<string> _detailToggles = new();
@@ -29,15 +29,15 @@ internal sealed class TaskCenterController : IDisposable
     private static readonly XsrSemanticId CardDismissCommand = XsrSemanticId.Parse("ui.tasks.card.dismiss");
     private static readonly XsrSemanticId ClearFinishedCommand = XsrSemanticId.Parse("ui.tasks.clear-finished");
 
-    private static readonly XsrUiColor CardBackground = new(255, 255, 255);
-    private static readonly XsrUiColor CardBorder = new(228, 233, 240);
-    private static readonly XsrUiColor TitleInk = new(40, 48, 60);
-    private static readonly XsrUiColor SecondaryInk = new(112, 124, 138);
-    private static readonly XsrUiColor RunningAccent = new(19, 112, 243);
-    private static readonly XsrUiColor FinishedAccent = new(34, 128, 84);
-    private static readonly XsrUiColor FailedAccent = new(196, 64, 54);
-    private static readonly XsrUiColor CanceledAccent = new(112, 124, 138);
-    private static readonly XsrUiColor HoverTint = new(19, 112, 243, 22);
+    private static readonly XsrUiColor CardBackground = DesktopMarkup.Visual("palette-TaskCenterController-CardBackground").Foreground;
+    private static readonly XsrUiColor CardBorder = DesktopMarkup.Visual("palette-TaskCenterController-CardBorder").Foreground;
+    private static readonly XsrUiColor TitleInk = DesktopMarkup.Visual("palette-TaskCenterController-TitleInk").Foreground;
+    private static readonly XsrUiColor SecondaryInk = DesktopMarkup.Visual("palette-TaskCenterController-SecondaryInk").Foreground;
+    private static readonly XsrUiColor RunningAccent = DesktopMarkup.Visual("palette-TaskCenterController-RunningAccent").Foreground;
+    private static readonly XsrUiColor FinishedAccent = DesktopMarkup.Visual("palette-TaskCenterController-FinishedAccent").Foreground;
+    private static readonly XsrUiColor FailedAccent = DesktopMarkup.Visual("palette-TaskCenterController-FailedAccent").Foreground;
+    private static readonly XsrUiColor CanceledAccent = DesktopMarkup.Visual("palette-TaskCenterController-CanceledAccent").Foreground;
+    private static readonly XsrUiColor HoverTint = DesktopMarkup.Visual("palette-TaskCenterController-HoverTint").Foreground;
 
     private readonly XsrUiShell _shell;
     private readonly DesktopUiIntentSink _intents;
@@ -48,7 +48,7 @@ internal sealed class TaskCenterController : IDisposable
     private readonly XsrStateId _summaryId;
     private readonly XsrUiEntityId _page;
     private readonly Dictionary<string, XsrUiEntityId> _entities;
-    private readonly PxmlHostIr _cardTemplate;
+    private readonly NxmlHostIr _cardTemplate;
     private readonly Dictionary<string, PresentedCard> _cards = [];
     private readonly ConcurrentQueue<(string TaskId, XsrSemanticId Command)> _dispatches = [];
     private bool _dispatchedThisFrame;
@@ -118,9 +118,9 @@ internal sealed class TaskCenterController : IDisposable
 
     private (XsrUiEntityId Page, Dictionary<string, XsrUiEntityId> Entities) LoadPage()
     {
-        PxmlHostIr ir = PxmlCompiler.Compile(PxmlParser.Parse(ReadEmbeddedResource(PageResource)));
+        NxmlHostIr ir = DesktopMarkup.Compile(NxmlParser.Parse(ReadEmbeddedResource(PageResource)));
         XsrUiEntityId host = _shell.Tree.Create("task-center-page-loader");
-        XsrUiEntityId page = PxmlUiLoader.Load(ir, _shell.Tree, _store, host);
+        XsrUiEntityId page = NxmlUiLoader.Load(ir, _shell.Tree, _store, host);
         _shell.Tree.Detach(page);
         _shell.Tree.Destroy(host);
         Dictionary<string, XsrUiEntityId> entities = [];
@@ -379,9 +379,9 @@ internal sealed class TaskCenterController : IDisposable
 
     private PresentedCard CreateCard(TaskCenterEntry entry)
     {
-        PxmlIrNode rootNode = _cardTemplate.Root with { Key = $"task-card:{entry.TaskId}" };
-        XsrUiEntityId root = PxmlUiLoader.Load(
-            new PxmlHostIr(rootNode), _shell.Tree, _store, _entities["TaskCenterList"]);
+        NxmlIrNode rootNode = _cardTemplate.Root with { Key = $"task-card:{entry.TaskId}" };
+        XsrUiEntityId root = NxmlUiLoader.Load(
+            new NxmlHostIr(rootNode), _shell.Tree, _store, _entities["TaskCenterList"]);
         Dictionary<string, XsrUiEntityId> entities = [];
         _shell.Tree.Walk(root, entity =>
         {
@@ -629,26 +629,14 @@ internal sealed class TaskCenterController : IDisposable
             $"{value.ToString(unit == 0 ? "F0" : "F1", CultureInfo.CurrentCulture)} {units[unit]}");
     }
 
-    private static PxmlHostIr LoadTemplate(string suffix)
+    private static NxmlHostIr LoadTemplate(string suffix)
     {
-        Assembly assembly = typeof(TaskCenterController).Assembly;
-        string resource = assembly.GetManifestResourceNames()
-            .Single(name => name.EndsWith(suffix, StringComparison.Ordinal));
-        using Stream stream = assembly.GetManifestResourceStream(resource)
-            ?? throw new InvalidOperationException($"Missing embedded task template '{suffix}'.");
-        using StreamReader reader = new(stream);
-        return PxmlCompiler.Compile(PxmlParser.Parse(reader.ReadToEnd()));
+        return DesktopMarkup.Load(suffix);
     }
 
     private static string ReadEmbeddedResource(string suffix)
     {
-        Assembly assembly = typeof(TaskCenterController).Assembly;
-        string resource = assembly.GetManifestResourceNames()
-            .Single(name => name.EndsWith(suffix, StringComparison.Ordinal));
-        using Stream stream = assembly.GetManifestResourceStream(resource)
-            ?? throw new InvalidOperationException($"Missing embedded resource '{suffix}'.");
-        using StreamReader reader = new(stream);
-        return reader.ReadToEnd();
+        return DesktopMarkup.Read(suffix);
     }
 
     public void Dispose()

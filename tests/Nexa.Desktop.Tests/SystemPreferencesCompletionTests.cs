@@ -1,5 +1,5 @@
 using Nexa.Desktop.Ui;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Tests;
 
@@ -69,7 +69,7 @@ internal static partial class Program
         {
             Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", directory);
             using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
-            var platform = new Nexa.UI.Next.Backend.Avalonia.AvaloniaUiPlatformActions();
+            var platform = new Nexa.Xsr.Renderer.Backend.Avalonia.AvaloniaUiPlatformActions();
             var session = new SystemPreferencesSession(fixture.Foundation.Queries, fixture.Store, platform, fixture.Feedback, _ => { }, _ => { });
             try
             {

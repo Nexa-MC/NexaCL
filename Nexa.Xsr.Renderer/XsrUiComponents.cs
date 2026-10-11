@@ -1,0 +1,562 @@
+using Nexa.Xsr;
+
+namespace Nexa.Xsr.Renderer;
+
+/// <summary>
+/// Text content of one entity. Content is plain text; the backend chooses presentation. Text
+/// can bind to one state entry, in which case the renderer reads the applied value per render.
+/// </summary>
+public sealed class XsrUiText(string content)
+{
+    public string Content { get; set; } = content ?? string.Empty;
+    public IReadOnlyList<XsrUiTextRun> Runs { get; set; } = [];
+    /// <summary>False for user/provider content that must retain its original spelling.</summary>
+    public bool Localize { get; set; } = true;
+
+    public XsrStateId BoundState { get; set; }
+
+    /// <summary>
+    /// Maximum rendered line count. Zero keeps every line. The complete <see cref="Content"/>
+    /// remains the semantic value even when presentation is clamped.
+    /// </summary>
+    public int MaxLines { get; set; }
+
+    /// <summary>Shows an end ellipsis when wrapping or the line limit omits content.</summary>
+    public bool TrimOverflow { get; set; }
+}
+
+/// <summary>Immutable presentation ranges in the plain, accessible text.</summary>
+public sealed record XsrUiTextRun(int Start, int Length, XsrUiColor Foreground, bool Bold = false,
+    bool Italic = false, bool Underline = false, bool Strikethrough = false);
+
+/// <summary>
+/// Box model spacing around and inside one element.
+/// </summary>
+public readonly record struct XsrUiThickness(double Left, double Top, double Right, double Bottom)
+{
+    public static XsrUiThickness Uniform(double value) => new(value, value, value, value);
+
+    public double Horizontal => Left + Right;
+
+    public double Vertical => Top + Bottom;
+}
+
+/// <summary>
+/// Alignment of one element inside its arranged slot.
+/// </summary>
+public enum XsrUiAlignment
+{
+    Stretch = 0,
+    Start = 1,
+    Center = 2,
+    End = 3,
+}
+
+/// <summary>
+/// Stack flow direction.
+/// </summary>
+public enum XsrUiOrientation
+{
+    Vertical = 0,
+    Horizontal = 1,
+}
+
+/// <summary>
+/// Size, spacing, alignment, and visibility constraints of one element.
+/// </summary>
+public sealed class XsrUiElement
+{
+    public bool IsVisible { get; set; } = true;
+
+    public XsrStateId BoundVisibility { get; set; }
+
+    public double? Width { get; set; }
+
+    public double? Height { get; set; }
+
+    public double? MinWidth { get; set; }
+
+    public double? MaxWidth { get; set; }
+
+    public double? MinHeight { get; set; }
+
+    public double? MaxHeight { get; set; }
+
+    /// <summary>
+    /// Shares the parent's remaining stack-axis space with weighted siblings. Zero keeps the
+    /// element at its desired size; positive values behave like star-sized rows or columns.
+    /// </summary>
+    public double Weight { get; set; }
+
+    public XsrUiThickness Margin { get; set; }
+
+    public XsrUiThickness Padding { get; set; }
+
+    public XsrUiAlignment HorizontalAlignment { get; set; }
+
+    public XsrUiAlignment VerticalAlignment { get; set; }
+}
+
+/// <summary>
+/// Lays out children in one flow direction with fixed spacing.
+/// </summary>
+public sealed class XsrUiStackPanel(XsrUiOrientation direction)
+{
+    public XsrUiOrientation Direction { get; set; } = direction;
+
+    public double Spacing { get; set; }
+
+    /// <summary>
+    /// Gives the final visible child the remaining main-axis space. This is intentionally
+    /// opt-in: a normal stack keeps its intrinsic size, while shell rows can reserve the rest
+    /// of the viewport for the content host.
+    /// </summary>
+    public bool StretchLastChild { get; set; }
+}
+
+/// <summary>
+/// Semantic role and label of one entity for accessibility and tests. Backends map roles to
+/// their native accessibility bridges; UI.Next never references a concrete backend.
+/// </summary>
+public sealed class XsrUiSemantic(XsrUiSemanticRole role, string? label = null)
+{
+    public XsrUiSemanticRole Role { get; set; } = role;
+
+    public string? Label { get; set; } = label;
+    /// <summary>False for accessible names containing only user/provider content.</summary>
+    public bool Localize { get; set; } = true;
+
+    /// <summary>Optional host state whose applied string value is the current accessible label.</summary>
+    public XsrStateId BoundLabel { get; set; }
+}
+
+/// <summary>
+/// The accessibility roles the renderer kernel knows about.
+/// </summary>
+public enum XsrUiSemanticRole
+{
+    None = 0,
+    Text = 1,
+    Button = 2,
+    Page = 3,
+    List = 4,
+    ListItem = 5,
+    Image = 6,
+    ProgressBar = 7,
+    Dialog = 8,
+    TitleBar = 9,
+    Navigation = 10,
+    NavigationItem = 11,
+    Content = 12,
+    TextInput = 13,
+    /// <summary>A non-modal status announcement that remains independently dismissible.</summary>
+    Status = 14,
+    Switch = 15,
+    CheckBox = 16,
+    RadioGroup = 17,
+    RadioButton = 18,
+}
+
+/// <summary>Confirmed toggle state. Activation emits an intent; it never mutates this value.</summary>
+public sealed class XsrUiToggle(bool isChecked = false)
+{
+    public bool IsChecked { get; set; } = isChecked;
+}
+
+/// <summary>Whether an exclusive selection container permits no selected item.</summary>
+public sealed class XsrUiSelectionGroup(bool isSelectionRequired = true)
+{
+    public bool IsSelectionRequired { get; set; } = isSelectionRequired;
+}
+
+/// <summary>Backend-neutral live-region urgency for accessibility announcements.</summary>
+public enum XsrUiLiveSetting
+{
+    Off = 0,
+    Polite = 1,
+    Assertive = 2,
+}
+
+/// <summary>
+/// Marks one semantic node as an accessibility live region. Backends map the setting to their
+/// native automation bridge; the renderer does not announce through a platform API itself.
+/// </summary>
+public sealed class XsrUiLiveRegion(XsrUiLiveSetting setting)
+{
+    public XsrUiLiveSetting Setting { get; set; } = setting;
+}
+
+/// <summary>
+/// Marks a child as out-of-flow overlay content. Stack parents ignore marked children while
+/// measuring their normal flow and arrange them against the complete content rectangle.
+/// </summary>
+public sealed class XsrUiOverlayLayer(bool isModal = false)
+{
+    /// <summary>
+    /// Modal layers suppress earlier siblings from input and accessibility traversal while
+    /// their full-window root continues to intercept pointer input.
+    /// </summary>
+    public bool IsModal { get; set; } = isModal;
+}
+
+/// <summary>The physical presentation family used by a window-internal overlay subtree.</summary>
+public enum XsrUiOverlayMotionKind
+{
+    None = 0,
+    Notification = 1,
+    DialogScrim = 2,
+    Dialog = 3,
+}
+
+/// <summary>
+/// Declares an interruptible overlay enter/exit track. The fact propagates to descendants in
+/// the immutable scene so a backend can move the whole visual group around one shared anchor.
+/// </summary>
+public sealed class XsrUiOverlayMotion(XsrUiOverlayMotionKind kind)
+{
+    public XsrUiOverlayMotionKind Kind { get; set; } = kind;
+
+    public bool IsClosing { get; set; }
+}
+
+/// <summary>
+/// Semantic cancel route for the active modal overlay. Escape invokes this through the same
+/// intent sink as a visible secondary button.
+/// </summary>
+public sealed class XsrUiDismissBinding(XsrSemanticId command)
+{
+    public XsrSemanticId Command { get; set; } = command;
+}
+
+/// <summary>
+/// Binds one entity to a command: activation emits the command as intent through the intent
+/// sink. The command itself stays a semantic ID; binding resolution is the composition root's job.
+/// </summary>
+public sealed class XsrUiCommandBinding(XsrSemanticId command)
+{
+    public XsrSemanticId Command { get; set; } = command;
+}
+
+/// <summary>
+/// Scroll offsets of one stacking container. Offsets are renderer-local ephemeral state,
+/// clamped to the measured content extent during arrange; wheel routing adjusts them.
+/// </summary>
+public sealed class XsrUiScroll
+{
+    public double OffsetX { get; set; }
+
+    public double OffsetY { get; set; }
+
+    /// <summary>Route conventional wheel movement along a horizontal card track.</summary>
+    public bool UseVerticalWheelForHorizontalScroll { get; set; }
+
+    /// <summary>
+    /// Keeps the viewport attached to its lower edge while content changes, unless the user has
+    /// explicitly scrolled away from that edge.
+    /// </summary>
+    public bool StickToEnd { get; set; }
+
+    /// <summary>Requests a backend-neutral vertical scrollbar when content overflows.</summary>
+    public bool ShowsVerticalIndicator { get; set; }
+
+    /// <summary>Requests a backend-neutral horizontal scrollbar when content overflows.</summary>
+    public bool ShowsHorizontalIndicator { get; set; }
+
+    internal double MaximumOffsetY { get; set; }
+    internal double MaximumOffsetX { get; set; }
+}
+
+/// <summary>Immutable continuous-scroll facts projected into a render scene.</summary>
+public readonly record struct XsrUiScrollSnapshot(
+    double OffsetX,
+    double OffsetY,
+    double ViewportWidth,
+    double ViewportHeight,
+    double ContentWidth,
+    double ContentHeight,
+    bool ShowsVerticalIndicator)
+{
+    public bool ShowsHorizontalIndicator { get; init; }
+
+    public double MaximumOffsetX => Math.Max(0, ContentWidth - ViewportWidth);
+
+    public double MaximumOffsetY => Math.Max(0, ContentHeight - ViewportHeight);
+
+    public bool CanScrollHorizontally => MaximumOffsetX > 0;
+
+    public bool CanScrollVertically => MaximumOffsetY > 0;
+
+    /// <summary>Projects the same scene-coordinate geometry for painting and pointer input.</summary>
+    public XsrUiScrollbarSnapshot? Scrollbar(XsrUiRect rect, XsrUiOrientation direction)
+    {
+        bool vertical = direction == XsrUiOrientation.Vertical;
+        double maximum = vertical ? MaximumOffsetY : MaximumOffsetX;
+        if (!(vertical ? ShowsVerticalIndicator : ShowsHorizontalIndicator) || maximum <= 0) return null;
+        const double inset = 6, width = 3, gutter = 12;
+        double length = Math.Max(0, (vertical ? rect.Height : rect.Width)
+            - ((vertical ? ShowsHorizontalIndicator : ShowsVerticalIndicator) ? gutter : 0) - inset * 2);
+        double crossLength = vertical ? rect.Width : rect.Height;
+        if (length <= 0 || crossLength <= 0) return null;
+        double viewport = vertical ? ViewportHeight : ViewportWidth;
+        double content = vertical ? ContentHeight : ContentWidth;
+        double thumbLength = Math.Clamp(length * (viewport / content), Math.Min(28, length), length);
+        double travel = length - thumbLength;
+        double offset = vertical ? OffsetY : OffsetX;
+        double thumbStart = inset + travel * Math.Clamp(offset / maximum, 0, 1);
+        double paintCross = Math.Max(0, crossLength - width - 4);
+        double hitCross = Math.Max(0, crossLength - gutter);
+        return vertical
+            ? new(direction, new(rect.X + paintCross, rect.Y + inset, Math.Min(width, crossLength), length),
+                new(rect.X + paintCross, rect.Y + thumbStart, Math.Min(width, crossLength), thumbLength),
+                new(rect.X + hitCross, rect.Y + inset, Math.Min(gutter, crossLength), length))
+            : new(direction, new(rect.X + inset, rect.Y + paintCross, length, Math.Min(width, crossLength)),
+                new(rect.X + thumbStart, rect.Y + paintCross, thumbLength, Math.Min(width, crossLength)),
+                new(rect.X + inset, rect.Y + hitCross, length, Math.Min(gutter, crossLength)));
+    }
+}
+
+/// <summary>Immutable scrollbar geometry. Hit width includes the reserved content gutter.</summary>
+public readonly record struct XsrUiScrollbarSnapshot(
+    XsrUiOrientation Direction, XsrUiRect Track, XsrUiRect Thumb, XsrUiRect HitRect)
+{
+    public double Travel => Direction == XsrUiOrientation.Vertical ? Track.Height - Thumb.Height : Track.Width - Thumb.Width;
+
+    public bool HitsThumb(XsrUiPoint point) => HitRect.Contains(point)
+        && (Direction == XsrUiOrientation.Vertical
+            ? point.Y >= Thumb.Y && point.Y < Thumb.Y + Thumb.Height
+            : point.X >= Thumb.X && point.X < Thumb.X + Thumb.Width);
+}
+
+/// <summary>
+/// One media slot. The kernel carries only the source reference; decoding and drawing belong to
+/// backends.
+/// </summary>
+public sealed class XsrUiImage
+{
+    public XsrUiImage(string source)
+    {
+        Source = source;
+    }
+
+    public string Source { get; set; }
+    public XsrUiRasterImage? Raster { get; set; }
+}
+
+/// <summary>
+/// Marks one entity as an input target: focusable for keyboard navigation, clickable for
+/// pointer activation. Hover, pressed, and focus flags are renderer-local ephemeral state.
+/// </summary>
+public sealed class XsrUiInput
+{
+    /// <summary>Renderer-owned capsule geometry; never a product state value.</summary>
+    public double CapsuleExpansionProgress { get; internal set; }
+
+    public bool Focusable { get; set; }
+
+    public bool Clickable { get; set; }
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// The optional state that drives clickability: when assigned and the applied value is
+    /// false, the node presents and routes as disabled even though its base Clickable stays
+    /// true. Mirrors <see cref="XsrUiElement.BoundVisibility"/>.
+    /// </summary>
+    public XsrStateId BoundEnabled { get; set; }
+
+    public bool IsHovered { get; set; }
+
+    public bool IsPressed { get; set; }
+
+    public bool IsFocused { get; set; }
+    public bool IsFocusVisible { get; set; }
+}
+
+/// <summary>
+/// Selection state for mutually exclusive navigation or list items. Selection is a semantic
+/// renderer fact, separate from focus and pointer-pressed state.
+/// </summary>
+public sealed class XsrUiSelection
+{
+    public bool IsSelected { get; set; }
+}
+
+/// <summary>
+/// Backend-neutral RGBA color. UI.Next carries color values as data; a platform backend decides
+/// how the value is turned into a native brush or draw command.
+/// </summary>
+public readonly record struct XsrUiColor(byte Red, byte Green, byte Blue, byte Alpha = 255)
+{
+    public static XsrUiColor FromRgb(byte red, byte green, byte blue) => new(red, green, blue);
+
+    public static XsrUiColor Transparent => new(0, 0, 0, 0);
+}
+
+/// <summary>
+/// Describes the material treatment of a surface without naming a platform compositor.
+/// </summary>
+public enum XsrUiSurfaceKind
+{
+    None = 0,
+    Solid = 1,
+    Translucent = 2,
+    Glass = 3,
+}
+
+/// <summary>Horizontal placement of text inside its scene rectangle.</summary>
+public enum XsrUiTextAlignment
+{
+    Start = 0,
+    Center = 1,
+    End = 2,
+}
+
+/// <summary>
+/// Immutable visual facts copied from an entity into the render scene. The default value means
+/// that the backend should use its own neutral fallback.
+/// </summary>
+public readonly record struct XsrUiVisualStyleSnapshot(
+    XsrUiColor Background,
+    XsrUiColor Foreground,
+    XsrUiColor Border,
+    XsrUiColor Hover,
+    bool HoverExpand,
+    XsrUiSurfaceKind Surface,
+    double Opacity,
+    double CornerRadius,
+    double BorderWidth,
+    double BlurRadius,
+    double FontSize,
+    double FontWeight,
+    XsrUiTextAlignment TextAlignment,
+    bool NavigationLayout = false,
+    bool WrapText = false)
+{
+    public bool IsDefined => Surface != XsrUiSurfaceKind.None || Opacity != 0;
+}
+
+/// <summary>
+/// Mutable visual component owned by the render-thread tree. Mutating a component must be
+/// followed by <see cref="XsrUiTree.MarkDirty(XsrUiEntityId, XsrUiDirtyKinds)"/> by its owner.
+/// </summary>
+public sealed class XsrUiVisualStyle
+{
+    public XsrUiColor Background { get; set; } = XsrUiColor.Transparent;
+
+    public XsrUiColor Foreground { get; set; } = XsrUiColor.FromRgb(255, 255, 255);
+
+    public XsrUiColor Border { get; set; } = XsrUiColor.Transparent;
+
+    /// <summary>
+    /// Gets or sets the transient pointer-hover tint. Zero alpha means the backend picks its own
+    /// neutral hover treatment.
+    /// </summary>
+    public XsrUiColor Hover { get; set; } = XsrUiColor.Transparent;
+
+    /// <summary>
+    /// Gets or sets whether this node presents as a hover-expanding capsule: an icon circle at
+    /// rest that grows leftward on hover or focus to reveal its scene text. The node's hit
+    /// region follows renderer-owned presentation progress rather than reserving expanded space.
+    /// </summary>
+    public bool HoverExpand { get; set; }
+    public bool NavigationLayout { get; set; }
+    public bool WrapText { get; set; }
+
+    public XsrUiSurfaceKind Surface { get; set; } = XsrUiSurfaceKind.None;
+
+    public double Opacity { get; set; } = 1;
+
+    public double CornerRadius { get; set; }
+
+    public double BorderWidth { get; set; }
+
+    public double BlurRadius { get; set; }
+
+    /// <summary>
+    /// Gets or sets the text size in logical pixels. Zero means the backend picks the size
+    /// implied by the entity's semantic role.
+    /// </summary>
+    public double FontSize { get; set; }
+
+    /// <summary>
+    /// Gets or sets the text weight on the common 100..900 scale. 400 means normal; the backend
+    /// maps values of roughly 600 and above to its semibold face.
+    /// </summary>
+    public double FontWeight { get; set; } = 400;
+
+    public XsrUiTextAlignment TextAlignment { get; set; }
+
+    public XsrUiVisualStyleSnapshot Snapshot() => new(
+        Background,
+        Foreground,
+        Border,
+        Hover,
+        HoverExpand,
+        Surface,
+        Opacity,
+        CornerRadius,
+        BorderWidth,
+        BlurRadius,
+        FontSize,
+        FontWeight,
+        TextAlignment,
+        NavigationLayout,
+        WrapText);
+}
+
+/// <summary>
+/// The keyboard keys the renderer kernel routes itself.
+/// </summary>
+public enum XsrUiKey
+{
+    Tab = 1,
+    Enter = 2,
+    Space = 3,
+    Back = 4,
+    Up = 5,
+    Down = 6,
+    Escape = 7,
+    Left = 8,
+    Right = 9,
+}
+
+/// <summary>A shared selector track. Its hidden child thumb is painted behind the selected segment.</summary>
+public sealed class XsrUiSegmentedTrack(XsrUiEntityId thumb)
+{
+    public XsrUiEntityId Thumb { get; } = thumb;
+    public XsrUiEntityId Selected { get; set; }
+    internal XsrUiEntityId PresentedSelection { get; set; }
+    internal XsrUiRect LastTarget { get; set; }
+    internal bool Dragging { get; set; }
+    internal double DragX { get; set; }
+    internal double GrabOffset { get; set; }
+    internal double ScrollStartProgress { get; set; }
+    internal double ScrollStartOffset { get; set; }
+    internal double ScrollThumbWidth { get; set; }
+    internal long GestureRevision { get; set; }
+    internal double? ScrollTargetX { get; set; }
+    internal long ScrollMotionRevision { get; set; }
+}
+
+/// <summary>Horizontal selector target, advanced from the presented viewport by the host clock.</summary>
+public readonly record struct XsrUiSegmentScrollSnapshot(long Revision, double Target);
+
+/// <summary>Width reveal for dynamically available segments, advanced by the host's shared clock.</summary>
+public sealed class XsrUiSegmentReveal(double width)
+{
+    public double Width { get; } = width;
+    public bool Expanded { get; internal set; } = true;
+    public double Progress { get; internal set; } = 1;
+}
+public readonly record struct XsrUiSegmentRevealSnapshot(bool Expanded, double Progress);
+
+/// <summary>Opt-in vertical list direct manipulation, independent of catalog semantics.</summary>
+public sealed class XsrUiScrollGesture
+{
+    internal bool Dragging { get; set; }
+    internal double Velocity { get; set; }
+    internal long Revision { get; set; }
+}
+public readonly record struct XsrUiScrollMotionSnapshot(long Revision, bool Dragging, double Velocity);
+
+/// <summary>Retained list content appears immediately, including rows entering a viewport.</summary>
+public sealed class XsrUiStableContent;

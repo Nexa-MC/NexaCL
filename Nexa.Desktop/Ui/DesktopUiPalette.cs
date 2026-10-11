@@ -1,10 +1,10 @@
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
 internal static class DesktopUiPalette
 {
-    public static readonly XsrUiColor CapsuleBackground = new(224, 234, 253);
-    public static readonly XsrUiColor CapsuleForeground = new(11, 91, 203);
-    public static readonly XsrUiColor CapsuleHover = new(207, 225, 254);
+    public static readonly XsrUiColor CapsuleBackground = DesktopMarkup.Visual("capsule").Background;
+    public static readonly XsrUiColor CapsuleForeground = DesktopMarkup.Visual("capsule").Foreground;
+    public static readonly XsrUiColor CapsuleHover = DesktopMarkup.Visual("capsule").Hover;
 }

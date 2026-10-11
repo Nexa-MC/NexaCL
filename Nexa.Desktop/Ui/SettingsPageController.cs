@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Settings;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
@@ -44,7 +44,7 @@ internal sealed partial class SettingsPageController : IDisposable
     private bool _visible;
     private long _revision = -1;
     private sealed record Editor(SettingsCatalogEntry Entry, XsrUiEntityId Input, XsrUiEntityId Button, XsrUiEntityId Thumb);
-    private static readonly XsrUiColor Ink = new(43, 51, 64), Muted = new(113, 124, 140), Blue = new(11, 91, 203), White = new(255, 255, 255), Line = new(232, 236, 242);
+    private static readonly XsrUiColor Ink = DesktopMarkup.Visual("palette-SettingsPageController-Ink").Foreground, Muted = DesktopMarkup.Visual("palette-SettingsPageController-Muted").Foreground, Blue = DesktopMarkup.Visual("palette-SettingsPageController-Blue").Foreground, White = DesktopMarkup.Visual("palette-SettingsPageController-White").Foreground, Line = DesktopMarkup.Visual("palette-SettingsPageController-Line").Foreground;
 
     public SettingsPageController(XsrUiShell shell, DesktopUiIntentSink intents, XsrQueryRouter queries, XsrCommandRouter commands,
         XsrStateStore store, DesktopFeedbackService feedback, Func<string?>? instanceDirectory = null)
@@ -53,12 +53,12 @@ internal sealed partial class SettingsPageController : IDisposable
         _instanceDirectory = instanceDirectory;
         if (instanceDirectory is not null) _selected = "overview";
         _revisionId = store.Resolve(SettingsPolicyContract.RevisionKey);
-        using var stream = typeof(SettingsPageController).Assembly.GetManifestResourceStream("Nexa.Desktop.Ui.SettingsPage.pxml")!;
+        using var stream = DesktopMarkup.Open("SettingsPage.nxml")!;
         using var reader = new StreamReader(stream);
         var host = shell.Tree.Create("settings-loader");
         string markup = reader.ReadToEnd();
         if (instanceDirectory is not null) markup = markup.Replace("Key=\"SettingsPage\" Label=\"设置\"", "Key=\"VersionSettingsPage\" Label=\"版本设置\"", StringComparison.Ordinal);
-        Page = PxmlUiLoader.Load(PxmlCompiler.Compile(PxmlParser.Parse(markup)), shell.Tree, store, host);
+        Page = NxmlUiLoader.Load(DesktopMarkup.Compile(NxmlParser.Parse(markup)), shell.Tree, store, host);
         shell.Tree.Detach(Page); shell.Tree.Destroy(host);
         var names = new Dictionary<string, XsrUiEntityId>();
         shell.Tree.Walk(Page, entity => { names[shell.Tree.Name(entity)] = entity; return true; });

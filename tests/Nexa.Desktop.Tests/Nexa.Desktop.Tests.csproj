@@ -8,7 +8,7 @@
     <ProjectReference Include="../../Nexa.Desktop/Nexa.Desktop.csproj" />
     <ProjectReference Include="../../Nexa.Services/Nexa.Services.csproj" />
     <ProjectReference Include="../../Nexa.Services.Composition/Nexa.Services.Composition.csproj" />
-    <ProjectReference Include="../../Nexa.UI.Next/Nexa.UI.Next.csproj" />
+    <ProjectReference Include="../../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
     <ProjectReference Include="../../Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
   </ItemGroup>
   <Import Project="../../eng/xsr/Xsr.Pac.targets" />

@@ -6,7 +6,7 @@ using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Services.Tasks;
-using Nexa.UI.Next.Backend.Avalonia;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 
 namespace Nexa.Desktop;
 

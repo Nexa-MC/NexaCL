@@ -1,6 +1,6 @@
 using System.Text;
 using Nexa.Services.Minecraft.Management;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 

@@ -1,0 +1,3 @@
+<nxml-component>
+  <Button Key="Choice" Label="" Content="" Command="ui.account.choice" Class="layout-AccountChoiceRow-Choice" />
+</nxml-component>

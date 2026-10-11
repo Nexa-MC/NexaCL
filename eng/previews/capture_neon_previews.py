@@ -553,7 +553,7 @@ def main():
     args.output.mkdir(parents=True, exist_ok=False)
     probe = X11(args.display)
     managed_assemblies = {}
-    for name in (args.binary.name + '.dll', 'Nexa.UI.Next.Backend.Avalonia.dll', 'Nexa.UI.Next.dll'):
+    for name in (args.binary.name + '.dll', 'Nexa.Xsr.Renderer.Backend.Avalonia.dll', 'Nexa.Xsr.Renderer.dll'):
         path = args.binary.parent / name
         if path.is_file():
             managed_assemblies[name] = hashlib.sha256(path.read_bytes()).hexdigest()

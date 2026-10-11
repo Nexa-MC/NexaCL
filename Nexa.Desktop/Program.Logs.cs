@@ -1,5 +1,5 @@
 using Nexa.Services.Logging;
-using Nexa.UI.Next.Backend.Avalonia;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 
 namespace Nexa.Desktop;
 

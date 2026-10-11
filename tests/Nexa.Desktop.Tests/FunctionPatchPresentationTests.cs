@@ -5,7 +5,7 @@ using Nexa.Desktop.Ui;
 using Nexa.Services.Resources;
 using Nexa.Sidecar.Protocol;
 using Nexa.Sidecar.Transport;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 

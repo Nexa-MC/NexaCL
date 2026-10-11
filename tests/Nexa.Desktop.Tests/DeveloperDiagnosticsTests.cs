@@ -4,7 +4,7 @@ using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
 using Nexa.Services.Foundation;
 using Nexa.Services.Settings;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.State;
 
@@ -202,7 +202,7 @@ internal static partial class Program
                 });
             for (int i = 0; i < 96; i++) Store.Publish(Store.Resolve(XsrSemanticId.Parse("AAADiagnostic" + i.ToString("D3", CultureInfo.InvariantCulture))), Secret);
             var foundation = FoundationRuntimeComposer.Compose(Host);
-            Shell = PxmlShellComposer.Compose(Store, ui, intentSink: Intents);
+            Shell = NxmlShellComposer.Compose(Store, ui, intentSink: Intents);
             Shell.Renderer.ReducedMotion = true;
             Settings = new(Shell, Intents, foundation.Queries, foundation.Commands, Store, Feedback);
             Shell.Stage.Navigation.Replace(Settings.Page);

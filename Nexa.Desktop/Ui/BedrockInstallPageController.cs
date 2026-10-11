@@ -1,5 +1,5 @@
-using Nexa.Pxml;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer.Nxml;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -34,15 +34,14 @@ internal sealed class BedrockInstallPageController : IDisposable
         _supportsStore = supportsStore ?? OperatingSystem.IsWindows();
         _status = _supportsStore ? "打开 Microsoft Store，继续获取或安装游戏。"
             : "当前系统不支持 Minecraft for Windows 安装。可查看官方产品页。";
-        using var source = typeof(BedrockInstallPageController).Assembly.GetManifestResourceStream(
-            "Nexa.Desktop.Ui.BedrockInstallPage.pxml")
+        using var source = DesktopMarkup.Open("BedrockInstallPage.nxml")
             ?? throw new InvalidOperationException("Missing Bedrock installation page.");
         using var reader = new StreamReader(source);
-        var template = PxmlCompiler.Compile(PxmlParser.Parse(reader.ReadToEnd()));
+        var template = DesktopMarkup.Compile(NxmlParser.Parse(reader.ReadToEnd()));
         var host = shell.Tree.Create("bedrock-install-loader");
         try
         {
-            Page = PxmlUiLoader.Load(template, shell.Tree, store, host);
+            Page = NxmlUiLoader.Load(template, shell.Tree, store, host);
             shell.Tree.Detach(Page);
         }
         finally { shell.Tree.Destroy(host); }

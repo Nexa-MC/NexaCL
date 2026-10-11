@@ -15,11 +15,11 @@ internal static partial class Program
         // Resolve the compiler's assembly owners, including aliases and type forwards.
         // No source-text spelling can bypass a forbidden API or a contract boundary.
         var libraries = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator)
-            .Concat(projects.Values.SelectMany(p => Directory.EnumerateFiles(Path.Combine(Path.GetDirectoryName(p)!, "bin"), "*.dll", SearchOption.AllDirectories)))
+            .Concat(projects.Values.SelectMany(p => Directory.Exists(Path.Combine(Path.GetDirectoryName(p)!, "bin")) ? Directory.EnumerateFiles(Path.Combine(Path.GetDirectoryName(p)!, "bin"), "*.dll", SearchOption.AllDirectories) : []))
             .GroupBy(Path.GetFileName, StringComparer.Ordinal).Select(g => g.First()).ToArray();
         foreach ((string projectName, string projectPath) in projects)
         {
-            bool renderer = projectName.StartsWith("Nexa.UI.Next", StringComparison.Ordinal);
+            bool renderer = projectName.StartsWith("Nexa.Xsr.Renderer", StringComparison.Ordinal);
             if (projectName.EndsWith(".Tests", StringComparison.Ordinal) || (!projectName.StartsWith("Nexa.Services", StringComparison.Ordinal) && projectName is not ("Nexa.Desktop" or "Nexa.Update.Helper") && !renderer)) continue;
             string directory = Path.GetDirectoryName(projectPath)!;
             var trees = Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories).Where(p => !IsBuildOutput(p))
@@ -57,7 +57,7 @@ internal static partial class Program
                     if (presentation && owner is not null && IsServiceImplementation(owner))
                         failures.Add($"UI must consume contracts: {symbol} belongs to {owner} at {location}.");
                     if (projectName.StartsWith("Nexa.Services", StringComparison.Ordinal)
-                        && owner is not null && (owner.StartsWith("Nexa.UI.", StringComparison.Ordinal) || owner == "Nexa.Desktop" || owner.StartsWith("Avalonia", StringComparison.Ordinal)))
+                        && owner is not null && (owner.StartsWith("Nexa.Xsr.Renderer", StringComparison.Ordinal) || owner == "Nexa.Desktop" || owner.StartsWith("Avalonia", StringComparison.Ordinal)))
                         failures.Add($"Service references renderer {owner} at {location}.");
                     if (symbol is IMethodSymbol method)
                     {

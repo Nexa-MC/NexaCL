@@ -27,9 +27,9 @@ internal sealed partial class LaunchPageController
         _startupCatalogOffline = true;
         foreach (var status in _catalogStatus.Values)
         {
-            _shell.Tree.GetComponent<Nexa.UI.Next.XsrUiText>(status)!.Content = "版本来源暂时不可用，请稍后重试。";
-            _shell.Tree.GetComponent<Nexa.UI.Next.XsrUiElement>(status)!.IsVisible = true;
+            _shell.Tree.GetComponent<Nexa.Xsr.Renderer.XsrUiText>(status)!.Content = "版本来源暂时不可用，请稍后重试。";
+            _shell.Tree.GetComponent<Nexa.Xsr.Renderer.XsrUiElement>(status)!.IsVisible = true;
         }
-        _shell.Tree.MarkDirty(_javaInstallPage, Nexa.UI.Next.XsrUiDirtyKinds.Paint);
+        _shell.Tree.MarkDirty(_javaInstallPage, Nexa.Xsr.Renderer.XsrUiDirtyKinds.Paint);
     }
 }

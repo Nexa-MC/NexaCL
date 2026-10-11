@@ -14,20 +14,20 @@ internal static partial class Program
             "Nexa.Jvm.Host",
             "Nexa.Update.Helper",
             "Nexa.Desktop",
-            "Nexa.UI.Next.Benchmarks",
+            "Nexa.Xsr.Renderer.Benchmarks",
             "Nexa.Xsr.ArchitectureTests",
             "Nexa.Xsr.Runtime.Tests",
             "Nexa.Xsr.Patch.Compiler",
-            "Nexa.UI.Next.Tests",
-            "Nexa.UI.Next.Backend.Avalonia.Tests",
-            "Nexa.Pxml.Tests",
+            "Nexa.Xsr.Renderer.Tests",
+            "Nexa.Xsr.Renderer.Backend.Avalonia.Tests",
+            "Nexa.Xsr.Renderer.Nxml.Tests",
             "Nexa.Sidecar.Tests",
             "Nexa.Services.Tests",
             "Nexa.Desktop.Tests",
         ];
 
     private static readonly HashSet<string> GeneratorProjects =
-        ["Nexa.Pxml.Generators"];
+        [];
 
     private static readonly HashSet<string> AotCompatibleProjects =
         [
@@ -36,9 +36,9 @@ internal static partial class Program
             "Nexa.Xsr.Runtime",
             "Nexa.Xsr.State",
             "Nexa.Xsr.Diagnostics",
-            "Nexa.UI.Next",
-            "Nexa.Pxml.Compiler",
-            "Nexa.Pxml.Runtime",
+            "Nexa.Xsr.Renderer",
+            "Nexa.Xsr.Renderer.Nxml.Compiler",
+            "Nexa.Xsr.Renderer.Nxml.Runtime",
             "Nexa.Services",
             "Nexa.Services.Composition",
         ];
@@ -59,7 +59,7 @@ internal static partial class Program
 
         ValidateNativeHostInterop(repositoryRoot, failures);
         ValidateProtectedDifferentialUpdates(repositoryRoot, failures);
-        ValidatePxmlControlCatalog(repositoryRoot, projectPaths, failures);
+        ValidateNxmlControlCatalog(repositoryRoot, projectPaths, failures);
         ValidateFunctionPatchCompiler(repositoryRoot, projectPaths, failures);
         ValidateWave3Ci(repositoryRoot, failures);
         ValidateAcyclicGraph(failures);
@@ -307,9 +307,9 @@ internal static partial class Program
             // Avalonia.Headless is the one sanctioned exception outside the backend project: the
             // backend test project runs the real desktop lifetime headlessly for regression
             // tests and must never leak the platform into product projects.
-            bool headlessLifetimeTestPackage = string.Equals(projectName, "Nexa.UI.Next.Backend.Avalonia.Tests", StringComparison.Ordinal)
+            bool headlessLifetimeTestPackage = string.Equals(projectName, "Nexa.Xsr.Renderer.Backend.Avalonia.Tests", StringComparison.Ordinal)
                 && string.Equals(packageName, "Avalonia.Headless", StringComparison.Ordinal);
-            if (!string.Equals(projectName, "Nexa.UI.Next.Backend.Avalonia", StringComparison.Ordinal)
+            if (!string.Equals(projectName, "Nexa.Xsr.Renderer.Backend.Avalonia", StringComparison.Ordinal)
                 && packageName.StartsWith("Avalonia", StringComparison.OrdinalIgnoreCase)
                 && !headlessLifetimeTestPackage)
             {
@@ -400,250 +400,44 @@ internal static partial class Program
         }
     }
 
-    private static void ValidatePxmlControlCatalog(
+    private static void ValidateNxmlControlCatalog(
         string repositoryRoot,
         Dictionary<string, string> projectPaths,
         List<string> failures)
     {
-        string propsPath = Path.Combine(repositoryRoot, "Directory.Build.props");
-        XDocument props = XDocument.Load(propsPath);
-        string? configuredDirectory = Property(props, "PxmlControlCatalogDirectory");
-        if (string.IsNullOrWhiteSpace(configuredDirectory)
-            || !configuredDirectory.Replace('\\', '/').EndsWith("Nexa.UI.Next/PxmlControls", StringComparison.Ordinal))
+        string directory = Path.Combine(repositoryRoot, "Nexa.Xsr.Renderer", "Components");
+        string[] components = Directory.GetFiles(directory, "*.c.nxml");
+        if (components.Length < 16) failures.Add("The external NXML primitive component bundle is incomplete.");
+        foreach (string file in components)
         {
-            failures.Add("Directory.Build.props must explicitly select the UI.Next-owned PxmlControlCatalogDirectory.");
+            XElement root = XDocument.Load(file).Root!;
+            if (root.Name.LocalName != "nxml-component" || root.Elements().Count() != 1)
+                failures.Add($"Invalid external component wrapper: {file}");
         }
-
-        string catalogDirectory = Path.Combine(repositoryRoot, "Nexa.UI.Next", "PxmlControls");
-        string[] descriptors = Directory.Exists(catalogDirectory)
-            ? Directory.GetFiles(catalogDirectory, "*.pxml-control", SearchOption.TopDirectoryOnly)
-            : [];
-        if (descriptors.Length == 0)
+        XDocument compiler = XDocument.Load(projectPaths["Nexa.Xsr.Renderer.Nxml.Compiler"]);
+        if (Elements(compiler, "ProjectReference").Any(item => item.Attribute("OutputItemType")?.Value == "Analyzer"))
+            failures.Add("NXML components must not be generated into the executable.");
+        if (!Elements(compiler, "Content").Any(item => item.Attribute("Include")?.Value.EndsWith("*.c.nxml", StringComparison.Ordinal) == true
+            && item.Attribute("CopyToPublishDirectory")?.Value == "PreserveNewest"))
+            failures.Add("External components must accompany published applications.");
+        XDocument desktop = XDocument.Load(projectPaths["Nexa.Desktop"]);
+        if (Elements(desktop, "EmbeddedResource").Any(item => item.Attribute("Include")?.Value.EndsWith(".nxml", StringComparison.Ordinal) == true))
+            failures.Add("Desktop NXML pages must be external files, not embedded resources.");
+        if (!Elements(desktop, "Content").Any(item => item.Attribute("Include")?.Value.Contains("*.nss", StringComparison.Ordinal) == true
+            && item.Attribute("CopyToPublishDirectory")?.Value == "PreserveNewest"))
+            failures.Add("Desktop NSS styles must accompany published applications.");
+        foreach (string project in new[] { "Nexa.Xsr.Renderer.Nxml.Compiler", "Nexa.Xsr.Renderer.Nxml.Runtime" })
         {
-            failures.Add("The UI.Next PXML control catalog must contain .pxml-control descriptors.");
-        }
-
-        if (!projectPaths.TryGetValue("Nexa.Pxml.Compiler", out string? compilerProjectPath))
-        {
-            return;
-        }
-
-        XDocument compilerProject = XDocument.Load(compilerProjectPath);
-        if (!string.Equals(Property(compilerProject, "EmitCompilerGeneratedFiles"), "true", StringComparison.OrdinalIgnoreCase))
-        {
-            failures.Add("Nexa.Pxml.Compiler must materialize compiler-generated files for inspection.");
-        }
-
-        string? generatedPath = Property(compilerProject, "CompilerGeneratedFilesOutputPath");
-        if (generatedPath is null
-            || !generatedPath.Contains("$(BaseIntermediateOutputPath)", StringComparison.Ordinal)
-            || !generatedPath.Replace('\\', '/').EndsWith("Generated", StringComparison.Ordinal))
-        {
-            failures.Add("Nexa.Pxml.Compiler generated files must stay under BaseIntermediateOutputPath.");
-        }
-
-        bool includesCatalog = Elements(compilerProject, "PxmlControlDefinition")
-            .Select(element => element.Attribute("Include")?.Value)
-            .Any(value => value?.Contains("$(PxmlControlCatalogDirectory)", StringComparison.Ordinal) == true
-                && value.EndsWith("*.pxml-control", StringComparison.Ordinal));
-        if (!includesCatalog)
-        {
-            failures.Add("Nexa.Pxml.Compiler must enumerate PxmlControlCatalogDirectory as .pxml-control inputs.");
-        }
-
-        bool passesAdditionalFiles = Elements(compilerProject, "AdditionalFiles")
-            .Select(element => element.Attribute("Include")?.Value)
-            .Any(value => string.Equals(value, "@(PxmlControlDefinition)", StringComparison.Ordinal));
-        if (!passesAdditionalFiles)
-        {
-            failures.Add("Nexa.Pxml.Compiler must pass every control descriptor to the generator as AdditionalFiles.");
-        }
-
-        string[] compileCacheInputs = Elements(compilerProject, "CoreCompileCache")
-            .Select(element => element.Attribute("Include")?.Value ?? string.Empty)
-            .ToArray();
-        if (!compileCacheInputs.Contains("$(PxmlControlCatalogDirectory)", StringComparer.Ordinal)
-            || !compileCacheInputs.Contains("@(PxmlControlDefinition)", StringComparer.Ordinal))
-        {
-            failures.Add("Nexa.Pxml.Compiler must fingerprint the selected catalog path and file set for incremental builds.");
-        }
-
-        XElement? validationTarget = Elements(compilerProject, "Target")
-            .FirstOrDefault(element => string.Equals(
-                element.Attribute("Name")?.Value,
-                "ValidatePxmlControlCatalog",
-                StringComparison.Ordinal));
-        string validationText = validationTarget?.ToString(SaveOptions.DisableFormatting) ?? string.Empty;
-        if (validationTarget is null
-            || !validationText.Contains("PxmlControlCatalogDirectory", StringComparison.Ordinal)
-            || !validationText.Contains("PxmlControlDefinition", StringComparison.Ordinal))
-        {
-            failures.Add("Nexa.Pxml.Compiler must fail before CoreCompile when the catalog path is missing or empty.");
-        }
-
-        XElement? generatorReference = Elements(compilerProject, "ProjectReference")
-            .FirstOrDefault(element => element.Attribute("Include")?.Value.Replace('\\', '/')
-                .EndsWith("Nexa.Pxml.Generators/Nexa.Pxml.Generators.csproj", StringComparison.Ordinal) == true);
-        if (generatorReference is null
-            || !string.Equals(generatorReference.Attribute("OutputItemType")?.Value, "Analyzer", StringComparison.Ordinal)
-            || !string.Equals(generatorReference.Attribute("ReferenceOutputAssembly")?.Value, "false", StringComparison.OrdinalIgnoreCase))
-        {
-            failures.Add("Nexa.Pxml.Compiler must consume Nexa.Pxml.Generators only as an analyzer.");
-        }
-        else
-        {
-            string[] removedPublishProperties = (generatorReference.Attribute("GlobalPropertiesToRemove")?.Value ?? string.Empty)
-                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            string[] requiredRemovedProperties =
-                [
-                    "PublishAot",
-                    "PublishTrimmed",
-                    "PublishSingleFile",
-                    "PublishReadyToRun",
-                    "SelfContained",
-                    "RuntimeIdentifier",
-                ];
-            foreach (string requiredProperty in requiredRemovedProperties)
+            foreach (string file in Directory.EnumerateFiles(Path.Combine(repositoryRoot, project), "*.cs", SearchOption.AllDirectories))
             {
-                if (!removedPublishProperties.Contains(requiredProperty, StringComparer.Ordinal))
-                {
-                    failures.Add(
-                        $"Nexa.Pxml.Compiler must not propagate '{requiredProperty}' to its build-only generator reference.");
-                }
-            }
-        }
-
-        string compilerSource = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Pxml.Compiler", "PxmlCompiler.cs"));
-        string[] controlNames = descriptors
-            .SelectMany(File.ReadLines)
-            .Where(line => line.StartsWith("name=", StringComparison.Ordinal))
-            .Select(line => line.Substring("name=".Length).Trim())
-            .Where(name => name.Length != 0)
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
-        foreach (string controlName in controlNames)
-        {
-            if (compilerSource.Contains($"\"{controlName}\"", StringComparison.Ordinal))
-            {
-                failures.Add($"Nexa.Pxml.Compiler must not embed generated control model name '{controlName}'.");
-            }
-        }
-
-        string loaderSource = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Pxml.Runtime", "PxmlUiLoader.cs"));
-        foreach (string controlName in controlNames)
-        {
-            string forbiddenKind = $"PxmlIrNodeKind.{controlName}";
-            if (loaderSource.Contains(forbiddenKind, StringComparison.Ordinal))
-            {
-                failures.Add($"Nexa.Pxml.Runtime must dispatch generated controls through recipes, not {forbiddenKind}.");
-            }
-        }
-
-        string[] forbiddenReflectionTokens =
-        [
-            "System.Reflection",
-            "Activator.",
-            "BindingFlags",
-            "MethodInfo",
-            "PropertyInfo",
-            ".GetMethod(",
-            ".GetProperty(",
-            "Type.GetType(",
-        ];
-        foreach (string projectDirectoryName in new[] { "Nexa.Pxml.Compiler", "Nexa.Pxml.Runtime" })
-        {
-            string projectDirectory = Path.Combine(repositoryRoot, projectDirectoryName);
-            foreach (string sourcePath in Directory.EnumerateFiles(projectDirectory, "*.cs", SearchOption.AllDirectories))
-            {
-                string relativePath = Path.GetRelativePath(projectDirectory, sourcePath).Replace('\\', '/');
-                if (relativePath.StartsWith("bin/", StringComparison.Ordinal)
-                    || relativePath.StartsWith("obj/", StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                string source = File.ReadAllText(sourcePath);
-                foreach (string forbiddenToken in forbiddenReflectionTokens)
-                {
-                    if (source.Contains(forbiddenToken, StringComparison.Ordinal))
-                    {
-                        failures.Add(
-                            $"{projectDirectoryName}/{relativePath} contains forbidden runtime-reflection token '{forbiddenToken}'.");
-                    }
-                }
-
-                if (projectDirectoryName == "Nexa.Pxml.Runtime")
-                {
-                    string[] forbiddenCatalogIoTokens =
-                        ["System.IO", "File.", "Directory.", "PxmlControlCatalogDirectory", ".pxml-control"];
-                    foreach (string forbiddenToken in forbiddenCatalogIoTokens)
-                    {
-                        if (source.Contains(forbiddenToken, StringComparison.Ordinal))
-                        {
-                            failures.Add(
-                                $"{projectDirectoryName}/{relativePath} contains forbidden runtime catalog-I/O token '{forbiddenToken}'.");
-                        }
-                    }
-                }
-            }
-        }
-
-        string irSource = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Pxml.Compiler", "PxmlIr.cs"));
-        if (irSource.Contains("enum PxmlIrNodeKind", StringComparison.Ordinal))
-        {
-            failures.Add("PxmlIrNodeKind must be generated from the configured control catalog.");
-        }
-
-        if (projectPaths.TryGetValue("Nexa.Pxml.Generators", out string? generatorProjectPath))
-        {
-            XDocument generatorProject = XDocument.Load(generatorProjectPath);
-            if (!string.Equals(Property(generatorProject, "TargetFramework"), "netstandard2.0", StringComparison.Ordinal))
-            {
-                failures.Add("Nexa.Pxml.Generators must target netstandard2.0 for compiler-host compatibility.");
-            }
-
-            string[] isolatedPublishProperties =
-            [
-                "PublishAot",
-                "PublishTrimmed",
-                "PublishSingleFile",
-                "PublishReadyToRun",
-                "SelfContained",
-                "RuntimeIdentifier",
-            ];
-            string[] localProperties = (generatorProject.Root?.Attribute("TreatAsLocalProperty")?.Value ?? string.Empty)
-                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            foreach (string isolatedProperty in isolatedPublishProperties)
-            {
-                if (!localProperties.Contains(isolatedProperty, StringComparer.Ordinal))
-                {
-                    failures.Add($"Nexa.Pxml.Generators must treat '{isolatedProperty}' as a local build-tool property.");
-                }
-            }
-
-            foreach (string disabledProperty in isolatedPublishProperties.Where(
-                         property => property != "RuntimeIdentifier"))
-            {
-                if (!string.Equals(Property(generatorProject, disabledProperty), "false", StringComparison.OrdinalIgnoreCase))
-                {
-                    failures.Add($"Nexa.Pxml.Generators must disable inherited '{disabledProperty}'.");
-                }
-            }
-
-            if (!string.IsNullOrEmpty(Property(generatorProject, "RuntimeIdentifier")))
-            {
-                failures.Add("Nexa.Pxml.Generators must clear inherited RuntimeIdentifier values.");
-            }
-
-            XElement? roslynPackage = Elements(generatorProject, "PackageReference")
-                .FirstOrDefault(element => string.Equals(
-                    element.Attribute("Include")?.Value,
-                    "Microsoft.CodeAnalysis.CSharp",
-                    StringComparison.Ordinal));
-            if (roslynPackage is null
-                || !string.Equals(roslynPackage.Attribute("PrivateAssets")?.Value, "all", StringComparison.OrdinalIgnoreCase))
-            {
-                failures.Add("Nexa.Pxml.Generators must keep Roslyn dependencies private.");
+                string relative = Path.GetRelativePath(Path.Combine(repositoryRoot, project), file).Replace('\\', '/');
+                if (relative.StartsWith("obj/", StringComparison.Ordinal) || relative.StartsWith("bin/", StringComparison.Ordinal)) continue;
+                string source = File.ReadAllText(file);
+                foreach (string token in new[] { "System.Reflection", "Activator.", "BindingFlags", "MethodInfo", "PropertyInfo", "Type.GetType(" })
+                    if (source.Contains(token, StringComparison.Ordinal)) failures.Add($"{project}/{relative}: reflection is not an NXML primitive.");
+                if (project.EndsWith(".Runtime", StringComparison.Ordinal)
+                    && (source.Contains("File.", StringComparison.Ordinal) || source.Contains("Directory.", StringComparison.Ordinal)))
+                    failures.Add("The tree loader must use validated IR, not perform file I/O.");
             }
         }
     }
@@ -660,19 +454,15 @@ internal static partial class Program
         string workflow = File.ReadAllText(workflowPath);
         string[] requiredFragments =
         [
-            "dotnet run --project tests/Nexa.Pxml.Tests/Nexa.Pxml.Tests.csproj",
-            "dotnet publish tests/Nexa.Pxml.Tests/Nexa.Pxml.Tests.csproj",
+            "dotnet run --project tests/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj",
+            "dotnet publish tests/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj",
             "-p:PublishAot=true",
-            "pxml-aot/Nexa.Pxml.Tests",
+            "pxml-aot/Nexa.Xsr.Renderer.Nxml.Tests",
             "pcl-desktop-aot/Nexa.Desktop\" --validate-shell",
             "pcl-desktop-trimmed/Nexa.Desktop\" --validate-shell",
             "-p:PublishTrimmed=true",
             "-p:TrimMode=link",
-            "PxmlControlCatalogDirectory",
-            "Fixtures/AlternateCatalog",
-            "Fixtures/InvalidCatalog",
-            "PXMLGEN002",
-            "PxmlControlCatalog.g.cs",
+            "Validate external NXML component bundle",
             "dotnet format NexaCL.slnx --no-restore --verify-no-changes --diagnostics IDE0055 IMPORTS",
         ];
         foreach (string requiredFragment in requiredFragments)

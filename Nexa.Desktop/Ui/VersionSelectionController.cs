@@ -1,9 +1,9 @@
 using System.Reflection;
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Process;
-using Nexa.UI.Next;
-using Nexa.UI.Next.Backend.Avalonia;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
@@ -40,11 +40,11 @@ internal static class VersionSelectionState
 /// <summary>PXML projection and intent adapter. Directory and version truth lives in Services.</summary>
 internal sealed partial class VersionSelectionController : IDisposable
 {
-    private static readonly XsrUiColor Ink = new(38, 49, 65);
-    private static readonly XsrUiColor Secondary = new(94, 110, 130);
-    private static readonly XsrUiColor Blue = new(11, 91, 203);
-    private static readonly XsrUiColor Surface = new(255, 255, 255, 245);
-    private static readonly XsrUiColor Tint = new(231, 240, 255);
+    private static readonly XsrUiColor Ink = DesktopMarkup.Visual("palette-VersionSelectionController-Ink").Foreground;
+    private static readonly XsrUiColor Secondary = DesktopMarkup.Visual("palette-VersionSelectionController-Secondary").Foreground;
+    private static readonly XsrUiColor Blue = DesktopMarkup.Visual("palette-VersionSelectionController-Blue").Foreground;
+    private static readonly XsrUiColor Surface = DesktopMarkup.Visual("palette-VersionSelectionController-Surface").Foreground;
+    private static readonly XsrUiColor Tint = DesktopMarkup.Visual("palette-VersionSelectionController-Tint").Foreground;
     private readonly XsrUiShell _shell;
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrCommandRouter _commands;
@@ -56,8 +56,8 @@ internal sealed partial class VersionSelectionController : IDisposable
     private readonly Dictionary<XsrUiEntityId, string> _directories = [];
     private readonly Dictionary<XsrUiEntityId, string> _forget = [];
     private readonly Dictionary<XsrUiEntityId, string> _rename = [];
-    private readonly PxmlHostIr _row = Load("VersionSelectionRow.pxml");
-    private readonly PxmlHostIr _directoryRow = Load("VersionDirectoryRow.pxml");
+    private readonly NxmlHostIr _row = Load("VersionSelectionRow.c.nxml");
+    private readonly NxmlHostIr _directoryRow = Load("VersionDirectoryRow.c.nxml");
     private readonly XsrUiEntityId _dropdown;
     private readonly CancellationTokenSource _lifetime = new();
     private long _revision = -1;
@@ -79,10 +79,10 @@ internal sealed partial class VersionSelectionController : IDisposable
     {
         _shell = shell; _intents = intents; _commands = commands; _store = store; _feedback = feedback; _effects = effects;
         XsrUiEntityId parent = shell.Tree.Create("version-selection-loader");
-        Page = PxmlUiLoader.Load(Load("VersionSelectionPage.pxml"), shell.Tree, store, parent);
+        Page = NxmlUiLoader.Load(Load("VersionSelectionPage.nxml"), shell.Tree, store, parent);
         shell.Tree.Detach(Page); shell.Tree.Destroy(parent);
         shell.Tree.Walk(Page, entity => { _entities[shell.Tree.Name(entity)] = entity; Style(entity); return true; });
-        _dropdown = PxmlUiLoader.Load(Load("VersionDirectoryDropdown.pxml"), shell.Tree, store, Page);
+        _dropdown = NxmlUiLoader.Load(Load("VersionDirectoryDropdown.c.nxml"), shell.Tree, store, Page);
         shell.Tree.Walk(_dropdown, entity => { _entities[shell.Tree.Name(entity)] = entity; Style(entity); return true; });
         shell.Tree.Detach(_dropdown);
         shell.Tree.SetComponent(_entities["LibraryDropdownCard"], new XsrUiAnchoredOverlay(_entities["LibraryChooseDirectory"]));
@@ -347,9 +347,9 @@ internal sealed partial class VersionSelectionController : IDisposable
             _directories.Clear(); _forget.Clear(); _rename.Clear();
             foreach (MinecraftLibraryDirectory directory in snapshot.Directories)
             {
-                PxmlIrNode Project(PxmlIrNode node) => node with
+                NxmlIrNode Project(NxmlIrNode node) => node with
                 { Key = node.Key + ":directory:" + directory.Path, Children = [.. node.Children.Select(Project)] };
-                XsrUiEntityId row = PxmlUiLoader.Load(new(Project(_directoryRow.Root)), _shell.Tree, _store, _entities["LibraryDirectoryRows"]);
+                XsrUiEntityId row = NxmlUiLoader.Load(new(Project(_directoryRow.Root)), _shell.Tree, _store, _entities["LibraryDirectoryRows"]);
                 _shell.Tree.SetComponent(row, new XsrUiSelection());
                 _directories[row] = directory.Path;
                 _shell.Tree.Walk(row, entity =>
@@ -386,7 +386,7 @@ internal sealed partial class VersionSelectionController : IDisposable
 
     private XsrUiEntityId CreateRow(XsrUiEntityId parent, string key, string name, string detail, bool directory, string? icon = null)
     {
-        PxmlIrNode Project(PxmlIrNode node) => node with
+        NxmlIrNode Project(NxmlIrNode node) => node with
         {
             Key = node.Key + ":" + key,
             Content = node.Key switch { "LibraryRowName" => name, "LibraryRowDetail" => detail, _ => node.Content },
@@ -394,7 +394,7 @@ internal sealed partial class VersionSelectionController : IDisposable
             Command = node.Key == "LibraryRow" && directory ? XsrSemanticId.Parse("ui.versions.directory") : node.Command,
             Children = [.. node.Children.Select(Project)],
         };
-        XsrUiEntityId row = PxmlUiLoader.Load(new(Project(_row.Root)), _shell.Tree, _store, parent);
+        XsrUiEntityId row = NxmlUiLoader.Load(new(Project(_row.Root)), _shell.Tree, _store, parent);
         _shell.Tree.SetComponent(row, new XsrUiSelection());
         _shell.Tree.Walk(row, entity => { Style(entity); if (_shell.Tree.Name(entity).StartsWith("LibraryRowName:", StringComparison.Ordinal)) DesktopLiteralText.Preserve(_shell.Tree, entity); return true; });
         return row;
@@ -470,12 +470,9 @@ internal sealed partial class VersionSelectionController : IDisposable
     private bool IsKeyboard(XsrUiEntityId entity) => _shell.Tree.IsAlive(entity) && _shell.Tree.GetComponent<XsrUiInput>(entity)?.IsFocusVisible == true;
     private void Publish<T>(string name, T value)
     { XsrStateId id = _store.Resolve(VersionSelectionState.Key(name)); if (!Equals(_store.ReadAppliedValue(id), value)) _store.Publish(id, value); }
-    private static PxmlHostIr Load(string name)
+    private static NxmlHostIr Load(string name)
     {
-        Assembly assembly = typeof(VersionSelectionController).Assembly;
-        using Stream stream = assembly.GetManifestResourceStream("Nexa.Desktop.Ui." + name)!;
-        using StreamReader reader = new(stream);
-        return PxmlCompiler.Compile(PxmlParser.Parse(reader.ReadToEnd()));
+        return DesktopMarkup.Load(name);
     }
     public void Dispose()
     {

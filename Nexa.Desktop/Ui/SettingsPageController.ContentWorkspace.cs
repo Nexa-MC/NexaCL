@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Nexa.Services.Logging;
 using Nexa.Services.Setup;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 
 namespace Nexa.Desktop.Ui;

@@ -1,0 +1,11 @@
+<nxml-component>
+  <Button Key="LibraryRow" Command="ui.versions.directory" Class="layout-VersionDirectoryRow-LibraryRow">
+    <StackPanel Class="layout-VersionDirectoryRow-2">
+      <Text Key="LibraryDirectoryRowName" Class="layout-VersionDirectoryRow-LibraryDirectoryRowName" />
+      <Text Key="LibraryDirectoryRowPath" Class="layout-VersionDirectoryRow-LibraryDirectoryRowPath" />
+      <Image Key="LibraryDirectoryRowCheck" Source="lucide/check" Class="layout-VersionDirectoryRow-LibraryDirectoryRowCheck" />
+      <Button Key="LibraryDirectoryRename" Label="修改文件夹名称" Command="ui.versions.rename" Icon="pcl/pencil" Class="layout-VersionDirectoryRow-LibraryDirectoryRename" />
+      <Button Key="LibraryDirectoryForget" Label="移除目录，保留文件" Command="ui.versions.forget" Icon="lucide/x" Class="layout-VersionDirectoryRow-LibraryDirectoryForget" />
+    </StackPanel>
+  </Button>
+</nxml-component>

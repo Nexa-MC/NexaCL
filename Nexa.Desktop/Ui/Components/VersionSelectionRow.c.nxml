@@ -1,0 +1,19 @@
+<nxml-component>
+  <Button Key="LibraryRow" Command="ui.versions.select" Class="layout-VersionSelectionRow-LibraryRow">
+    <StackPanel Class="layout-VersionSelectionRow-2">
+      <StackPanel Class="layout-VersionSelectionRow-3">
+        <Image Key="LibraryRowCheck" Source="lucide/check" Class="layout-VersionSelectionRow-LibraryRowCheck" />
+      </StackPanel>
+      <Image Key="LibraryRowIcon" Source="lucide/blocks" Class="layout-VersionSelectionRow-LibraryRowIcon" />
+      <StackPanel Class="layout-VersionSelectionRow-6">
+        <StackPanel Class="layout-VersionSelectionRow-7">
+          <Text Key="LibraryRowName" Class="layout-VersionSelectionRow-LibraryRowName" />
+        </StackPanel>
+        <Text Key="LibraryRowDetail" Class="layout-VersionSelectionRow-LibraryRowDetail" />
+      </StackPanel>
+      <Button Key="LibraryRowModify" Icon="lucide/wrench" Content="修改" Command="ui.versions.modify" Class="layout-VersionSelectionRow-LibraryRowModify" />
+      <Button Key="LibraryRowSettings" Icon="lucide/settings" Content="设置" Command="ui.versions.settings" Class="layout-VersionSelectionRow-LibraryRowSettings" />
+      <Button Key="LibraryRowDelete" Icon="lucide/trash-2" Content="删除" Command="ui.versions.delete" Class="layout-VersionSelectionRow-LibraryRowDelete" />
+    </StackPanel>
+  </Button>
+</nxml-component>

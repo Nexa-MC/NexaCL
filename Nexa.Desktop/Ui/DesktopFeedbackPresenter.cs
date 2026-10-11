@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Reflection;
-using Nexa.Pxml;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer.Nxml;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.State;
 
@@ -14,8 +14,8 @@ namespace Nexa.Desktop.Ui;
 /// </summary>
 internal sealed class DesktopFeedbackPresenter : IDisposable
 {
-    private const string NotificationResource = "Ui.Notification.pxml";
-    private const string DialogResource = "Ui.Dialog.pxml";
+    private const string NotificationResource = "Ui.FeedbackNotification.c.nxml";
+    private const string DialogResource = "Ui.FeedbackDialog.c.nxml";
     private const double NotificationRailGap = 18;
     private static readonly TimeSpan ExitSettle = TimeSpan.FromMilliseconds(360);
     private static readonly XsrSemanticId NotificationDismiss =
@@ -70,8 +70,8 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
     private readonly DesktopFeedbackService _service;
     private readonly XsrStateStore _store;
     private readonly TimeProvider _timeProvider;
-    private readonly PxmlHostIr _notificationTemplate;
-    private readonly PxmlHostIr _dialogTemplate;
+    private readonly NxmlHostIr _notificationTemplate;
+    private readonly NxmlHostIr _dialogTemplate;
     private readonly XsrUiEntityId _notificationHost;
     private readonly Dictionary<Guid, PresentedNotification> _notifications = [];
     private readonly Dictionary<XsrUiEntityId, Guid> _notificationRoots = [];
@@ -215,12 +215,12 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
 
     private PresentedNotification CreateNotification(DesktopNotification notification)
     {
-        PxmlIrNode rootNode = _notificationTemplate.Root with
+        NxmlIrNode rootNode = _notificationTemplate.Root with
         {
             Key = $"notification:{notification.Id:N}",
         };
-        XsrUiEntityId root = PxmlUiLoader.Load(
-            new PxmlHostIr(rootNode),
+        XsrUiEntityId root = NxmlUiLoader.Load(
+            new NxmlHostIr(rootNode),
             _shell.Tree,
             _store,
             _notificationHost);
@@ -357,7 +357,7 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
     private PresentedDialog CreateDialog(DesktopDialog dialog)
     {
         XsrUiEntityId temporaryHost = _shell.Tree.Create("dialog-template-host");
-        XsrUiEntityId root = PxmlUiLoader.Load(_dialogTemplate, _shell.Tree, _store, temporaryHost);
+        XsrUiEntityId root = NxmlUiLoader.Load(_dialogTemplate, _shell.Tree, _store, temporaryHost);
         _shell.Tree.Detach(root);
         _shell.Tree.Destroy(temporaryHost);
         Dictionary<string, XsrUiEntityId> entities = Index(root);
@@ -656,15 +656,9 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
             _ => throw new ArgumentOutOfRangeException(nameof(level), level, "Unknown notification level."),
         };
 
-    private static PxmlHostIr LoadTemplate(string suffix)
+    private static NxmlHostIr LoadTemplate(string suffix)
     {
-        Assembly assembly = typeof(DesktopFeedbackPresenter).Assembly;
-        string resource = assembly.GetManifestResourceNames()
-            .Single(name => name.EndsWith(suffix, StringComparison.Ordinal));
-        using Stream stream = assembly.GetManifestResourceStream(resource)
-            ?? throw new InvalidOperationException($"Missing embedded feedback template '{suffix}'.");
-        using StreamReader reader = new(stream);
-        return PxmlCompiler.Compile(PxmlParser.Parse(reader.ReadToEnd()));
+        return DesktopMarkup.Load(suffix);
     }
 
     public void Dispose()

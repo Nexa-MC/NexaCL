@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using Nexa.Services.Minecraft.Management;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 
 namespace Nexa.Desktop.Ui;

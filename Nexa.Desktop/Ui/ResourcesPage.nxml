@@ -1,0 +1,11 @@
+<nxml-page>
+  <Page Key="ResourcesPage" Label="资源">
+    <StackPanel Key="ResourcesLayout" Class="layout-ResourcesPage-ResourcesLayout">
+      <StackPanel Key="ResourceCategories" Class="layout-ResourcesPage-ResourceCategories" />
+      <StackPanel Key="ResourceToolbar" Class="layout-ResourcesPage-ResourceToolbar" />
+      <StackPanel Key="ResourceExtensionCard" IsVisible="false" Scroll="true" Class="layout-ResourcesPage-ResourceExtensionCard" />
+      <StackPanel Key="ResourceList" Scroll="true" Class="layout-ResourcesPage-ResourceList" />
+      <StackPanel Key="ResourcePagination" Class="layout-ResourcesPage-ResourcePagination" />
+    </StackPanel>
+  </Page>
+</nxml-page>

@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Xml.Linq;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Settings;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Tests;
@@ -106,9 +106,11 @@ internal static partial class Program
             catalog.SetLanguage("zh-Hant"); AssertEqual(traditional, catalog.Translate(source));
         }
         catalog.SetLanguage("en");
-        foreach (string resource in typeof(UiLocalizationCatalog).Assembly.GetManifestResourceNames().Where(name => name.EndsWith(".pxml", StringComparison.Ordinal)))
+        string[] markupFiles = Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "Ui"), "*.nxml", SearchOption.AllDirectories);
+        AssertTrue(markupFiles.Length >= 24);
+        foreach (string resource in markupFiles)
         {
-            using var markup = typeof(UiLocalizationCatalog).Assembly.GetManifestResourceStream(resource)!;
+            using var markup = File.OpenRead(resource);
             var document = System.Xml.Linq.XDocument.Load(markup);
             foreach (var attribute in document.Descendants().Attributes().Where(attribute => attribute.Name.LocalName is "Content" or "Label" or "Placeholder"))
             {

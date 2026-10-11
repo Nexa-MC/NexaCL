@@ -1,6 +1,6 @@
 using Nexa.Core.Media;
-using Nexa.UI.Next;
-using Nexa.UI.Next.Backend.Avalonia;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 
 namespace Nexa.Desktop.Ui;
 
@@ -114,7 +114,7 @@ internal static class WardrobePlayerPresentation
     private static PngImage DefaultSkin(string name)
     {
         using Stream stream = typeof(AvaloniaUiPlatformActions).Assembly.GetManifestResourceStream(
-            $"Nexa.UI.Next.Backend.Avalonia.Assets.Avatars.{name}.png")
+            $"Nexa.Xsr.Renderer.Backend.Avalonia.Assets.Avatars.{name}.png")
             ?? throw new InvalidOperationException($"Missing embedded player texture: {name}.");
         using MemoryStream encoded = new(); stream.CopyTo(encoded);
         return PngImage.TryCreate(encoded.GetBuffer().AsSpan(0, checked((int)encoded.Length)))

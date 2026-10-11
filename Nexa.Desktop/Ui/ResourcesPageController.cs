@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Resources;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
@@ -89,10 +89,10 @@ internal sealed partial class ResourcesPageController : IDisposable
         _functionPatches = functionPatches ?? new();
         _sidecarSignals = sidecarSignals;
         _sidecarUi = sidecarUi;
-        using var stream = typeof(ResourcesPageController).Assembly.GetManifestResourceStream("Nexa.Desktop.Ui.ResourcesPage.pxml")!;
+        using var stream = DesktopMarkup.Open("ResourcesPage.nxml")!;
         using var reader = new StreamReader(stream);
         var host = shell.Tree.Create("resources-loader");
-        Page = PxmlUiLoader.Load(PxmlCompiler.Compile(PxmlParser.Parse(reader.ReadToEnd())), shell.Tree, store, host);
+        Page = NxmlUiLoader.Load(DesktopMarkup.Compile(NxmlParser.Parse(reader.ReadToEnd())), shell.Tree, store, host);
         shell.Tree.Detach(Page); shell.Tree.Destroy(host);
         shell.Tree.Walk(Page, entity => { _entities[shell.Tree.Name(entity)] = entity; return true; });
         shell.Tree.SetComponent(_entities["ResourceList"], new XsrUiScrollGesture());

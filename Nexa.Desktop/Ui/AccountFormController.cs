@@ -1,8 +1,8 @@
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Accounts;
 using Nexa.Services.Logging;
-using Nexa.UI.Next;
-using Nexa.UI.Next.Backend.Avalonia;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
@@ -39,7 +39,7 @@ internal sealed class AccountFormController : IDisposable
     private readonly Dictionary<string, XsrUiEntityId> _entities = [];
     private readonly Dictionary<XsrUiEntityId, string> _importRows = [];
     private readonly Dictionary<XsrUiEntityId, string> _characterRows = [];
-    private readonly PxmlHostIr _rowTemplate = Load("AccountChoiceRow.pxml");
+    private readonly NxmlHostIr _rowTemplate = Load("AccountChoiceRow.c.nxml");
     private readonly CancellationTokenSource _lifetime = new();
     private long _importsRevision = -1, _charactersRevision = -1, _seenCompletion, _viewEpoch;
     private long _presentedChallengeGeneration = -1;
@@ -66,7 +66,7 @@ internal sealed class AccountFormController : IDisposable
             return true;
         });
         _fallbackFocus = fallback;
-        XsrUiEntityId form = PxmlUiLoader.Load(Load("AccountForm.pxml"), shell.Tree, store, accountBody);
+        XsrUiEntityId form = NxmlUiLoader.Load(Load("AccountForm.c.nxml"), shell.Tree, store, accountBody);
         shell.Tree.Walk(form, entity => { _entities[shell.Tree.Name(entity)] = entity; Style(entity); return true; });
         _projections = new UiProjectionSignal(_store, _intents);
         _intents.IntentEmitted += OnIntent;
@@ -249,8 +249,8 @@ internal sealed class AccountFormController : IDisposable
         destinations.Clear();
         foreach ((string value, string text, string label) in entries)
         {
-            PxmlIrNode node = _rowTemplate.Root with { Key = host + ":" + destinations.Count, Content = text, Label = label };
-            XsrUiEntityId entity = PxmlUiLoader.Load(new PxmlHostIr(node), _shell.Tree, _store, _entities[host]);
+            NxmlIrNode node = _rowTemplate.Root with { Key = host + ":" + destinations.Count, Content = text, Label = label };
+            XsrUiEntityId entity = NxmlUiLoader.Load(new NxmlHostIr(node), _shell.Tree, _store, _entities[host]);
             Style(entity);
             destinations.Add(entity, value);
         }
@@ -361,11 +361,8 @@ internal sealed class AccountFormController : IDisposable
         if (!_returnFocus.IsAssigned || !_shell.Renderer.Focus(_returnFocus, _keyboardFocus))
             if (_fallbackFocus.IsAssigned) _shell.Renderer.Focus(_fallbackFocus, _keyboardFocus);
     }
-    private static PxmlHostIr Load(string file)
+    private static NxmlHostIr Load(string file)
     {
-        using Stream stream = typeof(AccountFormController).Assembly.GetManifestResourceStream("Nexa.Desktop.Ui." + file)
-            ?? throw new InvalidOperationException("Missing account PXML template.");
-        using StreamReader reader = new(stream);
-        return PxmlCompiler.Compile(PxmlParser.Parse(reader.ReadToEnd()));
+        return DesktopMarkup.Load(file);
     }
 }

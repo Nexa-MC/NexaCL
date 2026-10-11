@@ -8,7 +8,7 @@ using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Services.Settings;
 using Nexa.Services.Tasks;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
@@ -266,7 +266,7 @@ internal static partial class Program
         ("Java only installation guards close until stopped", JavaOnlyInstallationGuardsCloseUntilStopped),
         ("Startup install recovery owns dispatch and shutdown", StartupInstallRecoveryOwnsDispatchAndShutdown),
         ("first run keeps drafts and commits only at finish", FirstRunKeepsDraftsAndCommitsOnlyAtFinish),
-        ("product PXML shell accepts native window metrics", ProductPxmlShellAcceptsNativeWindowMetrics),
+        ("product PXML shell accepts native window metrics", ProductNxmlShellAcceptsNativeWindowMetrics),
         ("Version settings isolate overrides and restore inheritance", VersionSettingsAreScopedAndRestoreInheritance),
         ("Instance management projects content with bounded realized rows", InstanceManagementShowsContentAndBoundsRealizedRows),
         ("Instance content graph bounds relations and retires stale instances", ContentGraphPageBoundsRelationsAndRetiresOldInstances),

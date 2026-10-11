@@ -1,5 +1,5 @@
 using Nexa.Services.Minecraft;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Tests;
 

@@ -1,5 +1,5 @@
 
-using Nexa.Pxml;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Accounts;
 
 
@@ -7,7 +7,7 @@ using Nexa.Services.Accounts;
 
 
 
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 
 using Nexa.Xsr.State;
@@ -141,7 +141,7 @@ internal sealed partial class LaunchPageController
 
         foreach (LaunchProfileView profile in profiles)
         {
-            XsrUiEntityId row = PxmlUiLoader.Load(new PxmlHostIr(ProjectProfileNode(_accountRowTemplate.Root, profile)),
+            XsrUiEntityId row = NxmlUiLoader.Load(new NxmlHostIr(ProjectProfileNode(_accountRowTemplate.Root, profile)),
                 tree, _store, rowsHost);
             tree.SetComponent(row, new XsrUiSelection());
             tree.Walk(row, entity =>
@@ -160,7 +160,7 @@ internal sealed partial class LaunchPageController
     }
 
 
-    private static PxmlIrNode ProjectProfileNode(PxmlIrNode node, LaunchProfileView profile) => node with
+    private static NxmlIrNode ProjectProfileNode(NxmlIrNode node, LaunchProfileView profile) => node with
     {
         Key = node.Key == "AccountRow" ? $"account-row:{profile.Index}" : $"{node.Key}:{profile.Index}",
         Label = node.Key == "AccountRow" ? $"选择 {profile.Username}，{ProfileKind(profile.Kind)}"

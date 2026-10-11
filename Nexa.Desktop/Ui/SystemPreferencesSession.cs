@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Threading.Channels;
 using Nexa.Services.Settings;
-using Nexa.UI.Next.Backend.Avalonia;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;

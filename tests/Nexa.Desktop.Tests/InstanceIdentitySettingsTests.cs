@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Management;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Tests;
 

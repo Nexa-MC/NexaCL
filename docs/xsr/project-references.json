@@ -7,13 +7,13 @@
   ],
   "Nexa.Core": [],
   "Nexa.Desktop": [
-    "Nexa.Pxml.Runtime",
+    "Nexa.Xsr.Renderer.Nxml.Runtime",
     "Nexa.Services",
     "Nexa.Services.Composition",
     "Nexa.Sidecar.Protocol",
     "Nexa.Sidecar.Transport",
-    "Nexa.UI.Next",
-    "Nexa.UI.Next.Backend.Avalonia",
+    "Nexa.Xsr.Renderer",
+    "Nexa.Xsr.Renderer.Backend.Avalonia",
     "Nexa.Xsr.Patch.Compiler",
     "Nexa.Xsr.Runtime"
   ],
@@ -21,7 +21,7 @@
     "Nexa.Desktop",
     "Nexa.Services",
     "Nexa.Services.Composition",
-    "Nexa.UI.Next",
+    "Nexa.Xsr.Renderer",
     "Nexa.Xsr.State"
   ],
   "Nexa.Domain": [
@@ -49,25 +49,23 @@
     "Nexa.Services.Minecraft.Metadata",
     "Nexa.Services.Minecraft.Process.Contracts"
   ],
-  "Nexa.Pxml.Compiler": [
+  "Nexa.Xsr.Renderer.Nxml.Compiler": [
     "Nexa.Core",
-    "Nexa.Pxml.Generators",
-    "Nexa.UI.Next",
+    "Nexa.Xsr.Renderer",
     "Nexa.Xsr.Abstractions"
   ],
-  "Nexa.Pxml.Generators": [],
   "Nexa.Xsr.Patch.Compiler": [],
-  "Nexa.Pxml.Runtime": [
+  "Nexa.Xsr.Renderer.Nxml.Runtime": [
     "Nexa.Core",
-    "Nexa.Pxml.Compiler",
-    "Nexa.UI.Next",
+    "Nexa.Xsr.Renderer.Nxml.Compiler",
+    "Nexa.Xsr.Renderer",
     "Nexa.Xsr.Abstractions",
     "Nexa.Xsr.State"
   ],
-  "Nexa.Pxml.Tests": [
-    "Nexa.Pxml.Compiler",
-    "Nexa.Pxml.Runtime",
-    "Nexa.UI.Next",
+  "Nexa.Xsr.Renderer.Nxml.Tests": [
+    "Nexa.Xsr.Renderer.Nxml.Compiler",
+    "Nexa.Xsr.Renderer.Nxml.Runtime",
+    "Nexa.Xsr.Renderer",
     "Nexa.Xsr.Abstractions",
     "Nexa.Xsr.State"
   ],
@@ -486,11 +484,11 @@
     "Nexa.Xsr.State"
   ],
   "Nexa.Services.Tests": [
-    "Nexa.Pxml.Compiler",
-    "Nexa.Pxml.Runtime",
+    "Nexa.Xsr.Renderer.Nxml.Compiler",
+    "Nexa.Xsr.Renderer.Nxml.Runtime",
     "Nexa.Services",
     "Nexa.Services.Composition",
-    "Nexa.UI.Next",
+    "Nexa.Xsr.Renderer",
     "Nexa.Xsr.Runtime",
     "Nexa.Xsr.State"
   ],
@@ -521,25 +519,25 @@
   "Nexa.Sidecar.Transport": [
     "Nexa.Sidecar.Protocol"
   ],
-  "Nexa.UI.Next": [
+  "Nexa.Xsr.Renderer": [
     "Nexa.Core",
     "Nexa.Xsr.Abstractions",
     "Nexa.Xsr.State"
   ],
-  "Nexa.UI.Next.Backend.Avalonia": [
-    "Nexa.UI.Next"
+  "Nexa.Xsr.Renderer.Backend.Avalonia": [
+    "Nexa.Xsr.Renderer"
   ],
-  "Nexa.UI.Next.Backend.Avalonia.Tests": [
-    "Nexa.UI.Next.Backend.Avalonia",
+  "Nexa.Xsr.Renderer.Backend.Avalonia.Tests": [
+    "Nexa.Xsr.Renderer.Backend.Avalonia",
     "Nexa.Xsr.Abstractions",
     "Nexa.Xsr.State"
   ],
-  "Nexa.UI.Next.Benchmarks": [
-    "Nexa.UI.Next",
+  "Nexa.Xsr.Renderer.Benchmarks": [
+    "Nexa.Xsr.Renderer",
     "Nexa.Xsr.State"
   ],
-  "Nexa.UI.Next.Tests": [
-    "Nexa.UI.Next",
+  "Nexa.Xsr.Renderer.Tests": [
+    "Nexa.Xsr.Renderer",
     "Nexa.Xsr.Abstractions",
     "Nexa.Xsr.State"
   ],

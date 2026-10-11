@@ -1,6 +1,6 @@
 using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Tests;
 
@@ -8,8 +8,8 @@ internal static partial class Program
 {
     private static void SkinRoutePublishesIntoRenderedProfile()
     {
-        using Stream resource = typeof(Nexa.UI.Next.Backend.Avalonia.AvaloniaUiShellHost).Assembly
-            .GetManifestResourceStream("Nexa.UI.Next.Backend.Avalonia.Assets.Avatars.Steve.png")!;
+        using Stream resource = typeof(Nexa.Xsr.Renderer.Backend.Avalonia.AvaloniaUiShellHost).Assembly
+            .GetManifestResourceStream("Nexa.Xsr.Renderer.Backend.Avalonia.Assets.Avatars.Steve.png")!;
         using MemoryStream buffer = new(); resource.CopyTo(buffer);
         using ProfileSkinHttp handler = new();
         using HttpClient http = new(handler);

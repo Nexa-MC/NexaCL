@@ -6,7 +6,7 @@ using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.ModLoaders;
 using Nexa.Services.Minecraft.Process;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;

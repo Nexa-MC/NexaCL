@@ -1,7 +1,7 @@
 using Nexa.Services.Composition;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Install;
-using Nexa.UI.Next.Backend.Avalonia;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;

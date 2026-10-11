@@ -2,7 +2,7 @@ using Nexa.Desktop.Ui;
 using Nexa.Services.Composition;
 using Nexa.Services.Files;
 using Nexa.Services.Setup;
-using Nexa.UI.Next;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Tests;
@@ -21,7 +21,7 @@ internal static partial class Program
                 XsrStateStoreBuilder builder = new(); LaunchPageState.DeclareState(builder);
                 var store = builder.Build(context.StateBridge);
                 var intents = new DesktopUiIntentSink();
-                var shell = PxmlShellComposer.Compose(store, context, intentSink: intents);
+                var shell = NxmlShellComposer.Compose(store, context, intentSink: intents);
                 shell.Renderer.ReducedMotion = true;
                 string chosen = Path.Combine(temp, finish ? "finish" : "cancel");
                 string locator = Path.Combine(temp, "storage.json");

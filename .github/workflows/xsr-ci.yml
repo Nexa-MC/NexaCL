@@ -27,12 +27,12 @@ jobs:
           Get-Process -Id $PID | Select-Object ProcessName, SessionId
           Get-CimInstance Win32_VideoController | Select-Object Name, DriverVersion
       - name: Build native window probe
-        run: dotnet build tests/Nexa.UI.Next.Backend.Avalonia.Tests -c Release
+        run: dotnet build tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release
       - name: Exercise actual Win32 decorations and tray restoration
         shell: pwsh
         run: |
           $log = Join-Path $env:RUNNER_TEMP 'windows-native-chrome.log'
-          & dotnet tests/Nexa.UI.Next.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.UI.Next.Backend.Avalonia.Tests.dll --native-corner-smoke *> $log
+          & dotnet tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll --native-corner-smoke *> $log
           $probeExitCode = $LASTEXITCODE
           Get-Content $log
           exit $probeExitCode
@@ -184,55 +184,12 @@ jobs:
       - name: Build
         run: dotnet build NexaCL.slnx --configuration Release --no-restore -p:XsrVersionChannel=ci
 
-      - name: Validate generated PXML control catalogs
+      - name: Validate external NXML component bundle
         shell: bash
         run: |
-          generated_catalog="$(find Nexa.Pxml.Compiler/obj/Release -name PxmlControlCatalog.g.cs -print -quit)"
-          if [[ -z "${generated_catalog}" ]] || ! grep -q "PxmlIrNodeKind.Page" "${generated_catalog}"; then
-            echo "The default PXML control catalog was not materialized." >&2
-            exit 1
-          fi
-
-          dotnet build Nexa.Pxml.Compiler/Nexa.Pxml.Compiler.csproj \
-            --configuration Release \
-            --no-restore \
-            -p:XsrVersionChannel=ci \
-            -p:PxmlControlCatalogDirectory="${GITHUB_WORKSPACE}/tests/Nexa.Pxml.Tests/Fixtures/AlternateCatalog"
-          if ! grep -q "PxmlIrNodeKind.Card" "${generated_catalog}"; then
-            echo "The alternate PXML control catalog was not expanded." >&2
-            exit 1
-          fi
-
-          invalid_log="${RUNNER_TEMP}/pxml-invalid-catalog.log"
-          if dotnet build Nexa.Pxml.Compiler/Nexa.Pxml.Compiler.csproj \
-            --configuration Release \
-            --no-restore \
-            -p:XsrVersionChannel=ci \
-            -p:PxmlControlCatalogDirectory="${GITHUB_WORKSPACE}/tests/Nexa.Pxml.Tests/Fixtures/InvalidCatalog" \
-            2>&1 | tee "${invalid_log}"; then
-            echo "The invalid PXML control catalog unexpectedly compiled." >&2
-            exit 1
-          fi
-          grep -q "PXMLGEN002" "${invalid_log}"
-
-          missing_catalog="${RUNNER_TEMP}/pxml-catalog-does-not-exist"
-          if [[ -e "${missing_catalog}" ]]; then
-            echo "The missing-catalog fixture path unexpectedly exists." >&2
-            exit 1
-          fi
-          if dotnet msbuild Nexa.Pxml.Compiler/Nexa.Pxml.Compiler.csproj \
-            -target:ValidatePxmlControlCatalog \
-            -nologo \
-            -p:PxmlControlCatalogDirectory="${missing_catalog}"; then
-            echo "A missing PXML control catalog unexpectedly passed validation." >&2
-            exit 1
-          fi
-
-          dotnet build Nexa.Pxml.Compiler/Nexa.Pxml.Compiler.csproj \
-            --configuration Release \
-            --no-restore \
-            -p:XsrVersionChannel=ci
-          grep -q "PxmlIrNodeKind.Page" "${generated_catalog}"
+          test -f Nexa.Desktop/bin/Release/net10.0/Ui/Shell.nxml
+          test -f Nexa.Desktop/bin/Release/net10.0/Ui/Components/Button.c.nxml
+          test -f Nexa.Desktop/bin/Release/net10.0/Ui/Styles/Desktop.nss
 
       - name: Test compile-time Function Patch rewriting
         run: dotnet run --project tools/Nexa.Xsr.Patch.Compiler --configuration Release --no-build -- --self-test
@@ -254,33 +211,33 @@ jobs:
           "${{ runner.temp }}/xsr-runtime-aot/Nexa.Xsr.Runtime.Tests"
 
       - name: Test UI.Next renderer kernel
-        run: dotnet run --project tests/Nexa.UI.Next.Tests/Nexa.UI.Next.Tests.csproj --configuration Release --no-build
+        run: dotnet run --project tests/Nexa.Xsr.Renderer.Tests/Nexa.Xsr.Renderer.Tests.csproj --configuration Release --no-build
 
       - name: Test Avalonia scene backend
-        run: dotnet run --project tests/Nexa.UI.Next.Backend.Avalonia.Tests/Nexa.UI.Next.Backend.Avalonia.Tests.csproj --configuration Release --no-build
+        run: dotnet run --project tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.csproj --configuration Release --no-build
 
       - name: Publish and run NativeAOT renderer tests
         run: |
-          dotnet publish tests/Nexa.UI.Next.Tests/Nexa.UI.Next.Tests.csproj \
+          dotnet publish tests/Nexa.Xsr.Renderer.Tests/Nexa.Xsr.Renderer.Tests.csproj \
             --configuration Release \
             -p:XsrVersionChannel=ci \
             -p:PublishAot=true \
             -p:StripSymbols=true \
             --output "${{ runner.temp }}/uinext-aot"
-          "${{ runner.temp }}/uinext-aot/Nexa.UI.Next.Tests"
+          "${{ runner.temp }}/uinext-aot/Nexa.Xsr.Renderer.Tests"
 
-      - name: Test PXML compiler pipeline
-        run: dotnet run --project tests/Nexa.Pxml.Tests/Nexa.Pxml.Tests.csproj --configuration Release --no-build
+      - name: Test NXML compiler pipeline
+        run: dotnet run --project tests/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj --configuration Release --no-build
 
-      - name: Publish and run NativeAOT PXML tests
+      - name: Publish and run NativeAOT NXML tests
         run: |
-          dotnet publish tests/Nexa.Pxml.Tests/Nexa.Pxml.Tests.csproj \
+          dotnet publish tests/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj \
             --configuration Release \
             -p:XsrVersionChannel=ci \
             -p:PublishAot=true \
             -p:StripSymbols=true \
             --output "${{ runner.temp }}/pxml-aot"
-          "${{ runner.temp }}/pxml-aot/Nexa.Pxml.Tests"
+          "${{ runner.temp }}/pxml-aot/Nexa.Xsr.Renderer.Nxml.Tests"
 
       - name: Test Sidecar protocol and transport
         run: dotnet run --project tests/Nexa.Sidecar.Tests/Nexa.Sidecar.Tests.csproj --configuration Release --no-build
@@ -308,7 +265,7 @@ jobs:
           xvfb-run -a "${{ runner.temp }}/foundation-aot/Nexa.Services.Tests"
 
       - name: Enforce UI.Next benchmark gates
-        run: dotnet run --project Nexa.UI.Next.Benchmarks/Nexa.UI.Next.Benchmarks.csproj --configuration Release --no-build
+        run: dotnet run --project Nexa.Xsr.Renderer.Benchmarks/Nexa.Xsr.Renderer.Benchmarks.csproj --configuration Release --no-build
 
       - name: Validate real Minecraft evidence admission
         run: |
