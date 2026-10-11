@@ -93,7 +93,9 @@ internal static partial class Program
         AssertTrue(SpinWait.SpinUntil(() =>
         {
             scene = fixture.Shell.Render(new(1000, 1700));
-            return FindByKey(fixture.Shell, scene, "SettingsJavaChoose.0").IsSelected;
+            var selected = FindByKey(fixture.Shell, scene, "SettingsJavaChoose.0");
+            // Selection projects before the asynchronous registry write releases its busy state.
+            return selected.IsSelected && fixture.Shell.Tree.GetComponent<XsrUiInput>(selected.Entity)!.Enabled;
         }, TimeSpan.FromSeconds(5)));
         AssertEqual(choice.Entity, FindByKey(fixture.Shell, scene, "SettingsJavaChoose.0").Entity);
         fixture.Shell.Renderer.Focus(choice.Entity, showIndicator: true);
