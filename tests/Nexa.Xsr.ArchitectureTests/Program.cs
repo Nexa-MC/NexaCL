@@ -274,6 +274,11 @@ internal static partial class Program
         if (Property(desktop, "ValidateExecutableReferencesMatchSelfContained") == "false")
             failures.Add("Desktop must retain product executable-reference validation.");
         var targets = XDocument.Load(Path.Combine(root, "eng/xsr/Xsr.FunctionPatches.targets"));
+        if (!Elements(targets, "MSBuild").Any(task => task.Attribute("Targets")?.Value == "GetTargetPath"
+            && task.Attribute("Projects")?.Value == "$(_NexaPatchCompilerProject)"
+            && task.Descendants().Any(output => output.Name.LocalName == "Output"
+                && output.Attribute("TaskParameter")?.Value == "TargetOutputs")))
+            failures.Add("Function Patch compiler must resolve its actual build output instead of a fixed bin path.");
         var replacement = Elements(targets, "Target").SingleOrDefault(target => target.Attribute("Name")?.Value == "UseNexaFunctionPatches");
         if (replacement?.Attribute("BeforeTargets")?.Value != "CoreCompile"
             || !replacement!.Descendants().Any(item => item.Name.LocalName == "Compile"
