@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer;
+﻿using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 
 namespace Nexa.Xsr.Renderer.Nxml;
@@ -101,6 +101,8 @@ public sealed record NxmlIrNode
     public bool IsPassword { get; init; }
     public int MaximumLength { get; init; } = 2048;
     public bool Enabled { get; init; } = true;
+    public bool Localize { get; init; } = true;
+    public bool? Selected { get; init; }
     public string? TransitionKey { get; init; }
     public double TransitionOffsetX { get; init; }
     public double TransitionOffsetY { get; init; }

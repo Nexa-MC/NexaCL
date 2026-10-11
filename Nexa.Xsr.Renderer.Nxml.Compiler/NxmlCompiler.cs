@@ -47,6 +47,7 @@ public static class NxmlCompiler
             slotLayout = Literal("Layout", "Stack") switch
             {
                 "Stack" => NxmlRuntimeRecipe.StackLayout,
+                "Overlay" => NxmlRuntimeRecipe.Element,
                 "HorizontalPager" => NxmlRuntimeRecipe.HorizontalPager,
                 "VerticalPager" => NxmlRuntimeRecipe.VerticalPager,
                 _ => throw Fail(element.Name, "Layout", "is not a supported slot layout"),
@@ -96,6 +97,7 @@ public static class NxmlCompiler
                 NxmlIrPropertyTarget.Orientation or NxmlIrPropertyTarget.Spacing or NxmlIrPropertyTarget.StretchLastChild or NxmlIrPropertyTarget.Scrollable => recipe is NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
                 NxmlIrPropertyTarget.Value => recipe == NxmlRuntimeRecipe.Progress,
                 NxmlIrPropertyTarget.Placeholder or NxmlIrPropertyTarget.IsPassword => recipe == NxmlRuntimeRecipe.TextInput,
+                NxmlIrPropertyTarget.Selected => recipe == NxmlRuntimeRecipe.CommandInput,
                 NxmlIrPropertyTarget.Enabled => recipe is NxmlRuntimeRecipe.TextInput or NxmlRuntimeRecipe.CommandInput,
                 _ => true,
             };
@@ -296,6 +298,8 @@ public static class NxmlCompiler
         private string? _placeholder;
         private bool _isPassword;
         private bool _enabled = true;
+        private bool _localize = true;
+        private bool? _selected;
         private string? _transitionKey;
         private double _transitionOffsetX;
         private double _transitionOffsetY;
@@ -382,6 +386,12 @@ public static class NxmlCompiler
                 case NxmlIrPropertyTarget.IsPassword:
                     _isPassword = (bool)value;
                     break;
+                case NxmlIrPropertyTarget.Localize:
+                    _localize = (bool)value;
+                    break;
+                case NxmlIrPropertyTarget.Selected:
+                    _selected = (bool)value;
+                    break;
                 case NxmlIrPropertyTarget.Enabled:
                     _enabled = (bool)value;
                     break;
@@ -438,6 +448,8 @@ public static class NxmlCompiler
                 Placeholder = _placeholder,
                 IsPassword = _isPassword,
                 Enabled = _enabled,
+                Localize = _localize,
+                Selected = _selected,
                 TransitionKey = _transitionKey,
                 TransitionOffsetX = _transitionOffsetX,
                 TransitionOffsetY = _transitionOffsetY,

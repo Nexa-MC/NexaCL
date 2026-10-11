@@ -28,6 +28,8 @@ public sealed partial class NxmlUiLoader
             ImageSource = after.ImageSource,
             Command = after.Command,
             Enabled = after.Enabled,
+            Localize = after.Localize,
+            Selected = after.Selected,
             Value = after.Value,
             Visual = after.Visual,
             Children = after.Children,
@@ -64,13 +66,13 @@ public sealed partial class NxmlUiLoader
         if (before.Content != after.Content)
         {
             if (tree.GetComponent<XsrUiText>(entity) is { } text) text.Content = after.Content ?? string.Empty;
-            else if (after.Content is not null) tree.SetComponent(entity, new XsrUiText(after.Content));
+            else if (after.Content is not null) tree.SetComponent(entity, new XsrUiText(after.Content) { Localize = after.Localize });
             dirty |= XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint;
         }
         if (before.Label != after.Label)
         {
             if (tree.GetComponent<XsrUiSemantic>(entity) is { } semantic) semantic.Label = after.Label;
-            else tree.SetComponent(entity, new XsrUiSemantic(after.Role, after.Label));
+            else tree.SetComponent(entity, new XsrUiSemantic(after.Role, after.Label) { Localize = after.Localize });
             dirty |= XsrUiDirtyKinds.Paint;
         }
         if (before.ImageSource != after.ImageSource)
@@ -92,6 +94,22 @@ public sealed partial class NxmlUiLoader
         { input.Enabled = after.Enabled; dirty |= XsrUiDirtyKinds.Paint; }
         if (before.Value != after.Value && tree.GetComponent<XsrUiProgress>(entity) is { } progress)
         { progress.SetTarget(after.Value); dirty |= XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint; }
+        if (before.Localize != after.Localize)
+        {
+            if (tree.GetComponent<XsrUiText>(entity) is { } literalText) literalText.Localize = after.Localize;
+            if (tree.GetComponent<XsrUiSemantic>(entity) is { } literalSemantic) literalSemantic.Localize = after.Localize;
+            dirty |= XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint;
+        }
+        if (before.Selected != after.Selected)
+        {
+            if (after.Selected is { } selected)
+            {
+                if (tree.GetComponent<XsrUiSelection>(entity) is { } selection) selection.IsSelected = selected;
+                else tree.SetComponent(entity, new XsrUiSelection { IsSelected = selected });
+            }
+            else tree.SetComponent<XsrUiSelection>(entity, null);
+            dirty |= XsrUiDirtyKinds.Paint;
+        }
         if (before.Visual != after.Visual)
         {
             tree.SetComponent(entity, after.Visual is { } visual ? CreateVisual(visual) : null);

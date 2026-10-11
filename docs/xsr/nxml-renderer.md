@@ -194,3 +194,20 @@ exercised active/finished ordering and expanded steps. Both Windows x64 NativeAO
 full-trim executables actually ran the added task smoke (card load, nested steps and
 retained progress reload) and exited 0. The existing Jint IL2098 warning remains.
 See `nxml-migration-remaining.md` for the whole-objective inventory and completion gates.
+
+
+### External overlay layers
+
+`Dynamic Layout="Overlay"` is a named slot whose children overlap, using their declared
+alignment and size. It has no stack layout. Desktop-owned nonmodal layers load a `.nxml`
+slot through the normal loader, show that slot on the stage, then append `.d.nxml` bubbles
+without reparenting them away from their owner. An empty layer must not intercept page
+input. Each layer owns disposal and stage dismissal. Dock registration tracks explicit
+entities rather than scanning the entire page tree each frame, and prunes destroyed entries.
+Dock flow offsets and animation remain behavior; base dimensions, insets, gaps and paint
+come from external assets. Task/launch/process bubbles share this path.
+
+NXML `Selected` declares command-control selection; `Localize="false"` preserves literal
+user/provider text and accessible names. Both values participate in retained reload, so log
+rows require no imperative text, semantic, selection or style construction. Neither changes
+service data or introduces a plugin ABI.

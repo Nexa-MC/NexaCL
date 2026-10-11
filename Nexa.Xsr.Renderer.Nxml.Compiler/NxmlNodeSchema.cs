@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer;
+﻿using Nexa.Xsr.Renderer;
 
 namespace Nexa.Xsr.Renderer.Nxml;
 
@@ -38,5 +38,7 @@ internal static class NxmlNodeSchema
         new("Placeholder", NxmlControlValueKind.String, NxmlIrPropertyTarget.Placeholder, null, XsrUiDirtyKinds.None, false, null),
         new("IsPassword", NxmlControlValueKind.Boolean, NxmlIrPropertyTarget.IsPassword, null, XsrUiDirtyKinds.None, false, null),
         new("Enabled", NxmlControlValueKind.Boolean, NxmlIrPropertyTarget.Enabled, XsrUiStateProperty.Enabled, XsrUiDirtyKinds.State, false, null),
+        new("Localize", NxmlControlValueKind.Boolean, NxmlIrPropertyTarget.Localize, null, XsrUiDirtyKinds.None, false, null),
+        new("Selected", NxmlControlValueKind.Boolean, NxmlIrPropertyTarget.Selected, null, XsrUiDirtyKinds.None, false, null),
     ];
 }

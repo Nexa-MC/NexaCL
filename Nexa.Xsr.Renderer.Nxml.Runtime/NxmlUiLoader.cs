@@ -140,6 +140,7 @@ public sealed partial class NxmlUiLoader
                 break;
             case NxmlRuntimeRecipe.DynamicSlot:
                 tree.SetComponent(entity, new NxmlDynamicSlot());
+                if (node.SlotLayout == NxmlRuntimeRecipe.Element) break;
                 if (node.SlotLayout is NxmlRuntimeRecipe.HorizontalPager or NxmlRuntimeRecipe.VerticalPager)
                 {
                     tree.SetComponent(entity, new XsrUiPager(node.SlotLayout == NxmlRuntimeRecipe.HorizontalPager ? XsrUiOrientation.Horizontal : XsrUiOrientation.Vertical));
@@ -160,7 +161,7 @@ public sealed partial class NxmlUiLoader
 
                 break;
             case NxmlRuntimeRecipe.Text:
-                XsrUiText text = new(node.Content ?? string.Empty);
+                XsrUiText text = new(node.Content ?? string.Empty) { Localize = node.Localize };
                 NxmlIrBinding? textBinding = node.Bindings.FirstOrDefault(
                     binding => binding.Property == XsrUiStateProperty.Text);
                 if (textBinding is not null)
@@ -197,7 +198,7 @@ public sealed partial class NxmlUiLoader
                     binding => binding.Property == XsrUiStateProperty.Text);
                 if (node.Content is not null || commandTextBinding is not null)
                 {
-                    XsrUiText commandText = new(node.Content ?? string.Empty);
+                    XsrUiText commandText = new(node.Content ?? string.Empty) { Localize = node.Localize };
                     if (commandTextBinding is not null)
                     {
                         commandText.BoundState = ResolveState(state, commandTextBinding.State);
@@ -234,7 +235,7 @@ public sealed partial class NxmlUiLoader
             binding => binding.Property == XsrUiStateProperty.SemanticLabel);
         if (node.Role != XsrUiSemanticRole.None || node.Label is not null || semanticBinding is not null)
         {
-            XsrUiSemantic semantic = new(node.Role, node.Label);
+            XsrUiSemantic semantic = new(node.Role, node.Label) { Localize = node.Localize };
             if (semanticBinding is not null)
             {
                 semantic.BoundLabel = ResolveState(state, semanticBinding.State);
@@ -242,6 +243,8 @@ public sealed partial class NxmlUiLoader
 
             tree.SetComponent(entity, semantic);
         }
+
+        if (node.Selected is { } selected) tree.SetComponent(entity, new XsrUiSelection { IsSelected = selected });
 
         if (node.Visual is { } visual)
             tree.SetComponent(entity, CreateVisual(visual));

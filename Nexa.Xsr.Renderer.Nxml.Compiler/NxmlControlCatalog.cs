@@ -1,4 +1,4 @@
-using Nexa.Xsr.Renderer;
+﻿using Nexa.Xsr.Renderer;
 
 namespace Nexa.Xsr.Renderer.Nxml;
 
@@ -53,6 +53,8 @@ internal enum NxmlIrPropertyTarget
     TransitionOffsetX = 28,
     TransitionOffsetY = 29,
     Value = 30,
+    Localize = 31,
+    Selected = 32,
 }
 
 internal sealed class NxmlControlPropertyModel
