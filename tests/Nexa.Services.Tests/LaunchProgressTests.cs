@@ -102,6 +102,8 @@ internal static partial class Program
     {
         string root = CreateTempDirectory();
         LongLivedProcessPort port = new();
+        FoundationHost? host = null;
+        MinecraftProcessService? processes = null;
         try
         {
             string baseDirectory = CreateVersionDirectory(root, "1.20.1", new JsonObject
@@ -121,7 +123,7 @@ internal static partial class Program
             File.WriteAllBytes(Path.Combine(baseDirectory, "1.20.1.jar"), [0xCA, 0xFE]);
 
             SettingsSchema schema = LauncherDefaults.CreateSchema();
-            FoundationHost host = FoundationComposer.Compose(
+            host = FoundationComposer.Compose(
                 new InMemorySettingsPort(),
                 schema,
                 new LaunchProfileFilePort(Path.Combine(root, "profiles.json")));
@@ -146,7 +148,7 @@ internal static partial class Program
                 JavaArchitecture.X64,
                 is64Bit: true,
                 isJre: false));
-            MinecraftProcessService processes = new(port, host.StateStore);
+            processes = new(port, host.StateStore);
             MinecraftLaunchCoordinator coordinator = new(
                 root,
                 Path.Combine(root, "runtime"),
@@ -235,11 +237,17 @@ internal static partial class Program
         }
         finally
         {
-            if (port.LastProcess is { HasExited: false } process)
+            if (port.LastProcess is { } process)
             {
-                process.Kill();
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
             }
-
+            if (processes is not null) await processes.DisposeAsync();
+            // OS exit and process disposal precede the executor's receipt cleanup.
+            // Exclusive lease acquisition proves that cleanup released its owned gate.
+            if (port.LastStartInfo is { } startInfo)
+                await WaitForLaunchGameDirectoryReleasedAsync(startInfo.WorkingDirectory);
+            host?.Dispose();
             Directory.Delete(root, recursive: true);
         }
     }

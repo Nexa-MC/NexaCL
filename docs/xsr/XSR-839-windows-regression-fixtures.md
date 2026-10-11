@@ -12,6 +12,14 @@ the product hook worker. The readiness loop now jumps to a label and returns
 outside the block. Exit-code, live-child, process-tree cleanup and detached-child
 assertions remain unchanged.
 
+A later complete run reached a launch-progress teardown which killed its shell
+and immediately deleted the game directory. That fixture now waits for the
+entire process tree, disposes its own process service, and acquires the real
+exclusive game-directory lease before cleanup. The lease acquisition proves
+that the executor's asynchronous shared receipt was released. The authoritative
+lock keeps its original sharing requirements; no deletion retry hides the race.
+
 Focused Windows regressions passed: four launcher/auxiliary Java lease cases,
-ten managed Java lifecycle cases, and all four launch-hook platform cases. These
+ten managed Java lifecycle cases, all four launch-hook platform cases, and the
+launch-progress lifecycle case. These
 fixtures do not replace physical Minecraft client or publisher-signing evidence.
