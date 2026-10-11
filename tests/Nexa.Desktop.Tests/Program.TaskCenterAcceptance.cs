@@ -41,10 +41,20 @@ internal static partial class Program
         XsrUiScene second = fixture.Shell.Render(new XsrUiSize(1280, 800));
         AssertTrue(ReferenceEquals(first, second));
 
+        var stableCard = FindByKey(fixture.Shell, first, "task-card:install:1").Entity;
+        var stableAction = controller.CardAction("install:1");
+        var progressEntity = FindByKey(fixture.Shell, first, "TaskCardFill").Entity;
+        var progress = fixture.Shell.Tree.GetComponent<XsrUiProgress>(progressEntity)!;
+        AssertTrue(fixture.Shell.Renderer.Focus(stableAction));
         // A real entry change still updates the card.
         install.Report("游戏文件", "下载中", 0.8, 4, 5, 100);
         XsrUiScene updated = fixture.Shell.Render(new XsrUiSize(1280, 800));
         AssertFalse(ReferenceEquals(second, updated));
+        AssertEqual(stableCard, FindByKey(fixture.Shell, updated, "task-card:install:1").Entity);
+        AssertEqual(stableAction, controller.CardAction("install:1"));
+        AssertEqual(stableAction, fixture.Shell.Renderer.Focused);
+        AssertTrue(ReferenceEquals(progress, fixture.Shell.Tree.GetComponent<XsrUiProgress>(progressEntity)));
+        AssertEqual(0.8d, progress.Target);
 
         install.Complete();
         using var next = tasks.Begin(new TaskCenterStart("install:2", "下一项", ["下载"]));

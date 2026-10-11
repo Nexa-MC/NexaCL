@@ -1,20 +1,5 @@
-<nxml-page>
+﻿<nxml-page>
   <Page Key="TaskCenterPage" Label="任务中心">
-    <StackPanel Key="TaskCenterRoot" Class="layout-TaskCenterPage-TaskCenterRoot">
-      <StackPanel Key="TaskCenterHeader" Class="layout-TaskCenterPage-TaskCenterHeader">
-        <Image Key="TaskCenterHeaderIcon" Source="lucide/list-checks" IsVisible="false" Class="layout-TaskCenterPage-TaskCenterHeaderIcon" />
-        <Text Key="TaskCenterTitle" Content="任务中心" Class="layout-TaskCenterPage-TaskCenterTitle" />
-        <Button Key="TaskCenterClear" Content="清除已完成" Label="清除已完成的任务" Command="ui.tasks.clear-finished" Class="layout-TaskCenterPage-TaskCenterClear" />
-      </StackPanel>
-      <Text Key="TaskCenterSummary" Content="暂无任务" Class="layout-TaskCenterPage-TaskCenterSummary" />
-      <ContentHost Key="TaskCenterBody" Class="layout-TaskCenterPage-TaskCenterBody">
-        <StackPanel Key="TaskCenterEmpty" Class="layout-TaskCenterPage-TaskCenterEmpty">
-          <Image Key="TaskCenterEmptyIcon" Source="lucide/inbox" Class="layout-TaskCenterPage-TaskCenterEmptyIcon" />
-          <Text Key="TaskCenterEmptyTitle" Content="暂无任务" Class="layout-TaskCenterPage-TaskCenterEmptyTitle" />
-          <Text Key="TaskCenterEmptyHint" Content="安装和下载进度会显示在这里。" Class="layout-TaskCenterPage-TaskCenterEmptyHint" />
-        </StackPanel>
-        <StackPanel Key="TaskCenterList" IsVisible="false" Scroll="true" Class="layout-TaskCenterPage-TaskCenterList" />
-      </ContentHost>
-    </StackPanel>
+    <Dynamic Key="TaskCenterWorkspace" Class="task-workspace-slot" />
   </Page>
 </nxml-page>

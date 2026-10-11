@@ -1,13 +1,4 @@
-/* Shared controller palette for dynamic state projections. */
-.palette-TaskCenterController-CardBackground { Foreground: #ffffff; }
-.palette-TaskCenterController-CardBorder { Foreground: #e4e9f0; }
-.palette-TaskCenterController-TitleInk { Foreground: #28303c; }
-.palette-TaskCenterController-SecondaryInk { Foreground: #707c8a; }
-.palette-TaskCenterController-RunningAccent { Foreground: #1370f3; }
-.palette-TaskCenterController-FinishedAccent { Foreground: #228054; }
-.palette-TaskCenterController-FailedAccent { Foreground: #c44036; }
-.palette-TaskCenterController-CanceledAccent { Foreground: #707c8a; }
-.palette-TaskCenterController-HoverTint { Foreground: #1370f316; }
+﻿/* Shared controller palette for dynamic state projections. */
 .palette-VersionSelectionController-Ink { Foreground: #263141; }
 .palette-VersionSelectionController-Secondary { Foreground: #5e6e82; }
 .palette-VersionSelectionController-Blue { Foreground: #0b5bcb; }

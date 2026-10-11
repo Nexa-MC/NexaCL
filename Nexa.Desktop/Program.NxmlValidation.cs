@@ -36,4 +36,45 @@ internal static partial class Program
             return found;
         }
     }
+    private static void ValidateDynamicTaskPage(XsrUiShell shell, TaskCenterController controller,
+        Nexa.Services.Tasks.TaskCenterService tasks, DesktopUiIntentSink intents)
+    {
+        var previous = shell.Stage.Navigation.Current;
+        string id = "nxml-smoke:" + Guid.NewGuid().ToString("N");
+        using var task = tasks.Begin(new(id, "动态模板验证", ["读取", "写入"]));
+        try
+        {
+            task.Report("写入", "验证", 0.25, 1, 4, 0);
+            intents.Emit(XsrSemanticId.Parse("ui.tasks.open"), default, XsrCorrelationId.Create());
+            shell.Render(new(1280, 800));
+            XsrUiEntityId card = default, details = default, fill = default;
+            shell.Tree.Walk(controller.Page, entity =>
+            {
+                if (shell.Tree.Name(entity) == "task-card:" + id) card = entity;
+                return true;
+            });
+            if (!card.IsAssigned) throw new InvalidOperationException("Dynamic task card did not load.");
+            shell.Tree.Walk(card, entity =>
+            {
+                if (shell.Tree.Name(entity) == "TaskCardDetails") details = entity;
+                if (shell.Tree.Name(entity) == "TaskCardFill") fill = entity;
+                return true;
+            });
+            intents.Emit(XsrSemanticId.Parse("ui.tasks.card.details"), details, XsrCorrelationId.Create());
+            shell.Render(new(1280, 800));
+            var progress = shell.Tree.GetComponent<XsrUiProgress>(fill);
+            task.Report("写入", "更新", 0.75, 3, 4, 0);
+            shell.Render(new(1280, 800));
+            if (!shell.Tree.IsAlive(card) || progress?.Target != 0.75
+                || !ReferenceEquals(progress, shell.Tree.GetComponent<XsrUiProgress>(fill)))
+                throw new InvalidOperationException("Dynamic task reload lost retained state.");
+            Console.WriteLine("Dynamic task validation passed: card, nested steps, retained progress and live reload.");
+        }
+        finally
+        {
+            task.Complete(); tasks.Dismiss(id);
+            shell.Stage.Navigation.Replace(previous);
+        }
+    }
+
 }

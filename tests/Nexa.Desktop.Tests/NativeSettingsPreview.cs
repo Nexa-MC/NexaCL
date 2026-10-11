@@ -204,6 +204,27 @@ internal static partial class Program
                 Capture("directories");
                 f.Shell.Stage.Navigation.Replace(controller.Page); surface!.CommitScene();
             }, timeout.Token);
+            DesktopTaskBubblePresenter? taskBubble = null;
+            TaskCenterController? taskPage = null;
+            using var taskRuntime = Nexa.Services.Composition.TaskCenterRuntimeComposer.Compose(f.Foundation.Host);
+            using var previewTask = f.Foundation.Host.Tasks.Begin(new("preview:nxml", "安装 Minecraft", ["版本信息", "下载文件", "校验"]));
+            using var completedTask = f.Foundation.Host.Tasks.Begin(new("preview:finished", "更新资源包", ["下载", "校验"]));
+            previewTask.Report("下载文件", "游戏资源", 0.45, 9, 20, 1048576); completedTask.Complete("更新完成");
+            await startup.InvokeAsync(() =>
+            {
+                taskBubble = new(f.Shell, f.Store);
+                taskPage = new(f.Shell, f.Intents, taskRuntime.Commands, f.Store, taskBubble);
+                Emit(f.Intents, "ui.tasks.open"); surface!.CommitScene();
+                var details = surface.Scene!.Nodes.First(node => f.Shell.Tree.Name(node.Entity) == "TaskCardDetails");
+                f.Shell.Renderer.Activate(details.Entity); surface.CommitScene();
+            }, timeout.Token);
+            await Task.Delay(500, timeout.Token);
+            await startup.InvokeAsync(() =>
+            {
+                Capture("tasks");
+                f.Shell.Stage.Navigation.Replace(controller.Page);
+                taskPage!.Dispose(); taskBubble!.Dispose(); surface!.CommitScene();
+            }, timeout.Token);
             await SelectCategory("general");
             await Task.Delay(600, timeout.Token);
             await SelectCategory("appearance");

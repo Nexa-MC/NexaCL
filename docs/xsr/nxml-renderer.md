@@ -168,3 +168,29 @@ controllers still create presentation nodes. They must be migrated in subsequent
 slices before extending the no-factory architecture rule to the entire Desktop project.
 The Dynamic API and two migrated network controllers are complete; whole-Desktop
 externalization is still in progress.
+
+
+### Retained dynamic reload (2026-10-11)
+
+A controller may reload an owned `.d.nxml` instance with new typed data. Reload validates
+its entire existing shape and bindings before changing any live node. It preserves entity
+identity, focused input drafts, nested Dynamic contents, scroll/pager positions and live
+progress/transition objects. Only changed declarative properties invalidate rendering;
+reloading identical data does not schedule a frame. Shape, recipe, bindings or transition
+contract changes require explicit replace, and a rejected reload leaves prior content intact.
+This keeps dynamic data projection in external templates without forcing controllers to
+mutate text/style components or recreate a card for every progress sample.
+
+The next complete consumer is Task Center: cards and steps enter Dynamic slots, all visual
+values come from NSS, and header/card data changes use retained reload. Static semantic
+labels and terminal-state wording must ultimately move into fragment variants; the current
+task projection still formats summary/state captions and is recorded as remaining work. Task routing and ordering
+remain controller behavior; service task contracts are unchanged.
+
+
+Retained-reload slice validation: 50 NXML tests, 264 Desktop tests and architecture checks
+for 69 projects passed. Native Avalonia task-center previews in light and dark themes
+exercised active/finished ordering and expanded steps. Both Windows x64 NativeAOT and
+full-trim executables actually ran the added task smoke (card load, nested steps and
+retained progress reload) and exited 0. The existing Jint IL2098 warning remains.
+See `nxml-migration-remaining.md` for the whole-objective inventory and completion gates.

@@ -1,25 +1,25 @@
-<nxml-component>
-  <StackPanel Key="TaskCard" Class="layout-TaskCard-TaskCard">
+﻿<nxml-component>
+  <StackPanel Key="{data key}" Class="layout-TaskCard-TaskCard">
     <StackPanel Key="TaskCardContent" Class="layout-TaskCard-TaskCardContent">
       <StackPanel Key="TaskCardHeader" Class="layout-TaskCard-TaskCardHeader">
-        <Image Key="TaskCardIcon" Source="lucide/loader-circle" Class="layout-TaskCard-TaskCardIcon" />
-        <Text Key="TaskCardTitle" Content="任务" Class="layout-TaskCard-TaskCardTitle" />
-        <Button Key="TaskCardAction" Icon="lucide/x" Label="取消任务" Command="ui.tasks.card.cancel" Class="layout-TaskCard-TaskCardAction" />
+        <Image Key="TaskCardIcon" Source="{data icon}" Class="{data icon-style}" />
+        <Text Key="TaskCardTitle" Content="{data title}" Class="layout-TaskCard-TaskCardTitle" />
+        <Button Key="TaskCardAction" Icon="lucide/x" Label="{data action-label}" Command="{data action}" IsVisible="{data show-action}" Class="layout-TaskCard-TaskCardAction" />
       </StackPanel>
       <StackPanel Key="TaskCardStatus" Class="layout-TaskCard-TaskCardStatus">
-        <Text Key="TaskCardStage" Content="正在准备" Class="layout-TaskCard-TaskCardStage" />
-        <Text Key="TaskCardPercent" Content="0%" Class="layout-TaskCard-TaskCardPercent" />
+        <Text Key="TaskCardStage" Content="{data stage}" Class="layout-TaskCard-TaskCardStage" />
+        <Text Key="TaskCardPercent" Content="{data percent}" Class="{data percent-style}" />
       </StackPanel>
-      <ContentHost Key="TaskCardTrack" Class="layout-TaskCard-TaskCardTrack">
-        <Progress Key="TaskCardFill" Label="任务进度条" Class="layout-TaskCard-TaskCardFill" />
+      <ContentHost Key="TaskCardTrack" IsVisible="{data active}" Class="layout-TaskCard-TaskCardTrack">
+        <Progress Key="TaskCardFill" Label="任务进度条" Value="{data progress}" Class="{data fill-style}" />
       </ContentHost>
-      <StackPanel Key="TaskCardMeta" Class="layout-TaskCard-TaskCardMeta">
-        <Text Key="TaskCardFiles" Content="" Class="layout-TaskCard-TaskCardFiles" />
-        <Text Key="TaskCardSpeed" Content="" Class="layout-TaskCard-TaskCardSpeed" />
+      <StackPanel Key="TaskCardMeta" IsVisible="{data show-meta}" Class="layout-TaskCard-TaskCardMeta">
+        <Text Key="TaskCardFiles" Content="{data files}" Class="layout-TaskCard-TaskCardFiles" />
+        <Text Key="TaskCardSpeed" Content="{data speed}" Class="layout-TaskCard-TaskCardSpeed" />
       </StackPanel>
-      <Text Key="TaskCardError" Content="" IsVisible="false" Class="layout-TaskCard-TaskCardError" />
-      <Button Key="TaskCardDetails" Content="查看步骤" Label="展开任务步骤" Command="ui.tasks.card.details" Class="layout-TaskCard-TaskCardDetails" />
-      <StackPanel Key="TaskCardSteps" IsVisible="false" Class="layout-TaskCard-TaskCardSteps" />
+      <Text Key="TaskCardError" Content="{data error}" IsVisible="{data show-error}" Class="layout-TaskCard-TaskCardError" />
+      <Button Key="TaskCardDetails" Content="{data details}" Label="{data details-label}" IsVisible="{data has-steps}" Command="ui.tasks.card.details" Class="layout-TaskCard-TaskCardDetails" />
+      <Dynamic Key="TaskCardSteps" IsVisible="{data expanded}" Class="layout-TaskCard-TaskCardSteps" />
     </StackPanel>
   </StackPanel>
 </nxml-component>
