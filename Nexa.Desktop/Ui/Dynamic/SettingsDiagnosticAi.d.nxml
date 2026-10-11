@@ -1,0 +1,6 @@
+<nxml-dynamic>
+<SettingsForm Key="DiagnosticAiWorkspace"><Text Content="AI 诊断建议" Class="settings-form-label" /><StackPanel Class="settings-form-surface"><StackPanel Class="settings-form-body">
+<Dynamic Key="DiagnosticAi.Policy" Class="settings-workspace-column" />
+<Dynamic Key="DiagnosticAi.Editor" Class="settings-workspace-column" />
+</StackPanel></StackPanel></SettingsForm>
+</nxml-dynamic>

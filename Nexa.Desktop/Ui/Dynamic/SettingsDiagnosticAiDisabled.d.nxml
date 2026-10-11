@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Text Content="AI 诊断已停用。启用后仍需逐次确认数据预览和发送范围。" Class="settings-workspace-ai-hint" />
+</nxml-dynamic>

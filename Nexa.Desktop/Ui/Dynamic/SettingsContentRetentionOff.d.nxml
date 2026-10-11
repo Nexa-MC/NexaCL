@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Button Key="ContentWorkspace.Retention" Label="启用自动清理" Content="启用自动清理" Command="ui.settings.storage.workspace" Enabled="{data enabled}" Class="settings-catalog-action settings-workspace-action" />
+</nxml-dynamic>

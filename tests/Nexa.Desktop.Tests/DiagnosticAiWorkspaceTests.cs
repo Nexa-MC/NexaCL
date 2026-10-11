@@ -53,6 +53,11 @@ internal static partial class Program
                 + "; feedback=" + string.Join(" | ", fixture.Feedback.Snapshot().Notifications.Select(x => x.Message)));
         }
         AssertTrue(opened);
+        AssertTrue(fixture.Shell.Tree.GetComponent<Nexa.Xsr.Renderer.Nxml.NxmlDynamicSlot>(Get("DiagnosticAi.Editor")) is not null);
+        AssertTrue(fixture.Shell.Tree.GetComponent<Nexa.Xsr.Renderer.Nxml.NxmlDynamicSlot>(Get("ContentWorkspace.Backups")) is not null);
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiTextInput>(Get("DiagnosticAi.key"))!.IsPassword);
+        AssertEqual(4096, fixture.Shell.Tree.GetComponent<XsrUiTextInput>(Get("DiagnosticAi.key"))!.MaximumLength);
+        AssertEqual(6, fixture.Shell.Tree.GetComponent<XsrUiTextInput>(Get("DiagnosticAi.inputBudget"))!.MaximumLength);
         fixture.Shell.Renderer.SetTextInputValue(Get("DiagnosticAi.endpoint"), "https://provider.example/v1/chat/completions");
         fixture.Shell.Renderer.SetTextInputValue(Get("DiagnosticAi.model"), "返回");
         fixture.Shell.Renderer.SetTextInputValue(Get("DiagnosticAi.key"), "ui-ephemeral-key");

@@ -22,22 +22,27 @@ internal sealed partial class SettingsPageController
     {
         _diagnosticAiInputs.Clear(); if (_diagnosticAi is null) return;
         _diagnosticAiWorkspaceEnabled = DiagnosticAiEnabled;
-        var group = FormGroup(_sections, "DiagnosticAiWorkspace", "AI 诊断建议");
+        var group = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsDiagnosticAi.d.nxml"));
+        var nodes = CatalogNodes(group);
         foreach (string id in new[] { "global.privacy.f07ee7c87d0e", "global.privacy.c1b151abf947" })
-            if (_catalog?.Entries.FirstOrDefault(x => x.Id == id) is { } entry) BuildRow(group, entry);
-        if (!DiagnosticAiEnabled) { Text(group, "AI 诊断已停用。启用后仍需逐次确认数据预览和发送范围。", 11, Muted, 42); return; }
-        Text(group, "仅在确认发送范围和预览后请求指定服务；API 密钥只保留在当前页面会话。建议不会自动执行命令。", 11, Muted, 42);
-        foreach (var (key, label, maximum) in new[] { ("endpoint", "服务 HTTPS 地址", 2048), ("model", "模型", 128), ("key", "API 密钥", 4096), ("inputBudget", "输入字节预算", 6), ("outputBudget", "输出 Token 预算", 4) })
+            if (_catalog?.Entries.FirstOrDefault(x => x.Id == id) is { } entry) BuildRow(nodes["DiagnosticAi.Policy"], entry);
+        if (!DiagnosticAiEnabled)
         {
-            var input = ManagementField(group, "DiagnosticAi." + key, label, _diagnosticAiDraft[key]);
-            _shell.Tree.SetComponent(input, new XsrUiTextInput { MaximumLength = maximum, IsPassword = key == "key", Placeholder = label });
+            _dynamic.Append(nodes["DiagnosticAi.Editor"], DesktopMarkup.Dynamic("SettingsDiagnosticAiDisabled.d.nxml"));
+            return;
+        }
+        var editor = _dynamic.Append(nodes["DiagnosticAi.Editor"], DesktopMarkup.Dynamic("SettingsDiagnosticAiEditor.d.nxml",
+            new Dictionary<string, string> { ["enabled"] = Flag(!ContentWorkspaceBusy) }));
+        var controls = CatalogNodes(editor);
+        foreach (string key in _diagnosticAiDraft.Keys)
+        {
+            var input = controls["DiagnosticAi." + key];
             _shell.Renderer.SetTextInputValue(input, _diagnosticAiDraft[key]);
             _diagnosticAiInputs[key] = input;
         }
-        var actions = Stack(group, "DiagnosticAi.Actions", XsrUiOrientation.Horizontal, 8);
-        WorkspaceButton(actions, "AiFacts", "预览结构化诊断", "ai-facts");
-        WorkspaceButton(actions, "AiRaw", "预览脱敏文本", "ai-raw");
-        WorkspaceButton(actions, "AiRepair", "预览存储修复", "prune");
+        RegisterWorkspaceAction(controls, "AiFacts", "ai-facts");
+        RegisterWorkspaceAction(controls, "AiRaw", "ai-raw");
+        RegisterWorkspaceAction(controls, "AiRepair", "prune");
     }
 
     private void CaptureDiagnosticAiDraft()

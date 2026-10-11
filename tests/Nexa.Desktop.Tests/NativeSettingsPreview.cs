@@ -191,12 +191,25 @@ internal static partial class Program
                         Path.Combine(storage, "settings"), Path.Combine(storage, "logs"), Path.Combine(storage, "cache"),
                         [javaHome], [game, Path.Combine(storage, "Games", "Modpacks")], game, Path.Combine(game, "versions"),
                         Path.Combine(game, "versions", "1.21.1-Fabric")))));
+                queries.Register<ContentStoreStatisticsQuery, ContentStoreStatistics>(ContentWorkspaceContract.Statistics,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success(new ContentStoreStatistics(1, 8, 1048576, 2097152, 1048576, 0))));
+                queries.Register<ContentBackupListQuery, IReadOnlyList<ContentBackupManifest>>(ContentWorkspaceContract.List,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success<IReadOnlyList<ContentBackupManifest>>(
+                        [new("preview-backup", "Survival {state literal}", DateTimeOffset.UtcNow, [])])));
+                queries.Register<ContentBackupRetentionQuery, ContentBackupRetentionPolicy>(ContentWorkspaceContract.Retention,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success(new ContentBackupRetentionPolicy())));
+                queries.Register<Nexa.Services.Logging.DurableDiagnosticHistoryQuery, IReadOnlyList<Nexa.Services.Logging.DurableDiagnosticEntry>>(
+                    Nexa.Services.Logging.DiagnosticWorkspaceContract.History,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success<IReadOnlyList<Nexa.Services.Logging.DurableDiagnosticEntry>>([])));
                 var commands = new XsrCommandRouterBuilder();
                 commands.Register<JavaRuntimeManageCommand>(JavaRuntimeInventoryContract.Manage,
                     (_, _) => throw new InvalidOperationException("Preview must not manage a Java runtime."));
                 using var java = new SettingsPageController(f.Shell, f.Intents, queries.Build(new NoopDispatchObserver()),
                     commands.Build(new NoopDispatchObserver()), f.Store, f.Feedback)
                 { PickRemediationJava = () => Task.FromResult<string?>(null) };
+                AssertTrue(f.Foundation.Host.SettingsPolicy.Set(new("diagnostics.ai.enabled", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "true"))).IsSuccess);
+                java.ConfigureContentWorkspace(_ => Task.FromResult<string?>(null), _ => Task.FromResult<string?>(null), static () => "");
+                java.ConfigureDiagnosticAi(true);
                 await java.PrepareStartupAsync(timeout.Token);
                 f.Shell.Stage.Navigation.Replace(java.Page); surface!.CommitScene();
                 Emit(f.Intents, "ui.settings.section", FindByKey(f.Shell, surface.Scene!, "SettingsNav.java").Entity);
@@ -213,6 +226,15 @@ internal static partial class Program
                 surface.CommitScene(); Capture("storage-locations");
                 ShowSettingsFixtureControl(f, java, ref storageScene, "SettingsReset", f.Shell.Renderer.Viewport);
                 surface.CommitScene(); Capture("storage-transfer");
+                ShowSettingsFixtureControl(f, java, ref storageScene, "ContentWorkspace.Refresh", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("storage-backups");
+                ShowSettingsFixtureControl(f, java, ref storageScene, "ContentWorkspace.Raw", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("storage-diagnostics");
+                ShowSettingsFixtureControl(f, java, ref storageScene, "DiagnosticAi.endpoint", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("storage-ai");
+                ShowSettingsFixtureControl(f, java, ref storageScene, "ContentWorkspace.AiFacts", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("storage-ai-actions");
+                AssertTrue(f.Foundation.Host.SettingsPolicy.Set(new("diagnostics.ai.enabled", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "false"))).IsSuccess);
                 f.Shell.Stage.Navigation.Replace(controller.Page); surface.CommitScene();
             }, timeout.Token);
             await SelectCategory("network");

@@ -62,7 +62,11 @@ internal static partial class Program
             || shell.Tree.GetComponent<XsrUiCommandBinding>(Find("SettingsImport")) is null
             || shell.Tree.GetComponent<XsrUiCommandBinding>(Find("SettingsReset")) is null)
             throw new InvalidOperationException("External storage or settings transfer controls did not load.");
-        Console.WriteLine("Dynamic storage validation passed: owned directory slot, cleanup and transfer controls; no filesystem changes.");
+        if (shell.Tree.GetComponent<NxmlDynamicSlot>(Find("ContentWorkspace.Backups")) is null
+            || shell.Tree.GetComponent<NxmlDynamicSlot>(Find("DiagnosticAi.Editor")) is null
+            || shell.Tree.GetComponent<XsrUiCommandBinding>(Find("ContentWorkspace.Migrate")) is null)
+            throw new InvalidOperationException("External backup or diagnostic workspaces did not load.");
+        Console.WriteLine("Dynamic storage validation passed: owned directory, backup and AI slots, migration, cleanup and transfer controls; no filesystem changes.");
         intents.Emit(XsrSemanticId.Parse("ui.settings.section"), Find("SettingsNav.general"), XsrCorrelationId.Create());
         shell.Render(new(1280, 800));
         if (shell.Tree.GetComponent<XsrUiText>(Find("SettingsGeneral.Protocol.Details"))?.Localize != false)

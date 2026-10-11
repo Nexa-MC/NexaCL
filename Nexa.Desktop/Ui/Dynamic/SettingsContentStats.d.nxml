@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<StackPanel Class="settings-workspace-column"><Text Content="{data summary}" Localize="false" Class="settings-workspace-stats" /><Text Content="{data saved}" Localize="false" Class="settings-workspace-note" /><Text Content="存在未引用的备份对象，可预览清理后确认回收。" IsVisible="{data reclaimable}" Class="settings-workspace-note" /><Text Content="没有未引用的备份对象，无需回收。" IsVisible="{data clean}" Class="settings-workspace-note" /></StackPanel>
+</nxml-dynamic>

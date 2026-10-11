@@ -1,0 +1,10 @@
+<nxml-dynamic>
+<SettingsForm Key="ContentWorkspace"><Text Content="内容存储与独立备份" Class="settings-form-label" /><StackPanel Class="settings-form-surface"><StackPanel Class="settings-form-body">
+<Dynamic Key="ContentWorkspace.Summary" Class="settings-workspace-column" />
+<StackPanel Key="ContentWorkspace.Toolbar" Class="settings-workspace-actions"><Button Key="ContentWorkspace.Refresh" Label="刷新" Content="刷新" Command="ui.settings.storage.workspace" Enabled="{data enabled}" Class="settings-catalog-action settings-workspace-action" /><Button Key="ContentWorkspace.Capture" Label="创建备份" Content="创建备份" Command="ui.settings.storage.workspace" Enabled="{data enabled}" Class="settings-catalog-action settings-workspace-action" /><Button Key="ContentWorkspace.Import" Label="导入薄备份" Content="导入薄备份" Command="ui.settings.storage.workspace" Enabled="{data enabled}" Class="settings-catalog-action settings-workspace-action" /><Button Key="ContentWorkspace.Prune" Label="预览清理" Content="预览清理" Command="ui.settings.storage.workspace" Enabled="{data enabled}" Class="settings-catalog-action settings-workspace-action" /></StackPanel>
+<Dynamic Key="ContentWorkspace.RetentionSlot" />
+<Dynamic Key="ContentWorkspace.Backups" Class="settings-workspace-column" />
+<Text Content="显示最近 16 个备份，清理后刷新查看较早项目。" IsVisible="{data truncated}" Class="settings-workspace-limit" />
+<Dynamic Key="ContentWorkspace.Message" />
+</StackPanel></StackPanel></SettingsForm>
+</nxml-dynamic>

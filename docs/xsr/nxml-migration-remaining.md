@@ -170,3 +170,31 @@ entities instead of rebuilding the settings page; export data policy is unchange
   settings transfer controls, and literal protocol details. Existing Jint IL2098 remains.
 - Backup/AI workspaces, platform/diagnostic cards, instance management and the other
   product surfaces listed above remain open; this is not whole-product completion.
+
+## Backup and diagnostic workspace boundary
+
+Backup, legacy migration, durable diagnostic history and AI request editor structures
+move to owned dynamic fragments. Styles and field limits are external. Controllers
+retain service admission, confirmation, cancellation, identities and ephemeral input
+drafts; API keys are never template parameters. Formatted service summaries and
+confirmation copy remain a separate text-projection migration item.
+
+## Backup and diagnostic workspace verification, 2026-10-11
+
+- ContentWorkspace and DiagnosticAi now load external fragments into owned slots;
+  both partials are covered by the architecture no-presentation-factory guard.
+- Desktop composition: 264 passed, including AI opt-in, policy revision retirement,
+  confirmation-before-send, raw preview localization, draft preservation and secret
+  clearing. The test additionally verifies dynamic slot ownership and password/length
+  metadata from the template. Java focus regression waits for the asynchronous write
+  to restore interactivity before checking focus rather than racing the busy state.
+- NXML: 53 passed. Architecture: 69 projects passed. Scoped whitespace/diff checks pass.
+- Actual Avalonia previews in both themes include backup summary/controls, diagnostic
+  workspace, AI fields and actions. Backup/history data are explicitly read-only
+  fixtures; the preview executes no backup, migration or AI request.
+- Windows x64 NativeAOT and full-trim publishes succeed. Both actual binaries run
+  --validate-shell with exit 0 and verify backup and AI slots plus migration actions.
+  The existing Jint IL2098 warning remains.
+- Remaining: formatted summary/caption copy and confirmation dialogs still need the
+  text-projection migration; platform/diagnostic panels and other product surfaces
+  above still need migration. This does not close the whole-product objective.

@@ -43,49 +43,53 @@ internal sealed partial class SettingsPageController
     {
         _contentWorkspaceActions.Clear();
         if (_instanceDirectory is not null || _selected != "storage" || _contentBackups is null) return;
-        var panel = FormGroup(_sections, "ContentWorkspace", "内容存储与独立备份");
+        var availability = new Dictionary<string, string> { ["enabled"] = Flag(!ContentWorkspaceBusy) };
+        var panel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsContentWorkspace.d.nxml",
+            new Dictionary<string, string>(availability) { ["truncated"] = Flag(_contentBackupRows.Count > 16) }));
+        var nodes = CatalogNodes(panel);
         if (_contentStoreStatistics is { } stats)
-        {
-            Text(panel, $"{stats.Backups} 个备份 · {stats.Objects} 个对象 · 实际 {stats.PhysicalBytes} 字节 · 逻辑 {stats.LogicalBytes} 字节 · 可回收 {stats.ReclaimableBytes} 字节", 11, Muted, 48);
-            Text(panel, string.Format(System.Globalization.CultureInfo.CurrentCulture, _shell.Renderer.LocalizeText("备份内容去重节省：{0} 字节；不含清单及文件系统开销。"), Math.Max(0, stats.LogicalBytes - stats.ReferencedBytes)), 11, Muted, 32);
-            Text(panel, stats.ReclaimableBytes > 0 ? "存在未引用的备份对象，可预览清理后确认回收。" : "没有未引用的备份对象，无需回收。", 11, Muted, 32);
-        }
-        else Text(panel, "捕获世界、配置或截图文件夹；对象按内容去重，不链接到可写游戏文件。", 11, Muted, 34);
-        var toolbar = Stack(panel, "ContentWorkspace.Toolbar", XsrUiOrientation.Horizontal, 8);
-        WorkspaceButton(toolbar, "Refresh", "刷新", "refresh"); WorkspaceButton(toolbar, "Capture", "创建备份", "capture");
-        WorkspaceButton(toolbar, "Import", "导入薄备份", "import"); WorkspaceButton(toolbar, "Prune", "预览清理", "prune");
-        WorkspaceButton(panel, "Retention", _contentRetention.Enabled ? "停用自动清理" : "启用自动清理", "retention");
+            _dynamic.Append(nodes["ContentWorkspace.Summary"], DesktopMarkup.Dynamic("SettingsContentStats.d.nxml", new Dictionary<string, string>
+            {
+                ["summary"] = $"{stats.Backups} 个备份 · {stats.Objects} 个对象 · 实际 {stats.PhysicalBytes} 字节 · 逻辑 {stats.LogicalBytes} 字节 · 可回收 {stats.ReclaimableBytes} 字节",
+                ["saved"] = string.Format(System.Globalization.CultureInfo.CurrentCulture, _shell.Renderer.LocalizeText("备份内容去重节省：{0} 字节；不含清单及文件系统开销。"), Math.Max(0, stats.LogicalBytes - stats.ReferencedBytes)),
+                ["reclaimable"] = Flag(stats.ReclaimableBytes > 0), ["clean"] = Flag(stats.ReclaimableBytes == 0)
+            }));
+        else _dynamic.Append(nodes["ContentWorkspace.Summary"], DesktopMarkup.Dynamic("SettingsContentIntro.d.nxml"));
+        foreach (var (name, kind) in new[] { ("Refresh", "refresh"), ("Capture", "capture"), ("Import", "import"), ("Prune", "prune") })
+            RegisterWorkspaceAction(nodes, name, kind);
+        var retention = _dynamic.Append(nodes["ContentWorkspace.RetentionSlot"], DesktopMarkup.Dynamic(
+            _contentRetention.Enabled ? "SettingsContentRetentionOn.d.nxml" : "SettingsContentRetentionOff.d.nxml", availability));
+        RegisterWorkspaceAction(CatalogNodes(retention), "Retention", "retention");
         foreach (var manifest in _contentBackupRows.Take(16))
         {
-            var row = Stack(panel, "ContentWorkspace.Backup." + manifest.Identity, XsrUiOrientation.Vertical, 6);
-            var caption = Text(row, manifest.Label + $" · {manifest.Files.Count} " + _shell.Renderer.LocalizeText("个文件")
-                + $" · {manifest.CreatedAt.ToLocalTime():yyyy-MM-dd HH:mm}", 12, Ink, 28);
-            DesktopLiteralText.Preserve(_shell.Tree, caption);
-            var actions = Stack(row, "ContentWorkspace.Actions." + manifest.Identity, XsrUiOrientation.Horizontal, 8);
-            WorkspaceButton(actions, "Verify." + manifest.Identity, "离线校验", "verify", manifest.Identity);
-            WorkspaceButton(actions, "Restore." + manifest.Identity, "恢复副本", "restore", manifest.Identity);
-            WorkspaceButton(actions, "Export." + manifest.Identity, "导出薄备份", "export", manifest.Identity);
+            var row = _dynamic.Append(nodes["ContentWorkspace.Backups"], DesktopMarkup.Dynamic("SettingsContentBackup.d.nxml", new Dictionary<string, string>(availability)
+            {
+                ["row"] = "ContentWorkspace.Backup." + manifest.Identity,
+                ["actions"] = "ContentWorkspace.Actions." + manifest.Identity,
+                ["caption"] = manifest.Label + $" · {manifest.Files.Count} " + _shell.Renderer.LocalizeText("个文件") + $" · {manifest.CreatedAt.ToLocalTime():yyyy-MM-dd HH:mm}",
+                ["verify"] = "ContentWorkspace.Verify." + manifest.Identity,
+                ["restore"] = "ContentWorkspace.Restore." + manifest.Identity,
+                ["export"] = "ContentWorkspace.Export." + manifest.Identity
+            }));
+            var actions = CatalogNodes(row);
+            foreach (var (name, kind) in new[] { ("Verify", "verify"), ("Restore", "restore"), ("Export", "export") })
+                RegisterWorkspaceAction(actions, name + "." + manifest.Identity, kind, manifest.Identity);
         }
-        if (_contentBackupRows.Count > 16) Text(panel, "显示最近 16 个备份，清理后刷新查看较早项目。", 11, Muted, 28);
-        var migration = FormGroup(_sections, "LegacyMigrationWorkspace", "迁移助手");
-        Text(migration, "预览旧启动器 JSON 设置和离线账户；在线账户需要重新登录。来源保留，新目录不覆盖现有数据。", 11, Muted, 40);
-        WorkspaceButton(migration, "Migrate", "预览旧数据迁移", "migrate");
-        var diagnostics = FormGroup(_sections, "DurableDiagnosticWorkspace", "持久诊断历史");
-        Text(diagnostics, "历史仅保留操作、阶段和结果；原始文本导出先脱敏再确认。", 11, Muted, 32);
-        WorkspaceButton(diagnostics, "Raw", "预览原始诊断导出", "raw");
+        var migration = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsLegacyMigration.d.nxml", availability));
+        RegisterWorkspaceAction(CatalogNodes(migration), "Migrate", "migrate");
+        var diagnostics = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsDurableDiagnostics.d.nxml", availability));
+        var diagnosticNodes = CatalogNodes(diagnostics);
+        RegisterWorkspaceAction(diagnosticNodes, "Raw", "raw");
         foreach (var entry in _durableDiagnosticRows.Take(12))
-            Text(diagnostics, $"{entry.Timestamp.ToLocalTime():MM-dd HH:mm} · {entry.Module} / {entry.Operation} / {entry.Stage} · {entry.Outcome}", 11, Muted, 26);
+            _dynamic.Append(diagnosticNodes["DurableDiagnosticWorkspace.History"], DesktopMarkup.Dynamic("SettingsDurableDiagnosticRow.d.nxml", new Dictionary<string, string>
+            { ["text"] = $"{entry.Timestamp.ToLocalTime():MM-dd HH:mm} · {entry.Module} / {entry.Operation} / {entry.Stage} · {entry.Outcome}" }));
         BuildDiagnosticAiWorkspace();
         if (_contentWorkspaceMessage is { } message)
-        { var text = Text(panel, message, 11, Muted, 60); _shell.Tree.GetComponent<XsrUiVisualStyle>(text)!.WrapText = true; DesktopLiteralText.Preserve(_shell.Tree, text); }
+            _dynamic.Append(nodes["ContentWorkspace.Message"], DesktopMarkup.Dynamic("SettingsContentMessage.d.nxml", new Dictionary<string, string> { ["text"] = message }));
     }
 
-    private void WorkspaceButton(XsrUiEntityId parent, string name, string label, string kind, string? identity = null)
-    {
-        var button = ActionButton(parent, "ContentWorkspace." + name, label, ContentWorkspaceAction, 116);
-        _shell.Tree.GetComponent<XsrUiInput>(button)!.Enabled = !ContentWorkspaceBusy;
-        _contentWorkspaceActions[button] = (kind, identity);
-    }
+    private void RegisterWorkspaceAction(Dictionary<string, XsrUiEntityId> nodes, string name, string kind, string? identity = null)
+        => _contentWorkspaceActions[nodes["ContentWorkspace." + name]] = (kind, identity);
 
     private void HandleContentWorkspace(DesktopUiIntent intent)
     {
