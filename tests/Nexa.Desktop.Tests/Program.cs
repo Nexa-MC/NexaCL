@@ -153,6 +153,8 @@ internal static partial class Program
         ("CommandLineAdmitsOnlyFiniteNavigationAndExplicitSafeMode", CommandLineAdmitsOnlyFiniteNavigationAndExplicitSafeMode),
         ("FileWorkspaceRequiresPreviewBeforeExplicitSaveAndPreservesOtherLines", FileWorkspaceRequiresPreviewBeforeExplicitSaveAndPreservesOtherLines),
         ("FileWorkspaceRetiresLateReadsPreservesPagingAndRejectsEditedPreview", FileWorkspaceRetiresLateReadsPreservesPagingAndRejectsEditedPreview),
+        ("OperationCopyLocalizesFormatsAndPreservesLiteralMetadata", OperationCopyLocalizesFormatsAndPreservesLiteralMetadata),
+        ("OperationCopyRetainsTaskAndLogIdentityAcrossLanguageChanges", OperationCopyRetainsTaskAndLogIdentityAcrossLanguageChanges),
         ("OfflineReadinessCoalescesRetiresScopesAndInvalidatesSettingsRevision", OfflineReadinessCoalescesRetiresScopesAndInvalidatesSettingsRevision),
         ("InstanceIdentityEditorWritesTypedMetadataAndShowsServerRequirements", InstanceIdentityEditorWritesTypedMetadataAndShowsServerRequirements),
         ("ContentBatchUpdatesDispatchOnlySelectedLiveFiles", ContentBatchUpdatesDispatchOnlySelectedLiveFiles),

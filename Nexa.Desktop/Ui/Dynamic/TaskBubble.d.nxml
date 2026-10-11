@@ -1,5 +1,5 @@
 ﻿<nxml-dynamic>
-  <Button Key="task-bubble" Class="desktop-bubble task-bubble capsule" IsVisible="false" Command="ui.tasks.open" Icon="lucide/list-checks" Content="{data caption}" Label="{data label}">
+  <Button Key="task-bubble" Class="desktop-bubble task-bubble capsule" IsVisible="false" Command="ui.tasks.open" Icon="lucide/list-checks" Content="{data caption}" Localize="false" Label="{data label}">
     <ContentHost Key="task-bubble-details" IsVisible="{data details}">
       <ContentHost Key="task-bubble-track" Class="task-bubble-track">
         <Progress Key="task-bubble-fill" Class="task-bubble-fill" Value="{data progress}" />

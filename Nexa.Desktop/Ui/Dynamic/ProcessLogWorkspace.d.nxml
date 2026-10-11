@@ -12,12 +12,12 @@
         <Button Key="ProcessLogStdout" Selected="{data ProcessLogStdout.selected}" Content="stdout" Label="标准输出" Command="ui.process.log.stdout" Class="layout-ProcessLogPage-ProcessLogStdout process-log-control process-log-text" />
         <Button Key="ProcessLogStderr" Selected="{data ProcessLogStderr.selected}" Content="stderr" Label="标准错误" Command="ui.process.log.stderr" Class="layout-ProcessLogPage-ProcessLogStderr process-log-control process-log-text" />
       </StackPanel>
-      <Text Key="ProcessLogStatus" Content="{data ProcessLogStatus}" Class="layout-ProcessLogPage-ProcessLogStatus process-log-text" />
+      <Text Key="ProcessLogStatus" Localize="false" Content="{data ProcessLogStatus}" Class="layout-ProcessLogPage-ProcessLogStatus process-log-text" />
       <Text Key="ProcessLogEmpty" IsVisible="{data ProcessLogEmpty.visible}" Content="{data ProcessLogEmpty}" Class="layout-ProcessLogPage-ProcessLogEmpty process-log-text" />
       <Dynamic Key="ProcessLogRows" Scroll="true" Class="layout-ProcessLogPage-ProcessLogRows process-log-text" />
       <StackPanel Class="layout-ProcessLogPage-16 process-log-text">
         <Button Key="ProcessLogPrevious" Enabled="{data ProcessLogPrevious.enabled}" Content="上一页" Label="上一页日志" Command="ui.process.log.previous" Class="layout-ProcessLogPage-ProcessLogPrevious process-log-control process-log-text" />
-        <Text Key="ProcessLogPageNumber" Content="{data ProcessLogPageNumber}" Class="layout-ProcessLogPage-ProcessLogPageNumber process-log-text" />
+        <Text Key="ProcessLogPageNumber" Localize="false" Content="{data ProcessLogPageNumber}" Class="layout-ProcessLogPage-ProcessLogPageNumber process-log-text" />
         <Button Key="ProcessLogNext" Enabled="{data ProcessLogNext.enabled}" Content="下一页" Label="下一页日志" Command="ui.process.log.next" Class="layout-ProcessLogPage-ProcessLogNext process-log-control process-log-text" />
         <Button Key="ProcessLogClearSelection" Enabled="{data ProcessLogClearSelection.enabled}" Content="清除选择" Label="清除日志选择" Command="ui.process.log.clear-selection" Class="layout-ProcessLogPage-ProcessLogClearSelection process-log-control process-log-text" />
         <Button Key="ProcessLogCopySelected" Enabled="{data ProcessLogCopySelected.enabled}" Content="复制所选" Label="复制所选日志" Command="ui.process.log.copy-selected" Class="layout-ProcessLogPage-ProcessLogCopySelected process-log-control process-log-text" />

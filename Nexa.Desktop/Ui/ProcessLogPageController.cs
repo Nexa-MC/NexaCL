@@ -21,7 +21,7 @@ internal sealed class ProcessLogPageController : IDisposable
     private readonly XsrUiShell _shell;
     private readonly NxmlDynamicContent _dynamic;
     private readonly XsrUiEntityId _workspace;
-    private readonly Dictionary<string, string> _view = InitialView();
+    private readonly Dictionary<string, string> _view;
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrQueryRouter _queries;
     private readonly XsrStateStore _store;
@@ -36,7 +36,7 @@ internal sealed class ProcessLogPageController : IDisposable
     private MinecraftProcessOutputSnapshot? _snapshot;
     private MinecraftProcessOutputEntry[] _filtered = [];
     private Guid _session;
-    private string _search = "", _error = "";
+    private string _search = "", _error = "", _copyStamp = "";
     private MinecraftProcessOutputChannel? _stream;
     private int _page;
     private long _generation, _wakeRevision, _sessionRevision = -1;
@@ -47,6 +47,7 @@ internal sealed class ProcessLogPageController : IDisposable
         XsrStateStore store, DesktopFeedbackService feedback, Func<string, Task>? copy = null)
     {
         _shell = shell; _intents = intents; _queries = queries; _store = store; _feedback = feedback; _copy = copy;
+        _view = InitialView();
         _dynamic = new(shell.Tree, store);
         Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("ProcessLogPage.nxml"), shell.Tree, store);
         _workspace = _dynamic.Append(shell.Tree.Children(Page).Single(), DesktopMarkup.Dynamic("ProcessLogWorkspace.d.nxml", _view));
@@ -84,7 +85,7 @@ internal sealed class ProcessLogPageController : IDisposable
         RetireRead();
         _error = ""; _dirty = true;
         if (!_queries.TryResolve(MinecraftProcessOutputContract.Query, out var route))
-        { _error = "本次运行不支持读取日志。"; return; }
+        { _error = DesktopPresentationText.Raw("log.unsupported"); return; }
         long generation = _generation;
         Guid session = _session;
         _readStop = new();
@@ -97,9 +98,9 @@ internal sealed class ProcessLogPageController : IDisposable
                     new(session), cancellationToken: token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
-            { return XsrResult.Failure<MinecraftProcessOutputSnapshot>(MinecraftErrors.InvalidRequest("日志读取已取消。")); }
+            { return XsrResult.Failure<MinecraftProcessOutputSnapshot>(MinecraftErrors.InvalidRequest(DesktopPresentationText.Raw("log.canceled"))); }
             catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-            { return XsrResult.Failure<MinecraftProcessOutputSnapshot>(MinecraftErrors.InvalidRequest("暂时无法读取日志。")); }
+            { return XsrResult.Failure<MinecraftProcessOutputSnapshot>(MinecraftErrors.InvalidRequest(DesktopPresentationText.Raw("log.unavailable"))); }
         });
         _pending = _reading;
         WakeOnCompletion(_reading, generation);
@@ -132,6 +133,8 @@ internal sealed class ProcessLogPageController : IDisposable
         else if (!_visible && visible) Read();
         _visible = visible;
         if (!visible) return;
+        string stamp = LogTerm("task.empty");
+        if (_copyStamp != stamp) { _copyStamp = stamp; _dirty = true; }
         string draft = _shell.Tree.GetComponent<XsrUiTextInput>(_entities["ProcessLogSearch"])!.ReadDraft().Trim();
         if (draft != _search) { _search = draft; _page = 0; _dirty = true; }
         if (_store.TryResolve(MinecraftProcessStateComposition.SessionsKey, out var sessionsId))
@@ -143,7 +146,7 @@ internal sealed class ProcessLogPageController : IDisposable
                 if (_snapshot is not null && !_store.ReadCollection<MinecraftProcessSnapshot>(sessionsId).Items.Any(item => item.SessionId == _session))
                 {
                     RetireRead(); _snapshot = null; _selected.Clear();
-                    _error = "这次运行的日志已过期，或该进程不由启动器管理。";
+                    _error = DesktopPresentationText.Raw("log.expired");
                 }
             }
         }
@@ -160,7 +163,7 @@ internal sealed class ProcessLogPageController : IDisposable
             else
             {
                 _snapshot = null; _selected.Clear();
-                _error = !completed ? "暂时无法读取日志。" : result!.Error?.Message ?? "日志与所选运行不匹配。";
+                _error = !completed ? DesktopPresentationText.Raw("log.unavailable") : result!.Error?.Message ?? DesktopPresentationText.Raw("log.mismatch");
             }
             _dirty = true;
         }
@@ -214,21 +217,22 @@ internal sealed class ProcessLogPageController : IDisposable
     {
         try
         {
-            if (_copy is null) throw new InvalidOperationException("系统剪贴板不可用。");
+            if (_copy is null) throw new InvalidOperationException(DesktopPresentationText.Raw("log.clipboard"));
             await _copy(text).ConfigureAwait(false);
-            if (!_disposed && generation == Interlocked.Read(ref _generation)) _feedback.Info("日志已复制。");
+            if (!_disposed && generation == Interlocked.Read(ref _generation)) _feedback.Info(LogTerm("log.copied"));
         }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
         {
             if (!_disposed && generation == Interlocked.Read(ref _generation))
-                _feedback.Error(error is InvalidOperationException && error.Message == "系统剪贴板不可用。"
-                    ? "系统剪贴板不可用，无法复制日志。" : "无法复制日志，请稍后重试。");
+                _feedback.Error(error is InvalidOperationException && error.Message == DesktopPresentationText.Raw("log.clipboard")
+                    ? LogTerm("log.copy-unavailable") : LogTerm("log.copy-failed"));
         }
         finally { _copying = false; _dirty = true; }
     }
 
     private static string Display(MinecraftProcessOutputEntry entry) =>
-        "[" + (entry.Stream == MinecraftProcessOutputChannel.Stdout ? "stdout" : "stderr") + "] " + entry.Text;
+        DesktopPresentationText.Format(entry.Stream == MinecraftProcessOutputChannel.Stdout ? "LogStdout" : "LogStderr",
+            new() { ["text"] = entry.Text });
 
     private void Project()
     {
@@ -236,11 +240,12 @@ internal sealed class ProcessLogPageController : IDisposable
         int index = sessions.ToList().FindIndex(item => item.SessionId == _session);
         var session = index >= 0 ? sessions[index] : null;
         var state = session?.State ?? _snapshot?.State;
-        string lifecycle = state is MinecraftProcessState.Created or MinecraftProcessState.Running ? "运行中"
-            : state == MinecraftProcessState.Cancelled ? "已结束（取消）" : state == MinecraftProcessState.Failed ? "异常退出" : "已结束";
-        lifecycle = _shell.Renderer.LocalizeText(lifecycle);
-        Text("ProcessLogSession", (session?.InstanceId ?? _snapshot?.InstanceId ?? "本次运行")
-            + " · " + lifecycle + (session is null ? "" : " · " + session.StartedAt.ToLocalTime().ToString("MM-dd HH:mm:ss", System.Globalization.CultureInfo.CurrentCulture)));
+        string lifecycle = LogTerm(state is MinecraftProcessState.Created or MinecraftProcessState.Running ? "log.running"
+            : state == MinecraftProcessState.Cancelled ? "log.cancelled" : state == MinecraftProcessState.Failed ? "log.failed" : "log.exited");
+        var sessionData = new Dictionary<string, string>
+        { ["instance"] = session?.InstanceId ?? _snapshot?.InstanceId ?? LogTerm("log.session"), ["lifecycle"] = lifecycle };
+        if (session is not null) sessionData["time"] = session.StartedAt.ToLocalTime().ToString("MM-dd HH:mm:ss", System.Globalization.CultureInfo.CurrentCulture);
+        Text("ProcessLogSession", LogFormat(session is null ? "LogSession" : "LogSessionTime", sessionData));
         Enable("ProcessLogPreviousSession", index > 0);
         Enable("ProcessLogNextSession", index >= 0 && index + 1 < sessions.Length);
         Enable("ProcessLogRefresh", _reading is null);
@@ -248,13 +253,15 @@ internal sealed class ProcessLogPageController : IDisposable
             && (_search.Length == 0 || entry.Text.Contains(_search, StringComparison.OrdinalIgnoreCase))).ToArray();
         int pages = Math.Max(1, (_filtered.Length + PageSize - 1) / PageSize);
         _page = Math.Clamp(_page, 0, pages - 1);
-        Text("ProcessLogPageNumber", $"{_page + 1} / {pages}");
-        Text("ProcessLogStatus", _reading is not null ? "正在读取日志…"
-            : _error.Length > 0 ? _error : $"{_filtered.Length} 条日志 · 已选 {_selected.Count} 条 · 打开或点击刷新时读取"
-                + (_snapshot?.DroppedEntries > 0 ? $"\n仅保留最近 512 条，已省略 {_snapshot.DroppedEntries} 条较早输出。" : ""));
+        Text("ProcessLogPageNumber", LogFormat("LogPage", new() { ["page"] = LogNumber(_page + 1), ["pages"] = LogNumber(pages) }));
+        string status = _reading is not null ? LogTerm("log.reading")
+            : _error.Length > 0 ? _shell.Renderer.LocalizeText(_error) : LogFormat("LogStatus", new()
+            { ["count"] = LogNumber(_filtered.Length), ["selected"] = LogNumber(_selected.Count) });
+        if (_reading is null && _error.Length == 0 && _snapshot?.DroppedEntries > 0)
+            status = LogFormat("LogDropped", new() { ["status"] = status, ["dropped"] = LogNumber(_snapshot.DroppedEntries) });
+        Text("ProcessLogStatus", status);
         string empty = _error.Length > 0 || _reading is not null ? ""
-            : _snapshot?.Entries.Count == 0 ? "本次运行尚未产生可读取的标准输出或标准错误。"
-            : _filtered.Length == 0 ? "没有符合搜索条件的日志。" : "";
+            : _snapshot?.Entries.Count == 0 ? LogTerm("log.empty") : _filtered.Length == 0 ? LogTerm("log.no-match") : "";
         Text("ProcessLogEmpty", empty);
         _view["ProcessLogEmpty.visible"] = Flag(empty.Length > 0);
         Enable("ProcessLogPrevious", _page > 0);
@@ -298,13 +305,13 @@ internal sealed class ProcessLogPageController : IDisposable
     private static string Flag(bool value) => value ? "true" : "false";
     private void Text(string key, string text) => _view[key] = text;
     private void Enable(string key, bool enabled) => _view[key + ".enabled"] = Flag(enabled);
-    private static Dictionary<string, string> InitialView()
+    private Dictionary<string, string> InitialView()
     {
         var values = new Dictionary<string, string>
         {
-            ["ProcessLogSession"] = "游戏日志",
-            ["ProcessLogPageNumber"] = "1 / 1",
-            ["ProcessLogStatus"] = "正在读取日志…",
+            ["ProcessLogSession"] = LogTerm("log.title"),
+            ["ProcessLogPageNumber"] = LogFormat("LogPage", new() { ["page"] = "1", ["pages"] = "1" }),
+            ["ProcessLogStatus"] = LogTerm("log.reading"),
             ["ProcessLogEmpty"] = "",
             ["ProcessLogEmpty.visible"] = "false",
             ["ProcessLogAll.selected"] = "true",
@@ -315,6 +322,11 @@ internal sealed class ProcessLogPageController : IDisposable
             "ProcessLogNext", "ProcessLogClearSelection", "ProcessLogCopySelected", "ProcessLogCopyPage" }) values[key + ".enabled"] = "false";
         return values;
     }
+
+    private string LogTerm(string key) => DesktopPresentationText.Term(key, _shell.Renderer.LocalizeText);
+    private string LogFormat(string template, Dictionary<string, string> data)
+        => DesktopPresentationText.Format(template, data, _shell.Renderer.LocalizeText);
+    private static string LogNumber(long value) => value.ToString(System.Globalization.CultureInfo.CurrentCulture);
 
     public void Dispose()
     {

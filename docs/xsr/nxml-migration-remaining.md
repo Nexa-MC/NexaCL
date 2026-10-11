@@ -1,4 +1,4 @@
-# Remaining NXML migration
+﻿# Remaining NXML migration
 
 Objective: migrate all product presentation to Nexa.Xsr.Renderer, external `.nxml`
 pages, `.c.nxml` components and `.nss` styles. Dynamic collections must enter named
@@ -11,11 +11,11 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
   architecture checks reject imperative presentation factories.
 - Task Center cards and nested steps now load/reload owned fragments; their layout
   and visual constants are in NSS. Controller-owned node/style construction is gone.
-  Remaining conditional copy and status formatting are still projected by C#.
+  Fixed status/icon copy and counter/unit formats now come from external assets.
 - Task/launch/process bubbles and Java choices now use external dynamic fragments.
   The dock registers only owned slot children and reads spacing/dimensions from NSS.
 - Process log workspace and rows now load/reload fragments, preserving literal output,
-  selection identity, search drafts and caret. Conditional status copy remains C#.
+  selection identity, search drafts and caret. Conditional copy and named formats are external.
 - Settings catalogue rows, navigation, save status, enum/boolean selectors,
   plain inputs, argument rows and lossless command editors now load owned fragments.
   Their layout and visual constants live in NSS; labels/hints and option mappings
@@ -65,10 +65,8 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 | Version selection | `VersionSelectionController.cs`, `.Window.cs` | Row window/virtualization, directory choices/editor, popup body and selection styles. |
 | Wardrobe | `WardrobePageController.cs`, `WardrobeLibraryPageController.cs` | Skin/cape cards, details, empty/loading/failure surfaces and interaction variants. |
 | Accounts and first run | `AccountFormController.cs`, `FirstRunController.cs` | Form structures, state copy, action availability and complete OOBE composition. |
-| Process and dock copy | `LaunchPageController.Process.cs`, `ProcessLogPageController.cs`, `DesktopTaskBubblePresenter.cs` | Layouts and visual constants are external; migrate remaining conditional labels and formatting, then audit all lifecycle paths. |
 | Global overlays | `DesktopCommandPalette.cs`, `DesktopFeedbackPresenter.cs` | Palette, notification/dialog collections and actions, keyboard focus and dismiss behavior. |
 | Appearance | `CustomAppearanceSession.cs` | Separate runtime image/theme behavior from remaining fixed presentation construction. |
-| Task copy | `TaskCenterController.cs` | Externalize conditional labels, icons and text formatting as fragment variants/data formatting, not C# literals. |
 
 Direct node/style/stack construction still remains across the other Desktop slices. This is a locator, not a completion metric: helpers can hide imperative layouts,
 and compiled renderer primitives/platform bridges are intentionally still code.
@@ -430,3 +428,35 @@ contents and reason codes remain literal data, never markup or raw UI keys.
 - Scoped whitespace format and diff checks pass. Remaining instance management,
   resources, launch/install, version/wardrobe/account/OOBE and global overlays/copy
   still require migration; this closes the related tools, not the overall objective.
+
+## Task/dock/process text boundary
+
+Finish the already-external task, bubble and process-log layouts by moving fixed
+state terms, unit/counter formats and presentation-only crash/Java/confirmation copy
+to external text assets. Localize format templates before substituting task names,
+instance identities and provider errors; raw log output stays literal and copied
+byte-for-byte as the existing stream-prefixed text. Language changes must reproject
+retained controls without another query, lost search/selection or reset progress.
+The read/cancel/dismiss/process termination and Java-selection routes are unchanged.
+
+## Task/dock/process text verification, 2026-10-11
+
+- Desktop composition: 275 passed, zero failed; architecture: 69 projects passed;
+  NXML compiler/runtime: 56 passed. A new guard rejects compiled fixed operation copy
+  in task, task-bubble, process-bubble/Java/crash and process-log presentation.
+- State terms/icons and 29 format variants are external. Format localization occurs
+  before substituting literal task names, instance metadata and provider errors.
+  Raw stream-prefixed log output retains tabs, CRLF, XML/binding-like text and ANSI
+  control characters without reparsing. Oversized format data is rejected.
+- Deterministic regressions retain task action/focus/progress entities and log row
+  selection, search draft/caret/focus across Simplified Chinese, Traditional Chinese
+  and English changes. Language changes do not read the log service again.
+- Actual native previews cover task details, dock/process bubbles and selected log
+  rows in both themes. Sessions and task progress are declared read-only fixtures,
+  not evidence of a real game process. Existing constrained diagnostic previews pass.
+- NativeAOT and self-contained full-trim publications succeeded. Both published
+  executables actually ran --validate-shell and exited 0 with the positive External
+  operation copy validation marker. Jint IL2098 remains unsuppressed.
+- Scoped formatting and diff checks pass. Legacy lifecycle/helper primitives and the
+  remaining global overlays/other inventory still need the full-product audit; this
+  closes the operation copy group and does not complete the overall migration.

@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data active} 个任务进行中 · {data percent}%" Localize="false" /></nxml-dynamic>

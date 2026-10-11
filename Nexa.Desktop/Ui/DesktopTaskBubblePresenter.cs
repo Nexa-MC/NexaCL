@@ -53,7 +53,7 @@ internal sealed class DesktopTaskBubblePresenter : IDisposable
         _wakeState = store.Resolve(TaskBubbleState.Revision);
 
         _layer = new(shell, store, "ShellBubbleLayer.nxml");
-        _root = _layer.Append("TaskBubble.d.nxml", Data("任务", "打开任务中心", false, 0));
+        _root = _layer.Append("TaskBubble.d.nxml", Data(BubbleTerm("bubble.task"), BubbleTerm("bubble.open"), false, 0));
         DesktopBubbleLayout.Register(shell, _root, 1);
         _motion = shell.Tree.GetComponent<XsrUiOverlayMotion>(_root)!;
         XsrUiEntityId fill = default;
@@ -144,7 +144,9 @@ internal sealed class DesktopTaskBubblePresenter : IDisposable
             SetEnabled(true);
             _shell.Tree.MarkDirty(_root, XsrUiDirtyKinds.Paint);
         }
-        string caption = summary.ActiveCount > 0 ? $"{summary.ActiveCount} 项任务 · {(int)Math.Round(summary.Progress * 100)}%" : $"{summary.VisibleCount} 项任务记录";
+        string caption = summary.ActiveCount > 0 ? BubbleFormat("TaskBubbleActive", new()
+        { ["count"] = summary.ActiveCount.ToString(System.Globalization.CultureInfo.CurrentCulture), ["percent"] = ((int)Math.Round(summary.Progress * 100)).ToString(System.Globalization.CultureInfo.CurrentCulture) })
+            : BubbleFormat("TaskBubbleHistory", new() { ["count"] = summary.VisibleCount.ToString(System.Globalization.CultureInfo.CurrentCulture) });
         if (wanted && !_closing && !IsVisible(_root))
         {
             SetVisible(true);
@@ -156,7 +158,8 @@ internal sealed class DesktopTaskBubblePresenter : IDisposable
 
         double target = summary.ActiveCount > 0 ? Math.Clamp(summary.Progress, 0d, 1d) : 1d;
         int percent = (int)Math.Round(target * 100d);
-        string label = summary.ActiveCount > 0 ? $"任务进行中 {percent}%，打开任务中心" : "查看任务记录，打开任务中心";
+        string label = summary.ActiveCount > 0 ? BubbleFormat("TaskBubbleLabel", new()
+        { ["percent"] = percent.ToString(System.Globalization.CultureInfo.CurrentCulture) }) : BubbleTerm("bubble.records");
         var projection = (caption, label, showDetails, target);
         if (_projection != projection)
         {
@@ -164,6 +167,10 @@ internal sealed class DesktopTaskBubblePresenter : IDisposable
             _projection = projection;
         }
     }
+
+    private string BubbleTerm(string key) => DesktopPresentationText.Term(key, _shell.Renderer.LocalizeText);
+    private string BubbleFormat(string template, Dictionary<string, string> data)
+        => DesktopPresentationText.Format(template, data, _shell.Renderer.LocalizeText);
 
     private void BeginClose()
     {

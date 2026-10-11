@@ -1,0 +1,58 @@
+<StackPanel>
+<Text Key="task.empty" Content="暂无任务" />
+<Text Key="task.failed" Content="有任务未成功" />
+<Text Key="task.idle" Content="没有进行中的任务" />
+<Text Key="task.finished" Content="已完成" />
+<Text Key="task.failure" Content="失败" />
+<Text Key="task.canceled" Content="已取消" />
+<Text Key="task.paused" Content="已暂停" />
+<Text Key="task.dismiss" Content="移除任务" />
+<Text Key="task.cancel" Content="取消任务" />
+<Text Key="task.collapse" Content="收起步骤" />
+<Text Key="task.expand" Content="查看步骤" />
+<Text Key="task.collapse-label" Content="收起任务步骤" />
+<Text Key="task.expand-label" Content="展开任务步骤" />
+<Text Key="bubble.task" Content="任务" />
+<Text Key="bubble.open" Content="打开任务中心" />
+<Text Key="bubble.records" Content="查看任务记录，打开任务中心" />
+<Text Key="log.unsupported" Content="本次运行不支持读取日志。" />
+<Text Key="log.canceled" Content="日志读取已取消。" />
+<Text Key="log.unavailable" Content="暂时无法读取日志。" />
+<Text Key="log.expired" Content="这次运行的日志已过期，或该进程不由启动器管理。" />
+<Text Key="log.mismatch" Content="日志与所选运行不匹配。" />
+<Text Key="log.copied" Content="日志已复制。" />
+<Text Key="log.clipboard" Content="系统剪贴板不可用。" />
+<Text Key="log.copy-unavailable" Content="系统剪贴板不可用，无法复制日志。" />
+<Text Key="log.copy-failed" Content="无法复制日志，请稍后重试。" />
+<Text Key="log.running" Content="运行中" />
+<Text Key="log.cancelled" Content="已结束（取消）" />
+<Text Key="log.failed" Content="异常退出" />
+<Text Key="log.exited" Content="已结束" />
+<Text Key="log.session" Content="本次运行" />
+<Text Key="log.reading" Content="正在读取日志…" />
+<Text Key="log.empty" Content="本次运行尚未产生可读取的标准输出或标准错误。" />
+<Text Key="log.no-match" Content="没有符合搜索条件的日志。" />
+<Text Key="log.title" Content="游戏日志" />
+<Text Key="process.stop" Content="结束游戏" />
+<Text Key="process.logs" Content="日志" />
+<Text Key="process.confirm" Content="结束游戏？" />
+<Text Key="process.warning" Content="未保存的游戏进度可能丢失。" />
+<Text Key="common.cancel" Content="取消" />
+<Text Key="process.failed" Content="无法结束游戏。" />
+<Text Key="java.choose" Content="选择 Java 版本" />
+<Text Key="java.preparing" Content="正在准备 Java" />
+<Text Key="java.failed" Content="无法使用所选 Java。" />
+<Text Key="crash.memory" Content="游戏内存不足。请关闭占用内存的应用，并检查内存分配。" />
+<Text Key="crash.java" Content="Java 与当前版本不兼容。请选择兼容的 Java 版本。" />
+<Text Key="crash.dependency" Content="缺少模组依赖。请检查模组要求。" />
+<Text Key="crash.conflict" Content="检测到模组冲突。请检查近期添加或更新的模组。" />
+<Text Key="crash.graphics" Content="图形初始化失败。请检查显卡驱动。" />
+<Text Key="crash.files" Content="游戏文件可能不完整。请修复版本文件。" />
+<Text Key="crash.natives" Content="本地库加载失败。请检查系统架构与版本文件。" />
+<Text Key="crash.unknown" Content="尚无法确定具体原因。以下是本次运行记录中的错误信息。" />
+<Text Key="task.icon.finished" Content="lucide/circle-check" />
+<Text Key="task.icon.failed" Content="lucide/circle-x" />
+<Text Key="task.icon.canceled" Content="lucide/circle-minus" />
+<Text Key="task.icon.paused" Content="lucide/pause" />
+<Text Key="task.icon.running" Content="lucide/loader-circle" />
+</StackPanel>

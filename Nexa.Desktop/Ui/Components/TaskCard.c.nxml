@@ -3,21 +3,21 @@
     <StackPanel Key="TaskCardContent" Class="layout-TaskCard-TaskCardContent">
       <StackPanel Key="TaskCardHeader" Class="layout-TaskCard-TaskCardHeader">
         <Image Key="TaskCardIcon" Source="{data icon}" Class="{data icon-style}" />
-        <Text Key="TaskCardTitle" Content="{data title}" Class="layout-TaskCard-TaskCardTitle" />
+        <Text Key="TaskCardTitle" Localize="false" Content="{data title}" Class="layout-TaskCard-TaskCardTitle" />
         <Button Key="TaskCardAction" Icon="lucide/x" Label="{data action-label}" Command="{data action}" IsVisible="{data show-action}" Class="layout-TaskCard-TaskCardAction" />
       </StackPanel>
       <StackPanel Key="TaskCardStatus" Class="layout-TaskCard-TaskCardStatus">
-        <Text Key="TaskCardStage" Content="{data stage}" Class="layout-TaskCard-TaskCardStage" />
-        <Text Key="TaskCardPercent" Content="{data percent}" Class="{data percent-style}" />
+        <Text Key="TaskCardStage" Localize="false" Content="{data stage}" Class="layout-TaskCard-TaskCardStage" />
+        <Text Key="TaskCardPercent" Localize="false" Content="{data percent}" Class="{data percent-style}" />
       </StackPanel>
       <ContentHost Key="TaskCardTrack" IsVisible="{data active}" Class="layout-TaskCard-TaskCardTrack">
         <Progress Key="TaskCardFill" Label="任务进度条" Value="{data progress}" Class="{data fill-style}" />
       </ContentHost>
       <StackPanel Key="TaskCardMeta" IsVisible="{data show-meta}" Class="layout-TaskCard-TaskCardMeta">
-        <Text Key="TaskCardFiles" Content="{data files}" Class="layout-TaskCard-TaskCardFiles" />
-        <Text Key="TaskCardSpeed" Content="{data speed}" Class="layout-TaskCard-TaskCardSpeed" />
+        <Text Key="TaskCardFiles" Localize="false" Content="{data files}" Class="layout-TaskCard-TaskCardFiles" />
+        <Text Key="TaskCardSpeed" Localize="false" Content="{data speed}" Class="layout-TaskCard-TaskCardSpeed" />
       </StackPanel>
-      <Text Key="TaskCardError" Content="{data error}" IsVisible="{data show-error}" Class="layout-TaskCard-TaskCardError" />
+      <Text Key="TaskCardError" Localize="false" Content="{data error}" IsVisible="{data show-error}" Class="layout-TaskCard-TaskCardError" />
       <Button Key="TaskCardDetails" Content="{data details}" Label="{data details-label}" IsVisible="{data has-steps}" Command="ui.tasks.card.details" Class="layout-TaskCard-TaskCardDetails" />
       <Dynamic Key="TaskCardSteps" IsVisible="{data expanded}" Class="layout-TaskCard-TaskCardSteps" />
     </StackPanel>

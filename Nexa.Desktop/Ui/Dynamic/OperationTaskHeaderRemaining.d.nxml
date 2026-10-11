@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data header} · 剩余 {data remaining} 个文件" Localize="false" /></nxml-dynamic>

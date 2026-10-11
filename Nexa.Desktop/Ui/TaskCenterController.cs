@@ -44,11 +44,13 @@ internal sealed class TaskCenterController : IDisposable
     private bool _dispatchedThisFrame;
     private bool _staged;
     private bool _disposed;
+    private string _copyStamp = "";
 
     private sealed class PresentedCard(XsrUiEntityId root, XsrUiEntityId action, XsrUiEntityId steps)
     {
         public bool Expanded { get; set; }
         public TaskCenterEntry? Value { get; set; }
+        public string CopyStamp { get; set; } = "";
         public XsrUiEntityId Root { get; } = root;
         public XsrUiEntityId Action { get; } = action;
         public XsrUiEntityId Steps { get; } = steps;
@@ -87,7 +89,7 @@ internal sealed class TaskCenterController : IDisposable
     {
         XsrUiEntityId page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load(PageResource), _shell.Tree, _store);
         var slot = _shell.Tree.Children(page).Single();
-        _workspace = _dynamic.Append(slot, Workspace("暂无任务", empty: true, finished: false));
+        _workspace = _dynamic.Append(slot, Workspace(TaskTerm("task.empty"), empty: true, finished: false));
         Dictionary<string, XsrUiEntityId> entities = [];
         _shell.Tree.Walk(page, entity =>
         {
@@ -200,9 +202,11 @@ internal sealed class TaskCenterController : IDisposable
             return;
         }
 
+        string stamp = TaskTerm("task.empty");
+        _copyStamp = stamp;
         while (_detailToggles.TryDequeue(out string? taskId))
             if (_cards.TryGetValue(taskId, out var card) && card.Value is { } entry)
-            { card.Expanded = !card.Expanded; card.Value = null; UpdateCard(card, entry); }
+            { card.Expanded = !card.Expanded; UpdateCard(card, entry, force: true); }
         DrainDispatches();
         TrackStagedState();
         TaskCenterSummary summary =
@@ -280,28 +284,22 @@ internal sealed class TaskCenterController : IDisposable
         string header;
         if (summary.VisibleCount == 0)
         {
-            header = "暂无任务";
+            header = TaskTerm("task.empty");
         }
         else if (summary.ActiveCount == 0)
         {
             header = entries.Items.Any(static entry => entry.State == TaskCenterEntryState.Failed)
-                ? "有任务未成功"
-                : "没有进行中的任务";
+                ? TaskTerm("task.failed")
+                : TaskTerm("task.idle");
         }
         else
         {
-            header = string.Create(
-                CultureInfo.CurrentCulture,
-                $"{summary.ActiveCount} 个任务进行中 · {(int)Math.Round(summary.Progress * 100d)}%");
+            header = TaskFormat("TaskHeader", new()
+            { ["active"] = Number(summary.ActiveCount), ["percent"] = Number((int)Math.Round(summary.Progress * 100d)) });
             if (summary.SpeedBytesPerSecond > 0)
-            {
-                header += $" · {FormatSpeed(summary.SpeedBytesPerSecond)}";
-            }
-
+                header = TaskFormat("TaskHeaderSpeed", new() { ["header"] = header, ["speed"] = FormatSpeed(summary.SpeedBytesPerSecond) });
             if (summary.RemainingFiles > 0)
-            {
-                header += $" · 剩余 {summary.RemainingFiles} 个文件";
-            }
+                header = TaskFormat("TaskHeaderRemaining", new() { ["header"] = header, ["remaining"] = Number(summary.RemainingFiles) });
         }
 
         var projection = (header, summary.VisibleCount == 0, entries.Items.Any(static entry => entry.IsTerminal));
@@ -359,11 +357,11 @@ internal sealed class TaskCenterController : IDisposable
         return new(root, entities["TaskCardAction"], entities["TaskCardSteps"]);
     }
 
-    private void UpdateCard(PresentedCard card, TaskCenterEntry entry)
+    private void UpdateCard(PresentedCard card, TaskCenterEntry entry, bool force = false)
     {
-        if (card.Value == entry) return;
+        if (!force && card.Value == entry && card.CopyStamp == _copyStamp) return;
         _dynamic.Reload(card.Root, Card(entry, card.Expanded));
-        card.Value = entry;
+        card.Value = entry; card.CopyStamp = _copyStamp;
         ReconcileSteps(card, entry);
     }
 
@@ -376,48 +374,49 @@ internal sealed class TaskCenterController : IDisposable
         _ => "running",
     };
 
-    private static NxmlHostIr Card(TaskCenterEntry entry, bool expanded)
+    private NxmlHostIr Card(TaskCenterEntry entry, bool expanded)
     {
         string style = StateStyle(entry.State);
         bool hasSteps = entry.Steps is { Count: > 1 };
         return DesktopMarkup.Dynamic("TaskCard.d.nxml", new Dictionary<string, string>
         {
             ["key"] = $"task-card:{entry.TaskId}",
-            ["title"] = entry.Title,
-            ["stage"] = entry.IsTerminal ? entry.Detail : $"{entry.Stage} · {entry.Detail}",
+            ["title"] = _shell.Renderer.LocalizeText(entry.Title),
+            ["stage"] = entry.IsTerminal ? _shell.Renderer.LocalizeText(entry.Detail) : TaskFormat("TaskStage", new()
+            { ["stage"] = _shell.Renderer.LocalizeText(entry.Stage), ["detail"] = _shell.Renderer.LocalizeText(entry.Detail) }),
             ["icon"] = entry.State switch
             {
-                TaskCenterEntryState.Finished => "lucide/circle-check",
-                TaskCenterEntryState.Failed => "lucide/circle-x",
-                TaskCenterEntryState.Canceled => "lucide/circle-minus",
-                TaskCenterEntryState.Paused => "lucide/pause",
-                _ => "lucide/loader-circle",
+                TaskCenterEntryState.Finished => DesktopPresentationText.Raw("task.icon.finished"),
+                TaskCenterEntryState.Failed => DesktopPresentationText.Raw("task.icon.failed"),
+                TaskCenterEntryState.Canceled => DesktopPresentationText.Raw("task.icon.canceled"),
+                TaskCenterEntryState.Paused => DesktopPresentationText.Raw("task.icon.paused"),
+                _ => DesktopPresentationText.Raw("task.icon.running"),
             },
             ["icon-style"] = "layout-TaskCard-TaskCardIcon task-" + style,
             ["percent-style"] = "layout-TaskCard-TaskCardPercent task-" + style,
             ["fill-style"] = "layout-TaskCard-TaskCardFill task-fill-" + style,
             ["percent"] = entry.State switch
             {
-                TaskCenterEntryState.Finished => "已完成",
-                TaskCenterEntryState.Failed => "失败",
-                TaskCenterEntryState.Canceled => "已取消",
-                TaskCenterEntryState.Paused => "已暂停",
-                _ => $"{(int)Math.Round(Math.Clamp(entry.Progress, 0d, 1d) * 100d)}%",
+                TaskCenterEntryState.Finished => TaskTerm("task.finished"),
+                TaskCenterEntryState.Failed => TaskTerm("task.failure"),
+                TaskCenterEntryState.Canceled => TaskTerm("task.canceled"),
+                TaskCenterEntryState.Paused => TaskTerm("task.paused"),
+                _ => TaskFormat("TaskPercent", new() { ["percent"] = Number((int)Math.Round(Math.Clamp(entry.Progress, 0d, 1d) * 100d)) }),
             },
             ["progress"] = Math.Clamp(entry.Progress, 0d, 1d).ToString(CultureInfo.InvariantCulture),
             ["active"] = Flag(!entry.IsTerminal),
             ["show-meta"] = Flag(entry.TotalFiles > 0 || entry.SpeedBytesPerSecond > 0 && !entry.IsTerminal),
-            ["files"] = entry.TotalFiles > 0 ? string.Create(CultureInfo.CurrentCulture, $"{entry.CompletedFiles}/{entry.TotalFiles} 个文件") : "",
+            ["files"] = entry.TotalFiles > 0 ? TaskFormat("TaskFiles", new() { ["completed"] = Number(entry.CompletedFiles), ["total"] = Number(entry.TotalFiles) }) : "",
             ["speed"] = entry.SpeedBytesPerSecond > 0 && !entry.IsTerminal ? FormatSpeed(entry.SpeedBytesPerSecond) : "",
-            ["error"] = entry.ErrorMessage ?? "",
+            ["error"] = _shell.Renderer.LocalizeText(entry.ErrorMessage ?? ""),
             ["show-error"] = Flag(entry.State == TaskCenterEntryState.Failed && !string.IsNullOrEmpty(entry.ErrorMessage)),
-            ["action-label"] = entry.IsTerminal ? "移除任务" : "取消任务",
+            ["action-label"] = TaskTerm(entry.IsTerminal ? "task.dismiss" : "task.cancel"),
             ["action"] = entry.IsTerminal ? "ui.tasks.card.dismiss" : "ui.tasks.card.cancel",
             ["show-action"] = Flag(entry.IsTerminal || entry.CanCancel),
             ["has-steps"] = Flag(hasSteps),
             ["expanded"] = Flag(hasSteps && expanded),
-            ["details"] = expanded ? "收起步骤" : "查看步骤",
-            ["details-label"] = expanded ? "收起任务步骤" : "展开任务步骤",
+            ["details"] = TaskTerm(expanded ? "task.collapse" : "task.expand"),
+            ["details-label"] = TaskTerm(expanded ? "task.collapse-label" : "task.expand-label"),
         });
     }
 
@@ -433,39 +432,32 @@ internal sealed class TaskCenterController : IDisposable
         else for (int i = 0; i < count; i++) _dynamic.Reload(card.StepRows[i], Step(entry.TaskId, steps[i], i));
     }
 
-    private static NxmlHostIr Step(string taskId, TaskCenterStep step, int index) =>
+    private NxmlHostIr Step(string taskId, TaskCenterStep step, int index) =>
         DesktopMarkup.Dynamic("TaskStep.d.nxml", new Dictionary<string, string>
         {
             ["key"] = $"task-card-step:{taskId}:{index}",
             ["style"] = "task-step task-" + StateStyle(step.State),
-            ["text"] = step.State switch
+            ["text"] = TaskFormat(step.State switch
             {
-                TaskCenterEntryState.Finished => $"✓ {step.Name}",
-                TaskCenterEntryState.Running => $"● {step.Name} · {step.Detail}",
-                TaskCenterEntryState.Failed => $"✕ {step.Name} · {step.Detail}",
-                _ => $"· {step.Name}",
-            },
+                TaskCenterEntryState.Finished => "TaskStepFinished",
+                TaskCenterEntryState.Running => "TaskStepRunning",
+                TaskCenterEntryState.Failed => "TaskStepFailed",
+                _ => "TaskStepPending"
+            }, step.State is TaskCenterEntryState.Running or TaskCenterEntryState.Failed
+                ? new() { ["name"] = _shell.Renderer.LocalizeText(step.Name), ["detail"] = _shell.Renderer.LocalizeText(step.Detail) }
+                : new() { ["name"] = _shell.Renderer.LocalizeText(step.Name) }),
         });
 
+    private string TaskTerm(string key) => DesktopPresentationText.Term(key, _shell.Renderer.LocalizeText);
+    private string TaskFormat(string template, Dictionary<string, string> data)
+        => DesktopPresentationText.Format(template, data, _shell.Renderer.LocalizeText);
+    private static string Number(long value) => value.ToString(CultureInfo.CurrentCulture);
     internal static string FormatSpeed(long bytesPerSecond)
     {
-        if (bytesPerSecond <= 0)
-        {
-            return "0 B/s";
-        }
-
-        double value = bytesPerSecond;
-        string[] units = ["B/s", "KB/s", "MB/s", "GB/s"];
-        int unit = 0;
-        while (value >= 1024d && unit < units.Length - 1)
-        {
-            value /= 1024d;
-            unit++;
-        }
-
-        return string.Create(
-            CultureInfo.CurrentCulture,
-            $"{value.ToString(unit == 0 ? "F0" : "F1", CultureInfo.CurrentCulture)} {units[unit]}");
+        double value = Math.Max(0, bytesPerSecond); int unit = 0;
+        while (value >= 1024d && unit < 3) { value /= 1024d; unit++; }
+        return DesktopPresentationText.Format("TransferSpeed" + unit.ToString(CultureInfo.InvariantCulture),
+            new() { ["value"] = value.ToString(unit == 0 ? "F0" : "F1", CultureInfo.CurrentCulture) });
     }
 
     public void Dispose()

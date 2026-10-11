@@ -434,6 +434,15 @@ internal static partial class Program
             if (System.Text.RegularExpressions.Regex.IsMatch(source, @"\b(?:Stack|Text|Style|SettingsCard|ManagementFactIn|DiagnosticText|ManagementButton)\s*\("))
                 failures.Add($"{name}: legacy helper factories cannot hide imperative presentation.");
         }
+        foreach (string name in new[] { "TaskCenterController.cs", "DesktopTaskBubblePresenter.cs", "ProcessLogPageController.cs", "LaunchPageController.Process.cs" })
+        {
+            string source = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", name));
+            if (System.Text.RegularExpressions.Regex.IsMatch(source, "[\\u4e00-\\u9fff]"))
+                failures.Add($"{name}: fixed operation copy and formats must be external.");
+        }
+        string textProjection = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", "DesktopPresentationText.cs"));
+        if (textProjection.Contains(".Tree.Create(", StringComparison.Ordinal) || textProjection.Contains("new NxmlNode", StringComparison.Ordinal))
+            failures.Add("External text projection must not hide an imperative UI factory.");
         XDocument compiler = XDocument.Load(projectPaths["Nexa.Xsr.Renderer.Nxml.Compiler"]);
         if (Elements(compiler, "ProjectReference").Any(item => item.Attribute("OutputItemType")?.Value == "Analyzer"))
             failures.Add("NXML components must not be generated into the executable.");

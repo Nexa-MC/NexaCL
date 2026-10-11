@@ -326,6 +326,14 @@ internal static partial class Program
             if (localization.Translate("设置") != "Settings"
                 || typeof(UiLocalizationCatalog).Assembly.GetManifestResourceNames().Contains("Nexa.Desktop.Ui.Localization.messages.json", StringComparer.Ordinal))
                 throw new InvalidOperationException("Published language bundle is missing or still embedded.");
+            string operationLiteral = "<operation> {data percent} {state secret}";
+            string operationCaption = DesktopPresentationText.Format("ProcessLogsCaption",
+                new() { ["instance"] = operationLiteral }, localization.Translate);
+            if (operationCaption != operationLiteral + " · Logs"
+                || DesktopPresentationText.Format("LogStdout", new() { ["text"] = operationLiteral }) != "[stdout] " + operationLiteral
+                || TaskCenterController.FormatSpeed(2048) != "2.0 KB/s")
+                throw new InvalidOperationException("External operation text lost literal data or unit format.");
+            Console.WriteLine("External operation copy validation passed: localized metadata, literal raw output and external speed units.");
             Console.WriteLine("External localization validation passed: copied language catalog, English translation, no embedded fallback.");
             Console.WriteLine("Dynamic instance diagnostics validation passed: external launch/history assets, retained actions, owned rows and literal metadata.");
             Console.WriteLine("Dynamic runtime validation passed: external metrics, retained probe action, owned slots and literal trace format.");

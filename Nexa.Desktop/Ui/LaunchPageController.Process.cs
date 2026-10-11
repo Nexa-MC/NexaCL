@@ -18,6 +18,7 @@ internal sealed partial class LaunchPageController
     private NxmlDynamicContent? _javaChoiceContent;
     private XsrUiEntityId _javaChoiceWorkspace;
     private long _processRevision = -1;
+    private string _processCopyStamp = "";
     private ProcessLogPageController? _processLogPage;
     private DesktopDynamicLayer? _processLayer;
     internal Func<string, Task>? CopyProcessLogText { get; set; }
@@ -26,7 +27,7 @@ internal sealed partial class LaunchPageController
     private void ShowJavaVersionChoice()
     {
         Interlocked.Exchange(ref _showJavaChoices, 1);
-        Publish(LaunchPageState.LaunchingStageKey, "选择 Java 版本");
+        Publish(LaunchPageState.LaunchingStageKey, DesktopPresentationText.Raw("java.choose"));
     }
 
     private void ProjectProcessFeedback()
@@ -52,6 +53,8 @@ internal sealed partial class LaunchPageController
         }
         if (!_store.TryResolve(MinecraftProcessStateComposition.SessionsKey, out var sessionsId)) return;
         var sessions = _store.ReadCollection<MinecraftProcessSnapshot>(sessionsId);
+        string stamp = ProcessTerm("task.empty");
+        if (_processCopyStamp != stamp) { _processCopyStamp = stamp; _processRevision = -1; }
         if (_processRevision != sessions.Revision)
         {
             _processRevision = sessions.Revision;
@@ -70,9 +73,14 @@ internal sealed partial class LaunchPageController
                 var session = visibleSessions[i];
                 if (!_processDocks.TryGetValue(session.SessionId, out var dock))
                 {
-                    dock = (CreateProcessButton(session, "结束游戏", "stop"),
-                        CreateProcessButton(session, "日志", "logs"));
+                    dock = (CreateProcessButton(session, "stop"),
+                        CreateProcessButton(session, "logs"));
                     _processDocks.Add(session.SessionId, dock);
+                }
+                else
+                {
+                    _processLayer!.Reload(dock.Power, "ProcessStopBubble.d.nxml", ProcessBubbleData(session, "stop"));
+                    _processLayer.Reload(dock.Logs, "ProcessLogsBubble.d.nxml", ProcessBubbleData(session, "logs"));
                 }
             }
         }
@@ -105,19 +113,21 @@ internal sealed partial class LaunchPageController
         else DesktopBubbleLayout.SetVisible(_shell, _store, entity, false, destroy: true);
     }
 
-    private XsrUiEntityId CreateProcessButton(MinecraftProcessSnapshot session, string label, string action)
+    private XsrUiEntityId CreateProcessButton(MinecraftProcessSnapshot session, string action)
     {
         _processLayer ??= new(_shell, _store, "ShellBubbleLayer.nxml");
         var entity = _processLayer.Append(action == "stop" ? "ProcessStopBubble.d.nxml" : "ProcessLogsBubble.d.nxml",
-            new Dictionary<string, string>
-            {
-                ["key"] = "process-" + action + "-" + session.SessionId,
-                ["command"] = "ui.process." + action + "." + session.SessionId.ToString("N"),
-                ["caption"] = session.InstanceId + " · " + label,
-            });
+            ProcessBubbleData(session, action));
         DesktopBubbleLayout.Register(_shell, entity, 2);
         return entity;
     }
+
+    private Dictionary<string, string> ProcessBubbleData(MinecraftProcessSnapshot session, string action) => new()
+    {
+        ["key"] = "process-" + action + "-" + session.SessionId,
+        ["command"] = "ui.process." + action + "." + session.SessionId.ToString("N"),
+        ["caption"] = ProcessFormat(action == "stop" ? "ProcessStopCaption" : "ProcessLogsCaption", new() { ["instance"] = session.InstanceId }),
+    };
 
     private bool HandleProcessIntent(DesktopUiIntentEventArgs e)
     {
@@ -131,7 +141,7 @@ internal sealed partial class LaunchPageController
         }
         if (command.StartsWith("ui.process.stop.", StringComparison.Ordinal) && Guid.TryParseExact(command[16..], "N", out var id))
         {
-            _feedback.ShowDialog("minecraft.stop." + id, "结束游戏？", "未保存的游戏进度可能丢失。", "结束游戏", "取消",
+            _feedback.ShowDialog("minecraft.stop." + id, ProcessTerm("process.confirm"), ProcessTerm("process.warning"), ProcessTerm("process.stop"), ProcessTerm("common.cancel"),
                 confirmed => { if (confirmed) _ = StopProcessAsync(id); });
             return true;
         }
@@ -139,7 +149,7 @@ internal sealed partial class LaunchPageController
             && Guid.TryParseExact(command[16..], "N", out var logSession))
         {
             _processLogPage ??= new(_shell, _intents, _minecraft.Queries, _store, _feedback,
-                text => CopyProcessLogText?.Invoke(text) ?? Task.FromException(new InvalidOperationException("系统剪贴板不可用。")));
+                text => CopyProcessLogText?.Invoke(text) ?? Task.FromException(new InvalidOperationException(DesktopPresentationText.Raw("log.clipboard"))));
             OpenSubpage(_processLogPage.Page, e.Intent.Source);
             _processLogPage.Open(logSession);
             return true;
@@ -153,10 +163,10 @@ internal sealed partial class LaunchPageController
         try
         {
             var result = await Task.Run(async () => await _minecraft.Commands.Dispatch(route, new MinecraftCancelProcessCommand(id), cancellationToken: _lifetimeCancellation.Token).Completion.ConfigureAwait(false)).ConfigureAwait(false);
-            if (!_disposed && !result.IsSuccess) _feedback.Error(result.Error?.Message ?? "无法结束游戏。");
+            if (!_disposed && !result.IsSuccess) _feedback.Error(result.Error?.Message ?? ProcessTerm("process.failed"));
         }
         catch (Exception ex) when (ex is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed) _feedback.Error("无法结束游戏：" + ex.Message); }
+        { if (!_disposed) _feedback.Error(ProcessFormat("ProcessStopFailed", new() { ["message"] = ex.Message })); }
     }
 
     private async Task SelectJavaMajorAsync(int major)
@@ -165,30 +175,34 @@ internal sealed partial class LaunchPageController
         try
         {
             if (!_minecraft.Commands.TryResolve(MinecraftRouteIds.JavaVersionSelect, out var route)) return;
-            _feedback.Info($"正在查找 Java {major}，缺失时将自动下载。");
+            _feedback.Info(ProcessFormat("JavaSearching", new() { ["major"] = major.ToString(System.Globalization.CultureInfo.CurrentCulture) }));
             var result = await _minecraft.Commands.Dispatch(route, new MinecraftSelectJavaVersionCommand(major), cancellationToken: _lifetimeCancellation.Token).Completion.ConfigureAwait(false);
-            if (!_disposed && !result.IsSuccess) _feedback.Error(result.Error?.Message ?? "无法使用所选 Java。");
+            if (!_disposed && !result.IsSuccess) _feedback.Error(result.Error?.Message ?? ProcessTerm("java.failed"));
             else if (!_disposed)
             {
                 Interlocked.Exchange(ref _returnFromJavaChoice, 1);
-                Publish(LaunchPageState.LaunchingStageKey, "正在准备 Java");
+                Publish(LaunchPageState.LaunchingStageKey, DesktopPresentationText.Raw("java.preparing"));
             }
         }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested) { }
         catch (Exception ex) when (ex is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed) _feedback.Error("Java 选择失败：" + ex.Message); }
+        { if (!_disposed) _feedback.Error(ProcessFormat("JavaChooseFailed", new() { ["message"] = ex.Message })); }
         finally { Interlocked.Exchange(ref _pickingJava, 0); }
     }
 
-    private static string CrashSummary(MinecraftLaunchFaultReport report) => report.Code switch
+    private string ProcessTerm(string key) => DesktopPresentationText.Term(key, _shell.Renderer.LocalizeText);
+    private string ProcessFormat(string template, Dictionary<string, string> data)
+        => DesktopPresentationText.Format(template, data, _shell.Renderer.LocalizeText);
+
+    private string CrashSummary(MinecraftLaunchFaultReport report) => report.Code switch
     {
-        MinecraftLaunchFaultCode.OutOfMemory => "游戏内存不足。请关闭占用内存的应用，并检查内存分配。",
-        MinecraftLaunchFaultCode.JavaRuntimeIncompatible => "Java 与当前版本不兼容。请选择兼容的 Java 版本。",
-        MinecraftLaunchFaultCode.MissingModDependency => "缺少模组依赖。请检查模组要求。",
-        MinecraftLaunchFaultCode.ModConflict => "检测到模组冲突。请检查近期添加或更新的模组。",
-        MinecraftLaunchFaultCode.GraphicsInitializationFailed => "图形初始化失败。请检查显卡驱动。",
-        MinecraftLaunchFaultCode.MainClassMissing or MinecraftLaunchFaultCode.ClasspathDependencyMissing => "游戏文件可能不完整。请修复版本文件。",
-        MinecraftLaunchFaultCode.NativeLibraryFailed => "本地库加载失败。请检查系统架构与版本文件。",
-        _ => "尚无法确定具体原因。以下是本次运行记录中的错误信息。",
+        MinecraftLaunchFaultCode.OutOfMemory => ProcessTerm("crash.memory"),
+        MinecraftLaunchFaultCode.JavaRuntimeIncompatible => ProcessTerm("crash.java"),
+        MinecraftLaunchFaultCode.MissingModDependency => ProcessTerm("crash.dependency"),
+        MinecraftLaunchFaultCode.ModConflict => ProcessTerm("crash.conflict"),
+        MinecraftLaunchFaultCode.GraphicsInitializationFailed => ProcessTerm("crash.graphics"),
+        MinecraftLaunchFaultCode.MainClassMissing or MinecraftLaunchFaultCode.ClasspathDependencyMissing => ProcessTerm("crash.files"),
+        MinecraftLaunchFaultCode.NativeLibraryFailed => ProcessTerm("crash.natives"),
+        _ => ProcessTerm("crash.unknown"),
     };
 }
