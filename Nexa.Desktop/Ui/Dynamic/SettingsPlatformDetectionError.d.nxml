@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="检测未完成，请重试。" Class="platform-status" />
+</nxml-dynamic>

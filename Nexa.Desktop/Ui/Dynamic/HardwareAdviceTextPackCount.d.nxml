@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="{data count} 个已启用资源包" Localize="false" />
+</nxml-dynamic>

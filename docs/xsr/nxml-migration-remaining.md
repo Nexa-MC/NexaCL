@@ -1,4 +1,4 @@
-﻿# Remaining NXML migration
+# Remaining NXML migration
 
 Objective: migrate all product presentation to Nexa.Xsr.Renderer, external `.nxml`
 pages, `.c.nxml` components and `.nss` styles. Dynamic collections must enter named
@@ -33,6 +33,10 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 - Developer renderer diagnostics and state inspector use external fragments, fixed
   field/condition templates, NSS and named text formats. Renderer refresh preserves
   field entities; inspector paging replaces only its owned row slot.
+- Platform observation groups, status/badges, right-side device/resource lists and
+  preflight/remediation panels now load owned fragments and NSS. Hardware advice shares
+  one asynchronous preflight evaluation per captured snapshot; presentation never queries.
+  Fixed status/group/format copy is external, while service facts remain literal data.
 - Literal named text formats support localization before substitution, reject non-text
   placement and enforce both output and placeholder budgets. Data is never reparsed.
 - Resource filter overlays already use fragments. Other resource presentation is
@@ -236,3 +240,45 @@ before literal data substitution. Developer admission and stale intent rejection
   diagnostics, remaining catalogue copy, global dialogs and the other product surfaces
   listed above. The reusable formatter removes the prior blocker for external copy;
   it does not imply all remaining copy has migrated.
+
+## Platform and preflight presentation boundary
+
+Platform groups, badges, right-side device/resource lists, diagnostics/remediation and
+hardware advice move to external fragments/NSS. External PlatformTerms.nxml defines
+presentation terms and preferred group order; controllers may read this text-only IR
+as copy data, never as an imperative UI factory. Hardware advice text formats are
+external text fragments. Every actual UI change still enters an owned Dynamic slot.
+
+One asynchronous preflight request evaluates each captured machine snapshot and is
+shared by diagnostics and advice. Rendering performs no service query. Source/scope
+changes and leaving the page retire pending evaluation. Remediation dispatch is tied
+to the current enabled source control and captured instance scope; delayed confirmation
+or Java pick cannot act on a newly selected instance. Each platform projection has a
+generation so returning to the same cached snapshot never revives a retired confirmation.
+Unknown facts remain unknown.
+
+## Platform presentation and Java removal verification, 2026-10-11
+
+- Desktop composition: 267 passed. The captured-snapshot test proves that repeated frames
+  issue neither new machine reads nor repeated preflight requests and do not publish a new
+  machine revision. The asynchronous report appears in both the repair and advice sections.
+- New regressions distinguish unavailable lists from verified empty lists, retain literal
+  device/resource names, verify right-side list and centered badge layout at 760/1100 widths,
+  and reject confirmation/Java-pick results retired by navigation or instance selection.
+- Architecture checks passed for 69 projects, including the no-presentation-factory gate for
+  Platform and HardwareAdvice. NXML compiler/loader checks: 56 passed. Targeted formatting
+  completed; the workspace loader reports its existing generic warning.
+- Actual Avalonia previews in both themes include the Java page without the removed
+  diagnostic/manual-download/policy cards, plus platform preflight, advice, device lists and
+  resource-pack lists. Observation values and available Java rows are explicitly declared
+  fixtures; these images are layout evidence, not real hardware acceptance.
+- Preview navigation now selects entities owned by its current controller. Two simultaneously
+  retained Settings pages may have identical navigation keys during transitions; a scene-wide
+  first match was insufficient for this fixture.
+- Windows x64 NativeAOT and self-contained full-trim publication succeeded. Both published
+  executables actually ran --validate-shell, checked Java panel retirement and the new
+  platform group/issues slots, literal centered badge and named device format, then exited 0.
+  Existing Jint IL2098 remains; no warning was suppressed.
+- These are closed presentation slices. Remaining runtime/instance diagnostics, management,
+  resources, install/version rows, wardrobe, accounts/OOBE, global overlays and fixed copy
+  in other controllers/localization assets still require migration. The whole objective is active.

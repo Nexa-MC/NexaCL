@@ -1,0 +1,11 @@
+<nxml-dynamic>
+  <StackPanel Class="platform-group">
+    <Text Content="诊断与修复" Class="platform-group-title" />
+    <StackPanel Key="PlatformPreflightCard" Class="platform-card">
+      <StackPanel Class="platform-card-body">
+        <Text Content="整体状态：{data severity}" Localize="false" Class="platform-overall" />
+        <Dynamic Key="PlatformPreflightIssues" />
+      </StackPanel>
+    </StackPanel>
+  </StackPanel>
+</nxml-dynamic>

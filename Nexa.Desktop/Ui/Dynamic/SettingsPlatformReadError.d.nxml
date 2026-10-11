@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="无法读取平台功能，请重试。" Class="platform-status" />
+</nxml-dynamic>

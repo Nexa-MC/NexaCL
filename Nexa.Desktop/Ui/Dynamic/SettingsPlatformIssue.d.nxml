@@ -1,0 +1,6 @@
+<nxml-dynamic>
+  <StackPanel Key="{data row}" Class="platform-issue">
+    <Text Content="{data title}（{data severity}）" Localize="false" Class="platform-issue-title" />
+    <Dynamic Key="{data actions}" />
+  </StackPanel>
+</nxml-dynamic>

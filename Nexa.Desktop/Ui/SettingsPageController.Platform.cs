@@ -14,13 +14,22 @@ internal static class SettingsPresentationState
 
 internal sealed partial class SettingsPageController
 {
-    // Preferred section order; snapshot groups this table omits append at the end instead
-    // of piling at the top (the old IndexOf ordering sent every new group to position -1).
-    private static readonly string[] PlatformGroups =
-    [
-        "系统", "运行环境", "处理器", "内存", "显卡", "存储", "文件系统", "显示", "电源", "散热",
-        "形态", "输入", "Java", "加载器", "账户", "游戏文件", "游戏设置", "机器画像", "资源估算", "启动预检", "策略",
-    ];
+    private static readonly Lazy<Dictionary<string, string>> PlatformTerms = new(ReadPlatformTerms);
+    private static readonly Lazy<string[]> PlatformGroups = new(() => PlatformTerms.Value
+        .Where(pair => pair.Key.StartsWith("group.", StringComparison.Ordinal) && pair.Key != "group.memory")
+        .Select(pair => pair.Value).ToArray());
+    private static Dictionary<string, string> ReadPlatformTerms()
+    {
+        var nodes = DesktopMarkup.Load("PlatformTerms.nxml").Root.Children;
+        if (nodes.Any(node => node.Recipe != Nexa.Xsr.Renderer.Nxml.NxmlRuntimeRecipe.Text
+            || string.IsNullOrWhiteSpace(node.Key) || node.Content is null || node.Bindings.Count != 0 || node.Children.Count != 0))
+            throw new Nexa.Xsr.Renderer.Nxml.NxmlCompileException("Platform terms must be keyed, literal text.");
+        return nodes.ToDictionary(node => node.Key!, node => node.Content!, StringComparer.Ordinal);
+    }
+    private static string PlatformTerm(string key) => PlatformTerms.Value[key];
+    private enum PlatformReadError { Detection, Read }
+    private readonly Dictionary<XsrUiEntityId, (string Id, MachineCapabilitySnapshot Snapshot, MachineCapabilityQuery Scope, long Generation)> _platformRemediationActions = [];
+    private long _platformActionGeneration;
     private static readonly XsrSemanticId RefreshPlatform = XsrSemanticId.Parse("ui.settings.platform.refresh");
     private Task<XsrResult<MachineCapabilitySnapshot>>? _machineReading;
     private MachineCapabilityQuery? _machineReadingScope;
@@ -28,7 +37,7 @@ internal sealed partial class SettingsPageController
     private Task<XsrResult>? _machineRefreshing;
     private MachineCapabilitySnapshot? _machine;
     private long _machineSourceRevision = -1;
-    private string? _machineError;
+    private PlatformReadError? _machineError;
     private long _platformWakeRevision;
     private void WakeOnPlatformCompletion(Task task)
     {
@@ -61,7 +70,7 @@ internal sealed partial class SettingsPageController
         if (_machineRefreshing is { IsCompleted: true } refreshed)
         {
             _machineRefreshing = null;
-            if (!PendingQuery.Succeeded(refreshed)) { _machineError = "检测未完成，请重试。"; if (_selected == "platform") BuildSections(); }
+            if (!PendingQuery.Succeeded(refreshed)) { _machineError = PlatformReadError.Detection; if (_selected == "platform") BuildSections(); }
             else _machine = null;
         }
         if (_selected != "platform" || !_sections.IsAssigned) return;
@@ -86,7 +95,7 @@ internal sealed partial class SettingsPageController
             _machineSourceRevision = _store.Read<long>(
                 _store.Resolve(MachineCapabilityStateContract.RevisionKey)).Value;
         }
-        else _machineError = "无法读取平台功能，请重试。";
+        else _machineError = PlatformReadError.Read;
         BuildSections();
     }
 
@@ -110,11 +119,19 @@ internal sealed partial class SettingsPageController
 
     private void BuildPlatformCapabilities()
     {
-        var toolbar = Stack(_sections, "PlatformToolbar", XsrUiOrientation.Horizontal, 12);
-        var status = Text(toolbar, _machineError ?? (_machineRefreshing is not null || _machine is null ? "正在检测平台功能…" : "检测时间：" + _machine.Timestamp.ToLocalTime().ToString("HH:mm:ss", System.Globalization.CultureInfo.CurrentCulture)), 12, Muted, 32);
-        _shell.Tree.GetComponent<XsrUiElement>(status)!.Weight = 1;
-        var refresh = RefreshIcon(toolbar, "PlatformRefresh", RefreshPlatform);
-        _shell.Tree.GetComponent<XsrUiInput>(refresh)!.Enabled = _machineRefreshing is null;
+        _platformRemediationActions.Clear();
+        Interlocked.Increment(ref _platformActionGeneration);
+        var toolbar = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsPlatformToolbar.d.nxml", new Dictionary<string, string>
+        { ["enabled"] = Flag(_machineRefreshing is null) }));
+        var statusSlot = CatalogNodes(toolbar)["PlatformStatus"];
+        string statusTemplate = _machineError switch
+        {
+            PlatformReadError.Detection => "SettingsPlatformDetectionError.d.nxml",
+            PlatformReadError.Read => "SettingsPlatformReadError.d.nxml",
+            _ => _machineRefreshing is not null || _machine is null ? "SettingsPlatformLoading.d.nxml" : "SettingsPlatformReady.d.nxml"
+        };
+        _dynamic.Append(statusSlot, DesktopMarkup.Dynamic(statusTemplate, new Dictionary<string, string>
+        { ["timestamp"] = _machine?.Timestamp.ToLocalTime().ToString("HH:mm:ss", System.Globalization.CultureInfo.CurrentCulture) ?? "" }, _shell.Renderer.LocalizeText));
 
         if (_machine is not null)
         {
@@ -139,14 +156,18 @@ internal sealed partial class SettingsPageController
             var orderedGroups = visible.Select(value => value.Definition.Group).Distinct()
                 .OrderBy(group =>
                 {
-                    int index = Array.IndexOf(PlatformGroups, group);
+                    int index = Array.IndexOf(PlatformGroups.Value, group);
                     return index < 0 ? int.MaxValue : index;
                 }).ThenBy(group => group, StringComparer.CurrentCulture)
                 .ToList();
             foreach (var group in orderedGroups)
             {
-                Text(_sections, MemoryAnalysisUnavailable && group == "资源估算" ? "内存分析" : group, 12, Muted, 24, 600);
-                var card = SettingsCard("PlatformCard." + group, new(16, 6, 16, 6));
+                var section = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsPlatformGroup.d.nxml", new Dictionary<string, string>
+                {
+                    ["group"] = "PlatformGroup." + group, ["title"] = MemoryAnalysisUnavailable && group == PlatformTerm("group.18") ? PlatformTerm("group.memory") : group,
+                    ["card"] = "PlatformCard." + group, ["body"] = "PlatformCard." + group + ".Body"
+                }));
+                var card = CatalogNodes(section)["PlatformCard." + group + ".Body"];
                 foreach (var value in visible.Where(value => value.Definition.Group == group))
                     BuildCapabilityRow(card, value);
             }
@@ -156,142 +177,88 @@ internal sealed partial class SettingsPageController
         _shell.Tree.MarkDirty(_sections, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
     }
 
-    /// <summary>Status badge colors: gray pill background for every state.</summary>
-    private static readonly XsrUiColor BadgeGray = new(245, 247, 250);
-
-    private static (string Text, XsrUiColor Foreground) StatusText(ICapability value) => value.Availability switch
+    private static string StatusText(ICapability value)
     {
-        CapabilityAvailability.Available => (string.IsNullOrWhiteSpace(value.DisplayValue) ? "—" : LocalizeValue(value.DisplayValue), Ink),
-        CapabilityAvailability.DependencyMissing => (ShortReason(value, "待前置能力"), Muted),
-        CapabilityAvailability.PlatformUnsupported => (ShortReason(value, "平台不支持"), Muted),
-        CapabilityAvailability.NotImplemented => (ShortReason(value, "尚未接入"), Muted),
-        CapabilityAvailability.TemporarilyUnavailable => (ShortReason(value, "暂不可用"), Muted),
-        CapabilityAvailability.Unknown => (ShortReason(value, "未知"), Muted),
-        _ => ("—", Muted),
-    };
-
-    /// <summary>Enum-shaped values the services publish in English; the badge shows Chinese.</summary>
-    private static string LocalizeValue(string value) => value switch
-    {
-        "true" => "是",
-        "false" => "否",
-        "Low" => "低",
-        "Medium" => "中",
-        "High" => "高",
-        "NotStarted" => "未开始",
-        "Pending" => "进行中",
-        "Completed" => "已完成",
-        "Failed" => "失败",
-        "Verified" => "已验证",
-        "Estimated" => "估算",
-        "Inferred" => "推断",
-        "Unknown" => "未知",
-        "Desktop" => "台式机",
-        "Laptop" => "笔记本电脑",
-        "Handheld" => "掌机",
-        "Win32" => "Windows",
-        "X64" => "x64",
-        "ARM64" => "ARM64",
-        "Offline" => "离线",
-        "Microsoft" => "微软账户",
-        "LittleSkin" => "LittleSkin",
-        "ThirdParty" => "第三方",
-        "NCloud" => "NCloud",
-        _ => value,
-    };
-
-    /// <summary>Reasons run long; the badge shows the leading clause, the row keeps the rest.</summary>
-    private static string ShortReason(ICapability value, string fallback)
-    {
-        if (string.IsNullOrEmpty(value.Reason)) return fallback;
-        int colon = value.Reason.IndexOf('：');
-        return colon > 0 ? value.Reason[..colon] : value.Reason;
+        if (value.Availability == CapabilityAvailability.Available)
+            return string.IsNullOrWhiteSpace(value.DisplayValue) ? PlatformTerm("status.default")
+                : PlatformTerms.Value.GetValueOrDefault("value." + value.DisplayValue, value.DisplayValue);
+        if (!string.IsNullOrEmpty(value.Reason))
+        {
+            int colon = value.Reason.IndexOf('：');
+            return colon > 0 ? value.Reason[..colon] : value.Reason;
+        }
+        return PlatformTerms.Value.GetValueOrDefault("status." + value.Availability, PlatformTerm("status.default"));
     }
 
     private void BuildCapabilityRow(XsrUiEntityId card, ICapability value)
     {
         if (value is Capability<IReadOnlyList<InputDeviceFeature>> devices)
         {
-            BuildRightListRow(card, value, devices.Value?.Select(device =>
-                device.DeviceName + " · " + (device.Available ? "可用" : "不可用")) ?? []);
+            var list = BuildCapabilityList(card, value);
+            if (value.Availability != CapabilityAvailability.Available) { AppendListStatus(list, value); return; }
+            if (devices.Value is not { Count: > 0 })
+                _dynamic.Append(list, DesktopMarkup.Dynamic("SettingsPlatformDevicesEmpty.d.nxml"));
+            else foreach (var device in devices.Value)
+                _dynamic.Append(list, DesktopMarkup.Dynamic(device.Available ? "SettingsPlatformDeviceAvailable.d.nxml" : "SettingsPlatformDeviceUnavailable.d.nxml",
+                    new Dictionary<string, string> { ["name"] = device.DeviceName }, _shell.Renderer.LocalizeText));
             return;
         }
-
-        if (value is Capability<IReadOnlyList<string>> items
-            && value.Id == "minecraft.settings.resource_packs")
+        if (value is Capability<IReadOnlyList<string>> items && value.Id == "minecraft.settings.resource_packs")
         {
-            BuildRightListRow(card, value, items.Value is { Count: > 0 } ? items.Value : ["默认资源"]);
+            var list = BuildCapabilityList(card, value);
+            if (value.Availability != CapabilityAvailability.Available) { AppendListStatus(list, value); return; }
+            if (items.Value is not { Count: > 0 })
+                _dynamic.Append(list, DesktopMarkup.Dynamic("SettingsPlatformResourceDefault.d.nxml"));
+            else foreach (string item in items.Value)
+                _dynamic.Append(list, DesktopMarkup.Dynamic("SettingsPlatformListEntry.d.nxml", new Dictionary<string, string> { ["value"] = item }));
             return;
         }
-
-        var row = Stack(card, "PlatformCapability." + value.Id, XsrUiOrientation.Vertical, 1);
-        _shell.Tree.GetComponent<XsrUiElement>(row)!.Padding = new(0, 7, 0, 7);
-        var headline = Stack(row, "PlatformCapabilityHeadline", XsrUiOrientation.Horizontal, 12);
-        var label = Text(headline, value.Definition.Label, 14, Ink, 28);
-        _shell.Tree.GetComponent<XsrUiElement>(label)!.Weight = 1;
-
-        // Badge: gray pill, right aligned, text centered — values and unavailability states
-        // share one shape so the column reads as a single thing.
-        (string badgeText, XsrUiColor badgeInk) = StatusText(value);
-        var badge = Text(headline, badgeText, 12, badgeInk, 28);
-        Style(badge, BadgeGray, badgeInk, 6, 12);
-        var badgeElement = _shell.Tree.GetComponent<XsrUiElement>(badge)!;
-        badgeElement.MinWidth = 96;
-        badgeElement.MaxWidth = 330;
-        badgeElement.HorizontalAlignment = XsrUiAlignment.End;
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(badge)!.TextAlignment = XsrUiTextAlignment.Center;
-
-        // Users see the data source (or the reason), never capability ids or provider names.
-        string evidence = value.Availability == CapabilityAvailability.Available
-            ? value.Source
-            : value.Reason;
-        Text(row, evidence, 11, Muted, 22);
+        _dynamic.Append(card, DesktopMarkup.Dynamic("SettingsPlatformCapability.d.nxml", new Dictionary<string, string>
+        {
+            ["row"] = "PlatformCapability." + value.Id, ["label"] = value.Definition.Label,
+            ["badgeKey"] = "PlatformCapabilityBadge." + value.Id, ["badge"] = _shell.Renderer.LocalizeText(StatusText(value)),
+            ["badgeStyle"] = value.Availability == CapabilityAvailability.Available ? "platform-badge platform-badge-available" : "platform-badge",
+            ["evidence"] = value.Availability == CapabilityAvailability.Available ? value.Source : value.Reason
+        }));
     }
 
-    private void BuildRightListRow(XsrUiEntityId card, ICapability value, IEnumerable<string> values)
+    private XsrUiEntityId BuildCapabilityList(XsrUiEntityId card, ICapability value)
     {
-        var row = Stack(card, "PlatformCapability." + value.Id, XsrUiOrientation.Horizontal, 12);
-        _shell.Tree.GetComponent<XsrUiElement>(row)!.Padding = new(0, 7, 0, 7);
-        var label = Text(row, value.Definition.Label, 14, Ink, 28);
-        _shell.Tree.GetComponent<XsrUiElement>(label)!.Weight = 1;
-        var list = Stack(row, "PlatformCapabilityList." + value.Id, XsrUiOrientation.Vertical, 2);
-        _shell.Tree.GetComponent<XsrUiElement>(list)!.HorizontalAlignment = XsrUiAlignment.End;
-        string[] entries = values.ToArray();
-        if (entries.Length == 0) entries = ["未检测到已连接设备"];
-        foreach (string entry in entries)
-        {
-            var text = Text(list, entry, 12, Muted, 22);
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(text)!.TextAlignment = XsrUiTextAlignment.End;
-        }
+        string key = "PlatformCapabilityList." + value.Id;
+        var root = _dynamic.Append(card, DesktopMarkup.Dynamic("SettingsPlatformList.d.nxml", new Dictionary<string, string>
+        { ["row"] = "PlatformCapability." + value.Id, ["label"] = value.Definition.Label, ["list"] = key }));
+        return CatalogNodes(root)[key];
     }
 
-    /// <summary>Projects the bounded service evaluation of the existing snapshot.</summary>
+    private void AppendListStatus(XsrUiEntityId list, ICapability value)
+        => _dynamic.Append(list, DesktopMarkup.Dynamic("SettingsPlatformListEntry.d.nxml", new Dictionary<string, string>
+        { ["value"] = _shell.Renderer.LocalizeText(StatusText(value)) }));
+
     private void BuildPreflightCard()
     {
-        if (_machine is null) return;
-        if (!_queries.TryResolve(MachineCapabilityStateContract.PreflightQuery, out var route)) return;
-        var response = _queries.QueryAsync<LaunchPreflightQuery, CapabilityPreflightReport>(route, new(_machine)).AsTask();
-        if (!PendingQuery.Succeeded(response)) return;
-        CapabilityPreflightReport report = response.Result.Value!;
-        if (report.OverallSeverity == PreflightSeverity.None) return;
-
-        Text(_sections, "诊断与修复", 12, Muted, 24, 600);
-        var card = SettingsCard("PlatformPreflightCard", new(16, 6, 16, 6));
-        Text(card, "整体状态：" + SeverityLabel(report.OverallSeverity), 13, Ink, 26, 600);
+        if (_machine is not { } machine || !ReferenceEquals(_hardwareAdviceSource, machine)
+            || _hardwareAdviceReport is not { OverallSeverity: not PreflightSeverity.None } report) return;
+        var card = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsPlatformPreflight.d.nxml", new Dictionary<string, string>
+        { ["severity"] = _shell.Renderer.LocalizeText(SeverityLabel(report.OverallSeverity)) }, _shell.Renderer.LocalizeText));
+        var issues = CatalogNodes(card)["PlatformPreflightIssues"];
         foreach (var issue in report.CollapsedIssues)
         {
-            var row = Stack(card, "PlatformIssue." + issue.Code, XsrUiOrientation.Horizontal, 12);
-            _shell.Tree.GetComponent<XsrUiElement>(row)!.Padding = new(0, 6, 0, 6);
-            var title = Text(row, issue.Title + "（" + SeverityLabel(issue.Severity) + "）", 13, Ink, 28);
-            _shell.Tree.GetComponent<XsrUiElement>(title)!.Weight = 1;
-            foreach (var remediationId in issue.Remediations.Take(1))
+            string rowKey = "PlatformIssue." + issue.Code;
+            var row = _dynamic.Append(issues, DesktopMarkup.Dynamic("SettingsPlatformIssue.d.nxml", new Dictionary<string, string>
             {
-                RemediationDefinition definition = RemediationCatalog.Get(remediationId);
-                var button = ActionButton(row, "PlatformRemediation." + remediationId, definition.Label,
-                    RemediationExecuted, 110);
-                _shell.Tree.GetComponent<XsrUiInput>(button)!.Enabled =
-                    _machine.Get<bool>(remediationId) is { Availability: CapabilityAvailability.Available, Value: true };
-                _shell.Tree.GetComponent<XsrUiSemantic>(button)!.Label = definition.Label + "：" + issue.Title;
+                ["row"] = rowKey, ["actions"] = rowKey + ".Actions", ["title"] = _shell.Renderer.LocalizeText(issue.Title),
+                ["severity"] = _shell.Renderer.LocalizeText(SeverityLabel(issue.Severity))
+            }, _shell.Renderer.LocalizeText));
+            foreach (string id in issue.Remediations.Take(1))
+            {
+                var definition = RemediationCatalog.Get(id);
+                bool enabled = _machineRefreshing is null && machine.Get<bool>(id) is { Availability: CapabilityAvailability.Available, Value: true };
+                var button = _dynamic.Append(CatalogNodes(row)[rowKey + ".Actions"], DesktopMarkup.Dynamic("SettingsPlatformRemediation.d.nxml", new Dictionary<string, string>
+                {
+                    ["key"] = "PlatformRemediation." + id, ["label"] = _shell.Renderer.LocalizeText(definition.Label),
+                    ["issue"] = _shell.Renderer.LocalizeText(issue.Title), ["enabled"] = Flag(enabled)
+                }, _shell.Renderer.LocalizeText));
+                _platformRemediationActions[button] = (id, machine, _machineScope, _platformActionGeneration);
             }
         }
     }
@@ -303,11 +270,12 @@ internal sealed partial class SettingsPageController
     /// an in-window notification (definitions requiring confirmation dispatch confirmed).</summary>
     private void OnPlatformRemediation(object? sender, DesktopUiIntentEventArgs args)
     {
-        if (_disposed || !_commands.TryResolve(MachineCapabilityStateContract.RemediationCommand, out var route)) return;
-        // The id rides the source entity name: "PlatformRemediation.<remediation-id>".
-        string name = _shell.Tree.Name(args.Intent.Source);
-        int dot = name.IndexOf('.', StringComparison.Ordinal);
-        string id = dot > 0 ? name[(dot + 1)..] : name;
+        if (_disposed || !_visible || _selected != "platform" || !_shell.Tree.IsAlive(args.Intent.Source)
+            || _shell.Tree.GetComponent<XsrUiInput>(args.Intent.Source)?.Enabled != true
+            || !_platformRemediationActions.TryGetValue(args.Intent.Source, out var action)
+            || !CurrentRemediationContext(action.Snapshot, action.Scope, action.Generation)
+            || !_commands.TryResolve(MachineCapabilityStateContract.RemediationCommand, out var route)) return;
+        string id = action.Id;
         Dictionary<string, string> arguments = new(StringComparer.Ordinal);
         if (_machine?.Get<long>("estimate.heap.recommended") is { Availability: CapabilityAvailability.Available } memory)
             arguments["memoryMiB"] = memory.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -315,14 +283,20 @@ internal sealed partial class SettingsPageController
             arguments["instanceDirectory"] = _machineScope.InstanceDirectory;
         void Execute()
         {
-            _ = ExecuteRemediationAsync(id, arguments, route);
+            if (CurrentRemediationContext(action.Snapshot, action.Scope, action.Generation))
+                _ = ExecuteRemediationAsync(id, arguments, route, action.Snapshot, action.Scope, action.Generation);
         }
         if (RemediationCatalog.Get(id).RequiresConfirmation)
             _feedback.ShowDialog("preflight.confirm." + id, RemediationCatalog.Get(id).Label, "将对当前选中的实例执行此操作。", "继续", "取消", accepted => { if (accepted) Execute(); });
         else Execute();
     }
 
-    private async Task ExecuteRemediationAsync(string id, Dictionary<string, string> arguments, XsrCommandId route)
+    private bool CurrentRemediationContext(MachineCapabilitySnapshot snapshot, MachineCapabilityQuery scope, long generation)
+        => generation == Interlocked.Read(ref _platformActionGeneration) && !_disposed && _visible && _selected == "platform" && _machineRefreshing is null
+            && ReferenceEquals(snapshot, _machine) && scope == ResolveMachineScope();
+
+    private async Task ExecuteRemediationAsync(string id, Dictionary<string, string> arguments, XsrCommandId route,
+        MachineCapabilitySnapshot snapshot, MachineCapabilityQuery scope, long generation)
     {
         try
         {
@@ -330,9 +304,10 @@ internal sealed partial class SettingsPageController
             {
                 if (PickRemediationJava is null) return;
                 string? executable = await PickRemediationJava().ConfigureAwait(false);
-                if (executable is null || _disposed) return;
+                if (executable is null || !CurrentRemediationContext(snapshot, scope, generation)) return;
                 arguments["executable"] = executable;
             }
+            if (!CurrentRemediationContext(snapshot, scope, generation)) return;
             var result = await _commands.Dispatch(route, new RemediationRequest(id, arguments, Confirmed: true)).Completion.ConfigureAwait(false);
             if (_disposed) return;
             if (result.IsSuccess) _feedback.Info("修复操作已完成。");
@@ -342,13 +317,7 @@ internal sealed partial class SettingsPageController
         { if (!_disposed) _feedback.Error("修复操作未完成，请查看任务详情。"); }
     }
 
-    private static string SeverityLabel(PreflightSeverity severity) => severity switch
-    {
-        PreflightSeverity.Information => "提示",
-        PreflightSeverity.Warning => "警告",
-        PreflightSeverity.Critical => "严重",
-        PreflightSeverity.Blocked => "阻止启动",
-        _ => "正常",
-    };
+    private static string SeverityLabel(PreflightSeverity severity)
+        => PlatformTerms.Value.GetValueOrDefault("severity." + severity, PlatformTerm("severity.None"));
 
 }

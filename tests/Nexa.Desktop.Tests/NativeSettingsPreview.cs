@@ -1,4 +1,5 @@
-﻿using Nexa.Services.Setup;
+using Nexa.Services.Setup;
+using Nexa.Services.Capabilities;
 using Nexa.Services.Minecraft.Java;
 using Nexa.Services.Settings;
 using Nexa.Xsr;
@@ -235,24 +236,80 @@ internal static partial class Program
                 queries.Register<Nexa.Services.Logging.DurableDiagnosticHistoryQuery, IReadOnlyList<Nexa.Services.Logging.DurableDiagnosticEntry>>(
                     Nexa.Services.Logging.DiagnosticWorkspaceContract.History,
                     (_, _) => ValueTask.FromResult(XsrResult.Success<IReadOnlyList<Nexa.Services.Logging.DurableDiagnosticEntry>>([])));
+                // Readonly platform observations are explicit fixtures; no real hardware or
+                // Java discovery participates in this visual acceptance run.
+                DateTimeOffset observedAt = DateTimeOffset.UtcNow;
+                var peak = new CapabilityDefinition<long>("resource.derived.load_peak", "加载峰值", "资源", "fixture");
+                var shader = new CapabilityDefinition<long>("resource.shader.estimated_gpu_memory", "光影预算", "资源", "fixture");
+                var action = (CapabilityDefinition<bool>)RemediationCatalog.Definitions().Single(item => item.Id == "remediation.memory.adjust_heap");
+                ICapability[] observations =
+                [MachineCapabilityCatalog.Os.Observe("Windows 11", observedAt, "readonly preview fixture"),
+                    InputCatalog.InputKeyboardAvailable.Unavailable(CapabilityAvailability.NotImplemented, observedAt, ""),
+                    InputCatalog.InputGyroscopeDevices.Observe([new("Wireless Controller", true), new("USB Controller", false)], observedAt, "readonly preview fixture"),
+                    InputCatalog.InputHapticsDevices.Unavailable(CapabilityAvailability.PermissionDenied, observedAt, "设备查询被拒绝"),
+                    MachineInstanceCatalog.MinecraftSettingsResourcePacks.Observe(["file/Vanilla Tweaks.zip", "file/Faithful 32x.zip"], observedAt, "readonly preview fixture"),
+                    MachineInstanceCatalog.MinecraftSettingsRenderDistance.Observe(24, observedAt, "readonly preview fixture"),
+                    peak.Observe(256L * 1048576, observedAt, "readonly preview fixture"),
+                    shader.Observe(512L * 1048576, observedAt, "readonly preview fixture"), action.Observe(false, observedAt, "readonly preview fixture")];
+                var projection = new ResourceEstimatorProjection().Project(observations.ToDictionary(item => item.Id), observedAt,
+                    new("/fixture/platform", "preview"));
+                var platform = new MachineCapabilitySnapshot(1, observedAt, observations.Concat(projection));
+                var issue = new CapabilityPreflightIssue("MEM_HEAP_LAUNCH_LOW", PreflightSeverity.Warning, "memory", PreflightCertainty.Estimated,
+                    false, ["readonly preview fixture"], remediations: [action.Id]);
+                var preflight = new CapabilityPreflightReport([issue], [issue], PreflightSeverity.Warning);
+                queries.Register<MachineCapabilityQuery, MachineCapabilitySnapshot>(MachineCapabilityStateContract.SnapshotQuery,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success(platform)));
+                queries.Register<LaunchPreflightQuery, CapabilityPreflightReport>(MachineCapabilityStateContract.PreflightQuery,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success(preflight)));
                 var commands = new XsrCommandRouterBuilder();
                 commands.Register<JavaRuntimeManageCommand>(JavaRuntimeInventoryContract.Manage,
                     (_, _) => throw new InvalidOperationException("Preview must not manage a Java runtime."));
                 using var java = new SettingsPageController(f.Shell, f.Intents, queries.Build(new NoopDispatchObserver()),
                     commands.Build(new NoopDispatchObserver()), f.Store, f.Feedback)
                 { PickRemediationJava = () => Task.FromResult<string?>(null) };
+                XsrUiEntityId OwnedSection(string section)
+                {
+                    XsrUiEntityId found = default;
+                    f.Shell.Tree.Walk(java.Page, entity =>
+                    { if (f.Shell.Tree.Name(entity) == "SettingsNav." + section) found = entity; return true; });
+                    AssertTrue(found.IsAssigned); return found;
+                }
                 AssertTrue(f.Foundation.Host.SettingsPolicy.Set(new("diagnostics.ai.enabled", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "true"))).IsSuccess);
                 java.ConfigureContentWorkspace(_ => Task.FromResult<string?>(null), _ => Task.FromResult<string?>(null), static () => "");
                 java.ConfigureDiagnosticAi(true);
                 await java.PrepareStartupAsync(timeout.Token);
                 f.Shell.Stage.Navigation.Replace(java.Page); surface!.CommitScene();
-                Emit(f.Intents, "ui.settings.section", FindByKey(f.Shell, surface.Scene!, "SettingsNav.java").Entity);
+                Emit(f.Intents, "ui.settings.section", OwnedSection("java"));
                 surface.CommitScene(); await java.PrepareVisibleStartupAsync(timeout.Token);
                 await Task.Delay(500, timeout.Token); surface.CommitScene();
                 var javaScene = surface.Scene!;
                 ShowSettingsFixtureControl(f, java, ref javaScene, "SettingsJavaChoose.0", f.Shell.Renderer.Viewport);
                 surface.CommitScene(); Capture("java-inventory");
-                Emit(f.Intents, "ui.settings.section", FindByKey(f.Shell, surface.Scene!, "SettingsNav.storage").Entity);
+                f.Shell.Tree.Walk(java.Page, entity =>
+                {
+                    string key = f.Shell.Tree.Name(entity);
+                    AssertFalse(key.StartsWith("JavaDiagnostics", StringComparison.Ordinal) || key.StartsWith("JavaManual", StringComparison.Ordinal)
+                        || key.StartsWith("JavaPolicy", StringComparison.Ordinal));
+                    return true;
+                });
+                var originalLibrary = f.Store.Read<Nexa.Services.Minecraft.MinecraftLibrarySnapshot>(library).Value!;
+                var previewInstance = Instance("platform-preview");
+                f.Store.Publish(library, originalLibrary with { Revision = originalLibrary.Revision + 1,
+                    Instances = [previewInstance], SelectedInstanceId = previewInstance.Id, IsProvisional = false });
+                Emit(f.Intents, "ui.settings.section", OwnedSection("platform"));
+                surface.CommitScene(); await java.PrepareVisibleStartupAsync(timeout.Token);
+                AssertEqual("platform", java.SelectedSection);
+                await Task.Delay(500, timeout.Token);
+                surface.CommitScene(); Capture("platform-preflight");
+                var platformScene = surface.Scene!;
+                ShowSettingsFixtureControl(f, java, ref platformScene, "HardwareAdvice.Risk.Facts", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("platform-advice");
+                ShowSettingsFixtureControl(f, java, ref platformScene, "PlatformCapability.input.gyroscope.devices", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("platform-devices");
+                ShowSettingsFixtureControl(f, java, ref platformScene, "PlatformCapability.minecraft.settings.resource_packs", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("platform-resource-packs");
+                f.Store.Publish(library, originalLibrary);
+                Emit(f.Intents, "ui.settings.section", OwnedSection("storage"));
                 surface.CommitScene(); await java.PrepareVisibleStartupAsync(timeout.Token);
                 await Task.Delay(500, timeout.Token); surface.CommitScene(); Capture("storage-top");
                 var storageScene = surface.Scene!;

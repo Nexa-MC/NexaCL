@@ -1,0 +1,9 @@
+<nxml-dynamic>
+  <StackPanel Key="{data row}" Class="platform-capability">
+    <StackPanel Key="PlatformCapabilityHeadline" Class="platform-headline">
+      <Text Content="{data label}" Class="platform-capability-label" />
+      <Text Key="{data badgeKey}" Content="{data badge}" Label="{data badge}" Localize="false" Class="{data badgeStyle}" />
+    </StackPanel>
+    <Text Content="{data evidence}" Class="platform-evidence" />
+  </StackPanel>
+</nxml-dynamic>

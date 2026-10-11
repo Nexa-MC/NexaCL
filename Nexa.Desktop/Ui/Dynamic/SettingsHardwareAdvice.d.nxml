@@ -1,0 +1,37 @@
+<nxml-dynamic>
+  <StackPanel Class="platform-group">
+    <Text Content="硬件与资源建议" Class="platform-group-title" />
+    <Text Content="建议只根据本次捕获的估算与预检，不会自动修改游戏配置；未知输入仍需启动后验证。" Class="hardware-advice-hint" />
+    <StackPanel Key="HardwareAdvice.Shader" Class="platform-card">
+      <StackPanel Class="hardware-advice-body">
+        <Text Content="光影" Class="hardware-advice-title" />
+        <Text Key="HardwareAdvice.Shader.Facts" Content="{data shader}" Label="{data shader}" Localize="false" MaxLines="1" TrimOverflow="true" Class="hardware-advice-facts" />
+        <Text Content="先降低光影负载或停用光影，再刷新预检比较资源预算。" IsVisible="{data resourceRisk}" Class="hardware-advice-hint" />
+        <Text Content="新增光影后请刷新预检；模型预算不能证明实际 GPU 使用。" IsVisible="{data safe}" Class="hardware-advice-hint" />
+      </StackPanel>
+    </StackPanel>
+    <StackPanel Key="HardwareAdvice.ResourcePack" Class="platform-card">
+      <StackPanel Class="hardware-advice-body">
+        <Text Content="资源包" Class="hardware-advice-title" />
+        <Text Key="HardwareAdvice.ResourcePack.Facts" Content="{data packs}" Label="{data packs}" Localize="false" MaxLines="1" TrimOverflow="true" Class="hardware-advice-facts" />
+        <Text Content="先减少启用的资源包或降低纹理分辨率，再比较新的加载峰值。" IsVisible="{data resourceRisk}" Class="hardware-advice-hint" />
+        <Text Content="增加资源包后请比较加载峰值与可用内存预算。" IsVisible="{data safe}" Class="hardware-advice-hint" />
+      </StackPanel>
+    </StackPanel>
+    <StackPanel Key="HardwareAdvice.RenderDistance" Class="platform-card">
+      <StackPanel Class="hardware-advice-body">
+        <Text Content="渲染距离" Class="hardware-advice-title" />
+        <Text Key="HardwareAdvice.RenderDistance.Facts" Content="{data distance}" Label="{data distance}" Localize="false" MaxLines="1" TrimOverflow="true" Class="hardware-advice-facts" />
+        <Text Content="降低游戏中的渲染距离后刷新预检，观察资源预算变化。" IsVisible="{data resourceRisk}" Class="hardware-advice-hint" />
+        <Text Content="当前距离来自已读取的游戏设置，实际帧率仍需游戏内验证。" IsVisible="{data safe}" Class="hardware-advice-hint" />
+      </StackPanel>
+    </StackPanel>
+    <StackPanel Key="HardwareAdvice.Risk" Class="platform-card">
+      <StackPanel Class="hardware-advice-body">
+        <Text Content="风险" Class="hardware-advice-title" />
+        <Text Key="HardwareAdvice.Risk.Facts" Content="{data risk}" Label="{data risk}" Localize="false" MaxLines="1" TrimOverflow="true" Class="hardware-advice-facts" />
+        <Text Content="这里只显示当前预检分类；时间关联、估算和未知读数不能证明崩溃原因。" Class="hardware-advice-hint" />
+      </StackPanel>
+    </StackPanel>
+  </StackPanel>
+</nxml-dynamic>

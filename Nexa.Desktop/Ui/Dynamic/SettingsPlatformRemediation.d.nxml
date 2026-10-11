@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Button Key="{data key}" Content="{data label}" Label="{data label}：{data issue}" Localize="false" Command="ui.settings.platform.remediation" Enabled="{data enabled}" Class="settings-catalog-action platform-remediation" />
+</nxml-dynamic>

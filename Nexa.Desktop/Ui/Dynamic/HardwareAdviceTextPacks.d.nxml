@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="{data enabled} · 加载峰值：{data peak}" Localize="false" />
+</nxml-dynamic>

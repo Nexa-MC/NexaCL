@@ -1,0 +1,6 @@
+<nxml-dynamic>
+  <StackPanel Key="PlatformToolbar" Class="platform-toolbar">
+    <Dynamic Key="PlatformStatus" Class="platform-status-slot" />
+    <Button Key="PlatformRefresh" Label="刷新" Icon="pcl/refresh" Command="ui.settings.platform.refresh" Enabled="{data enabled}" Class="platform-refresh" />
+  </StackPanel>
+</nxml-dynamic>

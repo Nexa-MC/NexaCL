@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="{data chunks} chunks（已读取）" Localize="false" />
+</nxml-dynamic>

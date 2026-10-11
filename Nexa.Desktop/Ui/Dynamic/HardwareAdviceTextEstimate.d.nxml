@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="{data mib} MiB（估算 · {data confidence}）" Localize="false" />
+</nxml-dynamic>

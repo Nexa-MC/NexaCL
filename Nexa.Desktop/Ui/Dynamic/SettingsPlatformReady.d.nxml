@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="检测时间：{data timestamp}" Localize="false" Class="platform-status" />
+</nxml-dynamic>

@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="模型光影预算：{data budget} · {data input}" Localize="false" />
+</nxml-dynamic>

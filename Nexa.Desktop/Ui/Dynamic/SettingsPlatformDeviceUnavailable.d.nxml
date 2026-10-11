@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="{data name} · 不可用" Label="{data name} · 不可用" Localize="false" Class="platform-list-entry" />
+</nxml-dynamic>

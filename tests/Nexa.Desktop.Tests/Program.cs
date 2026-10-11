@@ -119,6 +119,8 @@ internal static partial class Program
         ("developer diagnostic formats follow language without translating metadata", DeveloperDiagnosticFormatsFollowLanguageWithoutLocalizingMetadata),
         ("DiagnosticAiWorkspaceRebuildsCommittedAdmissionAndCancelsRetiredSend", () => DiagnosticAiWorkspaceRebuildsCommittedAdmissionAndCancelsRetiredSend().AsTask().GetAwaiter().GetResult()),
         ("HardwareAdviceUsesSameCapturedEstimatePreflightAndNeverWritesConfiguration", HardwareAdviceUsesSameCapturedEstimatePreflightAndNeverWritesConfiguration),
+        ("platform lists preserve unknown status and literal values", PlatformListsPreserveUnknownStatusAndLiteralValues),
+        ("platform repair rejects retired confirmation and Java pick", PlatformRepairRejectsRetiredConfirmationAndJavaPick),
         ("StartupHintsConsumeCommittedChoiceAndKeepLaunchProgress", StartupHintsConsumeCommittedChoiceAndKeepLaunchProgress),
         ("ManualNetworkProbeUiCancelsAndKeepsObservedFactsLiteral", ManualNetworkProbeUiCancelsAndKeepsObservedFactsLiteral),
         ("ResourceSourcePolicyDisablesLocalOverrideAndRestoresIt", ResourceSourcePolicyDisablesLocalOverrideAndRestoresIt),

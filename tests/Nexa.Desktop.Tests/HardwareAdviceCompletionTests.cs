@@ -57,8 +57,9 @@ internal static partial class Program
             (query, token) => fixture.Foundation.Queries.QueryAsync<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(effective, query, cancellationToken: token));
         var current = first;
         MachineCapabilityQuery? capturedScope = null;
+        int snapshotReads = 0;
         queries.Register<MachineCapabilityQuery, MachineCapabilitySnapshot>(MachineCapabilityStateContract.SnapshotQuery,
-            (query, _) => { capturedScope = query; return ValueTask.FromResult(XsrResult.Success(current)); });
+            (query, _) => { snapshotReads++; capturedScope = query; return ValueTask.FromResult(XsrResult.Success(current)); });
         var pending = new TaskCompletionSource<XsrResult<CapabilityPreflightReport>>(TaskCreationOptions.RunContinuationsAsynchronously);
         List<MachineCapabilitySnapshot> evaluated = [];
         queries.Register<LaunchPreflightQuery, CapabilityPreflightReport>(MachineCapabilityStateContract.PreflightQuery,
@@ -85,19 +86,26 @@ internal static partial class Program
         PumpUntil(() => HasKey(fixture.Shell, scene, "HardwareAdvice.Risk.Facts"));
         AssertEqual(instance.DirectoryPath, capturedScope!.InstanceDirectory);
         AssertTrue(FindByKey(fixture.Shell, scene, "HardwareAdvice.Risk.Facts").Text!.Contains("未知", StringComparison.Ordinal));
+        long machineRevision = fixture.Store.Read<long>(fixture.Store.Resolve(MachineCapabilityStateContract.RevisionKey)).Value;
+        for (int frame = 0; frame < 16; frame++) scene = fixture.Shell.Render(new(1100, 2800));
+        AssertEqual(1, snapshotReads); AssertEqual(1, evaluated.Count);
+        AssertEqual(machineRevision, fixture.Store.Read<long>(fixture.Store.Resolve(MachineCapabilityStateContract.RevisionKey)).Value);
         pending.SetResult(XsrResult.Success(report));
         PumpUntil(() => FindByKey(fixture.Shell, scene, "HardwareAdvice.Risk.Facts").Text!.Contains("GPU_VRAM_RUNTIME_LOW", StringComparison.Ordinal));
         long revision = fixture.Foundation.Host.SettingsPolicy.Read(new()).Value!.Revision;
         foreach (string key in new[] { "Shader", "ResourcePack", "RenderDistance", "Risk" })
             fixture.Shell.Tree.Walk(FindByKey(fixture.Shell, scene, "HardwareAdvice." + key).Entity, entity =>
             { AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiTextInput>(entity) is null); return true; });
+        AssertEqual(1, evaluated.Count);
         AssertTrue(evaluated.All(snapshot => ReferenceEquals(snapshot, first)));
+        AssertTrue(HasKey(fixture.Shell, scene, "PlatformPreflightCard"));
         AssertFalse(scene.Nodes.Where(node => fixture.Shell.Tree.Name(node.Entity).StartsWith("HardwareAdvice.", StringComparison.Ordinal))
             .Any(node => node.Text?.Contains("private-pack", StringComparison.Ordinal) == true));
         Emit(fixture.Intents, "ui.settings.platform.refresh", FindByKey(fixture.Shell, scene, "PlatformRefresh").Entity);
         PumpUntil(() => FindByKey(fixture.Shell, scene, "HardwareAdvice.RenderDistance.Facts").Text!.StartsWith("16 chunks", StringComparison.Ordinal));
         AssertEqual(revision, fixture.Foundation.Host.SettingsPolicy.Read(new()).Value!.Revision);
-        AssertTrue(evaluated.Any(snapshot => ReferenceEquals(snapshot, current)));
+        AssertEqual(2, snapshotReads); AssertEqual(2, evaluated.Count);
+        AssertTrue(ReferenceEquals(evaluated[1], current));
         current = new MachineCapabilitySnapshot(3, now,
             new UnavailableResourceEstimatorProjection().Project(new Dictionary<string, ICapability>(), now));
         fixture.Store.Publish(fixture.Store.Resolve(MachineCapabilityStateContract.RevisionKey), 3L);
@@ -105,6 +113,8 @@ internal static partial class Program
             && !HasKey(fixture.Shell, scene, "HardwareAdvice.Risk.Facts"));
         AssertFalse(HasKey(fixture.Shell, scene, "PlatformCapability.estimate.heap.launch"));
         AssertTrue(scene.Nodes.Any(node => node.Text == "暂不可用"));
+        AssertEqual(3, snapshotReads); AssertEqual(3, evaluated.Count);
+        AssertTrue(ReferenceEquals(evaluated[2], current));
 
     }
 }

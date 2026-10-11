@@ -1,0 +1,8 @@
+<nxml-dynamic>
+  <StackPanel Key="{data group}" Class="platform-group">
+    <Text Content="{data title}" Class="platform-group-title" />
+    <StackPanel Key="{data card}" Class="platform-card">
+      <Dynamic Key="{data body}" Class="platform-card-body" />
+    </StackPanel>
+  </StackPanel>
+</nxml-dynamic>

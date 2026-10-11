@@ -49,6 +49,14 @@ internal static partial class Program
         var inventoryBody = Find("SettingsJavaInventory.Body");
         if (shell.Tree.GetComponent<NxmlDynamicSlot>(inventoryBody) is null)
             throw new InvalidOperationException("Java inventory did not use its external dynamic body.");
+        shell.Tree.Walk(settings.Page, entity =>
+        {
+            string key = shell.Tree.Name(entity);
+            if (key.StartsWith("JavaDiagnostics", StringComparison.Ordinal) || key.StartsWith("JavaManual", StringComparison.Ordinal)
+                || key.StartsWith("JavaPolicy", StringComparison.Ordinal))
+                throw new InvalidOperationException("Retired Java panels reappeared.");
+            return true;
+        });
         Console.WriteLine("Dynamic Java validation passed: external inventory header and owned body slot; no registry changes.");
         intents.Emit(XsrSemanticId.Parse("ui.settings.section"), Find("SettingsNav.about"), XsrCorrelationId.Create());
         shell.Render(new(1280, 800));
@@ -158,6 +166,33 @@ internal static partial class Program
             if (shell.Tree.GetComponent<XsrUiText>(metadata) is not { Localize: false } text || !text.Content.Contains(literal, StringComparison.Ordinal))
                 throw new InvalidOperationException("Diagnostic format did not preserve literal metadata.");
             Console.WriteLine("Dynamic diagnostic validation passed: external inspector, named text format and literal metadata.");
+            var group = dynamic.Append(shell.Tree.Children(page).Single(), DesktopMarkup.Dynamic("SettingsPlatformGroup.d.nxml",
+                new Dictionary<string, string> { ["group"] = "platform-fixture", ["card"] = "platform-card", ["body"] = "platform-body", ["title"] = "fixture" }));
+            XsrUiEntityId platformBody = default;
+            shell.Tree.Walk(group, entity => { if (shell.Tree.Name(entity) == "platform-body") platformBody = entity; return true; });
+            if (shell.Tree.GetComponent<NxmlDynamicSlot>(platformBody) is null)
+                throw new InvalidOperationException("Platform group lost its owned body.");
+            var platformRow = dynamic.Append(platformBody, DesktopMarkup.Dynamic("SettingsPlatformCapability.d.nxml", new Dictionary<string, string>
+            {
+                ["row"] = "platform-fact", ["label"] = "fixture", ["badgeKey"] = "platform-badge", ["badge"] = literal,
+                ["badgeStyle"] = "platform-badge", ["evidence"] = "fixture"
+            }));
+            XsrUiEntityId badge = default;
+            shell.Tree.Walk(platformRow, entity => { if (shell.Tree.Name(entity) == "platform-badge") badge = entity; return true; });
+            if (shell.Tree.GetComponent<XsrUiText>(badge) is not { Localize: false } badgeText || badgeText.Content != literal
+                || shell.Tree.GetComponent<XsrUiVisualStyle>(badge)?.TextAlignment != XsrUiTextAlignment.Center)
+                throw new InvalidOperationException("Platform badge lost literal or centered presentation.");
+            var device = dynamic.Append(platformBody, DesktopMarkup.Dynamic("SettingsPlatformDeviceAvailable.d.nxml",
+                new Dictionary<string, string> { ["name"] = literal }, shell.Renderer.LocalizeText));
+            if (shell.Tree.GetComponent<XsrUiText>(device) is not { Localize: false } deviceText || !deviceText.Content.Contains(literal, StringComparison.Ordinal))
+                throw new InvalidOperationException("Platform device format reparsed literal input.");
+            var report = dynamic.Append(platformBody, DesktopMarkup.Dynamic("SettingsPlatformPreflight.d.nxml",
+                new Dictionary<string, string> { ["severity"] = "fixture" }, shell.Renderer.LocalizeText));
+            XsrUiEntityId issues = default;
+            shell.Tree.Walk(report, entity => { if (shell.Tree.Name(entity) == "PlatformPreflightIssues") issues = entity; return true; });
+            if (shell.Tree.GetComponent<NxmlDynamicSlot>(issues) is null)
+                throw new InvalidOperationException("Preflight issues lost their dynamic owner.");
+            Console.WriteLine("Dynamic platform validation passed: owned group/issues slots, centered literal badge and named device format.");
             Console.WriteLine("Dynamic dock validation passed: overlay ownership, process template, literal text and selection reload.");
         }
         finally { shell.Tree.Destroy(page); }

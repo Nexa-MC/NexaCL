@@ -1,4 +1,4 @@
-﻿# Nexa.Xsr.Renderer — external NXML and NSS
+# Nexa.Xsr.Renderer — external NXML and NSS
 
 ## Boundary decision
 
@@ -236,3 +236,23 @@ substitution; translated formats must preserve exactly the same named parameter
 set. Product formatted text declares Localize=false to avoid translating user data
 after substitution. The Desktop adapter does not cache language-specific compiled
 fragments across localizers. This is text formatting, not an expression language.
+
+
+### Captured platform presentation
+
+Platform status/group vocabulary is a keyed literal text-only NXML asset; observation rows,
+right-side device/resource lists, preflight issues/actions and hardware advice are external
+`.d.nxml` projections with NSS surfaces and padded inner bodies. Unavailable list observations
+retain their status rather than becoming a verified empty-device/default-resource list.
+
+The frame update requests one asynchronous preflight report for a captured machine snapshot.
+Repair and advice presentation reuse that report, including when no advice card is available;
+neither construction nor rendering invokes the service. Typed facts and instance scope remain
+service data. Confirmation and Java-picker callbacks capture the snapshot, scope and projection
+generation; returning to the same cached snapshot does not revive retired UI actions.
+
+This slice passed 267 Desktop tests, 56 NXML tests, architecture checks for 69 projects and
+actual light/dark native previews. Both Windows x64 NativeAOT and full-trim executables ran
+the new platform template smoke and Java-panel retirement assertions, then exited 0. Existing
+Jint IL2098 remains. The whole externalization inventory is still open in
+`nxml-migration-remaining.md`.

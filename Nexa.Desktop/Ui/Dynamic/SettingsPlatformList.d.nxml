@@ -1,0 +1,6 @@
+<nxml-dynamic>
+  <StackPanel Key="{data row}" Class="platform-list-row">
+    <Text Content="{data label}" Class="platform-capability-label" />
+    <Dynamic Key="{data list}" Class="platform-right-list" />
+  </StackPanel>
+</nxml-dynamic>
