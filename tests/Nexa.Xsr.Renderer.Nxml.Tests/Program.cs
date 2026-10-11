@@ -28,6 +28,8 @@ internal static partial class Program
         ("declarative overlay facts reject invalid values and contract changes", DeclarativeOverlayFactsRejectInvalidValuesAndContractChanges),
         ("owned collection reorders retain state and reject foreign permutations", OwnedReorderRetainsStateAndRejectsForeignPermutations),
         ("local anchors and viewport facts preserve live contracts", LocalAnchorsAndViewportFactsPreserveLiveContracts),
+        ("owned move retains live state and rejects invalid scopes", OwnedMoveRetainsStateAndRejectsInvalidScopes),
+        ("horizontal scroll and responsive orientation retain contracts", DeclarativeHorizontalScrollAndResponsiveOrientationRetainContracts),
         // XSR-207: NXML grammar and parser.
         ("document resource budgets are enforced before recursion", DocumentResourceBudgetsAreEnforcedBeforeRecursion),
         ("simple document parses structurally", SimpleDocumentParsesStructurally),

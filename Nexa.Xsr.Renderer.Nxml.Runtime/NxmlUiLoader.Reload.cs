@@ -10,6 +10,9 @@ public sealed partial class NxmlUiLoader
     {
         var allowed = before with
         {
+            Orientation = !before.Scrollable && (before.Recipe == NxmlRuntimeRecipe.StackLayout
+                || before.Recipe == NxmlRuntimeRecipe.DynamicSlot && before.SlotLayout == NxmlRuntimeRecipe.StackLayout)
+                ? after.Orientation : before.Orientation,
             Width = after.Width,
             Height = after.Height,
             MinWidth = after.MinWidth,
@@ -65,6 +68,8 @@ public sealed partial class NxmlUiLoader
             box.Margin = after.Margin; box.Padding = after.Padding; box.IsVisible = after.IsVisible;
             dirty |= XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint;
         }
+        if (before.Orientation != after.Orientation && tree.GetComponent<XsrUiStackPanel>(entity) is { } oriented)
+        { oriented.Direction = after.Orientation; dirty |= XsrUiDirtyKinds.Layout; }
         if (before.Spacing != after.Spacing && tree.GetComponent<XsrUiStackPanel>(entity) is { } stack)
         { stack.Spacing = after.Spacing; dirty |= XsrUiDirtyKinds.Layout; }
         if (before.Content != after.Content)

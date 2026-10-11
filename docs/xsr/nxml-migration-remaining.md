@@ -62,7 +62,6 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 | Settings and instance management | `SettingsPageController.cs` and partial files | Replace remaining custom row/group factories, diagnostic cards, content/detail/snapshot/server/export structures and their style mutations with templates. Preserve drafts and list virtualization. |
 | Resources | `ResourcesPageController.cs` and partial files | Search toolbar, categories, virtual rows, detail/version/dependency and install confirmation layouts; content and state variants must be external. |
 | Launch and installation | `LaunchPageController.InstallCatalog.cs`, `.Installation.cs`, `.FrameProjection.cs`, `.Styles.cs`, `BedrockInstallPageController.cs` | Catalog/loader rows, state panels, choice tracks and runtime presentation styling. |
-| Wardrobe | `WardrobePageController.cs`, `WardrobeLibraryPageController.cs` | Skin/cape cards, details, empty/loading/failure surfaces and interaction variants. |
 
 Direct node/style/stack construction still remains across the other Desktop slices. This is a locator, not a completion metric: helpers can hide imperative layouts,
 and compiled renderer primitives/platform bridges are intentionally still code.
@@ -596,3 +595,51 @@ rejects stale generations; the renderer only receives immutable raster/palette d
 - Scoped whitespace formatting and diff checks pass. Artifacts are under
   .tmp-cleanup-validation/bootstrap-*. Four main areas remain in the inventory;
   the whole-product migration remains active.
+
+## Wardrobe/library boundary
+
+Migrate the entire player rail, skin/cape tracks, local PNG dialog and public skin
+library together. Pages expose owned Dynamic workspaces; collection rows/cards and
+library grid rows are external fragments, including empty/loading/failure/selected
+states. Fixed labels, formats, palettes and all responsive dimensions come from
+NXML/NSS. Account/catalog/texture queries, bounded lazy image windows and typed
+mutations keep their existing identity, generation, cancellation and admission rules.
+Provider metadata and file paths stay literal; localization occurs before insertion.
+Viewport/language/busy updates reload the same controls, retaining search/path drafts,
+focus, view selection, scroll and raster caches. Only immutable raster construction
+and behavioral scrolling remain compiled; no controller-owned presentation factories.
+
+Declare finite horizontal-indicator and wheel-routing facts in NXML. Reload may
+change a non-scroll stack orientation while retaining identity; a scrolling stack's
+orientation remains a lifetime contract. Add an owned Move operation for library
+reflow: both slots must belong to the same top-level owned workspace, validate before
+mutation, reject foreign/stale identities, cycles and fragments containing anchors.
+Moving preserves live children/drafts/motion; ownership updates with the move so
+subsequent reload/remove/reorder stay valid. Resize cannot retire catalogue cards or
+reset their view merely to regroup rows. Anchor relocation remains unsupported.
+
+## Wardrobe/library verification, 2026-10-11
+
+- Full Desktop composition: 281 passed, zero failed. Wardrobe-specific regressions:
+  27 passed, including all selectable dark accents, readable modal/card/selection
+  contrast, correctly painted inset surfaces, and retained path/search caret/focus.
+- NXML compiler/runtime: 62 passed; architecture: 69 projects passed; actual
+  Avalonia backend: 30 passed. Both controllers reject imperative presentation
+  construction and fixed copy through the architecture regression.
+- Entire workspaces, skin/cape cards, library/site rows, local PNG modal and finite
+  state variants now use owned external fragments, named text formats and NSS.
+  Horizontal scrollbar/wheel facts are declarative. Responsive orientation and
+  grid regrouping preserve live cards, draft/focus, view selection and raster data.
+- Owned Move validates source/destination lifetimes and the same enclosing owned
+  workspace before mutation, rejects foreign scopes/cycles/anchored subtrees, and
+  keeps nested ownership coherent for subsequent reload/reorder/remove.
+- Actual native previews in both themes and 800px windows cover the main wardrobe,
+  local PNG modal and public library. They use declared read-only fixture accounts,
+  textures and catalog data; no real account mutation or game launch is claimed.
+  Preview teardown exited normally after returning from the fixture library.
+- Windows x64 NativeAOT and self-contained full-trim publications succeeded. Both
+  actual executables ran --validate-shell, exited 0 and emitted the positive
+  Dynamic wardrobe validation passed marker. Existing Jint IL2098 remains unsuppressed.
+- Scoped whitespace and diff checks passed. Evidence is under
+  .tmp-cleanup-validation/wardrobe-*; three main areas remain in the inventory.
+  The overall migration remains active.

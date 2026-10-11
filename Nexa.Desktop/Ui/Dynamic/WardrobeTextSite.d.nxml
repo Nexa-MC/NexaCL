@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="{data name}&#10;{data host}" Localize="false" />
+</nxml-dynamic>

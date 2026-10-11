@@ -1,0 +1,30 @@
+<Node Recipe="StackLayout" Key="WardrobeMetrics">
+  <Node Recipe="StackLayout" Key="view" Class="wardrobe-metric-view" />
+  <Node Recipe="StackLayout" Key="rail" Class="wardrobe-metric-rail" />
+  <Node Recipe="StackLayout" Key="rail-compact" Class="wardrobe-metric-rail-compact" />
+  <Node Recipe="StackLayout" Key="content" Class="wardrobe-metric-content" />
+  <Node Recipe="StackLayout" Key="content-compact" Class="wardrobe-metric-content-compact" />
+  <Node Recipe="StackLayout" Key="content-large" Class="wardrobe-metric-content-large" />
+  <Node Recipe="StackLayout" Key="content-narrow" Class="wardrobe-metric-content-narrow" />
+  <Node Recipe="StackLayout" Key="header" Class="wardrobe-metric-header" />
+  <Node Recipe="StackLayout" Key="status" Class="wardrobe-metric-status" />
+  <Node Recipe="StackLayout" Key="skin-subtitle" Class="wardrobe-metric-skin-subtitle" />
+  <Node Recipe="StackLayout" Key="cape-subtitle" Class="wardrobe-metric-cape-subtitle" />
+  <Node Recipe="StackLayout" Key="track" Class="wardrobe-metric-track" />
+  <Node Recipe="StackLayout" Key="estimate" Class="wardrobe-metric-estimate" />
+  <Node Recipe="StackLayout" Key="card-axis" Class="wardrobe-metric-card-axis" />
+  <Node Recipe="StackLayout" Key="image-aspect" Class="wardrobe-metric-image-aspect" />
+  <Node Recipe="StackLayout" Key="horizontal-image" Class="wardrobe-metric-horizontal-image" />
+  <Node Recipe="StackLayout" Key="horizontal-card" Class="wardrobe-metric-horizontal-card" />
+  <Node Recipe="StackLayout" Key="vertical-card" Class="wardrobe-metric-vertical-card" />
+  <Node Recipe="StackLayout" Key="vertical-image" Class="wardrobe-metric-vertical-image" />
+  <Node Recipe="StackLayout" Key="current-card" Class="wardrobe-metric-current-card" />
+  <Node Recipe="StackLayout" Key="local" Class="wardrobe-metric-local" />
+  <Node Recipe="StackLayout" Key="card-labels" Class="wardrobe-metric-card-labels" />
+  <Node Recipe="StackLayout" Key="library-view" Class="wardrobe-metric-library-view" />
+  <Node Recipe="StackLayout" Key="library-rail" Class="wardrobe-metric-library-rail" />
+  <Node Recipe="StackLayout" Key="library-content" Class="wardrobe-metric-library-content" />
+  <Node Recipe="StackLayout" Key="library-compact" Class="wardrobe-metric-library-compact" />
+  <Node Recipe="StackLayout" Key="library-grid" Class="wardrobe-metric-library-grid" />
+  <Node Recipe="StackLayout" Key="card-body" Class="wardrobe-card-body" />
+</Node>

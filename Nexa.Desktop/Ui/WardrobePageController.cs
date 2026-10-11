@@ -1,5 +1,7 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Accounts;
 using Nexa.Xsr.Renderer;
@@ -27,7 +29,14 @@ internal sealed class WardrobePageController : IDisposable
         internal AccountWardrobeResolvedTextures? Loaded;
         internal AccountWardrobeResolvedTextures? Presented;
         internal WardrobePlayerView PresentedView;
+        internal Dictionary<string,string> Projection=[];
     }
+    private readonly NxmlDynamicContent _dynamic;
+    private readonly XsrUiEntityId _workspace;
+    private readonly Dictionary<string,string> _presentation=DesktopWardrobeText.Defaults(library:false);
+    private Dictionary<string,string> _applied=[];
+    private string _copyStamp="";
+    private double _trackHeight=Required(DesktopWardrobeText.Metric("track").MinHeight);
     private readonly XsrUiShell _shell;
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrQueryRouter _queries;
@@ -61,10 +70,10 @@ internal sealed class WardrobePageController : IDisposable
     private bool _visible, _loaded, _slim, _disposed, _localOpen;
     private volatile bool _dirty = true;
     private long _wake, _selectionEvents, _seenSelectionEvents, _rosterEvents, _seenRosterEvents;
-    private string _status = "正在读取当前账户…";
+    private string _status = Raw("read-account");
     private string? _operationNotice;
     private XsrUiSize _viewport;
-    private double _skinOffset, _capeOffset, _cardWidth = 176, _cardHeight = 228, _trackWidth = 400;
+    private double _skinOffset, _capeOffset, _cardWidth=CardWidth(Required(DesktopWardrobeText.Metric("track").MinHeight)), _cardHeight=Required(DesktopWardrobeText.Metric("track").MinHeight), _trackWidth=Required(DesktopWardrobeText.Metric("track").MinWidth);
     private bool Busy => _reading is not null || _previewing is not null || _writing is not null || _picking is not null;
     internal const int CapePageSize = 12; // Bounded lazy image window; the horizontal track retains every card.
 
@@ -72,57 +81,20 @@ internal sealed class WardrobePageController : IDisposable
         XsrCommandRouter commands, XsrStateStore store, DesktopFeedbackService feedback)
     {
         _shell = shell; _intents = intents; _queries = queries; _commands = commands; _store = store; _feedback = feedback;
-        using var stream = DesktopMarkup.Open("WardrobePage.nxml")!;
-        using var reader = new StreamReader(stream);
-        var host = shell.Tree.Create("wardrobe-loader");
-        Page = NxmlUiLoader.Load(DesktopMarkup.Compile(NxmlParser.Parse(reader.ReadToEnd())), shell.Tree, store, host);
-        shell.Tree.Detach(Page); shell.Tree.Destroy(host);
-        shell.Tree.Walk(Page, entity =>
+        _dynamic=new(shell.Tree,store);
+        Page=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("WardrobePage.nxml"),shell.Tree,store);
+        var slot=shell.Tree.Children(Page).Single();
+        _workspace=_dynamic.Append(slot,DesktopMarkup.Dynamic("WardrobeWorkspace.d.nxml",_presentation));
+        shell.Tree.Walk(_workspace,entity=>
         {
-            string name = shell.Tree.Name(entity); if (name.Length > 0) _nodes[name] = entity;
-            if (shell.Tree.GetComponent<XsrUiCommandBinding>(entity) is { } binding)
+            string name=shell.Tree.Name(entity);if(name.Length>0)_nodes[name]=entity;
+            if(shell.Tree.GetComponent<XsrUiCommandBinding>(entity)is{}binding)
             {
-                if (!_staticSources.TryGetValue(binding.Command.Value, out var sources)) _staticSources[binding.Command.Value] = sources = [];
+                if(!_staticSources.TryGetValue(binding.Command.Value,out var sources))_staticSources[binding.Command.Value]=sources=[];
                 sources.Add(entity);
             }
-            Style(entity); return true;
+            return true;
         });
-        shell.Tree.SetComponent(_nodes["WardrobeLocalLayer"], new XsrUiOverlayLayer(isModal: true));
-        shell.Tree.SetComponent(_nodes["WardrobeLocalLayer"], new XsrUiDismissBinding(XsrSemanticId.Parse("ui.wardrobe.local.close")));
-        shell.Tree.SetComponent(_nodes["WardrobeLocalLayer"], new XsrUiCommandBinding(XsrSemanticId.Parse("ui.wardrobe.local.close")));
-        _staticSources["ui.wardrobe.local.close"].Add(_nodes["WardrobeLocalLayer"]);
-        shell.Tree.SetComponent(_nodes["WardrobeLocalLayer"], new XsrUiInput { Clickable = true });
-        Scroll("WardrobeSkins").UseVerticalWheelForHorizontalScroll = true;
-        Scroll("WardrobeCapes").UseVerticalWheelForHorizontalScroll = true;
-        Scroll("WardrobeSkins").ShowsHorizontalIndicator = true;
-        Scroll("WardrobeCapes").ShowsHorizontalIndicator = true;
-        shell.Tree.SetComponent(_nodes["WardrobeContent"], new XsrUiScrollGesture());
-        shell.Tree.SetComponent(_nodes["WardrobeProfileRail"], new XsrUiScrollGesture());
-        shell.Tree.SetComponent(_nodes["WardrobeLocalPanel"], new XsrUiScrollGesture());
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["WardrobeLocalLayer"])!.Background = new(0, 0, 0, 100);
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["WardrobeLocalPanel"])!.Background = new(250, 252, 255);
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["WardrobeLocalPanel"])!.CornerRadius = 18;
-        foreach (string key in new[] { "WardrobeCurrentTitle", "WardrobePageTitle", "WardrobeSkinTitle", "WardrobeCapeTitle", "WardrobeLocalTitle" })
-        { var style = shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes[key])!; style.FontSize = 19; style.FontWeight = 600; }
-        foreach (string key in new[] { "WardrobeCurrentSubtitle", "WardrobeProfileKind", "WardrobeSkinSubtitle", "WardrobeCapeSubtitle", "WardrobeSkinCount", "WardrobeCapeCount", "WardrobeStatus", "WardrobeLocalStatus" })
-        { var style = shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes[key])!; style.FontSize = 12; style.Foreground = new(96, 108, 124); }
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["WardrobeRailSurface"])!.Background = new(244, 247, 251);
-        var currentStyle = shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["WardrobeCurrentCard"])!;
-        currentStyle.Background = new(255, 255, 255); currentStyle.CornerRadius = 22;
-        foreach (string key in new[] { "WardrobeIdentity", "WardrobeProfileKind" })
-        {
-            shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes[key])!.TextAlignment = XsrUiTextAlignment.Center;
-            var text = shell.Tree.GetComponent<XsrUiText>(_nodes[key])!; text.MaxLines = 1; text.TrimOverflow = true;
-        }
-        var identityStyle = shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["WardrobeIdentity"])!;
-        identityStyle.FontSize = 17; identityStyle.FontWeight = 600;
-        var browseStyle = shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["WardrobeBrowse"])!;
-        browseStyle.Background = new(19, 112, 243); browseStyle.Foreground = new(255, 255, 255);
-        browseStyle.FontWeight = 600; browseStyle.CornerRadius = 12;
-        var libraryStyle = shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["WardrobeLibrary"])!;
-        libraryStyle.Background = new(241, 245, 250); libraryStyle.Border = new(144, 159, 181);
-        libraryStyle.BorderWidth = 1; libraryStyle.CornerRadius = 12; libraryStyle.FontWeight = 600;
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["WardrobeCurrentView"])!.Background = XsrUiColor.Transparent;
         _intents.IntentEmitted += OnIntent; shell.Renderer.FramePreparing += OnFrame; _store.Changed += OnStateChanged;
     }
     internal XsrUiEntityId Page { get; }
@@ -156,6 +128,7 @@ internal sealed class WardrobePageController : IDisposable
     }
     private void OnFrame(object? sender, EventArgs args)
     {
+        string copy=_shell.Renderer.LocalizeText(Raw("read-account"));if(copy!=_copyStamp){_copyStamp=copy;_dirty=true;}
         if (_disposed) return;
         bool visible = _shell.Stage.Navigation.Current == Page;
         if (!visible) { if (_visible) { Retire(); } _visible = false; return; }
@@ -185,18 +158,14 @@ internal sealed class WardrobePageController : IDisposable
             }
             fixedHeight += Math.Max(0, visibleChildren - 1) *
                 _shell.Tree.GetComponent<XsrUiStackPanel>(_nodes["WardrobeContent"])!.Spacing;
-            double trackHeight = Math.Max(112, (contentViewport.ViewportHeight - fixedHeight) / 2);
-            double height = Math.Clamp(trackHeight - 10, 112, 270);
-            foreach (string track in new[] { "WardrobeSkinTrack", "WardrobeCapeTrack" })
+            var metric=DesktopWardrobeText.Metric("track");
+            double trackHeight=Math.Max(Required(metric.MinHeight),(contentViewport.ViewportHeight-fixedHeight)/2);
+            double height=Math.Clamp(trackHeight-metric.Margin.Top,Required(metric.MinHeight),Required(metric.MaxHeight));
+            if(_trackHeight!=trackHeight)
             {
-                var element = _shell.Tree.GetComponent<XsrUiElement>(_nodes[track])!;
-                if (element.Height != trackHeight)
-                {
-                    element.Height = trackHeight;
-                    element.Weight = 0;
-                    _shell.Tree.MarkDirty(_nodes[track], XsrUiDirtyKinds.Layout);
-                    _dirty = true;
-                }
+                _trackHeight=trackHeight;
+                foreach(string track in new[]{"WardrobeSkinTrack","WardrobeCapeTrack"})_presentation[track+"_height"]=Number(trackHeight);
+                _dirty=true;
             }
             if (Math.Abs(height - _cardHeight) > .5)
             {
@@ -219,13 +188,12 @@ internal sealed class WardrobePageController : IDisposable
                 if (child != _nodes["WardrobeCurrentCard"])
                     reserved += (element.Height ?? 0) + element.Padding.Vertical + element.Margin.Vertical;
             }
-            reserved += Math.Max(0, count - 1) * 8;
+            reserved+=Math.Max(0,count-1)*DesktopWardrobeText.Metric("rail").Spacing;
             var card = _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeCurrentCard"])!;
-            double height = Math.Max(180, railViewport.ViewportHeight - reserved - card.Padding.Vertical);
+            double height=Math.Max(Required(DesktopWardrobeText.Metric("current-card").MinHeight),railViewport.ViewportHeight-reserved-card.Padding.Vertical);
             if (card.Height != height)
             {
-                card.Weight = 0; card.Height = height;
-                _shell.Tree.MarkDirty(_nodes["WardrobeCurrentCard"], XsrUiDirtyKinds.Layout); _dirty = true;
+                _presentation["WardrobeCurrentCard_height"]=Number(height);_dirty=true;
             }
         }
         long selections = Volatile.Read(ref _selectionEvents), rosters = Volatile.Read(ref _rosterEvents);
@@ -244,7 +212,7 @@ internal sealed class WardrobePageController : IDisposable
             || selections != _seenSelectionEvents || rosterChangedWhileIdle)
         {
             Retire(); _observedIdentity = identity;
-            _status = identity is null ? "请先添加并选择一个账户。" : "正在读取当前账户…";
+            _status = identity is null ? Raw("copy.df5f107f6bca") : Raw("read-account");
         }
         _visible = true; _seenSelectionEvents = selections; _seenRosterEvents = rosters;
         ApplyResponsiveLayout();
@@ -259,7 +227,7 @@ internal sealed class WardrobePageController : IDisposable
             _dirty = true; _picking = null;
             if (picking.IsCompletedSuccessfully && picking.Result is { } path)
             { _shell.Renderer.SetTextInputValue(_nodes["WardrobeSkinPath"], path); BeginPreview(); }
-            else if (picking.IsFaulted) _status = "无法选择皮肤文件，请重试。";
+            else if (picking.IsFaulted) _status = Raw("copy.9547fec915a5");
         }
         if (!_loaded && _reading is null) BeginRead();
         if (_reading is { IsCompleted: true } reading)
@@ -268,12 +236,12 @@ internal sealed class WardrobePageController : IDisposable
             if (Succeeded(reading) && MatchesPublishedProfile(reading.Result.Value))
             {
                 _snapshot = reading.Result.Value;
-                _status = _operationNotice ?? _snapshot.ProviderStatus ?? _snapshot.UnavailableReason ?? "选择皮肤或已获得的披风。";
+                _status = _operationNotice ?? _snapshot.ProviderStatus ?? _snapshot.UnavailableReason ?? Raw("ready");
                 BuildCards();
             }
             else
                 _status = reading.IsCompletedSuccessfully && !reading.Result.IsSuccess
-                    ? reading.Result.Error?.Message ?? "无法读取更衣橱。" : "无法读取更衣橱，请重试。";
+                    ? reading.Result.Error?.Message ?? Raw("copy.fc0b5b5c5528") : Raw("copy.259aaeffa337");
             // An admitted read can publish a provider rename before its final reply, including
             // a later failure. Consume that same-principal roster change without auto-retrying.
             if (_readingProfile is { } captured && SamePrincipal(captured, CurrentProfile())
@@ -285,8 +253,8 @@ internal sealed class WardrobePageController : IDisposable
         if (_previewing is { IsCompleted: true } previewing)
         {
             _dirty = true; _previewing = null;
-            if (Succeeded(previewing)) { _preview = previewing.Result.Value; _status = "皮肤已验证，可以上传。"; }
-            else _status = previewing.IsCompletedSuccessfully ? previewing.Result.Error?.Message ?? "皮肤无法使用。" : "无法读取皮肤文件。";
+            if (Succeeded(previewing)) { _preview = previewing.Result.Value; _status = Raw("copy.00e98e4bc87c"); }
+            else _status = previewing.IsCompletedSuccessfully ? previewing.Result.Error?.Message ?? Raw("copy.13135fbcc904") : Raw("copy.9a6d2ea3d613");
         }
         if (_writing is { IsCompleted: true } writing)
         {
@@ -295,16 +263,16 @@ internal sealed class WardrobePageController : IDisposable
                 && Volatile.Read(ref _selectionEvents) == _writingSelectionEpoch;
             if (!currentWrite)
             {
-                Retire(); _observedIdentity = CurrentIdentity(); _status = "正在读取当前账户…";
+                Retire(); _observedIdentity = CurrentIdentity(); _status = Raw("read-account");
             }
             else if (writing.IsCompletedSuccessfully && writing.Result.IsSuccess)
             {
-                _operationNotice = null; _feedback.Info("外观已更新。"); _loaded = false; _snapshot = null; _preview = null; _localOpen = false;
-                _shell.Renderer.SetTextInputValue(_nodes["WardrobeSkinPath"], ""); _status = "外观已更新，正在刷新…";
+                _operationNotice = null; _feedback.Info(Raw("copy.9fa5be79e728")); _loaded = false; _snapshot = null; _preview = null; _localOpen = false;
+                _shell.Renderer.SetTextInputValue(_nodes["WardrobeSkinPath"], ""); _status = Raw("copy.1d165a5566db");
             }
             else
             {
-                _operationNotice = _status = writing.IsCompletedSuccessfully ? writing.Result.Error?.Message ?? "外观操作未完成。" : "外观操作未完成，请重试。";
+                _operationNotice = _status = writing.IsCompletedSuccessfully ? writing.Result.Error?.Message ?? Raw("copy.0a69a3749a9e") : Raw("copy.d3ff07c74807");
                 _loaded = false; _snapshot = null;
             }
             if (currentWrite) _observedIdentity = CurrentIdentity();
@@ -339,7 +307,7 @@ internal sealed class WardrobePageController : IDisposable
         _dirty = true;
         if (command is "ui.wardrobe.cancel" or "ui.wardrobe.local.close")
         {
-            if (Busy) { Retire(); _observedIdentity = CurrentIdentity(); _loaded = true; _status = "操作已取消。点击刷新重新读取外观。"; }
+            if (Busy) { Retire(); _observedIdentity = CurrentIdentity(); _loaded = true; _status = Raw("copy.eae1ff8ac1ab"); }
             else { _localOpen = false; _preview = null; _shell.Renderer.SetTextInputValue(_nodes["WardrobeSkinPath"], ""); }
             return;
         }
@@ -354,18 +322,18 @@ internal sealed class WardrobePageController : IDisposable
         {
             try { _openUrl(uri); }
             catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
-            { _status = "无法打开账户皮肤站，请重试。"; }
+            { _status = Raw("copy.d6f1c4f4be1a"); }
             return;
         }
         if (command is "ui.wardrobe.skin.previous" or "ui.wardrobe.skin.next" or "ui.wardrobe.cape.previous" or "ui.wardrobe.cape.next")
         {
             string track = command.Contains(".skin.", StringComparison.Ordinal) ? "WardrobeSkins" : "WardrobeCapes";
             var scroll = Scroll(track);
-            scroll.OffsetX = Math.Max(0, scroll.OffsetX + (command.EndsWith("next", StringComparison.Ordinal) ? 1 : -1) * Math.Max(_cardWidth + 12, _trackWidth - 12));
+            scroll.OffsetX = Math.Max(0, scroll.OffsetX + (command.EndsWith("next", StringComparison.Ordinal) ? 1 : -1) * Math.Max(_cardWidth+TrackSpacing,_trackWidth-TrackSpacing));
             _shell.Tree.MarkDirty(_nodes[track], XsrUiDirtyKinds.Layout); return;
         }
         if (command is "ui.wardrobe.classic" or "ui.wardrobe.slim")
-        { _slim = command.EndsWith("slim", StringComparison.Ordinal); _preview = null; _status = "模型已改变，请重新校验皮肤。"; }
+        { _slim = command.EndsWith("slim", StringComparison.Ordinal); _preview = null; _status = Raw("copy.46da263430ba"); }
         else if (command == "ui.wardrobe.browse")
         {
             if (snapshot.CanUploadSkin && _pickFile is not null)
@@ -373,15 +341,15 @@ internal sealed class WardrobePageController : IDisposable
                 _localOpen = true;
                 try { _picking = _pickFile(_stop.Token); Wake(_picking); }
                 catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
-                { _status = "无法选择皮肤文件，请重试。"; }
+                { _status = Raw("copy.9547fec915a5"); }
             }
             else if (SafeManageUri(snapshot.ManageUri) is { } site && _openUrl is not null)
             {
                 try { _openUrl(site); }
                 catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
-                { _status = "无法打开账户皮肤站，请重试。"; }
+                { _status = Raw("copy.d6f1c4f4be1a"); }
             }
-            else _status = snapshot.UnavailableReason ?? "当前账户不支持在启动器内更换皮肤。";
+            else _status = snapshot.UnavailableReason ?? Raw("copy.67ee74e4b591");
         }
         else if (command == "ui.wardrobe.preview" && snapshot.CanUploadSkin) BeginPreview();
         else if (command == "ui.wardrobe.upload" && snapshot.CanUploadSkin && _preview is { } preview)
@@ -402,8 +370,8 @@ internal sealed class WardrobePageController : IDisposable
         && uri.Scheme == "https" && uri.UserInfo.Length == 0 && !uri.IsLoopback ? uri : null;
     private void BeginRead()
     {
-        _dirty = true; _status = _operationNotice ?? "正在读取当前账户…";
-        if (!_queries.TryResolve(AccountWardrobeContract.Read, out var route)) { _loaded = true; _status = "更衣橱服务不可用。"; return; }
+        _dirty = true; _status = _operationNotice ?? Raw("read-account");
+        if (!_queries.TryResolve(AccountWardrobeContract.Read, out var route)) { _loaded = true; _status = Raw("copy.3fdfadaa192d"); return; }
         _readingProfile = CurrentProfile(); _readingSelectionEpoch = Volatile.Read(ref _selectionEvents);
         _reading = _queries.QueryAsync<AccountWardrobeQuery, AccountWardrobeSnapshot>(route, new(), cancellationToken: _stop.Token).AsTask(); Wake(_reading);
     }
@@ -424,13 +392,13 @@ internal sealed class WardrobePageController : IDisposable
         if (_snapshot is not { } snapshot || !_queries.TryResolve(AccountWardrobeContract.ValidateSkin, out var route)) return;
         string path = _shell.Tree.GetComponent<XsrUiTextInput>(_nodes["WardrobeSkinPath"])!.ReadDraft();
         _previewing = _queries.QueryAsync<AccountWardrobeSkinQuery, AccountWardrobeSkinPreview>(route,
-            new(snapshot.Identity, path, _slim), cancellationToken: _stop.Token).AsTask(); Wake(_previewing); _status = "正在校验皮肤…";
+            new(snapshot.Identity, path, _slim), cancellationToken: _stop.Token).AsTask(); Wake(_previewing); _status = Raw("copy.4d82b5ad78bd");
     }
     private void Write<T>(XsrSemanticId semantic, T command) where T : notnull
     {
-        if (!_commands.TryResolve(semantic, out var route)) { _status = "外观操作服务不可用。"; return; }
+        if (!_commands.TryResolve(semantic, out var route)) { _status = Raw("copy.57a831d60896"); return; }
         _writingProfile = CurrentProfile(); _writingSelectionEpoch = Volatile.Read(ref _selectionEvents);
-        _writing = _commands.Dispatch(route, command, cancellationToken: _stop.Token).Completion; Wake(_writing); _status = "正在更新外观…";
+        _writing = _commands.Dispatch(route, command, cancellationToken: _stop.Token).Completion; Wake(_writing); _status = Raw("copy.cf41ca6935be");
     }
     private void Wake(Task task)
     {
@@ -470,45 +438,45 @@ internal sealed class WardrobePageController : IDisposable
         }
     }
     private IEnumerable<CardVisual> VisibleCards(List<CardVisual> cards, double offset) => cards
-        .Skip(Math.Clamp((int)(offset / (_cardWidth + 12)), 0, Math.Max(0, cards.Count - 1))).Take(CapePageSize);
+        .Skip(Math.Clamp((int)(offset / (_cardWidth + TrackSpacing)), 0, Math.Max(0, cards.Count - 1))).Take(CapePageSize);
     private void Present()
     {
         if (!_dirty) return; _dirty = false;
         var profile = _writing is not null && _writingProfile is { } captured && SamePrincipal(captured, CurrentProfile())
             ? CurrentProfile() : _snapshot?.Profile ?? CurrentProfile();
-        Text("WardrobeIdentity", string.IsNullOrWhiteSpace(profile.Username) ? "更衣橱" : profile.Username, literal: true);
+        Text("WardrobeIdentity", string.IsNullOrWhiteSpace(profile.Username) ? Raw("copy.7e7d4ca64386") : profile.Username, literal: true);
         var profileCaption = ProfileCaption(profile);
         Text("WardrobeProfileKind", profileCaption.Content, profileCaption.Literal);
         Text("WardrobeStatus", _status); Text("WardrobeLocalStatus", _status);
-        Visible("WardrobeStatus", !_localOpen && _status != "选择皮肤或已获得的披风。" && !string.IsNullOrWhiteSpace(_status));
-        Text("WardrobeClassic", (!_slim ? "✓  " : "") + "经典模型"); Text("WardrobeSlim", (_slim ? "✓  " : "") + "纤细模型");
-        _shell.Tree.GetComponent<XsrUiSemantic>(_nodes["WardrobeCurrentView"])!.Label = ViewCaption(_currentView);
-        Text("WardrobeSkinCount", $"{_skinCards.Count} 项"); Text("WardrobeCapeCount", $"{_capeCards.Count} 项");
+        Visible("WardrobeStatus", !_localOpen && _status != Raw("ready") && !string.IsNullOrWhiteSpace(_status));
+        Text("WardrobeClassic",Format("Choice",("marker",!_slim?Raw("choice-marker"):""),("label",_shell.Renderer.LocalizeText(Raw("copy.fc09417885b9")))),literal:true);Text("WardrobeSlim",Format("Choice",("marker",_slim?Raw("choice-marker"):""),("label",_shell.Renderer.LocalizeText(Raw("copy.252d2d8a440b")))),literal:true);
+        _presentation["WardrobeCurrentView_label"]=ViewCaption(_currentView);
+        Text("WardrobeSkinCount",Format("Count",("count",_skinCards.Count)),literal:true);Text("WardrobeCapeCount",Format("Count",("count",_capeCards.Count)),literal:true);
         Text("WardrobeSkinsEmpty", _snapshot is not null
-            ? "还没有发现可展示的皮肤。可以选择本地皮肤或打开皮肤库。"
-            : _observedIdentity is null ? "请先添加并选择一个账户。"
-            : !_loaded ? "正在读取可展示的皮肤…" : "暂时无法读取皮肤，请检查网络和授权后刷新。");
+            ? Raw("copy.5621b9ced9f2")
+            : _observedIdentity is null ? Raw("copy.df5f107f6bca")
+            : !_loaded ? Raw("copy.aeaccff1924a") : Raw("copy.eb4a3e791478"));
         bool capeEmpty = _capeCards.Count == 0;
-        Text("WardrobeCapeTitle", profile.Kind switch { LaunchProfileKind.Microsoft => "正版账户披风", LaunchProfileKind.LittleSkin => "LittleSkin 披风库", LaunchProfileKind.ThirdParty => "第三方披风", _ => "披风" });
+        Text("WardrobeCapeTitle", profile.Kind switch { LaunchProfileKind.Microsoft => Raw("copy.aa1c5c5541be"), LaunchProfileKind.LittleSkin => Raw("copy.e18491f56efd"), LaunchProfileKind.ThirdParty => Raw("copy.c293fca99b4b"), _ => Raw("copy.ff6519c3a91a") });
         Text("WardrobeCapeSubtitle", profile.Kind switch
         {
-            LaunchProfileKind.Microsoft => "仅可切换当前正版账户已经获得的披风。",
-            LaunchProfileKind.LittleSkin => "LittleSkin 披风衣柜，可自由切换账户衣柜中的披风。",
-            LaunchProfileKind.ThirdParty => "第三方认证站的披风由对应皮肤站管理。",
-            _ => "当前、历史和其他档案中发现的披风。"
+            LaunchProfileKind.Microsoft => Raw("copy.d2bbc702a031"),
+            LaunchProfileKind.LittleSkin => Raw("copy.c11c5962da20"),
+            LaunchProfileKind.ThirdParty => Raw("copy.11d9c550308f"),
+            _ => Raw("copy.a95caa65232f")
         });
         var capeState = _snapshot?.CapeState ?? (!_loaded ? AccountWardrobeCapeState.Loading : AccountWardrobeCapeState.LoadFailed);
         Text("WardrobeCapeStatus", capeState switch
         {
-            AccountWardrobeCapeState.Loading => "正在读取当前账户的披风…",
-            AccountWardrobeCapeState.LoadFailed => "暂时无法读取账户披风，请检查网络和授权后刷新。",
-            AccountWardrobeCapeState.Unsupported => _snapshot?.UnavailableReason ?? "当前账户不支持在启动器内更换披风。",
+            AccountWardrobeCapeState.Loading => Raw("copy.7629fe4d751d"),
+            AccountWardrobeCapeState.LoadFailed => Raw("copy.c4483d5f9b3c"),
+            AccountWardrobeCapeState.Unsupported => _snapshot?.UnavailableReason ?? Raw("copy.1719a7a417c1"),
             _ => profile.Kind switch
             {
-                LaunchProfileKind.Microsoft => "当前正版账户尚未获得任何披风。",
-                LaunchProfileKind.LittleSkin => "LittleSkin 披风衣柜为空，可先在 LittleSkin 添加披风。",
-                LaunchProfileKind.ThirdParty => "尚未发现披风；可前往对应第三方皮肤站设置。",
-                _ => "当前档案和其他档案中没有发现披风。"
+                LaunchProfileKind.Microsoft => Raw("copy.277a40b70823"),
+                LaunchProfileKind.LittleSkin => Raw("copy.fb8dbf7bd06e"),
+                LaunchProfileKind.ThirdParty => Raw("copy.9b76bdbfc3d8"),
+                _ => Raw("copy.4678e5d9760d")
             }
         });
         Visible("WardrobeCapeStatus", capeEmpty); Visible("WardrobeCapes", !capeEmpty);
@@ -534,7 +502,7 @@ internal sealed class WardrobePageController : IDisposable
             _presentedCurrent = current; _presentedCurrentView = _currentView;
         }
         var head = _shell.Tree.GetComponent<XsrUiImage>(_nodes["WardrobeHeadPreview"])!;
-        head.Source = LaunchProfilePresentation.Avatar(profile.Uuid ?? "");
+        _presentation["WardrobeHeadPreview_source"]=LaunchProfilePresentation.Avatar(profile.Uuid??"");
         head.Raster = _preview is { } selected ? LaunchProfilePresentation.Head(selected.Image) : null;
         _shell.Tree.GetComponent<XsrUiImage>(_nodes["WardrobeTexturePreview"])!.Raster = _preview is { } draft
             ? new XsrUiRasterImage(draft.Image, []) { FitToBounds = true } : null;
@@ -544,39 +512,36 @@ internal sealed class WardrobePageController : IDisposable
             if (card.Presented != textures || card.PresentedView != card.View)
             {
                 _shell.Tree.GetComponent<XsrUiImage>(card.Image)!.Raster = WardrobePlayerPresentation.Player(textures.Skin, textures.Cape, textures.IsSlim, card.View);
-                var caption = _shell.Tree.GetComponent<XsrUiText>(card.ViewButton)!;
-                caption.Content = ""; caption.Localize = false;
-                _shell.Tree.GetComponent<XsrUiSemantic>(card.ViewButton)!.Label = ViewCaption(card.View);
                 card.Presented = textures; card.PresentedView = card.View;
             }
-            if (card.Apply.IsAssigned) _shell.Tree.GetComponent<XsrUiInput>(card.Apply)!.Enabled = !Busy && !_localOpen && _snapshot is not null;
+            ProjectCard(card);
         }
-        _shell.Tree.MarkDirty(Page, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+        ReloadWorkspace();
+        _shell.Tree.MarkDirty(Page,XsrUiDirtyKinds.Paint);
         _skinOffset = Scroll("WardrobeSkins").OffsetX; _capeOffset = Scroll("WardrobeCapes").OffsetX;
     }
     private Nexa.Core.Media.PngImage? CurrentSkin(LaunchProfileView profile) => _store.ReadCollection<AccountSkinSnapshot>(_store.Resolve(AccountSkinContract.SkinsKey)).Items
         .FirstOrDefault(s => s.ProfileKey == AccountSkinContract.ProfileKey(profile))?.Image;
     private (string Content, bool Literal) ProfileCaption(LaunchProfileView profile)
     {
-        if (string.IsNullOrWhiteSpace(profile.Username)) return ("请先选择账户", false);
+        if (string.IsNullOrWhiteSpace(profile.Username)) return (Raw("copy.e6d4f4247246"), false);
         if (profile.Kind == LaunchProfileKind.ThirdParty)
         {
             string server = profile.AuthServer.Trim();
             if (!server.Contains("://", StringComparison.Ordinal)) server = "https://" + server;
             if (Uri.TryCreate(server, UriKind.Absolute, out var address) && !string.IsNullOrEmpty(address.Host))
-                return (string.Format(CultureInfo.CurrentCulture, _shell.Renderer.LocalizeText("第三方 · {0}"), address.Host), true);
+                return (Format("ThirdParty",("host",address.Host)),true);
         }
         return !string.IsNullOrWhiteSpace(profile.Info)
             ? (profile.Info, true) : (LaunchProfilePresentation.Description(profile), false);
     }
     private static string ViewLabel(WardrobePlayerView view) => view switch
-    { WardrobePlayerView.Isometric => "立体", WardrobePlayerView.Front => "正面", WardrobePlayerView.Back => "背面", WardrobePlayerView.Left => "左侧", WardrobePlayerView.Right => "右侧", WardrobePlayerView.Top => "顶部", _ => "底部" };
-    private string ViewCaption(WardrobePlayerView view) => string.Format(CultureInfo.CurrentCulture,
-        _shell.Renderer.LocalizeText("{0} · 切换视角"), _shell.Renderer.LocalizeText(ViewLabel(view)));
+    { WardrobePlayerView.Isometric => Raw("copy.bc295ff5696c"), WardrobePlayerView.Front => Raw("copy.740f5e8102e0"), WardrobePlayerView.Back => Raw("copy.2d270b6ce44a"), WardrobePlayerView.Left => Raw("copy.6a24b14f33c7"), WardrobePlayerView.Right => Raw("copy.1cf1d4d0b24b"), WardrobePlayerView.Top => Raw("copy.6f2a4a02e60e"), _ => Raw("copy.3f049887991b") };
+    private string ViewCaption(WardrobePlayerView view)=>Format("View",("view",_shell.Renderer.LocalizeText(ViewLabel(view))));
     private void UpdateTrackButtons(string prefix, int count, double offset)
     {
         Enable(prefix + "Previous", !Busy && offset > 0);
-        Enable(prefix + "Next", !Busy && offset + _trackWidth + .5 < count * (_cardWidth + 12) - 12);
+        Enable(prefix + "Next", !Busy && offset + _trackWidth + .5 < count * (_cardWidth + TrackSpacing) - TrackSpacing);
     }
     private void BuildCards()
     {
@@ -585,132 +550,115 @@ internal sealed class WardrobePageController : IDisposable
         var capes = _snapshot?.CapeCards ?? [];
         if (capes.Count == 0 && _snapshot is { } legacy && legacy.Capes.Count > 0)
             capes = legacy.Capes.Select(cape => new AccountWardrobeCard(cape.Id, cape.Name,
-                cape.IsActive ? "当前使用" : legacy.Profile.Kind == LaunchProfileKind.Microsoft ? "正版账户已获得" : "LittleSkin 衣柜",
+                cape.IsActive ? Raw("copy.5ddff4afab27") : legacy.Profile.Kind == LaunchProfileKind.Microsoft ? Raw("copy.e4df853a4197") : Raw("copy.54b19c79b4f1"),
                 (legacy.Current ?? new(null, null, false, null, null)) with { CapeAddress = cape.TextureAddress, Cape = null },
                 legacy.CanChooseCape && !cape.IsActive, CapeId: cape.Id)
             { Kind = AccountWardrobeTextureKind.Cape, IsActive = cape.IsActive }).ToArray();
         foreach (var card in capes) AddCard(card, _nodes["WardrobeCapes"], _capeCards);
         SetCardMetrics();
     }
-    private void AddCard(AccountWardrobeCard card, XsrUiEntityId parent, List<CardVisual> cards)
+    private void AddCard(AccountWardrobeCard card,XsrUiEntityId parent,List<CardVisual> cards)
     {
-        string prefix = card.Kind == AccountWardrobeTextureKind.Cape ? "WardrobeCape" : "WardrobeSkin";
-        var container = Element(parent, prefix + "Card." + card.Id, XsrUiOrientation.Vertical, 0);
-        var border = _shell.Tree.GetComponent<XsrUiVisualStyle>(container)!; border.Background = new(255, 255, 255); border.CornerRadius = 18; border.Hover = new(242, 247, 253);
-        var body = Element(container, prefix + "Body." + card.Id, XsrUiOrientation.Vertical, 12);
-        _shell.Tree.GetComponent<XsrUiElement>(body)!.Weight = 1;
-        var image = _shell.Tree.Create(prefix + "Preview." + card.Id); _shell.Tree.Attach(image, body);
-        _shell.Tree.SetComponent(image, new XsrUiElement { Height = 140, Weight = 1 });
-        _shell.Tree.SetComponent(image, new XsrUiImage("lucide/image"));
-        _shell.Tree.SetComponent(image, new XsrUiSemantic(XsrUiSemanticRole.Image, card.Title) { Localize = false });
-        var details = Element(body, prefix + "Details." + card.Id, XsrUiOrientation.Vertical, 6);
-        var title = Label(details, prefix + "Title." + card.Id, card.Title, 25, true);
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(title)!.FontWeight = 600;
-        Label(details, prefix + "Source." + card.Id, card.Source, 22, false);
-        var viewButton = Button(body, prefix + "View." + card.Id, "", "ui.wardrobe.view.card", 22);
-        _shell.Tree.SetComponent(viewButton, new XsrUiImage("pcl/refresh"));
-        _shell.Tree.SetComponent(viewButton, new XsrUiOverlayLayer(isModal: false));
-        var viewElement = _shell.Tree.GetComponent<XsrUiElement>(viewButton)!;
-        viewElement.Margin = new(0, 4, 4, 0); viewElement.Width = 22; viewElement.HorizontalAlignment = XsrUiAlignment.End; viewElement.VerticalAlignment = XsrUiAlignment.Start;
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(viewButton)!.Background = XsrUiColor.Transparent;
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(viewButton)!.BorderWidth = 0;
-        XsrUiEntityId apply = default;
-        if (card.CanApply && !card.IsActive)
-            apply = Button(details, card.Kind == AccountWardrobeTextureKind.Cape ? prefix + "." + card.Id : prefix + "Apply." + card.Id,
-                card.Kind == AccountWardrobeTextureKind.Cape ? "使用披风" : "使用皮肤", card.Kind == AccountWardrobeTextureKind.Cape ? "ui.wardrobe.cape.choose" : "ui.wardrobe.skin.choose", 30);
-        var visual = new CardVisual(card, container, body, image, details, viewButton, apply); cards.Add(visual);
-        _viewSources[viewButton] = visual; if (apply.IsAssigned) _applySources[apply] = visual;
+        var data=CardProjection(card,card.Kind==AccountWardrobeTextureKind.Cape?WardrobePlayerView.Back:WardrobePlayerView.Front);
+        var container=_dynamic.Append(parent,DesktopMarkup.Dynamic("WardrobeCard.d.nxml",data));
+        var nodes=new Dictionary<string,XsrUiEntityId>();
+        _shell.Tree.Walk(container,node=>{nodes[_shell.Tree.Name(node)]=node;return true;});
+        XsrUiEntityId apply=default;
+        if(card.CanApply&&!card.IsActive)
+            apply=_dynamic.Append(nodes[data["apply_slot"]],DesktopMarkup.Dynamic("WardrobeCardApply.d.nxml",ApplyProjection(card)));
+        var visual=new CardVisual(card,container,nodes[data["body"]],nodes[data["image"]],nodes[data["details"]],nodes[data["view"]],apply){Projection=data};
+        cards.Add(visual);_viewSources[visual.ViewButton]=visual;if(apply.IsAssigned)_applySources[apply]=visual;
     }
-    private XsrUiEntityId Element(XsrUiEntityId parent, string name, XsrUiOrientation direction, double spacing)
+    private Dictionary<string,string> ApplyProjection(AccountWardrobeCard card)
     {
-        var entity = _shell.Tree.Create(name); _shell.Tree.Attach(entity, parent);
-        _shell.Tree.SetComponent(entity, new XsrUiElement()); _shell.Tree.SetComponent(entity, new XsrUiStackPanel(direction) { Spacing = spacing }); Style(entity); return entity;
+        bool cape=card.Kind==AccountWardrobeTextureKind.Cape;
+        return new(){["key"]=(cape?"WardrobeCape.":"WardrobeSkinApply.")+SafeSuffix(card.Id),
+            ["caption"]=_shell.Renderer.LocalizeText(Raw(cape?"use-cape":"use-skin")),
+            ["command"]=cape?"ui.wardrobe.cape.choose":"ui.wardrobe.skin.choose",
+            ["enabled"]=Flag(!Busy&&!_localOpen&&_snapshot is not null)};
     }
-    private XsrUiEntityId Label(XsrUiEntityId parent, string name, string value, double height, bool literal)
+    private Dictionary<string,string> CardProjection(AccountWardrobeCard card,WardrobePlayerView view)=>ProjectCard(_shell,card,view,_cardWidth,_cardHeight);
+    internal static Dictionary<string,string> ProjectCard(XsrUiShell shell,AccountWardrobeCard card,WardrobePlayerView view,double width,double height)
     {
-        var entity = _shell.Tree.Create(name); _shell.Tree.Attach(entity, parent);
-        _shell.Tree.SetComponent(entity, new XsrUiElement { Height = height });
-        _shell.Tree.SetComponent(entity, new XsrUiText(value) { Localize = !literal, MaxLines = 1, TrimOverflow = true });
-        _shell.Tree.SetComponent(entity, new XsrUiSemantic(XsrUiSemanticRole.Text, value) { Localize = !literal }); Style(entity);
-        var style = _shell.Tree.GetComponent<XsrUiVisualStyle>(entity)!; style.FontSize = literal ? 15 : 12; style.TextAlignment = XsrUiTextAlignment.Center; return entity;
+        if(!double.IsFinite(width)||!double.IsFinite(height)||width<=0||height<=0)throw new ArgumentException("Invalid wardrobe card viewport.");
+        string ViewCaption(WardrobePlayerView selected)=>DesktopWardrobeText.Format("View",new Dictionary<string,string>{["view"]=shell.Renderer.LocalizeText(ViewLabel(selected))},shell.Renderer.LocalizeText);
+        string prefix=card.Kind==AccountWardrobeTextureKind.Cape?"WardrobeCape":"WardrobeSkin",suffix=SafeSuffix(card.Id);
+        var axis=DesktopWardrobeText.Metric("card-axis");bool horizontal=height<Required(axis.Height);
+        var image=DesktopWardrobeText.Metric("horizontal-image");var vertical=DesktopWardrobeText.Metric("vertical-image");var labels=DesktopWardrobeText.Metric("card-labels");
+        var aspect=DesktopWardrobeText.Metric("image-aspect");double imageHeight=horizontal?Math.Clamp(height-image.Margin.Top,Required(image.MinHeight),Required(image.MaxHeight))
+            :Math.Max(Required(vertical.MinHeight),height-(card.CanApply&&!card.IsActive?vertical.Margin.Top:vertical.Margin.Bottom));
+        double imageWidth=horizontal?imageHeight*Required(aspect.Width)/Required(aspect.Height):width-DesktopWardrobeText.Metric("card-body").Margin.Horizontal;
+        return new(){["container"]=prefix+"Card."+suffix,["body"]=prefix+"Body."+suffix,["image"]=prefix+"Preview."+suffix,
+            ["details"]=prefix+"Details."+suffix,["title_key"]=prefix+"Title."+suffix,["source_key"]=prefix+"Source."+suffix,
+            ["apply_slot"]=prefix+"ApplySlot."+suffix,["view_layer"]=prefix+"ViewLayer."+suffix,["view"]=prefix+"View."+suffix,
+            ["width"]=Number(width),["height"]=Number(height),["orientation"]=horizontal?"Horizontal":"Vertical",
+            ["image_width"]=Number(imageWidth),["image_height"]=Number(imageHeight),["image_weight"]=horizontal?"0":"1",
+            ["image_alignment"]=horizontal?"Center":"Stretch",["details_weight"]=horizontal?"1":"0",
+            ["title_height"]=Number(Required(horizontal?labels.MinHeight:labels.Height)),["source_height"]=Number(Required(horizontal?labels.MinWidth:labels.Width)),
+            ["title"]=card.Title,["source"]=shell.Renderer.LocalizeText(card.Source),["view_label"]=ViewCaption(view),
+            ["title_variant"]=Raw(horizontal?"card-title-start":"card-title-center"),["source_variant"]=Raw(horizontal?"card-source-start":"card-source-center")};
     }
-    private XsrUiEntityId Button(XsrUiEntityId parent, string name, string label, string command, double height)
+    private void ProjectCard(CardVisual card)
     {
-        var entity = Label(parent, name, label, height, false);
-        _shell.Tree.SetComponent(entity, new XsrUiInput { Clickable = true, Focusable = true });
-        _shell.Tree.SetComponent(entity, new XsrUiCommandBinding(XsrSemanticId.Parse(command)));
-        _shell.Tree.SetComponent(entity, new XsrUiSemantic(XsrUiSemanticRole.Button, label)); Style(entity);
-        var style = _shell.Tree.GetComponent<XsrUiVisualStyle>(entity)!;
-        style.FontWeight = 600; style.Border = new(144, 159, 181); style.BorderWidth = 1;
-        return entity;
+        var data=CardProjection(card.Card,card.View);
+        if(!Same(data,card.Projection)){_dynamic.Reload(card.Container,DesktopMarkup.Dynamic("WardrobeCard.d.nxml",data));card.Projection=data;}
+        if(card.Apply.IsAssigned)_dynamic.Reload(card.Apply,DesktopMarkup.Dynamic("WardrobeCardApply.d.nxml",ApplyProjection(card.Card)));
     }
     private void ApplyResponsiveLayout()
     {
-        if (_viewport == _shell.Renderer.Viewport) return;
-        _viewport = _shell.Renderer.Viewport;
-        double rail = _viewport.Width >= 1380 ? 326 : _viewport.Width <= 940 ? 268 : 300;
-        _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeRailSurface"])!.Width = rail;
-        bool compact = _viewport.Height <= 650;
-        var railElement = _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeProfileRail"])!;
-        railElement.Padding = compact ? new(18, 14, 18, 16) : new(22, 18, 22, 22);
-        railElement.Width = rail - railElement.Padding.Horizontal;
-        double edge = _viewport.Width >= 1500 ? 38 : _viewport.Width <= 980 ? 18 : 26;
-        _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeContent"])!.Padding = new(edge, compact ? 10 : 20, edge, compact ? 10 : 24);
-        _shell.Tree.GetComponent<XsrUiStackPanel>(_nodes["WardrobeContent"])!.Spacing = compact ? 4 : 8;
-        foreach (string key in new[] { "WardrobeSkinHeader", "WardrobeCapeHeader" }) _shell.Tree.GetComponent<XsrUiElement>(_nodes[key])!.Height = 32;
-        _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeCapeHeader"])!.Margin = new(0, compact ? 4 : 8, 0, 0);
-        _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeMainHeader"])!.Height = compact ? 30 : 34;
-        _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeStatus"])!.Height = compact ? 30 : 40;
-        _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeSkinSubtitle"])!.Height = compact ? 22 : 28;
-        _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeCapeSubtitle"])!.Height = compact ? 26 : 30;
-        _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeSkinPager"])!.Height = 30;
-        _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeCapePager"])!.Height = 30;
-        _trackWidth = Math.Max(120, _viewport.Width - rail - edge * 2 - 32);
-        // First-frame estimate only; subsequent frames use the actual scroll viewport.
-        _cardHeight = Math.Clamp((_viewport.Height - (compact ? 270 : 330)) / 2 - 10, 112, 270);
-        _cardWidth = CardWidth(_cardHeight);
-        var localPanel = _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeLocalPanel"])!;
-        localPanel.Width = Math.Min(600, Math.Max(260, _viewport.Width - 48)) - localPanel.Padding.Horizontal;
-        localPanel.MaxHeight = Math.Min(500, Math.Max(140, _viewport.Height - 100)) - localPanel.Padding.Vertical;
-        SetCardMetrics(); _dirty = true; _shell.Tree.MarkDirty(Page, XsrUiDirtyKinds.Layout);
-    }
-    private static double CardWidth(double height) => height < 240
-        ? Math.Clamp(Math.Clamp(height - 18, 72, 150) * .65 + 140, 220, 244)
-        : Math.Clamp((height - 90) * .65 + 88, 150, 190);
-    private void SetCardMetrics()
-    {
-        bool horizontal = _cardHeight < 240;
-        foreach (var card in _skinCards.Concat(_capeCards))
+        if(_viewport==_shell.Renderer.Viewport)return;
+        _viewport=_shell.Renderer.Viewport;var view=DesktopWardrobeText.Metric("view");var railMetric=DesktopWardrobeText.Metric("rail");
+        bool compact=_viewport.Height<=Required(view.Height);
+        double rail=_viewport.Width>=Required(view.MaxWidth)?Required(railMetric.MaxWidth):_viewport.Width<=Required(view.MinWidth)?Required(railMetric.MinWidth):Required(railMetric.Width);
+        var railPadding=(compact?DesktopWardrobeText.Metric("rail-compact"):railMetric).Padding;
+        var content=DesktopWardrobeText.Metric("content");var contentHeight=compact?DesktopWardrobeText.Metric("content-compact"):content;
+        var edgeMetric=_viewport.Width>=Required(content.MaxWidth)?DesktopWardrobeText.Metric("content-large"):_viewport.Width<=Required(content.MinWidth)?DesktopWardrobeText.Metric("content-narrow"):content;
+        double edge=edgeMetric.Padding.Left;
+        _presentation["WardrobeRailSurface_width"]=Number(rail);_presentation["WardrobeProfileRail_width"]=Number(rail-railPadding.Horizontal);
+        _presentation["WardrobeProfileRail_padding"]=Thickness(railPadding);
+        _presentation["WardrobeContent_padding"]=Thickness(new(edge,contentHeight.Padding.Top,edge,contentHeight.Padding.Bottom));
+        _presentation["WardrobeContent_spacing"]=Number(contentHeight.Spacing);
+        _presentation["WardrobeCapeHeader_margin"]=Thickness(new(0,contentHeight.Spacing,0,0));
+        foreach(var pair in new[]{("WardrobeMainHeader","header"),("WardrobeStatus","status"),("WardrobeSkinSubtitle","skin-subtitle"),("WardrobeCapeSubtitle","cape-subtitle")})
         {
-            var container = _shell.Tree.GetComponent<XsrUiElement>(card.Container)!;
-            // Paint the whole card; inset the body instead of shrinking the painted surface.
-            container.Padding = default;
-            _shell.Tree.GetComponent<XsrUiElement>(card.Body)!.Margin = new(12, 10, 12, 10);
-            container.Width = container.MinWidth = _cardWidth - container.Padding.Horizontal;
-            container.Height = _cardHeight - container.Padding.Vertical;
-            _shell.Tree.GetComponent<XsrUiStackPanel>(card.Body)!.Direction = horizontal ? XsrUiOrientation.Horizontal : XsrUiOrientation.Vertical;
-            var image = _shell.Tree.GetComponent<XsrUiElement>(card.Image)!;
-            image.Width = horizontal ? Math.Clamp(_cardHeight - 18, 72, 150) * .65 : null;
-            image.Height = horizontal ? Math.Clamp(_cardHeight - 18, 72, 150) : Math.Max(72, _cardHeight - (card.Apply.IsAssigned ? 90 : 56));
-            image.Weight = horizontal ? 0 : 1;
-            image.VerticalAlignment = horizontal ? XsrUiAlignment.Center : XsrUiAlignment.Stretch;
-            var details = _shell.Tree.GetComponent<XsrUiElement>(card.Details)!; details.Weight = horizontal ? 1 : 0; details.VerticalAlignment = XsrUiAlignment.Center;
-            var labels = _shell.Tree.Children(card.Details);
-            foreach (var label in labels.Take(2))
-                _shell.Tree.GetComponent<XsrUiVisualStyle>(label)!.TextAlignment = horizontal ? XsrUiTextAlignment.Start : XsrUiTextAlignment.Center;
-            _shell.Tree.GetComponent<XsrUiElement>(labels[0])!.Height = horizontal ? 20 : 25;
-            _shell.Tree.GetComponent<XsrUiElement>(labels[1])!.Height = horizontal ? 18 : 22;
-            _shell.Tree.GetComponent<XsrUiElement>(card.ViewButton)!.Height = 22;
-            if (card.Apply.IsAssigned) _shell.Tree.GetComponent<XsrUiElement>(card.Apply)!.Height = 32;
-            _shell.Tree.MarkDirty(card.Container, XsrUiDirtyKinds.Layout);
+            var metric=DesktopWardrobeText.Metric(pair.Item2);_presentation[pair.Item1+"_height"]=Number(Required(compact?metric.MinHeight:metric.Height));
         }
+        var track=DesktopWardrobeText.Metric("track");_trackWidth=Math.Max(Required(track.MinWidth),_viewport.Width-rail-edge*2-track.Margin.Left);
+        var estimate=DesktopWardrobeText.Metric("estimate");_cardHeight=Math.Clamp((_viewport.Height-Required(compact?estimate.MinHeight:estimate.Height))/2-track.Margin.Top,Required(track.MinHeight),Required(track.MaxHeight));
+        _cardWidth=CardWidth(_cardHeight);
+        var local=DesktopWardrobeText.Metric("local");var padding=_shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeLocalPanel"])!.Padding;
+        _presentation["WardrobeLocalPanel_width"]=Number(Math.Min(Required(local.Width),Math.Max(Required(local.MinWidth),_viewport.Width-local.Margin.Horizontal))-padding.Horizontal);
+        _presentation["WardrobeLocalPanel_maxheight"]=Number(Math.Min(Required(local.Height),Math.Max(Required(local.MinHeight),_viewport.Height-local.Margin.Vertical))-padding.Vertical);
+        _dirty=true;SetCardMetrics();
     }
+    private static double CardWidth(double height)
+    {
+        var axis=DesktopWardrobeText.Metric("card-axis");var aspect=DesktopWardrobeText.Metric("image-aspect");
+        if(height<Required(axis.Height))
+        {
+            var image=DesktopWardrobeText.Metric("horizontal-image");var card=DesktopWardrobeText.Metric("horizontal-card");
+            return Math.Clamp(Math.Clamp(height-image.Margin.Top,Required(image.MinHeight),Required(image.MaxHeight))*Required(aspect.Width)/Required(aspect.Height)+card.Padding.Left,Required(card.MinWidth),Required(card.MaxWidth));
+        }
+        var vertical=DesktopWardrobeText.Metric("vertical-card");
+        return Math.Clamp((height-vertical.Padding.Top)*Required(aspect.Width)/Required(aspect.Height)+vertical.Padding.Left,Required(vertical.MinWidth),Required(vertical.MaxWidth));
+    }
+    private void SetCardMetrics(){foreach(var card in _skinCards.Concat(_capeCards))ProjectCard(card);}
+    private double TrackSpacing=>_shell.Tree.GetComponent<XsrUiStackPanel>(_nodes["WardrobeSkins"])!.Spacing;
+    private static double Required(double? value)=>value is >0&&double.IsFinite(value.Value)?value.Value:throw new NxmlCompileException("Incomplete wardrobe viewport metric.");
+    private static string SafeSuffix(string value)=>value.Length<=90&&!value.Any(char.IsWhiteSpace)&&!value.Contains('{')&&!value.Contains('}')?value:"h"+Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
+    private static string Number(double value)=>value.ToString("R",CultureInfo.InvariantCulture);
+    private static string Flag(bool value)=>value?"true":"false";
+    private static string Thickness(XsrUiThickness value)=>string.Join(",",Number(value.Left),Number(value.Top),Number(value.Right),Number(value.Bottom));
+    private static bool Same(Dictionary<string,string> a,Dictionary<string,string> b)=>a.Count==b.Count&&a.All(pair=>b.TryGetValue(pair.Key,out var value)&&value==pair.Value);
+    private string Format(string name,params(string Key,object Value)[] values)=>DesktopWardrobeText.Format(name,values.ToDictionary(pair=>pair.Key,pair=>Convert.ToString(pair.Value,CultureInfo.CurrentCulture)??""),_shell.Renderer.LocalizeText);
+    private static string Raw(string key)=>DesktopWardrobeText.Raw(key);
+    private void ReloadWorkspace(){if(Same(_presentation,_applied))return;_dynamic.Reload(_workspace,DesktopMarkup.Dynamic("WardrobeWorkspace.d.nxml",_presentation));_applied=new(_presentation);}
     private XsrUiScroll Scroll(string node) => _shell.Tree.GetComponent<XsrUiScroll>(_nodes[node])!;
     private void ClearCards()
     {
         foreach (string key in new[] { "WardrobeSkins", "WardrobeCapes" })
         {
-            foreach (var child in _shell.Tree.Children(_nodes[key]).ToArray()) _shell.Tree.Destroy(child);
+            _dynamic.Clear(_nodes[key]);
             Scroll(key).OffsetX = 0;
         }
         _skinCards.Clear(); _capeCards.Clear(); _applySources.Clear(); _viewSources.Clear(); _textures.Clear(); _textureAttempts.Clear();
@@ -726,32 +674,13 @@ internal sealed class WardrobePageController : IDisposable
             _shell.Tree.GetComponent<XsrUiImage>(_nodes[name])!.Raster = null;
         ClearCards();
     }
-    private void Text(string name, string content, bool literal = false)
-    {
-        var entity = _nodes[name]; var text = _shell.Tree.GetComponent<XsrUiText>(entity)!;
-        text.Localize = !literal;
-        if (text.Content == content) return; text.Content = content;
-        _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-    }
-    private void Enable(string name, bool enabled) => _shell.Tree.GetComponent<XsrUiInput>(_nodes[name])!.Enabled = enabled;
-    private void Visible(string name, bool visible) => _shell.Tree.GetComponent<XsrUiElement>(_nodes[name])!.IsVisible = visible;
-    private void Style(XsrUiEntityId entity)
-    {
-        bool button = _shell.Tree.GetComponent<XsrUiInput>(entity)?.Clickable == true;
-        _shell.Tree.SetComponent(entity, new XsrUiVisualStyle
-        {
-            Foreground = new(43, 51, 64),
-            Background = button ? new(241, 245, 250) : XsrUiColor.Transparent,
-            CornerRadius = button ? 10 : 0,
-            FontSize = 14,
-            WrapText = !button,
-            TextAlignment = button ? XsrUiTextAlignment.Center : XsrUiTextAlignment.Start
-        });
-    }
+    private void Text(string name,string content,bool literal=false)=>_presentation[name+"_text"]=literal?content:_shell.Renderer.LocalizeText(content);
+    private void Enable(string name,bool enabled)=>_presentation[name+"_enabled"]=Flag(enabled);
+    private void Visible(string name,bool visible)=>_presentation[name+"_visible"]=Flag(visible);
     public void Dispose()
     {
         if (_disposed) return; _disposed = true;
         _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame; _store.Changed -= OnStateChanged;
-        Retire(); _stop.Dispose();
+        Retire();_stop.Dispose();_dynamic.Remove(_workspace);
     }
 }

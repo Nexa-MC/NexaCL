@@ -189,7 +189,7 @@ public sealed partial class NxmlUiLoader
                 if (node.Scrollable)
                 {
                     tree.SetComponent(entity, new XsrUiScroll
-                    { ShowsVerticalIndicator = node.ShowsVerticalIndicator, StickToEnd = node.StickToEnd });
+                    { ShowsVerticalIndicator = node.ShowsVerticalIndicator, ShowsHorizontalIndicator = node.ShowsHorizontalIndicator, UseVerticalWheelForHorizontalScroll = node.UseVerticalWheelForHorizontalScroll, StickToEnd = node.StickToEnd });
                     if (node.ScrollGesture) tree.SetComponent(entity, new XsrUiScrollGesture());
                 }
 

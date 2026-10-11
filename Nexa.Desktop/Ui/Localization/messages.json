@@ -1,4 +1,11 @@
 [
+  {"source":"{data count} 项","en":"{data count} items","zh-Hant":"{data count} 項"},
+  {"source":"第三方 · {data host}","en":"Third-party · {data host}","zh-Hant":"第三方 · {data host}"},
+  {"source":"{data view} · 切换视角","en":"{data view} · Change view","zh-Hant":"{data view} · 切換視角"},
+  {"source":"第 {data page} 页","en":"Page {data page}","zh-Hant":"第 {data page} 頁"},
+  {"source":"第 {data page} 页 · {data count} 项{data server}","en":"Page {data page} · {data count} items{data server}","zh-Hant":"第 {data page} 頁 · {data count} 項{data server}"},
+  {"source":"由 {data uploader} 上传","en":"Uploaded by {data uploader}","zh-Hant":"由 {data uploader} 上傳"},
+  {"source":"♥ {data likes} · 披风{data hd}","en":"♥ {data likes} · Cape{data hd}","zh-Hant":"♥ {data likes} · 披風{data hd}"},
   {"source":"设置保存操作尚不可用。","en":"Saving setup is currently unavailable.","zh-Hant":"設定儲存操作尚不可用。"},
   {"source":"无法读取初始外观设置。","en":"Could not read the initial appearance settings.","zh-Hant":"無法讀取初始外觀設定。"},
   {"source":"背景配置未应用：{data error}","en":"Background settings were not applied: {data error}","zh-Hant":"背景設定未套用：{data error}"},

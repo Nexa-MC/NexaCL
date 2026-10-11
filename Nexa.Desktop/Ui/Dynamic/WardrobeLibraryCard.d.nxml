@@ -1,0 +1,13 @@
+<nxml-dynamic>
+  <StackPanel Key="{data prefix}" Class="wardrobe-library-base wardrobe-library-card">
+    <StackPanel Key="{data body_key}" Class="wardrobe-library-base wardrobe-library-card-body">
+      <Image Key="{data preview_key}" Label="{data name}" Localize="false" Source="lucide/image" Class="wardrobe-library-preview" />
+      <Text Key="{data name_key}" Content="{data name}" Localize="false" MaxLines="1" TrimOverflow="true" Class="wardrobe-library-base wardrobe-library-name" />
+      <Text Key="{data uploader_key}" Content="{data uploader}" Localize="false" MaxLines="1" TrimOverflow="true" Class="wardrobe-library-base wardrobe-library-metadata" />
+      <Text Key="{data metadata_key}" Content="{data metadata}" Localize="false" MaxLines="1" TrimOverflow="true" Class="wardrobe-library-base wardrobe-library-metadata" />
+      <Button Key="{data view_key}" Content="{data view}" Localize="false" Command="ui.wardrobe.library.action" Class="wardrobe-library-base wardrobe-library-button wardrobe-library-card-button" />
+      <Button Key="{data apply_key}" Content="{data apply}" Localize="false" IsVisible="{data apply_visible}" Enabled="{data apply_enabled}" Command="ui.wardrobe.library.action" Class="wardrobe-library-base wardrobe-library-button wardrobe-library-card-button" />
+      <Button Key="{data details_key}" Content="查看详情" Command="ui.wardrobe.library.action" Class="wardrobe-library-base wardrobe-library-button wardrobe-library-card-button" />
+    </StackPanel>
+  </StackPanel>
+</nxml-dynamic>

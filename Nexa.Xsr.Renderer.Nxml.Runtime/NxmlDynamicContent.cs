@@ -50,6 +50,34 @@ public sealed class NxmlDynamicContent(XsrUiTree tree, XsrStateStore state)
         tree.ReorderChildren(slot, requested);
     }
 
+    /// <summary>Moves an anchor-free fragment between slots of the same owned workspace, retaining its live state.</summary>
+    public void Move(XsrUiEntityId instance, XsrUiEntityId destination)
+    {
+        RequireSlot(destination);
+        if (!_owners.TryGetValue(instance, out var owner) || !tree.IsAlive(instance)
+            || tree.Parent(instance) != owner.Slot)
+            throw new NxmlLoadException("Move requires a live owned dynamic instance.");
+        RequireSlot(owner.Slot);
+        for (var node = destination; node.IsAssigned; node = tree.Parent(node))
+            if (node == instance) throw new NxmlLoadException("Move cannot create an ownership cycle.");
+        if (Workspace(instance) != Workspace(destination))
+            throw new NxmlLoadException("Move requires slots in the same owned workspace.");
+        bool anchored = false;
+        tree.Walk(instance, node => { anchored |= tree.GetComponent<XsrUiAnchoredOverlay>(node) is not null; return true; });
+        if (anchored) throw new NxmlLoadException("Move cannot relocate anchor contracts.");
+        if (owner.Slot == destination) return;
+        tree.Attach(instance, destination);
+        _owners[instance] = owner with { Slot = destination };
+    }
+
+    private XsrUiEntityId Workspace(XsrUiEntityId entity)
+    {
+        XsrUiEntityId root = default;
+        for (var node = entity; node.IsAssigned; node = tree.Parent(node))
+            if (_owners.ContainsKey(node)) root = node;
+        return root;
+    }
+
     public XsrUiEntityId Replace(XsrUiEntityId slot, NxmlHostIr fragment)
     {
         var instance = Append(slot, fragment);

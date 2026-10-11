@@ -1,0 +1,82 @@
+<nxml-dynamic>
+  <StackPanel Key="WardrobeRoot" Class="layout-WardrobePage-WardrobeRoot wardrobe-base">
+    <ContentHost Key="WardrobeRailSurface" Class="layout-WardrobePage-WardrobeRailSurface wardrobe-base" Width="{data WardrobeRailSurface_width}">
+      <StackPanel Key="WardrobeProfileRail" Scroll="true" Class="layout-WardrobePage-WardrobeProfileRail wardrobe-base" Width="{data WardrobeProfileRail_width}" Padding="{data WardrobeProfileRail_padding}" ScrollGesture="true">
+        <Text Key="WardrobeCurrentTitle" Content="当前外观" Class="layout-WardrobePage-WardrobeCurrentTitle wardrobe-base" />
+        <Text Key="WardrobeCurrentSubtitle" Content="完整预览当前档案正在使用的皮肤与披风。" Class="layout-WardrobePage-WardrobeCurrentSubtitle wardrobe-base" />
+        <StackPanel Key="WardrobeCurrentCard" Class="layout-WardrobePage-WardrobeCurrentCard wardrobe-base" Height="{data WardrobeCurrentCard_height}" Weight="{data WardrobeCurrentCard_weight}">
+          <ContentHost Key="WardrobeCurrentPreview" Class="layout-WardrobePage-WardrobeCurrentPreview wardrobe-base">
+            <Image Key="WardrobePlayerPreview" Label="当前皮肤与披风全身预览" Source="lucide/image" Class="layout-WardrobePage-WardrobePlayerPreview wardrobe-base" />
+            <Button Key="WardrobeCurrentView" Label="{data WardrobeCurrentView_label}" Content="" Icon="pcl/refresh" Command="ui.wardrobe.view.current" Class="layout-WardrobePage-WardrobeCurrentView wardrobe-base wardrobe-button" Enabled="{data WardrobeCurrentView_enabled}" Localize="false" />
+          </ContentHost>
+          <Text Key="WardrobeIdentity" Content="{data WardrobeIdentity_text}" Class="layout-WardrobePage-WardrobeIdentity wardrobe-base" Localize="false" MaxLines="1" TrimOverflow="true" />
+          <Text Key="WardrobeProfileKind" Content="{data WardrobeProfileKind_text}" Class="layout-WardrobePage-WardrobeProfileKind wardrobe-base" Localize="false" MaxLines="1" TrimOverflow="true" />
+        </StackPanel>
+        <Button Key="WardrobeBrowse" Label="选择本地皮肤" Content="选择本地皮肤" Command="ui.wardrobe.browse" Class="layout-WardrobePage-WardrobeBrowse wardrobe-base wardrobe-button" Enabled="{data WardrobeBrowse_enabled}" />
+        <Button Key="WardrobeLibrary" Label="打开皮肤库" Content="皮肤库" Command="ui.wardrobe.library" Class="layout-WardrobePage-WardrobeLibrary wardrobe-base wardrobe-button" Enabled="{data WardrobeLibrary_enabled}" />
+        <Button Key="WardrobeManage" Label="打开账户皮肤站" Content="打开账户皮肤站" Command="ui.wardrobe.manage" Icon="lucide/external-link" IsVisible="{data WardrobeManage_visible}" Class="layout-WardrobePage-WardrobeManage wardrobe-base wardrobe-button" Enabled="{data WardrobeManage_enabled}" />
+        <Button Key="WardrobeCancel" Label="取消更衣橱操作" Content="取消操作" Command="ui.wardrobe.cancel" IsVisible="{data WardrobeCancel_visible}" Class="layout-WardrobePage-WardrobeCancel wardrobe-base wardrobe-button" Enabled="{data WardrobeCancel_enabled}" />
+      </StackPanel>
+    </ContentHost>
+    <StackPanel Key="WardrobeContent" Scroll="true" Class="layout-WardrobePage-WardrobeContent wardrobe-base" Padding="{data WardrobeContent_padding}" Spacing="{data WardrobeContent_spacing}" ScrollGesture="true">
+      <StackPanel Key="WardrobeMainHeader" IsVisible="false" Class="layout-WardrobePage-WardrobeMainHeader wardrobe-base" Height="{data WardrobeMainHeader_height}">
+        <Text Key="WardrobePageTitle" Content="更衣橱" Class="layout-WardrobePage-WardrobePageTitle wardrobe-base" />
+      </StackPanel>
+      <Text Key="WardrobeStatus" Content="{data WardrobeStatus_text}" Class="layout-WardrobePage-WardrobeStatus wardrobe-base" Localize="false" IsVisible="{data WardrobeStatus_visible}" Height="{data WardrobeStatus_height}" />
+      <StackPanel Key="WardrobeSkinHeader" Class="layout-WardrobePage-WardrobeSkinHeader wardrobe-base">
+        <Text Key="WardrobeSkinTitle" Content="皮肤" Class="layout-WardrobePage-WardrobeSkinTitle wardrobe-base" />
+        <Text Key="WardrobeSkinCount" Content="{data WardrobeSkinCount_text}" Class="layout-WardrobePage-WardrobeSkinCount wardrobe-base" Localize="false" />
+        <StackPanel Key="WardrobeSkinPager" Class="layout-WardrobePage-WardrobeSkinPager wardrobe-base" IsVisible="{data WardrobeSkinPager_visible}">
+          <Button Key="WardrobeSkinPrevious" Content="" Label="向左浏览皮肤" Command="ui.wardrobe.skin.previous" Icon="lucide/arrow-left" Class="layout-WardrobePage-WardrobeSkinPrevious wardrobe-base wardrobe-button" Enabled="{data WardrobeSkinPrevious_enabled}" />
+          <Button Key="WardrobeSkinNext" Content="" Label="向右浏览皮肤" Command="ui.wardrobe.skin.next" Icon="lucide/chevron-right" Class="layout-WardrobePage-WardrobeSkinNext wardrobe-base wardrobe-button" Enabled="{data WardrobeSkinNext_enabled}" />
+        </StackPanel>
+        <Button Key="WardrobeRefresh" Content="" Label="刷新更衣橱" Command="ui.wardrobe.refresh" Icon="pcl/refresh" Class="layout-WardrobePage-WardrobeRefresh wardrobe-base wardrobe-button" Enabled="{data WardrobeRefresh_enabled}" />
+      </StackPanel>
+      <Text Key="WardrobeSkinSubtitle" Content="此前更换过的皮肤和其他档案的皮肤" Class="layout-WardrobePage-WardrobeSkinSubtitle wardrobe-base" Height="{data WardrobeSkinSubtitle_height}" />
+      <StackPanel Key="WardrobeSkinTrack" Class="layout-WardrobePage-WardrobeSkinTrack wardrobe-base" Height="{data WardrobeSkinTrack_height}" Weight="{data WardrobeSkinTrack_weight}">
+        <Dynamic Key="WardrobeSkins" Scroll="true" Class="layout-WardrobePage-WardrobeSkins wardrobe-base" IsVisible="{data WardrobeSkins_visible}" ShowsHorizontalIndicator="true" UseVerticalWheelForHorizontalScroll="true" />
+        <Text Key="WardrobeSkinsEmpty" Content="{data WardrobeSkinsEmpty_text}" IsVisible="{data WardrobeSkinsEmpty_visible}" Class="layout-WardrobePage-WardrobeSkinsEmpty wardrobe-base" Localize="false" />
+      </StackPanel>
+      <StackPanel Key="WardrobeCapeHeader" Class="layout-WardrobePage-WardrobeCapeHeader wardrobe-base" Margin="{data WardrobeCapeHeader_margin}">
+        <Text Key="WardrobeCapeTitle" Content="{data WardrobeCapeTitle_text}" Class="layout-WardrobePage-WardrobeCapeTitle wardrobe-base" Localize="false" />
+        <Text Key="WardrobeCapeCount" Content="{data WardrobeCapeCount_text}" Class="layout-WardrobePage-WardrobeCapeCount wardrobe-base" Localize="false" />
+        <StackPanel Key="WardrobeCapePager" Class="layout-WardrobePage-WardrobeCapePager wardrobe-base">
+          <Button Key="WardrobeCapePrevious" Content="" Label="向左浏览披风" Command="ui.wardrobe.cape.previous" Icon="lucide/arrow-left" Class="layout-WardrobePage-WardrobeCapePrevious wardrobe-base wardrobe-button" Enabled="{data WardrobeCapePrevious_enabled}" />
+          <Button Key="WardrobeCapeNext" Content="" Label="向右浏览披风" Command="ui.wardrobe.cape.next" Icon="lucide/chevron-right" Class="layout-WardrobePage-WardrobeCapeNext wardrobe-base wardrobe-button" Enabled="{data WardrobeCapeNext_enabled}" />
+          <Button Key="WardrobeCapeClear" Content="" Label="关闭当前披风" Command="ui.wardrobe.cape.clear" Icon="lucide/circle-minus" Class="layout-WardrobePage-WardrobeCapeClear wardrobe-base wardrobe-button" IsVisible="{data WardrobeCapeClear_visible}" Enabled="{data WardrobeCapeClear_enabled}" />
+        </StackPanel>
+      </StackPanel>
+      <Text Key="WardrobeCapeSubtitle" Content="{data WardrobeCapeSubtitle_text}" Class="layout-WardrobePage-WardrobeCapeSubtitle wardrobe-base" Localize="false" Height="{data WardrobeCapeSubtitle_height}" />
+      <StackPanel Key="WardrobeCapeTrack" Class="layout-WardrobePage-WardrobeCapeTrack wardrobe-base" Height="{data WardrobeCapeTrack_height}" Weight="{data WardrobeCapeTrack_weight}">
+        <Dynamic Key="WardrobeCapes" Scroll="true" Class="layout-WardrobePage-WardrobeCapes wardrobe-base" IsVisible="{data WardrobeCapes_visible}" ShowsHorizontalIndicator="true" UseVerticalWheelForHorizontalScroll="true" />
+        <Text Key="WardrobeCapeStatus" Content="{data WardrobeCapeStatus_text}" IsVisible="{data WardrobeCapeStatus_visible}" Class="layout-WardrobePage-WardrobeCapeStatus wardrobe-base" Localize="false" />
+      </StackPanel>
+    </StackPanel>
+    <Node Key="WardrobeLocalLayer" Label="本地皮肤选择" IsVisible="{data WardrobeLocalLayer_visible}" Recipe="Element" Class="wardrobe-base layout-WardrobePage-WardrobeLocalLayer" ModalLayer="true" DismissCommand="ui.wardrobe.local.close" Command="ui.wardrobe.local.close" Clickable="true">
+      <Dialog Key="WardrobeLocalPanel" Label="选择本地皮肤" Scroll="true" Class="layout-WardrobePage-WardrobeLocalPanel wardrobe-base" Width="{data WardrobeLocalPanel_width}" MaxHeight="{data WardrobeLocalPanel_maxheight}" ScrollGesture="true">
+        <StackPanel Key="WardrobeLocalBody" Class="wardrobe-base wardrobe-local-body">
+          <Text Key="WardrobeLocalTitle" Content="选择本地皮肤" Class="layout-WardrobePage-WardrobeLocalTitle wardrobe-base" />
+          <Text Content="支持 64×64 或经典模型的 64×32 PNG 皮肤，最大 1 MiB。" Class="layout-WardrobePage-46 wardrobe-base" />
+          <StackPanel Key="WardrobePreviews" Class="layout-WardrobePage-WardrobePreviews wardrobe-base">
+            <Image Key="WardrobeHeadPreview" Label="选择的皮肤头像预览" Source="{data WardrobeHeadPreview_source}" Class="layout-WardrobePage-WardrobeHeadPreview wardrobe-base" />
+            <Image Key="WardrobeTexturePreview" Label="选择的皮肤 PNG 预览" Source="lucide/image" Class="layout-WardrobePage-WardrobeTexturePreview wardrobe-base" />
+          </StackPanel>
+          <StackPanel Class="layout-WardrobePage-50 wardrobe-base">
+            <TextInput Key="WardrobeSkinPath" Label="皮肤 PNG 文件路径" Placeholder="皮肤 PNG 文件路径" Class="layout-WardrobePage-WardrobeSkinPath wardrobe-base" Enabled="{data WardrobeSkinPath_enabled}" />
+            <Button Key="WardrobeChooseFile" Label="选择皮肤文件" Content="选择文件" Command="ui.wardrobe.browse" Class="layout-WardrobePage-WardrobeChooseFile wardrobe-base wardrobe-button" Enabled="{data WardrobeChooseFile_enabled}" />
+          </StackPanel>
+          <StackPanel Class="layout-WardrobePage-53 wardrobe-base">
+            <Button Key="WardrobeClassic" Label="经典皮肤模型" Content="{data WardrobeClassic_text}" Command="ui.wardrobe.classic" Class="layout-WardrobePage-WardrobeClassic wardrobe-base wardrobe-button" Localize="false" Enabled="{data WardrobeClassic_enabled}" />
+            <Button Key="WardrobeSlim" Label="纤细皮肤模型" Content="{data WardrobeSlim_text}" Command="ui.wardrobe.slim" Class="layout-WardrobePage-WardrobeSlim wardrobe-base wardrobe-button" Localize="false" Enabled="{data WardrobeSlim_enabled}" />
+          </StackPanel>
+          <Text Key="WardrobeLocalStatus" Content="{data WardrobeLocalStatus_text}" Class="layout-WardrobePage-WardrobeLocalStatus wardrobe-base" Localize="false" />
+          <StackPanel Class="layout-WardrobePage-57 wardrobe-base">
+            <Button Key="WardrobeLocalClose" Label="关闭本地皮肤选择" Content="取消" Command="ui.wardrobe.local.close" Class="layout-WardrobePage-WardrobeLocalClose wardrobe-base wardrobe-button" Enabled="{data WardrobeLocalClose_enabled}" />
+            <Button Key="WardrobePreview" Label="校验并预览皮肤" Content="校验并预览" Command="ui.wardrobe.preview" Class="layout-WardrobePage-WardrobePreview wardrobe-base wardrobe-button" Enabled="{data WardrobePreview_enabled}" />
+            <Button Key="WardrobeUpload" Label="上传预览的皮肤" Content="上传皮肤" Command="ui.wardrobe.upload" Class="layout-WardrobePage-WardrobeUpload wardrobe-base wardrobe-button" Enabled="{data WardrobeUpload_enabled}" />
+          </StackPanel>
+        </StackPanel>
+      </Dialog>
+    </Node>
+  </StackPanel>
+</nxml-dynamic>

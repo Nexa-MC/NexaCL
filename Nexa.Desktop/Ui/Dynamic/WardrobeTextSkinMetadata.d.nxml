@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="♥ {data likes} · {data model}{data hd}" Localize="false" />
+</nxml-dynamic>

@@ -81,6 +81,8 @@ public sealed record NxmlIrNode
 
     public bool Scrollable { get; init; }
     public bool ShowsVerticalIndicator { get; init; }
+    public bool ShowsHorizontalIndicator { get; init; }
+    public bool UseVerticalWheelForHorizontalScroll { get; init; }
     public bool StickToEnd { get; init; }
     public bool ScrollGesture { get; init; }
     public bool StableContent { get; init; }

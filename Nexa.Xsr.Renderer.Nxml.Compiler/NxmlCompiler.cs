@@ -83,9 +83,11 @@ public static class NxmlCompiler
         XsrSemanticId? dismissCommand = element.FindProperty("DismissCommand") is null ? null
             : ParseSemanticId(element.Name, "DismissCommand", Literal("DismissCommand", ""));
         bool showsIndicator = ParseBoolean(element.Name, "ShowsVerticalIndicator", Literal("ShowsVerticalIndicator", "false"));
+        bool horizontalIndicator = ParseBoolean(element.Name, "ShowsHorizontalIndicator", Literal("ShowsHorizontalIndicator", "false"));
+        bool verticalWheelRouting = ParseBoolean(element.Name, "UseVerticalWheelForHorizontalScroll", Literal("UseVerticalWheelForHorizontalScroll", "false"));
         bool stickToEnd = ParseBoolean(element.Name, "StickToEnd", Literal("StickToEnd", "false"));
         bool scrollGesture = ParseBoolean(element.Name, "ScrollGesture", Literal("ScrollGesture", "false"));
-        if (element.Attributes.Any(attribute => attribute.Name is "ShowsVerticalIndicator" or "StickToEnd" or "ScrollGesture")
+        if (element.Attributes.Any(attribute => attribute.Name is "ShowsVerticalIndicator" or "ShowsHorizontalIndicator" or "UseVerticalWheelForHorizontalScroll" or "StickToEnd" or "ScrollGesture")
             && (recipe is not (NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot)
                 || recipe == NxmlRuntimeRecipe.DynamicSlot && slotLayout != NxmlRuntimeRecipe.StackLayout
                 || !ParseBoolean(element.Name, "Scroll", Literal("Scroll", "false"))))
@@ -124,7 +126,7 @@ public static class NxmlCompiler
                 NssStyleSheet.SetVisual(visual ??= new(), attribute.Name, attribute.Value.Text);
                 continue;
             }
-            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength" or "PreserveTabs" or "MaxLines" or "TrimOverflow" or "OverlayMotion" or "LiveSetting" or "DismissCommand" or "ShowsVerticalIndicator" or "StickToEnd" or "ScrollGesture" or "StableContent" or "ModalLayer" or "Anchor" or "AnchorGap") continue;
+            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength" or "PreserveTabs" or "MaxLines" or "TrimOverflow" or "OverlayMotion" or "LiveSetting" or "DismissCommand" or "ShowsVerticalIndicator" or "ShowsHorizontalIndicator" or "UseVerticalWheelForHorizontalScroll" or "StickToEnd" or "ScrollGesture" or "StableContent" or "ModalLayer" or "Anchor" or "AnchorGap") continue;
             if (!model.TryGetProperty(attribute.Name, out NxmlControlPropertyModel property))
             {
                 throw Fail(element.Name, attribute.Name, "is not declared by this control model");
@@ -177,7 +179,7 @@ public static class NxmlCompiler
         return builder.Build(
             [.. element.Children.Select(child => CompileNode(child, keys, styles))],
             bindings) with
-        { Visual = visual?.Snapshot(), SlotLayout = slotLayout, MaximumLength = maximumLength, PreserveTabs = preserveTabs, MaxLines = maxLines, TrimOverflow = trimOverflow, OverlayMotion = overlayMotion, LiveSetting = liveSetting, DismissCommand = dismissCommand, ShowsVerticalIndicator = showsIndicator, StickToEnd = stickToEnd, ScrollGesture = scrollGesture, StableContent = stableContent, ModalLayer = modalLayer, AnchorKey = anchorKey, AnchorGap = anchorGap };
+        { Visual = visual?.Snapshot(), SlotLayout = slotLayout, MaximumLength = maximumLength, PreserveTabs = preserveTabs, MaxLines = maxLines, TrimOverflow = trimOverflow, OverlayMotion = overlayMotion, LiveSetting = liveSetting, DismissCommand = dismissCommand, ShowsVerticalIndicator = showsIndicator, ShowsHorizontalIndicator = horizontalIndicator, UseVerticalWheelForHorizontalScroll = verticalWheelRouting, StickToEnd = stickToEnd, ScrollGesture = scrollGesture, StableContent = stableContent, ModalLayer = modalLayer, AnchorKey = anchorKey, AnchorGap = anchorGap };
     }
 
     private static void ApplyLiteral(

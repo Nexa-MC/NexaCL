@@ -1,0 +1,45 @@
+<nxml-dynamic>
+  <StackPanel Key="WardrobeLibraryLayout" StretchLastChild="true" Class="layout-WardrobeLibraryPage-WardrobeLibraryLayout wardrobe-library-base">
+    <StackPanel Key="WardrobeLibraryRail" Scroll="true" Class="layout-WardrobeLibraryPage-WardrobeLibraryRail wardrobe-library-base" Width="{data WardrobeLibraryRail_width}" ScrollGesture="true">
+      <Button Key="WardrobeLibraryBack" Label="返回更衣橱" Content="返回更衣橱" Command="ui.wardrobe.library.back" Class="layout-WardrobeLibraryPage-WardrobeLibraryBack wardrobe-library-base wardrobe-library-button" Enabled="{data WardrobeLibraryBack_enabled}" />
+      <Text Content="皮肤站" Class="layout-WardrobeLibraryPage-5 wardrobe-library-base" />
+      <Dynamic Key="WardrobeLibrarySites" Class="layout-WardrobeLibraryPage-WardrobeLibrarySites wardrobe-library-base" />
+      <Text Key="WardrobeLibraryAccountNotice" Content="{data WardrobeLibraryAccountNotice_text}" Class="layout-WardrobeLibraryPage-WardrobeLibraryAccountNotice wardrobe-library-base" Localize="false" />
+      <Button Key="WardrobeLibraryManage" Label="前往皮肤站授权与管理" Content="前往皮肤站管理" Command="ui.wardrobe.library.manage" IsVisible="{data WardrobeLibraryManage_visible}" Class="layout-WardrobeLibraryPage-WardrobeLibraryManage wardrobe-library-base wardrobe-library-button" Enabled="{data WardrobeLibraryManage_enabled}" />
+    </StackPanel>
+    <StackPanel Key="WardrobeLibraryContent" Class="layout-WardrobeLibraryPage-WardrobeLibraryContent wardrobe-library-base" Padding="{data WardrobeLibraryContent_padding}" Spacing="{data WardrobeLibraryContent_spacing}">
+      <Text Key="WardrobeLibrarySiteName" Content="{data WardrobeLibrarySiteName_text}" Class="layout-WardrobeLibraryPage-WardrobeLibrarySiteName wardrobe-library-base" Localize="false" />
+      <Text Key="WardrobeLibrarySiteStatus" Content="{data WardrobeLibrarySiteStatus_text}" Class="layout-WardrobeLibraryPage-WardrobeLibrarySiteStatus wardrobe-library-base" Localize="false" />
+      <StackPanel Class="layout-WardrobeLibraryPage-12 wardrobe-library-base">
+        <Button Key="WardrobeLibraryDocs" Label="皮肤站 API 文档" Content="API 文档" Command="ui.wardrobe.library.docs" Class="layout-WardrobeLibraryPage-WardrobeLibraryDocs wardrobe-library-base wardrobe-library-button" Enabled="{data WardrobeLibraryDocs_enabled}" />
+        <Button Key="WardrobeLibraryOpenSite" Label="打开皮肤站" Content="打开皮肤站" Command="ui.wardrobe.library.site" Class="layout-WardrobeLibraryPage-WardrobeLibraryOpenSite wardrobe-library-base wardrobe-library-button" Enabled="{data WardrobeLibraryOpenSite_enabled}" />
+        <Button Key="WardrobeLibraryRefresh" Label="刷新皮肤库" Content="刷新" Command="ui.wardrobe.library.refresh" Class="layout-WardrobeLibraryPage-WardrobeLibraryRefresh wardrobe-library-base wardrobe-library-button" Enabled="{data WardrobeLibraryRefresh_enabled}" />
+      </StackPanel>
+      <StackPanel Class="layout-WardrobeLibraryPage-16 wardrobe-library-base">
+        <TextInput Key="WardrobeLibrarySearch" Label="搜索皮肤名称或上传者" Placeholder="搜索皮肤名称或上传者" Class="layout-WardrobeLibraryPage-WardrobeLibrarySearch wardrobe-library-base" Enabled="{data WardrobeLibrarySearch_enabled}" />
+        <Button Key="WardrobeLibrarySearchButton" Label="搜索皮肤库" Content="搜索" Command="ui.wardrobe.library.search" Class="layout-WardrobeLibraryPage-WardrobeLibrarySearchButton wardrobe-library-base wardrobe-library-button" Enabled="{data WardrobeLibrarySearchButton_enabled}" />
+      </StackPanel>
+      <StackPanel Key="WardrobeLibraryFilters" Scroll="true" Class="layout-WardrobeLibraryPage-WardrobeLibraryFilters wardrobe-library-base" ScrollGesture="true">
+        <Button Key="WardrobeLibrarySkin" Label="查看皮肤" Content="皮肤" Command="ui.wardrobe.library.skin" Class="{data WardrobeLibrarySkin_class}" Enabled="{data WardrobeLibrarySkin_enabled}" Selected="{data WardrobeLibrarySkin_selected}" />
+        <Button Key="WardrobeLibraryCape" Label="查看披风" Content="披风" Command="ui.wardrobe.library.cape" Class="{data WardrobeLibraryCape_class}" IsVisible="{data WardrobeLibraryCape_visible}" Enabled="{data WardrobeLibraryCape_enabled}" Selected="{data WardrobeLibraryCape_selected}" />
+        <Button Key="WardrobeLibraryTime" Label="按时间排序" Content="按时间" Command="ui.wardrobe.library.time" Class="{data WardrobeLibraryTime_class}" Enabled="{data WardrobeLibraryTime_enabled}" Selected="{data WardrobeLibraryTime_selected}" />
+        <Button Key="WardrobeLibraryLikes" Label="按点赞排序" Content="按点赞" Command="ui.wardrobe.library.likes" Class="{data WardrobeLibraryLikes_class}" Enabled="{data WardrobeLibraryLikes_enabled}" Selected="{data WardrobeLibraryLikes_selected}" />
+      </StackPanel>
+      <Text Key="WardrobeLibraryOperationStatus" Content="{data WardrobeLibraryOperationStatus_text}" IsVisible="{data WardrobeLibraryOperationStatus_visible}" Class="layout-WardrobeLibraryPage-WardrobeLibraryOperationStatus wardrobe-library-base" Localize="false" />
+      <StackPanel Key="WardrobeLibraryBody" Scroll="true" Class="layout-WardrobeLibraryPage-WardrobeLibraryBody wardrobe-library-base" ScrollGesture="true">
+        <Text Key="WardrobeLibraryLoading" Content="正在读取皮肤站 API…" Class="layout-WardrobeLibraryPage-WardrobeLibraryLoading wardrobe-library-base" IsVisible="{data WardrobeLibraryLoading_visible}" />
+        <StackPanel Key="WardrobeLibraryEmpty" IsVisible="{data WardrobeLibraryEmpty_visible}" Class="layout-WardrobeLibraryPage-WardrobeLibraryEmpty wardrobe-library-base">
+          <Text Key="WardrobeLibraryEmptyTitle" Content="{data WardrobeLibraryEmptyTitle_text}" Class="layout-WardrobeLibraryPage-WardrobeLibraryEmptyTitle wardrobe-library-base" Localize="false" />
+          <Text Key="WardrobeLibraryEmptyMessage" Content="{data WardrobeLibraryEmptyMessage_text}" Class="layout-WardrobeLibraryPage-WardrobeLibraryEmptyMessage wardrobe-library-base" Localize="false" />
+        </StackPanel>
+        <Dynamic Key="WardrobeLibraryItems" IsVisible="{data WardrobeLibraryItems_visible}" Class="layout-WardrobeLibraryPage-WardrobeLibraryItems wardrobe-library-base" />
+      </StackPanel>
+      <Text Key="WardrobeLibraryHelp" Content="皮肤库使用皮肤站公开 API；上传与应用外观需要账户对应的独立授权。" Class="layout-WardrobeLibraryPage-WardrobeLibraryHelp wardrobe-library-base" IsVisible="{data WardrobeLibraryHelp_visible}" />
+      <StackPanel Class="layout-WardrobeLibraryPage-32 wardrobe-library-base">
+        <Text Key="WardrobeLibraryPageNumber" Content="{data WardrobeLibraryPageNumber_text}" Class="layout-WardrobeLibraryPage-WardrobeLibraryPageNumber wardrobe-library-base" Localize="false" />
+        <Button Key="WardrobeLibraryPrevious" Label="上一页皮肤库" Content="上一页" Command="ui.wardrobe.library.previous" Class="layout-WardrobeLibraryPage-WardrobeLibraryPrevious wardrobe-library-base wardrobe-library-button" Enabled="{data WardrobeLibraryPrevious_enabled}" />
+        <Button Key="WardrobeLibraryNext" Label="下一页皮肤库" Content="下一页" Command="ui.wardrobe.library.next" Class="layout-WardrobeLibraryPage-WardrobeLibraryNext wardrobe-library-base wardrobe-library-button" Enabled="{data WardrobeLibraryNext_enabled}" />
+      </StackPanel>
+    </StackPanel>
+  </StackPanel>
+</nxml-dynamic>

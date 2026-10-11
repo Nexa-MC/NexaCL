@@ -1,0 +1,15 @@
+<nxml-dynamic>
+  <StackPanel Key="{data container}" Width="{data width}" MinWidth="{data width}" Height="{data height}" Class="wardrobe-base wardrobe-card">
+    <StackPanel Key="{data body}" Orientation="{data orientation}" Class="wardrobe-card-body">
+      <Image Key="{data image}" Label="{data title}" Localize="false" Source="lucide/image" Width="{data image_width}" Height="{data image_height}" Weight="{data image_weight}" VerticalAlignment="{data image_alignment}" />
+      <StackPanel Key="{data details}" Weight="{data details_weight}" Class="wardrobe-card-details">
+        <Text Key="{data title_key}" Content="{data title}" Localize="false" Height="{data title_height}" MaxLines="1" TrimOverflow="true" Class="{data title_variant}" />
+        <Text Key="{data source_key}" Content="{data source}" Localize="false" Height="{data source_height}" MaxLines="1" TrimOverflow="true" Class="{data source_variant}" />
+        <Dynamic Key="{data apply_slot}" />
+      </StackPanel>
+      <Node Recipe="Element" Key="{data view_layer}" ModalLayer="false" Class="wardrobe-card-view-layer">
+        <Button Key="{data view}" Content="" Label="{data view_label}" Localize="false" Icon="pcl/refresh" Command="ui.wardrobe.view.card" Class="wardrobe-base wardrobe-button wardrobe-card-view" />
+      </Node>
+    </StackPanel>
+  </StackPanel>
+</nxml-dynamic>

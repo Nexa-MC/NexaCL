@@ -55,6 +55,28 @@ internal static partial class Program
                 await Capture(fixture.Shell, "wardrobe-" + (dark ? "dark" : "light"));
                 await Capture(fixture.Shell, "wardrobe-compact-" + (dark ? "dark" : "light"), 800, 600);
             }
+            fixture.Shell.Stage.Navigation.Replace(wardrobe.Page);
+            WardrobeEmit(fixture,"ui.wardrobe.browse","WardrobeBrowse");fixture.Shell.Render(new(1000,640));
+            foreach(bool dark in WardrobePreviewThemes)
+            {
+                fixture.Shell.Renderer.ColorScheme=new(dark);
+                await Capture(fixture.Shell,"wardrobe-local-"+(dark?"dark":"light"),800,600);
+            }
+            WardrobeEmit(fixture,"ui.wardrobe.local.close","WardrobeLocalClose");fixture.Shell.Render(new(1000,640));
+            var publicQueries=LibraryQueries(fixture);
+            publicQueries.Register<WardrobeCatalogQuery,WardrobeCatalogPage>(WardrobeCatalogContract.Read,(query,_)=>
+                ValueTask.FromResult(XsrResult.Success(LibraryPage(query,Enumerable.Range(1,12).Select(i=>LibraryItem(i,WardrobeCatalogKind.Skin)).ToArray()))));
+            using var publicLibrary=new WardrobeLibraryPageController(fixture.Shell,fixture.Intents,publicQueries.Build(new NoopDispatchObserver()),
+                new XsrCommandRouterBuilder().Build(new NoopDispatchObserver()),fixture.Store,fixture.Feedback);
+            fixture.Shell.Stage.Navigation.Replace(publicLibrary.Page);
+            foreach(bool dark in WardrobePreviewThemes)
+            {
+                fixture.Shell.Renderer.ColorScheme=new(dark);string theme=dark?"dark":"light";
+                await Capture(fixture.Shell,"wardrobe-library-"+theme);
+                await Capture(fixture.Shell,"wardrobe-library-compact-"+theme,800,600);
+            }
+            fixture.Shell.Stage.Navigation.Replace(wardrobe.Page);fixture.Shell.Render(new(1000,640));
+            publicLibrary.Dispose();
             wardrobe.Dispose();
             foreach (bool dark in WardrobePreviewThemes)
             {

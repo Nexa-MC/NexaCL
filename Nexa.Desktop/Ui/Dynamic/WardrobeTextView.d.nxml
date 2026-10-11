@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="{data view} · 切换视角" Localize="false" />
+</nxml-dynamic>

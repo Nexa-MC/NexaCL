@@ -502,4 +502,41 @@ internal static partial class Program
         finally{shell.Tree.Destroy(account);shell.Tree.Destroy(setup);shell.Tree.Destroy(titleShell);}
     }
 
+    private static void ValidateDynamicWardrobe(XsrUiShell shell,Nexa.Xsr.State.XsrStateStore store)
+    {
+        var owner=new NxmlDynamicContent(shell.Tree,store);
+        var page=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("WardrobePage.nxml"),shell.Tree,store);
+        var library=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("WardrobeLibraryPage.nxml"),shell.Tree,store);
+        XsrUiEntityId Find(XsrUiEntityId root,string key)
+        {XsrUiEntityId found=default;shell.Tree.Walk(root,node=>{if(shell.Tree.Name(node)==key)found=node;return true;});return found;}
+        try
+        {
+            string literal="literal <skin> {state private}";
+            var mainData=DesktopWardrobeText.Defaults(library:false);
+            var workspace=owner.Append(shell.Tree.Children(page).Single(),DesktopMarkup.Dynamic("WardrobeWorkspace.d.nxml",mainData));
+            var card=new Nexa.Services.Accounts.AccountWardrobeCard("validation",literal,literal,new(null,null,false,null,null),true);
+            var row=owner.Append(Find(workspace,"WardrobeSkins"),DesktopMarkup.Dynamic("WardrobeCard.d.nxml",WardrobePageController.ProjectCard(shell,card,WardrobePlayerView.Front,220,160)));
+            var path=Find(workspace,"WardrobeSkinPath");shell.Renderer.SetTextInputValue(path,literal);
+            owner.Reload(row,DesktopMarkup.Dynamic("WardrobeCard.d.nxml",WardrobePageController.ProjectCard(shell,card,WardrobePlayerView.Back,190,270)));
+            mainData["WardrobeLocalLayer_visible"]="true";owner.Reload(workspace,DesktopMarkup.Dynamic("WardrobeWorkspace.d.nxml",mainData));
+            if(shell.Tree.GetComponent<XsrUiTextInput>(path)?.ReadDraft()!=literal
+                ||shell.Tree.GetComponent<XsrUiScroll>(Find(workspace,"WardrobeSkins")) is not {ShowsHorizontalIndicator:true,UseVerticalWheelForHorizontalScroll:true}
+                ||shell.Tree.GetComponent<XsrUiOverlayLayer>(Find(workspace,"WardrobeLocalLayer"))?.IsModal!=true)
+                throw new InvalidOperationException("Wardrobe lost its owned draft, modal or horizontal scroll facts.");
+            var body=owner.Append(shell.Tree.Children(library).Single(),DesktopMarkup.Dynamic("WardrobeLibraryWorkspace.d.nxml",DesktopWardrobeText.Defaults(library:true)));
+            var items=Find(body,"WardrobeLibraryItems");
+            var a=owner.Append(items,DesktopMarkup.Dynamic("WardrobeLibraryRow.d.nxml",new Dictionary<string,string>{["key"]="validation-row-a"}));
+            var b=owner.Append(items,DesktopMarkup.Dynamic("WardrobeLibraryRow.d.nxml",new Dictionary<string,string>{["key"]="validation-row-b"}));
+            var item=new Nexa.Services.Accounts.WardrobeCatalogItem(1,literal,literal,"alex",1,false,"https://example.invalid/skin",new("https://example.invalid/details"),Nexa.Services.Accounts.WardrobeCatalogKind.Skin);
+            var projected=WardrobeLibraryPageController.ProjectCard(shell,item,WardrobePlayerView.Front,true,false);
+            var gallery=owner.Append(a,DesktopMarkup.Dynamic("WardrobeLibraryCard.d.nxml",projected));var preview=Find(gallery,"WardrobeLibraryCard.1.Preview");
+            owner.Move(gallery,b);owner.Reload(gallery,DesktopMarkup.Dynamic("WardrobeLibraryCard.d.nxml",projected));owner.Reorder(b,[gallery]);
+            if(shell.Tree.Parent(gallery)!=b || preview!=Find(gallery,"WardrobeLibraryCard.1.Preview")
+                ||shell.Tree.GetComponent<XsrUiText>(Find(gallery,"WardrobeLibraryCard.1.Name"))?.Content!=literal)
+                throw new InvalidOperationException("Wardrobe library reflow lost identity or reparsed metadata.");
+            Console.WriteLine("Dynamic wardrobe validation passed: owned cards/modal, retained drafts, responsive orientation and library reflow.");
+        }
+        finally {shell.Tree.Destroy(page);shell.Tree.Destroy(library);}
+    }
+
 }

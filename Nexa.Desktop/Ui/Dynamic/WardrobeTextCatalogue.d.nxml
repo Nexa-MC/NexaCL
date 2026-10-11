@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="第 {data page} 页 · {data count} 项{data server}" Localize="false" />
+</nxml-dynamic>

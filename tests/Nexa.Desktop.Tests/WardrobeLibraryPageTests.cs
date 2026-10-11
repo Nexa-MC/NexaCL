@@ -1,4 +1,4 @@
-using Nexa.Desktop.Ui;
+﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
@@ -111,7 +111,7 @@ internal static partial class Program
             else
             {
                 AssertFalse(LibraryEnabled(fixture, "WardrobeLibraryCard.201.Apply"));
-                AssertTrue(LibraryText(fixture, "WardrobeLibraryAccountNotice").Contains(kind == LaunchProfileKind.Offline ? "仅供预览" : "独立授权", StringComparison.Ordinal));
+                AssertTrue(LibraryText(fixture,"WardrobeLibraryAccountNotice").Contains(kind==LaunchProfileKind.Offline?"preview":"authorization",StringComparison.OrdinalIgnoreCase));
             }
             if (kind == LaunchProfileKind.ThirdParty)
             {
@@ -124,7 +124,7 @@ internal static partial class Program
             LibraryPump(fixture, () => LibraryVisible(fixture, "WardrobeLibraryItems")
                 && fixture.Shell.Tree.IsAlive(FindEntity(fixture.Shell, "WardrobeLibraryCard.201.Metadata")));
             AssertEqual("♥ 42 · Cape · HD", LibraryText(fixture, "WardrobeLibraryCard.201.Metadata"));
-            AssertEqual("使用披风", LibraryText(fixture, "WardrobeLibraryCard.201.Apply"));
+            AssertEqual("Use cape", LibraryText(fixture, "WardrobeLibraryCard.201.Apply"));
             bool allowedCape = kind == LaunchProfileKind.LittleSkin;
             bool showCape = kind is not (LaunchProfileKind.Microsoft or LaunchProfileKind.NCloud);
             AssertEqual(showCape, LibraryVisible(fixture, "WardrobeLibraryCard.201.Apply"));

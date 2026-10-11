@@ -1,0 +1,88 @@
+<Node Recipe="StackLayout" Key="WardrobeTerms">
+  <Node Recipe="Text" Key="card-source-center" Content="wardrobe-base wardrobe-card-source wardrobe-card-text-center" Localize="false" />
+  <Node Recipe="Text" Key="card-source-start" Content="wardrobe-base wardrobe-card-source wardrobe-card-text-start" Localize="false" />
+  <Node Recipe="Text" Key="card-title-center" Content="wardrobe-base wardrobe-card-title wardrobe-card-text-center" Localize="false" />
+  <Node Recipe="Text" Key="card-title-start" Content="wardrobe-base wardrobe-card-title wardrobe-card-text-start" Localize="false" />
+  <Node Recipe="Text" Key="choice-marker" Content="✓  " Localize="false" />
+  <Node Recipe="Text" Key="classic-model" Content="Classic" Localize="false" />
+  <Node Recipe="Text" Key="copy.00e98e4bc87c" Content="皮肤已验证，可以上传。" Localize="false" />
+  <Node Recipe="Text" Key="copy.09301ef42513" Content="应用外观需要皮肤站的独立授权。" Localize="false" />
+  <Node Recipe="Text" Key="copy.0a69a3749a9e" Content="外观操作未完成。" Localize="false" />
+  <Node Recipe="Text" Key="copy.0c01aef694ac" Content="第三方账户需要皮肤站的独立授权。请前往该账户对应的皮肤站管理外观。" Localize="false" />
+  <Node Recipe="Text" Key="copy.11d9c550308f" Content="第三方认证站的披风由对应皮肤站管理。" Localize="false" />
+  <Node Recipe="Text" Key="copy.13135fbcc904" Content="皮肤无法使用。" Localize="false" />
+  <Node Recipe="Text" Key="copy.1719a7a417c1" Content="当前账户不支持在启动器内更换披风。" Localize="false" />
+  <Node Recipe="Text" Key="copy.1cf1d4d0b24b" Content="右侧" Localize="false" />
+  <Node Recipe="Text" Key="copy.1d165a5566db" Content="外观已更新，正在刷新…" Localize="false" />
+  <Node Recipe="Text" Key="copy.252d2d8a440b" Content="纤细模型" Localize="false" />
+  <Node Recipe="Text" Key="copy.259aaeffa337" Content="无法读取更衣橱，请重试。" Localize="false" />
+  <Node Recipe="Text" Key="copy.277a40b70823" Content="当前正版账户尚未获得任何披风。" Localize="false" />
+  <Node Recipe="Text" Key="copy.2d270b6ce44a" Content="背面" Localize="false" />
+  <Node Recipe="Text" Key="copy.31e1252e5216" Content="没有找到皮肤" Localize="false" />
+  <Node Recipe="Text" Key="copy.3f049887991b" Content="底部" Localize="false" />
+  <Node Recipe="Text" Key="copy.3fdfadaa192d" Content="更衣橱服务不可用。" Localize="false" />
+  <Node Recipe="Text" Key="copy.409efd13530d" Content="离线账户的外观仅供预览，不能上传或应用皮肤站外观。" Localize="false" />
+  <Node Recipe="Text" Key="copy.4678e5d9760d" Content="当前档案和其他档案中没有发现披风。" Localize="false" />
+  <Node Recipe="Text" Key="copy.46c8ec44cca3" Content="API 请求失败" Localize="false" />
+  <Node Recipe="Text" Key="copy.46da263430ba" Content="模型已改变，请重新校验皮肤。" Localize="false" />
+  <Node Recipe="Text" Key="copy.4d82b5ad78bd" Content="正在校验皮肤…" Localize="false" />
+  <Node Recipe="Text" Key="copy.5028fc56dfe0" Content="皮肤库服务不可用，请稍后重试。" Localize="false" />
+  <Node Recipe="Text" Key="copy.54b19c79b4f1" Content="LittleSkin 衣柜" Localize="false" />
+  <Node Recipe="Text" Key="copy.5621b9ced9f2" Content="还没有发现可展示的皮肤。可以选择本地皮肤或打开皮肤库。" Localize="false" />
+  <Node Recipe="Text" Key="copy.57a831d60896" Content="外观操作服务不可用。" Localize="false" />
+  <Node Recipe="Text" Key="copy.5ddff4afab27" Content="当前使用" Localize="false" />
+  <Node Recipe="Text" Key="copy.5f57d692389c" Content="无法打开皮肤站链接，请检查默认浏览器后重试。" Localize="false" />
+  <Node Recipe="Text" Key="copy.67ee74e4b591" Content="当前账户不支持在启动器内更换皮肤。" Localize="false" />
+  <Node Recipe="Text" Key="copy.6a24b14f33c7" Content="左侧" Localize="false" />
+  <Node Recipe="Text" Key="copy.6f2a4a02e60e" Content="顶部" Localize="false" />
+  <Node Recipe="Text" Key="copy.740f5e8102e0" Content="正面" Localize="false" />
+  <Node Recipe="Text" Key="copy.7629fe4d751d" Content="正在读取当前账户的披风…" Localize="false" />
+  <Node Recipe="Text" Key="copy.7ae745517690" Content="皮肤站暂时不可用" Localize="false" />
+  <Node Recipe="Text" Key="copy.7b00c3d7e6bf" Content="试试其他关键词或切换分类。" Localize="false" />
+  <Node Recipe="Text" Key="copy.7e7d4ca64386" Content="更衣橱" Localize="false" />
+  <Node Recipe="Text" Key="copy.91b8270f3266" Content="可应用公开皮肤；披风只能选择此账户已获得的披风。" Localize="false" />
+  <Node Recipe="Text" Key="copy.9547fec915a5" Content="无法选择皮肤文件，请重试。" Localize="false" />
+  <Node Recipe="Text" Key="copy.9a6d2ea3d613" Content="无法读取皮肤文件。" Localize="false" />
+  <Node Recipe="Text" Key="copy.9b76bdbfc3d8" Content="尚未发现披风；可前往对应第三方皮肤站设置。" Localize="false" />
+  <Node Recipe="Text" Key="copy.9c6126383f6d" Content="尚未配置可用的皮肤站。" Localize="false" />
+  <Node Recipe="Text" Key="copy.9d0d37af1ea8" Content="正在读取皮肤站 API…" Localize="false" />
+  <Node Recipe="Text" Key="copy.9fa5be79e728" Content="外观已更新。" Localize="false" />
+  <Node Recipe="Text" Key="copy.a3b8c4ddae92" Content="无法读取皮肤站 API，请刷新重试。" Localize="false" />
+  <Node Recipe="Text" Key="copy.a95caa65232f" Content="当前、历史和其他档案中发现的披风。" Localize="false" />
+  <Node Recipe="Text" Key="copy.aa1c5c5541be" Content="正版账户披风" Localize="false" />
+  <Node Recipe="Text" Key="copy.aeaccff1924a" Content="正在读取可展示的皮肤…" Localize="false" />
+  <Node Recipe="Text" Key="copy.bc295ff5696c" Content="立体" Localize="false" />
+  <Node Recipe="Text" Key="copy.c11c5962da20" Content="LittleSkin 披风衣柜，可自由切换账户衣柜中的披风。" Localize="false" />
+  <Node Recipe="Text" Key="copy.c185a9b3b40f" Content="无法读取当前账户外观，请刷新重试。" Localize="false" />
+  <Node Recipe="Text" Key="copy.c293fca99b4b" Content="第三方披风" Localize="false" />
+  <Node Recipe="Text" Key="copy.c34ebcb0dd6f" Content="没有皮肤站" Localize="false" />
+  <Node Recipe="Text" Key="copy.c4483d5f9b3c" Content="暂时无法读取账户披风，请检查网络和授权后刷新。" Localize="false" />
+  <Node Recipe="Text" Key="copy.cf41ca6935be" Content="正在更新外观…" Localize="false" />
+  <Node Recipe="Text" Key="copy.d2bbc702a031" Content="仅可切换当前正版账户已经获得的披风。" Localize="false" />
+  <Node Recipe="Text" Key="copy.d3ff07c74807" Content="外观操作未完成，请重试。" Localize="false" />
+  <Node Recipe="Text" Key="copy.d6f1c4f4be1a" Content="无法打开账户皮肤站，请重试。" Localize="false" />
+  <Node Recipe="Text" Key="copy.df5f107f6bca" Content="请先添加并选择一个账户。" Localize="false" />
+  <Node Recipe="Text" Key="copy.e18491f56efd" Content="LittleSkin 披风库" Localize="false" />
+  <Node Recipe="Text" Key="copy.e4df853a4197" Content="正版账户已获得" Localize="false" />
+  <Node Recipe="Text" Key="copy.e6d4f4247246" Content="请先选择账户" Localize="false" />
+  <Node Recipe="Text" Key="copy.e745c0d43198" Content="此账户暂不支持应用公开皮肤。" Localize="false" />
+  <Node Recipe="Text" Key="copy.eae1ff8ac1ab" Content="操作已取消。点击刷新重新读取外观。" Localize="false" />
+  <Node Recipe="Text" Key="copy.eb4a3e791478" Content="暂时无法读取皮肤，请检查网络和授权后刷新。" Localize="false" />
+  <Node Recipe="Text" Key="copy.f242886e6a3f" Content="皮肤库" Localize="false" />
+  <Node Recipe="Text" Key="copy.f3c2deaebe84" Content="可应用公开皮肤；公开披风不支持此账户。" Localize="false" />
+  <Node Recipe="Text" Key="copy.f7d7864c571f" Content="无法读取皮肤站列表，请稍后重试。" Localize="false" />
+  <Node Recipe="Text" Key="copy.fb8dbf7bd06e" Content="LittleSkin 披风衣柜为空，可先在 LittleSkin 添加披风。" Localize="false" />
+  <Node Recipe="Text" Key="copy.fc09417885b9" Content="经典模型" Localize="false" />
+  <Node Recipe="Text" Key="copy.fc0b5b5c5528" Content="无法读取更衣橱。" Localize="false" />
+  <Node Recipe="Text" Key="copy.ff6519c3a91a" Content="披风" Localize="false" />
+  <Node Recipe="Text" Key="hd-marker" Content=" · HD" Localize="false" />
+  <Node Recipe="Text" Key="read-account" Content="正在读取当前账户…" Localize="false" />
+  <Node Recipe="Text" Key="ready" Content="选择皮肤或已获得的披风。" Localize="false" />
+  <Node Recipe="Text" Key="selected-class-suffix" Content=" wardrobe-library-selected" Localize="false" />
+  <Node Recipe="Text" Key="site-idle-class" Content="wardrobe-library-base wardrobe-library-button wardrobe-library-site wardrobe-library-site-idle" Localize="false" />
+  <Node Recipe="Text" Key="site-selected-class" Content="wardrobe-library-base wardrobe-library-button wardrobe-library-site wardrobe-library-selected" Localize="false" />
+  <Node Recipe="Text" Key="slim-model" Content="Slim" Localize="false" />
+  <Node Recipe="Text" Key="use-skin" Content="使用皮肤" Localize="false" />
+  <Node Recipe="Text" Key="use-cape" Content="使用披风" Localize="false" />
+  <Node Recipe="Text" Key="unknown-user" Content="未知用户" Localize="false" />
+</Node>

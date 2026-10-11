@@ -73,7 +73,9 @@ internal static partial class Program
             return;
         }
         int failures = 0;
-        foreach ((string name, Action body) in TestCases)
+        var cases=args is ["--filter",var filter]?TestCases.Where(item=>item.Name.Contains(filter,StringComparison.OrdinalIgnoreCase)).ToArray():TestCases;
+        if(cases.Length==0)throw new ArgumentException("No desktop tests match the requested filter.");
+        foreach ((string name, Action body) in cases)
         {
             try
             {
@@ -87,7 +89,7 @@ internal static partial class Program
             }
         }
 
-        Console.WriteLine($"Desktop composition tests passed: {TestCases.Length - failures}; failed: {failures}.");
+        Console.WriteLine($"Desktop composition tests passed: {cases.Length - failures}; failed: {failures}.");
         Environment.ExitCode = failures == 0 ? 0 : 1;
     }
 
@@ -276,6 +278,8 @@ internal static partial class Program
         ("Startup install recovery owns dispatch and shutdown", StartupInstallRecoveryOwnsDispatchAndShutdown),
         ("first run keeps drafts and commits only at finish", FirstRunKeepsDraftsAndCommitsOnlyAtFinish),
         ("account owned rows retain drafts and reject hidden sources", AccountOwnedRowsRetainDraftsAndRejectHiddenSources),
+        ("wardrobe owned cards preserve path drafts and responsive orientation", WardrobeOwnedCardsRetainDraftsAcrossLanguageAndOrientation),
+        ("wardrobe library owned reflow retains search view and focus", WardrobeLibraryOwnedReflowRetainsSearchViewAndFocus),
         ("first run owned workspace retains transitions and retires picker", FirstRunOwnedWorkspaceRetainsTransitionsAndRetiresPicker),
         ("product PXML shell accepts native window metrics", ProductNxmlShellAcceptsNativeWindowMetrics),
         ("Version settings isolate overrides and restore inheritance", VersionSettingsAreScopedAndRestoreInheritance),

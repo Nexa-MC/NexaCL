@@ -1,0 +1,1 @@
+<nxml-dynamic><Button Key="{data key}" Content="{data caption}" Localize="false" Selected="{data selected}" Command="ui.wardrobe.library.action" Class="{data variant}" /></nxml-dynamic>

@@ -1,0 +1,44 @@
+<Node Recipe="StackLayout" Key="WardrobeLibraryProjectionDefaults">
+  <Node Recipe="Text" Key="WardrobeLibraryRail_width" Content="244" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryBack_enabled" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryAccountNotice_text" Content="正在读取当前账户…" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryManage_visible" Content="false" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryManage_enabled" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryContent_padding" Content="28,18,28,20" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryContent_spacing" Content="12" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibrarySiteName_text" Content="皮肤库" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibrarySiteStatus_text" Content="正在读取皮肤站 API…" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryDocs_enabled" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryOpenSite_enabled" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryRefresh_enabled" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibrarySearch_enabled" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibrarySearchButton_enabled" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibrarySkin_enabled" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibrarySkin_selected" Content="false" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibrarySkin_variant" Content="" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryCape_visible" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryCape_enabled" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryCape_selected" Content="false" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryCape_variant" Content="" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryTime_enabled" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryTime_selected" Content="false" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryTime_variant" Content="" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryLikes_enabled" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryLikes_selected" Content="false" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryLikes_variant" Content="" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryOperationStatus_text" Content="" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryOperationStatus_visible" Content="false" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryLoading_visible" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryEmpty_visible" Content="false" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryEmptyTitle_text" Content="没有找到皮肤" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryEmptyMessage_text" Content="试试其他关键词或切换分类。" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryItems_visible" Content="false" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryHelp_visible" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryPageNumber_text" Content="第 1 页" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryPrevious_enabled" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryNext_enabled" Content="true" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibrarySkin_class" Content="layout-WardrobeLibraryPage-WardrobeLibrarySkin wardrobe-library-base wardrobe-library-button" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryCape_class" Content="layout-WardrobeLibraryPage-WardrobeLibraryCape wardrobe-library-base wardrobe-library-button" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryTime_class" Content="layout-WardrobeLibraryPage-WardrobeLibraryTime wardrobe-library-base wardrobe-library-button" Localize="false" />
+  <Node Recipe="Text" Key="WardrobeLibraryLikes_class" Content="layout-WardrobeLibraryPage-WardrobeLibraryLikes wardrobe-library-base wardrobe-library-button" Localize="false" />
+</Node>

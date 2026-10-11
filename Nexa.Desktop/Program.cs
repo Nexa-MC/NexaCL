@@ -608,6 +608,7 @@ internal static partial class Program
             ValidateDynamicGlobalOverlays(shell, host.StateStore, uiIntents, feedback);
             ValidateDynamicVersionSelection(shell,host.StateStore);
             ValidateDynamicBootstrap(shell,host.StateStore);
+            ValidateDynamicWardrobe(shell,host.StateStore);
             Console.WriteLine($"NXML shell and dynamic network templates validated: {scene.Count} shell semantic nodes.");
             host.Logging.Info("Launcher", $"Headless shell validation completed nodes={scene.Count}");
             setStage("shutdown");

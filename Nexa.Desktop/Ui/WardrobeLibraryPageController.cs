@@ -1,5 +1,7 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Accounts;
 using Nexa.Xsr.Renderer;
@@ -13,6 +15,13 @@ namespace Nexa.Desktop.Ui;
 internal sealed class WardrobeLibraryPageController : IDisposable
 {
     private static readonly XsrSemanticId CardAction = XsrSemanticId.Parse("ui.wardrobe.library.action");
+    private readonly NxmlDynamicContent _dynamic;
+    private readonly XsrUiEntityId _workspace;
+    private readonly Dictionary<string,string> _presentation=DesktopWardrobeText.Defaults(library:true);
+    private Dictionary<string,string> _applied=[];
+    private readonly List<XsrUiEntityId> _gridRows=[];
+    private readonly Dictionary<string,XsrUiEntityId> _siteRows=[];
+    private string _copyStamp="";
     private readonly XsrUiShell _shell;
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrQueryRouter _queries;
@@ -43,13 +52,14 @@ internal sealed class WardrobeLibraryPageController : IDisposable
     private volatile bool _dirty = true;
     private long _wake, _selectionEvents, _rosterEvents, _seenSelectionEvents, _seenRosterEvents;
     private string? _observedIdentity, _notice;
-    private string _siteStatus = "正在读取皮肤站 API…", _emptyTitle = "没有找到皮肤", _emptyMessage = "试试其他关键词或切换分类。";
+    private string _siteStatus = Raw("copy.9d0d37af1ea8"), _emptyTitle = Raw("copy.31e1252e5216"), _emptyMessage = Raw("copy.7b00c3d7e6bf");
     private int _columns = 1;
     private double _railWidth, _scrollOffset = double.NaN;
     private XsrUiSize _viewport;
     private bool _siteStatusLiteral;
     internal const int MaximumVisibleCards = 64;
-    private const double CardHeight = 383, RowSpacing = 12;
+    private static double CardHeight=>Required(DesktopWardrobeText.Metric("library-grid").Height);
+    private static double RowSpacing=>DesktopWardrobeText.Metric("library-grid").Spacing;
     private sealed class CardVisual(WardrobeCatalogItem item, XsrUiEntityId container, XsrUiEntityId preview)
     {
         internal WardrobeCatalogItem Item { get; } = item;
@@ -59,6 +69,7 @@ internal sealed class WardrobeLibraryPageController : IDisposable
         internal WardrobePlayerView View { get; set; } = item.Kind == WardrobeCatalogKind.Cape ? WardrobePlayerView.Back : WardrobePlayerView.Isometric;
         internal AccountWardrobeResolvedTextures? Loaded { get; set; }
         internal bool Attempted { get; set; }
+        internal Dictionary<string,string> Projection=[];
     }
     private sealed record ImageRead(CardVisual Card, CancellationTokenSource Stop, Task<XsrResult<AccountWardrobeResolvedTextures>> Read);
 
@@ -66,21 +77,10 @@ internal sealed class WardrobeLibraryPageController : IDisposable
         XsrQueryRouter queries, XsrCommandRouter commands, XsrStateStore store, DesktopFeedbackService feedback)
     {
         _shell = shell; _intents = intents; _queries = queries; _commands = commands; _store = store; _feedback = feedback;
-        using var stream = DesktopMarkup.Open("WardrobeLibraryPage.nxml")
-            ?? throw new InvalidOperationException("Missing wardrobe library page.");
-        using var reader = new StreamReader(stream);
-        var host = shell.Tree.Create("wardrobe-library-loader");
-        try { Page = NxmlUiLoader.Load(DesktopMarkup.Compile(NxmlParser.Parse(reader.ReadToEnd())), shell.Tree, store, host); shell.Tree.Detach(Page); }
-        finally { shell.Tree.Destroy(host); }
-        shell.Tree.Walk(Page, entity =>
-        {
-            string name = shell.Tree.Name(entity); if (name.Length > 0) _nodes[name] = entity;
-            Style(entity); return true;
-        });
-        foreach (string name in new[] { "WardrobeLibraryRail", "WardrobeLibraryBody", "WardrobeLibraryFilters" })
-            shell.Tree.SetComponent(_nodes[name], new XsrUiScrollGesture());
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["WardrobeLibrarySiteName"])!.FontSize = 20;
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["WardrobeLibrarySiteName"])!.FontWeight = 600;
+        _dynamic=new(shell.Tree,store);
+        Page=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("WardrobeLibraryPage.nxml"),shell.Tree,store);
+        _workspace=_dynamic.Append(shell.Tree.Children(Page).Single(),DesktopMarkup.Dynamic("WardrobeLibraryWorkspace.d.nxml",_presentation));
+        shell.Tree.Walk(_workspace,entity=>{string name=shell.Tree.Name(entity);if(name.Length>0)_nodes[name]=entity;return true;});
         _intents.IntentEmitted += OnIntent;
         shell.Renderer.FramePreparing += OnFrame;
         _store.Changed += OnStateChanged;
@@ -116,6 +116,7 @@ internal sealed class WardrobeLibraryPageController : IDisposable
     private void OnFrame(object? sender, EventArgs args)
     {
         if (_disposed) return;
+        string copy=_shell.Renderer.LocalizeText(Raw("read-account"));if(copy!=_copyStamp){_copyStamp=copy;_dirty=true;}
         if (!IsCurrent) { if (_visible) Retire(); _visible = false; return; }
         long selections = Volatile.Read(ref _selectionEvents), rosters = Volatile.Read(ref _rosterEvents);
         double offset = _shell.Tree.GetComponent<XsrUiScroll>(_nodes["WardrobeLibraryBody"])!.OffsetY;
@@ -157,7 +158,7 @@ internal sealed class WardrobeLibraryPageController : IDisposable
     {
         _dirty = true;
         if (!_queries.TryResolve(WardrobeCatalogContract.Sites, out var route))
-        { SetEmpty("没有皮肤站", "尚未配置可用的皮肤站。"); return; }
+        { SetEmpty(Raw("copy.c34ebcb0dd6f"), Raw("copy.9c6126383f6d")); return; }
         _sitesReading = _queries.QueryAsync<WardrobeCatalogSitesQuery, IReadOnlyList<WardrobeCatalogSite>>(route, new(), cancellationToken: _lifetime.Token).AsTask();
         Wake(_sitesReading, _lifetime.Token);
     }
@@ -175,12 +176,12 @@ internal sealed class WardrobeLibraryPageController : IDisposable
     {
         _catalogStop.Cancel(); _catalogStop.Dispose(); _catalogStop = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
         _catalogReading = null; _catalog = null; ClearCards(); _dirty = true;
-        if (_site is null) { SetEmpty("没有皮肤站", "尚未配置可用的皮肤站。"); return; }
+        if (_site is null) { SetEmpty(Raw("copy.c34ebcb0dd6f"), Raw("copy.9c6126383f6d")); return; }
         _filter = _filter with { SiteId = _site.Id, ForceRefresh = force };
-        _siteStatus = "正在读取皮肤站 API…";
+        _siteStatus = Raw("copy.9d0d37af1ea8");
         _siteStatusLiteral = false;
         if (!_queries.TryResolve(WardrobeCatalogContract.Read, out var route))
-        { SetEmpty("皮肤站暂时不可用", "皮肤库服务不可用，请稍后重试。"); return; }
+        { SetEmpty(Raw("copy.7ae745517690"), Raw("copy.5028fc56dfe0")); return; }
         _catalogReading = _queries.QueryAsync<WardrobeCatalogQuery, WardrobeCatalogPage>(route, _filter, cancellationToken: _catalogStop.Token).AsTask();
         Wake(_catalogReading, _catalogStop.Token);
     }
@@ -196,7 +197,7 @@ internal sealed class WardrobeLibraryPageController : IDisposable
                 if (_site?.SupportsCapes != true) _filter = _filter with { Kind = WardrobeCatalogKind.Skin };
                 BuildSites(); Reload();
             }
-            else SetEmpty("没有皮肤站", "无法读取皮肤站列表，请稍后重试。");
+            else SetEmpty(Raw("copy.c34ebcb0dd6f"), Raw("copy.f7d7864c571f"));
         }
         if (_accountReading is { IsCompleted: true } account)
         {
@@ -218,19 +219,18 @@ internal sealed class WardrobeLibraryPageController : IDisposable
                 && catalog.Result.Value.Items.Count <= MaximumVisibleCards)
             {
                 _catalog = catalog.Result.Value;
-                _siteStatus = Format("第 {0} 页 · {1} 项{2}", _catalog.Page, _catalog.Items.Count,
-                    string.IsNullOrWhiteSpace(_catalog.ServerVersion) ? "" : " · Blessing Skin " + _catalog.ServerVersion);
+                _siteStatus=CatalogueCaption(_catalog);
                 _siteStatusLiteral = true;
-                _emptyTitle = "没有找到皮肤"; _emptyMessage = "试试其他关键词或切换分类。";
+                _emptyTitle = Raw("copy.31e1252e5216"); _emptyMessage = Raw("copy.7b00c3d7e6bf");
                 BuildCards();
             }
-            else SetEmpty("皮肤站暂时不可用", "无法读取皮肤站 API，请刷新重试。");
+            else SetEmpty(Raw("copy.7ae745517690"), Raw("copy.a3b8c4ddae92"));
         }
         if (_writing is { IsCompleted: true } writing)
         {
             _writing = null; _dirty = true;
-            _notice = writing.IsCompletedSuccessfully && writing.Result.IsSuccess ? "外观已更新。"
-                : writing.IsCompletedSuccessfully ? writing.Result.Error?.Message ?? "外观操作未完成。" : "外观操作未完成，请重试。";
+            _notice = writing.IsCompletedSuccessfully && writing.Result.IsSuccess ? Raw("copy.9fa5be79e728")
+                : writing.IsCompletedSuccessfully ? writing.Result.Error?.Message ?? Raw("copy.0a69a3749a9e") : Raw("copy.d3ff07c74807");
             if (writing.IsCompletedSuccessfully && writing.Result.IsSuccess) _feedback.Info(_notice);
             // Always refresh admission before a retry, including provider failure after token rotation.
             _account = null; _accountLoaded = false; _seenRosterEvents = Volatile.Read(ref _rosterEvents);
@@ -344,10 +344,10 @@ internal sealed class WardrobeLibraryPageController : IDisposable
     {
         if (_writing is not null || _account is not { } account || _site is not { } site || !MatchesCurrentAccount(account)
             || !CanApply(item) || _catalog?.Items.Contains(item) != true) return;
-        if (!_commands.TryResolve(AccountWardrobeContract.ApplyPublic, out var route)) { _notice = "外观操作服务不可用。"; _dirty = true; return; }
+        if (!_commands.TryResolve(AccountWardrobeContract.ApplyPublic, out var route)) { _notice = Raw("copy.57a831d60896"); _dirty = true; return; }
         _writing = _commands.Dispatch(route, new AccountWardrobeApplyPublicCommand(account.Identity, site.Id, item.TextureId,
             item.Kind == WardrobeCatalogKind.Cape ? AccountWardrobeTextureKind.Cape : AccountWardrobeTextureKind.Skin), cancellationToken: _lifetime.Token).Completion;
-        _notice = "正在更新外观…"; _dirty = true; Wake(_writing, _lifetime.Token);
+        _notice = Raw("copy.cf41ca6935be"); _dirty = true; Wake(_writing, _lifetime.Token);
     }
     private bool CanApply(WardrobeCatalogItem item) => _account is { } account && _writing is null
         && (item.Kind == WardrobeCatalogKind.Skin ? account.CanUploadSkin
@@ -364,138 +364,127 @@ internal sealed class WardrobeLibraryPageController : IDisposable
         _effecting = true;
         try { _openUrl(uri); }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { if (IsCurrent) { _notice = "无法打开皮肤站链接，请检查默认浏览器后重试。"; _dirty = true; } }
+        { if (IsCurrent) { _notice = Raw("copy.5f57d692389c"); _dirty = true; } }
         finally { _effecting = false; }
     }
     private void SetEmpty(string title, string message)
     {
-        _emptyTitle = title; _emptyMessage = message; _siteStatus = title == "皮肤站暂时不可用" ? "API 请求失败" : message; _siteStatusLiteral = false; _dirty = true;
+        _emptyTitle = title; _emptyMessage = message; _siteStatus = title == Raw("copy.7ae745517690") ? Raw("copy.46c8ec44cca3") : message; _siteStatusLiteral = false; _dirty = true;
     }
 
     private void BuildSites()
     {
-        Clear(_nodes["WardrobeLibrarySites"]);
-        foreach (var site in _sites)
+        var desired=_sites.Select(site=>site.Id).ToHashSet(StringComparer.Ordinal);
+        foreach(var pair in _siteRows.ToArray())if(!desired.Contains(pair.Key)){RemoveFragment(pair.Value);_siteRows.Remove(pair.Key);}
+        List<XsrUiEntityId> order=[];
+        foreach(var site in _sites)
         {
-            var row = Button(_nodes["WardrobeLibrarySites"], "WardrobeLibrarySite." + site.Id,
-                site.DisplayName + "\n" + site.BaseUri.Host, () =>
-                {
-                    if (_writing is not null || _site == site) return;
-                    _site = site; _filter = _filter with
-                    {
-                        SiteId = site.Id,
-                        Page = 1,
-                        Kind = site.SupportsCapes ? _filter.Kind : WardrobeCatalogKind.Skin
-                    };
-                    BuildSites(); Reload();
-                }, 60, literal: true);
-            _shell.Tree.SetComponent(row, new XsrUiSelection { IsSelected = _site == site });
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(row)!.WrapText = true;
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(row)!.Background = _site == site ? new(226, 236, 253) : XsrUiColor.Transparent;
+            var data=new Dictionary<string,string>{["key"]="WardrobeLibrarySite."+SafeSuffix(site.Id),["caption"]=Format("Site",("name",site.DisplayName),("host",site.BaseUri.Host)),
+                ["selected"]=Flag(_site==site),["variant"]=Raw(_site==site?"site-selected-class":"site-idle-class")};
+            if(!_siteRows.TryGetValue(site.Id,out var row)){row=_dynamic.Append(_nodes["WardrobeLibrarySites"],DesktopMarkup.Dynamic("WardrobeLibrarySite.d.nxml",data));_siteRows[site.Id]=row;}
+            else _dynamic.Reload(row,DesktopMarkup.Dynamic("WardrobeLibrarySite.d.nxml",data));
+            _actions[row]=()=>
+            {
+                if(_writing is not null||_site==site)return;
+                _site=site;_filter=_filter with{SiteId=site.Id,Page=1,Kind=site.SupportsCapes?_filter.Kind:WardrobeCatalogKind.Skin};BuildSites();Reload();
+            };
+            order.Add(row);
         }
+        _dynamic.Reorder(_nodes["WardrobeLibrarySites"],order);
     }
     private void BuildCards()
     {
-        ClearCards();
-        if (_catalog is null) return;
-        var items = _catalog.Items.ToArray();
-        for (int index = 0; index < items.Length; index += _columns)
+        ClearCards();if(_catalog is null)return;
+        foreach(var item in _catalog.Items)
         {
-            var row = Stack(_nodes["WardrobeLibraryItems"], "WardrobeLibraryCardRow." + index, horizontal: true);
-            E(row).Height = CardHeight;
-            foreach (var item in items.Skip(index).Take(_columns)) CreateCard(row, item);
+            int rowIndex=_cards.Count/_columns;EnsureRows(rowIndex+1);
+            CreateCard(_gridRows[rowIndex],item);
         }
-        var scroll = _shell.Tree.GetComponent<XsrUiScroll>(_nodes["WardrobeLibraryBody"]);
-        if (scroll is not null) { scroll.OffsetX = 0; scroll.OffsetY = 0; }
-        _dirty = true;
+        var scroll=_shell.Tree.GetComponent<XsrUiScroll>(_nodes["WardrobeLibraryBody"]);
+        if(scroll is not null){scroll.OffsetX=0;scroll.OffsetY=0;}_dirty=true;
     }
-    private void CreateCard(XsrUiEntityId parent, WardrobeCatalogItem item)
+    private void CreateCard(XsrUiEntityId parent,WardrobeCatalogItem item)
     {
-        string prefix = "WardrobeLibraryCard." + item.TextureId.ToString(CultureInfo.InvariantCulture);
-        var card = Stack(parent, prefix);
-        E(card).Width = 180; E(card).Height = CardHeight - 24; E(card).Padding = new(14, 11, 14, 13);
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(card)!.Background = new(248, 250, 253);
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(card)!.CornerRadius = 18;
-        var preview = Element(card, prefix + ".Preview", XsrUiSemanticRole.Image, item.Name);
-        E(preview).Width = 84; E(preview).Height = 168; E(preview).HorizontalAlignment = XsrUiAlignment.Center;
-        _shell.Tree.GetComponent<XsrUiSemantic>(preview)!.Localize = false;
-        var visual = new CardVisual(item, card, preview); _cards.Add(visual);
-        _shell.Tree.SetComponent(preview, new XsrUiImage("lucide/image")); PresentImage(visual);
-        Text(card, prefix + ".Name", item.Name, 28, literal: true);
-        Text(card, prefix + ".Uploader", Format("由 {0} 上传", string.IsNullOrWhiteSpace(item.Uploader) ? _shell.Renderer.LocalizeText("未知用户") : item.Uploader), 26, literal: true);
-        Text(card, prefix + ".Metadata", item.Kind == WardrobeCatalogKind.Cape
-            ? Format("♥ {0} · 披风{1}", item.Likes, item.IsHighDefinition ? " · HD" : "")
-            : Format("♥ {0} · {1}{2}", item.Likes, item.Model == "alex" ? "Slim" : "Classic", item.IsHighDefinition ? " · HD" : ""), 26, literal: true);
-        visual.ViewButton = Button(card, prefix + ".View", Format("{0} · 切换视角", _shell.Renderer.LocalizeText(ViewLabel(visual.View))), () =>
-        {
-            visual.View = (WardrobePlayerView)(((int)visual.View + 1) % 7);
-            PresentImage(visual); Text(prefix + ".View", Format("{0} · 切换视角", _shell.Renderer.LocalizeText(ViewLabel(visual.View))), literal: true);
-            _shell.Tree.MarkDirty(visual.Preview, XsrUiDirtyKinds.Paint); _dirty = true;
-        }, literal: true);
-        var apply = Button(card, prefix + ".Apply", item.Kind == WardrobeCatalogKind.Cape ? "使用披风" : "使用皮肤", () => Apply(item));
-        E(apply).IsVisible = ShowApply(item); _shell.Tree.GetComponent<XsrUiInput>(apply)!.Enabled = CanApply(item);
-        Button(card, prefix + ".Details", "查看详情", () =>
-        {
-            if (_site is { } site && item.DetailsUri.Host.Equals(site.BaseUri.Host, StringComparison.OrdinalIgnoreCase)) Open(item.DetailsUri);
-        });
+        var data=CardProjection(item,item.Kind==WardrobeCatalogKind.Cape?WardrobePlayerView.Back:WardrobePlayerView.Isometric);
+        var card=_dynamic.Append(parent,DesktopMarkup.Dynamic("WardrobeLibraryCard.d.nxml",data));
+        _shell.Tree.Walk(card,node=>{_nodes[_shell.Tree.Name(node)]=node;return true;});
+        string prefix=data["prefix"];
+        var visual=new CardVisual(item,card,_nodes[prefix+".Preview"]){ViewButton=_nodes[prefix+".View"],Projection=data};_cards.Add(visual);PresentImage(visual);
+        _actions[visual.ViewButton]=()=>{visual.View=(WardrobePlayerView)(((int)visual.View+1)%7);PresentImage(visual);_dirty=true;};
+        _actions[_nodes[prefix+".Apply"]]=()=>Apply(item);
+        _actions[_nodes[prefix+".Details"]]=()=>{if(_site is{}site&&item.DetailsUri.Host.Equals(site.BaseUri.Host,StringComparison.OrdinalIgnoreCase))Open(item.DetailsUri);};
     }
-
+    private Dictionary<string,string> CardProjection(WardrobeCatalogItem item,WardrobePlayerView view)=>ProjectCard(_shell,item,view,ShowApply(item),CanApply(item));
+    internal static Dictionary<string,string> ProjectCard(XsrUiShell shell,WardrobeCatalogItem item,WardrobePlayerView view,bool showApply,bool canApply)
+    {
+        string Format(string name,params(string Key,object Value)[] values)=>DesktopWardrobeText.Format(name,values.ToDictionary(pair=>pair.Key,pair=>Convert.ToString(pair.Value,CultureInfo.CurrentCulture)??""),shell.Renderer.LocalizeText);
+        string hd=item.IsHighDefinition?Raw("hd-marker"):"";
+        string metadata=item.Kind==WardrobeCatalogKind.Cape?Format("CapeMetadata",("likes",item.Likes),("hd",hd))
+            :Format("SkinMetadata",("likes",item.Likes),("model",item.Model=="alex"?Raw("slim-model"):Raw("classic-model")),("hd",hd));
+        string prefix="WardrobeLibraryCard."+item.TextureId.ToString(CultureInfo.InvariantCulture);
+        return new(){["prefix"]=prefix,["body_key"]=prefix+".Body",["preview_key"]=prefix+".Preview",["name_key"]=prefix+".Name",["uploader_key"]=prefix+".Uploader",["metadata_key"]=prefix+".Metadata",["view_key"]=prefix+".View",["apply_key"]=prefix+".Apply",["details_key"]=prefix+".Details", ["name"]=item.Name,
+            ["uploader"]=Format("Uploader",("uploader",string.IsNullOrWhiteSpace(item.Uploader)?shell.Renderer.LocalizeText(Raw("unknown-user")):item.Uploader)),
+            ["metadata"]=metadata,["view"]=Format("View",("view",shell.Renderer.LocalizeText(ViewLabel(view)))),
+            ["apply"]=shell.Renderer.LocalizeText(Raw(item.Kind==WardrobeCatalogKind.Cape?"use-cape":"use-skin")),
+            ["apply_visible"]=Flag(showApply),["apply_enabled"]=Flag(canApply)};
+    }
+    private void ProjectCards()
+    {
+        foreach(var card in _cards)
+        {
+            var data=CardProjection(card.Item,card.View);
+            if(Same(data,card.Projection))continue;
+            _dynamic.Reload(card.Container,DesktopMarkup.Dynamic("WardrobeLibraryCard.d.nxml",data));card.Projection=data;
+        }
+    }
+    private void EnsureRows(int count)
+    {
+        while(_gridRows.Count<count)_gridRows.Add(_dynamic.Append(_nodes["WardrobeLibraryItems"],DesktopMarkup.Dynamic("WardrobeLibraryRow.d.nxml",
+            new Dictionary<string,string>{["key"]="WardrobeLibraryCardRow."+_gridRows.Count.ToString(CultureInfo.InvariantCulture)})));
+    }
+    private void ReflowCards()
+    {
+        int count=(_cards.Count+_columns-1)/_columns;EnsureRows(count);
+        for(int i=0;i<_cards.Count;i++)_dynamic.Move(_cards[i].Container,_gridRows[i/_columns]);
+        for(int i=0;i<count;i++)_dynamic.Reorder(_gridRows[i],_cards.Skip(i*_columns).Take(_columns).Select(card=>card.Container).ToArray());
+        while(_gridRows.Count>count){RemoveFragment(_gridRows[^1]);_gridRows.RemoveAt(_gridRows.Count-1);}
+        _dynamic.Reorder(_nodes["WardrobeLibraryItems"],_gridRows);
+    }
     private void UpdateResponsiveLayout()
     {
-        double width = _shell.Renderer.Viewport.Width;
-        if (_viewport == _shell.Renderer.Viewport) return;
-        _viewport = _shell.Renderer.Viewport;
-        bool compact = _viewport.Height <= 700;
-        E(_nodes["WardrobeLibraryContent"]).Padding = compact ? new(18, 10, 18, 12) : new(28, 18, 28, 20);
-        _shell.Tree.GetComponent<XsrUiStackPanel>(_nodes["WardrobeLibraryContent"])!.Spacing = compact ? 6 : 12;
-        E(_nodes["WardrobeLibraryHelp"]).IsVisible = !compact;
-        double rail = width >= 1500 ? 294 : width <= 960 ? 238 : 268;
-        if (_railWidth != rail)
-        {
-            _railWidth = rail;
-            E(_nodes["WardrobeLibraryRail"]).Width = rail - E(_nodes["WardrobeLibraryRail"]).Padding.Horizontal;
-            _shell.Tree.MarkDirty(Page, XsrUiDirtyKinds.Layout);
-        }
-        var padding = E(_shell.Content).Padding;
-        double available = Math.Min(1320, Math.Max(208, width - 48 - padding.Left - padding.Right - rail))
-            - E(_nodes["WardrobeLibraryContent"]).Padding.Horizontal;
-        int columns = Math.Clamp((int)((available + 12) / 220), 1, 5);
-        if (_columns == columns) return;
-        _columns = columns;
-        if (_cards.Count > 0)
-        {
-            foreach (var card in _cards) _shell.Tree.Detach(card.Container);
-            Clear(_nodes["WardrobeLibraryItems"]);
-            for (int index = 0; index < _cards.Count; index += _columns)
-            {
-                var row = Stack(_nodes["WardrobeLibraryItems"], "WardrobeLibraryCardRow." + index, horizontal: true);
-                E(row).Height = CardHeight;
-                foreach (var card in _cards.Skip(index).Take(_columns)) _shell.Tree.Attach(card.Container, row);
-            }
-        }
-        _dirty = true;
+        if(_viewport==_shell.Renderer.Viewport)return;
+        _viewport=_shell.Renderer.Viewport;var view=DesktopWardrobeText.Metric("library-view");var content=DesktopWardrobeText.Metric("library-content");
+        bool compact=_viewport.Height<=Required(view.Height);var layout=compact?DesktopWardrobeText.Metric("library-compact"):content;
+        _presentation["WardrobeLibraryContent_padding"]=Thickness(layout.Padding);_presentation["WardrobeLibraryContent_spacing"]=Number(layout.Spacing);
+        Visible("WardrobeLibraryHelp",!compact);
+        var rail=DesktopWardrobeText.Metric("library-rail");_railWidth=_viewport.Width>=Required(view.MaxWidth)?Required(rail.MaxWidth):_viewport.Width<=Required(view.MinWidth)?Required(rail.MinWidth):Required(rail.Width);
+        _presentation["WardrobeLibraryRail_width"]=Number(_railWidth-rail.Padding.Horizontal);
+        var padding=_shell.Tree.GetComponent<XsrUiElement>(_shell.Content)!.Padding;
+        double available=Math.Min(Required(content.MaxWidth),Math.Max(Required(content.MinWidth),_viewport.Width-view.Margin.Left-padding.Horizontal-_railWidth))-layout.Padding.Horizontal;
+        var grid=DesktopWardrobeText.Metric("library-grid");int columns=Math.Clamp((int)((available+grid.Spacing)/Required(grid.Width)),(int)Required(grid.MinWidth),(int)Required(grid.MaxWidth));
+        if(_columns!=columns){_columns=columns;ReflowCards();}_dirty=true;
     }
     private void Present()
     {
         if (!_dirty) return; _dirty = false;
-        Text("WardrobeLibrarySiteName", _site?.DisplayName ?? "皮肤库", literal: _site is not null);
-        Text("WardrobeLibrarySiteStatus", _siteStatus, literal: _siteStatusLiteral);
-        Text("WardrobeLibraryPageNumber", Format("第 {0} 页", _filter.Page), literal: true);
+        Text("WardrobeLibrarySiteName", _site?.DisplayName ?? Raw("copy.f242886e6a3f"), literal: _site is not null);
+        Text("WardrobeLibrarySiteStatus",_catalog is{}catalog?CatalogueCaption(catalog):_siteStatus,literal:_siteStatusLiteral);
+        Text("WardrobeLibraryPageNumber",Format("Page",("page",_filter.Page)),literal:true);
         Text("WardrobeLibraryAccountNotice", _account is { } account ? account.Identity.Kind switch
         {
-            LaunchProfileKind.Offline => "离线账户的外观仅供预览，不能上传或应用皮肤站外观。",
-            LaunchProfileKind.ThirdParty => "第三方账户需要皮肤站的独立授权。请前往该账户对应的皮肤站管理外观。",
-            LaunchProfileKind.NCloud => account.CanUploadSkin ? "可应用公开皮肤；公开披风不支持此账户。" : account.UnavailableReason ?? "此账户暂不支持应用公开皮肤。",
-            LaunchProfileKind.Microsoft => "可应用公开皮肤；披风只能选择此账户已获得的披风。",
-            _ => account.UnavailableReason ?? "应用外观需要皮肤站的独立授权。"
-        } : _accountReading is not null ? "正在读取当前账户…"
-            : _accountFailed ? "无法读取当前账户外观，请刷新重试。" : "请先添加并选择一个账户。");
-        Text("WardrobeLibraryOperationStatus", _notice ?? ""); E(_nodes["WardrobeLibraryOperationStatus"]).IsVisible = !string.IsNullOrWhiteSpace(_notice);
-        E(_nodes["WardrobeLibraryManage"]).IsVisible = ManageUri() is not null;
+            LaunchProfileKind.Offline => Raw("copy.409efd13530d"),
+            LaunchProfileKind.ThirdParty => Raw("copy.0c01aef694ac"),
+            LaunchProfileKind.NCloud => account.CanUploadSkin ? Raw("copy.f3c2deaebe84") : account.UnavailableReason ?? Raw("copy.e745c0d43198"),
+            LaunchProfileKind.Microsoft => Raw("copy.91b8270f3266"),
+            _ => account.UnavailableReason ?? Raw("copy.09301ef42513")
+        } : _accountReading is not null ? Raw("read-account")
+            : _accountFailed ? Raw("copy.c185a9b3b40f") : Raw("copy.df5f107f6bca"));
+        Text("WardrobeLibraryOperationStatus", _notice ?? ""); Visible("WardrobeLibraryOperationStatus",!string.IsNullOrWhiteSpace(_notice));
+        Visible("WardrobeLibraryManage",ManageUri() is not null);
         bool loading = _sitesReading is not null || _catalogReading is not null;
-        E(_nodes["WardrobeLibraryLoading"]).IsVisible = loading;
-        E(_nodes["WardrobeLibraryItems"]).IsVisible = !loading && _catalog?.Items.Count > 0;
-        E(_nodes["WardrobeLibraryEmpty"]).IsVisible = !loading && _catalog?.Items.Count is not > 0;
+        Visible("WardrobeLibraryLoading",loading);
+        Visible("WardrobeLibraryItems",!loading && _catalog?.Items.Count > 0);
+        Visible("WardrobeLibraryEmpty",!loading && _catalog?.Items.Count is not > 0);
         Text("WardrobeLibraryEmptyTitle", _emptyTitle); Text("WardrobeLibraryEmptyMessage", _emptyMessage);
         bool idle = _writing is null;
         Enable("WardrobeLibraryBack", _back is not null);
@@ -504,18 +493,13 @@ internal sealed class WardrobeLibraryPageController : IDisposable
         Enable("WardrobeLibraryManage", ManageUri() is not null && _openUrl is not null);
         Enable("WardrobeLibraryRefresh", idle && !loading);
         foreach (string key in new[] { "WardrobeLibrarySearchButton", "WardrobeLibrarySkin", "WardrobeLibraryCape", "WardrobeLibraryTime", "WardrobeLibraryLikes" }) Enable(key, idle && _site is not null);
-        E(_nodes["WardrobeLibraryCape"]).IsVisible = _site?.SupportsCapes == true;
+        Visible("WardrobeLibraryCape",_site?.SupportsCapes == true);
         Enable("WardrobeLibraryPrevious", idle && !loading && _catalog?.HasPreviousPage == true);
         Enable("WardrobeLibraryNext", idle && !loading && _catalog?.HasNextPage == true);
         Select("WardrobeLibrarySkin", _filter.Kind == WardrobeCatalogKind.Skin); Select("WardrobeLibraryCape", _filter.Kind == WardrobeCatalogKind.Cape);
         Select("WardrobeLibraryTime", _filter.Order == WardrobeCatalogOrder.Time); Select("WardrobeLibraryLikes", _filter.Order == WardrobeCatalogOrder.Likes);
-        if (_catalog is not null)
-            foreach (var item in _catalog.Items.Take(MaximumVisibleCards))
-            {
-                string key = "WardrobeLibraryCard." + item.TextureId.ToString(CultureInfo.InvariantCulture) + ".Apply";
-                if (_nodes.TryGetValue(key, out var button)) { E(button).IsVisible = ShowApply(item); _shell.Tree.GetComponent<XsrUiInput>(button)!.Enabled = CanApply(item); }
-            }
-        _shell.Tree.MarkDirty(Page, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+        ProjectCards();BuildSites();ReloadWorkspace();
+        _shell.Tree.MarkDirty(Page,XsrUiDirtyKinds.Paint);
     }
 
     private void Retire()
@@ -524,11 +508,11 @@ internal sealed class WardrobeLibraryPageController : IDisposable
         _catalogStop.Cancel(); _catalogStop.Dispose(); _catalogStop = new();
         _sitesReading = null; _catalogReading = null; _accountReading = null; _writing = null;
         _account = null; _lastAdmittedIdentity = null; _catalog = null; _started = false; _accountLoaded = false; _accountFailed = false; _notice = null; _dirty = true;
-        _siteStatus = "正在读取皮肤站 API…"; _siteStatusLiteral = false; _scrollOffset = double.NaN;
+        _siteStatus = Raw("copy.9d0d37af1ea8"); _siteStatusLiteral = false; _scrollOffset = double.NaN;
         while (_pending.TryDequeue(out _)) { }
         ClearCards();
     }
-    private void ClearCards() { ClearImages(); Clear(_nodes["WardrobeLibraryItems"]); _cards.Clear(); }
+    private void ClearCards(){ClearImages();Clear(_nodes["WardrobeLibraryItems"]);_gridRows.Clear();_cards.Clear();}
     private void ConsumeImages()
     {
         if (_cards.Count == 0 || _site is null) return;
@@ -575,7 +559,7 @@ internal sealed class WardrobeLibraryPageController : IDisposable
     private void PresentImage(CardVisual card) => _shell.Tree.GetComponent<XsrUiImage>(card.Preview)!.Raster
         = WardrobePlayerPresentation.Player(card.Loaded?.Skin, card.Loaded?.Cape, card.Item.Model == "alex", card.View);
     private static string ViewLabel(WardrobePlayerView view) => view switch
-    { WardrobePlayerView.Isometric => "立体", WardrobePlayerView.Front => "正面", WardrobePlayerView.Back => "背面", WardrobePlayerView.Left => "左侧", WardrobePlayerView.Right => "右侧", WardrobePlayerView.Top => "顶部", _ => "底部" };
+    { WardrobePlayerView.Isometric => Raw("copy.bc295ff5696c"), WardrobePlayerView.Front => Raw("copy.740f5e8102e0"), WardrobePlayerView.Back => Raw("copy.2d270b6ce44a"), WardrobePlayerView.Left => Raw("copy.6a24b14f33c7"), WardrobePlayerView.Right => Raw("copy.1cf1d4d0b24b"), WardrobePlayerView.Top => Raw("copy.6f2a4a02e60e"), _ => Raw("copy.3f049887991b") };
     private void ClearImages()
     {
         _imageStop.Cancel(); _imageStop.Dispose(); _imageStop = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
@@ -593,7 +577,7 @@ internal sealed class WardrobeLibraryPageController : IDisposable
                 string name = _shell.Tree.Name(entity); if (_nodes.TryGetValue(name, out var mapped) && mapped == entity) _nodes.Remove(name);
                 return true;
             });
-            _shell.Tree.Destroy(child);
+            _dynamic.Remove(child);
         }
     }
     private void Wake(Task task, CancellationToken token) => _ = task.ContinueWith(completed =>
@@ -605,60 +589,31 @@ internal sealed class WardrobeLibraryPageController : IDisposable
         catch (ObjectDisposedException) { }
     }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     private static bool Succeeded<T>(Task<XsrResult<T>> task) => task.IsCompletedSuccessfully && task.Result.IsSuccess;
-    private string Format(string source, params object[] arguments) => string.Format(CultureInfo.CurrentCulture, _shell.Renderer.LocalizeText(source), arguments);
-    private XsrUiElement E(XsrUiEntityId entity) => _shell.Tree.GetComponent<XsrUiElement>(entity)!;
-    private XsrUiEntityId Element(XsrUiEntityId parent, string name, XsrUiSemanticRole role = XsrUiSemanticRole.None, string? label = null)
+    private static string Raw(string key)=>DesktopWardrobeText.Raw(key);
+    private string Format(string name,params(string Key,object Value)[] values)=>DesktopWardrobeText.Format(name,values.ToDictionary(pair=>pair.Key,pair=>Convert.ToString(pair.Value,CultureInfo.CurrentCulture)??""),_shell.Renderer.LocalizeText);
+    private string CatalogueCaption(WardrobeCatalogPage page)=>Format("Catalogue",("page",page.Page),("count",page.Items.Count),
+        ("server",string.IsNullOrWhiteSpace(page.ServerVersion)?"":Format("Server",("version",page.ServerVersion))));
+    private static double Required(double? value)=>value is >0&&double.IsFinite(value.Value)?value.Value:throw new NxmlCompileException("Incomplete wardrobe library viewport metric.");
+    private static string SafeSuffix(string value)=>value.Length<=90&&!value.Any(char.IsWhiteSpace)&&!value.Contains('{')&&!value.Contains('}')?value:"h"+Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
+    private static string Number(double value)=>value.ToString("R",CultureInfo.InvariantCulture);
+    private static string Flag(bool value)=>value?"true":"false";
+    private static string Thickness(XsrUiThickness value)=>string.Join(",",Number(value.Left),Number(value.Top),Number(value.Right),Number(value.Bottom));
+    private static bool Same(Dictionary<string,string>a,Dictionary<string,string>b)=>a.Count==b.Count&&a.All(pair=>b.TryGetValue(pair.Key,out var value)&&value==pair.Value);
+    private void RemoveFragment(XsrUiEntityId entity)
     {
-        var entity = _shell.Tree.Create(name); _shell.Tree.Attach(entity, parent); _nodes[name] = entity;
-        _shell.Tree.SetComponent(entity, new XsrUiElement()); _shell.Tree.SetComponent(entity, new XsrUiSemantic(role, label)); Style(entity); return entity;
+        _shell.Tree.Walk(entity,node=>{_actions.Remove(node);string name=_shell.Tree.Name(node);if(_nodes.TryGetValue(name,out var mapped)&&mapped==node)_nodes.Remove(name);return true;});
+        _dynamic.Remove(entity);
     }
-    private XsrUiEntityId Stack(XsrUiEntityId parent, string name, bool horizontal = false)
-    {
-        var entity = Element(parent, name); _shell.Tree.SetComponent(entity, new XsrUiStackPanel(horizontal ? XsrUiOrientation.Horizontal : XsrUiOrientation.Vertical) { Spacing = horizontal ? 12 : 3 }); return entity;
-    }
-    private XsrUiEntityId Button(XsrUiEntityId parent, string name, string label, Action action, double height = 31, bool literal = false)
-    {
-        var entity = Element(parent, name, XsrUiSemanticRole.Button, label); E(entity).Height = height;
-        _shell.Tree.SetComponent(entity, new XsrUiText(label));
-        _shell.Tree.SetComponent(entity, new XsrUiInput { Clickable = true, Focusable = true });
-        _shell.Tree.SetComponent(entity, new XsrUiCommandBinding(CardAction)); _actions[entity] = action; Style(entity);
-        if (literal) DesktopLiteralText.Preserve(_shell.Tree, entity);
-        return entity;
-    }
-    private void Text(XsrUiEntityId parent, string name, string value, double height, bool literal = false)
-    {
-        var entity = Element(parent, name, XsrUiSemanticRole.Text, value); E(entity).Height = height;
-        _shell.Tree.SetComponent(entity, new XsrUiText(value) { MaxLines = 1, TrimOverflow = true });
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(entity)!.TextAlignment = XsrUiTextAlignment.Center;
-        if (literal) DesktopLiteralText.Preserve(_shell.Tree, entity);
-    }
-    private void Text(string name, string value, bool literal = false)
-    {
-        var entity = _nodes[name]; var text = _shell.Tree.GetComponent<XsrUiText>(entity)!;
-        text.Content = value; text.Localize = !literal;
-        if (_shell.Tree.GetComponent<XsrUiSemantic>(entity) is { } semantic) { semantic.Label = value; semantic.Localize = !literal; }
-    }
-    private void Enable(string name, bool enabled) => _shell.Tree.GetComponent<XsrUiInput>(_nodes[name])!.Enabled = enabled;
-    private void Select(string name, bool selected) => _shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes[name])!.Background = selected ? new(226, 236, 253) : new(241, 245, 250);
-    private void Style(XsrUiEntityId entity)
-    {
-        bool button = _shell.Tree.GetComponent<XsrUiInput>(entity)?.Clickable == true;
-        _shell.Tree.SetComponent(entity, new XsrUiVisualStyle
-        {
-            Foreground = new(43, 51, 64),
-            Background = button ? new(241, 245, 250) : XsrUiColor.Transparent,
-            Hover = new(226, 236, 253),
-            CornerRadius = button ? 10 : 0,
-            FontSize = 13,
-            WrapText = !button,
-            TextAlignment = button ? XsrUiTextAlignment.Center : XsrUiTextAlignment.Start
-        });
-    }
+    private void Text(string name,string value,bool literal=false)=>_presentation[name+"_text"]=literal?value:_shell.Renderer.LocalizeText(value);
+    private void Enable(string name,bool enabled)=>_presentation[name+"_enabled"]=Flag(enabled);
+    private void Visible(string name,bool visible)=>_presentation[name+"_visible"]=Flag(visible);
+    private void Select(string name,bool selected){_presentation[name+"_selected"]=Flag(selected);_presentation[name+"_class"]=DesktopWardrobeText.Defaults(library:true)[name+"_class"]+(selected?Raw("selected-class-suffix"):"");}
+    private void ReloadWorkspace(){if(Same(_presentation,_applied))return;_dynamic.Reload(_workspace,DesktopMarkup.Dynamic("WardrobeLibraryWorkspace.d.nxml",_presentation));_applied=new(_presentation);}
     public void Dispose()
     {
         if (_disposed) return; _disposed = true;
         _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame; _store.Changed -= OnStateChanged;
         Retire(); _lifetime.Dispose(); _catalogStop.Dispose(); _imageStop.Dispose();
-        if (_shell.Tree.IsAlive(Page)) _shell.Tree.Destroy(Page);
+        _dynamic.Remove(_workspace);if(_shell.Tree.IsAlive(Page))_shell.Tree.Destroy(Page);
     }
 }

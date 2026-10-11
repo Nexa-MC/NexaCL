@@ -1,47 +1,5 @@
 <nxml-page>
   <Page Key="WardrobeLibraryPage" Label="皮肤库">
-    <StackPanel Key="WardrobeLibraryLayout" StretchLastChild="true" Class="layout-WardrobeLibraryPage-WardrobeLibraryLayout">
-      <StackPanel Key="WardrobeLibraryRail" Scroll="true" Class="layout-WardrobeLibraryPage-WardrobeLibraryRail">
-        <Button Key="WardrobeLibraryBack" Label="返回更衣橱" Content="返回更衣橱" Command="ui.wardrobe.library.back" Class="layout-WardrobeLibraryPage-WardrobeLibraryBack" />
-        <Text Content="皮肤站" Class="layout-WardrobeLibraryPage-5" />
-        <StackPanel Key="WardrobeLibrarySites" Class="layout-WardrobeLibraryPage-WardrobeLibrarySites" />
-        <Text Key="WardrobeLibraryAccountNotice" Content="正在读取当前账户…" Class="layout-WardrobeLibraryPage-WardrobeLibraryAccountNotice" />
-        <Button Key="WardrobeLibraryManage" Label="前往皮肤站授权与管理" Content="前往皮肤站管理" Command="ui.wardrobe.library.manage" IsVisible="false" Class="layout-WardrobeLibraryPage-WardrobeLibraryManage" />
-      </StackPanel>
-      <StackPanel Key="WardrobeLibraryContent" Class="layout-WardrobeLibraryPage-WardrobeLibraryContent">
-        <Text Key="WardrobeLibrarySiteName" Content="皮肤库" Class="layout-WardrobeLibraryPage-WardrobeLibrarySiteName" />
-        <Text Key="WardrobeLibrarySiteStatus" Content="正在读取皮肤站 API…" Class="layout-WardrobeLibraryPage-WardrobeLibrarySiteStatus" />
-        <StackPanel Class="layout-WardrobeLibraryPage-12">
-          <Button Key="WardrobeLibraryDocs" Label="皮肤站 API 文档" Content="API 文档" Command="ui.wardrobe.library.docs" Class="layout-WardrobeLibraryPage-WardrobeLibraryDocs" />
-          <Button Key="WardrobeLibraryOpenSite" Label="打开皮肤站" Content="打开皮肤站" Command="ui.wardrobe.library.site" Class="layout-WardrobeLibraryPage-WardrobeLibraryOpenSite" />
-          <Button Key="WardrobeLibraryRefresh" Label="刷新皮肤库" Content="刷新" Command="ui.wardrobe.library.refresh" Class="layout-WardrobeLibraryPage-WardrobeLibraryRefresh" />
-        </StackPanel>
-        <StackPanel Class="layout-WardrobeLibraryPage-16">
-          <TextInput Key="WardrobeLibrarySearch" Label="搜索皮肤名称或上传者" Placeholder="搜索皮肤名称或上传者" Class="layout-WardrobeLibraryPage-WardrobeLibrarySearch" />
-          <Button Key="WardrobeLibrarySearchButton" Label="搜索皮肤库" Content="搜索" Command="ui.wardrobe.library.search" Class="layout-WardrobeLibraryPage-WardrobeLibrarySearchButton" />
-        </StackPanel>
-        <StackPanel Key="WardrobeLibraryFilters" Scroll="true" Class="layout-WardrobeLibraryPage-WardrobeLibraryFilters">
-          <Button Key="WardrobeLibrarySkin" Label="查看皮肤" Content="皮肤" Command="ui.wardrobe.library.skin" Class="layout-WardrobeLibraryPage-WardrobeLibrarySkin" />
-          <Button Key="WardrobeLibraryCape" Label="查看披风" Content="披风" Command="ui.wardrobe.library.cape" Class="layout-WardrobeLibraryPage-WardrobeLibraryCape" />
-          <Button Key="WardrobeLibraryTime" Label="按时间排序" Content="按时间" Command="ui.wardrobe.library.time" Class="layout-WardrobeLibraryPage-WardrobeLibraryTime" />
-          <Button Key="WardrobeLibraryLikes" Label="按点赞排序" Content="按点赞" Command="ui.wardrobe.library.likes" Class="layout-WardrobeLibraryPage-WardrobeLibraryLikes" />
-        </StackPanel>
-        <Text Key="WardrobeLibraryOperationStatus" Content="" IsVisible="false" Class="layout-WardrobeLibraryPage-WardrobeLibraryOperationStatus" />
-        <StackPanel Key="WardrobeLibraryBody" Scroll="true" Class="layout-WardrobeLibraryPage-WardrobeLibraryBody">
-          <Text Key="WardrobeLibraryLoading" Content="正在读取皮肤站 API…" Class="layout-WardrobeLibraryPage-WardrobeLibraryLoading" />
-          <StackPanel Key="WardrobeLibraryEmpty" IsVisible="false" Class="layout-WardrobeLibraryPage-WardrobeLibraryEmpty">
-            <Text Key="WardrobeLibraryEmptyTitle" Content="没有找到皮肤" Class="layout-WardrobeLibraryPage-WardrobeLibraryEmptyTitle" />
-            <Text Key="WardrobeLibraryEmptyMessage" Content="试试其他关键词或切换分类。" Class="layout-WardrobeLibraryPage-WardrobeLibraryEmptyMessage" />
-          </StackPanel>
-          <StackPanel Key="WardrobeLibraryItems" IsVisible="false" Class="layout-WardrobeLibraryPage-WardrobeLibraryItems" />
-        </StackPanel>
-        <Text Key="WardrobeLibraryHelp" Content="皮肤库使用皮肤站公开 API；上传与应用外观需要账户对应的独立授权。" Class="layout-WardrobeLibraryPage-WardrobeLibraryHelp" />
-        <StackPanel Class="layout-WardrobeLibraryPage-32">
-          <Text Key="WardrobeLibraryPageNumber" Content="第 1 页" Class="layout-WardrobeLibraryPage-WardrobeLibraryPageNumber" />
-          <Button Key="WardrobeLibraryPrevious" Label="上一页皮肤库" Content="上一页" Command="ui.wardrobe.library.previous" Class="layout-WardrobeLibraryPage-WardrobeLibraryPrevious" />
-          <Button Key="WardrobeLibraryNext" Label="下一页皮肤库" Content="下一页" Command="ui.wardrobe.library.next" Class="layout-WardrobeLibraryPage-WardrobeLibraryNext" />
-        </StackPanel>
-      </StackPanel>
-    </StackPanel>
+    <Dynamic Key="WardrobeLibraryWorkspaceSlot" Weight="1" />
   </Page>
 </nxml-page>

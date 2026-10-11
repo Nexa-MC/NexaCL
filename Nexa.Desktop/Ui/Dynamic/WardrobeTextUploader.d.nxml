@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="由 {data uploader} 上传" Localize="false" />
+</nxml-dynamic>
