@@ -1,4 +1,6 @@
+﻿using Nexa.Core;
 using Nexa.Services.Minecraft.Management;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
 
 namespace Nexa.Desktop.Ui;
@@ -11,51 +13,83 @@ internal sealed partial class SettingsPageController
     private string? _offlineInstance;
     private long _offlineSettingsRevision;
     private string? _offlineError;
+    private XsrUiEntityId _offlineRoot;
 
     private void BuildOfflineReadiness(InstanceManagementSnapshot snapshot)
     {
         if (_selected is not ("overview" or "recovery") || !_queries.TryResolve(InstanceOfflineReadinessContract.Query, out _)) return;
-        if (_offlineInstance != snapshot.InstanceDirectory) { CancelOfflineReadiness(); _offlineInstance = snapshot.InstanceDirectory; _offlineReport = null; _offlineError = null; }
-        var group = FormGroup(_sections, "InstanceOfflineReadiness", "离线就绪");
-        Text(group, "检查本地版本、库、Native、资源索引/对象及兼容 Java；不下载、不登录，也不替代启动前检查。", 11, Muted, 42);
-        if (_offlineRead is null) ManagementButton(group, "检查本地离线依赖", BeginOfflineReadiness, 164);
-        else Text(group, "正在检查本地文件…", 12, Muted, 28);
-        if (_offlineError is { } error) Text(group, error, 12, Muted, 42);
-        if (_offlineReport is not { } report) return;
-        ManagementFactIn(group, "检查结果", report.Ready ? "本地离线依赖校验通过" : report.Complete ? "尚未离线就绪" : "检查不完整");
-        ManagementFactIn(group, "Java", report.JavaCompatible == true ? "兼容 · " + report.JavaVersion : report.JavaCompatible == false ? "缺失或不兼容" : "尚无法确认");
-        ManagementFactIn(group, "已校验文件", report.Artifacts.Count(x => x.State == OfflineArtifactState.Verified).ToString(System.Globalization.CultureInfo.InvariantCulture));
-        foreach (var fact in report.Artifacts.Where(x => x.State != OfflineArtifactState.Verified).Take(20))
-        {
-            string label = fact.State switch { OfflineArtifactState.Missing => "缺失", OfflineArtifactState.Corrupt => "损坏", OfflineArtifactState.PresentUnverified => "缺少完整性证据", _ => "无法检查" };
-            var text = Text(group, _shell.Renderer.LocalizeText(label) + " · " + fact.RelativePath + " · " + fact.ReasonCode, 11, Muted, 32);
-            DesktopLiteralText.Preserve(_shell.Tree, text);
-        }
-        if (report.Artifacts.Count(x => x.State != OfflineArtifactState.Verified) > 20) Text(group, "显示前 20 项问题；解决后重新检查。", 11, Muted, 28);
+        if (!PathIdentity.Comparer.Equals(_offlineInstance, snapshot.InstanceDirectory))
+        { CancelOfflineReadiness(); _offlineInstance = snapshot.InstanceDirectory; _offlineReport = null; _offlineError = null; }
+        _offlineRoot = AppendInstanceTool(_sections, "SettingsInstanceOffline.d.nxml", OfflineReadinessData());
+        BindInstanceToolAction(CatalogNodes(_offlineRoot), "InstanceOfflineReadiness.Check", BeginOfflineReadiness);
+        ProjectOfflineReadiness();
     }
-
+    private Dictionary<string, string> OfflineReadinessData()
+    {
+        var report = _offlineReport;
+        return new()
+        {
+            ["canCheck"] = Flag(_offlineRead is null),
+            ["pending"] = Flag(_offlineRead is not null),
+            ["hasError"] = Flag(_offlineError is not null),
+            ["error"] = _offlineError is null ? "" : InstanceToolTerm(_offlineError),
+            ["hasReport"] = Flag(report is not null),
+            ["result"] = report is null ? "" : InstanceToolTerm(report.Ready ? "offline.ready" : report.Complete ? "offline.not-ready" : "offline.incomplete"),
+            ["java"] = report?.JavaCompatible == true ? InstanceToolFormat("OfflineJava", new() { ["version"] = report.JavaVersion ?? "" })
+                : report?.JavaCompatible == false ? InstanceToolTerm("java.missing") : InstanceToolTerm("java.unknown"),
+            ["verified"] = InstanceNumber(report?.Artifacts.Count(item => item.State == OfflineArtifactState.Verified) ?? 0),
+            ["more"] = Flag(report?.Artifacts.Count(item => item.State != OfflineArtifactState.Verified) > 20)
+        };
+    }
+    private void ProjectOfflineReadiness()
+    {
+        if (!_shell.Tree.IsAlive(_offlineRoot)) return;
+        ReloadInstanceTool(_offlineRoot, OfflineReadinessData());
+        var rows = CatalogNodes(_offlineRoot)["InstanceOfflineReadiness.Rows"];
+        _dynamic.Clear(rows);
+        if (_offlineReport is not { } report) return;
+        int index = 0;
+        foreach (var fact in report.Artifacts.Where(item => item.State != OfflineArtifactState.Verified).Take(20))
+            _dynamic.Append(rows, DesktopMarkup.Dynamic("SettingsInstanceOfflineRow.d.nxml", new Dictionary<string, string>
+            {
+                ["row"] = "InstanceOfflineReadiness.Fact." + InstanceNumber(index++),
+                ["state"] = InstanceToolTerm(fact.State switch
+                {
+                    OfflineArtifactState.Missing => "artifact.missing", OfflineArtifactState.Corrupt => "artifact.corrupt",
+                    OfflineArtifactState.PresentUnverified => "artifact.unverified", _ => "artifact.unavailable"
+                }),
+                ["path"] = fact.RelativePath, ["reason"] = fact.ReasonCode
+            }, _shell.Renderer.LocalizeText));
+    }
     private void BeginOfflineReadiness()
     {
         if (_instance is not { } instance || _selected is not ("overview" or "recovery") || _offlineRead is not null
             || !_queries.TryResolve(InstanceOfflineReadinessContract.Query, out var route)) return;
-        CancelOfflineReadiness(); _offlineInstance = instance; _offlineError = null; _offlineStop = new();
+        CancelOfflineReadiness(); _offlineInstance = instance; _offlineError = null; _offlineReport = null; _offlineStop = new();
         _offlineSettingsRevision = _store.Read<long>(_revisionId).Value;
         _offlineRead = _queries.QueryAsync<InstanceOfflineReadinessQuery, InstanceOfflineReadinessReport>(route, new(instance), cancellationToken: _offlineStop.Token).AsTask();
-        WakeOnPlatformCompletion(_offlineRead); BuildSections();
+        WakeOnPlatformCompletion(_offlineRead); ProjectOfflineReadiness();
     }
-
     private void UpdateOfflineReadiness()
     {
-        if (!_visible || _selected is not ("overview" or "recovery") || _offlineInstance is not null && _instance != _offlineInstance)
+        if (!_visible || _selected is not ("overview" or "recovery") || !PathIdentity.Comparer.Equals(_instance, _offlineInstance))
         { CancelOfflineReadiness(); return; }
-        if (_offlineRead is not { IsCompleted: true } completed) return;
-        _offlineRead = null;
-        if (_store.Read<long>(_revisionId).Value != _offlineSettingsRevision) { _offlineReport = null; _offlineError = "设置在检查期间改变，请重新检查。"; }
-        else if (PendingQuery.Succeeded(completed)) { _offlineReport = completed.Result.Value; _offlineError = null; }
-        else if (!completed.IsCanceled) _offlineError = "无法完成本地离线检查，请检查目录权限后重试。";
-        BuildSections();
+        if (_offlineRead is not { IsCompleted: true } completed)
+        {
+            if (_offlineReport is not null && _store.Read<long>(_revisionId).Value != _offlineSettingsRevision)
+            { _offlineReport = null; _offlineError = "offline.stale"; ProjectOfflineReadiness(); }
+            return;
+        }
+        _offlineRead = null; _offlineStop?.Dispose(); _offlineStop = null;
+        if (_store.Read<long>(_revisionId).Value != _offlineSettingsRevision) { _offlineReport = null; _offlineError = "offline.stale"; }
+        else if (PendingQuery.Succeeded(completed) && PathIdentity.Comparer.Equals(completed.Result.Value!.InstanceDirectory, _instance))
+        { _offlineReport = completed.Result.Value; _offlineError = null; }
+        else if (!completed.IsCanceled) _offlineError = "offline.failed";
+        ProjectOfflineReadiness();
     }
-
     private void CancelOfflineReadiness()
-    { _offlineStop?.Cancel(); _offlineStop?.Dispose(); _offlineStop = null; _offlineRead = null; }
+    {
+        _offlineStop?.Cancel(); _offlineStop?.Dispose(); _offlineStop = null;
+        ObserveRetiredInstanceToolRead(_offlineRead); _offlineRead = null;
+    }
 }

@@ -1,0 +1,1 @@
+<nxml-dynamic><StackPanel Key="InstanceDevelopmentMode" Class="settings-diagnostics-card"><StackPanel Class="instance-tools-body"><Text Content="整合包开发" Class="instance-tools-title" /><Dynamic Key="InstanceDevelopmentMode.Control" Class="instance-tools-rows" /><Text Content="显示导出、依赖网络、快照回滚和诊断工具，并自动保留历史快照。" Class="instance-tools-hint" /></StackPanel></StackPanel></nxml-dynamic>

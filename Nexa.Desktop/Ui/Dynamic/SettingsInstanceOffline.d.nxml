@@ -1,0 +1,11 @@
+<nxml-dynamic><StackPanel Key="InstanceOfflineReadiness" Class="settings-diagnostics-card"><StackPanel Class="instance-tools-body">
+<Text Content="离线就绪" Class="instance-tools-title" />
+<Text Content="检查本地版本、库、Native、资源索引/对象及兼容 Java；不下载、不登录，也不替代启动前检查。" Class="instance-tools-hint" />
+<StackPanel Class="instance-tools-toolbar"><Button Key="InstanceOfflineReadiness.Check" Content="检查本地离线依赖" Command="ui.settings.management.action" Enabled="{data canCheck}" Class="settings-catalog-action instance-tools-check" /><Text IsVisible="{data pending}" Content="正在检查本地文件…" Class="instance-tools-hint" /></StackPanel>
+<Text Content="{data error}" IsVisible="{data hasError}" Localize="false" Class="instance-tools-hint" MaxLines="3" />
+<StackPanel IsVisible="{data hasReport}" Class="instance-tools-rows">
+<StackPanel Class="instance-tools-field"><Text Content="检查结果" Class="instance-tools-label" /><Text Key="InstanceOfflineReadiness.Result" Content="{data result}" Localize="false" Class="instance-tools-value" /></StackPanel>
+<StackPanel Class="instance-tools-field"><Text Content="Java" Class="instance-tools-label" /><Text Content="{data java}" Localize="false" Class="instance-tools-value" /></StackPanel>
+<StackPanel Class="instance-tools-field"><Text Content="已校验文件" Class="instance-tools-label" /><Text Content="{data verified}" Localize="false" Class="instance-tools-value" /></StackPanel>
+<Dynamic Key="InstanceOfflineReadiness.Rows" Class="instance-tools-rows" /><Text IsVisible="{data more}" Content="显示前 20 项问题；解决后重新检查。" Class="instance-tools-hint" />
+</StackPanel></StackPanel></StackPanel></nxml-dynamic>

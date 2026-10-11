@@ -1,4 +1,4 @@
-using Nexa.Xsr.State;
+﻿using Nexa.Xsr.State;
 using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Services.Minecraft.Management;
@@ -405,7 +405,24 @@ internal static partial class Program
                     (q, ct) => f.Foundation.Queries.QueryAsync<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(effective, q, cancellationToken: ct));
                 queries.Register<InstanceManagementQuery, InstanceManagementSnapshot>(InstanceManagementContract.Query, (q, _) =>
                     ValueTask.FromResult(XsrResult.Success(new InstanceManagementSnapshot(q.InstanceDirectory, q.InstanceDirectory, "1.21.1", [],
-                        [new("overview", "总览"), new("game", "游戏设置"), new("diagnostics", "实例诊断")], true, ""))));
+                        [new("overview", "总览"), new("game", "游戏设置"), new("diagnostics", "实例诊断"), new("recovery", "快照与存储"), new("files", "文件工作区")], true, "")
+                    {
+                        RecoveryStorage = new(10485760, 3145728, true, Enumerable.Range(0, 18).Select(index => new InstanceRecoverySnapshotSummary(
+                            new Guid(index + 1, 0, 0, new byte[8]), DateTimeOffset.UtcNow.AddDays(index - 18), index % 2 + 20, 2097152)).ToArray())
+                    })));
+                queries.Register<InstanceOfflineReadinessQuery, InstanceOfflineReadinessReport>(InstanceOfflineReadinessContract.Query, (q, _) =>
+                    ValueTask.FromResult(XsrResult.Success(new InstanceOfflineReadinessReport(q.InstanceDirectory, DateTimeOffset.UtcNow, true, true,
+                        "Java 21 preview", [new("client", "client.jar", OfflineArtifactState.Verified, 1024, "verified"),
+                            new("library", "libraries/preview/missing.jar", OfflineArtifactState.Missing, null, "missing")]))));
+                queries.Register<InstanceFileListQuery, InstanceFileListing>(InstanceFileWorkspaceContract.List, (q, _) =>
+                    ValueTask.FromResult(XsrResult.Success(new InstanceFileListing(q.InstanceDirectory, q.Area, q.RelativeDirectory,
+                        Path.Combine(q.InstanceDirectory, q.Area), Enumerable.Range(0, 30).Select(index =>
+                            new InstanceFileEntry("preview-" + index + ".cfg", false, 2048, 42)).ToArray(), true))));
+                queries.Register<InstanceFileReadQuery, InstanceFileDocument>(InstanceFileWorkspaceContract.Read, (q, _) =>
+                    ValueTask.FromResult(XsrResult.Success(new InstanceFileDocument(q,
+                        string.Join("\r\n", Enumerable.Range(0, 40).Select(index => "\tpreview.key." + index + "=value {data literal}")), "preview-original", "utf8", true))));
+                queries.Register<InstanceFileSavePreviewQuery, InstanceFileSavePreview>(InstanceFileWorkspaceContract.Preview, (q, _) =>
+                    ValueTask.FromResult(XsrResult.Success(new InstanceFileSavePreview(q.Original, q.Text, "preview-updated", 2048, 2052, 40, 40))));
                 DateTimeOffset started = DateTimeOffset.UtcNow.AddMinutes(-2); Guid sessionId = Guid.NewGuid();
                 var session = new MinecraftProcessSnapshot(sessionId, "Instance preview", 42, MinecraftProcessState.Exited, 0, started, started.AddMinutes(1))
                 { InstanceDirectory = instance, GameWindowConfirmed = true };
@@ -484,6 +501,42 @@ internal static partial class Program
                 f.Shell.Renderer.Activate(planTab.Entity); surface.CommitScene();
                 ShowSettingsFixtureControl(f, diagnostics, ref diagnosticScene, "AdvancedLaunch.Line.Arguments", f.Shell.Renderer.Viewport);
                 f.Shell.Renderer.PointerScroll(new(500, 400), 112); surface.CommitScene(); Capture("instance-narrow-plan");
+                window.Width = 1040; window.UpdateLayout(); surface.CommitScene();
+                async Task ToolPage(string page)
+                {
+                    XsrUiEntityId nav = default; f.Shell.Tree.Walk(diagnostics.Page, entity =>
+                    { if (f.Shell.Tree.Name(entity) == "SettingsNav." + page) nav = entity; return true; });
+                    AssertTrue(nav.IsAssigned); Emit(f.Intents, "ui.settings.section", nav); surface.CommitScene();
+                    await diagnostics.PrepareVisibleStartupAsync(timeout.Token); await Task.Delay(500, timeout.Token); surface.CommitScene();
+                }
+                await ToolPage("overview");
+                var toolScene = surface.Scene!;
+                ShowSettingsFixtureControl(f, diagnostics, ref toolScene, "InstanceDevelopmentMode", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("instance-development");
+                var offline = ShowSettingsFixtureControl(f, diagnostics, ref toolScene, "InstanceOfflineReadiness.Check", f.Shell.Renderer.Viewport);
+                f.Shell.Renderer.Activate(offline.Entity); surface.CommitScene(); surface.CommitScene();
+                ShowSettingsFixtureControl(f, diagnostics, ref toolScene, "InstanceOfflineReadiness.Result", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("instance-offline");
+                await ToolPage("recovery");
+                ShowSettingsFixtureControl(f, diagnostics, ref toolScene, "RecoveryTimeline.Title", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("instance-timeline");
+                ShowSettingsFixtureControl(f, diagnostics, ref toolScene, "RecoveryTimeline." + new Guid(9, 0, 0, new byte[8]), f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("instance-timeline-points");
+                await ToolPage("files");
+                ShowSettingsFixtureControl(f, diagnostics, ref toolScene, "FileWorkspace.NextFiles", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("instance-files");
+                var openFile = ShowSettingsFixtureControl(f, diagnostics, ref toolScene, "FileWorkspace.Open." +
+                    Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("config//preview-0.cfg")))[..24], f.Shell.Renderer.Viewport);
+                f.Shell.Renderer.Activate(openFile.Entity); surface.CommitScene(); surface.CommitScene();
+                ShowSettingsFixtureControl(f, diagnostics, ref toolScene, "FileWorkspaceLineEditor", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("instance-file-editor");
+                var previewSave = ShowSettingsFixtureControl(f, diagnostics, ref toolScene, "FileWorkspace.Preview", f.Shell.Renderer.Viewport);
+                f.Shell.Renderer.Activate(previewSave.Entity); surface.CommitScene(); surface.CommitScene();
+                ShowSettingsFixtureControl(f, diagnostics, ref toolScene, "FileWorkspace.Save", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("instance-file-preview");
+                window.Width = 820; window.UpdateLayout(); await Task.Delay(200, timeout.Token);
+                ShowSettingsFixtureControl(f, diagnostics, ref toolScene, "FileWorkspaceLineEditor", f.Shell.Renderer.Viewport);
+                surface.CommitScene(); Capture("instance-narrow-editor");
                 window.Width = 1040; window.UpdateLayout(); surface.CommitScene();
 
                 f.Store.PublishDelta(sessionsId, new XsrCollectionDelta<MinecraftProcessSnapshot, Guid>(
@@ -677,7 +730,7 @@ internal static partial class Program
                     ["page"] = "SettingsAppearance",
                     ["phase"] = phase,
                     ["theme"] = f.Shell.Renderer.ColorScheme.IsDark ? "dark" : "light",
-                    ["data"] = "temporary local settings; empty instances; Java inventory and storage locations, task/process/log, Trace, instance diagnostics and resource fixtures; runtime metrics and probe are actual native read-only captures",
+                    ["data"] = "temporary local settings; empty instances; Java inventory and storage locations, task/process/log, Trace, instance diagnostics, offline/file/recovery workspace and resource fixtures; runtime metrics and probe are actual native read-only captures",
                     ["renderer"] = "actual product NXML/controller and software Avalonia native window",
                     ["version"] = f.Shell.Version,
                     ["x"] = origin.X,

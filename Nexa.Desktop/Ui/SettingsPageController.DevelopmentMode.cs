@@ -1,6 +1,4 @@
-using Nexa.Xsr.Renderer;
-
-namespace Nexa.Desktop.Ui;
+﻿namespace Nexa.Desktop.Ui;
 
 internal sealed partial class SettingsPageController
 {
@@ -21,10 +19,9 @@ internal sealed partial class SettingsPageController
 
     private void BuildInstanceDevelopmentMode()
     {
-        var group = FormGroup(_sections, "InstanceDevelopmentMode", "整合包开发");
+        var root = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsInstanceDevelopment.d.nxml"));
+        var slot = CatalogNodes(root)["InstanceDevelopmentMode.Control"];
         if (_catalog?.Entries.FirstOrDefault(item => item.Id == "instance.development-mode") is { } setting)
-            BuildRow(group, setting);
-        var hint = Text(group, "显示导出、依赖网络、快照回滚和诊断工具，并自动保留历史快照。", 12, Muted, 38);
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(hint)!.WrapText = true;
+            BuildRow(slot, setting);
     }
 }

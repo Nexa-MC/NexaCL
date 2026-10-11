@@ -40,6 +40,9 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 - Instance capture/status/resource/system-event panels, durable launch/crash/operation
   histories and advanced captured launch facts now use external assets and owned row
   slots. Background completions and pagination no longer rebuild the settings page.
+- Development-mode controls, bounded config/log editing, explicit offline checking
+  and the recovery timeline now use external fragments/NSS. Async results and local
+  paging retain controls/drafts; old scope/path/document completions are discarded.
 - The immutable language catalogue now ships as an external JSON asset. Build/publish
   and architecture checks reject the former embedded resource; bounded parsing and
   complete entry validation remain enforced.
@@ -386,3 +389,44 @@ fail clearly; there is no compiled copy silently masking a broken package.
 - Overall migration remains active. The remaining inventory still includes custom
   instance pages, resources, launch/install, version selection, wardrobe/accounts/
   OOBE, global overlays, conditional copy and appearance.
+
+## Instance tools boundary
+
+Development-mode controls, the complete bounded configuration/log workspace, explicit
+offline readiness and recovery timeline move together to external fragments and NSS.
+The file workspace keeps 25-entry/25-line paging, lossless line replacement including
+tabs and original line endings, preview-before-save and original-file backups. Async
+completion and local paging update owned result/row slots, retaining toolbar/editor
+entities and drafts; no presentation-time query or full-page rebuild is allowed.
+
+Every pending read captures normalized instance plus area/path/document identity.
+Navigation, hiding, development-mode changes and instance changes retire it. Late
+results and intents cannot act after retirement, including a return to the same scope.
+Offline checking remains explicit, read-only and coalesced; settings revision changes
+invalidate a pending/cached report. Timeline rows retain the most recent 16 real
+snapshot timestamps, baseline markers and actual file-count deltas. User paths, file
+contents and reason codes remain literal data, never markup or raw UI keys.
+
+## Instance tools verification, 2026-10-11
+
+- Desktop composition: 273 passed, zero failed. New deterministic regressions cover
+  canceled/late reads after returning to the same scope, bounded identities for long
+  file names, 25-row paging, retained editor/focus/caret, tabs/CRLF preservation,
+  coalesced previews, edited-preview rejection and explicit-save admission.
+- Offline checks coalesce, reject results from another root with the same instance
+  name and invalidate reports when settings change. Their pending/result projection
+  retains the identity editor and all unsaved notes in the overview.
+- Architecture: 69 projects passed. The four tool partials plus their projection and
+  behavior-only helpers now join both direct- and hidden-factory rejection guards.
+  NXML compiler/runtime: 56 passed. Complete external language coverage passes.
+- Actual native previews cover development controls, offline result/failure detail,
+  persisted timeline points/deltas, file lists, text editor/save preview and an
+  820-pixel window in both themes. Workspace/snapshot/Java facts are documented
+  read-only fixtures; these previews do not write or restore user files.
+- Windows x64 NativeAOT and full-trim publication succeeded. Both actual executables
+  ran --validate-shell with exit 0 and the positive Dynamic instance tools validation
+  marker: editor identity/tabs, owned slots and localization before literal metadata
+  substitution. The existing Jint IL2098 warning remains in both paths.
+- Scoped whitespace format and diff checks pass. Remaining instance management,
+  resources, launch/install, version/wardrobe/account/OOBE and global overlays/copy
+  still require migration; this closes the related tools, not the overall objective.

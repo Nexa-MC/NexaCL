@@ -270,3 +270,13 @@ clock/motion/availability terms and route labels come from RuntimeTerms.nxml.
 This closes these three controller partials only. Shared dialog feedback copy,
 instance diagnostics and other custom settings/resource/account/launch surfaces
 remain in the migration inventory.
+
+## Captured instance tools
+
+Instance config/log editing, offline readiness and timeline fragments own their
+result/row slots. Local reads, paging and save-preview completion must not replace
+the toolbar or editor. Capture instance/area/path and original document identity
+before asynchronous work, retire it on navigation, and require the preview to match
+the current lossless draft before dispatching save. Terms and mixed localized
+metadata formats are external assets; file names and source contents stay literal.
+See nxml-migration-remaining.md for the related parity and publication evidence.

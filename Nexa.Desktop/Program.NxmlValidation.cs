@@ -320,6 +320,7 @@ internal static partial class Program
                 new Dictionary<string, string> { ["message"] = literal }));
             if (shell.Tree.GetComponent<XsrUiText>(systemEvent) is not { Localize: false, MaxLines: 4 } eventText || eventText.Content != literal)
                 throw new InvalidOperationException("Bounded system event lost literal text semantics.");
+            ValidateDynamicInstanceTools(shell, platformBody, dynamic);
             var localization = new UiLocalizationCatalog();
             localization.SetLanguage("en");
             if (localization.Translate("设置") != "Settings"
@@ -331,6 +332,61 @@ internal static partial class Program
             Console.WriteLine("Dynamic dock validation passed: overlay ownership, process template, literal text and selection reload.");
         }
         finally { shell.Tree.Destroy(page); }
+    }
+
+    private static void ValidateDynamicInstanceTools(XsrUiShell shell, XsrUiEntityId slot, NxmlDynamicContent dynamic)
+    {
+        var data = new Dictionary<string, string>
+        {
+            ["config"] = "true", ["logs"] = "false", ["crash"] = "false", ["other"] = "false",
+            ["configClass"] = "settings-catalog-action instance-tools-area instance-tools-area-selected",
+            ["logsClass"] = "settings-catalog-action instance-tools-area",
+            ["crashClass"] = "settings-catalog-action instance-tools-area",
+            ["otherClass"] = "settings-catalog-action instance-tools-area",
+            ["hasError"] = "false", ["error"] = "", ["loadingList"] = "false", ["loadingFile"] = "false",
+            ["showList"] = "false", ["directory"] = "<literal> {data directory}", ["hasParent"] = "false",
+            ["incomplete"] = "false", ["empty"] = "false", ["listPaging"] = "true", ["listPage"] = "1", ["listPages"] = "2",
+            ["hasDocument"] = "true", ["editable"] = "true", ["manyLines"] = "false",
+            ["textPaging"] = "true", ["textPage"] = "1", ["textPages"] = "2",
+            ["shortLine"] = "true", ["longLine"] = "false", ["canPreview"] = "true", ["previewPending"] = "false"
+        };
+        var root = dynamic.Append(slot, DesktopMarkup.Dynamic("SettingsInstanceFiles.d.nxml", data, shell.Renderer.LocalizeText));
+        XsrUiEntityId editor = default, rows = default, action = default;
+        shell.Tree.Walk(root, entity =>
+        {
+            if (shell.Tree.Name(entity) == "FileWorkspaceLineEditor") editor = entity;
+            if (shell.Tree.Name(entity) == "FileWorkspace.Lines") rows = entity;
+            if (shell.Tree.Name(entity) == "FileWorkspace.Preview") action = entity;
+            return true;
+        });
+        string literal = "\tvalue=<state> {data secret}";
+        shell.Renderer.SetTextInputValue(editor, literal);
+        var line = dynamic.Append(rows, DesktopMarkup.Dynamic("SettingsInstanceFileLine.d.nxml",
+            new Dictionary<string, string> { ["row"] = "validation-file-line", ["number"] = "1", ["content"] = literal }));
+        data["textPage"] = "2"; data["canPreview"] = "false"; data["previewPending"] = "true";
+        dynamic.Reload(root, DesktopMarkup.Dynamic("SettingsInstanceFiles.d.nxml", data, shell.Renderer.LocalizeText));
+        if (shell.Tree.GetComponent<XsrUiTextInput>(editor) is not { PreserveTabs: true, MaximumLength: 32768 } input
+            || input.ReadDraft() != literal || !shell.Tree.IsAlive(line) || shell.Tree.Parent(line) != rows
+            || shell.Tree.GetComponent<NxmlDynamicSlot>(rows) is null || shell.Tree.GetComponent<XsrUiInput>(action)?.Enabled != false
+            || shell.Tree.GetComponent<XsrUiText>(line) is not { Localize: false } text || text.Content != "1  " + literal)
+            throw new InvalidOperationException("External file tools lost input identity, tabs, ownership or literal data.");
+        var language = new UiLocalizationCatalog(); language.SetLanguage("en");
+        var caption = DesktopMarkup.Dynamic("SettingsInstanceFileEditableCaption.d.nxml",
+            new Dictionary<string, string> { ["path"] = literal, ["encoding"] = "utf8" }, language.Translate).Root.Content;
+        if (caption != literal + " · utf8 · Editable configuration")
+            throw new InvalidOperationException("File metadata must localize before literal substitution.");
+        var development = dynamic.Append(slot, DesktopMarkup.Dynamic("SettingsInstanceDevelopment.d.nxml"));
+        XsrUiEntityId control = default;
+        shell.Tree.Walk(development, entity => { if (shell.Tree.Name(entity) == "InstanceDevelopmentMode.Control") control = entity; return true; });
+        if (shell.Tree.GetComponent<NxmlDynamicSlot>(control) is null)
+            throw new InvalidOperationException("Development control lost its dynamic owner.");
+        var timeline = dynamic.Append(slot, DesktopMarkup.Dynamic("SettingsInstanceTimeline.d.nxml", new Dictionary<string, string>
+        { ["incomplete"] = "false", ["empty"] = "false", ["hasPoints"] = "true", ["more"] = "false", ["hasComparison"] = "false", ["changes"] = "0" }));
+        XsrUiEntityId points = default;
+        shell.Tree.Walk(timeline, entity => { if (shell.Tree.Name(entity) == "RecoveryTimeline.Rows") points = entity; return true; });
+        dynamic.Append(points, DesktopMarkup.Dynamic("SettingsInstanceTimelineDeltaBaseline.d.nxml", new Dictionary<string, string>
+        { ["row"] = "validation-timeline", ["time"] = literal, ["files"] = "2", ["size"] = "4 MiB", ["delta"] = "+1" }, language.Translate));
+        Console.WriteLine("Dynamic instance tools validation passed: retained editor/tabs, literal localized metadata and owned file/development/timeline slots.");
     }
 
 }

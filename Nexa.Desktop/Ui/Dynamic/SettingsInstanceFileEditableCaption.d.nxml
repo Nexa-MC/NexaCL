@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data path} · {data encoding} · 可编辑配置" Localize="false" MaxLines="1" TrimOverflow="true" Class="instance-tools-caption" /></nxml-dynamic>

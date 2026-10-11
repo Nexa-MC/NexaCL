@@ -253,7 +253,7 @@ internal sealed partial class SettingsPageController : IDisposable
         CancelContentIntegrity();
         RetireHardwareAdvice(); RetireDeveloperDiagnostics(); RetireRuntimeDiagnostics(); RetireRuntimeTrace(); CancelNetworkProbe(); CancelAdvancedWorkspace();
         CancelIdentityRead(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelStoragePreferences(); CancelContentWorkspace();
-        CancelOfflineReadiness(); CancelWorldSnapshots(); CancelInstanceDiagnostics(); CancelAdvancedLaunchDiagnostics();
+        CancelOfflineReadiness(); CancelWorldSnapshots(); CancelInstanceDiagnostics(); CancelAdvancedLaunchDiagnostics(); CancelFileWorkspace();
         _scrollPositions[_selected] = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY;
         if (_selected == "contentgraph")
         {
@@ -284,6 +284,7 @@ internal sealed partial class SettingsPageController : IDisposable
         ResetRuntimeTraceControls();
         ResetInstanceDiagnosticControls();
         CaptureWorkspaceLine();
+        ResetInstanceToolControls();
         CaptureLaunchProfileDrafts(navigating);
         var identityDraft = CaptureIdentityDraft(navigating);
         var hookDrafts = CaptureHookDrafts(navigating);

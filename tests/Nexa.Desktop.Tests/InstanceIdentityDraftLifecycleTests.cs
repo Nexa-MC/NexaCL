@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Settings;
@@ -44,11 +44,11 @@ internal static partial class Program
         fixture.Shell.Renderer.SetTextInputValue(Find("InstanceNoteInput.32"), "Unsaved second-page note");
 
         var retiredSave = Find("InstanceIdentitySave");
-        Click("Management.检查本地离线依赖", "ui.settings.management.action");
-        AssertEqual(1, offlineReads); AssertFalse(fixture.Shell.Tree.IsAlive(retiredSave)); AssertDraft();
+        Click("InstanceOfflineReadiness.Check", "ui.settings.management.action");
+        AssertEqual(1, offlineReads); AssertTrue(fixture.Shell.Tree.IsAlive(retiredSave)); AssertDraft();
         pendingOffline.SetResult(XsrResult.Success(new InstanceOfflineReadinessReport(instanceA, DateTimeOffset.UtcNow,
             true, true, "fixture-java", [new("client", "draft-a.jar", OfflineArtifactState.Verified, 1, "verified")])));
-        Wait(() => HasText("本地离线依赖校验通过")); AssertDraft();
+        Wait(() => HasText("本地离线依赖校验通过")); AssertEqual(retiredSave, Find("InstanceIdentitySave")); AssertDraft();
 
         pauseManagement = true;
         retiredSave = Find("InstanceIdentitySave");

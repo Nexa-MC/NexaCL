@@ -1,0 +1,1 @@
+<nxml-dynamic><StackPanel Key="{data row}" Class="instance-tools-timeline-row"><Text Content="{data time} · {data files} 个文件 · {data size} · 当前恢复基线" Localize="false" Class="instance-tools-timeline-caption" MaxLines="1" TrimOverflow="true" /></StackPanel></nxml-dynamic>

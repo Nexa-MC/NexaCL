@@ -1,0 +1,19 @@
+<StackPanel>
+<Text Key="offline.stale" Content="设置在检查期间改变，请重新检查。" />
+<Text Key="offline.failed" Content="无法完成本地离线检查，请检查目录权限后重试。" />
+<Text Key="offline.ready" Content="本地离线依赖校验通过" />
+<Text Key="offline.not-ready" Content="尚未离线就绪" />
+<Text Key="offline.incomplete" Content="检查不完整" />
+<Text Key="java.missing" Content="缺失或不兼容" />
+<Text Key="java.unknown" Content="尚无法确认" />
+<Text Key="artifact.missing" Content="缺失" />
+<Text Key="artifact.corrupt" Content="损坏" />
+<Text Key="artifact.unverified" Content="缺少完整性证据" />
+<Text Key="artifact.unavailable" Content="无法检查" />
+<Text Key="workspace.list-failed" Content="无法读取此目录，请检查访问权限。" />
+<Text Key="workspace.read-failed" Content="无法读取此文本文件。" />
+<Text Key="workspace.unsupported" Content="文件不是受支持的有界文本。" />
+<Text Key="workspace.preview-failed" Content="配置预览未完成。" />
+<Text Key="workspace.preview-stale" Content="内容在预览后变化，请重新预览。" />
+<Text Key="workspace.invalid-line" Content="请输入当前文件中的有效行号。" />
+</StackPanel>

@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Key="{data row}" Content="{data state} · {data path} · {data reason}" Localize="false" MaxLines="2" TrimOverflow="true" Class="instance-tools-hint" /></nxml-dynamic>

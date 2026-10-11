@@ -152,6 +152,8 @@ internal static partial class Program
         ("CommandPaletteFiltersLocalizedRoutesAndRetiresSources", CommandPaletteFiltersLocalizedRoutesAndRetiresSources),
         ("CommandLineAdmitsOnlyFiniteNavigationAndExplicitSafeMode", CommandLineAdmitsOnlyFiniteNavigationAndExplicitSafeMode),
         ("FileWorkspaceRequiresPreviewBeforeExplicitSaveAndPreservesOtherLines", FileWorkspaceRequiresPreviewBeforeExplicitSaveAndPreservesOtherLines),
+        ("FileWorkspaceRetiresLateReadsPreservesPagingAndRejectsEditedPreview", FileWorkspaceRetiresLateReadsPreservesPagingAndRejectsEditedPreview),
+        ("OfflineReadinessCoalescesRetiresScopesAndInvalidatesSettingsRevision", OfflineReadinessCoalescesRetiresScopesAndInvalidatesSettingsRevision),
         ("InstanceIdentityEditorWritesTypedMetadataAndShowsServerRequirements", InstanceIdentityEditorWritesTypedMetadataAndShowsServerRequirements),
         ("ContentBatchUpdatesDispatchOnlySelectedLiveFiles", ContentBatchUpdatesDispatchOnlySelectedLiveFiles),
         ("LaunchProfileSettingsEditNamedAndTemporaryLayers", LaunchProfileSettingsEditNamedAndTemporaryLayers),
