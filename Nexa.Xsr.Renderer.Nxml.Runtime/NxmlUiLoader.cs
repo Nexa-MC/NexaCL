@@ -107,7 +107,7 @@ public sealed partial class NxmlUiLoader
         switch (node.Recipe)
         {
             case NxmlRuntimeRecipe.TextInput:
-                tree.SetComponent(entity, new XsrUiTextInput { Placeholder = node.Placeholder ?? string.Empty, IsPassword = node.IsPassword, MaximumLength = node.MaximumLength });
+                tree.SetComponent(entity, new XsrUiTextInput { Placeholder = node.Placeholder ?? string.Empty, IsPassword = node.IsPassword, MaximumLength = node.MaximumLength, PreserveTabs = node.PreserveTabs });
                 NxmlIrBinding? inputEnabled = node.Bindings.FirstOrDefault(binding => binding.Property == XsrUiStateProperty.Enabled);
                 tree.SetComponent(entity, new XsrUiInput
                 {
@@ -161,7 +161,7 @@ public sealed partial class NxmlUiLoader
 
                 break;
             case NxmlRuntimeRecipe.Text:
-                XsrUiText text = new(node.Content ?? string.Empty) { Localize = node.Localize };
+                XsrUiText text = new(node.Content ?? string.Empty) { Localize = node.Localize, MaxLines = node.MaxLines, TrimOverflow = node.TrimOverflow };
                 NxmlIrBinding? textBinding = node.Bindings.FirstOrDefault(
                     binding => binding.Property == XsrUiStateProperty.Text);
                 if (textBinding is not null)
@@ -198,7 +198,7 @@ public sealed partial class NxmlUiLoader
                     binding => binding.Property == XsrUiStateProperty.Text);
                 if (node.Content is not null || commandTextBinding is not null)
                 {
-                    XsrUiText commandText = new(node.Content ?? string.Empty) { Localize = node.Localize };
+                    XsrUiText commandText = new(node.Content ?? string.Empty) { Localize = node.Localize, MaxLines = node.MaxLines, TrimOverflow = node.TrimOverflow };
                     if (commandTextBinding is not null)
                     {
                         commandText.BoundState = ResolveState(state, commandTextBinding.State);

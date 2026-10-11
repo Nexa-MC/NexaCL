@@ -100,6 +100,9 @@ public sealed record NxmlIrNode
     public string? Placeholder { get; init; }
     public bool IsPassword { get; init; }
     public int MaximumLength { get; init; } = 2048;
+    public bool PreserveTabs { get; init; }
+    public int MaxLines { get; init; }
+    public bool TrimOverflow { get; init; }
     public bool Enabled { get; init; } = true;
     public bool Localize { get; init; } = true;
     public bool? Selected { get; init; }

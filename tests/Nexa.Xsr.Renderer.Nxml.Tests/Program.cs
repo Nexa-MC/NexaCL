@@ -20,6 +20,7 @@ internal static partial class Program
         ("dynamic component data binds after bounded expansion", DynamicComponentDataIsExpandedBeforeBinding),
         ("dynamic overlay keeps page input and owns aligned children", DynamicOverlayPreservesPageInputAndChildOwnership),
         ("dynamic selection and literal text reload without replacing controls", DynamicSelectionAndLiteralTextReload),
+        ("editor text contracts preserve tabs and reload clipping", EditorTextContractsPreserveTabsAndReloadClipping),
         // XSR-207: NXML grammar and parser.
         ("document resource budgets are enforced before recursion", DocumentResourceBudgetsAreEnforcedBeforeRecursion),
         ("simple document parses structurally", SimpleDocumentParsesStructurally),

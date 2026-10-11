@@ -58,6 +58,18 @@ public static class NxmlCompiler
             && (recipe != NxmlRuntimeRecipe.TextInput || !int.TryParse(Literal("MaximumLength", "2048"), NumberStyles.None, CultureInfo.InvariantCulture, out maximumLength)
                 || maximumLength is < 1 or > 32768))
             throw Fail(element.Name, "MaximumLength", "requires a text input and a length from 1 to 32768");
+        bool preserveTabs = ParseBoolean(element.Name, "PreserveTabs", Literal("PreserveTabs", "false"));
+        if (element.FindProperty("PreserveTabs") is not null && recipe != NxmlRuntimeRecipe.TextInput)
+            throw Fail(element.Name, "PreserveTabs", "requires a text input");
+        int maxLines = 0;
+        if (element.FindProperty("MaxLines") is not null
+            && (recipe is not (NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.CommandInput)
+                || !int.TryParse(Literal("MaxLines", "0"), NumberStyles.None, CultureInfo.InvariantCulture, out maxLines)
+                || maxLines is < 0 or > 4096))
+            throw Fail(element.Name, "MaxLines", "requires text and a line count from 0 to 4096");
+        bool trimOverflow = ParseBoolean(element.Name, "TrimOverflow", Literal("TrimOverflow", "false"));
+        if (element.FindProperty("TrimOverflow") is not null && recipe is not (NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.CommandInput))
+            throw Fail(element.Name, "TrimOverflow", "requires text");
         NxmlControlModel model = new(Literal("Kind", "Node"), "Node", role, recipe, allowsChildren, NxmlNodeSchema.Properties);
         foreach (string required in Literal("Required", "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             if (element.FindProperty(required) is null) throw Fail(element.Name, required, "is required by this component");
@@ -83,7 +95,7 @@ public static class NxmlCompiler
                 NssStyleSheet.SetVisual(visual ??= new(), attribute.Name, attribute.Value.Text);
                 continue;
             }
-            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength") continue;
+            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength" or "PreserveTabs" or "MaxLines" or "TrimOverflow") continue;
             if (!model.TryGetProperty(attribute.Name, out NxmlControlPropertyModel property))
             {
                 throw Fail(element.Name, attribute.Name, "is not declared by this control model");
@@ -136,7 +148,7 @@ public static class NxmlCompiler
         return builder.Build(
             [.. element.Children.Select(child => CompileNode(child, keys, styles))],
             bindings) with
-        { Visual = visual?.Snapshot(), SlotLayout = slotLayout, MaximumLength = maximumLength };
+        { Visual = visual?.Snapshot(), SlotLayout = slotLayout, MaximumLength = maximumLength, PreserveTabs = preserveTabs, MaxLines = maxLines, TrimOverflow = trimOverflow };
     }
 
     private static void ApplyLiteral(

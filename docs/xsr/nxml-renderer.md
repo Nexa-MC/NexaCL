@@ -211,3 +211,12 @@ NXML `Selected` declares command-control selection; `Localize="false"` preserves
 user/provider text and accessible names. Both values participate in retained reload, so log
 rows require no imperative text, semantic, selection or style construction. Neither changes
 service data or introduces a plugin ABI.
+
+### Settings editor text contracts
+
+Settings catalogue rows, selector options, argument rows and hook-command rows are
+owned dynamic fragments. Input drafts are assigned only by controller interaction,
+never from template Content. `PreserveTabs` is a text-input contract (default false),
+while `MaxLines` (0 means unrestricted) and `TrimOverflow` declare text presentation.
+Reload may update text clipping but cannot change input sanitization contracts.
+These host-internal properties do not change service or plugin contracts.

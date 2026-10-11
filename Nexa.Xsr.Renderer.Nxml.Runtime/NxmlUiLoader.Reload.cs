@@ -30,6 +30,8 @@ public sealed partial class NxmlUiLoader
             Enabled = after.Enabled,
             Localize = after.Localize,
             Selected = after.Selected,
+            MaxLines = after.MaxLines,
+            TrimOverflow = after.TrimOverflow,
             Value = after.Value,
             Visual = after.Visual,
             Children = after.Children,
@@ -66,7 +68,13 @@ public sealed partial class NxmlUiLoader
         if (before.Content != after.Content)
         {
             if (tree.GetComponent<XsrUiText>(entity) is { } text) text.Content = after.Content ?? string.Empty;
-            else if (after.Content is not null) tree.SetComponent(entity, new XsrUiText(after.Content) { Localize = after.Localize });
+            else if (after.Content is not null) tree.SetComponent(entity, new XsrUiText(after.Content) { Localize = after.Localize, MaxLines = after.MaxLines, TrimOverflow = after.TrimOverflow });
+            dirty |= XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint;
+        }
+        if ((before.MaxLines != after.MaxLines || before.TrimOverflow != after.TrimOverflow)
+            && tree.GetComponent<XsrUiText>(entity) is { } clipped)
+        {
+            clipped.MaxLines = after.MaxLines; clipped.TrimOverflow = after.TrimOverflow;
             dirty |= XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint;
         }
         if (before.Label != after.Label)
