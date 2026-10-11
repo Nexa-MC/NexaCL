@@ -37,6 +37,15 @@ internal static partial class Program
         Click("ui.settings.proxy.mode", "SettingsProxyMode.0");
         AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("SettingsProxyManual"))!.IsVisible);
 
+        // Idle network frames must not keep reposting native scene commits at dispatcher priority.
+        for (int frame = 0; frame < 12; frame++) Pump();
+        int invalidations = 0;
+        fixture.Shell.Tree.RenderInvalidated += OnInvalidated;
+        for (int frame = 0; frame < 4; frame++) Pump();
+        fixture.Shell.Tree.RenderInvalidated -= OnInvalidated;
+        AssertEqual(0, invalidations);
+        void OnInvalidated(object? sender, EventArgs args) => invalidations++;
+
         string Draft() => fixture.Shell.Tree.GetComponent<XsrUiTextInput>(Find("SettingsInput.network.proxy-address"))!.ReadDraft();
         void Pump() => fixture.Shell.Render(new(1100, 900));
         void Click(string command, string key) { Emit(fixture.Intents, command, Find(key)); Pump(); }

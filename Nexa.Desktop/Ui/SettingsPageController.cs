@@ -660,7 +660,18 @@ internal sealed partial class SettingsPageController : IDisposable
     }
     private void Style(XsrUiEntityId entity, XsrUiColor background, XsrUiColor foreground, double radius, double size = 13, double weight = 400)
     {
-        _shell.Tree.SetComponent(entity, new XsrUiVisualStyle { Background = background, Foreground = foreground, CornerRadius = radius, FontSize = size, FontWeight = weight, Surface = XsrUiSurfaceKind.Solid, Hover = DesktopUiPalette.CapsuleHover });
+        var style = _shell.Tree.GetComponent<XsrUiVisualStyle>(entity);
+        if (style is null)
+        {
+            style = new XsrUiVisualStyle();
+            _shell.Tree.SetComponent(entity, style);
+        }
+        else if (style.Background == background && style.Foreground == foreground
+            && style.CornerRadius == radius && style.FontSize == size && style.FontWeight == weight
+            && style.Surface == XsrUiSurfaceKind.Solid && style.Hover == DesktopUiPalette.CapsuleHover) return;
+        style.Background = background; style.Foreground = foreground; style.CornerRadius = radius;
+        style.FontSize = size; style.FontWeight = weight;
+        style.Surface = XsrUiSurfaceKind.Solid; style.Hover = DesktopUiPalette.CapsuleHover;
         _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Paint);
     }
     private static string DisplayLabel(string label) => label switch
