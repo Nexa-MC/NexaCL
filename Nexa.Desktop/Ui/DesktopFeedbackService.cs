@@ -12,7 +12,7 @@ internal enum DesktopNotificationLevel
 }
 
 /// <summary>One immutable notification request owned by the Desktop feedback service.</summary>
-internal sealed record DesktopNotification(Guid Id, DesktopNotificationLevel Level, string Message);
+internal sealed record DesktopNotification(Guid Id, DesktopNotificationLevel Level, string Message, bool LocalizeMessage = true);
 
 /// <summary>One immutable modal decision request. The callback never runs under the service lock.</summary>
 internal sealed record DesktopDialog(
@@ -25,7 +25,8 @@ internal sealed record DesktopDialog(
     Action<bool> Resolve,
     string? AlternateLabel = null,
     Action? Alternate = null,
-    bool LocalizeMessage = true);
+    bool LocalizeMessage = true,
+    bool LocalizeTitle = true);
 
 /// <summary>Thread-safe point-in-time feedback state consumed at the render boundary.</summary>
 internal sealed record DesktopFeedbackSnapshot(
@@ -34,7 +35,7 @@ internal sealed record DesktopFeedbackSnapshot(
 
 /// <summary>
 /// Thread-safe product feedback service. It owns notification lifetimes and modal decisions but
-/// never touches UI.Next: a Desktop presenter projects snapshots into PXML on the render thread.
+/// never touches renderer entities: a Desktop presenter projects snapshots through NXML on the render thread.
 /// </summary>
 internal sealed class DesktopFeedbackService : IDisposable
 {
@@ -64,12 +65,17 @@ internal sealed class DesktopFeedbackService : IDisposable
     public event EventHandler? Changed;
 
     public Guid Info(string message) => Notify(DesktopNotificationLevel.Info, message);
+    public Guid Info(string message, bool localizeMessage) => Notify(DesktopNotificationLevel.Info, message, localizeMessage);
 
     public Guid Warn(string message) => Notify(DesktopNotificationLevel.Warn, message);
+    public Guid Warn(string message, bool localizeMessage) => Notify(DesktopNotificationLevel.Warn, message, localizeMessage);
 
     public Guid Error(string message) => Notify(DesktopNotificationLevel.Error, message);
+    public Guid Error(string message, bool localizeMessage) => Notify(DesktopNotificationLevel.Error, message, localizeMessage);
 
-    public Guid Notify(DesktopNotificationLevel level, string message)
+    public Guid Notify(DesktopNotificationLevel level, string message) => Notify(level, message, true);
+
+    public Guid Notify(DesktopNotificationLevel level, string message, bool localizeMessage)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         if (!Enum.IsDefined(level))
@@ -78,16 +84,17 @@ internal sealed class DesktopFeedbackService : IDisposable
         }
 
         Guid id = Guid.NewGuid();
-        NotificationEntry entry = new(new DesktopNotification(id, level, message));
+        NotificationEntry entry = new(new DesktopNotification(id, level, message, localizeMessage));
         List<ITimer> evicted = [];
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            // The stack is bounded (XSR-714 contract): the same level+message refreshes the
-            // existing entry instead of stacking a duplicate, and beyond the cap the oldest
+            // The stack is bounded (XSR-714 contract): the same level, message and localization
+            // policy refresh the existing entry; beyond the cap the oldest
             // entry is evicted — display scroll limits visibility, never memory.
             NotificationEntry? duplicate = _notifications.FirstOrDefault(candidate =>
-                candidate.Notification.Level == level && candidate.Notification.Message == message);
+                candidate.Notification.Level == level && candidate.Notification.Message == message
+                && candidate.Notification.LocalizeMessage == localizeMessage);
             if (duplicate is not null)
             {
                 duplicate.Timer?.Dispose();
@@ -184,7 +191,7 @@ internal sealed class DesktopFeedbackService : IDisposable
         Action<bool> resolve,
         string? alternateLabel = null,
         Action? alternate = null,
-        bool localizeMessage = true)
+        bool localizeMessage = true, bool localizeTitle = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
@@ -193,7 +200,7 @@ internal sealed class DesktopFeedbackService : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(cancelLabel);
         ArgumentNullException.ThrowIfNull(resolve);
 
-        return ShowDialogCore(key, title, message, acceptLabel, cancelLabel, resolve, alternateLabel, alternate, localizeMessage);
+        return ShowDialogCore(key, title, message, acceptLabel, cancelLabel, resolve, alternateLabel, alternate, localizeMessage, localizeTitle);
     }
 
     /// <summary>Shows an informational dialog with one explicit acknowledgement action.</summary>
@@ -202,29 +209,29 @@ internal sealed class DesktopFeedbackService : IDisposable
         string title,
         string message,
         string? acceptLabel = null,
-        bool localizeMessage = true)
+        bool localizeMessage = true, bool localizeTitle = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         acceptLabel ??= DesktopOverlayText.Raw("common.ok");
         ArgumentException.ThrowIfNullOrWhiteSpace(acceptLabel);
-        return ShowDialogCore(key, title, message, acceptLabel, cancelLabel: null, static _ => { }, localizeMessage: localizeMessage);
+        return ShowDialogCore(key, title, message, acceptLabel, cancelLabel: null, static _ => { }, localizeMessage: localizeMessage, localizeTitle: localizeTitle);
     }
 
     /// <summary>Queues analysis at the next idle modal slot without cancelling another decision.</summary>
-    public bool TryShowMessageDialog(string key, string title, string message, string acceptLabel)
-        => TryShowMessageDialog(key, title, message, acceptLabel, out _);
+    public bool TryShowMessageDialog(string key, string title, string message, string acceptLabel, bool localizeMessage = true, bool localizeTitle = true)
+        => TryShowMessageDialog(key, title, message, acceptLabel, out _, localizeMessage, localizeTitle);
 
     public bool TryShowMessageDialog(string key, string title, string message, string acceptLabel,
-        out Guid dialogId)
+        out Guid dialogId, bool localizeMessage = true, bool localizeTitle = true)
     {
         dialogId = default;
         lock (_gate)
         {
             if (_disposed || _dialog is not null) return false;
             dialogId = Guid.NewGuid();
-            _dialog = new DesktopDialog(dialogId, key, title, message, acceptLabel, null, static _ => { });
+            _dialog = new DesktopDialog(dialogId, key, title, message, acceptLabel, null, static _ => { }, LocalizeMessage: localizeMessage, LocalizeTitle: localizeTitle);
         }
         RaiseChanged();
         return true;
@@ -232,12 +239,19 @@ internal sealed class DesktopFeedbackService : IDisposable
 
     // Async results are bound to a particular modal lifetime, never just a reusable key.
     public bool TryUpdateMessageDialog(Guid dialogId, string message, string? alternateLabel = null, Action? alternate = null,
-        string? actionLabel = null, Action? action = null)
+        string? actionLabel = null, Action? action = null, bool localizeMessage = true, bool? localizeTitle = null)
     {
         lock (_gate)
         {
             if (_disposed || _dialog?.Id != dialogId) return false;
-            _dialog = _dialog with { Message = message, AlternateLabel = alternateLabel, Alternate = alternate };
+            _dialog = _dialog with
+            {
+                Message = message,
+                AlternateLabel = alternateLabel,
+                Alternate = alternate,
+                LocalizeMessage = localizeMessage,
+                LocalizeTitle = localizeTitle ?? _dialog.LocalizeTitle
+            };
             if (actionLabel is not null && action is not null)
                 _dialog = _dialog with { AcceptLabel = actionLabel, CancelLabel = DesktopOverlayText.Raw("common.close"), Resolve = accepted => { if (accepted) action(); } };
         }
@@ -254,7 +268,7 @@ internal sealed class DesktopFeedbackService : IDisposable
         Action<bool> resolve,
         string? alternateLabel = null,
         Action? alternate = null,
-        bool localizeMessage = true)
+        bool localizeMessage = true, bool localizeTitle = true)
     {
 
         DesktopDialog? replaced = null;
@@ -275,7 +289,7 @@ internal sealed class DesktopFeedbackService : IDisposable
                 id = Guid.NewGuid();
             }
 
-            _dialog = new DesktopDialog(id, key, title, message, acceptLabel, cancelLabel, resolve, alternateLabel, alternate, localizeMessage);
+            _dialog = new DesktopDialog(id, key, title, message, acceptLabel, cancelLabel, resolve, alternateLabel, alternate, localizeMessage, localizeTitle);
         }
 
         replaced?.Resolve(false);

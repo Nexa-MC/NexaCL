@@ -405,6 +405,7 @@ internal static partial class Program
         Dictionary<string, string> projectPaths,
         List<string> failures)
     {
+        ValidateProductPresentationGuardFixtures(failures);
         string directory = Path.Combine(repositoryRoot, "Nexa.Xsr.Renderer", "Components");
         string[] components = Directory.GetFiles(directory, "*.c.nxml");
         if (components.Length < 17) failures.Add("The external NXML primitive component bundle is incomplete.");
@@ -447,17 +448,17 @@ internal static partial class Program
                 || source.Contains("new NxmlHostIr", StringComparison.Ordinal))
                 failures.Add($"{name}: presentation primitives and IR construction belong to external templates.");
         }
-        foreach(string name in new[]{"VersionSelectionController.cs","VersionSelectionController.Window.cs","VersionSelectionController.Projection.cs"})
+        foreach (string name in new[] { "VersionSelectionController.cs", "VersionSelectionController.Window.cs", "VersionSelectionController.Projection.cs" })
         {
-            string source=File.ReadAllText(Path.Combine(repositoryRoot,"Nexa.Desktop","Ui",name));
-            foreach(string token in new[]{"NxmlUiLoader.Load(","new NxmlIrNode","new NxmlHostIr",".Background =",".Border =",".Height =",".Width =",".Margin =",".Content =","MarkSelected(","CreateRow("})
-                if(source.Contains(token,StringComparison.Ordinal))failures.Add($"{name}: version presentation must use owned templates.");
+            string source = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", name));
+            foreach (string token in new[] { "NxmlUiLoader.Load(", "new NxmlIrNode", "new NxmlHostIr", ".Background =", ".Border =", ".Height =", ".Width =", ".Margin =", ".Content =", "MarkSelected(", "CreateRow(" })
+                if (source.Contains(token, StringComparison.Ordinal)) failures.Add($"{name}: version presentation must use owned templates.");
         }
-        foreach(string name in new[]{"AccountFormController.cs","FirstRunController.cs","CustomAppearanceSession.cs","WardrobePageController.cs","WardrobeLibraryPageController.cs"})
+        foreach (string name in new[] { "AccountFormController.cs", "FirstRunController.cs", "CustomAppearanceSession.cs", "WardrobePageController.cs", "WardrobeLibraryPageController.cs" })
         {
-            string source=File.ReadAllText(Path.Combine(repositoryRoot,"Nexa.Desktop","Ui",name));
-            foreach(string token in new[]{"NxmlUiLoader.Load(","new NxmlIrNode","new NxmlHostIr","new XsrUiElement",".Background =",".Height =",".Width =",".Margin =",".Content =","Style(","GetComponent<XsrUiVisualStyle>"})
-                if(source.Contains(token,StringComparison.Ordinal))failures.Add($"{name}: bootstrap presentation must use owned templates.");
+            string source = File.ReadAllText(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", name));
+            foreach (string token in new[] { "NxmlUiLoader.Load(", "new NxmlIrNode", "new NxmlHostIr", "new XsrUiElement", ".Background =", ".Height =", ".Width =", ".Margin =", ".Content =", "Style(", "GetComponent<XsrUiVisualStyle>" })
+                if (source.Contains(token, StringComparison.Ordinal)) failures.Add($"{name}: bootstrap presentation must use owned templates.");
         }
         foreach (string path in Directory.GetFiles(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui"), "ResourcesPageController*.cs")
             .Append(Path.Combine(repositoryRoot, "Nexa.Desktop", "Ui", "DesktopResourcesText.cs")))

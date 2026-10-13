@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="保留最新备份；清理超过 {data count} 个或 {data days} 天的旧备份。&#10;将删除 {data backups} 个清单，回收 {data objects} 个未引用对象（{data bytes} 字节）。" Localize="false" /></nxml-dynamic>

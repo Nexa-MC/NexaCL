@@ -4,8 +4,8 @@ using System.Text;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Resources;
 using Nexa.Sidecar.Protocol;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Tests;

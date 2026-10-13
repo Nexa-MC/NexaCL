@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<StackPanel Class="settings-content-graph-tools"><Text Key="ContentGraph.DependencyTitle" Content="{data title}" Localize="false" MaxLines="0" Class="settings-content-rule" /><Dynamic Key="ContentGraph.Providers" Class="settings-content-graph-tools" /></StackPanel>
+</nxml-dynamic>

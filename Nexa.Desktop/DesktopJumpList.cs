@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using Nexa.Desktop.Ui;
 
 namespace Nexa.Desktop;
 
@@ -61,8 +62,10 @@ internal static unsafe class DesktopJumpList
         string directory = Path.GetDirectoryName(executable) ?? throw new ArgumentException("启动器工作目录不可用。", nameof(command));
         return Array.AsReadOnly(new[]
         {
-            Task(captions?[0] ?? "启动", "launch"), Task(captions?[1] ?? "安装", "install"),
-            Task(captions?[2] ?? "资源", "resources"), Task(captions?[3] ?? "设置", "settings"),
+            Task(captions?[0] ?? ProductPresentationText.Raw("native.desktop.launch"), "launch"),
+            Task(captions?[1] ?? ProductPresentationText.Raw("native.desktop.install"), "install"),
+            Task(captions?[2] ?? ProductPresentationText.Raw("native.desktop.resources"), "resources"),
+            Task(captions?[3] ?? ProductPresentationText.Raw("native.desktop.settings"), "settings"),
         });
         DesktopJumpTask Task(string title, string route) => new(title, executable,
             string.Join(' ', command.Skip(1).Append("nexacl://" + route).Select(QuoteArgument)), directory);

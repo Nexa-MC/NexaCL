@@ -56,7 +56,7 @@ internal sealed partial class SettingsPageController
         var nodes = CatalogNodes(navigation);
         _dynamic.Append(nodes["AdvancedWorkspace.Navigation.State"], DesktopMarkup.Dynamic(LauncherSafeMode ? "SettingsAdvancedSafe.d.nxml" : "SettingsAdvancedNormal.d.nxml"));
         BindAdvancedAction(nodes, "AdvancedWorkspace.Palette", () =>
-        { if (OpenAdvancedCommandPalette?.Invoke() != true) _feedback.Info("请先完成当前对话框，再打开命令面板。"); }, developerOnly: false);
+        { if (OpenAdvancedCommandPalette?.Invoke() != true) _feedback.Info(ProductPresentationText.Raw("settings.advanced.paletteBlocked")); }, developerOnly: false);
         foreach (var route in DesktopCommandLine.Commands)
         {
             var row = AppendCatalog(nodes["AdvancedWorkspace.Navigation.Routes"], "SettingsAdvancedRoute.d.nxml", new Dictionary<string, string>

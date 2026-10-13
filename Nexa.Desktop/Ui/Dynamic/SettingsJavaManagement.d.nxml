@@ -1,7 +1,7 @@
 ﻿<nxml-dynamic>
   <StackPanel Class="settings-java-actions">
-    <SettingsChoiceTrack Key="{data track}" Label="允许使用 Java" Class="settings-java-enabled-track">
-      <ContentHost Key="SettingsJavaEnabled.Thumb" IsVisible="false" Class="settings-catalog-thumb" />
+    <SettingsChoiceTrack Key="{data track}" Label="允许使用 Java" SegmentThumb="SettingsJavaEnabled.Thumb" Class="settings-java-enabled-track">
+      <ContentHost Key="SettingsJavaEnabled.Thumb" TransitionKey="selection" IsVisible="false" Class="settings-catalog-thumb" />
       <SettingsChoice Key="{data on}" Label="开启" Content="开启" Command="ui.settings.management.action" Selected="{data isOn}" Enabled="{data enabled}" Class="{data onStyle}" />
       <SettingsChoice Key="{data off}" Label="关闭" Content="关闭" Command="ui.settings.management.action" Selected="{data isOff}" Enabled="{data enabled}" Class="{data offStyle}" />
     </SettingsChoiceTrack>

@@ -1,7 +1,7 @@
 using System.Globalization;
 using Nexa.Services.Capabilities;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -43,8 +43,12 @@ internal sealed partial class SettingsPageController
         var facts = CaptureHardwareAdvice(source, report, _shell.Renderer.LocalizeText);
         _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsHardwareAdvice.d.nxml", new Dictionary<string, string>
         {
-            ["shader"] = facts.Shader, ["packs"] = facts.ResourcePacks, ["distance"] = facts.RenderDistance,
-            ["risk"] = facts.Risk, ["resourceRisk"] = Flag(facts.ResourceRisk), ["safe"] = Flag(!facts.ResourceRisk)
+            ["shader"] = facts.Shader,
+            ["packs"] = facts.ResourcePacks,
+            ["distance"] = facts.RenderDistance,
+            ["risk"] = facts.Risk,
+            ["resourceRisk"] = Flag(facts.ResourceRisk),
+            ["safe"] = Flag(!facts.ResourceRisk)
         }));
     }
 

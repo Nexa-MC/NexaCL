@@ -1,9 +1,9 @@
-﻿using Nexa.Xsr.Renderer.Nxml;
-using Nexa.Services.Minecraft;
+﻿using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Process;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
-using Nexa.Xsr;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -52,7 +52,7 @@ internal sealed partial class VersionSelectionController : IDisposable
     private readonly Dictionary<XsrUiEntityId, string> _rename = [];
     private readonly NxmlDynamicContent _dynamic;
     private readonly XsrUiEntityId _workspace;
-    private readonly Dictionary<XsrUiEntityId, (string Template, Dictionary<string,string> Data)> _views = [];
+    private readonly Dictionary<XsrUiEntityId, (string Template, Dictionary<string, string> Data)> _views = [];
     private string _copyStamp = "";
     private bool _copyChanged;
     private readonly XsrUiEntityId _dropdown;
@@ -75,13 +75,13 @@ internal sealed partial class VersionSelectionController : IDisposable
         XsrStateStore store, DesktopFeedbackService feedback, IVersionDirectoryEffects? effects = null)
     {
         _shell = shell; _intents = intents; _commands = commands; _store = store; _feedback = feedback; _effects = effects;
-        _dynamic = new(shell.Tree,store);
-        Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("VersionSelectionPage.nxml"),shell.Tree,store);
+        _dynamic = new(shell.Tree, store);
+        Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("VersionSelectionPage.nxml"), shell.Tree, store);
         var slots = Nodes(Page);
-        _workspace = Append(slots["VersionSelectionWorkspace"],"VersionSelectionWorkspace.d.nxml",new()
-        { ["path"]="",["name"]="",["named"]="false",["count"]="",["status"]="",["empty"]="false" });
-        _dropdown = Append(slots["VersionDirectoryWorkspace"],"VersionDirectoryDropdown.d.nxml",PopupData());
-        foreach(var pair in Nodes(Page)) _entities[pair.Key]=pair.Value;
+        _workspace = Append(slots["VersionSelectionWorkspace"], "VersionSelectionWorkspace.d.nxml", new()
+        { ["path"] = "", ["name"] = "", ["named"] = "false", ["count"] = "", ["status"] = "", ["empty"] = "false" });
+        _dropdown = Append(slots["VersionDirectoryWorkspace"], "VersionDirectoryDropdown.d.nxml", PopupData());
+        foreach (var pair in Nodes(Page)) _entities[pair.Key] = pair.Value;
         shell.Tree.SetComponent(_entities["LibraryVersionRows"], new XsrUiFocusNavigation(NavigateVersionFocus));
         Publish("list.visible", true);
         shell.Renderer.FramePreparing += OnFrame;
@@ -96,8 +96,8 @@ internal sealed partial class VersionSelectionController : IDisposable
     {
         if (_disposed || _shell.Stage.Navigation.Current != Page) return;
         string command = e.Intent.Command.Value;
-        if (command is not "ui.page.back" && !command.StartsWith("ui.navigation.",StringComparison.Ordinal)
-            && !Admitted(e.Intent.Source,e.Intent.Command)) return;
+        if (command is not "ui.page.back" && !command.StartsWith("ui.navigation.", StringComparison.Ordinal)
+            && !Admitted(e.Intent.Source, e.Intent.Command)) return;
 
         if (command is "ui.versions.toggle-transfer" or "ui.versions.extend-transfer" or "ui.versions.add-range"
             && _versions.TryGetValue(e.Intent.Source, out var transferVersion))
@@ -125,9 +125,9 @@ internal sealed partial class VersionSelectionController : IDisposable
             && _actions.TryGetValue(e.Intent.Source, out var target))
         {
             if (command == "ui.versions.delete")
-                _feedback.ShowDialog("version.delete." + target.Id, Format("DeleteTitle",new(){["name"]=target.Id}),
+                _feedback.ShowDialog("version.delete." + target.Id, Format("DeleteTitle", new() { ["name"] = target.Id }),
                     Copy("delete.body"), Copy("delete.accept"), Copy("cancel"),
-                    confirmed => { if (confirmed) _pending = Dispatch(MinecraftLibraryRoutes.Delete, new MinecraftLibraryDeleteCommand(target.Root, target.Id)); });
+                    confirmed => { if (confirmed) _pending = Dispatch(MinecraftLibraryRoutes.Delete, new MinecraftLibraryDeleteCommand(target.Root, target.Id)); }, localizeTitle: false);
             else
             {
                 _pendingVersionPage = command == "ui.versions.modify" ? "ui.launch.modify" : "ui.launch.settings";
@@ -188,7 +188,7 @@ internal sealed partial class VersionSelectionController : IDisposable
     {
         try { await _effects!.OpenDirectoryAsync(directory).ConfigureAwait(false); }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed) _feedback.Error(Format("FolderFailure",new(){["error"]=error.Message})); }
+        { if (!_disposed) _feedback.Error(Format("FolderFailure", new() { ["error"] = error.Message }), localizeMessage: false); }
     }
 
     private async Task BrowseAsync()
@@ -252,7 +252,7 @@ internal sealed partial class VersionSelectionController : IDisposable
         MinecraftLibrarySnapshot snapshot = Snapshot;
         string stamp = Copy("version.current");
         _copyChanged = stamp != _copyStamp; _copyStamp = stamp;
-        if (_copyChanged) _revision=-1;
+        if (_copyChanged) _revision = -1;
         ProjectPopup();
         if (_root != snapshot.RootDirectory)
         {
@@ -272,14 +272,21 @@ internal sealed partial class VersionSelectionController : IDisposable
         IReadOnlyList<MinecraftInstanceDescriptor> shown = PrepareShownVersions(snapshot, filter);
         string name = DirectoryName(current);
         string count = snapshot.IsLoading ? Copy("loading.refresh") : _transferSelection.Count > 0
-            ? Format("TransferCount",new(){["count"]=Number(shown.Count),["selected"]=Number(_transferSelection.Count)})
-            : Format("Count",new(){["count"]=Number(shown.Count)});
+            ? Format("TransferCount", new() { ["count"] = Number(shown.Count), ["selected"] = Number(_transferSelection.Count) })
+            : Format("Count", new() { ["count"] = Number(shown.Count) });
         string status = Copy(snapshot.IsProvisional ? "loading.cached" : snapshot.IsLoading ? "loading.reading"
-            : snapshot.Error is not null ? "list.failed" : snapshot.Instances.Count==0 ? "list.empty" : "list.filtered");
-        Reload(_workspace,new(){["path"]=current.Path,["name"]=name,["named"]=Flag(current.HasName),
-            ["count"]=count,["status"]=status,["empty"]=Flag(shown.Count==0)});
-        Publish("directory.name",name); Publish("directory.path",current.Path); Publish("directory.named",current.HasName);
-        Publish("list.count",count);Publish("list.empty",shown.Count==0);Publish("list.status",status);
+            : snapshot.Error is not null ? "list.failed" : snapshot.Instances.Count == 0 ? "list.empty" : "list.filtered");
+        Reload(_workspace, new()
+        {
+            ["path"] = current.Path,
+            ["name"] = name,
+            ["named"] = Flag(current.HasName),
+            ["count"] = count,
+            ["status"] = status,
+            ["empty"] = Flag(shown.Count == 0)
+        });
+        Publish("directory.name", name); Publish("directory.path", current.Path); Publish("directory.named", current.HasName);
+        Publish("list.count", count); Publish("list.empty", shown.Count == 0); Publish("list.status", status);
         ReconcileRows(snapshot);
     }
 
@@ -316,9 +323,9 @@ internal sealed partial class VersionSelectionController : IDisposable
         if (row.IsAssigned) _shell.Renderer.Focus(row, _keyboardDropdown);
     }
 
-    internal static string VersionIcon(MinecraftVersionKind kind) => DesktopVersionText.Find("icon."+kind)
+    internal static string VersionIcon(MinecraftVersionKind kind) => DesktopVersionText.Find("icon." + kind)
         ?? DesktopVersionText.Raw("icon.Release");
-    private string VersionKindLabel(MinecraftVersionKind kind) => DesktopVersionText.Find("kind."+kind) is { } term
+    private string VersionKindLabel(MinecraftVersionKind kind) => DesktopVersionText.Find("kind." + kind) is { } term
         ? _shell.Renderer.LocalizeText(term) : kind.ToString();
 
     private bool IsKeyboard(XsrUiEntityId entity) => _shell.Tree.IsAlive(entity) && _shell.Tree.GetComponent<XsrUiInput>(entity)?.IsFocusVisible == true;

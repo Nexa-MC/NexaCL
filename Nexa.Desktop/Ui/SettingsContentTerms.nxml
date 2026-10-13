@@ -1,0 +1,95 @@
+<nxml-page><Page>
+<Text Key="loading" Content="正在读取版本内容…" />
+<Text Key="empty" Content="此目录中还没有内容。" />
+<Text Key="noMatches" Content="没有匹配的内容。" />
+<Text Key="gallery" Content="画廊" />
+<Text Key="timeline" Content="时间线" />
+<Text Key="incomplete" Content=" · 未全部列出" />
+<Text Key="disabledSuffix" Content=" · 已禁用" />
+<Text Key="problemSuffix" Content=" · 包异常" />
+<Text Key="updateSuffix" Content=" · 可更新" />
+<Text Key="unmarkedVersion" Content="版本未标注" />
+<Text Key="enable" Content="启用" />
+<Text Key="disable" Content="禁用" />
+<Text Key="enabledSuffix" Content=" · 已启用" />
+<Text Key="disabledDetailSuffix" Content=" · 已停用" />
+<Text Key="noUpdates" Content="未发现更新" />
+<Text Key="unchecked" Content="尚未检测或未识别" />
+<Text Key="folder" Content="文件夹" />
+<Text Key="openContentFolder" Content="打开内容文件夹" />
+<Text Key="openContainingFolder" Content="打开所在文件夹" />
+<Text Key="selectionHint" Content="点击选择，Ctrl 多选，Shift 连选" />
+<Text Key="rolledBack" Content="已撤回" />
+<Text Key="committed" Content="已完成" />
+<Text Key="needsRecovery" Content="需要恢复" />
+<Text Key="integrityLoading" Content="正在重新核对文件并计算摘要…" />
+<Text Key="baselineSame" Content="与受管理更新基准一致" />
+<Text Key="baselineDifferent" Content="与受管理更新基准不同" />
+<Text Key="baselineIncomplete" Content="未知（更新记录不完整）" />
+<Text Key="baselineUnknown" Content="未知（没有受管理更新基准）" />
+<Text Key="graphLoading" Content="正在读取依赖关系…" />
+<Text Key="enabledState" Content="已启用" />
+<Text Key="disabledState" Content="已禁用" />
+<Text Key="dependencyPresent" Content="本地存在，范围待验证" />
+<Text Key="dependencyDisabled" Content="提供者已禁用" />
+<Text Key="dependencyMissing" Content="缺失" />
+<Text Key="dependencyAmbiguous" Content="多个候选" />
+<Text Key="dependencyRuntime" Content="运行时提供" />
+<Text Key="dependencyNested" Content="内嵌候选" />
+<Text Key="dependencyUnknown" Content="未知" />
+<Text Key="previewUnavailable" Content="暂时无法预览此图片，可在文件夹中查看原文件。" />
+<Text Key="collapseCrop" Content="收起裁剪" />
+<Text Key="cropCopy" Content="裁剪副本" />
+<Text Key="cropInteger" Content="裁剪区域必须填写整数像素。" />
+<Text Key="unknownDate" Content="修改日期未知" />
+<Text Key="unknownTime" Content="修改时间未知" />
+<Text Key="icon.mods" Content="lucide/blocks" />
+<Text Key="icon.resourcepacks" Content="nexa/content-package" />
+<Text Key="icon.shaderpacks" Content="nexa/content-shader" />
+<Text Key="icon.saves" Content="nexa/content-world" />
+<Text Key="icon.screenshots" Content="nexa/content-image" />
+<Text Key="icon.enable" Content="lucide/play" />
+<Text Key="icon.disable" Content="lucide/pause" />
+<Text Key="fact.instanceName" Content="版本名称" />
+<Text Key="fact.minecraft" Content="Minecraft" />
+<Text Key="fact.instanceDirectory" Content="实例目录" />
+<Text Key="fact.gameDirectory" Content="游戏目录" />
+<Text Key="fact.description" Content="描述" />
+<Text Key="fact.package" Content="包检测" />
+<Text Key="fact.update" Content="更新" />
+<Text Key="fact.filename" Content="文件名" />
+<Text Key="fact.packFormat" Content="资源包格式" />
+<Text Key="fact.version" Content="版本" />
+<Text Key="fact.size" Content="大小" />
+<Text Key="fact.modified" Content="修改时间" />
+<Text Key="fact.directory" Content="所在目录" />
+<Text Key="category.all" Content="全部" />
+<Text Key="category.enabled" Content="已启用" />
+<Text Key="category.disabled" Content="已禁用" />
+<Text Key="category.updates" Content="可更新" />
+<Text Key="category.problems" Content="包异常" />
+<Text Key="category.unchecked" Content="未检测" />
+<Text Key="copy.a33db5730556" Content="总览" />
+<Text Key="copy.57444f5c18ae" Content="游戏设置" />
+<Text Key="copy.488e471d233b" Content="版本更改未完成。" />
+<Text Key="copy.ef9445a3331c" Content="无法读取版本内容，请检查目录后重试。" />
+<Text Key="copy.e4614fb4bc41" Content="无法打开目录，请检查目录是否存在。" />
+<Text Key="copy.578d8df0b4f5" Content="此环境未提供内容完整性读取。" />
+<Text Key="copy.3f2a49f6ac40" Content="无法读取完整性，文件可能已变化。请刷新内容列表。" />
+<Text Key="copy.9ec8f0f1cb3c" Content="未知（尚无匹配当前摘要的来源关联）" />
+<Text Key="copy.f93aad25e6b3" Content="暂时无法获取更新日志。" />
+<Text Key="copy.b94ec5a65cc6" Content="此版本未提供更新日志。" />
+<Text Key="copy.fe2c27764524" Content="没有已识别且可更新的选中内容。" />
+<Text Key="copy.30e9a80e5440" Content="一次最多更新 100 项，请分批选择。" />
+<Text Key="copy.764322c85636" Content="无法检查依赖关系，请刷新后重试。" />
+<Text Key="copy.d4be1b8287e4" Content="&#xA;以下模组依赖它（包括间接依赖）：" />
+<Text Key="copy.241cbb8edeba" Content="&#xA;以下前置已无其他模组需要，可选择一并移除：&#xA;" />
+<Text Key="copy.3e8aba8feedb" Content="移除模组" />
+<Text Key="copy.77cf786d08dc" Content="仅移除此模组" />
+<Text Key="copy.6135d4159e89" Content="移除" />
+<Text Key="copy.2cd0f3be8738" Content="取消" />
+<Text Key="copy.d3d4d975dda3" Content="连同前置移除" />
+<Text Key="copy.0287f08c20b7" Content="无法读取原图，请刷新后重试；仍可打开所在文件夹。" />
+<Text Key="copy.b5faedfb762e" Content="截图操作已完成。" />
+<Text Key="copy.f4fd63d7464d" Content="截图操作未完成，请刷新后重试。" />
+<Text Key="removeTitle" Content="移除内容" /><Text Key="remove" Content="移除" /><Text Key="cancel" Content="取消" /><Text Key="action.back" Content="Management.返回列表" Localize="false" /><Text Key="action.remove" Content="Management.移至已移除内容" Localize="false" /><Text Key="action.folder" Content="Management.打开文件夹" Localize="false" /><Text Key="action.refresh" Content="Management.刷新" Localize="false" /><Text Key="action.instanceFolder" Content="Management.打开版本文件夹" Localize="false" /><Text Key="action.updateSelected" Content="Management.更新已选择" Localize="false" /><Text Key="action.updateAll" Content="Management.更新全部已识别" Localize="false" /><Text Key="action.timelineAction" Content="Management.时间线" Localize="false" /><Text Key="action.galleryAction" Content="Management.画廊" Localize="false" /><Text Key="sourceSeparator" Content=" · " /><Text Key="nameSeparator" Content="、" /><Text Key="sentenceEnd" Content="。" /></Page></nxml-page>

@@ -1,15 +1,13 @@
 using System.Globalization;
-using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
 using Nexa.Services.Foundation;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Install;
-
 using Nexa.Services.Minecraft.Launch;
-
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -19,6 +17,13 @@ internal sealed partial class LaunchPageController
 {
     private void OnFramePreparing(object? sender, EventArgs e)
     {
+        string copyStamp = HomeCopy("account.title");
+        bool homeRefresh = Interlocked.Exchange(ref _homeRefreshRequested, 0) == 1;
+        if (copyStamp != _homeCopyStamp || homeRefresh)
+        {
+            _homeCopyStamp = copyStamp;
+            ApplyLaunchHomePresentation();
+        }
         bool quiet = _store.TryResolve(Nexa.Services.Scheduling.WorkSchedulingContract.QuietKey, out var quietId)
             && _store.ReadAppliedValue(quietId) is Nexa.Services.Scheduling.WorkQuietSnapshot { IsQuiet: true };
         bool active = !_store.TryResolve(XsrUiShellWindowState.Activity, out var activityId)
@@ -47,6 +52,7 @@ internal sealed partial class LaunchPageController
             UpdateTitleBar();
         }
         RefreshWidgetPresentation();
+        bool installLocaleChanged = RefreshInstallLocalization();
         bool completed = _installEditRead?.IsCompleted ?? false;
         bool queryChanged = _observedEditRead != _installEditRead || _editReadCompleted != completed;
         _observedEditRead = _installEditRead; _editReadCompleted = completed;
@@ -59,7 +65,7 @@ internal sealed partial class LaunchPageController
                 || _shell.Renderer.Viewport != _observedViewport;
             _observedInstallDraft = draft; _observedInstallOffset = offset; _observedViewport = _shell.Renderer.Viewport;
         }
-        bool wake = _projections.Consume() || queryChanged || pageChanged || busyChanged || draftChanged;
+        bool wake = _projections.Consume() || queryChanged || pageChanged || busyChanged || draftChanged || installLocaleChanged;
         if (Interlocked.Exchange(ref _pendingCloseLaunching, 0) == 1) { CloseLaunchingPage(); wake = true; }
         if (!wake) return;
         ProjectionPasses++;
@@ -75,33 +81,22 @@ internal sealed partial class LaunchPageController
 
     private void RefreshWidgetPresentation()
     {
+        ReloadLaunchHomeWorkspace();
         XsrUiPager pager = _shell.Tree.GetComponent<XsrUiPager>(_pageEntities["LaunchWidgetPager"])!;
         int index = pager.PageIndex;
         if (index != _presentedWidgetIndex)
         {
             _presentedWidgetIndex = index;
-            Publish(LaunchPageState.WidgetAboutLabelKey, index == 0 ? "关于 Nexa，当前卡片" : "查看关于 Nexa");
-            Publish(LaunchPageState.WidgetTriviaLabelKey, index == 1 ? "你知道吗，当前卡片" : "查看你知道吗");
-            Publish(LaunchPageState.WidgetEchoLabelKey, index == 2 ? "回声洞，当前卡片" : "查看回声洞");
+            Publish(LaunchPageState.WidgetAboutLabelKey, HomeCopy(index == 0 ? "widget.about.current" : "widget.about.open"));
+            Publish(LaunchPageState.WidgetTriviaLabelKey, HomeCopy(index == 1 ? "widget.trivia.current" : "widget.trivia.open"));
+            Publish(LaunchPageState.WidgetEchoLabelKey, HomeCopy(index == 2 ? "widget.echo.current" : "widget.echo.open"));
         }
         double position = Math.Clamp(pager.Position, 0, 2);
         if (position == _indicatorPosition) return;
         _indicatorPosition = position;
-        UpdateWidgetDot("WidgetAboutDot", "WidgetAboutIndicator", Math.Max(0, 1 - position));
-        UpdateWidgetDot("WidgetTriviaDot", "WidgetTriviaIndicator", Math.Max(0, 1 - Math.Abs(position - 1)));
-        UpdateWidgetDot("WidgetEchoDot", "WidgetEchoIndicator", Math.Max(0, position - 1));
-    }
-
-    private void UpdateWidgetDot(string key, string buttonKey, double activation)
-    {
-        XsrUiEntityId entity = _pageEntities[key];
-        _shell.Tree.GetComponent<XsrUiElement>(entity)!.Height = 6 + 10 * activation;
-        XsrUiEntityId button = _pageEntities[buttonKey];
-        _shell.Tree.GetComponent<XsrUiElement>(button)!.Height = 6 + 10 * activation;
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(entity)!.Background = new XsrUiColor(11, 91, 203,
-            (byte)Math.Round(64 + 191 * activation));
-        _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-        _shell.Tree.MarkDirty(button, XsrUiDirtyKinds.Layout);
+        ReloadWidgetDot("About", Math.Max(0, 1 - position));
+        ReloadWidgetDot("Trivia", Math.Max(0, 1 - Math.Abs(position - 1)));
+        ReloadWidgetDot("Echo", Math.Max(0, position - 1));
     }
 
     internal XsrUiEntityId VersionSettingsPage
@@ -133,27 +128,18 @@ internal sealed partial class LaunchPageController
 
     private (XsrUiEntityId Page, Dictionary<string, XsrUiEntityId> Entities) LoadLaunchPage()
     {
-        NxmlDocument document = NxmlParser.Parse(ReadEmbeddedResource("Ui.LaunchPage.nxml"));
-        NxmlHostIr ir = DesktopMarkup.Compile(document);
-        XsrUiEntityId host = _shell.Tree.Create("launch-page-host");
-        XsrUiEntityId page = NxmlUiLoader.Load(ir, _shell.Tree, _store, host);
-        _shell.Tree.Detach(page);
-        _shell.Tree.Destroy(host);
-
-        Dictionary<string, XsrUiEntityId> entities = [];
-        _shell.Tree.Walk(
-            page,
-            entity =>
-            {
-                string key = _shell.Tree.Name(entity);
-                if (key.Length > 0)
-                {
-                    entities[key] = entity;
-                }
-
-                return true;
-            });
-        StyleLaunchPage(page, entities);
+        XsrUiEntityId page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("LaunchPage.nxml"), _shell.Tree, _store);
+        var entities = HomeNodes(page);
+        _homeWorkspace = HomeDynamic.Append(entities["LaunchHomeWorkspaceSlot"],
+            DesktopMarkup.Dynamic("LaunchInstallHomeWorkspace.d.nxml", HomeWorkspaceData()));
+        foreach (var node in HomeNodes(_homeWorkspace)) entities[node.Key] = node.Value;
+        foreach (string name in new[] { "About", "Trivia", "Echo" })
+        {
+            var root = HomeDynamic.Append(entities["Widget" + name + "Slot"],
+                DesktopMarkup.Dynamic("LaunchInstallHomeWidget" + name + ".d.nxml", WidgetDotData(name == "About" ? 1 : 0)));
+            _homeWidgetDots[name] = root;
+            foreach (var node in HomeNodes(root)) entities[node.Key] = node.Value;
+        }
         return (page, entities);
     }
 }

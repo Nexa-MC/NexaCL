@@ -1,0 +1,9 @@
+<nxml-dynamic>
+  <Button Key="{data row}" Label="{data label}" Localize="false" Command="ui.install.catalog.select" Selected="{data selected}" Enabled="{data enabled}" Class="{data rowStyle}">
+    <StackPanel Class="layout-CatalogRow-2">
+      <Image Key="{data check}" Source="lucide/check" Class="{data checkStyle}" />
+      <Text Key="{data name}" Content="{data version}" Localize="false" Class="layout-CatalogRow-CatalogName launch-install-catalog-name" />
+      <Text Key="{data detailKey}" Content="{data detail}" Localize="false" Class="layout-CatalogRow-CatalogDetail launch-install-catalog-detail" />
+    </StackPanel>
+  </Button>
+</nxml-dynamic>

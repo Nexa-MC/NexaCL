@@ -3,8 +3,8 @@ using Nexa.Services.Composition;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Resources;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Tests;

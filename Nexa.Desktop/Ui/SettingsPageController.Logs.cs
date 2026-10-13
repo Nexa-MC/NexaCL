@@ -17,9 +17,9 @@ internal sealed partial class SettingsPageController
         if (OpenLogDirectory is null && ExportLogs is null) return;
         _diskLogActions = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsDiskLogActions.d.nxml", DiskLogProjection()));
         var nodes = CatalogNodes(_diskLogActions);
-        _managementActions[nodes["Management.打开日志目录"]] = OpenDiskLogDirectory;
-        _managementActions[nodes["Management.导出日志"]] = () => WakeOnPlatformCompletion(ExportDiskLogsAsync());
-        _managementActions[nodes["Management.取消日志导出"]] = CancelDiskLogExport;
+        _managementActions[nodes[ProductPresentationText.Raw("settings.logs.openKey")]] = OpenDiskLogDirectory;
+        _managementActions[nodes[ProductPresentationText.Raw("settings.logs.exportKey")]] = () => WakeOnPlatformCompletion(ExportDiskLogsAsync());
+        _managementActions[nodes[ProductPresentationText.Raw("settings.logs.cancelKey")]] = CancelDiskLogExport;
     }
 
     private Dictionary<string, string> DiskLogProjection() => new()
@@ -44,7 +44,7 @@ internal sealed partial class SettingsPageController
         if (_disposed) return;
         try { OpenLogDirectory?.Invoke(); }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { _feedback.Error("无法打开日志目录，请检查目录是否存在。"); }
+        { _feedback.Error(ProductPresentationText.Raw("settings.logs.openFailed")); }
     }
 
     private async Task ExportDiskLogsAsync()
@@ -56,11 +56,11 @@ internal sealed partial class SettingsPageController
         {
             if (_disposed) { stop.Cancel(); return; }
             bool saved = await export(stop.Token).ConfigureAwait(false);
-            if (!_disposed && !stop.IsCancellationRequested && saved) _feedback.Info("日志事实已导出到所选目录。");
+            if (!_disposed && !stop.IsCancellationRequested && saved) _feedback.Info(ProductPresentationText.Raw("settings.logs.exportComplete"));
         }
         catch (OperationCanceledException) { }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed && !stop.IsCancellationRequested) _feedback.Error("日志未导出，请检查日志和保存目录是否可访问。"); }
+        { if (!_disposed && !stop.IsCancellationRequested) _feedback.Error(ProductPresentationText.Raw("settings.logs.exportFailed")); }
         finally
         {
             Interlocked.CompareExchange(ref _logExportStop, null, stop);

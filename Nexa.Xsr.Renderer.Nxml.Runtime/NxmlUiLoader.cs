@@ -1,5 +1,5 @@
-﻿using Nexa.Xsr.Renderer;
-using Nexa.Xsr;
+﻿using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Xsr.Renderer.Nxml;
@@ -54,6 +54,7 @@ public sealed partial class NxmlUiLoader
         try
         {
             PopulateNode(ir.Root, root, tree, state);
+            ResolveSegments(ir.Root, root, tree);
             tree.Attach(root, parent);
             ResolveAnchors(ir.Root, root, tree);
             committed = true;
@@ -114,11 +115,12 @@ public sealed partial class NxmlUiLoader
             || node.HorizontalAlignment != XsrUiAlignment.Stretch
             || node.VerticalAlignment != XsrUiAlignment.Stretch
             || node.Margin != default || node.Padding != default || !node.IsVisible
+            || node.SegmentWidth is not null
             || visibilityBinding is not null)
         {
             tree.SetComponent(entity, new XsrUiElement
             {
-                Width = node.Width,
+                Width = node.Width ?? node.SegmentWidth,
                 Height = node.Height,
                 MinWidth = node.MinWidth,
                 MaxWidth = node.MaxWidth,
@@ -260,7 +262,9 @@ public sealed partial class NxmlUiLoader
             var enabled = node.Bindings.FirstOrDefault(binding => binding.Property == XsrUiStateProperty.Enabled);
             tree.SetComponent(entity, new XsrUiInput
             {
-                Clickable = node.Clickable, Focusable = node.Focusable, Enabled = node.Enabled,
+                Clickable = node.Clickable,
+                Focusable = node.Focusable,
+                Enabled = node.Enabled,
                 BoundEnabled = enabled is null ? default : ResolveState(state, enabled.State),
             });
             if (node.Command is { } command) tree.SetComponent(entity, new XsrUiCommandBinding(command));
@@ -276,7 +280,7 @@ public sealed partial class NxmlUiLoader
                 Key = node.TransitionKey,
                 OffsetX = node.TransitionOffsetX,
                 OffsetY = node.TransitionOffsetY,
-                MovesSelf = node.Recipe is NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.CommandInput or NxmlRuntimeRecipe.Image,
+                MovesSelf = node.TransitionMovesSelf ?? node.Recipe is NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.CommandInput or NxmlRuntimeRecipe.Image,
                 BoundKey = transitionBinding is null ? default : ResolveState(state, transitionBinding.State),
             });
 
@@ -297,6 +301,9 @@ public sealed partial class NxmlUiLoader
         if (node.ModalLayer is { } modal) tree.SetComponent(entity, new XsrUiOverlayLayer(isModal: modal));
 
         if (node.Selected is { } selected) tree.SetComponent(entity, new XsrUiSelection { IsSelected = selected });
+        if (node.Checked is { } isChecked) tree.SetComponent(entity, new XsrUiToggle(isChecked));
+        if (node.SelectionRequired is { } required) tree.SetComponent(entity, new XsrUiSelectionGroup(required));
+        if (node.SegmentWidth is { } segmentWidth) tree.SetComponent(entity, new XsrUiSegmentReveal(segmentWidth));
 
         if (node.Visual is { } visual)
             tree.SetComponent(entity, CreateVisual(visual));

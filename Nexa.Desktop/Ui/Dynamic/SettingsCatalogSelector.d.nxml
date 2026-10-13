@@ -1,3 +1,6 @@
 ﻿<nxml-dynamic>
-<SettingsChoiceSlot Key="{data key}" Label="{data label}" Scroll="true" Width="{data width}" Class="settings-catalog-selector" />
+<ContentHost Key="SettingsSelectorSurface" HorizontalAlignment="Stretch" VerticalAlignment="Center" Class="settings-catalog-selector-surface">
+  <ContentHost Key="{data thumb}" TransitionKey="selection" IsVisible="false" Class="settings-catalog-thumb" />
+  <SettingsChoiceSlot Key="{data key}" Label="{data label}" Scroll="true" ScrollGesture="true" SegmentThumb="{data thumb}" Class="settings-catalog-selector" />
+</ContentHost>
 </nxml-dynamic>

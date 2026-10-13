@@ -4,8 +4,8 @@ using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
 using Nexa.Services.Foundation;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Tests;

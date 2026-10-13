@@ -2,10 +2,10 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
-using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Accounts;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -17,11 +17,11 @@ internal sealed class WardrobeLibraryPageController : IDisposable
     private static readonly XsrSemanticId CardAction = XsrSemanticId.Parse("ui.wardrobe.library.action");
     private readonly NxmlDynamicContent _dynamic;
     private readonly XsrUiEntityId _workspace;
-    private readonly Dictionary<string,string> _presentation=DesktopWardrobeText.Defaults(library:true);
-    private Dictionary<string,string> _applied=[];
-    private readonly List<XsrUiEntityId> _gridRows=[];
-    private readonly Dictionary<string,XsrUiEntityId> _siteRows=[];
-    private string _copyStamp="";
+    private readonly Dictionary<string, string> _presentation = DesktopWardrobeText.Defaults(library: true);
+    private Dictionary<string, string> _applied = [];
+    private readonly List<XsrUiEntityId> _gridRows = [];
+    private readonly Dictionary<string, XsrUiEntityId> _siteRows = [];
+    private string _copyStamp = "";
     private readonly XsrUiShell _shell;
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrQueryRouter _queries;
@@ -58,8 +58,8 @@ internal sealed class WardrobeLibraryPageController : IDisposable
     private XsrUiSize _viewport;
     private bool _siteStatusLiteral;
     internal const int MaximumVisibleCards = 64;
-    private static double CardHeight=>Required(DesktopWardrobeText.Metric("library-grid").Height);
-    private static double RowSpacing=>DesktopWardrobeText.Metric("library-grid").Spacing;
+    private static double CardHeight => Required(DesktopWardrobeText.Metric("library-grid").Height);
+    private static double RowSpacing => DesktopWardrobeText.Metric("library-grid").Spacing;
     private sealed class CardVisual(WardrobeCatalogItem item, XsrUiEntityId container, XsrUiEntityId preview)
     {
         internal WardrobeCatalogItem Item { get; } = item;
@@ -69,7 +69,7 @@ internal sealed class WardrobeLibraryPageController : IDisposable
         internal WardrobePlayerView View { get; set; } = item.Kind == WardrobeCatalogKind.Cape ? WardrobePlayerView.Back : WardrobePlayerView.Isometric;
         internal AccountWardrobeResolvedTextures? Loaded { get; set; }
         internal bool Attempted { get; set; }
-        internal Dictionary<string,string> Projection=[];
+        internal Dictionary<string, string> Projection = [];
     }
     private sealed record ImageRead(CardVisual Card, CancellationTokenSource Stop, Task<XsrResult<AccountWardrobeResolvedTextures>> Read);
 
@@ -77,10 +77,10 @@ internal sealed class WardrobeLibraryPageController : IDisposable
         XsrQueryRouter queries, XsrCommandRouter commands, XsrStateStore store, DesktopFeedbackService feedback)
     {
         _shell = shell; _intents = intents; _queries = queries; _commands = commands; _store = store; _feedback = feedback;
-        _dynamic=new(shell.Tree,store);
-        Page=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("WardrobeLibraryPage.nxml"),shell.Tree,store);
-        _workspace=_dynamic.Append(shell.Tree.Children(Page).Single(),DesktopMarkup.Dynamic("WardrobeLibraryWorkspace.d.nxml",_presentation));
-        shell.Tree.Walk(_workspace,entity=>{string name=shell.Tree.Name(entity);if(name.Length>0)_nodes[name]=entity;return true;});
+        _dynamic = new(shell.Tree, store);
+        Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("WardrobeLibraryPage.nxml"), shell.Tree, store);
+        _workspace = _dynamic.Append(shell.Tree.Children(Page).Single(), DesktopMarkup.Dynamic("WardrobeLibraryWorkspace.d.nxml", _presentation));
+        shell.Tree.Walk(_workspace, entity => { string name = shell.Tree.Name(entity); if (name.Length > 0) _nodes[name] = entity; return true; });
         _intents.IntentEmitted += OnIntent;
         shell.Renderer.FramePreparing += OnFrame;
         _store.Changed += OnStateChanged;
@@ -116,7 +116,7 @@ internal sealed class WardrobeLibraryPageController : IDisposable
     private void OnFrame(object? sender, EventArgs args)
     {
         if (_disposed) return;
-        string copy=_shell.Renderer.LocalizeText(Raw("read-account"));if(copy!=_copyStamp){_copyStamp=copy;_dirty=true;}
+        string copy = _shell.Renderer.LocalizeText(Raw("read-account")); if (copy != _copyStamp) { _copyStamp = copy; _dirty = true; }
         if (!IsCurrent) { if (_visible) Retire(); _visible = false; return; }
         long selections = Volatile.Read(ref _selectionEvents), rosters = Volatile.Read(ref _rosterEvents);
         double offset = _shell.Tree.GetComponent<XsrUiScroll>(_nodes["WardrobeLibraryBody"])!.OffsetY;
@@ -219,7 +219,7 @@ internal sealed class WardrobeLibraryPageController : IDisposable
                 && catalog.Result.Value.Items.Count <= MaximumVisibleCards)
             {
                 _catalog = catalog.Result.Value;
-                _siteStatus=CatalogueCaption(_catalog);
+                _siteStatus = CatalogueCaption(_catalog);
                 _siteStatusLiteral = true;
                 _emptyTitle = Raw("copy.31e1252e5216"); _emptyMessage = Raw("copy.7b00c3d7e6bf");
                 BuildCards();
@@ -374,102 +374,123 @@ internal sealed class WardrobeLibraryPageController : IDisposable
 
     private void BuildSites()
     {
-        var desired=_sites.Select(site=>site.Id).ToHashSet(StringComparer.Ordinal);
-        foreach(var pair in _siteRows.ToArray())if(!desired.Contains(pair.Key)){RemoveFragment(pair.Value);_siteRows.Remove(pair.Key);}
-        List<XsrUiEntityId> order=[];
-        foreach(var site in _sites)
+        var desired = _sites.Select(site => site.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var pair in _siteRows.ToArray()) if (!desired.Contains(pair.Key)) { RemoveFragment(pair.Value); _siteRows.Remove(pair.Key); }
+        List<XsrUiEntityId> order = [];
+        foreach (var site in _sites)
         {
-            var data=new Dictionary<string,string>{["key"]="WardrobeLibrarySite."+SafeSuffix(site.Id),["caption"]=Format("Site",("name",site.DisplayName),("host",site.BaseUri.Host)),
-                ["selected"]=Flag(_site==site),["variant"]=Raw(_site==site?"site-selected-class":"site-idle-class")};
-            if(!_siteRows.TryGetValue(site.Id,out var row)){row=_dynamic.Append(_nodes["WardrobeLibrarySites"],DesktopMarkup.Dynamic("WardrobeLibrarySite.d.nxml",data));_siteRows[site.Id]=row;}
-            else _dynamic.Reload(row,DesktopMarkup.Dynamic("WardrobeLibrarySite.d.nxml",data));
-            _actions[row]=()=>
+            var data = new Dictionary<string, string>
             {
-                if(_writing is not null||_site==site)return;
-                _site=site;_filter=_filter with{SiteId=site.Id,Page=1,Kind=site.SupportsCapes?_filter.Kind:WardrobeCatalogKind.Skin};BuildSites();Reload();
+                ["key"] = "WardrobeLibrarySite." + SafeSuffix(site.Id),
+                ["caption"] = Format("Site", ("name", site.DisplayName), ("host", site.BaseUri.Host)),
+                ["selected"] = Flag(_site == site),
+                ["variant"] = Raw(_site == site ? "site-selected-class" : "site-idle-class")
+            };
+            if (!_siteRows.TryGetValue(site.Id, out var row)) { row = _dynamic.Append(_nodes["WardrobeLibrarySites"], DesktopMarkup.Dynamic("WardrobeLibrarySite.d.nxml", data)); _siteRows[site.Id] = row; }
+            else _dynamic.Reload(row, DesktopMarkup.Dynamic("WardrobeLibrarySite.d.nxml", data));
+            _actions[row] = () =>
+            {
+                if (_writing is not null || _site == site) return;
+                _site = site; _filter = _filter with { SiteId = site.Id, Page = 1, Kind = site.SupportsCapes ? _filter.Kind : WardrobeCatalogKind.Skin }; BuildSites(); Reload();
             };
             order.Add(row);
         }
-        _dynamic.Reorder(_nodes["WardrobeLibrarySites"],order);
+        _dynamic.Reorder(_nodes["WardrobeLibrarySites"], order);
     }
     private void BuildCards()
     {
-        ClearCards();if(_catalog is null)return;
-        foreach(var item in _catalog.Items)
+        ClearCards(); if (_catalog is null) return;
+        foreach (var item in _catalog.Items)
         {
-            int rowIndex=_cards.Count/_columns;EnsureRows(rowIndex+1);
-            CreateCard(_gridRows[rowIndex],item);
+            int rowIndex = _cards.Count / _columns; EnsureRows(rowIndex + 1);
+            CreateCard(_gridRows[rowIndex], item);
         }
-        var scroll=_shell.Tree.GetComponent<XsrUiScroll>(_nodes["WardrobeLibraryBody"]);
-        if(scroll is not null){scroll.OffsetX=0;scroll.OffsetY=0;}_dirty=true;
+        var scroll = _shell.Tree.GetComponent<XsrUiScroll>(_nodes["WardrobeLibraryBody"]);
+        if (scroll is not null) { scroll.OffsetX = 0; scroll.OffsetY = 0; }
+        _dirty = true;
     }
-    private void CreateCard(XsrUiEntityId parent,WardrobeCatalogItem item)
+    private void CreateCard(XsrUiEntityId parent, WardrobeCatalogItem item)
     {
-        var data=CardProjection(item,item.Kind==WardrobeCatalogKind.Cape?WardrobePlayerView.Back:WardrobePlayerView.Isometric);
-        var card=_dynamic.Append(parent,DesktopMarkup.Dynamic("WardrobeLibraryCard.d.nxml",data));
-        _shell.Tree.Walk(card,node=>{_nodes[_shell.Tree.Name(node)]=node;return true;});
-        string prefix=data["prefix"];
-        var visual=new CardVisual(item,card,_nodes[prefix+".Preview"]){ViewButton=_nodes[prefix+".View"],Projection=data};_cards.Add(visual);PresentImage(visual);
-        _actions[visual.ViewButton]=()=>{visual.View=(WardrobePlayerView)(((int)visual.View+1)%7);PresentImage(visual);_dirty=true;};
-        _actions[_nodes[prefix+".Apply"]]=()=>Apply(item);
-        _actions[_nodes[prefix+".Details"]]=()=>{if(_site is{}site&&item.DetailsUri.Host.Equals(site.BaseUri.Host,StringComparison.OrdinalIgnoreCase))Open(item.DetailsUri);};
+        var data = CardProjection(item, item.Kind == WardrobeCatalogKind.Cape ? WardrobePlayerView.Back : WardrobePlayerView.Isometric);
+        var card = _dynamic.Append(parent, DesktopMarkup.Dynamic("WardrobeLibraryCard.d.nxml", data));
+        _shell.Tree.Walk(card, node => { _nodes[_shell.Tree.Name(node)] = node; return true; });
+        string prefix = data["prefix"];
+        var visual = new CardVisual(item, card, _nodes[prefix + ".Preview"]) { ViewButton = _nodes[prefix + ".View"], Projection = data }; _cards.Add(visual); PresentImage(visual);
+        _actions[visual.ViewButton] = () => { visual.View = (WardrobePlayerView)(((int)visual.View + 1) % 7); PresentImage(visual); _dirty = true; };
+        _actions[_nodes[prefix + ".Apply"]] = () => Apply(item);
+        _actions[_nodes[prefix + ".Details"]] = () => { if (_site is { } site && item.DetailsUri.Host.Equals(site.BaseUri.Host, StringComparison.OrdinalIgnoreCase)) Open(item.DetailsUri); };
     }
-    private Dictionary<string,string> CardProjection(WardrobeCatalogItem item,WardrobePlayerView view)=>ProjectCard(_shell,item,view,ShowApply(item),CanApply(item));
-    internal static Dictionary<string,string> ProjectCard(XsrUiShell shell,WardrobeCatalogItem item,WardrobePlayerView view,bool showApply,bool canApply)
+    private Dictionary<string, string> CardProjection(WardrobeCatalogItem item, WardrobePlayerView view) => ProjectCard(_shell, item, view, ShowApply(item), CanApply(item));
+    internal static Dictionary<string, string> ProjectCard(XsrUiShell shell, WardrobeCatalogItem item, WardrobePlayerView view, bool showApply, bool canApply)
     {
-        string Format(string name,params(string Key,object Value)[] values)=>DesktopWardrobeText.Format(name,values.ToDictionary(pair=>pair.Key,pair=>Convert.ToString(pair.Value,CultureInfo.CurrentCulture)??""),shell.Renderer.LocalizeText);
-        string hd=item.IsHighDefinition?Raw("hd-marker"):"";
-        string metadata=item.Kind==WardrobeCatalogKind.Cape?Format("CapeMetadata",("likes",item.Likes),("hd",hd))
-            :Format("SkinMetadata",("likes",item.Likes),("model",item.Model=="alex"?Raw("slim-model"):Raw("classic-model")),("hd",hd));
-        string prefix="WardrobeLibraryCard."+item.TextureId.ToString(CultureInfo.InvariantCulture);
-        return new(){["prefix"]=prefix,["body_key"]=prefix+".Body",["preview_key"]=prefix+".Preview",["name_key"]=prefix+".Name",["uploader_key"]=prefix+".Uploader",["metadata_key"]=prefix+".Metadata",["view_key"]=prefix+".View",["apply_key"]=prefix+".Apply",["details_key"]=prefix+".Details", ["name"]=item.Name,
-            ["uploader"]=Format("Uploader",("uploader",string.IsNullOrWhiteSpace(item.Uploader)?shell.Renderer.LocalizeText(Raw("unknown-user")):item.Uploader)),
-            ["metadata"]=metadata,["view"]=Format("View",("view",shell.Renderer.LocalizeText(ViewLabel(view)))),
-            ["apply"]=shell.Renderer.LocalizeText(Raw(item.Kind==WardrobeCatalogKind.Cape?"use-cape":"use-skin")),
-            ["apply_visible"]=Flag(showApply),["apply_enabled"]=Flag(canApply)};
+        string Format(string name, params (string Key, object Value)[] values) => DesktopWardrobeText.Format(name, values.ToDictionary(pair => pair.Key, pair => Convert.ToString(pair.Value, CultureInfo.CurrentCulture) ?? ""), shell.Renderer.LocalizeText);
+        string hd = item.IsHighDefinition ? Raw("hd-marker") : "";
+        string metadata = item.Kind == WardrobeCatalogKind.Cape ? Format("CapeMetadata", ("likes", item.Likes), ("hd", hd))
+            : Format("SkinMetadata", ("likes", item.Likes), ("model", item.Model == "alex" ? Raw("slim-model") : Raw("classic-model")), ("hd", hd));
+        string prefix = "WardrobeLibraryCard." + item.TextureId.ToString(CultureInfo.InvariantCulture);
+        return new()
+        {
+            ["prefix"] = prefix,
+            ["body_key"] = prefix + ".Body",
+            ["preview_key"] = prefix + ".Preview",
+            ["name_key"] = prefix + ".Name",
+            ["uploader_key"] = prefix + ".Uploader",
+            ["metadata_key"] = prefix + ".Metadata",
+            ["view_key"] = prefix + ".View",
+            ["apply_key"] = prefix + ".Apply",
+            ["details_key"] = prefix + ".Details",
+            ["name"] = item.Name,
+            ["uploader"] = Format("Uploader", ("uploader", string.IsNullOrWhiteSpace(item.Uploader) ? shell.Renderer.LocalizeText(Raw("unknown-user")) : item.Uploader)),
+            ["metadata"] = metadata,
+            ["view"] = Format("View", ("view", shell.Renderer.LocalizeText(ViewLabel(view)))),
+            ["apply"] = shell.Renderer.LocalizeText(Raw(item.Kind == WardrobeCatalogKind.Cape ? "use-cape" : "use-skin")),
+            ["apply_visible"] = Flag(showApply),
+            ["apply_enabled"] = Flag(canApply)
+        };
     }
     private void ProjectCards()
     {
-        foreach(var card in _cards)
+        foreach (var card in _cards)
         {
-            var data=CardProjection(card.Item,card.View);
-            if(Same(data,card.Projection))continue;
-            _dynamic.Reload(card.Container,DesktopMarkup.Dynamic("WardrobeLibraryCard.d.nxml",data));card.Projection=data;
+            var data = CardProjection(card.Item, card.View);
+            if (Same(data, card.Projection)) continue;
+            _dynamic.Reload(card.Container, DesktopMarkup.Dynamic("WardrobeLibraryCard.d.nxml", data)); card.Projection = data;
         }
     }
     private void EnsureRows(int count)
     {
-        while(_gridRows.Count<count)_gridRows.Add(_dynamic.Append(_nodes["WardrobeLibraryItems"],DesktopMarkup.Dynamic("WardrobeLibraryRow.d.nxml",
-            new Dictionary<string,string>{["key"]="WardrobeLibraryCardRow."+_gridRows.Count.ToString(CultureInfo.InvariantCulture)})));
+        while (_gridRows.Count < count) _gridRows.Add(_dynamic.Append(_nodes["WardrobeLibraryItems"], DesktopMarkup.Dynamic("WardrobeLibraryRow.d.nxml",
+            new Dictionary<string, string> { ["key"] = "WardrobeLibraryCardRow." + _gridRows.Count.ToString(CultureInfo.InvariantCulture) })));
     }
     private void ReflowCards()
     {
-        int count=(_cards.Count+_columns-1)/_columns;EnsureRows(count);
-        for(int i=0;i<_cards.Count;i++)_dynamic.Move(_cards[i].Container,_gridRows[i/_columns]);
-        for(int i=0;i<count;i++)_dynamic.Reorder(_gridRows[i],_cards.Skip(i*_columns).Take(_columns).Select(card=>card.Container).ToArray());
-        while(_gridRows.Count>count){RemoveFragment(_gridRows[^1]);_gridRows.RemoveAt(_gridRows.Count-1);}
-        _dynamic.Reorder(_nodes["WardrobeLibraryItems"],_gridRows);
+        int count = (_cards.Count + _columns - 1) / _columns; EnsureRows(count);
+        for (int i = 0; i < _cards.Count; i++) _dynamic.Move(_cards[i].Container, _gridRows[i / _columns]);
+        for (int i = 0; i < count; i++) _dynamic.Reorder(_gridRows[i], _cards.Skip(i * _columns).Take(_columns).Select(card => card.Container).ToArray());
+        while (_gridRows.Count > count) { RemoveFragment(_gridRows[^1]); _gridRows.RemoveAt(_gridRows.Count - 1); }
+        _dynamic.Reorder(_nodes["WardrobeLibraryItems"], _gridRows);
     }
     private void UpdateResponsiveLayout()
     {
-        if(_viewport==_shell.Renderer.Viewport)return;
-        _viewport=_shell.Renderer.Viewport;var view=DesktopWardrobeText.Metric("library-view");var content=DesktopWardrobeText.Metric("library-content");
-        bool compact=_viewport.Height<=Required(view.Height);var layout=compact?DesktopWardrobeText.Metric("library-compact"):content;
-        _presentation["WardrobeLibraryContent_padding"]=Thickness(layout.Padding);_presentation["WardrobeLibraryContent_spacing"]=Number(layout.Spacing);
-        Visible("WardrobeLibraryHelp",!compact);
-        var rail=DesktopWardrobeText.Metric("library-rail");_railWidth=_viewport.Width>=Required(view.MaxWidth)?Required(rail.MaxWidth):_viewport.Width<=Required(view.MinWidth)?Required(rail.MinWidth):Required(rail.Width);
-        _presentation["WardrobeLibraryRail_width"]=Number(_railWidth-rail.Padding.Horizontal);
-        var padding=_shell.Tree.GetComponent<XsrUiElement>(_shell.Content)!.Padding;
-        double available=Math.Min(Required(content.MaxWidth),Math.Max(Required(content.MinWidth),_viewport.Width-view.Margin.Left-padding.Horizontal-_railWidth))-layout.Padding.Horizontal;
-        var grid=DesktopWardrobeText.Metric("library-grid");int columns=Math.Clamp((int)((available+grid.Spacing)/Required(grid.Width)),(int)Required(grid.MinWidth),(int)Required(grid.MaxWidth));
-        if(_columns!=columns){_columns=columns;ReflowCards();}_dirty=true;
+        if (_viewport == _shell.Renderer.Viewport) return;
+        _viewport = _shell.Renderer.Viewport; var view = DesktopWardrobeText.Metric("library-view"); var content = DesktopWardrobeText.Metric("library-content");
+        bool compact = _viewport.Height <= Required(view.Height); var layout = compact ? DesktopWardrobeText.Metric("library-compact") : content;
+        _presentation["WardrobeLibraryContent_padding"] = Thickness(layout.Padding); _presentation["WardrobeLibraryContent_spacing"] = Number(layout.Spacing);
+        Visible("WardrobeLibraryHelp", !compact);
+        var rail = DesktopWardrobeText.Metric("library-rail"); _railWidth = _viewport.Width >= Required(view.MaxWidth) ? Required(rail.MaxWidth) : _viewport.Width <= Required(view.MinWidth) ? Required(rail.MinWidth) : Required(rail.Width);
+        _presentation["WardrobeLibraryRail_width"] = Number(_railWidth - rail.Padding.Horizontal);
+        var padding = _shell.Tree.GetComponent<XsrUiElement>(_shell.Content)!.Padding;
+        double available = Math.Min(Required(content.MaxWidth), Math.Max(Required(content.MinWidth), _viewport.Width - view.Margin.Left - padding.Horizontal - _railWidth)) - layout.Padding.Horizontal;
+        var grid = DesktopWardrobeText.Metric("library-grid"); int columns = Math.Clamp((int)((available + grid.Spacing) / Required(grid.Width)), (int)Required(grid.MinWidth), (int)Required(grid.MaxWidth));
+        if (_columns != columns) { _columns = columns; ReflowCards(); }
+        _dirty = true;
     }
     private void Present()
     {
         if (!_dirty) return; _dirty = false;
         Text("WardrobeLibrarySiteName", _site?.DisplayName ?? Raw("copy.f242886e6a3f"), literal: _site is not null);
-        Text("WardrobeLibrarySiteStatus",_catalog is{}catalog?CatalogueCaption(catalog):_siteStatus,literal:_siteStatusLiteral);
-        Text("WardrobeLibraryPageNumber",Format("Page",("page",_filter.Page)),literal:true);
+        Text("WardrobeLibrarySiteStatus", _catalog is { } catalog ? CatalogueCaption(catalog) : _siteStatus, literal: _siteStatusLiteral);
+        Text("WardrobeLibraryPageNumber", Format("Page", ("page", _filter.Page)), literal: true);
         Text("WardrobeLibraryAccountNotice", _account is { } account ? account.Identity.Kind switch
         {
             LaunchProfileKind.Offline => Raw("copy.409efd13530d"),
@@ -479,12 +500,12 @@ internal sealed class WardrobeLibraryPageController : IDisposable
             _ => account.UnavailableReason ?? Raw("copy.09301ef42513")
         } : _accountReading is not null ? Raw("read-account")
             : _accountFailed ? Raw("copy.c185a9b3b40f") : Raw("copy.df5f107f6bca"));
-        Text("WardrobeLibraryOperationStatus", _notice ?? ""); Visible("WardrobeLibraryOperationStatus",!string.IsNullOrWhiteSpace(_notice));
-        Visible("WardrobeLibraryManage",ManageUri() is not null);
+        Text("WardrobeLibraryOperationStatus", _notice ?? ""); Visible("WardrobeLibraryOperationStatus", !string.IsNullOrWhiteSpace(_notice));
+        Visible("WardrobeLibraryManage", ManageUri() is not null);
         bool loading = _sitesReading is not null || _catalogReading is not null;
-        Visible("WardrobeLibraryLoading",loading);
-        Visible("WardrobeLibraryItems",!loading && _catalog?.Items.Count > 0);
-        Visible("WardrobeLibraryEmpty",!loading && _catalog?.Items.Count is not > 0);
+        Visible("WardrobeLibraryLoading", loading);
+        Visible("WardrobeLibraryItems", !loading && _catalog?.Items.Count > 0);
+        Visible("WardrobeLibraryEmpty", !loading && _catalog?.Items.Count is not > 0);
         Text("WardrobeLibraryEmptyTitle", _emptyTitle); Text("WardrobeLibraryEmptyMessage", _emptyMessage);
         bool idle = _writing is null;
         Enable("WardrobeLibraryBack", _back is not null);
@@ -493,13 +514,13 @@ internal sealed class WardrobeLibraryPageController : IDisposable
         Enable("WardrobeLibraryManage", ManageUri() is not null && _openUrl is not null);
         Enable("WardrobeLibraryRefresh", idle && !loading);
         foreach (string key in new[] { "WardrobeLibrarySearchButton", "WardrobeLibrarySkin", "WardrobeLibraryCape", "WardrobeLibraryTime", "WardrobeLibraryLikes" }) Enable(key, idle && _site is not null);
-        Visible("WardrobeLibraryCape",_site?.SupportsCapes == true);
+        Visible("WardrobeLibraryCape", _site?.SupportsCapes == true);
         Enable("WardrobeLibraryPrevious", idle && !loading && _catalog?.HasPreviousPage == true);
         Enable("WardrobeLibraryNext", idle && !loading && _catalog?.HasNextPage == true);
         Select("WardrobeLibrarySkin", _filter.Kind == WardrobeCatalogKind.Skin); Select("WardrobeLibraryCape", _filter.Kind == WardrobeCatalogKind.Cape);
         Select("WardrobeLibraryTime", _filter.Order == WardrobeCatalogOrder.Time); Select("WardrobeLibraryLikes", _filter.Order == WardrobeCatalogOrder.Likes);
-        ProjectCards();BuildSites();ReloadWorkspace();
-        _shell.Tree.MarkDirty(Page,XsrUiDirtyKinds.Paint);
+        ProjectCards(); BuildSites(); ReloadWorkspace();
+        _shell.Tree.MarkDirty(Page, XsrUiDirtyKinds.Paint);
     }
 
     private void Retire()
@@ -512,7 +533,7 @@ internal sealed class WardrobeLibraryPageController : IDisposable
         while (_pending.TryDequeue(out _)) { }
         ClearCards();
     }
-    private void ClearCards(){ClearImages();Clear(_nodes["WardrobeLibraryItems"]);_gridRows.Clear();_cards.Clear();}
+    private void ClearCards() { ClearImages(); Clear(_nodes["WardrobeLibraryItems"]); _gridRows.Clear(); _cards.Clear(); }
     private void ConsumeImages()
     {
         if (_cards.Count == 0 || _site is null) return;
@@ -589,31 +610,31 @@ internal sealed class WardrobeLibraryPageController : IDisposable
         catch (ObjectDisposedException) { }
     }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     private static bool Succeeded<T>(Task<XsrResult<T>> task) => task.IsCompletedSuccessfully && task.Result.IsSuccess;
-    private static string Raw(string key)=>DesktopWardrobeText.Raw(key);
-    private string Format(string name,params(string Key,object Value)[] values)=>DesktopWardrobeText.Format(name,values.ToDictionary(pair=>pair.Key,pair=>Convert.ToString(pair.Value,CultureInfo.CurrentCulture)??""),_shell.Renderer.LocalizeText);
-    private string CatalogueCaption(WardrobeCatalogPage page)=>Format("Catalogue",("page",page.Page),("count",page.Items.Count),
-        ("server",string.IsNullOrWhiteSpace(page.ServerVersion)?"":Format("Server",("version",page.ServerVersion))));
-    private static double Required(double? value)=>value is >0&&double.IsFinite(value.Value)?value.Value:throw new NxmlCompileException("Incomplete wardrobe library viewport metric.");
-    private static string SafeSuffix(string value)=>value.Length<=90&&!value.Any(char.IsWhiteSpace)&&!value.Contains('{')&&!value.Contains('}')?value:"h"+Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
-    private static string Number(double value)=>value.ToString("R",CultureInfo.InvariantCulture);
-    private static string Flag(bool value)=>value?"true":"false";
-    private static string Thickness(XsrUiThickness value)=>string.Join(",",Number(value.Left),Number(value.Top),Number(value.Right),Number(value.Bottom));
-    private static bool Same(Dictionary<string,string>a,Dictionary<string,string>b)=>a.Count==b.Count&&a.All(pair=>b.TryGetValue(pair.Key,out var value)&&value==pair.Value);
+    private static string Raw(string key) => DesktopWardrobeText.Raw(key);
+    private string Format(string name, params (string Key, object Value)[] values) => DesktopWardrobeText.Format(name, values.ToDictionary(pair => pair.Key, pair => Convert.ToString(pair.Value, CultureInfo.CurrentCulture) ?? ""), _shell.Renderer.LocalizeText);
+    private string CatalogueCaption(WardrobeCatalogPage page) => Format("Catalogue", ("page", page.Page), ("count", page.Items.Count),
+        ("server", string.IsNullOrWhiteSpace(page.ServerVersion) ? "" : Format("Server", ("version", page.ServerVersion))));
+    private static double Required(double? value) => value is > 0 && double.IsFinite(value.Value) ? value.Value : throw new NxmlCompileException("Incomplete wardrobe library viewport metric.");
+    private static string SafeSuffix(string value) => value.Length <= 90 && !value.Any(char.IsWhiteSpace) && !value.Contains('{') && !value.Contains('}') ? value : "h" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
+    private static string Number(double value) => value.ToString("R", CultureInfo.InvariantCulture);
+    private static string Flag(bool value) => value ? "true" : "false";
+    private static string Thickness(XsrUiThickness value) => string.Join(",", Number(value.Left), Number(value.Top), Number(value.Right), Number(value.Bottom));
+    private static bool Same(Dictionary<string, string> a, Dictionary<string, string> b) => a.Count == b.Count && a.All(pair => b.TryGetValue(pair.Key, out var value) && value == pair.Value);
     private void RemoveFragment(XsrUiEntityId entity)
     {
-        _shell.Tree.Walk(entity,node=>{_actions.Remove(node);string name=_shell.Tree.Name(node);if(_nodes.TryGetValue(name,out var mapped)&&mapped==node)_nodes.Remove(name);return true;});
+        _shell.Tree.Walk(entity, node => { _actions.Remove(node); string name = _shell.Tree.Name(node); if (_nodes.TryGetValue(name, out var mapped) && mapped == node) _nodes.Remove(name); return true; });
         _dynamic.Remove(entity);
     }
-    private void Text(string name,string value,bool literal=false)=>_presentation[name+"_text"]=literal?value:_shell.Renderer.LocalizeText(value);
-    private void Enable(string name,bool enabled)=>_presentation[name+"_enabled"]=Flag(enabled);
-    private void Visible(string name,bool visible)=>_presentation[name+"_visible"]=Flag(visible);
-    private void Select(string name,bool selected){_presentation[name+"_selected"]=Flag(selected);_presentation[name+"_class"]=DesktopWardrobeText.Defaults(library:true)[name+"_class"]+(selected?Raw("selected-class-suffix"):"");}
-    private void ReloadWorkspace(){if(Same(_presentation,_applied))return;_dynamic.Reload(_workspace,DesktopMarkup.Dynamic("WardrobeLibraryWorkspace.d.nxml",_presentation));_applied=new(_presentation);}
+    private void Text(string name, string value, bool literal = false) => _presentation[name + "_text"] = literal ? value : _shell.Renderer.LocalizeText(value);
+    private void Enable(string name, bool enabled) => _presentation[name + "_enabled"] = Flag(enabled);
+    private void Visible(string name, bool visible) => _presentation[name + "_visible"] = Flag(visible);
+    private void Select(string name, bool selected) { _presentation[name + "_selected"] = Flag(selected); _presentation[name + "_class"] = DesktopWardrobeText.Defaults(library: true)[name + "_class"] + (selected ? Raw("selected-class-suffix") : ""); }
+    private void ReloadWorkspace() { if (Same(_presentation, _applied)) return; _dynamic.Reload(_workspace, DesktopMarkup.Dynamic("WardrobeLibraryWorkspace.d.nxml", _presentation)); _applied = new(_presentation); }
     public void Dispose()
     {
         if (_disposed) return; _disposed = true;
         _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame; _store.Changed -= OnStateChanged;
         Retire(); _lifetime.Dispose(); _catalogStop.Dispose(); _imageStop.Dispose();
-        _dynamic.Remove(_workspace);if(_shell.Tree.IsAlive(Page))_shell.Tree.Destroy(Page);
+        _dynamic.Remove(_workspace); if (_shell.Tree.IsAlive(Page)) _shell.Tree.Destroy(Page);
     }
 }

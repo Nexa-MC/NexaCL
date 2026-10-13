@@ -1,11 +1,11 @@
-﻿using Nexa.Xsr.Renderer.Nxml;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using Nexa.Services.Accounts;
 using Nexa.Services.Logging;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
-using Nexa.Xsr;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -43,8 +43,8 @@ internal sealed class AccountFormController : IDisposable
     private readonly Dictionary<XsrUiEntityId, string> _characterRows = [];
     private readonly NxmlDynamicContent _dynamic;
     private readonly XsrUiEntityId _form;
-    private string _copyStamp="";
-    private long _characterGeneration=-1;
+    private string _copyStamp = "";
+    private long _characterGeneration = -1;
     private readonly CancellationTokenSource _lifetime = new();
     private long _importsRevision = -1, _charactersRevision = -1, _seenCompletion, _viewEpoch;
     private long _presentedChallengeGeneration = -1;
@@ -71,11 +71,11 @@ internal sealed class AccountFormController : IDisposable
             return true;
         });
         _fallbackFocus = fallback;
-        _dynamic=new(shell.Tree,store);
-        XsrUiEntityId slot=default;
-        shell.Tree.Walk(accountBody,entity=>{if(shell.Tree.Name(entity)=="AccountFormSlot")slot=entity;return true;});
-        _form=_dynamic.Append(slot,DesktopMarkup.Dynamic("AccountFormWorkspace.d.nxml"));
-        shell.Tree.Walk(_form,entity=>{_entities[shell.Tree.Name(entity)]=entity;return true;});
+        _dynamic = new(shell.Tree, store);
+        XsrUiEntityId slot = default;
+        shell.Tree.Walk(accountBody, entity => { if (shell.Tree.Name(entity) == "AccountFormSlot") slot = entity; return true; });
+        _form = _dynamic.Append(slot, DesktopMarkup.Dynamic("AccountFormWorkspace.d.nxml"));
+        shell.Tree.Walk(_form, entity => { _entities[shell.Tree.Name(entity)] = entity; return true; });
         _projections = new UiProjectionSignal(_store, _intents);
         _intents.IntentEmitted += OnIntent;
         _shell.Renderer.FramePreparing += OnFrame;
@@ -99,8 +99,8 @@ internal sealed class AccountFormController : IDisposable
     private void OnIntent(object? sender, DesktopUiIntentEventArgs e)
     {
         string command = e.Intent.Command.ToString();
-        if(_disposed || e.Intent.Source.IsAssigned && command.StartsWith("ui.account.",StringComparison.Ordinal)
-            && !Admitted(e.Intent.Source,e.Intent.Command,command is "ui.account.add" or "ui.account.import" or "ui.account.back"))return;
+        if (_disposed || e.Intent.Source.IsAssigned && command.StartsWith("ui.account.", StringComparison.Ordinal)
+            && !Admitted(e.Intent.Source, e.Intent.Command, command is "ui.account.add" or "ui.account.import" or "ui.account.back")) return;
         if (command == "ui.account.add" || command == "ui.account.import")
         {
             _returnFocus = e.Intent.Source;
@@ -145,7 +145,7 @@ internal sealed class AccountFormController : IDisposable
         {
             if (_importRows.TryGetValue(e.Intent.Source, out string? path)) Publish("import-path", path);
             else if (_characterRows.TryGetValue(e.Intent.Source, out string? uuid)
-                && Snapshot.Phase==AccountLoginPhase.ChoosingProfile && Snapshot.Generation==_characterGeneration)
+                && Snapshot.Phase == AccountLoginPhase.ChoosingProfile && Snapshot.Generation == _characterGeneration)
                 _ = Dispatch(AccountOnboardingRoutes.ChooseCharacter, new AccountChooseCharacterCommand(Snapshot.Generation, uuid));
         }
     }
@@ -188,7 +188,7 @@ internal sealed class AccountFormController : IDisposable
 
     private void OnFrame(object? sender, EventArgs e)
     {
-        string copy=Copy("account.title.providers"); bool copyChanged=copy!=_copyStamp; _copyStamp=copy;
+        string copy = Copy("account.title.providers"); bool copyChanged = copy != _copyStamp; _copyStamp = copy;
         if (!_projections.Consume() && _pendingFocus is null && !copyChanged) return;
         AccountLoginSnapshot snapshot = Snapshot;
         bool open = ReadBool("open");
@@ -239,11 +239,11 @@ internal sealed class AccountFormController : IDisposable
             _importsRevision = imports.Revision;
         }
         XsrCollectionSnapshot<AccountCharacterChoice> characters = _store.ReadCollection<AccountCharacterChoice>(_store.Resolve(AccountOnboardingState.Characters));
-        if (characters.Revision != _charactersRevision || copyChanged || _characterGeneration!=snapshot.Generation)
+        if (characters.Revision != _charactersRevision || copyChanged || _characterGeneration != snapshot.Generation)
         {
-            BuildRows("CharacterChoices", _characterRows, characters.Items.Select(item => (item.Uuid, item.Username, DesktopBootstrapText.Format("Character",new Dictionary<string,string>{["name"]=item.Username},_shell.Renderer.LocalizeText))));
+            BuildRows("CharacterChoices", _characterRows, characters.Items.Select(item => (item.Uuid, item.Username, DesktopBootstrapText.Format("Character", new Dictionary<string, string> { ["name"] = item.Username }, _shell.Renderer.LocalizeText))));
             _charactersRevision = characters.Revision;
-            _characterGeneration=snapshot.Generation;
+            _characterGeneration = snapshot.Generation;
         }
         string path = ReadText("import-path");
         if (path != _appliedPath)
@@ -257,38 +257,38 @@ internal sealed class AccountFormController : IDisposable
         }
     }
 
-    private void BuildRows(string host,Dictionary<XsrUiEntityId,string> destinations,
-        IEnumerable<(string Value,string Text,string Label)> entries)
+    private void BuildRows(string host, Dictionary<XsrUiEntityId, string> destinations,
+        IEnumerable<(string Value, string Text, string Label)> entries)
     {
-        var items=entries.GroupBy(item=>item.Value,StringComparer.Ordinal).Select(group=>group.First()).ToArray();
-        var desired=new HashSet<string>(items.Select(item=>item.Value),StringComparer.Ordinal);
-        foreach(var pair in destinations.ToArray())
-            if(!desired.Contains(pair.Value)){_dynamic.Remove(pair.Key);destinations.Remove(pair.Key);}
-        List<XsrUiEntityId> order=[];
-        foreach(var item in items)
+        var items = entries.GroupBy(item => item.Value, StringComparer.Ordinal).Select(group => group.First()).ToArray();
+        var desired = new HashSet<string>(items.Select(item => item.Value), StringComparer.Ordinal);
+        foreach (var pair in destinations.ToArray())
+            if (!desired.Contains(pair.Value)) { _dynamic.Remove(pair.Key); destinations.Remove(pair.Key); }
+        List<XsrUiEntityId> order = [];
+        foreach (var item in items)
         {
-            var row=destinations.FirstOrDefault(pair=>pair.Value==item.Value).Key;
-            var data=new Dictionary<string,string>{["key"]=host+":"+Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(item.Value))).ToLowerInvariant(),["text"]=item.Text,["label"]=item.Label};
-            var fragment=DesktopMarkup.Dynamic("AccountFormChoice.d.nxml",data);
-            if(row.IsAssigned)_dynamic.Reload(row,fragment);
-            else{row=_dynamic.Append(_entities[host],fragment);destinations[row]=item.Value;}
+            var row = destinations.FirstOrDefault(pair => pair.Value == item.Value).Key;
+            var data = new Dictionary<string, string> { ["key"] = host + ":" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(item.Value))).ToLowerInvariant(), ["text"] = item.Text, ["label"] = item.Label };
+            var fragment = DesktopMarkup.Dynamic("AccountFormChoice.d.nxml", data);
+            if (row.IsAssigned) _dynamic.Reload(row, fragment);
+            else { row = _dynamic.Append(_entities[host], fragment); destinations[row] = item.Value; }
             order.Add(row);
         }
-        _dynamic.Reorder(_entities[host],order);
+        _dynamic.Reorder(_entities[host], order);
     }
-    private string Copy(string key)=>_shell.Renderer.LocalizeText(DesktopBootstrapText.Raw(key));
-    private bool Admitted(XsrUiEntityId source,XsrSemanticId command,bool allowHeader)
+    private string Copy(string key) => _shell.Renderer.LocalizeText(DesktopBootstrapText.Raw(key));
+    private bool Admitted(XsrUiEntityId source, XsrSemanticId command, bool allowHeader)
     {
-        if(!_shell.Tree.IsAlive(source) || _shell.Tree.GetComponent<XsrUiInput>(source) is not {Enabled:true} input
+        if (!_shell.Tree.IsAlive(source) || _shell.Tree.GetComponent<XsrUiInput>(source) is not { Enabled: true } input
             || input.BoundEnabled.IsAssigned && _store.ReadAppliedValue(input.BoundEnabled) is not true
-            || _shell.Tree.GetComponent<XsrUiCommandBinding>(source)?.Command!=command)return false;
-        bool owned=false;
-        for(var node=source;node.IsAssigned;node=_shell.Tree.Parent(node))
+            || _shell.Tree.GetComponent<XsrUiCommandBinding>(source)?.Command != command) return false;
+        bool owned = false;
+        for (var node = source; node.IsAssigned; node = _shell.Tree.Parent(node))
         {
-            var box=_shell.Tree.GetComponent<XsrUiElement>(node);
-            if(box is not null && (box.BoundVisibility.IsAssigned ? _store.ReadAppliedValue(box.BoundVisibility) is not true : !box.IsVisible))return false;
-            if(node==_form)owned=true;
-            if(node==_shell.Stage.Navigation.Current)return owned||allowHeader;
+            var box = _shell.Tree.GetComponent<XsrUiElement>(node);
+            if (box is not null && (box.BoundVisibility.IsAssigned ? _store.ReadAppliedValue(box.BoundVisibility) is not true : !box.IsVisible)) return false;
+            if (node == _form) owned = true;
+            if (node == _shell.Stage.Navigation.Current) return owned || allowHeader;
         }
         return false;
     }

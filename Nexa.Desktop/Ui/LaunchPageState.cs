@@ -1,4 +1,4 @@
-﻿using Nexa.Xsr;
+using Nexa.Xsr;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -22,6 +22,10 @@ internal static class LaunchPageState
     public static readonly XsrSemanticId AccountTitleKey = XsrSemanticId.Parse("launch.account.title");
     public static readonly XsrSemanticId AccountTransitionKey = XsrSemanticId.Parse("launch.account.transition");
     public static readonly XsrSemanticId TitleTransitionKey = XsrSemanticId.Parse("launch.navigation.title");
+    public static readonly XsrSemanticId TitleRootKey = XsrSemanticId.Parse("launch.navigation.root");
+    public static readonly XsrSemanticId TitleSubpageKey = XsrSemanticId.Parse("launch.navigation.subpage");
+    public static readonly XsrSemanticId TitleCaptionKey = XsrSemanticId.Parse("launch.navigation.caption");
+    public static readonly XsrSemanticId JavaInstallTitleKey = XsrSemanticId.Parse("launch.install.title");
     public static readonly XsrSemanticId AccountBackVisibleKey = XsrSemanticId.Parse("launch.account.back-visible");
     public static readonly XsrSemanticId AccountAddVisibleKey = XsrSemanticId.Parse("launch.account.add-visible");
     public static readonly XsrSemanticId InstanceSummaryKey = XsrSemanticId.Parse("launch.instance.summary");
@@ -76,6 +80,10 @@ internal static class LaunchPageState
         builder.Cell<string>(AccountTitleKey, OwnerName);
         builder.Cell<string>(AccountTransitionKey, OwnerName);
         builder.Cell<string>(TitleTransitionKey, OwnerName);
+        builder.Cell<bool>(TitleRootKey, OwnerName);
+        builder.Cell<bool>(TitleSubpageKey, OwnerName);
+        builder.Cell<string>(TitleCaptionKey, OwnerName);
+        builder.Cell<string>(JavaInstallTitleKey, OwnerName);
         builder.Cell<bool>(AccountBackVisibleKey, OwnerName);
         builder.Cell<bool>(AccountAddVisibleKey, OwnerName);
         builder.Cell<string>(InstanceSummaryKey, OwnerName);

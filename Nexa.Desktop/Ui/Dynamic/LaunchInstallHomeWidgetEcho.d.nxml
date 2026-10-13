@@ -1,0 +1,5 @@
+<nxml-dynamic>
+  <Button Key="WidgetEchoIndicator" Label="{state launch.widget.echo-label}" Command="ui.launch.widget.echo" Localize="false" Height="{data height}" Class="layout-LaunchPage-WidgetEchoIndicator">
+    <StackPanel Key="WidgetEchoDot" Height="{data height}" Background="{data paint}" Class="layout-LaunchPage-WidgetEchoDot" />
+  </Button>
+</nxml-dynamic>

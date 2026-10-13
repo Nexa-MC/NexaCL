@@ -1,7 +1,7 @@
-using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Minecraft.Install;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Ui;
@@ -28,7 +28,7 @@ internal sealed partial class LaunchPageController
         _selectedInstallVersion = "";
         _selectedInstallBuilds.Clear();
         _selectedInstallAddons.Clear();
-        _selectedInstallLoader = "原版 Minecraft";
+        _selectedInstallLoader = LaunchInstallText.Raw("loader.vanilla");
         _activeJavaInstallPage = "JavaMinecraftPage";
         _catalogRequest = "";
         _catalogSearch = "";
@@ -42,7 +42,7 @@ internal sealed partial class LaunchPageController
         _installGameChosen = true;
         _selectedInstallVersion = version;
         _selectedInstallBuilds.Clear();
-        SelectInstallLoader("原版 Minecraft", string.Empty);
+        SelectInstallLoader(LaunchInstallText.Raw("loader.vanilla"), string.Empty);
         UpdateJavaInstallSubpageVisibility();
         PrefetchInstallCatalog(version);
         _locateCatalogSelection = true;
@@ -64,7 +64,12 @@ internal sealed partial class LaunchPageController
     private readonly Dictionary<string, XsrUiEntityId> _catalogStatus = [];
     private static readonly XsrSemanticId CatalogSelect = XsrSemanticId.Parse("ui.install.catalog.select");
     private static readonly XsrSemanticId CatalogRetry = XsrSemanticId.Parse("ui.install.catalog.retry");
-    private static readonly NxmlHostIr CatalogRowTemplate = DesktopMarkup.Load("CatalogRow.c.nxml");
+    private readonly Dictionary<string, (XsrUiEntityId Before, XsrUiEntityId After)> _catalogSpacers = [];
+    private static readonly double InstallRowHeight = LaunchInstallText.Metric("catalog").Height!.Value;
+    private static readonly double InstallRowPitch = InstallRowHeight + LaunchInstallText.Metric("catalog").Spacing;
+    private static readonly int InstallOverscan = (int)LaunchInstallText.Metric("catalog").Padding.Left;
+    private static readonly int InstallExtraRows = (int)LaunchInstallText.Metric("catalog").Width!.Value;
+    private static readonly double InstallCenterInset = LaunchInstallText.Metric("catalog").MinHeight!.Value;
     private InstallLoader? ActiveCatalogLoader => (_activeJavaInstallPage == "JavaOptiFabricPage" ? "OptiFabric" : _activeJavaInstallPage == "JavaFabricApiPage" ? "Fabric API" : _activeJavaInstallPage == "JavaQslPage" ? "QSL" : JavaInstallSubpages.First(p => p.PageKey == _activeJavaInstallPage).Loader) switch
     {
         "Fabric API" => InstallLoader.FabricApi,
@@ -85,39 +90,14 @@ internal sealed partial class LaunchPageController
     {
         foreach (JavaInstallSubpage page in JavaInstallSubpages)
         {
-            XsrUiEntityId parent = _javaInstallEntities[page.PageKey];
-            // Version names, status and selections come from the service, never a baked-in list.
-            XsrUiEntityId host = page.PageKey == "JavaMinecraftPage" ? _javaInstallEntities["JavaMinecraftVersions"] : _shell.Tree.Create(page.PageKey + "Rows");
-            if (page.PageKey != "JavaMinecraftPage")
-            {
-                _shell.Tree.Attach(host, parent);
-                _shell.Tree.SetComponent(host, new XsrUiElement());
-                _shell.Tree.SetComponent(host, new XsrUiStackPanel(XsrUiOrientation.Vertical) { Spacing = 2 });
-                _shell.Tree.SetComponent(parent, new XsrUiScroll { ShowsVerticalIndicator = true });
-            }
-            if (page.Loader is not null)
-            {
-                string loaderKey = "JavaLoader" + page.PageKey[4..^4];
-                _shell.Tree.GetComponent<XsrUiElement>(_javaInstallEntities[loaderKey])!.IsVisible = false;
-            }
-            if (page.PageKey is "JavaFabricApiPage" or "JavaQslPage")
-                _shell.Tree.GetComponent<XsrUiElement>(_javaInstallEntities[page.PageKey == "JavaFabricApiPage" ? "JavaFabricApiSelect" : "JavaQslSelect"])!.IsVisible = false;
-            _shell.Tree.GetComponent<XsrUiStackPanel>(host)!.Spacing = 0;
-            _shell.Tree.SetComponent(host, new XsrUiStableContent());
-            _shell.Tree.SetComponent(parent, new XsrUiScrollGesture());
-            _catalogHosts[page.PageKey] = host;
-            XsrUiEntityId status = _shell.Tree.Create(page.PageKey + "Status");
-            _shell.Tree.Attach(status, parent);
-            _shell.Tree.SetComponent(status, new XsrUiElement { Height = 40 });
-            _shell.Tree.SetComponent(status, new XsrUiInput { Focusable = true, Clickable = true });
-            _shell.Tree.SetComponent(status, new XsrUiCommandBinding(CatalogRetry));
-            _shell.Tree.SetComponent(status, new XsrUiSemantic(XsrUiSemanticRole.Button, "重新获取版本"));
-            _shell.Tree.SetComponent(status, new XsrUiText("正在获取版本…"));
-            _shell.Tree.SetComponent(status, new XsrUiVisualStyle { Foreground = SecondaryText, FontSize = 13, WrapText = true });
+            _catalogHosts[page.PageKey] = _javaInstallEntities[page.PageKey == "JavaMinecraftPage" ? "JavaMinecraftVersions" : page.PageKey + "Rows"];
+            var status = AppendInstall(_javaInstallEntities[page.PageKey + "StatusSlot"], "LaunchInstallCatalogStatus.d.nxml", new()
+            { ["key"] = page.PageKey + "Status", ["message"] = InstallCopy("catalog.loading"), ["label"] = InstallCopy("catalog.retry"), ["visible"] = "true" });
             _catalogStatus[page.PageKey] = status;
-            // Keep dependency notices ahead of potentially very long version lists.
-            _shell.Tree.Detach(host);
-            _shell.Tree.Attach(host, parent);
+            var parking = _javaInstallEntities["JavaInstallRowParking"];
+            var before = AppendInstall(parking, "LaunchInstallSpacer.d.nxml", new() { ["key"] = "CatalogBefore." + page.PageKey, ["height"] = "0" });
+            var after = AppendInstall(parking, "LaunchInstallSpacer.d.nxml", new() { ["key"] = "CatalogAfter." + page.PageKey, ["height"] = "0" });
+            _catalogSpacers[page.PageKey] = (before, after);
         }
     }
     private void RequestInstallCatalog(bool force = false)
@@ -155,21 +135,21 @@ internal sealed partial class LaunchPageController
                 _installGameChosen = false;
                 PrefetchInstallCatalog("");
                 _selectedInstallBuilds.Clear();
-                SelectInstallLoader("原版 Minecraft", string.Empty);
+                SelectInstallLoader(LaunchInstallText.Raw("loader.vanilla"), string.Empty);
                 _shell.Renderer.SetTextInputValue(_javaInstallEntities["JavaInstallVersionInput"], "");
                 _catalogRevision = -1;
                 return true;
             }
             ChooseInstallGame(version.Id);
             _shell.Renderer.SetTextInputValue(_javaInstallEntities["JavaInstallVersionInput"], version.Id);
-            SelectInstallLoader("原版 Minecraft", string.Empty);
+            SelectInstallLoader(LaunchInstallText.Raw("loader.vanilla"), string.Empty);
         }
         else
         {
             var result = QueryInstallEligibility(ActiveCatalogLoader, [version.Id], version.Id);
             if (result is null || result.Rejection is not null) return true;
             _selectedInstallLoader = result.PrimaryLoader is { } primary
-                ? JavaInstallSubpages.First(page => ParseInstallLoader(page.Loader) == primary).Loader! : "原版 Minecraft";
+                ? JavaInstallSubpages.First(page => ParseInstallLoader(page.Loader) == primary).Loader! : LaunchInstallText.Raw("loader.vanilla");
             _selectedInstallBuilds.Clear();
             _selectedInstallAddons.Clear();
             foreach (var item in result.Selection)
@@ -200,8 +180,7 @@ internal sealed partial class LaunchPageController
         if (_shell.Stage.Navigation.Current != _javaInstallPage || _installCatalogCommands is null) return;
         XsrUiEntityId inputEntity = _javaInstallEntities["JavaInstallVersionInput"];
         XsrUiTextInput input = _shell.Tree.GetComponent<XsrUiTextInput>(inputEntity)!;
-        input.Placeholder = _installGameChosen ? "版本名称" : "搜索版本";
-        _shell.Tree.GetComponent<XsrUiSemantic>(inputEntity)!.Label = input.Placeholder;
+        ProjectInstallInputLabel();
         RequestInstallCatalog();
         var catalogState = _store.ReadAppliedValue(_installCatalogId) as InstallCatalogState;
         if (catalogState is not null && catalogState.Revision != _catalogStateRevision)
@@ -218,7 +197,7 @@ internal sealed partial class LaunchPageController
         }
         string cacheKey = CurrentCatalogKey;
         InstallCatalogSnapshot? snapshot = _installEdit is { } edit && ActiveCatalogLoader is null
-            ? new InstallCatalogSnapshot(1, "", null, [new(edit.GameVersion, "不可更改")], false)
+            ? new InstallCatalogSnapshot(1, "", null, [new(edit.GameVersion, LaunchInstallText.Raw("catalog.immutable"))], false)
             : _catalogCache.GetValueOrDefault(cacheKey);
         if (snapshot is null)
         {
@@ -235,7 +214,7 @@ internal sealed partial class LaunchPageController
         if (_installEdit is not null && snapshot.Loader is { } selectedLoader
             && _selectedInstallBuilds.TryGetValue(selectedLoader, out string? selectedBuild)
             && !snapshot.Versions.Any(version => version.Id == selectedBuild))
-            snapshot = snapshot with { Versions = new[] { new InstallCatalogVersion(selectedBuild, "已安装") }.Concat(snapshot.Versions).ToArray() };
+            snapshot = snapshot with { Versions = new[] { new InstallCatalogVersion(selectedBuild, LaunchInstallText.Raw("catalog.installed")) }.Concat(snapshot.Versions).ToArray() };
         if (!_catalogHosts.TryGetValue(_activeJavaInstallPage, out XsrUiEntityId host)) return;
         XsrUiScroll scroll = _shell.Tree.GetComponent<XsrUiScroll>(_javaInstallEntities[_activeJavaInstallPage])!;
         string query = !_installGameChosen && snapshot.Loader is null ? input.ReadDraft().Trim() : "";
@@ -265,78 +244,75 @@ internal sealed partial class LaunchPageController
             if (selectedIndex >= 0)
             {
                 _shell.Renderer.FinishScrollInertia(_javaInstallEntities[_activeJavaInstallPage]);
-                scroll.OffsetY = Math.Max(0, selectedIndex * 50 - Math.Max(0, _shell.Renderer.Viewport.Height - 240) / 2);
+                scroll.OffsetY = Math.Max(0, selectedIndex * InstallRowPitch - Math.Max(0, _shell.Renderer.Viewport.Height - InstallCenterInset) / 2);
                 _catalogRevision = -1;
             }
         }
-        int first = Math.Clamp((int)(Math.Max(0, scroll.OffsetY - 48) / 50) - 4, 0, Math.Max(0, snapshot.Versions.Count - 1));
-        int count = Math.Min(snapshot.Versions.Count - first, (int)Math.Ceiling(_shell.Renderer.Viewport.Height / 50) + 10);
+        int first = Math.Clamp((int)(Math.Max(0, scroll.OffsetY - InstallRowHeight) / InstallRowPitch) - InstallOverscan, 0, Math.Max(0, snapshot.Versions.Count - 1));
+        int count = Math.Min(snapshot.Versions.Count - first, (int)Math.Ceiling(_shell.Renderer.Viewport.Height / InstallRowPitch) + InstallExtraRows);
         if (snapshot.Revision == _catalogRevision && first == _catalogFirst && count == _catalogCount) return;
         _catalogRevision = snapshot.Revision; _catalogFirst = first; _catalogCount = count;
         // A fixed-height window bounds ECS/native controls independently of catalog length.
         // Keep overlapping rows alive, preserving focus and avoiding repeated entry animations.
-        var wanted = snapshot.Versions.Skip(first).Take(count).Select(v => v.Id).ToHashSet(StringComparer.Ordinal);
+        var window = snapshot.Versions.Skip(first).Take(count).ToArray();
+        var wanted = window.Select(version => version.Id).ToHashSet(StringComparer.Ordinal);
         Dictionary<string, XsrUiEntityId> retained = [];
-        foreach (XsrUiEntityId child in _shell.Tree.Children(host).ToArray())
+        foreach (var child in _shell.Tree.Children(host).ToArray())
         {
-            if (_catalogRows.TryGetValue(child, out InstallCatalogVersion? old) && wanted.Contains(old.Id))
-            { retained[old.Id] = child; _shell.Tree.Detach(child); }
-            else { _catalogRows.Remove(child); _shell.Tree.Destroy(child); }
+            if (!_catalogRows.TryGetValue(child, out var old)) continue;
+            if (wanted.Contains(old.Id)) retained[old.Id] = child;
+            else { _catalogRows.Remove(child); RemoveInstall(child); }
         }
-        void Spacer(string name, double height)
-        {
-            if (height <= 0) return;
-            XsrUiEntityId spacer = _shell.Tree.Create(name);
-            _shell.Tree.SetComponent(spacer, new XsrUiElement { Height = height });
-            _shell.Tree.Attach(spacer, host);
-        }
-        Spacer("CatalogBefore", first * 50);
-        var eligibility = QueryInstallEligibility(snapshot.Loader, snapshot.Versions.Skip(first).Take(count).Select(v => v.Id).ToArray());
-        string message = snapshot.IsStale ? snapshot.Error ?? "正在显示缓存版本资料，请刷新以确认最新版本。"
-            : snapshot.Loading ? _startupCatalogOffline ? "版本来源暂时不可用，请稍后重试。" : "正在获取版本…"
-                : snapshot.Unsupported ?? (snapshot.Error is not null ? "获取失败，请重试。" : snapshot.Versions.Count == 0 ? (query.Length > 0 ? "没有匹配的版本。" : "此游戏版本暂无兼容版本。") : snapshot.Versions[0].Warning is not null ? "部分来源获取失败，点击重试。" : "");
-        if (message.Length == 0 && snapshot.Loader is { } noticeLoader && snapshot.Versions.Count > 0)
+        var spacers = _catalogSpacers[_activeJavaInstallPage];
+        var parking = _javaInstallEntities["JavaInstallRowParking"];
+        List<XsrUiEntityId> order = [];
+        ReloadInstall(spacers.Before, ("height", InstallNumber(first * InstallRowPitch)));
+        InstallDynamic.Move(spacers.Before, first > 0 ? host : parking);
+        if (first > 0) order.Add(spacers.Before);
+        var eligibility = QueryInstallEligibility(snapshot.Loader, window.Select(version => version.Id).ToArray());
+        string message = snapshot.IsStale ? snapshot.Error ?? InstallCopy("catalog.stale")
+            : snapshot.Loading ? InstallCopy(_startupCatalogOffline ? "catalog.offline" : "catalog.loading")
+                : snapshot.Unsupported ?? (snapshot.Error is not null ? InstallCopy("catalog.failed") : snapshot.Versions.Count == 0
+                    ? InstallCopy(query.Length > 0 ? "catalog.unmatched" : "catalog.empty")
+                    : snapshot.Versions[0].Warning is not null ? InstallCopy("catalog.partial") : "");
+        if (message.Length == 0 && snapshot.Loader is not null && snapshot.Versions.Count > 0)
             message = eligibility?.Builds.Values.Select(item => item.Notice).FirstOrDefault(notice => notice is not null) ?? "";
-        XsrUiEntityId status = _catalogStatus[_activeJavaInstallPage];
-        _shell.Tree.GetComponent<XsrUiText>(status)!.Content = message;
-        _shell.Tree.GetComponent<XsrUiElement>(status)!.IsVisible = message.Length > 0;
-        foreach (InstallCatalogVersion version in snapshot.Versions.Skip(first).Take(count))
+        ProjectInstallStatus(_activeJavaInstallPage, message);
+        foreach (var version in window)
         {
-            string key = snapshot.Loader is null ? "game:" + version.Id : "loader:" + version.Id;
+            string key = (snapshot.Loader is null ? "game:" : "loader:") + InstallIdentity(version.Id);
             bool selected = _installGameChosen && (snapshot.Loader is null ? version.Id == _selectedInstallVersion : _selectedInstallBuilds.GetValueOrDefault(snapshot.Loader.Value) == version.Id);
-            string? conflict = snapshot.Loader is { } kind ? eligibility?.Builds.GetValueOrDefault(version.Id)?.Conflict : null;
-            string detail = _editingInstall && snapshot.Loader is null ? "不可更改" : conflict ?? (snapshot.Loader is not null ? version.Detail : version.Stable ? "正式版" : "测试版");
-            NxmlIrNode Project(NxmlIrNode node) => node with
-            {
-                Key = node.Key + ":" + key,
-                Label = node.Key == "CatalogRow" ? (selected ? "已选择 " : "选择 ") + version.Id : node.Label,
-                Content = node.Key switch { "CatalogName" => version.Id, "CatalogDetail" => detail, _ => node.Content },
-                Children = [.. node.Children.Select(Project)],
-            };
-            XsrUiEntityId row;
-            if (retained.TryGetValue(version.Id, out row)) _shell.Tree.Attach(row, host);
-            else
-            {
-                row = NxmlUiLoader.Load(new(Project(CatalogRowTemplate.Root)), _shell.Tree, _store, host);
-                _shell.Tree.GetComponent<XsrUiElement>(row)!.Margin = new XsrUiThickness(0, 0, 0, 2);
-            }
-            _shell.Tree.GetComponent<XsrUiSemantic>(row)!.Label = _editingInstall && snapshot.Loader is null
-                ? "Minecraft " + version.Id + "，不可更改" : (selected ? "取消选择 " : "选择 ") + version.Id;
-            _shell.Tree.GetComponent<XsrUiInput>(row)!.Enabled = !(_editingInstall && snapshot.Loader is null) && (selected || conflict is null);
+            string? conflict = snapshot.Loader is not null ? eligibility?.Builds.GetValueOrDefault(version.Id)?.Conflict : null;
+            bool immutable = _editingInstall && snapshot.Loader is null;
+            string detail = immutable ? InstallCopy("catalog.immutable") : conflict ?? (snapshot.Loader is not null ? version.Detail : InstallCopy(version.Stable ? "catalog.release" : "catalog.preview"));
+            string label = InstallFormat(immutable ? "CatalogImmutable" : selected ? "CatalogDeselect" : "CatalogSelect", ("version", version.Id));
+            string rowStyle = LaunchInstallText.Raw(selected ? "style.row-selected" : "style.row");
+            string checkStyle = LaunchInstallText.Raw(selected ? "style.check-selected" : "style.check");
+            if (!retained.TryGetValue(version.Id, out var row))
+                row = AppendInstall(host, "LaunchInstallCatalogRow.d.nxml", new()
+                {
+                    ["row"] = "CatalogRow:" + key,
+                    ["check"] = "CatalogCheck:" + key,
+                    ["name"] = "CatalogName:" + key,
+                    ["detailKey"] = "CatalogDetail:" + key,
+                    ["version"] = version.Id,
+                    ["detail"] = detail,
+                    ["label"] = label,
+                    ["selected"] = InstallFlag(selected),
+                    ["enabled"] = InstallFlag(!immutable && (selected || conflict is null)),
+                    ["rowStyle"] = rowStyle,
+                    ["checkStyle"] = checkStyle,
+                });
+            else ReloadInstall(row, ("version", version.Id), ("detail", detail), ("label", label),
+                ("selected", InstallFlag(selected)), ("enabled", InstallFlag(!immutable && (selected || conflict is null))),
+                ("rowStyle", rowStyle), ("checkStyle", checkStyle));
             _catalogRows[row] = version;
-            _shell.Tree.SetComponent(row, new XsrUiSelection { IsSelected = selected });
-            ApplyVisual(row, selected ? ProfileSurface : XsrUiColor.Transparent, PrimaryText, XsrUiCornerRadii.Inset, hover: PickerBackground);
-            _shell.Tree.Walk(row, entity =>
-            {
-                string name = _shell.Tree.Name(entity);
-                if (name.StartsWith("CatalogName", StringComparison.Ordinal)) DesktopLiteralText.Preserve(_shell.Tree, entity);
-                if (name.StartsWith("CatalogDetail", StringComparison.Ordinal)) _shell.Tree.GetComponent<XsrUiText>(entity)!.Content = detail;
-                StyleText(entity, name.StartsWith("CatalogDetail", StringComparison.Ordinal) ? SecondaryText : PrimaryText, 14);
-                if (name.StartsWith("CatalogCheck", StringComparison.Ordinal)) ApplyVisual(entity, XsrUiColor.Transparent, selected ? BadgeText : XsrUiColor.Transparent, 0);
-                return true;
-            });
+            order.Add(row);
         }
-        Spacer("CatalogAfter", (snapshot.Versions.Count - first - count) * 50);
-        _shell.Tree.MarkDirty(_javaInstallPage, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+        int remaining = snapshot.Versions.Count - first - count;
+        ReloadInstall(spacers.After, ("height", InstallNumber(remaining * InstallRowPitch)));
+        InstallDynamic.Move(spacers.After, remaining > 0 ? host : parking);
+        if (remaining > 0) order.Add(spacers.After);
+        InstallDynamic.Reorder(host, order);
     }
 }

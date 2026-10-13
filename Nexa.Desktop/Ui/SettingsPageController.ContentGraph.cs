@@ -20,44 +20,41 @@ internal sealed partial class SettingsPageController
         ResetContentGraph();
         if (_management is { } snapshot) _management = snapshot with { ContentGraph = null };
     }
+    private XsrUiEntityId _graphSelectionWorkspace;
+    private int? _graphSelectionKey;
+    private readonly Dictionary<int, XsrUiEntityId> _graphDependencyRows = [];
+    private readonly Dictionary<(int Edge, int Provider), XsrUiEntityId> _graphProviderRows = [];
+    private readonly Dictionary<int, XsrUiEntityId> _graphConsumerRows = [];
     private void BuildContentGraph(InstanceManagementSnapshot snapshot)
     {
-        if (snapshot.ContentGraph is not { } graph) { Text(_sections, "正在读取依赖关系…", 13, Muted, 28); return; }
+        if (snapshot.ContentGraph is not { } graph)
+        {
+            var loading = AppendContent(_sections, "SettingsContentLoading.d.nxml", new() { ["enabled"] = ContentFlag(_managementWrite is null), ["message"] = ContentTerm("graphLoading") });
+            BindContentAction(ContentNodes(loading), ContentKey("refresh"), RefreshManagement); return;
+        }
         if (!ReferenceEquals(_graphIdentity, graph))
         {
             _graphIdentity = graph;
-            var nodes = graph.Nodes.Select(n => new XsrUiGraphNode(n.Key, n.Id, !n.Enabled ? Muted
-                : n.InCycle ? new(207, 121, 33) : n.Dependencies.Any(d => d.State == InstanceDependencyState.Missing) ? new(196, 66, 62) : Blue));
+            var nodes = graph.Nodes.Select(n => new XsrUiGraphNode(n.Key, n.Id, DesktopMarkup.Visual(!n.Enabled ? "settings-content-graph-disabled" : n.InCycle ? "settings-content-graph-cycle" : n.Dependencies.Any(d => d.State == InstanceDependencyState.Missing) ? "settings-content-graph-missing" : "settings-content-graph-enabled").Foreground));
             var edges = graph.Nodes.SelectMany(n => n.Dependencies.SelectMany(d => d.Providers.Select(p => new XsrUiGraphEdge(n.Key, graph.Nodes[p].Key))));
-            _graph = new(nodes, edges); _graph.Fit(700, 380);
+            _graph = new(nodes, edges); var metric = ContentMetric("graph"); _graph.Fit(metric.Width!.Value, metric.Height!.Value);
         }
-        var bar = Stack(_sections, "ContentGraphToolbar", XsrUiOrientation.Horizontal, 8);
-        _graphSearch = Element(bar, "ContentGraphSearch", XsrUiSemanticRole.TextInput, "搜索依赖", height: 36);
-        _shell.Tree.GetComponent<XsrUiElement>(_graphSearch)!.Weight = 1;
-        _shell.Tree.GetComponent<XsrUiElement>(_graphSearch)!.Padding = new(12, 0, 12, 0);
-        _shell.Tree.SetComponent(_graphSearch, new XsrUiTextInput { Placeholder = "搜索模组或依赖" });
-        _shell.Tree.SetComponent(_graphSearch, new XsrUiInput { Focusable = true, Clickable = true });
-        Style(_graphSearch, new(241, 244, 248), Ink, 10, 13);
-        _shell.Renderer.SetTextInputValue(_graphSearch, _graphFilter);
-        GraphButton(bar, "GraphZoomOut", "缩小", () => ZoomGraph(.8), 60);
-        GraphButton(bar, "GraphZoomIn", "放大", () => ZoomGraph(1.25), 60);
-        GraphButton(bar, "GraphFit", "适应", () =>
-        {
-            var node = _shell.Renderer.Render().Nodes.FirstOrDefault(n => n.Entity == _graphCanvas);
-            _graph!.Fit(node.Rect.Width, node.Rect.Height); _shell.Tree.MarkDirty(_graphCanvas, XsrUiDirtyKinds.Paint);
-        }, 60);
-        Text(_sections, $"{graph.Nodes.Count} 个身份 · 箭头指向依赖 · 节点越大，被依赖越多", 12, Muted, 24);
-        _graphCanvas = Element(_sections, "ContentGraphCanvas", XsrUiSemanticRole.Content, "依赖图，拖动平移，点击节点查看关系", height: 380);
-        Style(_graphCanvas, new(247, 249, 252), Ink, 14);
-        _shell.Tree.SetComponent(_graphCanvas, _graph!);
-        _shell.Tree.SetComponent(_graphCanvas, new XsrUiInput { Clickable = true, Focusable = true });
-        _shell.Tree.SetComponent(_graphCanvas, new XsrUiCommandBinding(ManagementAction));
-        _managementActions[_graphCanvas] = RenderGraphSelection; _graphActions.Add(_graphCanvas);
-        _graphBody = Stack(_sections, "ContentGraphSelection", XsrUiOrientation.Vertical, 6);
-        RenderGraphSelection();
-        Text(_sections, "来自本地包声明，不代表实际加载或已验证版本兼容。", 12, Muted, 24);
-        if (graph.Notice is { } notice) ContentName(_sections, notice, 12, null, 0, Muted, literal: false);
-        if (graph.UnknownFiles > 0) Text(_sections, $"{graph.UnknownFiles} 个文件尚未识别。", 12, Muted, 24);
+        _contentWorkspace = AppendContent(_sections, "SettingsContentGraph.d.nxml", new() { ["enabled"] = "true", ["count"] = ContentFormat("GraphCount", ("count", graph.Nodes.Count.ToString(System.Globalization.CultureInfo.CurrentCulture))), ["notice"] = graph.Notice is { } notice ? _shell.Renderer.LocalizeText(notice) : "", ["hasNotice"] = ContentFlag(graph.Notice is not null), ["unknown"] = ContentFormat("UnknownFiles", ("count", graph.UnknownFiles.ToString(System.Globalization.CultureInfo.CurrentCulture))), ["hasUnknown"] = ContentFlag(graph.UnknownFiles > 0) });
+        var entities = ContentNodes(_contentWorkspace); _graphSearch = entities["ContentGraphSearch"]; _graphCanvas = entities["ContentGraphCanvas"]; _graphBody = entities["ContentGraphSelection"];
+        _shell.Renderer.SetTextInputValue(_graphSearch, _graphFilter); _shell.Tree.SetComponent(_graphCanvas, _graph!);
+        BindContentAction(entities, "GraphZoomOut", () => ZoomGraph(.8)); BindContentAction(entities, "GraphZoomIn", () => ZoomGraph(1.25));
+        BindContentAction(entities, ContentKey("refresh"), RefreshManagement);
+        BindContentAction(entities, "GraphFit", () => { var node = _shell.Renderer.Render().Nodes.First(n => n.Entity == _graphCanvas); _graph!.Fit(node.Rect.Width, node.Rect.Height); _shell.Tree.MarkDirty(_graphCanvas, XsrUiDirtyKinds.Paint); });
+        BindContentAction(entities, "ContentGraphCanvas", RenderGraphSelection); _graphActions.Add(_graphCanvas);
+        _graphSelectionWorkspace = default; _graphSelectionKey = null; _graphDependencyRows.Clear(); _graphProviderRows.Clear(); _graphConsumerRows.Clear(); RenderGraphSelection();
+    }
+
+    private void ReloadContentGraph()
+    {
+        if (_graphIdentity is not { } graph) return;
+        ReloadContent(_contentWorkspace, ("count", ContentFormat("GraphCount", ("count", graph.Nodes.Count.ToString(System.Globalization.CultureInfo.CurrentCulture)))),
+            ("notice", graph.Notice is { } notice ? _shell.Renderer.LocalizeText(notice) : ""), ("unknown", ContentFormat("UnknownFiles", ("count", graph.UnknownFiles.ToString(System.Globalization.CultureInfo.CurrentCulture)))));
+        UpdateContentGraph(); RenderGraphSelection();
     }
     private void ZoomGraph(double factor)
     {
@@ -76,35 +73,44 @@ internal sealed partial class SettingsPageController
     private void RenderGraphSelection()
     {
         if (!_graphBody.IsAssigned || !_shell.Tree.IsAlive(_graphBody)) return;
-        foreach (var child in _shell.Tree.Children(_graphBody).ToArray())
-        {
-            _shell.Tree.Walk(child, entity => { _managementActions.Remove(entity); _graphActions.Remove(entity); return true; });
-            _shell.Tree.Destroy(child);
-        }
         var node = _graphIdentity?.Nodes.FirstOrDefault(n => n.Key == _graph?.Selected);
-        if (node is null) { Text(_graphBody, "选择一个节点，查看依赖和被依赖关系。", 13, Muted, 28); return; }
-        ContentName(_graphBody, node.Id + " · " + node.Version, 16, null, 0);
-        Text(_graphBody, node.Enabled ? "已启用" : "已禁用", 12, Muted, 24);
-        if (!node.DependenciesComplete) Text(_graphBody, "依赖声明尚未完整识别。", 12, Muted, 24);
-        if (node.InCycle) Text(_graphBody, "存在依赖循环。", 12, Muted, 24);
-        foreach (var edge in node.Dependencies)
+        Dictionary<string, string> data = new() { ["empty"] = ContentFlag(node is null), ["selected"] = ContentFlag(node is not null), ["title"] = node is null ? "" : ContentFormat("GraphTitle", ("id", StripContentFormatting(node.Id)), ("version", node.Version)), ["state"] = ContentTerm(node?.Enabled == true ? "enabledState" : "disabledState"), ["incomplete"] = ContentFlag(node?.DependenciesComplete == false), ["cycle"] = ContentFlag(node?.InCycle == true), ["consumers"] = ContentFormat("Consumers", ("count", (node?.Consumers.Count ?? 0).ToString(System.Globalization.CultureInfo.CurrentCulture))) };
+        if (!_shell.Tree.IsAlive(_graphSelectionWorkspace)) _graphSelectionWorkspace = AppendContent(_graphBody, "SettingsContentGraphSelection.d.nxml", data);
+        else ReloadContent(_graphSelectionWorkspace, data.Select(pair => (pair.Key, pair.Value)).ToArray());
+        var nodes = ContentNodes(_graphSelectionWorkspace);
+        if (_graphSelectionKey != node?.Key)
         {
-            var row = Stack(_graphBody, "GraphDependency", XsrUiOrientation.Horizontal, 8);
-            ContentName(row, edge.Id + " " + edge.Requirement + " · " + _shell.Renderer.LocalizeText(DependencyLabel(edge.State)), 12, null, 0);
+            foreach (var slot in new[] { nodes["ContentGraph.Dependencies"], nodes["ContentGraph.Consumers"] }) foreach (var child in _shell.Tree.Children(slot).ToArray()) RemoveContentView(child);
+            _graphSelectionKey = node?.Key; _graphDependencyRows.Clear(); _graphProviderRows.Clear(); _graphConsumerRows.Clear();
+        }
+        if (node is null) return;
+        ApplyContentFormatting(nodes["ContentGraph.SelectedTitle"], ContentFormat("GraphTitle", ("id", node.Id), ("version", node.Version)));
+        for (int edgeIndex = 0; edgeIndex < node.Dependencies.Count; edgeIndex++)
+        {
+            var edge = node.Dependencies[edgeIndex]; string title = ContentFormat("Dependency", ("id", edge.Id), ("requirement", edge.Requirement), ("state", DependencyLabel(edge.State)));
+            if (!_graphDependencyRows.TryGetValue(edgeIndex, out var row))
+            { row = AppendContent(nodes["ContentGraph.Dependencies"], "SettingsContentGraphDependency.d.nxml", new() { ["title"] = StripContentFormatting(title) }); _graphDependencyRows[edgeIndex] = row; }
+            else ReloadContent(row, ("title", StripContentFormatting(title)));
+            var relation = ContentNodes(row); ApplyContentFormatting(relation["ContentGraph.DependencyTitle"], title); var providers = relation["ContentGraph.Providers"];
             foreach (int provider in edge.Providers.Take(8))
             {
                 int key = _graphIdentity!.Nodes[provider].Key;
-                GraphButton(row, "GraphProvider." + key, "定位", () => SelectGraphNode(key), 54);
+                if (!_graphProviderRows.TryGetValue((edgeIndex, provider), out var action))
+                { action = AppendContent(providers, "SettingsContentGraphProvider.d.nxml", new() { ["key"] = "GraphProvider." + key, ["enabled"] = "true" }); _graphProviderRows[(edgeIndex, provider)] = action; _graphActions.Add(action); }
+                BindContentAction(ContentNodes(action), "GraphProvider." + key, () => SelectGraphNode(key));
             }
         }
-        Text(_graphBody, $"被 {node.Consumers.Count} 个模组依赖", 13, Muted, 24);
-        foreach (var consumer in node.Consumers)
+        for (int consumerIndex = 0; consumerIndex < node.Consumers.Count; consumerIndex++)
         {
-            var dependent = _graphIdentity!.Nodes[consumer.Node];
-            GraphButton(_graphBody, "GraphConsumer." + dependent.Key, dependent.Id, () => SelectGraphNode(dependent.Key), 220);
+            var dependent = _graphIdentity!.Nodes[node.Consumers[consumerIndex].Node];
+            if (!_graphConsumerRows.TryGetValue(consumerIndex, out var action))
+            { action = AppendContent(nodes["ContentGraph.Consumers"], "SettingsContentGraphConsumer.d.nxml", new() { ["key"] = "GraphConsumer." + dependent.Key, ["name"] = dependent.Id, ["enabled"] = "true" }); _graphConsumerRows[consumerIndex] = action; _graphActions.Add(action); }
+            else ReloadContent(action, ("name", dependent.Id));
+            BindContentAction(ContentNodes(action), "GraphConsumer." + dependent.Key, () => SelectGraphNode(dependent.Key));
         }
         _shell.Tree.MarkDirty(_graphBody, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
     }
+
     private void SelectGraphNode(int key)
     {
         _graph!.Selected = key;
@@ -112,19 +118,16 @@ internal sealed partial class SettingsPageController
         _graph.PanX = -point.X * _graph.Zoom; _graph.PanY = -point.Y * _graph.Zoom;
         _shell.Tree.MarkDirty(_graphCanvas, XsrUiDirtyKinds.Paint); RenderGraphSelection();
     }
-    private void GraphButton(XsrUiEntityId parent, string key, string label, Action action, double width)
+
+
+    private string DependencyLabel(InstanceDependencyState state) => ContentTerm(state switch
     {
-        var button = ActionButton(parent, key, label, ManagementAction, width);
-        _managementActions[button] = action; _graphActions.Add(button);
-    }
-    private static string DependencyLabel(InstanceDependencyState state) => state switch
-    {
-        InstanceDependencyState.Present => "本地存在，范围待验证",
-        InstanceDependencyState.Disabled => "提供者已禁用",
-        InstanceDependencyState.Missing => "缺失",
-        InstanceDependencyState.Ambiguous => "多个候选",
-        InstanceDependencyState.Runtime => "运行时提供",
-        InstanceDependencyState.NestedCandidate => "内嵌候选",
-        _ => "未知"
-    };
+        InstanceDependencyState.Present => "dependencyPresent",
+        InstanceDependencyState.Disabled => "dependencyDisabled",
+        InstanceDependencyState.Missing => "dependencyMissing",
+        InstanceDependencyState.Ambiguous => "dependencyAmbiguous",
+        InstanceDependencyState.Runtime => "dependencyRuntime",
+        InstanceDependencyState.NestedCandidate => "dependencyNested",
+        _ => "dependencyUnknown"
+    });
 }

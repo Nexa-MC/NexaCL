@@ -5,10 +5,11 @@ namespace Nexa.Desktop.Ui;
 /// <summary>Cached screenshot geometry; only the requested window becomes retained UI.</summary>
 internal sealed class DesktopScreenshotGalleryLayout
 {
-    internal const double Gap = 12;
-    internal const double CardPadding = 12;
-    private const double MinimumCardWidth = 220;
-    private const double HeadingHeight = 34;
+    private static readonly Nexa.Xsr.Renderer.Nxml.NxmlIrNode Metrics = DesktopMarkup.Load("SettingsContentMetrics.nxml").Root.Children.First(node => node.Key == "gallery");
+    internal static readonly double Gap = Metrics.Spacing;
+    internal static readonly double CardPadding = Metrics.Padding.Left;
+    private static readonly double MinimumCardWidth = Metrics.Width!.Value;
+    private static readonly double HeadingHeight = Metrics.Height!.Value;
 
     private DesktopScreenshotGalleryLayout(double availableWidth)
     {
@@ -61,8 +62,8 @@ internal sealed class DesktopScreenshotGalleryLayout
                 : entry.Item is { ImageWidth: { } sourceWidth, ImageHeight: { } sourceHeight }
                     && sourceWidth > 0 && sourceHeight > 0
                     ? imageWidth * sourceHeight / sourceWidth
-                    : imageWidth * 9 / 16;
-            double height = imageHeight + CardPadding * 2 + 8 + 26 + (timeline ? 28 : 0);
+                    : imageWidth * Metrics.Margin.Left / Metrics.Margin.Top;
+            double height = imageHeight + CardPadding * 2 + Metrics.Padding.Top + Metrics.Padding.Right + (timeline ? Metrics.Padding.Bottom : 0);
             columns[column].Add(new(entry.Index, entry.Item, tops[column], height, imageHeight, null));
             tops[column] += height + Gap;
         }

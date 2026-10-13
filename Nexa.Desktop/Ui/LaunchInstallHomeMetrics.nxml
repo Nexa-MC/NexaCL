@@ -1,0 +1,4 @@
+<Node Recipe="StackLayout" Key="LaunchHomeMetrics">
+  <Node Recipe="Element" Key="WidgetInactive" Class="launch-install-home-widget-inactive" />
+  <Node Recipe="Element" Key="WidgetActive" Class="launch-install-home-widget-active" />
+</Node>

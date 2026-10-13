@@ -3,8 +3,8 @@ using Nexa.Services.Composition;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Settings;
 using Nexa.Services.Setup;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 

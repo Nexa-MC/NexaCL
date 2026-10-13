@@ -1,7 +1,7 @@
 ﻿using Nexa.Services.Resources;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 

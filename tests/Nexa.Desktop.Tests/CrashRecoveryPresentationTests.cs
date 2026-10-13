@@ -24,7 +24,7 @@ internal static partial class Program
             translatedSources.Add(source);
             return source switch
             {
-                "{0} {1} 项{2}" => "{0} {1} {2}",
+                "{data kind} {data count} 项{data category}" => "{data kind} {data count} {data category}",
                 "删除" => "Removed",
                 "修改" => "Modified",
                 "模组" => "mods",

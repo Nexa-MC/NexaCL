@@ -6,8 +6,8 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 

@@ -1,11 +1,23 @@
-﻿# Remaining NXML migration
+﻿# NXML product migration inventory and evidence
 
 Objective: migrate all product presentation to Nexa.Xsr.Renderer, external `.nxml`
 pages, `.c.nxml` components and `.nss` styles. Dynamic collections must enter named
 `Dynamic` slots through `.d.nxml` fragments. Keep the existing product design and
 service boundaries. Finishing infrastructure alone does not finish this objective.
 
-## Current evidence, 2026-10-11
+## Current status, 2026-10-13
+
+The ordinary Desktop presentation inventory has **zero remaining implementation
+slices**. Settings/instance management and launch/installation are complete and
+verified by behavior, semantic architecture, rendered-theme/viewport and actual
+NativeAOT/full-trim publication checks. See the
+[final closure and evidence](#ordinary-desktop-presentation-closure-2026-10-13).
+The wider XSR roadmap and explicitly retained planning capabilities are separate.
+
+The entries below preserve the history of the migration. Statements about work
+remaining in earlier dated entries apply to those earlier revisions.
+
+## Historical inventory, 2026-10-11
 
 - Network/proxy and network diagnostics load dynamic fragments. Their controller
   architecture checks reject imperative presentation factories.
@@ -56,15 +68,18 @@ service boundaries. Finishing infrastructure alone does not finish this objectiv
 - Bootstrap of detached pages is now owned by the NXML loader, not a temporary
   controller-created visual tree. Other controllers must migrate to that API too.
 
-## Remaining slices
+## Current inventory, 2026-10-13
 
-| Area | Authoritative entry points | Remaining work |
-| --- | --- | --- |
-| Settings and instance management | `SettingsPageController.cs` and partial files | Replace remaining custom row/group factories, diagnostic cards, content/detail/snapshot/server/export structures and their style mutations with templates. Preserve drafts and list virtualization. |
-| Launch and installation | `LaunchPageController.InstallCatalog.cs`, `.Installation.cs`, `.FrameProjection.cs`, `.Styles.cs`, `BedrockInstallPageController.cs` | Catalog/loader rows, state panels, choice tracks and runtime presentation styling. |
+| Area | Remaining ordinary presentation slices | Verification |
+| --- | ---: | --- |
+| Settings and instance management | 0 | Full Desktop behavior, owned content/world/server/export/recovery shell checks and native previews |
+| Launch and installation | 0 | Home/Java/Bedrock controller checks, virtual catalog/editor lifecycle and native previews |
+| Product wording and native captions | 0 | External terms/formats, literal feedback markers and whole-Desktop semantic guard |
+| Desktop controllers/presenters and helper callers | 0 | Whole-Desktop source guard and negative bypass fixtures; 69-project architecture check |
 
-Direct node/style/stack construction still remains across the other Desktop slices. This is a locator, not a completion metric: helpers can hide imperative layouts,
-and compiled renderer primitives/platform bridges are intentionally still code.
+Compiled renderer/platform/media primitives and behavioral state/intent projection
+remain within their explicit boundaries. They do not form an alternate ordinary
+presentation factory. Final results and verification limits are recorded below.
 
 ## Completion gates
 
@@ -84,7 +99,8 @@ and compiled renderer primitives/platform bridges are intentionally still code.
 7. Remove obsolete UI.Next/PXML projects/assets/references, track any intentionally retained
    historical docs separately, format changes, commit in reviewable slices and push.
 
-The overall migration remains active until all gates are evidenced for all slices.
+The latest dated closure records the executed results for these gates. Earlier
+slice notes are historical evidence and do not replace final publication checks.
 
 ## Dock and process slice validation, 2026-10-11
 
@@ -703,3 +719,117 @@ visibility, formatting spans and bounded realization unchanged. Configuration va
 filenames, module metadata, paths and provider data remain literal; translate named
 formats before data substitution. Leave a shared legacy helper only while documented
 remaining callers exist, and remove it when its last caller is migrated.
+
+## Remaining-product closure boundary, 2026-10-13
+
+Complete both open inventory areas together in independently reviewable consumer
+slices: custom settings, instance content/preview operations, worlds/server/export
+workspaces, and launch/install presentation. Each complete workspace owns its named
+slots and finite external variants. No generic node/style compatibility factory may
+replace the old factories. Shared helpers may only select/load declared assets or
+project literal facts and typed intents; retire legacy helpers after their last caller.
+
+Preserve exact typed command/query identities and existing confirmations, lifecycle,
+virtual windows, media ownership, drafts/caret, focus, scroll and motion objects.
+Geometry and selected/available/status variants belong in external templates/styles;
+controller runtime changes reload owned projections rather than mutate presentation
+components. A failed or obsolete projection must leave the retained workspace intact.
+Extend the whole-Desktop source audit only after all ordinary product consumers pass,
+keeping explicit renderer/platform primitives outside that presentation rule. Do not
+mark this closure complete until behavior, rendered-theme/viewport, architecture and
+shipped-external-assets NativeAOT/full-trim checks have executed.
+
+## Ordinary Desktop presentation closure, 2026-10-13
+
+The two remaining implementation areas are closed: Settings/instance management and
+launch/installation now select authored external workspaces, components, dynamic
+fragments and NSS. This closes the ordinary Desktop NXML presentation inventory;
+it does not close the wider XSR feature roadmap. World Guardian, CoW and other
+planning-only capabilities remain planning items.
+
+### Delivered consumers and retained behavior
+
+- Launch home/account roster/widgets, launch progress, Java game/loader catalogues,
+  installation status and Bedrock official handoff use complete external surfaces.
+  Selection, bounded virtual rows, search/install drafts and local thumb/reveal
+  transitions retain their existing renderer objects through theme/locale refresh.
+- Custom settings, identity/history, profiles/hooks, update states, proxy/diagnostics,
+  catalogue wording/options, storage and transfer use owned projections. Storage,
+  recovery and transfer refresh retain their workspace instead of rebuilding the page.
+- Instance content search/list/detail, trust/integrity/updates/categories/graph,
+  trash/history and screenshot waterfall/modal/crop use owned fragments and bounded
+  identities. Source filenames/provider facts remain literal. Modal scope retirement
+  releases media and actions; async completions cannot reopen a retired workspace.
+- World metadata/data packs/health/snapshots, server lists/editor/status, modpack
+  export and recovery/history/offline readiness use declared external variants.
+  Snapshot append/reorder/remove retains surviving row entities; server/export drafts,
+  caret and focus survive query, theme and locale completion.
+- Fixed Desktop feedback, native menu/protocol/import captions and data-bearing
+  messages are external. Named formats translate before literal substitution;
+  notification/dialog literal markers and task-step provider details prevent a
+  second localization pass over provider data.
+
+Finite NXML facts (`SegmentThumb`, `SegmentWidth`, `Checked`, `SelectionRequired`,
+`TransitionMovesSelf`) establish existing renderer primitives from authored assets.
+The loader rejects incompatible contracts before mutation; retained input placeholder
+updates preserve draft/caret. Renderer hit testing rejects destroyed scene entities,
+and Escape dismissal rejects retired or currently obscured overlay targets.
+
+Obsolete imperative helpers and assets were removed, including
+`LaunchPageController.Styles.cs`, `DesktopElementVisibility.cs`,
+`DesktopLiteralText.cs`, `AccountProfileRow.c.nxml` and `CatalogRow.c.nxml`.
+The whole-Desktop semantic regression covers helper indirection, node/style factories,
+component assignments, direct ownership mutations, assembled XML/IR and fixed copy.
+Negative fixtures reject counterfeit copy helpers and unused asset-load bypasses.
+The narrow compiled boundary remains renderer/platform primitives, media/raster
+leases, parsed Minecraft formatting, literal host title facts and behavioral
+selection/scroll/input/motion projection. There is no generic layout compatibility
+factory or embedded markup fallback.
+
+### Executed validation
+
+Release validation ran on Linux x64 with .NET SDK 10.0.401:
+
+| Gate | Final result |
+| --- | --- |
+| Full solution build | 69 projects; 0 warnings, 0 errors |
+| Desktop composition/behavior | 309 passed, 0 failed |
+| Renderer interactions/layout | 105 passed |
+| NXML compiler/runtime | 68 passed |
+| Actual Avalonia backend | 30 passed |
+| Architecture and semantic negative fixtures | 69 projects passed |
+| CI formatter (`IDE0055`, `IMPORTS`) | Passed; no formatting changes required |
+| Managed `--validate-shell` | Exit 0; all existing and eight new closure markers |
+| NativeAOT publish + actual `--validate-shell` / `--validate-setup` | linux-x64; publish and both checks exited 0 |
+| Self-contained full-trim publish + actual `--validate-shell` / `--validate-setup` | linux-x64; publish and both checks exited 0 |
+| External asset inventory/content comparison | Each package: 636 NXML, 57 NSS, 1 JSON; zero missing, extra or mismatched files |
+
+The new shell checks exercise actual controllers over shipped external files:
+launch home, Bedrock, primitive segments, launch/install, global settings, instance
+content, world/server/export/recovery, and their combined settings lifecycle.
+They assert literal authority, retained interaction objects, both themes at 810x500,
+owned collection changes and rejected retired asynchronous results. Typed fixtures
+and isolated temporary directories supply facts. Server-save/export writes are
+counted and remain zero; world/snapshot/recovery mutation routes are not registered
+in the read-only publication fixture. This is not live provider/game execution or a
+world restore test.
+
+Actual Avalonia windows completed 15 stages in both themes at 1040 and 810 DIP,
+with normal teardown: 60 software-rendered captures. The harness checks drafts,
+caret, focus, scroll, virtual extent and slot ownership before capture. Seven
+representative images, adjacent interaction manifests and the complete capture
+index/digests are committed under
+[evidence/nxml-closure-2026-10-13](evidence/nxml-closure-2026-10-13/README.md).
+These are Linux `RenderTargetBitmap(window)` captures using typed fixtures; they do
+not certify Windows DWM/tray behavior or online provider responses.
+
+Publication warnings remain visible: the existing Jint `IL2098` annotation warning
+is unsuppressed in both publication paths. The first multi-node trimmed publication
+failed with `MSB4166` child-node exits; the final single-node/no-reuse publication
+succeeded. The formatter emitted a workspace-loading warning and exited 0 without
+formatting violations.
+After normalizing EOF whitespace in external assets, both packages were republished
+over unchanged compiled C# inputs and their actual shell/setup checks were rerun.
+Commands, outcomes, log digests, shipped-asset counts and executable digests are
+recorded in [validation.json](evidence/nxml-closure-2026-10-13/validation.json). Earlier dated slice evidence remains
+historical and does not replace these final checks.

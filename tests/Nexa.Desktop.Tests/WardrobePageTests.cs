@@ -1,8 +1,8 @@
 using Nexa.Core.Media;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Tests;

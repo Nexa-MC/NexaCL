@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data timestamp} · {data host} · {data kind} · {data status} · {data elapsed} ms" Localize="false" Class="settings-network-observation" /></nxml-dynamic>

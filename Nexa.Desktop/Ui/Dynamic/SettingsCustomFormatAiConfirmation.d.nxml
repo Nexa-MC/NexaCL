@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="将向 {data endpoint} 发送 {data scope}，模型 {data model}，推理参数 {data reasoning}。&#10;输入 {data bytes} 字节，输出最多 {data tokens} Token。&#10;请检查内容后确认：&#10;{data preview}" Localize="false" /></nxml-dynamic>

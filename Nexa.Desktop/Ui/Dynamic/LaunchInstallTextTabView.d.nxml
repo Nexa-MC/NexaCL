@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="查看 {data name} 设置" Localize="false" />
+</nxml-dynamic>

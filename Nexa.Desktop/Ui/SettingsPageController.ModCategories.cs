@@ -19,49 +19,29 @@ internal sealed partial class SettingsPageController
         _ => true
     };
 
-    private void BuildModCategories()
+    private XsrUiEntityId _modCategoryRoot;
+    private Dictionary<string, string> ModCategoryProjection()
+    {
+        Dictionary<string, string> data = new(StringComparer.Ordinal);
+        foreach (var key in new[] { "all", "enabled", "disabled", "updates", "problems", "unchecked" })
+        { data[key + "Selected"] = ContentFlag(key == _modCategory); data[key + "Style"] = key == _modCategory ? "settings-content-category settings-content-category-selected" : "settings-content-category"; }
+        return data;
+    }
+    private void BuildModCategories(XsrUiEntityId parent)
     {
         _modCategoryOptions.Clear();
-        var row = Stack(_sections, "ManagementModCategories", XsrUiOrientation.Horizontal, 12);
-        var track = Stack(row, "ManagementModCategoryTrack", XsrUiOrientation.Horizontal, 0);
-        _shell.Tree.SetComponent(track, new XsrUiSemantic(XsrUiSemanticRole.RadioGroup, "筛选模组"));
-        _modCategoryTrack = track;
-        Style(track, new(241, 245, 250), Ink, 9);
-        var thumb = Element(track, "ManagementModCategoryThumb", XsrUiSemanticRole.None, null);
-        _shell.Tree.GetComponent<XsrUiElement>(thumb)!.IsVisible = false;
-        Style(thumb, White, Ink, 7);
-        _shell.Tree.SetComponent(thumb, new XsrUiTransition());
-        _shell.Tree.SetComponent(track, new XsrUiSegmentedTrack(thumb));
-        _shell.Tree.SetComponent(track, new XsrUiScroll());
-        _shell.Tree.SetComponent(track, new XsrUiScrollGesture());
-        foreach (var (key, label) in new[] { ("all", "全部"), ("enabled", "已启用"), ("disabled", "已禁用"),
-            ("updates", "可更新"), ("problems", "包异常"), ("unchecked", "未检测") })
+        _modCategoryRoot = AppendContent(parent, "SettingsContentModCategories.d.nxml", ModCategoryProjection());
+        var nodes = ContentNodes(_modCategoryRoot); _modCategoryTrack = nodes["ManagementModCategoryTrack"];
+        foreach (var key in new[] { "all", "enabled", "disabled", "updates", "problems", "unchecked" })
         {
-            var option = RadioOption(track, "ManagementModCategory." + key, label, ManagementAction, 72);
-            _shell.Tree.SetComponent(option, new XsrUiSelection());
-            _modCategoryOptions[option] = key;
-            _managementActions[option] = () =>
-            {
-                _modCategory = key;
-                UpdateModCategories();
-                ApplyContentFilter();
-                _shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY = 0;
-                UpdateContentWindow();
-            };
+            var option = nodes["ManagementModCategory." + key]; _modCategoryOptions[option] = key;
+            RegisterContentAction(option, () => { _modCategory = key; UpdateModCategories(); ApplyContentFilter(); _shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY = 0; UpdateContentWindow(); });
         }
-        _shell.Tree.GetComponent<XsrUiElement>(track)!.Width = 432;
-        UpdateModCategories();
     }
-
     private void UpdateModCategories()
     {
-        foreach (var (entity, category) in _modCategoryOptions)
-        {
-            bool selected = category == _modCategory;
-            _shell.Tree.GetComponent<XsrUiSelection>(entity)!.IsSelected = selected;
-            Style(entity, XsrUiColor.Transparent, selected ? Blue : Ink, 7, 12, selected ? 600 : 450);
-            _shell.Tree.GetComponent<XsrUiVisualStyle>(entity)!.TextAlignment = XsrUiTextAlignment.Center;
-            if (selected) _shell.Tree.GetComponent<XsrUiSegmentedTrack>(_modCategoryTrack)!.Selected = entity;
-        }
+        ReloadContent(_modCategoryRoot, ModCategoryProjection().Select(pair => (pair.Key, pair.Value)).ToArray());
+        var selected = _modCategoryOptions.First(pair => pair.Value == _modCategory).Key;
+        _shell.Tree.GetComponent<XsrUiSegmentedTrack>(_modCategoryTrack)!.Selected = selected;
     }
 }

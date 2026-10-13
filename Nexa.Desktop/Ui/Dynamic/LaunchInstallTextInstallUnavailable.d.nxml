@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="无法开始安装 Java 版 {data version}（{data selection}）。" Localize="false" />
+</nxml-dynamic>

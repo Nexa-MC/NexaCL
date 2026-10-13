@@ -1,0 +1,69 @@
+<StackPanel>
+<Text Key="identity.generated" Content="首次保存时生成" />
+<Text Key="identity.isolated" Content="游戏目录：此实例（点击改为共享）" />
+<Text Key="identity.shared" Content="游戏目录：共享根目录（点击改为隔离）" />
+<Text Key="identity.starred" Content="已收藏 · 点击取消" />
+<Text Key="identity.unstarred" Content="收藏此实例" />
+<Text Key="identity.offline" Content="允许离线档案 · 点击收紧" />
+<Text Key="identity.online" Content="要求在线账户 · 点击允许离线" />
+<Text Key="identity.locked" Content="已锁定" />
+<Text Key="identity.editable" Content="可编辑" />
+<Text Key="identity.notLaunched" Content="本次启动器尚未启动此实例" />
+<Text Key="identity.healthy" Content="离线依赖校验通过" />
+<Text Key="identity.unhealthy" Content="发现缺失或校验问题" />
+<Text Key="identity.incomplete" Content="检查不完整" />
+<Text Key="identity.unchecked" Content="尚未检查，请运行下方离线就绪检查" />
+<Text Key="identity.autoMemory" Content="自动分配（启动时计算）" />
+<Text Key="identity.unknown" Content="未知" />
+<Text Key="identity.saved" Content="实例信息已保存。" />
+<Text Key="identity.permissions" Content="请检查文件权限。" />
+<Text Key="identity.readFailed" Content="无法读取实例信息；文件已保留。" />
+<Text Key="identity.invalidLogin" Content="请选择有效的登录要求。" />
+<Text Key="profile.temporary" Content="当前编辑：临时覆盖（结束后撤销）" />
+<Text Key="profile.instance" Content="当前编辑：实例设置" />
+<Text Key="profile.new" Content="新启动配置" />
+<Text Key="profile.unavailable" Content="启动配置服务路由不可用。" />
+<Text Key="profile.readFailed" Content="无法读取启动配置，请重试。" />
+<Text Key="profile.refreshPending" Content="启动配置正在更新，请稍后重试。" />
+<Text Key="profile.routeUnavailable" Content="Settings route is unavailable." />
+<Text Key="update.initial" Content="通过 Cloudflare 检查当前平台的新版本。" />
+<Text Key="update.installing" Content="正在更新…" />
+<Text Key="update.openFailed" Content="无法打开下载页面，请稍后重试。" />
+<Text Key="update.checkFailed" Content="暂时无法检查更新，请重试。" />
+<Text Key="update.noOffer" Content="此通道没有可用的新版本。" />
+<Text Key="update.checking" Content="正在检查更新…" />
+<Text Key="update.rolledBack" Content="已回滚更新。" />
+<Text Key="update.complete" Content="更新完成。" />
+<Text Key="update.incomplete" Content="更新未完成。可以继续更新，或下载安装包。" />
+<Text Key="update.unsupported" Content="此安装位置无法自动更新，请使用系统安装包。" />
+<Text Key="update.offline" Content="暂时无法检查更新，请稍后重试。" />
+<Text Key="ai.disabled" Content="请先启用 AI 诊断。" />
+<Text Key="ai.invalidRequest" Content="请填写 HTTPS 服务地址、模型和有效请求预算。" />
+<Text Key="ai.invalidReasoning" Content="AI 推理偏好无效，请重新选择。" />
+<Text Key="ai.previewBudget" Content="诊断预览超过输入预算，请缩小内容或提高明确预算。" />
+<Text Key="ai.raw" Content="脱敏原始日志文本" />
+<Text Key="ai.facts" Content="结构化操作事实（不含消息正文）" />
+<Text Key="ai.title" Content="AI 建议" />
+<Text Key="ai.acknowledge" Content="知道了" />
+<Text Key="ai.policyChanged" Content="AI 设置已改变，请重新预览。" />
+<Text Key="content.confirmTitle" Content="确认存储操作" />
+<Text Key="content.confirm" Content="确认" />
+<Text Key="content.back" Content="返回" />
+<Text Key="content.retentionOff" Content="停用自动备份清理，现有备份保持原状。" />
+<Text Key="content.retentionSaved" Content="备份保留策略已保存。" />
+<Text Key="content.pruned" Content="备份清理完成。" />
+<Text Key="content.importPreview" Content="导入所选薄备份清单，不下载对象；完成后报告本地对象可用情况。" />
+<Text Key="content.imported" Content="薄备份已导入；请使用离线校验检查本地对象。" />
+<Text Key="content.migrated" Content="迁移副本已创建。可在设置的数据位置中选择该目录；源数据保持原状。" />
+<Text Key="content.captured" Content="独立备份已创建。" />
+<Text Key="content.exported" Content="薄备份已导出。" />
+<Text Key="content.rawExported" Content="脱敏诊断工作区已导出。" />
+<Text Key="content.backupName" Content="备份" />
+<Text Key="network.probeStart" Content="开始网络探测" />
+<Text Key="network.probePending" Content="正在网络探测" />
+<Text Key="network.probeFailed" Content="网络探测未完成。" />
+<Text Key="network.traceFailed" Content="无法读取网络诊断记录。" />
+<Text Key="network.proxyFailed" Content="代理配置未保存。" />
+<Text Key="network.unknown" Content="—" />
+<Text Key="network.candidateSeparator" Content=" → " />
+</StackPanel>

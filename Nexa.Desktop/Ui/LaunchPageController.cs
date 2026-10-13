@@ -1,15 +1,13 @@
-﻿using System.Globalization;
-using Nexa.Xsr.Renderer.Nxml;
+using System.Globalization;
 using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
 using Nexa.Services.Foundation;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Install;
-
 using Nexa.Services.Minecraft.Launch;
-
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -82,28 +80,6 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
 
     private static readonly XsrSemanticId DownloadNavigationId = XsrSemanticId.Parse("navigation.download");
 
-    // The legacy experimental launch-home palette (light theme).
-    private static readonly XsrUiColor CardBackground = DesktopMarkup.Visual("launch-card-background").Foreground;
-    private static readonly XsrUiColor CardBorder = DesktopMarkup.Visual("launch-card-border").Foreground;
-    private static readonly XsrUiColor PickerBackground = DesktopMarkup.Visual("launch-picker-background").Foreground;
-    private static readonly XsrUiColor PrimaryText = DesktopMarkup.Visual("launch-primary-text").Foreground;
-    private static readonly XsrUiColor SecondaryText = DesktopMarkup.Visual("launch-secondary-text").Foreground;
-    private static readonly XsrUiColor BadgeBackground = DesktopMarkup.Visual("launch-badge-background").Foreground;
-    private static readonly XsrUiColor BadgeText = DesktopMarkup.Visual("launch-badge-text").Foreground;
-    private static readonly XsrUiColor LaunchButtonBackground = DesktopMarkup.Visual("launch-launch-button-background").Foreground;
-    private static readonly XsrUiColor LaunchButtonHover = DesktopMarkup.Visual("launch-launch-button-hover").Foreground;
-    private static readonly XsrUiColor ProfileSecondaryText = DesktopMarkup.Visual("launch-profile-secondary-text").Foreground;
-    private static readonly XsrUiColor ProfileSurface = DesktopMarkup.Visual("launch-profile-surface").Foreground;
-    private static readonly XsrUiColor LaunchProgressTrack = DesktopMarkup.Visual("launch-launch-progress-track").Foreground;
-    private static readonly XsrUiColor LaunchProgressFill = DesktopMarkup.Visual("launch-launch-progress-fill").Foreground;
-    private static readonly XsrUiColor InstallJavaTint = DesktopMarkup.Visual("launch-install-java-tint").Foreground;
-    private static readonly XsrUiColor InstallJavaAccent = DesktopMarkup.Visual("launch-install-java-accent").Foreground;
-    private static readonly XsrUiColor InstallJavaHover = DesktopMarkup.Visual("launch-install-java-hover").Foreground;
-    private static readonly XsrUiColor InstallBedrockTint = DesktopMarkup.Visual("launch-install-bedrock-tint").Foreground;
-    private static readonly XsrUiColor InstallBedrockAccent = DesktopMarkup.Visual("launch-install-bedrock-accent").Foreground;
-    private static readonly XsrUiColor InstallBedrockHover = DesktopMarkup.Visual("launch-install-bedrock-hover").Foreground;
-    private static readonly XsrUiColor InstallSelectedBorder = DesktopMarkup.Visual("launch-install-selected-border").Foreground;
-
     private static readonly JavaInstallSubpage[] JavaInstallSubpages =
     [
         new("JavaMinecraftPage", "JavaMinecraftTab", InstallMinecraftPageCommand),
@@ -127,29 +103,6 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
         "JavaLoaderLegacyFabric", "JavaLoaderQuilt", "JavaLoaderLabyMod", "JavaLoaderOptiFine", "JavaLoaderLiteLoader",
     ];
 
-    private const string NoAccountName = "未选择账户";
-    private const string AccountNeedLoginSummary = "请选择或创建一个账户档案后再启动。";
-
-    private static readonly Dictionary<string, string> LaunchStageDisplay = new(StringComparer.Ordinal)
-    {
-        ["get_java"] = "获取 Java",
-        ["login"] = "登录",
-        ["complete_files"] = "补全文件",
-        ["get_arguments"] = "获取启动参数",
-        ["extract_natives"] = "解压 Natives",
-        ["pre_launch"] = "预启动处理",
-        ["preflight"] = "检查启动条件",
-        ["start_process"] = "启动进程",
-        ["wait_window"] = "等待游戏窗口",
-        ["end"] = "完成",
-    };
-
-    private static readonly Dictionary<string, string> LaunchMethodDisplay = new(StringComparer.Ordinal)
-    {
-        ["offline"] = "离线模式",
-        ["microsoft"] = "微软登录",
-    };
-
     private Task _launchRequest = Task.CompletedTask;
     private MinecraftLaunchProgressSnapshot LaunchSnapshot =>
         _store.ReadAppliedValue(_launchProgressId) as MinecraftLaunchProgressSnapshot
@@ -166,13 +119,6 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
 
     /// <summary>The composition root attaches this observer to the shared store fan-out.</summary>
     public IXsrStateObserver StateObserver { get; }
-    private const string ScanningInstances = "正在扫描本地版本…";
-    private const string NoInstances = "未找到可启动的游戏版本";
-    private const string NoSelectedProfileLabel = "未选择档案";
-    private const string DownloadLabel = "下载游戏";
-    private const string LaunchLabel = "启动游戏";
-    private const string LaunchUnavailableLabel = "暂不支持启动";
-
     private readonly XsrUiShell _shell;
     private readonly DesktopUiIntentSink _intents;
     private readonly MinecraftRuntime _minecraft;
@@ -201,12 +147,9 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
     private readonly Dictionary<string, XsrUiEntityId> _pageEntities;
     private readonly Dictionary<int, XsrUiEntityId> _accountRowEntities = [];
     private readonly Dictionary<XsrUiEntityId, int> _accountRowIndexes = [];
-    private readonly NxmlHostIr _accountRowTemplate = DesktopMarkup.Compile(
-        NxmlParser.Parse(ReadEmbeddedResource("Ui.AccountProfileRow.c.nxml")));
     private long _accountRosterRevision = -1;
     private int _presentedAccountIndex = -2;
     private bool? _presentedAccountPicker;
-    private string? _accountMotionKey;
     private bool _accountKeyboardFocus;
     private int _presentedWidgetIndex = -1;
     private double _indicatorPosition = double.NaN;
@@ -293,10 +236,10 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
         _shell.Renderer.FramePreparing += OnFramePreparing;
         _shell.StyleChanged += OnShellStyleChanged;
         ShowLaunch();
-        Publish(LaunchPageState.ProfileNameKey, NoAccountName);
-        Publish(LaunchPageState.InstanceSummaryKey, ScanningInstances);
+        Publish(LaunchPageState.ProfileNameKey, HomeCopy("account.none"));
+        Publish(LaunchPageState.InstanceSummaryKey, HomeCopy("launch.scanning"));
         Publish(LaunchPageState.SelectedInstanceKey, string.Empty);
-        Publish(LaunchPageState.ActionLabelKey, DownloadLabel);
+        Publish(LaunchPageState.ActionLabelKey, HomeCopy("launch.download"));
         RefreshAccountPresentation();
         if (_store.TryResolve(XsrSemanticId.Parse("UiLaunchWidgetPage"), out XsrStateId widgetPage)
             && _store.ReadAppliedValue(widgetPage) is int savedPage)
@@ -392,7 +335,7 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
         Publish(LaunchPageState.SelectedInstanceKey, snapshot.SelectedInstance?.Id ?? "");
         Publish(LaunchPageState.InstanceSummaryKey, snapshot.SelectedInstance is { } selected
             ? string.IsNullOrWhiteSpace(selected.Metadata.DisplayName) ? selected.Id : selected.Metadata.DisplayName
-            : snapshot.IsProvisional ? "正在校验已缓存的版本…" : snapshot.IsLoading ? ScanningInstances : NoInstances);
+            : snapshot.IsProvisional ? HomeCopy("launch.validating-cache") : snapshot.IsLoading ? HomeCopy("launch.scanning") : HomeCopy("launch.no-instances"));
         Publish(LaunchPageState.InstanceDirectoryKey, snapshot.RootDirectory);
         UpdateLaunchButton();
     }
@@ -405,23 +348,21 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
     {
         bool hasProfile = ReadProfiles().Any(profile => profile.Index == SelectedAccountIndex);
         bool hasInstance = !string.IsNullOrWhiteSpace(ReadCell(LaunchPageState.SelectedInstanceKey));
-        if (_pageEntities.TryGetValue("VersionName", out var versionName)
-            && _shell.Tree.GetComponent<XsrUiText>(versionName) is { } versionText) versionText.Localize = !hasInstance;
         string label;
         bool enabled;
         if (_store.ReadAppliedValue(_libraryId) is MinecraftLibrarySnapshot { IsProvisional: true })
         {
-            label = "版本待校验";
+            label = HomeCopy("launch.provisional");
             enabled = false;
         }
         else if (!hasInstance)
         {
-            label = DownloadLabel;
+            label = HomeCopy("launch.download");
             enabled = true;
         }
         else if (!hasProfile)
         {
-            label = NoSelectedProfileLabel;
+            label = HomeCopy("launch.no-profile");
             enabled = false;
         }
         else if (!SelectedProfileCanLaunch())
@@ -430,18 +371,18 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
             // honestly that they cannot start a game yet. UpdateLaunchButton is a per-frame
             // projection: it must stay side-effect free — a toast here would re-raise the
             // feedback Changed event every frame and spin a render loop forever.
-            label = LaunchUnavailableLabel;
+            label = HomeCopy("launch.unsupported");
             enabled = false;
         }
         else
         {
-            label = LaunchLabel;
+            label = HomeCopy("launch.start");
             enabled = true;
         }
 
         bool busy = LaunchBusy && (LaunchSnapshot.InstanceId is null || LaunchSnapshot.InstanceId == ReadCell(LaunchPageState.SelectedInstanceKey))
             && (LaunchSnapshot.MinecraftRootDirectory is null || Nexa.Core.PathIdentity.Comparer.Equals(LaunchSnapshot.MinecraftRootDirectory, ReadCell(LaunchPageState.InstanceDirectoryKey)));
-        if (busy) { label = "正在启动…"; enabled = false; }
+        if (busy) { label = HomeCopy("launch.busy-action"); enabled = false; }
         Publish(LaunchPageState.ActionBusyKey, busy);
         Publish(LaunchPageState.ActionLabelKey, label);
         Publish(LaunchPageState.ActionEnabledKey, enabled);

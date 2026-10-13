@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data milliseconds} ms · {data online}/{data maximum} 人 · {data version} · {data compatibility} · {data description}" Localize="false" /></nxml-dynamic>

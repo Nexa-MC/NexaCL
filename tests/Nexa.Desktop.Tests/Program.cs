@@ -1,4 +1,4 @@
-﻿using Nexa.Desktop.Ui;
+using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
 using Nexa.Services.Foundation;
@@ -8,8 +8,8 @@ using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Services.Settings;
 using Nexa.Services.Tasks;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -34,6 +34,11 @@ internal static partial class Program
             return;
         }
         if (Environment.GetEnvironmentVariable("NEXA_COUNTRY") is null) Environment.SetEnvironmentVariable("NEXA_COUNTRY", "CN");
+        if (args is ["--native-nxml-settings-preview", var nxmlPreviewTheme, var nxmlPreviewDirectory])
+        {
+            Environment.ExitCode = RunNativeNxmlSettingsPreview(nxmlPreviewTheme, nxmlPreviewDirectory);
+            return;
+        }
         if (args is ["--native-screenshot-preview", var screenshotPreviewTheme, var screenshotPreviewDirectory])
         {
             Environment.ExitCode = RunNativeScreenshotPreview(screenshotPreviewTheme, screenshotPreviewDirectory);
@@ -73,8 +78,8 @@ internal static partial class Program
             return;
         }
         int failures = 0;
-        var cases=args is ["--filter",var filter]?TestCases.Where(item=>item.Name.Contains(filter,StringComparison.OrdinalIgnoreCase)).ToArray():TestCases;
-        if(cases.Length==0)throw new ArgumentException("No desktop tests match the requested filter.");
+        var cases = args is ["--filter", var filter] ? TestCases.Where(item => item.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToArray() : TestCases;
+        if (cases.Length == 0) throw new ArgumentException("No desktop tests match the requested filter.");
         foreach ((string name, Action body) in cases)
         {
             try
@@ -95,6 +100,32 @@ internal static partial class Program
 
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("LaunchInstallBedrockWorkspaceRetainsControlsStatusAndFocusAcrossProjection", LaunchInstallBedrockWorkspaceRetainsControlsStatusAndFocusAcrossProjection),
+        ("LaunchInstallBedrockUnsupportedReloadRetainsDisabledStore", LaunchInstallBedrockUnsupportedReloadRetainsDisabledStore),
+        ("LaunchInstallBedrockPlaceholderLoadsCompleteOwnedWorkspace", LaunchInstallBedrockPlaceholderLoadsCompleteOwnedWorkspace),
+        ("LaunchInstallHomeOwnedProfilesRetainFocusScrollAndLiteralFactsAcrossLocale", LaunchInstallHomeOwnedProfilesRetainFocusScrollAndLiteralFactsAcrossLocale),
+        ("LaunchInstallHomeWidgetFractionalDotsRetainEntitiesPagerAndTransitions", LaunchInstallHomeWidgetFractionalDotsRetainEntitiesPagerAndTransitions),
+        ("LaunchInstallOwnedCatalogRetainsSelectionDraftFocusAndScroll", LaunchInstallOwnedCatalogRetainsSelectionDraftFocusAndScroll),
+        ("LaunchInstallCatalogLiteralDataUsesBoundedIdentity", LaunchInstallCatalogLiteralDataUsesBoundedIdentity),
+        ("LaunchInstallCatalogLocaleReloadRetainsLiteralDraftAndOwnedRows", LaunchInstallCatalogLocaleReloadRetainsLiteralDraftAndOwnedRows),
+        ("CustomIdentityProjectionPreservesLiveDraftsAndOwnedNotes", CustomIdentityProjectionPreservesLiveDraftsAndOwnedNotes),
+        ("CustomUpdateProjectionRetainsCardAndRejectsRetiredActions", CustomUpdateProjectionRetainsCardAndRejectsRetiredActions),
+        ("CustomContentWorkspaceRetainsAiDraftsThroughConfirmationAndClearsHiddenSecrets", () => CustomContentWorkspaceRetainsAiDraftsThroughConfirmationAndClearsHiddenSecrets().AsTask().GetAwaiter().GetResult()),
+        ("SettingsServerOwnedStatusReloadKeepsEditorDraftCaretAndLiteralAuthority", SettingsServerOwnedStatusReloadKeepsEditorDraftCaretAndLiteralAuthority),
+        ("SettingsWorldOwnedSnapshotReloadPreservesIdentityAndRetiresOldResults", SettingsWorldOwnedSnapshotReloadPreservesIdentityAndRetiresOldResults),
+        ("ContentScreenshotOwnedModalRetainsDraftFocusScrollAndMotion", ContentScreenshotOwnedModalRetainsDraftFocusScrollAndMotion),
+        ("ContentUnsafeScreenshotNamesStayLiteralAndKeepTypedFileIdentity", ContentUnsafeScreenshotNamesStayLiteralAndKeepTypedFileIdentity),
+        ("ContentProjectionFailureLeavesRetainedWorkspaceAndNextReloadUsable", ContentProjectionFailureLeavesRetainedWorkspaceAndNextReloadUsable),
+        ("SettingsRecoveryWorkspaceRetainsControlsScrollAndLiteralRows", SettingsRecoveryWorkspaceRetainsControlsScrollAndLiteralRows),
+        ("SettingsRecoveryConfirmationsRetireAcrossScopeChanges", SettingsRecoveryConfirmationsRetireAcrossScopeChanges),
+        ("NetworkProbeReloadPreservesProxyDraftCaretFocusAndControlIdentity", NetworkProbeReloadPreservesProxyDraftCaretFocusAndControlIdentity),
+        ("ProductCopyNamedFormatsLocalizeBeforeLiteralProviderSubstitution", ProductCopyNamedFormatsLocalizeBeforeLiteralProviderSubstitution),
+        ("FeedbackPrelocalizedLiteralTextNeverReentersLocalizationAcrossDialogAndDetails", FeedbackPrelocalizedLiteralTextNeverReentersLocalizationAcrossDialogAndDetails),
+        ("FeedbackNotificationDeduplicationKeepsLocalizationSemanticsSeparate", FeedbackNotificationDeduplicationKeepsLocalizationSemanticsSeparate),
+        ("TaskCenterProviderDetailsAndErrorsStayLiteralWhileStagesTranslate", TaskCenterProviderDetailsAndErrorsStayLiteralWhileStagesTranslate),
+        ("SettingsTransferExportRetainsUnsavedArgumentRowsCaretAndScroll", SettingsTransferExportRetainsUnsavedArgumentRowsCaretAndScroll),
+        ("StorageBusyReloadRetainsCatalogDraftCaretAndOwnedDirectoryRows", StorageBusyReloadRetainsCatalogDraftCaretAndOwnedDirectoryRows),
+        ("RecoveryReloadKeepsTimelineOfflineControlsAndPendingReadAcrossSnapshots", RecoveryReloadKeepsTimelineOfflineControlsAndPendingReadAcrossSnapshots),
         ("memory analysis settings show unavailable without a switch", MemoryAnalysisSettingsAreUnavailable),
         ("instance development mode keeps advanced pages scoped and safety available", InstanceDevelopmentModeKeepsAdvancedPagesScoped),
         ("proxy protocols round trip PAC and compact direct mode", ProxyProtocolSelectionRoundTripsPacAndKeepsDirectModeCompact),

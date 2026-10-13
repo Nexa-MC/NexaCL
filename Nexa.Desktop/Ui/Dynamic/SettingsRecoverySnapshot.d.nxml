@@ -1,0 +1,1 @@
+<nxml-dynamic><StackPanel Key="{data key}" Class="settings-recovery-snapshot"><Text Content="{data time}" Label="{data time}" Localize="false" Class="settings-recovery-snapshot-time" /><Text Content="{data summary}" Label="{data summary}" Localize="false" Class="settings-recovery-snapshot-summary" /></StackPanel></nxml-dynamic>

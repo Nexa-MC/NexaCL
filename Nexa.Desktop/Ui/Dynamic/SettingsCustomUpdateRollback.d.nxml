@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Button Key="SettingsRollbackUpdate" Content="回滚更新" Label="回滚更新" Command="ui.settings.update.rollback" Class="settings-catalog-action settings-custom-update-action" />
+</nxml-dynamic>

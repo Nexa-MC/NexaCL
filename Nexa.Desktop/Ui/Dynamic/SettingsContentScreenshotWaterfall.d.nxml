@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Dynamic Key="ScreenshotWaterfall" Height="{data height}" Class="settings-content-screenshot-waterfall" />
+</nxml-dynamic>

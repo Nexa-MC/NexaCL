@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Threading.Channels;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -120,7 +120,8 @@ internal sealed class SystemPreferencesSession : IAsyncDisposable
             _platform.PostToWindow(() =>
             {
                 if (_disposed || !_clipboard || _feedback.Snapshot().Dialog is not null) return;
-                _feedback.ShowDialog("clipboard.nexacl", "检测到 NexaCL 链接", "是否打开剪贴板中的 NexaCL 页面链接？", "打开", "忽略",
+                _feedback.ShowDialog("clipboard.nexacl", ProductPresentationText.Raw("native.clipboard.link-title"), ProductPresentationText.Raw("native.clipboard.link-message"),
+                    ProductPresentationText.Raw("native.clipboard.open"), ProductPresentationText.Raw("native.clipboard.ignore"),
                     accepted => { if (accepted && !_disposed && _clipboard) _activateProtocol(text); });
             });
         }
@@ -160,7 +161,9 @@ internal sealed class SystemPreferencesSession : IAsyncDisposable
                     { await DesktopSystemPreferences.ApplyFileAssociationsAsync(association, _stop.Token).ConfigureAwait(false); _association = association; }
                     if (OperatingSystem.IsWindows() && _jumpList != jumpList)
                     {
-                        IReadOnlyList<string> captions = await _platform.LocalizeDesktopCaptionsAsync(["启动", "安装", "资源", "设置"], _stop.Token).ConfigureAwait(false);
+                        IReadOnlyList<string> captions = await _platform.LocalizeDesktopCaptionsAsync(
+                            [ProductPresentationText.Raw("native.desktop.launch"), ProductPresentationText.Raw("native.desktop.install"),
+                                ProductPresentationText.Raw("native.desktop.resources"), ProductPresentationText.Raw("native.desktop.settings")], _stop.Token).ConfigureAwait(false);
                         string? error = await DesktopJumpList.ApplyAsync(jumpList, captions, _stop.Token).ConfigureAwait(false);
                         if (error is null) _jumpList = jumpList;
                         else if (!_stop.IsCancellationRequested) _log(error);

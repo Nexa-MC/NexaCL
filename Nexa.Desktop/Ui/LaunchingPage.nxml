@@ -1,40 +1,5 @@
 <nxml-page>
   <Page Key="LaunchingPage" Label="正在启动">
-    <ContentHost Key="LaunchingHost">
-      <StackPanel Key="LaunchingCard" Class="layout-LaunchingPage-LaunchingCard">
-        <Image Key="LaunchingIcon" Source="lucide/loader-circle" Class="layout-LaunchingPage-LaunchingIcon" />
-        <Text Key="LaunchingTitle" Content="{state launch.launching.title}" Class="layout-LaunchingPage-LaunchingTitle" />
-        <Text Key="LaunchingName" Content="{state launch.launching.name}" Class="layout-LaunchingPage-LaunchingName" />
-        <StackPanel Key="LaunchingBody" Class="layout-LaunchingPage-LaunchingBody">
-          <ContentHost Key="LaunchProgressTrack" Class="layout-LaunchingPage-LaunchProgressTrack">
-            <Progress Key="LaunchProgressFill" Value="{state minecraft.launch.progress}" Label="启动进度条" Class="layout-LaunchingPage-LaunchProgressFill" />
-          </ContentHost>
-          <StackPanel Key="LaunchingStageRow" Class="layout-LaunchingPage-LaunchingStageRow">
-            <Text Key="LaunchingStageLabel" Content="当前步骤" Class="layout-LaunchingPage-LaunchingStageLabel" />
-            <Text Key="LaunchingStageValue" Content="{state launch.launching.stage}" Class="layout-LaunchingPage-LaunchingStageValue" />
-          </StackPanel>
-          <StackPanel Key="LaunchingMethodRow" Class="layout-LaunchingPage-LaunchingMethodRow">
-            <Text Key="LaunchingMethodLabel" Content="登录方式" Class="layout-LaunchingPage-LaunchingMethodLabel" />
-            <Text Key="LaunchingMethodValue" Content="{state launch.launching.method}" Class="layout-LaunchingPage-LaunchingMethodValue" />
-          </StackPanel>
-          <StackPanel Key="LaunchingPercentRow" Class="layout-LaunchingPage-LaunchingPercentRow">
-            <Text Key="LaunchingPercentLabel" Content="启动进度" Class="layout-LaunchingPage-LaunchingPercentLabel" />
-            <Text Key="LaunchingPercentValue" Content="{state launch.launching.percent}" Class="layout-LaunchingPage-LaunchingPercentValue" />
-          </StackPanel>
-          <StackPanel Key="LaunchingSpeedRow" IsVisible="{state launch.launching.speed-visible}" Class="layout-LaunchingPage-LaunchingSpeedRow">
-            <Text Key="LaunchingSpeedLabel" Content="下载速度" Class="layout-LaunchingPage-LaunchingSpeedLabel" />
-            <Text Key="LaunchingSpeedValue" Content="{state launch.launching.speed}" Class="layout-LaunchingPage-LaunchingSpeedValue" />
-          </StackPanel>
-          <ContentHost Key="LaunchingHintBox" Class="layout-LaunchingPage-LaunchingHintBox">
-            <StackPanel Class="layout-LaunchingPage-23">
-              <Text Key="LaunchingHintTitle" Content="启动贴士" Class="layout-LaunchingPage-LaunchingHintTitle" />
-              <Text Key="LaunchingHintValue" Content="{state launch.launching.hint}" Class="layout-LaunchingPage-LaunchingHintValue" />
-            </StackPanel>
-          </ContentHost>
-        </StackPanel>
-        <Button Key="LaunchingCancelButton" Label="{state launch.launching.cancel-label}" Content="{state launch.launching.cancel-label}" Command="ui.launch.cancel" Class="layout-LaunchingPage-LaunchingCancelButton" />
-        <ContentHost Key="LaunchingBottomInset" Class="layout-LaunchingPage-LaunchingBottomInset" />
-      </StackPanel>
-    </ContentHost>
+    <Dynamic Key="LaunchingWorkspaceSlot" Class="launch-install-home-slot" />
   </Page>
 </nxml-page>

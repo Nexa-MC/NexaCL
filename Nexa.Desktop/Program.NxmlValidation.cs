@@ -1,4 +1,4 @@
-﻿using Nexa.Desktop.Ui;
+using Nexa.Desktop.Ui;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Nxml;
@@ -368,7 +368,7 @@ internal static partial class Program
             feedback.DismissNotification(notification); shell.Render(new(810, 470));
             bool? resolved = null;
             feedback.ShowDialog("global.validation", "settings", literal, "accept", "cancel", value => resolved = value,
-                "alternate", static () => { }, localizeMessage:false);
+                "alternate", static () => { }, localizeMessage: false);
             scene = shell.Render(new(810, 470));
             var layer = scene.Nodes.Single(node => shell.Tree.Name(node.Entity) == "DialogLayer").Entity;
             var viewport = scene.Nodes.Single(node => shell.Tree.Name(node.Entity) == "DialogMessageViewport").Entity;
@@ -387,17 +387,36 @@ internal static partial class Program
     {
         var data = new Dictionary<string, string>
         {
-            ["config"] = "true", ["logs"] = "false", ["crash"] = "false", ["other"] = "false",
+            ["config"] = "true",
+            ["logs"] = "false",
+            ["crash"] = "false",
+            ["other"] = "false",
             ["configClass"] = "settings-catalog-action instance-tools-area instance-tools-area-selected",
             ["logsClass"] = "settings-catalog-action instance-tools-area",
             ["crashClass"] = "settings-catalog-action instance-tools-area",
             ["otherClass"] = "settings-catalog-action instance-tools-area",
-            ["hasError"] = "false", ["error"] = "", ["loadingList"] = "false", ["loadingFile"] = "false",
-            ["showList"] = "false", ["directory"] = "<literal> {data directory}", ["hasParent"] = "false",
-            ["incomplete"] = "false", ["empty"] = "false", ["listPaging"] = "true", ["listPage"] = "1", ["listPages"] = "2",
-            ["hasDocument"] = "true", ["editable"] = "true", ["manyLines"] = "false",
-            ["textPaging"] = "true", ["textPage"] = "1", ["textPages"] = "2",
-            ["shortLine"] = "true", ["longLine"] = "false", ["canPreview"] = "true", ["previewPending"] = "false"
+            ["hasError"] = "false",
+            ["error"] = "",
+            ["loadingList"] = "false",
+            ["loadingFile"] = "false",
+            ["showList"] = "false",
+            ["directory"] = "<literal> {data directory}",
+            ["hasParent"] = "false",
+            ["incomplete"] = "false",
+            ["empty"] = "false",
+            ["listPaging"] = "true",
+            ["listPage"] = "1",
+            ["listPages"] = "2",
+            ["hasDocument"] = "true",
+            ["editable"] = "true",
+            ["manyLines"] = "false",
+            ["textPaging"] = "true",
+            ["textPage"] = "1",
+            ["textPages"] = "2",
+            ["shortLine"] = "true",
+            ["longLine"] = "false",
+            ["canPreview"] = "true",
+            ["previewPending"] = "false"
         };
         var root = dynamic.Append(slot, DesktopMarkup.Dynamic("SettingsInstanceFiles.d.nxml", data, shell.Renderer.LocalizeText));
         XsrUiEntityId editor = default, rows = default, action = default;
@@ -438,105 +457,120 @@ internal static partial class Program
         Console.WriteLine("Dynamic instance tools validation passed: retained editor/tabs, literal localized metadata and owned file/development/timeline slots.");
     }
 
-    private static void ValidateDynamicVersionSelection(XsrUiShell shell,Nexa.Xsr.State.XsrStateStore store)
+    private static void ValidateDynamicVersionSelection(XsrUiShell shell, Nexa.Xsr.State.XsrStateStore store)
     {
-        var page=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("VersionSelectionPage.nxml"),shell.Tree,store);
-        var owner=new NxmlDynamicContent(shell.Tree,store);
-        var nodes=new Dictionary<string,XsrUiEntityId>();
-        void Index(XsrUiEntityId root)=>shell.Tree.Walk(root,entity=>{nodes[shell.Tree.Name(entity)]=entity;return true;});
+        var page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("VersionSelectionPage.nxml"), shell.Tree, store);
+        var owner = new NxmlDynamicContent(shell.Tree, store);
+        var nodes = new Dictionary<string, XsrUiEntityId>();
+        void Index(XsrUiEntityId root) => shell.Tree.Walk(root, entity => { nodes[shell.Tree.Name(entity)] = entity; return true; });
         Index(page);
-        string literal="literal <version> {data text}";
-        var workspace=owner.Append(nodes["VersionSelectionWorkspace"],DesktopMarkup.Dynamic("VersionSelectionWorkspace.d.nxml",
-            new Dictionary<string,string>{["path"]=literal,["name"]=literal,["named"]="true",["count"]="2",["status"]="",["empty"]="false"}));Index(workspace);
-        var popupData=new Dictionary<string,string>{["visible"]="false",["height"]="160",["indicator"]="false",["renameVisible"]="true",["addVisible"]="false"};
-        var popup=owner.Append(nodes["VersionDirectoryWorkspace"],DesktopMarkup.Dynamic("VersionDirectoryDropdown.d.nxml",popupData));Index(popup);
-        var rowData=new Dictionary<string,string>{["row"]="validation-version",["accessible"]=literal,["selected"]="true",["current"]="true",
-            ["check"]="validation-check",["iconKey"]="validation-icon",["icon"]=VersionSelectionController.VersionIcon(Nexa.Services.Minecraft.MinecraftVersionKind.Fabric),
-            ["nameKey"]="validation-name",["name"]=literal,["detailKey"]="validation-detail",["detail"]=literal,
-            ["modify"]="validation-modify",["settings"]="validation-settings",["delete"]="validation-delete",
-            ["style"]="layout-VersionSelectionRow-LibraryRow version-base version-row version-selected version-row-last"};
-        var row=owner.Append(nodes["LibraryVersionRows"],DesktopMarkup.Dynamic("VersionSelectionRow.d.nxml",rowData));Index(row);
-        shell.Renderer.SetTextInputValue(nodes["LibraryNameInput"],literal);
-        rowData["current"]="false";owner.Reload(row,DesktopMarkup.Dynamic("VersionSelectionRow.d.nxml",rowData));owner.Reorder(nodes["LibraryVersionRows"],[row]);
-        popupData["indicator"]="true";owner.Reload(popup,DesktopMarkup.Dynamic("VersionDirectoryDropdown.d.nxml",popupData));
-        if(shell.Tree.GetComponent<NxmlDynamicSlot>(shell.Tree.Parent(row)) is null
+        string literal = "literal <version> {data text}";
+        var workspace = owner.Append(nodes["VersionSelectionWorkspace"], DesktopMarkup.Dynamic("VersionSelectionWorkspace.d.nxml",
+            new Dictionary<string, string> { ["path"] = literal, ["name"] = literal, ["named"] = "true", ["count"] = "2", ["status"] = "", ["empty"] = "false" })); Index(workspace);
+        var popupData = new Dictionary<string, string> { ["visible"] = "false", ["height"] = "160", ["indicator"] = "false", ["renameVisible"] = "true", ["addVisible"] = "false" };
+        var popup = owner.Append(nodes["VersionDirectoryWorkspace"], DesktopMarkup.Dynamic("VersionDirectoryDropdown.d.nxml", popupData)); Index(popup);
+        var rowData = new Dictionary<string, string>
+        {
+            ["row"] = "validation-version",
+            ["accessible"] = literal,
+            ["selected"] = "true",
+            ["current"] = "true",
+            ["check"] = "validation-check",
+            ["iconKey"] = "validation-icon",
+            ["icon"] = VersionSelectionController.VersionIcon(Nexa.Services.Minecraft.MinecraftVersionKind.Fabric),
+            ["nameKey"] = "validation-name",
+            ["name"] = literal,
+            ["detailKey"] = "validation-detail",
+            ["detail"] = literal,
+            ["modify"] = "validation-modify",
+            ["settings"] = "validation-settings",
+            ["delete"] = "validation-delete",
+            ["style"] = "layout-VersionSelectionRow-LibraryRow version-base version-row version-selected version-row-last"
+        };
+        var row = owner.Append(nodes["LibraryVersionRows"], DesktopMarkup.Dynamic("VersionSelectionRow.d.nxml", rowData)); Index(row);
+        shell.Renderer.SetTextInputValue(nodes["LibraryNameInput"], literal);
+        rowData["current"] = "false"; owner.Reload(row, DesktopMarkup.Dynamic("VersionSelectionRow.d.nxml", rowData)); owner.Reorder(nodes["LibraryVersionRows"], [row]);
+        popupData["indicator"] = "true"; owner.Reload(popup, DesktopMarkup.Dynamic("VersionDirectoryDropdown.d.nxml", popupData));
+        if (shell.Tree.GetComponent<NxmlDynamicSlot>(shell.Tree.Parent(row)) is null
             || shell.Tree.GetComponent<XsrUiStableContent>(nodes["LibraryVersionRows"]) is null
-            || shell.Tree.GetComponent<XsrUiText>(nodes["validation-name"]) is not {Localize:false} text || text.Content!=literal
-            || shell.Tree.GetComponent<XsrUiTextInput>(nodes["LibraryNameInput"])!.ReadDraft()!=literal
-            || shell.Tree.GetComponent<XsrUiScroll>(nodes["LibraryDirectoryRows"])?.ShowsVerticalIndicator!=true
-            || shell.Tree.GetComponent<XsrUiAnchoredOverlay>(nodes["LibraryDropdownCard"])?.Anchor!=nodes["LibraryChooseDirectory"])
+            || shell.Tree.GetComponent<XsrUiText>(nodes["validation-name"]) is not { Localize: false } text || text.Content != literal
+            || shell.Tree.GetComponent<XsrUiTextInput>(nodes["LibraryNameInput"])!.ReadDraft() != literal
+            || shell.Tree.GetComponent<XsrUiScroll>(nodes["LibraryDirectoryRows"])?.ShowsVerticalIndicator != true
+            || shell.Tree.GetComponent<XsrUiAnchoredOverlay>(nodes["LibraryDropdownCard"])?.Anchor != nodes["LibraryChooseDirectory"])
             throw new InvalidOperationException("Version selection lost owned rows, literal identity, editor draft or viewport/anchor facts.");
-        owner.Remove(popup);owner.Remove(workspace);shell.Tree.Destroy(page);
+        owner.Remove(popup); owner.Remove(workspace); shell.Tree.Destroy(page);
         Console.WriteLine("Dynamic version selection validation passed: owned virtual rows, literal names, retained directory draft and local anchor/viewport facts.");
     }
 
-    private static void ValidateDynamicBootstrap(XsrUiShell shell,Nexa.Xsr.State.XsrStateStore store)
+    private static void ValidateDynamicBootstrap(XsrUiShell shell, Nexa.Xsr.State.XsrStateStore store)
     {
-        var owner=new NxmlDynamicContent(shell.Tree,store);
-        var account=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("LaunchPage.nxml"),shell.Tree,store);
-        var setup=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("FirstRunPage.nxml"),shell.Tree,store);
-        var titleShell=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("Shell.nxml"),shell.Tree,store);
-        XsrUiEntityId Find(XsrUiEntityId root,string key)
-        {XsrUiEntityId found=default;shell.Tree.Walk(root,node=>{if(shell.Tree.Name(node)==key)found=node;return true;});return found;}
+        var owner = new NxmlDynamicContent(shell.Tree, store);
+        var account = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("LaunchPage.nxml"), shell.Tree, store);
+        var setup = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("FirstRunPage.nxml"), shell.Tree, store);
+        var titleShell = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("Shell.nxml"), shell.Tree, store);
+        XsrUiEntityId Find(XsrUiEntityId root, string key)
+        { XsrUiEntityId found = default; shell.Tree.Walk(root, node => { if (shell.Tree.Name(node) == key) found = node; return true; }); return found; }
         try
         {
-            var form=owner.Append(Find(account,"AccountFormSlot"),DesktopMarkup.Dynamic("AccountFormWorkspace.d.nxml"));
-            var input=Find(form,"AuthPassword");var draft=shell.Tree.GetComponent<XsrUiTextInput>(input)!;shell.Renderer.SetTextInputValue(input,"fixture-secret");
-            var choice=owner.Append(Find(form,"ImportCandidates"),DesktopMarkup.Dynamic("AccountFormChoice.d.nxml",new Dictionary<string,string>
-                {["key"]="validation-account-choice",["text"]="literal <name> {state private}",["label"]="literal path"}));
-            owner.Reload(form,DesktopMarkup.Dynamic("AccountFormWorkspace.d.nxml"));
-            if(draft.ReadDraft()!="fixture-secret" || shell.Tree.GetComponent<XsrUiText>(choice)?.Content!="literal <name> {state private}")
+            var home = owner.Append(Find(account, "LaunchHomeWorkspaceSlot"), DesktopMarkup.Dynamic("LaunchInstallHomeWorkspace.d.nxml",
+                new Dictionary<string, string> { ["avatar"] = LaunchProfilePresentation.Avatar("") }));
+            var form = owner.Append(Find(home, "AccountFormSlot"), DesktopMarkup.Dynamic("AccountFormWorkspace.d.nxml"));
+            var input = Find(form, "AuthPassword"); var draft = shell.Tree.GetComponent<XsrUiTextInput>(input)!; shell.Renderer.SetTextInputValue(input, "fixture-secret");
+            var choice = owner.Append(Find(form, "ImportCandidates"), DesktopMarkup.Dynamic("AccountFormChoice.d.nxml", new Dictionary<string, string>
+            { ["key"] = "validation-account-choice", ["text"] = "literal <name> {state private}", ["label"] = "literal path" }));
+            owner.Reload(form, DesktopMarkup.Dynamic("AccountFormWorkspace.d.nxml"));
+            if (draft.ReadDraft() != "fixture-secret" || shell.Tree.GetComponent<XsrUiText>(choice)?.Content != "literal <name> {state private}")
                 throw new InvalidOperationException("Account projection replaced the draft or reparsed literal metadata.");
-            var status=new Nexa.Services.Setup.FirstRunStatus(true,"literal {state directory}",false){TelemetryRequired=true};
-            var fragment=owner.Append(shell.Tree.Children(setup).Single(),DesktopMarkup.Dynamic("FirstRunWorkspace.d.nxml",FirstRunController.Project(shell,status,status.DataDirectory,true,0,false,false,"")));
-            var transition=shell.Tree.GetComponent<XsrUiTransition>(Find(fragment,"SetupTitle"));
-            for(int step=1;step<4;step++)owner.Reload(fragment,DesktopMarkup.Dynamic("FirstRunWorkspace.d.nxml",FirstRunController.Project(shell,status,status.DataDirectory,true,step,false,false,"")));
-            if(!ReferenceEquals(transition,shell.Tree.GetComponent<XsrUiTransition>(Find(fragment,"SetupTitle")))
-                || shell.Tree.GetComponent<XsrUiText>(Find(fragment,"SetupPath"))?.Content!=status.DataDirectory)
+            var status = new Nexa.Services.Setup.FirstRunStatus(true, "literal {state directory}", false) { TelemetryRequired = true };
+            var fragment = owner.Append(shell.Tree.Children(setup).Single(), DesktopMarkup.Dynamic("FirstRunWorkspace.d.nxml", FirstRunController.Project(shell, status, status.DataDirectory, true, 0, false, false, "")));
+            var transition = shell.Tree.GetComponent<XsrUiTransition>(Find(fragment, "SetupTitle"));
+            for (int step = 1; step < 4; step++) owner.Reload(fragment, DesktopMarkup.Dynamic("FirstRunWorkspace.d.nxml", FirstRunController.Project(shell, status, status.DataDirectory, true, step, false, false, "")));
+            if (!ReferenceEquals(transition, shell.Tree.GetComponent<XsrUiTransition>(Find(fragment, "SetupTitle")))
+                || shell.Tree.GetComponent<XsrUiText>(Find(fragment, "SetupPath"))?.Content != status.DataDirectory)
                 throw new InvalidOperationException("Setup projection replaced motion identity or reparsed a directory.");
-            var logo=owner.Append(Find(titleShell,"CustomLauncherLogoSlot"),DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml",new Dictionary<string,string>{["visible"]="false"}));
-            owner.Reload(logo,DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml",new Dictionary<string,string>{["visible"]="true"}));
-            if(shell.Tree.GetComponent<XsrUiElement>(logo)?.IsVisible!=true)throw new InvalidOperationException("Custom logo projection did not reload.");
+            var logo = owner.Append(Find(titleShell, "CustomLauncherLogoSlot"), DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml", new Dictionary<string, string> { ["visible"] = "false" }));
+            owner.Reload(logo, DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml", new Dictionary<string, string> { ["visible"] = "true" }));
+            if (shell.Tree.GetComponent<XsrUiElement>(logo)?.IsVisible != true) throw new InvalidOperationException("Custom logo projection did not reload.");
             Console.WriteLine("Dynamic bootstrap validation passed: owned account/setup/logo fragments, retained secret draft and step motion, literal metadata.");
         }
-        finally{shell.Tree.Destroy(account);shell.Tree.Destroy(setup);shell.Tree.Destroy(titleShell);}
+        finally { shell.Tree.Destroy(account); shell.Tree.Destroy(setup); shell.Tree.Destroy(titleShell); }
     }
 
-    private static void ValidateDynamicWardrobe(XsrUiShell shell,Nexa.Xsr.State.XsrStateStore store)
+    private static void ValidateDynamicWardrobe(XsrUiShell shell, Nexa.Xsr.State.XsrStateStore store)
     {
-        var owner=new NxmlDynamicContent(shell.Tree,store);
-        var page=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("WardrobePage.nxml"),shell.Tree,store);
-        var library=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("WardrobeLibraryPage.nxml"),shell.Tree,store);
-        XsrUiEntityId Find(XsrUiEntityId root,string key)
-        {XsrUiEntityId found=default;shell.Tree.Walk(root,node=>{if(shell.Tree.Name(node)==key)found=node;return true;});return found;}
+        var owner = new NxmlDynamicContent(shell.Tree, store);
+        var page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("WardrobePage.nxml"), shell.Tree, store);
+        var library = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("WardrobeLibraryPage.nxml"), shell.Tree, store);
+        XsrUiEntityId Find(XsrUiEntityId root, string key)
+        { XsrUiEntityId found = default; shell.Tree.Walk(root, node => { if (shell.Tree.Name(node) == key) found = node; return true; }); return found; }
         try
         {
-            string literal="literal <skin> {state private}";
-            var mainData=DesktopWardrobeText.Defaults(library:false);
-            var workspace=owner.Append(shell.Tree.Children(page).Single(),DesktopMarkup.Dynamic("WardrobeWorkspace.d.nxml",mainData));
-            var card=new Nexa.Services.Accounts.AccountWardrobeCard("validation",literal,literal,new(null,null,false,null,null),true);
-            var row=owner.Append(Find(workspace,"WardrobeSkins"),DesktopMarkup.Dynamic("WardrobeCard.d.nxml",WardrobePageController.ProjectCard(shell,card,WardrobePlayerView.Front,220,160)));
-            var path=Find(workspace,"WardrobeSkinPath");shell.Renderer.SetTextInputValue(path,literal);
-            owner.Reload(row,DesktopMarkup.Dynamic("WardrobeCard.d.nxml",WardrobePageController.ProjectCard(shell,card,WardrobePlayerView.Back,190,270)));
-            mainData["WardrobeLocalLayer_visible"]="true";owner.Reload(workspace,DesktopMarkup.Dynamic("WardrobeWorkspace.d.nxml",mainData));
-            if(shell.Tree.GetComponent<XsrUiTextInput>(path)?.ReadDraft()!=literal
-                ||shell.Tree.GetComponent<XsrUiScroll>(Find(workspace,"WardrobeSkins")) is not {ShowsHorizontalIndicator:true,UseVerticalWheelForHorizontalScroll:true}
-                ||shell.Tree.GetComponent<XsrUiOverlayLayer>(Find(workspace,"WardrobeLocalLayer"))?.IsModal!=true)
+            string literal = "literal <skin> {state private}";
+            var mainData = DesktopWardrobeText.Defaults(library: false);
+            var workspace = owner.Append(shell.Tree.Children(page).Single(), DesktopMarkup.Dynamic("WardrobeWorkspace.d.nxml", mainData));
+            var card = new Nexa.Services.Accounts.AccountWardrobeCard("validation", literal, literal, new(null, null, false, null, null), true);
+            var row = owner.Append(Find(workspace, "WardrobeSkins"), DesktopMarkup.Dynamic("WardrobeCard.d.nxml", WardrobePageController.ProjectCard(shell, card, WardrobePlayerView.Front, 220, 160)));
+            var path = Find(workspace, "WardrobeSkinPath"); shell.Renderer.SetTextInputValue(path, literal);
+            owner.Reload(row, DesktopMarkup.Dynamic("WardrobeCard.d.nxml", WardrobePageController.ProjectCard(shell, card, WardrobePlayerView.Back, 190, 270)));
+            mainData["WardrobeLocalLayer_visible"] = "true"; owner.Reload(workspace, DesktopMarkup.Dynamic("WardrobeWorkspace.d.nxml", mainData));
+            if (shell.Tree.GetComponent<XsrUiTextInput>(path)?.ReadDraft() != literal
+                || shell.Tree.GetComponent<XsrUiScroll>(Find(workspace, "WardrobeSkins")) is not { ShowsHorizontalIndicator: true, UseVerticalWheelForHorizontalScroll: true }
+                || shell.Tree.GetComponent<XsrUiOverlayLayer>(Find(workspace, "WardrobeLocalLayer"))?.IsModal != true)
                 throw new InvalidOperationException("Wardrobe lost its owned draft, modal or horizontal scroll facts.");
-            var body=owner.Append(shell.Tree.Children(library).Single(),DesktopMarkup.Dynamic("WardrobeLibraryWorkspace.d.nxml",DesktopWardrobeText.Defaults(library:true)));
-            var items=Find(body,"WardrobeLibraryItems");
-            var a=owner.Append(items,DesktopMarkup.Dynamic("WardrobeLibraryRow.d.nxml",new Dictionary<string,string>{["key"]="validation-row-a"}));
-            var b=owner.Append(items,DesktopMarkup.Dynamic("WardrobeLibraryRow.d.nxml",new Dictionary<string,string>{["key"]="validation-row-b"}));
-            var item=new Nexa.Services.Accounts.WardrobeCatalogItem(1,literal,literal,"alex",1,false,"https://example.invalid/skin",new("https://example.invalid/details"),Nexa.Services.Accounts.WardrobeCatalogKind.Skin);
-            var projected=WardrobeLibraryPageController.ProjectCard(shell,item,WardrobePlayerView.Front,true,false);
-            var gallery=owner.Append(a,DesktopMarkup.Dynamic("WardrobeLibraryCard.d.nxml",projected));var preview=Find(gallery,"WardrobeLibraryCard.1.Preview");
-            owner.Move(gallery,b);owner.Reload(gallery,DesktopMarkup.Dynamic("WardrobeLibraryCard.d.nxml",projected));owner.Reorder(b,[gallery]);
-            if(shell.Tree.Parent(gallery)!=b || preview!=Find(gallery,"WardrobeLibraryCard.1.Preview")
-                ||shell.Tree.GetComponent<XsrUiText>(Find(gallery,"WardrobeLibraryCard.1.Name"))?.Content!=literal)
+            var body = owner.Append(shell.Tree.Children(library).Single(), DesktopMarkup.Dynamic("WardrobeLibraryWorkspace.d.nxml", DesktopWardrobeText.Defaults(library: true)));
+            var items = Find(body, "WardrobeLibraryItems");
+            var a = owner.Append(items, DesktopMarkup.Dynamic("WardrobeLibraryRow.d.nxml", new Dictionary<string, string> { ["key"] = "validation-row-a" }));
+            var b = owner.Append(items, DesktopMarkup.Dynamic("WardrobeLibraryRow.d.nxml", new Dictionary<string, string> { ["key"] = "validation-row-b" }));
+            var item = new Nexa.Services.Accounts.WardrobeCatalogItem(1, literal, literal, "alex", 1, false, "https://example.invalid/skin", new("https://example.invalid/details"), Nexa.Services.Accounts.WardrobeCatalogKind.Skin);
+            var projected = WardrobeLibraryPageController.ProjectCard(shell, item, WardrobePlayerView.Front, true, false);
+            var gallery = owner.Append(a, DesktopMarkup.Dynamic("WardrobeLibraryCard.d.nxml", projected)); var preview = Find(gallery, "WardrobeLibraryCard.1.Preview");
+            owner.Move(gallery, b); owner.Reload(gallery, DesktopMarkup.Dynamic("WardrobeLibraryCard.d.nxml", projected)); owner.Reorder(b, [gallery]);
+            if (shell.Tree.Parent(gallery) != b || preview != Find(gallery, "WardrobeLibraryCard.1.Preview")
+                || shell.Tree.GetComponent<XsrUiText>(Find(gallery, "WardrobeLibraryCard.1.Name"))?.Content != literal)
                 throw new InvalidOperationException("Wardrobe library reflow lost identity or reparsed metadata.");
             Console.WriteLine("Dynamic wardrobe validation passed: owned cards/modal, retained drafts, responsive orientation and library reflow.");
         }
-        finally {shell.Tree.Destroy(page);shell.Tree.Destroy(library);}
+        finally { shell.Tree.Destroy(page); shell.Tree.Destroy(library); }
     }
 
     private static void ValidateDynamicResources(XsrUiShell shell, Nexa.Xsr.State.XsrStateStore store, DesktopUiIntentSink intents)
@@ -588,6 +622,184 @@ internal static partial class Program
             if (shell.Tree.IsAlive(controller.Page)) shell.Tree.Destroy(controller.Page);
             if (shell.Tree.IsAlive(controller.DetailPage)) shell.Tree.Destroy(controller.DetailPage);
         }
+    }
+
+    private static async Task ValidateDynamicLaunchInstallAsync()
+    {
+        // This validates production controllers against bounded, typed in-memory service facts.
+        // It does not contact a catalogue provider, launch Minecraft or open a native Store/browser.
+        string directory = Path.Combine(Path.GetTempPath(), "nexa-nxml-validation", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var uiRuntime = new XsrUiRuntimeContext();
+            var observation = new Nexa.Services.Composition.XsrCompositeStateObserver(uiRuntime.StateBridge, null);
+            using var host = Nexa.Services.Foundation.FoundationComposer.Compose(
+                new Nexa.Services.Settings.InMemorySettingsPort(), Nexa.Services.Settings.LauncherDefaults.CreateSchema(),
+                new LaunchInstallValidationProfiles(), observer: observation,
+                declareHostState: LaunchPageState.DeclareState, minecraftRootDirectory: directory);
+            var foundation = Nexa.Services.Composition.FoundationRuntimeComposer.Compose(host);
+            using var minecraft = Nexa.Services.Composition.MinecraftRuntimeComposer.Compose();
+            using var library = Nexa.Services.Composition.MinecraftLibraryRuntimeComposer.Compose(host, directory,
+                new LaunchInstallValidationInstances());
+            using var catalogs = Nexa.Services.Composition.InstallCatalogRuntimeComposer.Compose(host, new LaunchInstallValidationCatalog());
+            var intents = new DesktopUiIntentSink();
+            var shell = NxmlShellComposer.Compose(host.StateStore, uiRuntime, intentSink: intents);
+            shell.Renderer.ReducedMotion = true;
+            using var feedback = new DesktopFeedbackService();
+            await using var controller = new LaunchPageController(shell, intents, minecraft, foundation.Commands,
+                host.StateStore, library, feedback, installCatalogCommands: catalogs.Commands, installCatalogQueries: catalogs.Queries);
+            using var subscription = observation.Subscribe(controller.StateObserver);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            controller.Attach();
+            await controller.WaitUntilIdle().WaitAsync(timeout.Token).ConfigureAwait(false);
+            var home = shell.Stage.Navigation.Current;
+            ValidateLaunchInstallHomeAndBedrock(shell, host.StateStore, intents, feedback, home);
+            var wide = new XsrUiSize(1100, 700);
+            var narrow = new XsrUiSize(810, 500);
+            intents.Emit(XsrSemanticId.Parse("ui.navigation.download"), default, XsrCorrelationId.Create());
+            shell.Render(wide);
+            var installRoot = shell.Stage.Navigation.Current;
+            if (!shell.Renderer.Activate(FindLaunchInstallValidationNode(shell, installRoot, "InstallJavaChoice")))
+                throw new InvalidOperationException("Java installation choice did not activate.");
+            await controller.WaitUntilIdle().WaitAsync(timeout.Token).ConfigureAwait(false);
+            var page = shell.Stage.Navigation.Current;
+            shell.Render(wide);
+            XsrUiEntityId Find(string key) => FindLaunchInstallValidationNode(shell, page, key);
+            var workspace = Find("JavaInstallContent");
+            var list = Find("JavaMinecraftVersions");
+            var input = Find("JavaInstallVersionInput");
+            var draft = shell.Tree.GetComponent<XsrUiTextInput>(input)!;
+            var track = shell.Tree.GetComponent<XsrUiSegmentedTrack>(Find("JavaInstallPagerTabs"));
+            var thumb = shell.Tree.GetComponent<XsrUiTransition>(Find("JavaInstallThumb"));
+            var reveal = shell.Tree.GetComponent<XsrUiSegmentReveal>(Find("JavaFabricTab"));
+            if (shell.Tree.GetComponent<NxmlDynamicSlot>(shell.Tree.Parent(workspace)) is null
+                || shell.Tree.GetComponent<NxmlDynamicSlot>(list) is null
+                || shell.Tree.GetComponent<XsrUiStableContent>(list) is null
+                || track?.Thumb != Find("JavaInstallThumb") || thumb is null || reveal is null
+                || draft.Placeholder != LaunchInstallText.Raw("input.search"))
+                throw new InvalidOperationException("Java installation lost its owned workspace or declarative segment/input facts.");
+            shell.Renderer.SetTextInputValue(input, "fixture-511");
+            if (!shell.Renderer.Focus(input, showIndicator: false)) throw new InvalidOperationException("Search input cannot focus.");
+            shell.Renderer.EditText(XsrUiTextEdit.Left, extendSelection: true);
+            int caret = draft.SelectionEnd;
+            shell.Render(wide);
+            var filtered = Find("CatalogRow:game:fixture-511");
+            if (shell.Tree.Parent(filtered) != list || shell.Tree.Children(list).Count != 1
+                || draft.ReadDraft() != "fixture-511" || draft.SelectionEnd != caret || shell.Renderer.Focused != input)
+                throw new InvalidOperationException("Catalogue search failed to retain its literal draft/caret or replace its owned window.");
+            shell.Renderer.SetTextInputValue(input, "");
+            shell.Render(wide);
+            var selected = Find("CatalogRow:game:1.20.1");
+            if (!shell.Renderer.Activate(selected)) throw new InvalidOperationException("Fixture game row did not activate.");
+            await controller.WaitUntilIdle().WaitAsync(timeout.Token).ConfigureAwait(false);
+            shell.Render(wide);
+            if (selected != Find("CatalogRow:game:1.20.1")
+                || shell.Tree.GetComponent<XsrUiSelection>(selected)?.IsSelected != true
+                || !ReferenceEquals(draft, shell.Tree.GetComponent<XsrUiTextInput>(input))
+                || draft.Placeholder != LaunchInstallText.Raw("input.name"))
+                throw new InvalidOperationException("Choosing a game replaced a retained entity or failed to reproject its placeholder.");
+            shell.Renderer.SetTextInputValue(input, "literal renamed <draft> {state private}");
+            shell.Renderer.Focus(input, showIndicator: false);
+            shell.Renderer.EditText(XsrUiTextEdit.Left, extendSelection: true);
+            caret = draft.SelectionEnd;
+            int anchor = draft.SelectionStart;
+            var scrollEntity = Find("JavaMinecraftPage");
+            var scroll = shell.Tree.GetComponent<XsrUiScroll>(scrollEntity)!;
+            var scene = shell.Render(narrow);
+            var scrollNode = scene.Nodes.Single(node => node.Entity == scrollEntity);
+            if (scrollNode.Scroll is not { } scrolling || scrolling.ContentHeight < 25000
+                || shell.Tree.Children(list).Count >= 30)
+                throw new InvalidOperationException("Large catalogue did not retain its bounded virtual window and complete scroll extent.");
+            if (!shell.Renderer.PointerScroll(new(scrollNode.Rect.X + 50, scrollNode.Rect.Y + 80), 10000))
+                throw new InvalidOperationException("Catalogue viewport did not accept a real scroll gesture.");
+            scene = shell.Render(narrow);
+            if (!ReferenceEquals(scroll, shell.Tree.GetComponent<XsrUiScroll>(scrollEntity)) || scroll.OffsetY <= 0
+                || shell.Tree.Children(list).Count >= 30 || draft.SelectionEnd != caret || draft.SelectionStart != anchor)
+                throw new InvalidOperationException("Virtual scroll replaced the scroll/input state or exceeded its row budget.");
+            foreach (bool dark in new[] { false, true })
+            {
+                shell.Renderer.ColorScheme = new(dark);
+                scene = shell.Render(narrow);
+                var action = scene.Nodes.Single(node => node.Entity == Find("JavaInstallStart"));
+                var pager = scene.Nodes.Single(node => node.Entity == Find("JavaInstallPager"));
+                if (shell.Renderer.ColorScheme.IsDark != dark || action.Rect.Height <= 0 || action.Rect.Y < 0
+                    || action.Rect.Y + action.Rect.Height > narrow.Height || pager.Rect.Height < 180
+                    || shell.Renderer.Focused != input || draft.ReadDraft() != "literal renamed <draft> {state private}"
+                    || draft.SelectionEnd != caret || draft.SelectionStart != anchor
+                    || !ReferenceEquals(track, shell.Tree.GetComponent<XsrUiSegmentedTrack>(Find("JavaInstallPagerTabs")))
+                    || !ReferenceEquals(thumb, shell.Tree.GetComponent<XsrUiTransition>(Find("JavaInstallThumb")))
+                    || !ReferenceEquals(reveal, shell.Tree.GetComponent<XsrUiSegmentReveal>(Find("JavaFabricTab"))))
+                    throw new InvalidOperationException("Theme/constrained layout lost interactive geometry, drafts or declarative segment state.");
+            }
+            intents.Emit(XsrSemanticId.Parse("ui.install.page.fabric"), Find("JavaFabricTab"), XsrCorrelationId.Create());
+            await controller.WaitUntilIdle().WaitAsync(timeout.Token).ConfigureAwait(false);
+            scene = shell.Render(narrow);
+            var loader = Find("CatalogRow:loader:0.16.0");
+            const string detail = "literal <loader> {data detail} {state private}";
+            if (shell.Tree.Parent(loader) != Find("JavaFabricPageRows")
+                || shell.Tree.GetComponent<NxmlDynamicSlot>(Find("JavaFabricPageRows")) is null
+                || shell.Tree.GetComponent<XsrUiText>(Find("CatalogDetail:loader:0.16.0")) is not { Localize: false } loaderText
+                || loaderText.Content != detail || !shell.Renderer.Activate(loader))
+                throw new InvalidOperationException("Loader catalogue failed literal owned-row projection or selection.");
+            scene = shell.Render(narrow);
+            if (shell.Tree.GetComponent<XsrUiSelection>(loader)?.IsSelected != true
+                || !ReferenceEquals(track, shell.Tree.GetComponent<XsrUiSegmentedTrack>(Find("JavaInstallPagerTabs")))
+                || shell.Tree.GetComponent<XsrUiSegmentReveal>(Find("JavaFabricApiTab"))?.Expanded != true)
+                throw new InvalidOperationException("Loader selection did not reveal its compatible addon with retained segment state.");
+            var language = new UiLocalizationCatalog();
+            language.SetLanguage("en");
+            shell.Renderer.TextLocalizer = language.Translate;
+            shell.Render(narrow);
+            if (shell.Tree.GetComponent<XsrUiText>(Find("CatalogDetail:loader:0.16.0"))?.Content != detail
+                || draft.ReadDraft() != "literal renamed <draft> {state private}"
+                || draft.SelectionEnd != caret || draft.SelectionStart != anchor)
+                throw new InvalidOperationException("Locale reload changed literal catalogue facts or editor draft state.");
+            intents.Emit(XsrSemanticId.Parse("ui.page.back"), default, XsrCorrelationId.Create());
+            shell.Render(narrow);
+            if (shell.Stage.Navigation.Current != installRoot) throw new InvalidOperationException("Installation back navigation failed.");
+            Console.WriteLine("NXML primitive segment validation passed: external local thumb/reveal facts retain track, transition and reveal objects through selection/theme/locale.");
+            Console.WriteLine("Dynamic launch/install validation passed: actual controllers, controlled 512-game/loader fixtures, owned search/selection, changed placeholder, bounded scroll, retained draft/caret, both themes and 810x500 viewport; no provider/install/game effects.");
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    private static XsrUiEntityId FindLaunchInstallValidationNode(XsrUiShell shell, XsrUiEntityId root, string key)
+    {
+        XsrUiEntityId found = default;
+        shell.Tree.Walk(root, entity => { if (shell.Tree.Name(entity) == key) found = entity; return true; });
+        if (!found.IsAssigned) throw new InvalidOperationException("Missing launch/install validation element: " + key);
+        return found;
+    }
+
+    private sealed class LaunchInstallValidationProfiles : Nexa.Services.Accounts.ILaunchProfilePort
+    {
+        private Nexa.Services.Accounts.LaunchProfileSet _profiles = new()
+        {
+            Profiles =
+            [
+                new() { Username = "literal <profile> {data name}", Info = "literal <provider> {state secret}", Kind = Nexa.Services.Accounts.LaunchProfileKind.Offline },
+                new() { Username = "FixturePlayer", Kind = Nexa.Services.Accounts.LaunchProfileKind.Offline },
+            ],
+        };
+        public Nexa.Services.Accounts.LaunchProfileSet Load() => _profiles;
+        public void Save(Nexa.Services.Accounts.LaunchProfileSet profiles) => _profiles = profiles;
+    }
+
+    private sealed class LaunchInstallValidationInstances : Nexa.Services.Minecraft.IMinecraftInstanceSource
+    {
+        public ValueTask<IReadOnlyList<Nexa.Services.Minecraft.MinecraftInstanceDescriptor>> DiscoverAsync(string minecraftRootDirectory,
+            CancellationToken cancellationToken = default) => ValueTask.FromResult<IReadOnlyList<Nexa.Services.Minecraft.MinecraftInstanceDescriptor>>([]);
+    }
+
+    private sealed class LaunchInstallValidationCatalog : Nexa.Services.Minecraft.Install.IInstallCatalogSource
+    {
+        public Task<IReadOnlyList<Nexa.Services.Minecraft.Install.InstallCatalogVersion>> GetGamesAsync(CancellationToken token) =>
+            Task.FromResult<IReadOnlyList<Nexa.Services.Minecraft.Install.InstallCatalogVersion>>(Enumerable.Range(0, 512)
+                .Select(index => new Nexa.Services.Minecraft.Install.InstallCatalogVersion(index == 0 ? "1.20.1" : "fixture-" + index.ToString(System.Globalization.CultureInfo.InvariantCulture), "fixture")).ToArray());
+        public Task<IReadOnlyList<Nexa.Services.Minecraft.Install.InstallCatalogVersion>> GetLoadersAsync(
+            Nexa.Services.Minecraft.Install.InstallLoader loader, string game, CancellationToken token) =>
+            Task.FromResult<IReadOnlyList<Nexa.Services.Minecraft.Install.InstallCatalogVersion>>([new("0.16.0", "literal <loader> {data detail} {state private}")]);
     }
 
     private sealed class ValidationDispatchObserver : Nexa.Xsr.Runtime.IXsrDispatchObserver

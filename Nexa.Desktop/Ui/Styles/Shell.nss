@@ -8,3 +8,7 @@
 .layout-Shell-8 { Orientation: Horizontal; }
 .layout-Shell-9 { Width: 48; }
 .layout-Shell-14 { Padding: 20,16,20,16; TransitionOffsetX: 16; }
+
+/* Product navigation captions share the title hierarchy. */
+.layout-Shell-TitleMain, .layout-Shell-TitleBack, .layout-Shell-TitleSubpage { Foreground: #ffffff; FontSize: 17; FontWeight: 600; }
+.layout-Shell-TitleBack { Hover: #ffffff32; CornerRadius: 15; }

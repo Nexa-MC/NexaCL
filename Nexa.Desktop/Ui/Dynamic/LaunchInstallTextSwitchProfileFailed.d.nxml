@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="切换档案失败：{data message}" Localize="false" />
+</nxml-dynamic>

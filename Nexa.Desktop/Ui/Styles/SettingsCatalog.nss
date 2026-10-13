@@ -16,6 +16,7 @@
 .settings-catalog-input { Height: 34; Weight: 1; Padding: 10,0,10,0; Background: #f5f6f8; Foreground: #2b3340; CornerRadius: 9; FontSize: 13; Surface: Solid; Hover: #cfe1fe; VerticalAlignment: Center; }
 .settings-catalog-mode { Orientation: Horizontal; Width: 112; Spacing: 0; Background: #f1f5fa; Foreground: #2b3340; CornerRadius: 9; Surface: Solid; VerticalAlignment: Center; }
 .settings-catalog-mode-option { Width: 56; }
+.settings-catalog-selector-surface { Height: 40; }
 .settings-catalog-selector { Orientation: Horizontal; Spacing: 0; Padding: 3; HorizontalAlignment: End; VerticalAlignment: Center; Background: #f1f5fa; Foreground: #2b3340; CornerRadius: 9; Surface: Solid; }
 .settings-catalog-thumb { Background: #ffffff; Foreground: #2b3340; CornerRadius: 7; Surface: Solid; }
 .settings-catalog-option { Height: 34; FontSize: 12; FontWeight: 450; Foreground: #2b3340; CornerRadius: 7; TextAlignment: Center; Hover: #cfe1fe; Surface: Solid; VerticalAlignment: Center; }

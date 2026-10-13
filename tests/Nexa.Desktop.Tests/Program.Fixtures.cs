@@ -8,8 +8,8 @@ using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Services.Settings;
 using Nexa.Services.Tasks;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 

@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Button Key="{data key}" Content="{data name}" Label="{data name}" Localize="false" Command="ui.settings.management.action" Enabled="{data enabled}" Class="settings-content-button settings-content-graph-consumer" />
+</nxml-dynamic>

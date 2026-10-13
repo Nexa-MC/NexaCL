@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<StackPanel Key="SettingsHookRow" Class="settings-editor-line"><TextInput Key="{data input}" Label="命令行 {data index}" Localize="false" MaximumLength="32768" PreserveTabs="true" Placeholder="输入命令；空行也会保留" Class="settings-editor-input" /><Button Key="{data remove}" Content="×" Label="删除命令行 {data index}" Localize="false" Command="ui.settings.hook.remove" Class="settings-catalog-action settings-editor-remove" /></StackPanel>
+</nxml-dynamic>

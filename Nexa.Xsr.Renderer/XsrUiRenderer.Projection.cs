@@ -121,7 +121,7 @@ public sealed partial class XsrUiRenderer
             input?.CapsuleExpansionProgress ?? 0,
             components.Get<XsrUiPager>()?.Snapshot(),
             accessible,
-            LocalizeInput(components.Get<XsrUiTextInput>()),
+            LocalizeInput(components.Get<XsrUiTextInput>(), semantic?.Localize ?? true),
             image?.Raster,
             transitionKey, transition?.OffsetX ?? 0, transition?.PresentedOffsetX ?? 0,
             transition?.OffsetY ?? 0, opacity, transition?.PresentedOffsetY ?? 0, entryOrder,
@@ -261,11 +261,11 @@ public sealed partial class XsrUiRenderer
         return semantic.Localize ? LocalizeText(boundLabel) : boundLabel;
     }
 
-    private XsrUiTextInputSnapshot? LocalizeInput(XsrUiTextInput? input)
+    private XsrUiTextInputSnapshot? LocalizeInput(XsrUiTextInput? input, bool localize)
     {
         if (input is null) return null;
         var snapshot = input.Snapshot();
-        return snapshot with { Placeholder = LocalizeText(snapshot.Placeholder) };
+        return localize ? snapshot with { Placeholder = LocalizeText(snapshot.Placeholder) } : snapshot;
     }
 
     // UI.Next uses a deliberately deterministic, backend-neutral text metric. Native backends

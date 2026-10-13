@@ -1,5 +1,5 @@
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -16,9 +16,9 @@ internal sealed partial class LaunchPageController
             _ = _shell.Select(_boundDestination);
             _feedback.Warn(command.Value switch
             {
-                "ui.navigation.settings" => "设置页面未绑定。",
-                "ui.navigation.community" => "资源页面未绑定。",
-                _ => "无法导航：未识别的页面入口。"
+                "ui.navigation.settings" => InstallCopy("copy.a9d2bf7e19f8"),
+                "ui.navigation.community" => InstallCopy("copy.f56baa816c6f"),
+                _ => InstallCopy("copy.f3d79210f3c2")
             });
             return;
         }

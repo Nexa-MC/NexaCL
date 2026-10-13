@@ -32,16 +32,16 @@ internal static class LaunchProfilePresentation
             string server = profile.AuthServer.Trim();
             if (!server.Contains("://", StringComparison.Ordinal)) server = "https://" + server;
             if (Uri.TryCreate(server, UriKind.Absolute, out Uri? uri) && !string.IsNullOrEmpty(uri.Host))
-                return "第三方 · " + uri.Host;
+                return ProductPresentationText.Format("ProfileThirdParty", null, ("host", uri.Host));
         }
         if (!string.IsNullOrWhiteSpace(profile.Info)) return profile.Info;
         return profile.Kind switch
         {
-            LaunchProfileKind.Microsoft => "Microsoft 账户",
-            LaunchProfileKind.LittleSkin => "LittleSkin 账户",
-            LaunchProfileKind.ThirdParty => "第三方账户",
-            LaunchProfileKind.NCloud => "NCloud 账户",
-            _ => "离线账户",
+            LaunchProfileKind.Microsoft => ProductPresentationText.Raw("profile.microsoft"),
+            LaunchProfileKind.LittleSkin => ProductPresentationText.Raw("profile.littleskin"),
+            LaunchProfileKind.ThirdParty => ProductPresentationText.Raw("profile.thirdparty"),
+            LaunchProfileKind.NCloud => ProductPresentationText.Raw("profile.ncloud"),
+            _ => ProductPresentationText.Raw("profile.offline"),
         };
     }
 }

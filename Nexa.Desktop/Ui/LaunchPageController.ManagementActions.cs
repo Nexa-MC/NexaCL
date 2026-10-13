@@ -29,17 +29,17 @@ internal sealed partial class LaunchPageController
             || snapshot.SelectedInstance is not { } selected
             || selected.Id != ReadCell(LaunchPageState.SelectedInstanceKey)
             || !PathIdentity.Comparer.Equals(snapshot.RootDirectory, ReadCell(LaunchPageState.InstanceDirectoryKey)))
-        { _feedback.Warn("当前版本已变化，请重新打开实例概览。"); return false; }
+        { _feedback.Warn(InstallCopy("copy.3f2e775cf3f9")); return false; }
         try
         {
             string requested = Path.GetFullPath(instanceDirectory);
             string expected = Path.GetFullPath(Path.Combine(snapshot.RootDirectory, "versions", selected.Id));
             if (!PathIdentity.Comparer.Equals(requested, expected)
                 || !PathIdentity.Comparer.Equals(Path.GetFullPath(selected.DirectoryPath), expected))
-            { _feedback.Warn("当前版本已变化，请重新打开实例概览。"); return false; }
+            { _feedback.Warn(InstallCopy("copy.3f2e775cf3f9")); return false; }
         }
         catch (Exception error) when (error is ArgumentException or NotSupportedException or PathTooLongException)
-        { _feedback.Warn("实例目录无效，请重新打开实例概览。"); return false; }
+        { _feedback.Warn(InstallCopy("copy.60ff2e16bc1a")); return false; }
         instance = selected; return true;
     }
 }

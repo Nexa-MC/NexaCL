@@ -1,5 +1,5 @@
-using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -15,9 +15,14 @@ internal sealed class BedrockInstallPageController : IDisposable
     private readonly Action _openStore;
     private readonly Action<Uri> _openBrowser;
     private readonly bool _supportsStore;
-    private readonly Dictionary<string, XsrUiEntityId> _nodes = [];
-    private string _status;
+    private readonly NxmlDynamicContent _dynamic;
+    private readonly XsrUiEntityId _workspace;
+    private readonly Dictionary<string, XsrUiEntityId> _nodes;
+    private Status _status;
+    private string _presentedStatus;
     private bool _dirty, _disposed, _dispatching;
+
+    private enum Status { ReadyWindows, Unsupported, StoreOpened, WebsiteOpened, StoreFailed, WebsiteFailed }
 
     internal BedrockInstallPageController(XsrUiShell shell, DesktopUiIntentSink intents,
         XsrStateStore store, DesktopFeedbackService feedback, Action openStore,
@@ -32,42 +37,34 @@ internal sealed class BedrockInstallPageController : IDisposable
         _shell = shell; _intents = intents; _feedback = feedback;
         _openStore = openStore; _openBrowser = openBrowser;
         _supportsStore = supportsStore ?? OperatingSystem.IsWindows();
-        _status = _supportsStore ? "打开 Microsoft Store，继续获取或安装游戏。"
-            : "当前系统不支持 Minecraft for Windows 安装。可查看官方产品页。";
-        using var source = DesktopMarkup.Open("BedrockInstallPage.nxml")
-            ?? throw new InvalidOperationException("Missing Bedrock installation page.");
-        using var reader = new StreamReader(source);
-        var template = DesktopMarkup.Compile(NxmlParser.Parse(reader.ReadToEnd()));
-        var host = shell.Tree.Create("bedrock-install-loader");
-        try
-        {
-            Page = NxmlUiLoader.Load(template, shell.Tree, store, host);
-            shell.Tree.Detach(Page);
-        }
-        finally { shell.Tree.Destroy(host); }
-        shell.Tree.Walk(Page, entity =>
-        {
-            _nodes[shell.Tree.Name(entity)] = entity;
-            bool button = shell.Tree.GetComponent<XsrUiInput>(entity) is not null;
-            shell.Tree.SetComponent(entity, new XsrUiVisualStyle
-            {
-                Foreground = button ? DesktopUiPalette.CapsuleForeground : new(52, 61, 74),
-                Background = button ? DesktopUiPalette.CapsuleBackground : XsrUiColor.Transparent,
-                Hover = DesktopUiPalette.CapsuleHover,
-                FontSize = 14,
-                CornerRadius = button ? 10 : 0,
-                WrapText = !button,
-                TextAlignment = button ? XsrUiTextAlignment.Center : XsrUiTextAlignment.Start,
-            });
-            return true;
-        });
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["BedrockInstallTitle"])!.FontSize = 19;
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["BedrockInstallTitle"])!.FontWeight = 600;
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["BedrockInstallReturn"])!.FontSize = 12;
-        shell.Tree.GetComponent<XsrUiVisualStyle>(_nodes["BedrockInstallReturn"])!.Foreground = new(122, 138, 153);
-        Present();
+        _status = _supportsStore ? Status.ReadyWindows : Status.Unsupported;
+        _dynamic = new(shell.Tree, store);
+        var loaded = LoadPage(shell, store, _dynamic, _supportsStore);
+        Page = loaded.Page; _workspace = loaded.Workspace; _nodes = loaded.Nodes; _presentedStatus = loaded.Status;
         _intents.IntentEmitted += OnIntent;
         shell.Renderer.FramePreparing += OnFrame;
+    }
+
+    internal static XsrUiEntityId LoadPlaceholder(XsrUiShell shell, XsrStateStore store) =>
+        LoadPage(shell, store, new(shell.Tree, store), OperatingSystem.IsWindows()).Page;
+
+    private static (XsrUiEntityId Page, XsrUiEntityId Workspace, Dictionary<string, XsrUiEntityId> Nodes, string Status)
+        LoadPage(XsrUiShell shell, XsrStateStore store, NxmlDynamicContent content, bool supportsStore)
+    {
+        var page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("BedrockInstallPage.nxml"), shell.Tree, store);
+        try
+        {
+            string status = shell.Renderer.LocalizeText(StatusCopy(supportsStore ? Status.ReadyWindows : Status.Unsupported));
+            var workspace = content.Append(shell.Tree.Children(page).Single(), Workspace(supportsStore, status));
+            Dictionary<string, XsrUiEntityId> nodes = [];
+            shell.Tree.Walk(page, entity => { nodes[shell.Tree.Name(entity)] = entity; return true; });
+            return (page, workspace, nodes, status);
+        }
+        catch
+        {
+            shell.Tree.Destroy(page);
+            throw;
+        }
     }
 
     internal XsrUiEntityId Page { get; }
@@ -100,16 +97,14 @@ internal sealed class BedrockInstallPageController : IDisposable
             // Both effects are synchronous, fixed product handoffs. They report no install progress.
             if (store) _openStore(); else _openBrowser(OfficialProductPage);
             if (!IsCurrent) return;
-            _status = store ? "已请求打开 Microsoft Store。请在商店中完成获取或安装。"
-                : "已请求打开官方产品页。Minecraft for Windows 安装需要 Windows。";
-            _feedback.Info(_status);
+            _status = store ? Status.StoreOpened : Status.WebsiteOpened;
+            _feedback.Info(StatusCopy(_status));
         }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
         {
             if (!IsCurrent) return;
-            _status = store ? "无法打开 Microsoft Store。请重试，或使用官方产品页。"
-                : "无法打开官方产品页。请检查默认浏览器后重试。";
-            _feedback.Error(_status);
+            _status = store ? Status.StoreFailed : Status.WebsiteFailed;
+            _feedback.Error(StatusCopy(_status));
         }
         finally
         {
@@ -120,17 +115,30 @@ internal sealed class BedrockInstallPageController : IDisposable
 
     private void OnFrame(object? sender, EventArgs args)
     {
-        if (IsCurrent && _dirty) Present();
+        if (!IsCurrent) return;
+        string status = _shell.Renderer.LocalizeText(StatusCopy(_status));
+        if (_dirty || status != _presentedStatus) Present(status);
     }
 
-    private void Present()
+    private static string StatusCopy(Status status)
     {
-        var status = _nodes["BedrockInstallStatus"];
-        _shell.Tree.GetComponent<XsrUiText>(status)!.Content = _status;
-        _shell.Tree.GetComponent<XsrUiSemantic>(status)!.Label = _status;
-        var store = _shell.Tree.GetComponent<XsrUiInput>(_nodes["BedrockInstallStore"])!;
-        store.Enabled = store.Clickable = store.Focusable = _supportsStore;
-        _shell.Tree.MarkDirty(Page, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+        var text = DesktopMarkup.Dynamic("LaunchInstallBedrockStatus" + status + ".d.nxml").Root;
+        if (text.Recipe != NxmlRuntimeRecipe.Text || text.Content is null || text.Bindings.Count != 0 || text.Children.Count != 0)
+            throw new NxmlCompileException("Bedrock status assets must produce literal text only.");
+        return text.Content;
+    }
+
+    private static NxmlHostIr Workspace(bool supportsStore, string status) => DesktopMarkup.Dynamic("LaunchInstallBedrockWorkspace.d.nxml",
+        new Dictionary<string, string>
+        {
+            ["status"] = status,
+            ["storeEnabled"] = supportsStore ? "true" : "false",
+        });
+
+    private void Present(string status)
+    {
+        _dynamic.Reload(_workspace, Workspace(_supportsStore, status));
+        _presentedStatus = status;
         _dirty = false;
     }
 

@@ -17,9 +17,9 @@ internal sealed partial class SettingsPageController
         var nodes = CatalogNodes(root);
         if (OpenAboutLink is { } open)
         {
-            _managementActions[nodes["Management.源代码"]] = () => open(new Uri("https://github.com/PCL-N-Edition/PCL-N"));
-            _managementActions[nodes["Management.完整许可证"]] = () => open(new Uri("https://github.com/PCL-N-Edition/PCL-N/blob/refactor/xsr/LICENSE"));
-            _managementActions[nodes["Management.贡献者"]] = () => open(new Uri("https://github.com/PCL-N-Edition/PCL-N/graphs/contributors"));
+            _managementActions[nodes[ProductPresentationText.Raw("settings.about.sourceKey")]] = () => open(new Uri("https://github.com/PCL-N-Edition/PCL-N"));
+            _managementActions[nodes[ProductPresentationText.Raw("settings.about.licenseKey")]] = () => open(new Uri("https://github.com/PCL-N-Edition/PCL-N/blob/refactor/xsr/LICENSE"));
+            _managementActions[nodes[ProductPresentationText.Raw("settings.about.contributorsKey")]] = () => open(new Uri("https://github.com/PCL-N-Edition/PCL-N/graphs/contributors"));
         }
         if (ExportDiagnostics is not null) BuildDiagnosticExportControls(nodes["AboutDiagnosticActions"]);
         var scroll = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!;

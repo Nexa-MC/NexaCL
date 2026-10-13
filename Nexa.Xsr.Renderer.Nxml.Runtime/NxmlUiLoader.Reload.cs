@@ -27,12 +27,14 @@ public sealed partial class NxmlUiLoader
             IsVisible = after.IsVisible,
             Spacing = after.Spacing,
             Content = after.Content,
+            Placeholder = after.Placeholder,
             Label = after.Label,
             ImageSource = after.ImageSource,
             Command = after.Command,
             Enabled = after.Enabled,
             Localize = after.Localize,
             Selected = after.Selected,
+            Checked = before.Checked.HasValue && after.Checked.HasValue ? after.Checked : before.Checked,
             MaxLines = after.MaxLines,
             TrimOverflow = after.TrimOverflow,
             Value = after.Value,
@@ -62,10 +64,13 @@ public sealed partial class NxmlUiLoader
         {
             var box = tree.GetComponent<XsrUiElement>(entity);
             if (box is null) { box = new(); tree.SetComponent(entity, box); }
-            box.Width = after.Width; box.Height = after.Height; box.MinWidth = after.MinWidth; box.MaxWidth = after.MaxWidth;
+            var reveal = tree.GetComponent<XsrUiSegmentReveal>(entity);
+            box.Width = reveal is null ? after.Width : reveal.Width * reveal.Progress;
+            box.Height = after.Height; box.MinWidth = after.MinWidth; box.MaxWidth = after.MaxWidth;
             box.MinHeight = after.MinHeight; box.MaxHeight = after.MaxHeight; box.Weight = after.Weight;
             box.HorizontalAlignment = after.HorizontalAlignment; box.VerticalAlignment = after.VerticalAlignment;
-            box.Margin = after.Margin; box.Padding = after.Padding; box.IsVisible = after.IsVisible;
+            box.Margin = after.Margin; box.Padding = after.Padding;
+            box.IsVisible = after.IsVisible && (reveal is null || reveal.Expanded || reveal.Progress > .001);
             dirty |= XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint;
         }
         if (before.Orientation != after.Orientation && tree.GetComponent<XsrUiStackPanel>(entity) is { } oriented)
@@ -77,6 +82,11 @@ public sealed partial class NxmlUiLoader
             if (tree.GetComponent<XsrUiText>(entity) is { } text) text.Content = after.Content ?? string.Empty;
             else if (after.Content is not null) tree.SetComponent(entity, new XsrUiText(after.Content) { Localize = after.Localize, MaxLines = after.MaxLines, TrimOverflow = after.TrimOverflow });
             dirty |= XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint;
+        }
+        if (before.Placeholder != after.Placeholder && tree.GetComponent<XsrUiTextInput>(entity) is { } editor)
+        {
+            editor.Placeholder = after.Placeholder ?? string.Empty;
+            dirty |= XsrUiDirtyKinds.Paint;
         }
         if ((before.MaxLines != after.MaxLines || before.TrimOverflow != after.TrimOverflow)
             && tree.GetComponent<XsrUiText>(entity) is { } clipped)
@@ -123,6 +133,11 @@ public sealed partial class NxmlUiLoader
                 else tree.SetComponent(entity, new XsrUiSelection { IsSelected = selected });
             }
             else tree.SetComponent<XsrUiSelection>(entity, null);
+            dirty |= XsrUiDirtyKinds.Paint;
+        }
+        if (before.Checked != after.Checked && tree.GetComponent<XsrUiToggle>(entity) is { } toggle)
+        {
+            toggle.IsChecked = after.Checked!.Value;
             dirty |= XsrUiDirtyKinds.Paint;
         }
         if (before.ShowsVerticalIndicator != after.ShowsVerticalIndicator && tree.GetComponent<XsrUiScroll>(entity) is { } scroll)

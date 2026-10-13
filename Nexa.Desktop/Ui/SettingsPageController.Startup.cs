@@ -91,7 +91,7 @@ internal sealed partial class SettingsPageController
                 TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         _updateReading = null;
         _startupUpdateChecked = true;
-        _updateStatus = "暂时无法检查更新，请稍后重试。";
-        if (_selected == "advanced") BuildSections();
+        _updateStatus = CustomCopy("update.offline");
+        if (_selected == "advanced") RefreshUpdateCard();
     }
 }

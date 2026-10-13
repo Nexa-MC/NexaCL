@@ -2,8 +2,8 @@ using System.Collections.Concurrent;
 using System.Text.Json.Nodes;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 

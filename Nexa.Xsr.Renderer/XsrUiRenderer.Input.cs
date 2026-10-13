@@ -21,9 +21,10 @@ public sealed partial class XsrUiRenderer
         for (int index = _scene.Count - 1; index >= 0; index--)
         {
             XsrUiSceneNode node = _scene[index];
+            if (!_tree.IsAlive(node.Entity)) continue;
             // Transparent nonmodal composition layers do not become hit targets merely
             // because they span the viewport. Their real children remain reachable.
-            bool passThrough = _tree.GetComponent<XsrUiOverlayLayer>(node.Entity) is { IsModal:false }
+            bool passThrough = _tree.GetComponent<XsrUiOverlayLayer>(node.Entity) is { IsModal: false }
                 && node.Role == XsrUiSemanticRole.None && !node.IsClickable && !node.IsFocusable
                 && node.Text is null && node.ImageSource is null && node.VisualStyle.Background.Alpha == 0;
             if (!passThrough && node.IsAccessible && node.Rect.Contains(point) && (node.ClipRect is null || node.ClipRect.Value.Contains(point)))
@@ -380,9 +381,8 @@ public sealed partial class XsrUiRenderer
         for (int index = _scene.Count - 1; index >= 0; index--)
         {
             XsrUiSceneNode node = _scene[index];
-            XsrUiDismissBinding? binding = node.IsAccessible
-                ? _tree.GetComponent<XsrUiDismissBinding>(node.Entity)
-                : null;
+            if (!node.IsAccessible || !_tree.IsAlive(node.Entity) || !IsInVisibleTree(node.Entity)) continue;
+            XsrUiDismissBinding? binding = _tree.GetComponent<XsrUiDismissBinding>(node.Entity);
             if (binding is null || !binding.Command.IsAssigned)
             {
                 continue;

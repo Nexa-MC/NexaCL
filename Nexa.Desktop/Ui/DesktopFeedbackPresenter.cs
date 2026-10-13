@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
-using Nexa.Xsr.Renderer.Nxml;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -98,7 +98,7 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
         _notificationLayer = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("FeedbackNotifications.nxml"), shell.Tree, store);
         _dialogLayer = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("FeedbackDialogs.nxml"), shell.Tree, store);
         _notificationBaseMargin = DesktopMarkup.Load("FeedbackHostLayout.nxml").Root.Margin;
-        _notificationHost = _dynamic.Append(_notificationLayer, HostFragment(_notificationBaseMargin, visible:false));
+        _notificationHost = _dynamic.Append(_notificationLayer, HostFragment(_notificationBaseMargin, visible: false));
         _wakeState = store.Resolve(DesktopFeedbackState.Revision);
         shell.Stage.Show(_notificationLayer);
 
@@ -153,9 +153,12 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
     private void UpdateNotificationPlacement() => SetNotificationHostVisible(_notifications.Count > 0);
 
     private static NxmlHostIr HostFragment(XsrUiThickness margin, bool visible) => DesktopMarkup.Dynamic("FeedbackNotificationHost.d.nxml",
-        new Dictionary<string,string>
-        { ["margin"] = string.Join(',', new[] { margin.Left, margin.Top, margin.Right, margin.Bottom }
-            .Select(value => value.ToString(System.Globalization.CultureInfo.InvariantCulture))), ["visible"] = Flag(visible) });
+        new Dictionary<string, string>
+        {
+            ["margin"] = string.Join(',', new[] { margin.Left, margin.Top, margin.Right, margin.Bottom }
+            .Select(value => value.ToString(System.Globalization.CultureInfo.InvariantCulture))),
+            ["visible"] = Flag(visible)
+        });
 
     private void SetNotificationHostVisible(bool visible)
     {
@@ -181,7 +184,7 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
         {
             if (_notifications.TryGetValue(notification.Id, out var current))
             {
-                if (_copyChanged && !current.IsClosing) _dynamic.Reload(current.Root, NotificationFragment(notification, enabled:true));
+                if (_copyChanged && !current.IsClosing) _dynamic.Reload(current.Root, NotificationFragment(notification, enabled: true));
                 continue;
             }
 
@@ -206,15 +209,20 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
     {
         string style = notification.Level switch
         {
-            DesktopNotificationLevel.Info => "info", DesktopNotificationLevel.Warn => "warn",
-            DesktopNotificationLevel.Error => "error", _ => throw new ArgumentOutOfRangeException(nameof(notification)),
+            DesktopNotificationLevel.Info => "info",
+            DesktopNotificationLevel.Warn => "warn",
+            DesktopNotificationLevel.Error => "error",
+            _ => throw new ArgumentOutOfRangeException(nameof(notification)),
         };
         string level = _shell.Renderer.LocalizeText(DesktopOverlayText.Raw("notification." + style));
-        string message = _shell.Renderer.LocalizeText(notification.Message);
-        return DesktopMarkup.Dynamic("FeedbackNotification.d.nxml", new Dictionary<string,string>
+        string message = notification.LocalizeMessage ? _shell.Renderer.LocalizeText(notification.Message) : notification.Message;
+        return DesktopMarkup.Dynamic("FeedbackNotification.d.nxml", new Dictionary<string, string>
         {
-            ["key"] = "notification:" + notification.Id.ToString("N"), ["level"] = level, ["message"] = message,
-            ["icon"] = DesktopOverlayText.Raw("notification.icon." + style), ["enabled"] = Flag(enabled),
+            ["key"] = "notification:" + notification.Id.ToString("N"),
+            ["level"] = level,
+            ["message"] = message,
+            ["icon"] = DesktopOverlayText.Raw("notification.icon." + style),
+            ["enabled"] = Flag(enabled),
             ["urgency"] = notification.Level == DesktopNotificationLevel.Info ? "Polite" : "Assertive",
             ["label"] = DesktopOverlayText.Format("NotificationLabel", new() { ["level"] = level, ["message"] = message }, _shell.Renderer.LocalizeText),
             ["close-label"] = DesktopOverlayText.Format("NotificationClose", new() { ["level"] = level }, _shell.Renderer.LocalizeText),
@@ -228,7 +236,7 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
 
     private PresentedNotification CreateNotification(DesktopNotification notification)
     {
-        var root = _dynamic.Append(_notificationHost, NotificationFragment(notification, enabled:true));
+        var root = _dynamic.Append(_notificationHost, NotificationFragment(notification, enabled: true));
         var entities = Index(root);
         return new(notification, root, entities["NotificationClose"], _shell.Tree.GetComponent<XsrUiOverlayMotion>(root)!);
     }
@@ -237,7 +245,7 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
     {
         notification.IsClosing = true;
         notification.Motion.IsClosing = true;
-        _dynamic.Reload(notification.Root, NotificationFragment(notification.Value, enabled:false));
+        _dynamic.Reload(notification.Root, NotificationFragment(notification.Value, enabled: false));
         _shell.Tree.MarkDirty(notification.Root, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
         _shell.Tree.MarkDirty(notification.Close, XsrUiDirtyKinds.Paint);
         if (_shell.Renderer.ReducedMotion)
@@ -308,24 +316,27 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
 
     private NxmlHostIr DialogFragment(DesktopDialog dialog, bool enabled)
     {
-        string title = _shell.Renderer.LocalizeText(dialog.Title);
+        string title = dialog.LocalizeTitle ? _shell.Renderer.LocalizeText(dialog.Title) : dialog.Title;
         string message = dialog.LocalizeMessage ? _shell.Renderer.LocalizeText(dialog.Message) : dialog.Message;
         bool alternate = dialog.Alternate is not null && !string.IsNullOrWhiteSpace(dialog.AlternateLabel);
-        return DesktopMarkup.Dynamic("FeedbackDialog.d.nxml", new Dictionary<string,string>
+        return DesktopMarkup.Dynamic("FeedbackDialog.d.nxml", new Dictionary<string, string>
         {
-            ["title"] = title, ["message"] = message, ["enabled"] = Flag(enabled),
+            ["title"] = title,
+            ["message"] = message,
+            ["enabled"] = Flag(enabled),
             ["narration"] = DesktopOverlayText.Format("DialogNarration", new() { ["title"] = title, ["message"] = message }),
             ["accept"] = _shell.Renderer.LocalizeText(dialog.AcceptLabel),
             ["cancel"] = _shell.Renderer.LocalizeText(dialog.CancelLabel ?? ""),
             ["alternate"] = _shell.Renderer.LocalizeText(dialog.AlternateLabel ?? ""),
-            ["has-cancel"] = Flag(!string.IsNullOrWhiteSpace(dialog.CancelLabel)), ["has-alternate"] = Flag(alternate),
+            ["has-cancel"] = Flag(!string.IsNullOrWhiteSpace(dialog.CancelLabel)),
+            ["has-alternate"] = Flag(alternate),
             ["action-alignment"] = alternate ? "Stretch" : "End",
         });
     }
 
     private PresentedDialog CreateDialog(DesktopDialog dialog)
     {
-        var root = _dynamic.Append(_dialogLayer, DialogFragment(dialog, enabled:true));
+        var root = _dynamic.Append(_dialogLayer, DialogFragment(dialog, enabled: true));
         var entities = Index(root);
         var previousFocus = _shell.Renderer.Focused;
         bool focusVisible = _shell.Tree.IsAlive(previousFocus)
@@ -333,7 +344,7 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
         var presented = new PresentedDialog(dialog, root, entities["DialogCard"], entities["DialogAccept"], entities["DialogCancel"],
             _shell.Tree.GetComponent<XsrUiOverlayMotion>(root)!, _shell.Tree.GetComponent<XsrUiOverlayMotion>(entities["DialogCard"])!,
             previousFocus, focusVisible);
-        _shell.Stage.Show(_dialogLayer, modal:true);
+        _shell.Stage.Show(_dialogLayer, modal: true);
         _shell.Renderer.Focus(presented.Accept, focusVisible);
         return presented;
     }
@@ -345,7 +356,7 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
             scroll.OffsetY = 0;
             _shell.Tree.MarkDirty(Index(presented.Root)["DialogMessageViewport"], XsrUiDirtyKinds.Layout);
         }
-        _dynamic.Reload(presented.Root, DialogFragment(dialog, enabled:!presented.IsClosing));
+        _dynamic.Reload(presented.Root, DialogFragment(dialog, enabled: !presented.IsClosing));
     }
 
     private static string Flag(bool value) => value ? "true" : "false";
@@ -355,7 +366,7 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
         dialog.IsClosing = true;
         dialog.ScrimMotion.IsClosing = true;
         dialog.CardMotion.IsClosing = true;
-        _dynamic.Reload(dialog.Root, DialogFragment(dialog.Value, enabled:false));
+        _dynamic.Reload(dialog.Root, DialogFragment(dialog.Value, enabled: false));
         _shell.Tree.MarkDirty(dialog.Root, XsrUiDirtyKinds.Paint);
         _shell.Tree.MarkDirty(dialog.Card, XsrUiDirtyKinds.Paint);
         if (_shell.Renderer.ReducedMotion)
@@ -423,7 +434,7 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
                 string level = _shell.Renderer.LocalizeText(DesktopOverlayText.Raw("notification." + style));
                 _service.ShowMessageDialog("notification.detail." + id.ToString("N"),
                     DesktopOverlayText.Format("NotificationTitle", new() { ["level"] = level }, _shell.Renderer.LocalizeText),
-                    notification.Value.Message);
+                    notification.Value.Message, localizeMessage: notification.Value.LocalizeMessage, localizeTitle: false);
             }
             return;
         }

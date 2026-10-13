@@ -1,0 +1,5 @@
+<nxml-dynamic>
+  <Button Key="WidgetTriviaIndicator" Label="{state launch.widget.trivia-label}" Command="ui.launch.widget.trivia" Localize="false" Height="{data height}" Class="layout-LaunchPage-WidgetTriviaIndicator">
+    <StackPanel Key="WidgetTriviaDot" Height="{data height}" Background="{data paint}" Class="layout-LaunchPage-WidgetTriviaDot" />
+  </Button>
+</nxml-dynamic>

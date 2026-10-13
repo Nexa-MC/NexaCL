@@ -2,12 +2,12 @@
   <Shell Label="NexaCL">
     <TitleBar Class="layout-Shell-2">
       <StackPanel Key="TitleNavigation" Class="layout-Shell-TitleNavigation">
-        <StackPanel Key="TitleBrand" Class="layout-Shell-TitleBrand">
-          <Text Key="TitleMain" Content="NexaCL" TransitionKey="{state launch.navigation.title}" Class="layout-Shell-TitleMain" />
+        <StackPanel Key="TitleBrand" Class="layout-Shell-TitleBrand" IsVisible="{state launch.navigation.root}">
+          <Text Key="TitleMain" Content="NexaCL" TransitionKey="{state launch.navigation.title}" Class="layout-Shell-TitleMain" IsVisible="{state launch.navigation.root}" />
           <Dynamic Key="CustomLauncherLogoSlot" IsVisible="{state shell.appearance.logo_visible}" />
         </StackPanel>
-        <Button Key="TitleBack" Label="返回上一级" Icon="lucide/arrow-left" Command="ui.page.back" IsVisible="false" TransitionKey="{state launch.navigation.title}" Class="layout-Shell-TitleBack" />
-        <Text Key="TitleSubpage" Content="" IsVisible="false" TransitionKey="{state launch.navigation.title}" Class="layout-Shell-TitleSubpage" />
+        <Button Key="TitleBack" Label="返回上一级" Icon="lucide/arrow-left" Command="ui.page.back" IsVisible="{state launch.navigation.subpage}" TransitionKey="{state launch.navigation.title}" Class="layout-Shell-TitleBack" />
+        <Text Key="TitleSubpage" Content="{state launch.navigation.caption}" IsVisible="{state launch.navigation.subpage}" TransitionKey="{state launch.navigation.title}" Class="layout-Shell-TitleSubpage" Localize="false" />
       </StackPanel>
     </TitleBar>
     <StackPanel StretchLastChild="true" Class="layout-Shell-8">

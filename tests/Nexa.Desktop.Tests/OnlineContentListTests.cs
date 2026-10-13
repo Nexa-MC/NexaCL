@@ -2,8 +2,8 @@ using Nexa.Desktop.Ui;
 using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Resources;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Tests;
@@ -87,7 +87,7 @@ internal static partial class Program
             AssertEqual(1, batches);
             if (page != "mods") AssertTrue(scene.Nodes.Any(n => n.Text == "34")); // Local pack-format metadata is not replaced by an online release.
             var detail = FindByKey(fixture.Shell, scene, "ManagementContentDetail").Entity;
-            var detailPage = fixture.Shell.Tree.Parent(detail);
+            var detailPage = ContentScrollAncestor(fixture.Shell.Tree, detail);
             fixture.Shell.Tree.GetComponent<XsrUiScroll>(detailPage)!.OffsetY = 400;
             fixture.Shell.Tree.MarkDirty(detailPage, XsrUiDirtyKinds.Layout);
             Pump(() => scene.Nodes.Any(n => fixture.Shell.Tree.Name(n.Entity) == "ManagementOnlineUpdate"));

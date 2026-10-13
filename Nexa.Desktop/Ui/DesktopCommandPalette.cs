@@ -1,8 +1,8 @@
-﻿using Nexa.Xsr.Renderer;
+﻿using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.State;
-using Nexa.Xsr.Renderer.Backend.Avalonia;
-using Nexa.Xsr;
 
 namespace Nexa.Desktop.Ui;
 
@@ -60,11 +60,11 @@ internal sealed class DesktopCommandPalette : IDisposable
         _previousFocusVisible = _shell.Tree.IsAlive(_previousFocus)
             && _shell.Tree.GetComponent<XsrUiInput>(_previousFocus)?.IsFocusVisible == true;
         _layer = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("CommandPalette.nxml"), _shell.Tree, _store);
-        _root = _dynamic.Append(_layer, Workspace(empty:false));
+        _root = _dynamic.Append(_layer, Workspace(empty: false));
         _search = Find("CommandPaletteSearch"); _close = Find("CommandPaletteClose");
         _empty = Find("CommandPaletteEmpty"); _rowSlot = Find("CommandPaletteRows");
         foreach (var route in DesktopCommandLine.Commands)
-            _rows[_dynamic.Append(_rowSlot, Row(route, visible:true))] = route;
+            _rows[_dynamic.Append(_rowSlot, Row(route, visible: true))] = route;
         _filterSignature = null;
         _shell.Stage.Show(_layer, modal: true);
         Filter(); _shell.Renderer.Focus(_search, showIndicator: false);
@@ -103,7 +103,7 @@ internal sealed class DesktopCommandPalette : IDisposable
             _dynamic.Reload(entity, Row(route, visible));
             if (visible) count++;
         }
-        _dynamic.Reload(_root, Workspace(empty:count == 0));
+        _dynamic.Reload(_root, Workspace(empty: count == 0));
     }
 
     private bool Matches(DesktopCommandRoute route, string query) => route.Id.Contains(query, StringComparison.OrdinalIgnoreCase)
@@ -121,9 +121,9 @@ internal sealed class DesktopCommandPalette : IDisposable
     }
 
     private static NxmlHostIr Workspace(bool empty) => DesktopMarkup.Dynamic("CommandPaletteWorkspace.d.nxml",
-        new Dictionary<string,string> { ["empty"] = empty ? "true" : "false" });
+        new Dictionary<string, string> { ["empty"] = empty ? "true" : "false" });
     private static NxmlHostIr Row(DesktopCommandRoute route, bool visible) => DesktopMarkup.Dynamic("CommandPaletteRow.d.nxml",
-        new Dictionary<string,string>
+        new Dictionary<string, string>
         { ["key"] = "CommandPaletteCommand." + route.Id, ["label"] = route.Label, ["visible"] = visible ? "true" : "false" });
 
     public void Dispose()

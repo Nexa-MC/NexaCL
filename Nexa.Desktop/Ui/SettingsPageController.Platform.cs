@@ -1,7 +1,7 @@
 using Nexa.Services.Capabilities;
 using Nexa.Services.Minecraft;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -164,8 +164,10 @@ internal sealed partial class SettingsPageController
             {
                 var section = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsPlatformGroup.d.nxml", new Dictionary<string, string>
                 {
-                    ["group"] = "PlatformGroup." + group, ["title"] = MemoryAnalysisUnavailable && group == PlatformTerm("group.18") ? PlatformTerm("group.memory") : group,
-                    ["card"] = "PlatformCard." + group, ["body"] = "PlatformCard." + group + ".Body"
+                    ["group"] = "PlatformGroup." + group,
+                    ["title"] = MemoryAnalysisUnavailable && group == PlatformTerm("group.18") ? PlatformTerm("group.memory") : group,
+                    ["card"] = "PlatformCard." + group,
+                    ["body"] = "PlatformCard." + group + ".Body"
                 }));
                 var card = CatalogNodes(section)["PlatformCard." + group + ".Body"];
                 foreach (var value in visible.Where(value => value.Definition.Group == group))
@@ -215,8 +217,10 @@ internal sealed partial class SettingsPageController
         }
         _dynamic.Append(card, DesktopMarkup.Dynamic("SettingsPlatformCapability.d.nxml", new Dictionary<string, string>
         {
-            ["row"] = "PlatformCapability." + value.Id, ["label"] = value.Definition.Label,
-            ["badgeKey"] = "PlatformCapabilityBadge." + value.Id, ["badge"] = _shell.Renderer.LocalizeText(StatusText(value)),
+            ["row"] = "PlatformCapability." + value.Id,
+            ["label"] = value.Definition.Label,
+            ["badgeKey"] = "PlatformCapabilityBadge." + value.Id,
+            ["badge"] = _shell.Renderer.LocalizeText(StatusText(value)),
             ["badgeStyle"] = value.Availability == CapabilityAvailability.Available ? "platform-badge platform-badge-available" : "platform-badge",
             ["evidence"] = value.Availability == CapabilityAvailability.Available ? value.Source : value.Reason
         }));
@@ -246,7 +250,9 @@ internal sealed partial class SettingsPageController
             string rowKey = "PlatformIssue." + issue.Code;
             var row = _dynamic.Append(issues, DesktopMarkup.Dynamic("SettingsPlatformIssue.d.nxml", new Dictionary<string, string>
             {
-                ["row"] = rowKey, ["actions"] = rowKey + ".Actions", ["title"] = _shell.Renderer.LocalizeText(issue.Title),
+                ["row"] = rowKey,
+                ["actions"] = rowKey + ".Actions",
+                ["title"] = _shell.Renderer.LocalizeText(issue.Title),
                 ["severity"] = _shell.Renderer.LocalizeText(SeverityLabel(issue.Severity))
             }, _shell.Renderer.LocalizeText));
             foreach (string id in issue.Remediations.Take(1))
@@ -255,8 +261,10 @@ internal sealed partial class SettingsPageController
                 bool enabled = _machineRefreshing is null && machine.Get<bool>(id) is { Availability: CapabilityAvailability.Available, Value: true };
                 var button = _dynamic.Append(CatalogNodes(row)[rowKey + ".Actions"], DesktopMarkup.Dynamic("SettingsPlatformRemediation.d.nxml", new Dictionary<string, string>
                 {
-                    ["key"] = "PlatformRemediation." + id, ["label"] = _shell.Renderer.LocalizeText(definition.Label),
-                    ["issue"] = _shell.Renderer.LocalizeText(issue.Title), ["enabled"] = Flag(enabled)
+                    ["key"] = "PlatformRemediation." + id,
+                    ["label"] = _shell.Renderer.LocalizeText(definition.Label),
+                    ["issue"] = _shell.Renderer.LocalizeText(issue.Title),
+                    ["enabled"] = Flag(enabled)
                 }, _shell.Renderer.LocalizeText));
                 _platformRemediationActions[button] = (id, machine, _machineScope, _platformActionGeneration);
             }
@@ -287,7 +295,8 @@ internal sealed partial class SettingsPageController
                 _ = ExecuteRemediationAsync(id, arguments, route, action.Snapshot, action.Scope, action.Generation);
         }
         if (RemediationCatalog.Get(id).RequiresConfirmation)
-            _feedback.ShowDialog("preflight.confirm." + id, RemediationCatalog.Get(id).Label, "将对当前选中的实例执行此操作。", "继续", "取消", accepted => { if (accepted) Execute(); });
+            _feedback.ShowDialog("preflight.confirm." + id, RemediationCatalog.Get(id).Label, ProductPresentationText.Raw("settings.platform.remediationMessage"),
+                ProductPresentationText.Raw("settings.action.continue"), ProductPresentationText.Raw("settings.action.cancel"), accepted => { if (accepted) Execute(); });
         else Execute();
     }
 
@@ -310,11 +319,11 @@ internal sealed partial class SettingsPageController
             if (!CurrentRemediationContext(snapshot, scope, generation)) return;
             var result = await _commands.Dispatch(route, new RemediationRequest(id, arguments, Confirmed: true)).Completion.ConfigureAwait(false);
             if (_disposed) return;
-            if (result.IsSuccess) _feedback.Info("修复操作已完成。");
-            else _feedback.Error(result.Error?.Message ?? "修复操作未完成。");
+            if (result.IsSuccess) _feedback.Info(ProductPresentationText.Raw("settings.platform.remediationComplete"));
+            else _feedback.Error(result.Error?.Message ?? ProductPresentationText.Raw("settings.platform.remediationIncomplete"));
         }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed) _feedback.Error("修复操作未完成，请查看任务详情。"); }
+        { if (!_disposed) _feedback.Error(ProductPresentationText.Raw("settings.platform.remediationFailed")); }
     }
 
     private static string SeverityLabel(PreflightSeverity severity)

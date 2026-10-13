@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
 using Nexa.Services.Capabilities;
@@ -9,9 +9,9 @@ using Nexa.Services.Logging;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Settings;
 using Nexa.Services.Setup;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
-using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -122,7 +122,7 @@ internal static partial class Program
             if (args.FirstOrDefault(argument => argument.StartsWith("nexacl:", StringComparison.OrdinalIgnoreCase)) is { } uri
                 && !DesktopActivation.TryParse(uri, out destination))
             {
-                Console.Error.WriteLine("不支持的 nexacl:// 链接。");
+                Console.Error.WriteLine(ProductPresentationText.Raw("program.copy.8de8cefc0a298f58"));
                 return 2;
             }
             if (!validation && (commandLine.SafeMode || SingleInstanceEnabled(folders.Root)))
@@ -132,7 +132,7 @@ internal static partial class Program
                 if (instance is null)
                 {
                     if (commandLine.SafeMode)
-                    { Console.Error.WriteLine("请先关闭正在运行的 NexaCL，再使用安全模式启动。"); exitCode = 2; return 2; }
+                    { Console.Error.WriteLine(ProductPresentationText.Raw("program.copy.c80dc9812e19a301")); exitCode = 2; return 2; }
                     exitCode = 0; return 0;
                 }
             }
@@ -147,7 +147,7 @@ internal static partial class Program
             bool locationLocked = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("NEXA_DATA_DIR")
                 ?? Environment.GetEnvironmentVariable("PCL_NEXA_DATA_DIR"));
             stage = "complete_storage_transaction";
-            startup?.ReportStage("检查数据位置");
+            startup?.ReportStage(ProductPresentationText.Raw("program.copy.2a15327eaf386e37"));
             // Recover before opening logs, settings or any other root consumer. Await here,
             // before ApplicationSession starts its STA thread: the GUI bootstrap must not
             // resume on a thread-pool thread after asynchronous file copying.
@@ -157,7 +157,7 @@ internal static partial class Program
             if (storageStartup.IsSuccess) folders = AppFolders.ResolveDefault();
             else
             {
-                try { Console.Error.WriteLine("存储恢复未完成，继续使用原数据位置：" + storageStartup.Error?.Message); }
+                try { Console.Error.WriteLine(ProductPresentationText.Raw("program.copy.9da908e4aee4f152") + storageStartup.Error?.Message); }
                 catch (IOException) { }
             }
             startup?.SetAppearance(ReadStartupAppearance(folders.Root));
@@ -178,25 +178,25 @@ internal static partial class Program
                             if (!guiStarted) startup?.CancellationToken.ThrowIfCancellationRequested();
                             startup?.ReportStage(value switch
                             {
-                                "compose_foundation" => "加载设置与服务",
-                                "compose_shell" => "准备界面",
-                                "first_run" => "准备首次设置",
-                                "startup_local_instances" => "读取本地版本",
-                                "startup_local_recovery" => "恢复本地事务",
-                                "startup_sidecar_discovery" => "发现插件接口",
-                                "startup_settings_metadata" => "加载设置目录",
-                                "startup_initial_policies" => "应用启动偏好",
-                                "startup_hidden_native_shell" or "startup_first_run_native_shell" => "准备原生窗口",
-                                "startup_controller_projection" or "startup_final_layout" => "准备页面布局",
-                                "startup_destination_facts" => "加载初始页面资料",
-                                "startup_install_catalog" => "加载安装目录",
-                                "startup_resource_catalog" => "加载资源目录",
-                                "startup_update_preferences" => "读取更新状态",
-                                "startup_update_discovery" => "检查启动器更新",
-                                "startup_native_fonts_media_icons" or "startup_first_run_scene" => "准备字体与图像",
-                                "startup_ready" or "startup_first_run_ready" => "初始化完成",
-                                "gui_lifetime" => "启动完成",
-                                _ => "准备启动器"
+                                "compose_foundation" => ProductPresentationText.Raw("program.copy.ffbfa39d1010a2b3"),
+                                "compose_shell" => ProductPresentationText.Raw("program.copy.03c8857c0a71ff98"),
+                                "first_run" => ProductPresentationText.Raw("program.copy.9718208b72d73e5d"),
+                                "startup_local_instances" => ProductPresentationText.Raw("program.copy.9b97822516a0690f"),
+                                "startup_local_recovery" => ProductPresentationText.Raw("program.copy.23e6560bf2f0d85d"),
+                                "startup_sidecar_discovery" => ProductPresentationText.Raw("program.copy.01e941901cfd7290"),
+                                "startup_settings_metadata" => ProductPresentationText.Raw("program.copy.32a162050e8284cc"),
+                                "startup_initial_policies" => ProductPresentationText.Raw("program.copy.2d8b46a92c6064d6"),
+                                "startup_hidden_native_shell" or "startup_first_run_native_shell" => ProductPresentationText.Raw("program.copy.a091eff3f907eb94"),
+                                "startup_controller_projection" or "startup_final_layout" => ProductPresentationText.Raw("program.copy.97445695454f73be"),
+                                "startup_destination_facts" => ProductPresentationText.Raw("program.copy.abff81701ef3aae3"),
+                                "startup_install_catalog" => ProductPresentationText.Raw("program.copy.ad6af4b84e5a332e"),
+                                "startup_resource_catalog" => ProductPresentationText.Raw("program.copy.ca69b5ddc439a203"),
+                                "startup_update_preferences" => ProductPresentationText.Raw("program.copy.e4219ee996f8b46a"),
+                                "startup_update_discovery" => ProductPresentationText.Raw("program.copy.9e3c76d5453e563b"),
+                                "startup_native_fonts_media_icons" or "startup_first_run_scene" => ProductPresentationText.Raw("program.copy.f73e91c015c68a99"),
+                                "startup_ready" or "startup_first_run_ready" => ProductPresentationText.Raw("program.copy.63c66119bd081130"),
+                                "gui_lifetime" => ProductPresentationText.Raw("program.copy.997cb4f867a376f8"),
+                                _ => ProductPresentationText.Raw("program.copy.a6300dab1fd19a8d")
                             });
                         }, folders, locationLocked, storageStartup.Error, instance, disableHardwareAcceleration, startup)).ConfigureAwait(false);
                     return exitCode;
@@ -205,9 +205,9 @@ internal static partial class Program
                     && exception is not OperationCanceledException and not OutOfMemoryException and not AccessViolationException)
                 {
                     log?.Error("Startup", "Initialization failed at " + stage, ExceptionDiagnostics.Describe(exception));
-                    try { Console.Error.WriteLine("启动初始化失败：" + LogRedactor.Redact(ExceptionDiagnostics.Describe(exception))); }
+                    try { Console.Error.WriteLine(ProductPresentationText.Raw("program.copy.dc386abc36210cac") + LogRedactor.Redact(ExceptionDiagnostics.Describe(exception))); }
                     catch (IOException) { }
-                    bool retry = await startup.WaitForRetryAsync("初始化失败，请查看启动日志后重试或关闭。").ConfigureAwait(false);
+                    bool retry = await startup.WaitForRetryAsync(ProductPresentationText.Raw("program.copy.46040f17634f4218")).ConfigureAwait(false);
                     if (!retry) { exitCode = 1; return exitCode; }
                     log?.Dispose(); log = null;
                     if (fileSink is not null) await fileSink.DisposeAsync().ConfigureAwait(false);
@@ -237,7 +237,7 @@ internal static partial class Program
             try { Console.Error.WriteLine($"{message}{Environment.NewLine}{detail}"); } catch (IOException) { }
             if (startup is not null && !startup.Completion.IsCompleted)
             {
-                startup.ReportFailure("启动失败，请查看启动日志后关闭窗口。");
+                startup.ReportFailure(ProductPresentationText.Raw("program.copy.6b2d855107bbf8f9"));
                 await startup.Completion.ConfigureAwait(false);
             }
             return 1;
@@ -352,9 +352,9 @@ internal static partial class Program
             ReadConfiguredKeepCount = () =>
             {
                 var policy = host.SettingsPolicy.Read(new());
-                if (!policy.IsSuccess) throw new IOException("无法读取备份保留策略。");
+                if (!policy.IsSuccess) throw new IOException(ProductPresentationText.Raw("program.copy.f0c793585316e786"));
                 var keepCount = policy.Value!.Values.Single(item => item.Key == "storage.backup-keep-count");
-                if (keepCount.ValidationError is not null) throw new IOException("备份保留策略无效。");
+                if (keepCount.ValidationError is not null) throw new IOException(ProductPresentationText.Raw("program.copy.2f29ce2f40c27582"));
                 return int.Parse(keepCount.Value.Value!, System.Globalization.CultureInfo.InvariantCulture);
             },
         };
@@ -441,7 +441,8 @@ internal static partial class Program
         using DesktopFeedbackPresenter feedbackPresenter = new(
             shell, uiIntents, feedback, runtime.Host.StateStore);
         if (storageStartupError is not null)
-            feedback.Warn("存储恢复尚未完成，继续使用原数据位置。可在“存储与迁移”中查看并取消待迁移后重新预览。\n" + storageStartupError.Message);
+            feedback.Warn(ProductPresentationText.Term("program.copy.5241d5cbe8c91c04", shell.Renderer.LocalizeText) + storageStartupError.Message,
+                localizeMessage: false);
         using DesktopTaskBubblePresenter taskBubble = new(shell, runtime.Host.StateStore);
         using TaskCenterRuntime taskCenter = TaskCenterRuntimeComposer.Compose(host, dispatchObservation);
         using TaskCenterController taskCenterPage = new(
@@ -478,7 +479,7 @@ internal static partial class Program
         installRun.Service.Renamed += (root, previous, current) =>
         {
             var remembered = library.Service.RememberRenamedInstance(root, previous, current);
-            if (!remembered.IsSuccess) feedback.Warn("版本已改名，但未能保存选择，请在版本列表中重新选择。");
+            if (!remembered.IsSuccess) feedback.Warn(ProductPresentationText.Raw("program.copy.274e2484303728dc"));
         };
         await using LaunchPageController launchPage = new(
             shell,
@@ -516,7 +517,7 @@ internal static partial class Program
             try { platformActions.OpenLocalFile(Path.Combine(settingsFolder, "settings.json")); }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception
                 or ArgumentException or InvalidOperationException or NotSupportedException)
-            { feedback.Error("无法打开本地设置文件。请检查文件是否存在及系统编辑器关联。"); }
+            { feedback.Error(ProductPresentationText.Raw("program.copy.0037a8119d3414e3")); }
         };
         settingsPage.ExportDiagnostics = token => ExportDiagnosticsAsync(runtime.Host, platformActions, buildInfo.ProductVersion, token);
         settingsPage.OpenLogDirectory = () => platformActions.OpenDirectory(Path.GetDirectoryName(logFilePath)!);
@@ -577,10 +578,10 @@ internal static partial class Program
         versionSettings.ShareScreenshotAsync = platformActions.ShareScreenshotAsync;
         versionSettings.PickRemediationJava = platformActions.PickJavaFileAsync;
         settingsPage.PickRemediationJava = platformActions.PickJavaFileAsync;
-        settingsPage.ConfigureSettingsTransfer(token => platformActions.ReadJsonDocumentAsync(1024 * 1024, () => shell.Renderer.LocalizeText("导入设置"), token),
-            (document, token) => platformActions.SaveJsonDocumentAsync(document, 1024 * 1024, () => shell.Renderer.LocalizeText("导出设置"), token));
-        versionSettings.ConfigureSettingsTransfer(token => platformActions.ReadJsonDocumentAsync(1024 * 1024, () => shell.Renderer.LocalizeText("导入设置"), token),
-            (document, token) => platformActions.SaveJsonDocumentAsync(document, 1024 * 1024, () => shell.Renderer.LocalizeText("导出设置"), token));
+        settingsPage.ConfigureSettingsTransfer(token => platformActions.ReadJsonDocumentAsync(1024 * 1024, () => shell.Renderer.LocalizeText(ProductPresentationText.Raw("program.copy.1a80d4a192698b02")), token),
+            (document, token) => platformActions.SaveJsonDocumentAsync(document, 1024 * 1024, () => shell.Renderer.LocalizeText(ProductPresentationText.Raw("program.copy.fe017784aa548855")), token));
+        versionSettings.ConfigureSettingsTransfer(token => platformActions.ReadJsonDocumentAsync(1024 * 1024, () => shell.Renderer.LocalizeText(ProductPresentationText.Raw("program.copy.1a80d4a192698b02")), token),
+            (document, token) => platformActions.SaveJsonDocumentAsync(document, 1024 * 1024, () => shell.Renderer.LocalizeText(ProductPresentationText.Raw("program.copy.fe017784aa548855")), token));
         versionSettings.ManagementChanged = () =>
         {
             if (library.Commands.TryResolve(MinecraftLibraryRoutes.Refresh, out var refresh))
@@ -603,13 +604,15 @@ internal static partial class Program
             host.Logging.Info("Launcher", "Headless shell validation started viewport=1280x800");
             XsrUiScene scene = shell.Render(new XsrUiSize(1280, 800));
             await ValidateDynamicNetworkPageAsync(shell, settingsPage, uiIntents).ConfigureAwait(false);
+            await ValidateDynamicLaunchInstallAsync().ConfigureAwait(false);
+            await ValidateDynamicSettingsMigrationAsync(shell, host.StateStore, uiIntents).ConfigureAwait(false);
             ValidateDynamicTaskPage(shell, taskCenterPage, host.Tasks, uiIntents);
             ValidateDynamicDock(shell, host.StateStore);
             ValidateDynamicGlobalOverlays(shell, host.StateStore, uiIntents, feedback);
-            ValidateDynamicVersionSelection(shell,host.StateStore);
-            ValidateDynamicBootstrap(shell,host.StateStore);
-            ValidateDynamicWardrobe(shell,host.StateStore);
-            ValidateDynamicResources(shell,host.StateStore,uiIntents);
+            ValidateDynamicVersionSelection(shell, host.StateStore);
+            ValidateDynamicBootstrap(shell, host.StateStore);
+            ValidateDynamicWardrobe(shell, host.StateStore);
+            ValidateDynamicResources(shell, host.StateStore, uiIntents);
             Console.WriteLine($"NXML shell and dynamic network templates validated: {scene.Count} shell semantic nodes.");
             host.Logging.Info("Launcher", $"Headless shell validation completed nodes={scene.Count}");
             setStage("shutdown");
@@ -637,7 +640,7 @@ internal static partial class Program
         using IDisposable? telemetrySubscription = telemetrySession is null ? null : stateObservation.Subscribe(telemetrySession);
         operationLog.Diagnostics = telemetrySession;
         rollouts.Start();
-        var installExit = new DesktopInstallExitCoordinator(host.StateStore, installRun.Commands, feedback, platformActions.RequestClose, minecraft.Commands);
+        var installExit = new DesktopInstallExitCoordinator(host.StateStore, installRun.Commands, feedback, platformActions.RequestClose, minecraft.Commands, localize: shell.Renderer.LocalizeText);
         using var launchExit = new DesktopLaunchExitCoordinator(() => minecraft.LaunchCoordinator!.HasPendingFinalization,
             minecraft.LaunchCoordinator!.WaitForFinalizationAsync, platformActions.PostToWindow, platformActions.RequestClose, feedback);
         platformActions.CloseRequested = () => installExit.CanClose() && launchExit.CanClose();
@@ -715,7 +718,7 @@ internal static partial class Program
         var runtime = FirstRunRuntimeComposer.Compose(service);
         runtime.Queries.TryResolve(FirstRunContract.Status, out var read);
         var status = runtime.Queries.QueryAsync<FirstRunQuery, FirstRunStatus>(read, new()).AsTask().GetAwaiter().GetResult();
-        if (!status.IsSuccess) throw new IOException(status.Error?.Message ?? "无法读取初始设置。");
+        if (!status.IsSuccess) throw new IOException(status.Error?.Message ?? ProductPresentationText.Raw("program.copy.ee29f105c75ef61a"));
         AvaloniaUiPlatformActions platform = new() { LocalizeContentPicker = shell.Renderer.LocalizeText };
         List<string> nativeFiles = [];
         using IDisposable? nativeFileSubscription = OperatingSystem.IsMacOS() ? DesktopNativeFileActivation.Subscribe(file =>
@@ -755,7 +758,7 @@ internal static partial class Program
         {
             // Avalonia has one application lifetime per process. Reopen after saving the
             // bootstrap locator so every service starts with the selected data root.
-            var start = new System.Diagnostics.ProcessStartInfo(Environment.ProcessPath ?? throw new IOException("无法定位启动器程序。"))
+            var start = new System.Diagnostics.ProcessStartInfo(Environment.ProcessPath ?? throw new IOException(ProductPresentationText.Raw("program.copy.34af0229e0340fa1")))
             { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = AppContext.BaseDirectory };
             if (Path.GetFileNameWithoutExtension(start.FileName).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
                 start.ArgumentList.Add(Environment.GetCommandLineArgs()[0]);

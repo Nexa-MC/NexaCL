@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data reason}&#10;&#10;{data summary}&#10;&#10;{data heading}&#10;{data rows}" Localize="false" /></nxml-dynamic>

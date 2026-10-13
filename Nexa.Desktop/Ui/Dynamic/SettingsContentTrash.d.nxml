@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<StackPanel Class="settings-content-workspace"><Dynamic Key="ContentTrash.History" /><Text Content="移除的内容仍保存在游戏目录中。还原不会覆盖同名文件。" Class="settings-content-message" /><Text Content="没有已移除的内容。" IsVisible="{data empty}" Class="settings-content-message" /><Dynamic Key="ContentTrash.Rows" /><Button Key="ContentTrash.Next" Content="{data next}" Label="{data next}" Command="ui.settings.management.action" Enabled="{data enabled}" Width="140" Class="settings-content-button" IsVisible="{data hasPages}"/></StackPanel>
+</nxml-dynamic>

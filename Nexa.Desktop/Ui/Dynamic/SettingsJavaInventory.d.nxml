@@ -1,5 +1,5 @@
 ﻿<nxml-dynamic>
-  <SettingsChoiceTrack Key="SettingsJavaInventory" Label="Java 运行时" Class="settings-java-inventory">
+  <SettingsChoiceTrack Key="SettingsJavaInventory" Label="Java 运行时" SelectionRequired="false" Class="settings-java-inventory">
     <StackPanel Key="SettingsJavaInventory.Header" Class="settings-java-header">
       <Text Content="已安装 Java" Class="{data titleStyle}" />
       <Button Key="SettingsJavaAdd" Label="添加 Java" Content="添加 Java" Command="ui.settings.java.add" IsVisible="{data addVisible}" Enabled="{data addEnabled}" Class="settings-catalog-action settings-java-add" />

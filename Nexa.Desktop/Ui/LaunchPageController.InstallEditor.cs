@@ -1,6 +1,6 @@
 using Nexa.Services.Minecraft.Install;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -15,7 +15,7 @@ internal sealed partial class LaunchPageController
     private void OpenInstallEditor(XsrUiEntityId source)
     {
         if (_installCatalogQueries is null || !_installCatalogQueries.TryResolve(MinecraftInstallEditContract.Query, out XsrQueryId route))
-        { _feedback.Warn("无法读取版本修改信息。"); return; }
+        { _feedback.Warn(InstallCopy("copy.bfe55e324dd7")); return; }
         string root = ReadCell(LaunchPageState.InstanceDirectoryKey);
         string instance = ReadCell(LaunchPageState.SelectedInstanceKey);
         if (string.IsNullOrWhiteSpace(instance)) return;
@@ -30,15 +30,12 @@ internal sealed partial class LaunchPageController
 
     private void SetInstallEditorLabels(bool editing)
     {
-        _shell.Tree.GetComponent<XsrUiSemantic>(_javaInstallPage)!.Label = editing ? "修改版本" : "安装 Java 版";
+        Publish(LaunchPageState.JavaInstallTitleKey, InstallCopy(editing ? "edit.title" : "install.title"));
         _editPlan = null;
         _editPlanKey = null;
-        var button = _javaInstallEntities["JavaInstallStart"];
-        _shell.Tree.GetComponent<XsrUiInput>(button)!.Enabled = !editing;
-        _shell.Tree.GetComponent<XsrUiText>(button)!.Content = editing ? "保存修改" : "开始安装";
-        _shell.Tree.GetComponent<XsrUiSemantic>(button)!.Label = editing ? "保存版本修改" : "开始安装 Java 版 Minecraft";
-        _shell.Tree.GetComponent<XsrUiInput>(_javaInstallEntities["JavaInstallVersionInput"])!.Enabled = true;
-        _shell.Tree.MarkDirty(_javaInstallPage, XsrUiDirtyKinds.Paint | XsrUiDirtyKinds.Layout);
+        ReloadInstall(_installWorkspace, ("startEnabled", InstallFlag(!editing)),
+            ("startText", InstallCopy(editing ? "edit.save" : "install.start")),
+            ("startLabel", InstallCopy(editing ? "edit.save-label" : "install.start-label")));
     }
 
     private void ProjectInstallEditor()
@@ -46,12 +43,12 @@ internal sealed partial class LaunchPageController
         if (!_editingInstall || _installEditRead is not { IsCompleted: true } read) return;
         _installEditRead = null;
         if (!PendingQuery.Succeeded(read))
-        { _feedback.Warn("无法读取版本信息，请返回后重试。"); return; }
+        { _feedback.Warn(InstallCopy("copy.7a8cf0d72095")); return; }
         _installEdit = read.Result.Value!;
         _installGameChosen = true;
         _selectedInstallVersion = _installEdit.GameVersion;
         foreach (var selection in _installEdit.Selection) _selectedInstallBuilds[selection.Loader] = selection.Version;
-        _selectedInstallLoader = _installEdit.Selection.Count > 0 ? _installEdit.Selection[0].Loader.ToString() : "原版 Minecraft";
+        _selectedInstallLoader = _installEdit.Selection.Count > 0 ? _installEdit.Selection[0].Loader.ToString() : LaunchInstallText.Raw("loader.vanilla");
         PrefetchInstallCatalog(_installEdit.GameVersion);
         UpdateJavaInstallSubpageVisibility("JavaMinecraftPage");
         _catalogRevision = -1;
@@ -72,13 +69,15 @@ internal sealed partial class LaunchPageController
         if (!completed.IsSuccess) return;
         _editPlan = completed.Value!;
         _editPlanKey = key;
-        var button = _javaInstallEntities["JavaInstallStart"];
         bool renamed = name != _installEdit.InstanceId;
-        string label = renamed && _editPlan.Kind == MinecraftInstallEditKind.Unchanged ? "保存改名" : _editPlan.ActionLabel;
-        _shell.Tree.GetComponent<XsrUiText>(button)!.Content = label;
-        _shell.Tree.GetComponent<XsrUiSemantic>(button)!.Label = label;
-        _shell.Tree.GetComponent<XsrUiInput>(button)!.Enabled = name.Length > 0 && (renamed || _editPlan.Kind != MinecraftInstallEditKind.Unchanged);
-        _shell.Tree.MarkDirty(button, XsrUiDirtyKinds.Paint | XsrUiDirtyKinds.Layout);
+        string label = renamed && _editPlan.Kind == MinecraftInstallEditKind.Unchanged ? InstallCopy("edit.rename") : InstallCopy(_editPlan.Kind switch
+        {
+            MinecraftInstallEditKind.Unchanged => "edit.unchanged",
+            MinecraftInstallEditKind.Reinstall => "edit.reinstall",
+            _ => _editPlan.ChangedLoaders.All(loader => !_installEdit.Selection.Any(original => original.Loader == loader)) ? "edit.add" : "edit.components",
+        });
+        ReloadInstall(_installWorkspace, ("startText", label), ("startLabel", label),
+            ("startEnabled", InstallFlag(name.Length > 0 && (renamed || _editPlan.Kind != MinecraftInstallEditKind.Unchanged))));
     }
 
 }

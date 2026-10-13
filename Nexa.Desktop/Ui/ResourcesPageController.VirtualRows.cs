@@ -121,9 +121,16 @@ internal sealed partial class ResourcesPageController
             name = ResourceIdentity(project.Id) + "." + (suffix++).ToString(CultureInfo.InvariantCulture);
         _catalogRowNames[name] = key;
         var row = AppendResource(_entities["ResourceRowParking"], "ResourceProject.d.nxml", new()
-        { ["row"] = "ResourceProject." + name, ["body"] = "ResourceProject." + name + ".Body", ["title"] = "", ["description"] = "", ["metadata"] = "",
-          ["icon"] = project.Kind switch { ResourceKind.Mod => DesktopResourcesText.Raw("icon-mod"), ResourceKind.Shader => DesktopResourcesText.Raw("icon-shader"), _ => DesktopResourcesText.Raw("icon-package") },
-          ["details"] = "ResourceDetails." + name, ["download"] = "ResourceQuickDownload." + name });
+        {
+            ["row"] = "ResourceProject." + name,
+            ["body"] = "ResourceProject." + name + ".Body",
+            ["title"] = "",
+            ["description"] = "",
+            ["metadata"] = "",
+            ["icon"] = project.Kind switch { ResourceKind.Mod => DesktopResourcesText.Raw("icon-mod"), ResourceKind.Shader => DesktopResourcesText.Raw("icon-shader"), _ => DesktopResourcesText.Raw("icon-package") },
+            ["details"] = "ResourceDetails." + name,
+            ["download"] = "ResourceQuickDownload." + name
+        });
         var view = new CatalogRowView(key, project, row, _entities["ResourceProjectIcon"], _entities["ResourceProjectTitle"],
             _entities["ResourceProjectDescription"], _entities["ResourceProjectMetadata"]);
         RegisterResourceText(view.Title, row, "title"); RegisterResourceText(view.Description, row, "description"); RegisterResourceText(view.Metadata, row, "metadata");

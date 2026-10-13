@@ -1,0 +1,3 @@
+<nxml-component>
+  <Node Recipe="CommandInput" Kind="CheckBox" Role="CheckBox" Clickable="true" Focusable="true" Checked="false" AcceptsChildren="false" />
+</nxml-component>

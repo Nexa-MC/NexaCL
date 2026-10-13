@@ -1,10 +1,10 @@
-﻿using Nexa.Xsr.Renderer.Nxml;
-using Nexa.Services.Minecraft;
+﻿using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Crash;
 using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Process;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Ui;
@@ -166,7 +166,7 @@ internal sealed partial class LaunchPageController
             if (!_disposed && !result.IsSuccess) _feedback.Error(result.Error?.Message ?? ProcessTerm("process.failed"));
         }
         catch (Exception ex) when (ex is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed) _feedback.Error(ProcessFormat("ProcessStopFailed", new() { ["message"] = ex.Message })); }
+        { if (!_disposed) _feedback.Error(ProcessFormat("ProcessStopFailed", new() { ["message"] = ex.Message }), localizeMessage: false); }
     }
 
     private async Task SelectJavaMajorAsync(int major)
@@ -175,7 +175,7 @@ internal sealed partial class LaunchPageController
         try
         {
             if (!_minecraft.Commands.TryResolve(MinecraftRouteIds.JavaVersionSelect, out var route)) return;
-            _feedback.Info(ProcessFormat("JavaSearching", new() { ["major"] = major.ToString(System.Globalization.CultureInfo.CurrentCulture) }));
+            _feedback.Info(ProcessFormat("JavaSearching", new() { ["major"] = major.ToString(System.Globalization.CultureInfo.CurrentCulture) }), localizeMessage: false);
             var result = await _minecraft.Commands.Dispatch(route, new MinecraftSelectJavaVersionCommand(major), cancellationToken: _lifetimeCancellation.Token).Completion.ConfigureAwait(false);
             if (!_disposed && !result.IsSuccess) _feedback.Error(result.Error?.Message ?? ProcessTerm("java.failed"));
             else if (!_disposed)
@@ -186,7 +186,7 @@ internal sealed partial class LaunchPageController
         }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested) { }
         catch (Exception ex) when (ex is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed) _feedback.Error(ProcessFormat("JavaChooseFailed", new() { ["message"] = ex.Message })); }
+        { if (!_disposed) _feedback.Error(ProcessFormat("JavaChooseFailed", new() { ["message"] = ex.Message }), localizeMessage: false); }
         finally { Interlocked.Exchange(ref _pickingJava, 0); }
     }
 

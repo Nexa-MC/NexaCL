@@ -1,0 +1,72 @@
+<StackPanel>
+<Text Key="yes" Content="是" />
+<Text Key="no" Content="否" />
+<Text Key="mode.0" Content="生存" />
+<Text Key="mode.1" Content="创造" />
+<Text Key="mode.2" Content="冒险" />
+<Text Key="mode.3" Content="旁观" />
+<Text Key="difficulty.0" Content="和平" />
+<Text Key="difficulty.1" Content="简单" />
+<Text Key="difficulty.2" Content="普通" />
+<Text Key="difficulty.3" Content="困难" />
+<Text Key="pack.trashed" Content="已移除" />
+<Text Key="pack.enabled" Content="已启用" />
+<Text Key="pack.disabled" Content="已停用" />
+<Text Key="world.import-error" Content="无法选择数据包文件。" />
+<Text Key="health.error" Content="无法完成健康检查，请先关闭游戏并检查访问权限。" />
+<Text Key="snapshot.empty" Content="此世界尚无快照。" />
+<Text Key="snapshot.read-error" Content="无法读取世界快照历史，请检查存储目录。" />
+<Text Key="snapshot.verified" Content="世界快照全部文件校验通过。" />
+<Text Key="snapshot.verify-error" Content="世界快照校验未完成。" />
+<Text Key="snapshot.complete" Content="世界快照操作已完成。" />
+<Text Key="snapshot.write-error" Content="世界快照操作未完成。" />
+<Text Key="snapshot.restore-title" Content="恢复世界快照" />
+<Text Key="snapshot.restore-accept" Content="恢复副本" />
+<Text Key="return" Content="返回" />
+<Text Key="server.read-error" Content="无法读取服务器列表。请检查 servers.dat，原文件未修改。" />
+<Text Key="server.connecting" Content="正在连接…" />
+<Text Key="server.unchecked" Content="状态未检查" />
+<Text Key="server.protocol-same" Content="协议号一致（模组与认证另行检查）" />
+<Text Key="server.protocol-unknown" Content="协议兼容无法判定（缺少已校验客户端或服务器协议号）" />
+<Text Key="server.remove-title" Content="移除服务器" />
+<Text Key="server.remove-message" Content="只从此版本的列表移除此服务器。" />
+<Text Key="remove" Content="移除" />
+<Text Key="cancel" Content="取消" />
+<Text Key="export.pick-error" Content="无法选择导出目录。" />
+<Text Key="export.read-error" Content="无法读取导出范围，请检查目录后刷新。" />
+<Text Key="unrecorded" Content="未记录" />
+<Text Key="online.match-error" Content="暂时无法识别在线信息，已保留本地资料。" />
+<Text Key="online.refresh-error" Content="暂时无法刷新在线信息。" />
+<Text Key="online.unavailable" Content="在线信息尚不可用" />
+<Text Key="online.cached" Content="正在显示缓存在线资料，后台正在刷新" />
+<Text Key="online.linking" Content="正在关联在线信息" />
+<Text Key="online.failed" Content="在线信息请求失败，请刷新重试" />
+<Text Key="online.incomplete" Content="在线信息已刷新，部分文件未能完整识别" />
+<Text Key="online.refreshed" Content="在线信息已刷新" />
+<Text Key="online.read-error" Content="暂时无法获取在线信息，请稍后重试。" />
+<Text Key="online.open-error" Content="无法打开项目页面。" />
+<Text Key="not-provided" Content="未提供" />
+<Text Key="unavailable" Content="暂不可用" />
+<Text Key="action.Lock" Content="Management.锁定编辑" Localize="false" />
+<Text Key="action.Unlock" Content="Management.解除编辑保护" Localize="false" />
+<Text Key="action.Backup" Content="Management.备份世界" Localize="false" />
+<Text Key="action.Copy" Content="Management.复制世界" Localize="false" />
+<Text Key="action.Import" Content="Management.导入数据包" Localize="false" />
+<Text Key="action.Health" Content="Management.检查世界健康" Localize="false" />
+<Text Key="action.SnapshotRead" Content="Management.读取快照历史" Localize="false" />
+<Text Key="action.SnapshotCapture" Content="Management.创建世界快照" Localize="false" />
+<Text Key="action.ServerAdd" Content="Management.添加服务器" Localize="false" />
+<Text Key="action.Cancel" Content="Management.取消" Localize="false" />
+<Text Key="action.Save" Content="Management.保存" Localize="false" />
+<Text Key="action.ExportChoose" Content="Management.选择保存目录" Localize="false" />
+<Text Key="action.Export" Content="Management.导出整合包" Localize="false" />
+<Text Key="action.Project" Content="Management.查看项目" Localize="false" />
+<Text Key="action.Recognize" Content="Management.重新识别" Localize="false" />
+<Text Key="channel.release" Content="正式版" />
+<Text Key="action.ServerCheck" Content="Management.检查状态" Localize="false" />
+<Text Key="action.ServerJoin" Content="Management.加入" Localize="false" />
+<Text Key="action.ServerEdit" Content="Management.编辑" Localize="false" />
+<Text Key="action.ServerUp" Content="Management.上移" Localize="false" />
+<Text Key="action.ServerDown" Content="Management.下移" Localize="false" />
+<Text Key="action.ServerRemove" Content="Management.移除" Localize="false" />
+</StackPanel>

@@ -5,6 +5,17 @@ namespace Nexa.Xsr.Renderer;
 
 public sealed partial class XsrUiShell
 {
+    private readonly Dictionary<XsrUiEntityId, (double Size, double Weight)> _declaredTitleTypography = [];
+
+    private void CaptureDeclaredTitleTypography()
+    {
+        Tree.Walk(TitleBar, entity =>
+        {
+            if (Tree.GetComponent<XsrUiText>(entity) is not null && Tree.GetComponent<XsrUiVisualStyle>(entity) is { } visual)
+                _declaredTitleTypography[entity] = (visual.FontSize, visual.FontWeight);
+            return true;
+        });
+    }
 
     /// <summary>
     /// Shared composition tail for both construction paths: the shell-owned rail toggle, the
@@ -208,8 +219,16 @@ public sealed partial class XsrUiShell
             }
 
             visual.Foreground = Palette.TitleBarText;
-            visual.FontSize = primary ? TitleFontSize : TitleSecondaryFontSize;
-            visual.FontWeight = primary ? TitleFontWeight : 400;
+            if (_declaredTitleTypography.TryGetValue(child, out var declared))
+            {
+                visual.FontSize = declared.Size;
+                visual.FontWeight = declared.Weight;
+            }
+            else
+            {
+                visual.FontSize = primary ? TitleFontSize : TitleSecondaryFontSize;
+                visual.FontWeight = primary ? TitleFontWeight : 400;
+            }
             Tree.MarkDirty(child, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
             textIndex++;
             return true;

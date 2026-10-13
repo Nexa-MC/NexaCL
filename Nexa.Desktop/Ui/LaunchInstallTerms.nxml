@@ -1,0 +1,71 @@
+<nxml-page>
+  <StackPanel>
+    <Text Key="install.title" Content="安装 Java 版" />
+    <Text Key="edit.title" Content="修改版本" />
+    <Text Key="install.start" Content="开始安装" />
+    <Text Key="install.start-label" Content="开始安装 Java 版 Minecraft" />
+    <Text Key="edit.save" Content="保存修改" />
+    <Text Key="edit.save-label" Content="保存版本修改" />
+    <Text Key="edit.rename" Content="保存改名" />
+    <Text Key="input.search" Content="搜索版本" />
+    <Text Key="input.name" Content="版本名称" />
+    <Text Key="catalog.retry" Content="重新获取版本" />
+    <Text Key="edit.unchanged" Content="无需修改" />
+    <Text Key="edit.reinstall" Content="重新安装" />
+    <Text Key="edit.add" Content="附加安装" />
+    <Text Key="edit.components" Content="更新组件" />
+    <Text Key="catalog.loading" Content="正在获取版本…" />
+    <Text Key="catalog.offline" Content="版本来源暂时不可用，请稍后重试。" />
+    <Text Key="catalog.stale" Content="正在显示缓存版本资料，请刷新以确认最新版本。" />
+    <Text Key="catalog.failed" Content="获取失败，请重试。" />
+    <Text Key="catalog.unmatched" Content="没有匹配的版本。" />
+    <Text Key="catalog.empty" Content="此游戏版本暂无兼容版本。" />
+    <Text Key="catalog.partial" Content="部分来源获取失败，点击重试。" />
+    <Text Key="catalog.immutable" Content="不可更改" />
+    <Text Key="catalog.installed" Content="已安装" />
+    <Text Key="catalog.release" Content="正式版" />
+    <Text Key="catalog.preview" Content="测试版" />
+    <Text Key="style.tab" Content="launch-install-tab" />
+    <Text Key="style.tab-active" Content="launch-install-tab launch-install-tab-active" />
+    <Text Key="style.choice" Content="launch-install-choice" />
+    <Text Key="style.choice-active" Content="launch-install-choice launch-install-choice-active" />
+    <Text Key="style.addon" Content="launch-install-choice launch-install-addon" />
+    <Text Key="style.addon-active" Content="launch-install-choice launch-install-addon launch-install-choice-active" />
+    <Text Key="style.row" Content="launch-install-catalog-row" />
+    <Text Key="style.row-selected" Content="launch-install-catalog-row launch-install-catalog-row-selected" />
+    <Text Key="style.check" Content="layout-CatalogRow-CatalogCheck launch-install-catalog-check" />
+    <Text Key="style.check-selected" Content="layout-CatalogRow-CatalogCheck launch-install-catalog-check launch-install-catalog-check-selected" />
+    <Text Key="tab.JavaMinecraftTab" Content="Minecraft" />
+    <Text Key="tab.JavaForgeTab" Content="Forge" />
+    <Text Key="tab.JavaCleanroomTab" Content="Cleanroom" />
+    <Text Key="tab.JavaNeoForgeTab" Content="NeoForge" />
+    <Text Key="tab.JavaFabricTab" Content="Fabric" />
+    <Text Key="tab.JavaLegacyFabricTab" Content="Legacy Fabric" />
+    <Text Key="tab.JavaFabricApiTab" Content="Fabric API" />
+    <Text Key="tab.JavaOptiFabricTab" Content="OptiFabric" />
+    <Text Key="tab.JavaQuiltTab" Content="Quilt" />
+    <Text Key="tab.JavaQslTab" Content="QSL" />
+    <Text Key="tab.JavaLabyModTab" Content="LabyMod" />
+    <Text Key="tab.JavaOptiFineTab" Content="OptiFine" />
+    <Text Key="tab.JavaLiteLoaderTab" Content="LiteLoader" />
+    <Text Key="loader.vanilla" Content="原版 Minecraft" />
+    <Text Key="copy.8599bb4a4f3b" Content="正在读取版本信息。" />
+    <Text Key="copy.26a1214b777a" Content="请先选择 Minecraft 版本。" />
+    <Text Key="copy.ff4c49f3fa06" Content="请输入版本名称。" />
+    <Text Key="copy.e0eac3f0bbfa" Content="一次只能选择一个主加载器。" />
+    <Text Key="copy.fe50d3e377bb" Content="尚未确定 Minecraft 目录。" />
+    <Text Key="copy.bfe55e324dd7" Content="无法读取版本修改信息。" />
+    <Text Key="copy.7a8cf0d72095" Content="无法读取版本信息，请返回后重试。" />
+    <Text Key="copy.b4acd16bf9ae" Content="版本设置页面未绑定。" />
+    <Text Key="copy.7b91e37cba7e" Content="更衣橱页面未绑定。" />
+    <Text Key="copy.a6e55436e782" Content="账户切换命令未注册。" />
+    <Text Key="copy.3f2e775cf3f9" Content="当前版本已变化，请重新打开实例概览。" />
+    <Text Key="copy.60ff2e16bc1a" Content="实例目录无效，请重新打开实例概览。" />
+    <Text Key="copy.a9d2bf7e19f8" Content="设置页面未绑定。" />
+    <Text Key="copy.f56baa816c6f" Content="资源页面未绑定。" />
+    <Text Key="copy.f3d79210f3c2" Content="无法导航：未识别的页面入口。" />
+    <Text Key="selection.separator" Content=" + " Localize="false" />
+    <Text Key="addon.fabric-api" Content="Fabric API" />
+    <Text Key="addon.qsl" Content="QSL" />
+  </StackPanel>
+</nxml-page>

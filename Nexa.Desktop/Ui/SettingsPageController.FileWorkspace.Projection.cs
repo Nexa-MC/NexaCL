@@ -25,13 +25,21 @@ internal sealed partial class SettingsPageController
             ["loadingList"] = Flag(listing is null && _workspaceError is null),
             ["loadingFile"] = Flag(_workspaceDocumentRead is not null),
             ["showList"] = Flag(listing is not null && document is null),
-            ["directory"] = listing?.Directory ?? "", ["hasParent"] = Flag(_workspaceDirectory.Length > 0),
-            ["incomplete"] = Flag(listing is { Complete: false }), ["empty"] = Flag(listing?.Entries.Count == 0),
-            ["listPaging"] = Flag(listPages > 1), ["listPage"] = InstanceNumber(_workspaceListPage + 1), ["listPages"] = InstanceNumber(listPages),
-            ["hasDocument"] = Flag(document is not null), ["editable"] = Flag(editable),
-            ["manyLines"] = Flag(lines.Count == 65536), ["textPaging"] = Flag(textPages > 1),
-            ["textPage"] = InstanceNumber(_workspaceTextPage + 1), ["textPages"] = InstanceNumber(textPages),
-            ["shortLine"] = Flag(shortLine), ["longLine"] = Flag(!shortLine),
+            ["directory"] = listing?.Directory ?? "",
+            ["hasParent"] = Flag(_workspaceDirectory.Length > 0),
+            ["incomplete"] = Flag(listing is { Complete: false }),
+            ["empty"] = Flag(listing?.Entries.Count == 0),
+            ["listPaging"] = Flag(listPages > 1),
+            ["listPage"] = InstanceNumber(_workspaceListPage + 1),
+            ["listPages"] = InstanceNumber(listPages),
+            ["hasDocument"] = Flag(document is not null),
+            ["editable"] = Flag(editable),
+            ["manyLines"] = Flag(lines.Count == 65536),
+            ["textPaging"] = Flag(textPages > 1),
+            ["textPage"] = InstanceNumber(_workspaceTextPage + 1),
+            ["textPages"] = InstanceNumber(textPages),
+            ["shortLine"] = Flag(shortLine),
+            ["longLine"] = Flag(!shortLine),
             ["canPreview"] = Flag(editable && _workspacePreviewRead is null && _managementWrite is null),
             ["previewPending"] = Flag(_workspacePreviewRead is not null)
         };
@@ -65,8 +73,10 @@ internal sealed partial class SettingsPageController
         { ClearWorkspaceRows("FileWorkspace.PreviewResult"); _workspacePreviewRoot = default; return; }
         var data = new Dictionary<string, string>
         {
-            ["previousBytes"] = InstanceNumber(preview.PreviousBytes), ["updatedBytes"] = InstanceNumber(preview.UpdatedBytes),
-            ["previousLines"] = InstanceNumber(preview.PreviousLines), ["updatedLines"] = InstanceNumber(preview.UpdatedLines),
+            ["previousBytes"] = InstanceNumber(preview.PreviousBytes),
+            ["updatedBytes"] = InstanceNumber(preview.UpdatedBytes),
+            ["previousLines"] = InstanceNumber(preview.PreviousLines),
+            ["updatedLines"] = InstanceNumber(preview.UpdatedLines),
             ["canSave"] = Flag(_managementWrite is null)
         };
         if (!_shell.Tree.IsAlive(_workspacePreviewRoot))
@@ -100,8 +110,11 @@ internal sealed partial class SettingsPageController
             var row = _dynamic.Append(_workspaceNodes["FileWorkspace.Rows"],
                 DesktopMarkup.Dynamic("SettingsInstanceFile" + (entry.IsDirectory ? "Directory" : "Text") + "Row.d.nxml", new Dictionary<string, string>
                 {
-                    ["row"] = "FileWorkspaceRow." + identity, ["action"] = "FileWorkspace.Open." + identity,
-                    ["name"] = entry.Name, ["size"] = InstanceToolSize(entry.Size ?? 0), ["enabled"] = Flag(canRead)
+                    ["row"] = "FileWorkspaceRow." + identity,
+                    ["action"] = "FileWorkspace.Open." + identity,
+                    ["name"] = entry.Name,
+                    ["size"] = InstanceToolSize(entry.Size ?? 0),
+                    ["enabled"] = Flag(canRead)
                 }, _shell.Renderer.LocalizeText));
             BindInstanceToolAction(CatalogNodes(row), "FileWorkspace.Open." + identity, () => OpenWorkspaceEntry(listing, entry));
         }
@@ -126,7 +139,8 @@ internal sealed partial class SettingsPageController
                 line.Length > 120 ? "SettingsInstanceFileLongLine.d.nxml" : "SettingsInstanceFileLine.d.nxml",
                 new Dictionary<string, string>
                 {
-                    ["row"] = "FileWorkspace.Line." + InstanceNumber(number), ["number"] = InstanceNumber(number++),
+                    ["row"] = "FileWorkspace.Line." + InstanceNumber(number),
+                    ["number"] = InstanceNumber(number++),
                     ["content"] = _workspaceDraft.Substring(line.Start, Math.Min(line.Length, 120))
                 }));
         }

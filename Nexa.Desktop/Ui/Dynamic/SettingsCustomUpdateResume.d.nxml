@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Button Key="SettingsResumeUpdate" Content="继续更新" Label="继续更新" Command="ui.settings.update.install" Class="settings-catalog-action settings-custom-update-action" />
+</nxml-dynamic>

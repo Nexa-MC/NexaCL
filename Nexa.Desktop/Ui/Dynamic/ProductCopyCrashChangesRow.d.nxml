@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data kind} · {data category}&#10;{data path}" Localize="false" /></nxml-dynamic>

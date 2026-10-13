@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<StackPanel Key="SettingsHookActions" Class="settings-editor-line"><Button Key="{data add}" Label="添加行" Content="添加行" Command="ui.settings.hook.add" Class="settings-catalog-action settings-hook-add" /><Button Key="{data previous}" IsVisible="{data pages}" Label="上一页" Content="上一页" Command="ui.settings.hook.page" Class="settings-catalog-action settings-hook-page" /><Button Key="{data next}" IsVisible="{data pages}" Label="下一页" Content="下一页" Command="ui.settings.hook.page" Class="settings-catalog-action settings-hook-page" /><Text Label="{data page} / {data total}" Content="{data page} / {data total}" Localize="false" IsVisible="{data pages}" Class="settings-hook-counter" /></StackPanel>
+</nxml-dynamic>

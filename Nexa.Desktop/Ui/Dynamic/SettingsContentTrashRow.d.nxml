@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<StackPanel Class="settings-content-card"><StackPanel Class="settings-content-trash-body"><Text Content="{data name}" Localize="false" Class="settings-content-trash-name" /><Button Key="ContentTrash.Restore" Content="还原" Label="还原" Command="ui.settings.management.action" Enabled="{data enabled}" Width="64" Class="settings-content-button" /></StackPanel></StackPanel>
+</nxml-dynamic>

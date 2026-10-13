@@ -14,7 +14,7 @@ internal sealed partial class LaunchPageController
     }
     private bool _installGameChosen { get => InstallDraft.Chosen; set => ChangeDraft(new(InstallDraftChangeKind.SetChosen, Chosen: value)); }
     private string _selectedInstallVersion { get => InstallDraft.GameVersion; set => ChangeDraft(new(InstallDraftChangeKind.SetVersion, value)); }
-    private string _selectedInstallLoader { get => InstallDraft.PrimaryLoader?.ToString() ?? "原版 Minecraft"; set => ChangeDraft(new(InstallDraftChangeKind.SetLoader, Loader: ParseInstallLoader(value))); }
+    private string _selectedInstallLoader { get => InstallDraft.PrimaryLoader?.ToString() ?? LaunchInstallText.Raw("loader.vanilla"); set => ChangeDraft(new(InstallDraftChangeKind.SetLoader, Loader: ParseInstallLoader(value))); }
     private DraftBuildView _selectedInstallBuilds => new(this);
     private DraftAddonView _selectedInstallAddons => new(this);
     private static string AddonLabel(InstallLoader loader) => loader == InstallLoader.FabricApi ? "Fabric API" : loader == InstallLoader.Qsl ? "QSL" : loader.ToString();

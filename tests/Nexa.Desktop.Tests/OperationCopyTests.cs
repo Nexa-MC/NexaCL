@@ -2,8 +2,8 @@
 using Nexa.Services.Composition;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Services.Tasks;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Tests;
 

@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<StackPanel Key="{data key}" Class="settings-content-fact"><Text Content="{data label}" Localize="false" Class="settings-content-fact-label" /><Text Key="{data valueKey}" Content="{data value}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-fact-value" /></StackPanel>
+</nxml-dynamic>

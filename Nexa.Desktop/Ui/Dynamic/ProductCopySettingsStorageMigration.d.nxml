@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="将在下次启动时复制 {data files} 个文件（{data bytes} 字节）。&#10;{data source}&#10;→ {data destination}&#10;确认后启动器关闭；旧数据保留，独立游戏路径保持原位置。" Localize="false" /></nxml-dynamic>

@@ -1,0 +1,171 @@
+<nxml-page>
+  <ContentHost>
+    <Text Key="catalog.copy.0443f45b075ec245" Content="Assets 验证策略" Localize="false" />
+    <Text Key="catalog.copy.07724494618cd221" Content="仅官方" Localize="false" />
+    <Text Key="catalog.copy.08d99de9033a468b" Content="次级 GPU（Mesa）" Localize="false" />
+    <Text Key="catalog.copy.0b68f43e8196aeff" Content="下次启动生效；留空保留游戏标题。" Localize="false" />
+    <Text Key="catalog.copy.0eb838056acb6db9" Content="游戏参数" Localize="false" />
+    <Text Key="catalog.copy.0ee882fbcb4d2488" Content="缺少依赖" Localize="false" />
+    <Text Key="catalog.copy.0fa12acfea2ecfbd" Content="显卡与渲染器" Localize="false" />
+    <Text Key="catalog.copy.16d36cbb4d2b5579" Content="创造模式快捷栏" Localize="false" />
+    <Text Key="catalog.copy.17fc89da68477c26" Content="自动分配，或输入 MiB" Localize="false" />
+    <Text Key="catalog.copy.1bd91a7d0c53c936" Content="已保存" Localize="false" />
+    <Text Key="catalog.copy.1c677c4a263bb9c4" Content="仅错误" Localize="false" />
+    <Text Key="catalog.copy.1c95ab9b144ea2f5" Content="繁體中文" Localize="false" />
+    <Text Key="catalog.copy.1d27f02ed278ebc9" Content="配置文件" Localize="false" />
+    <Text Key="catalog.copy.1d5d4fd4747e8a2a" Content="保持显示" Localize="false" />
+    <Text Key="catalog.copy.1e0c0ff9dbad0fc5" Content="尚未可用" Localize="false" />
+    <Text Key="catalog.copy.217cfe7db1e3d10a" Content="跟随系统" Localize="false" />
+    <Text Key="catalog.copy.22ea3f47fee80536" Content="全屏" Localize="false" />
+    <Text Key="catalog.copy.2388cbc6a486af9f" Content="服务器" Localize="false" />
+    <Text Key="catalog.copy.25efb3d5b616c16a" Content="全部版本" Localize="false" />
+    <Text Key="catalog.copy.2720b4221e5e4ca3" Content="Java 与内存" Localize="false" />
+    <Text Key="catalog.copy.2825e15e15252b12" Content="加载器版本" Localize="false" />
+    <Text Key="catalog.copy.294e0dedc919b615" Content="镜像优先" Localize="false" />
+    <Text Key="catalog.copy.296de0e31f8c22d9" Content="正常" Localize="false" />
+    <Text Key="catalog.copy.2b1a4c391d4c74a1" Content="系统顺序" Localize="false" />
+    <Text Key="catalog.copy.2bab706cf8cc7ab1" Content="游戏资源交接" Localize="false" />
+    <Text Key="catalog.copy.2ed9c6fabac2013a" Content="紫色" Localize="false" />
+    <Text Key="catalog.copy.30c83dc25b12c32c" Content="绿色" Localize="false" />
+    <Text Key="catalog.copy.33650a369521ec29" Content="世界" Localize="false" />
+    <Text Key="catalog.copy.36769ec63d49e00b" Content="启动器标志" Localize="false" />
+    <Text Key="catalog.copy.38084d301e3f1a31" Content="开发者" Localize="false" />
+    <Text Key="catalog.copy.38941425982294bf" Content="默认地址，可带端口；版本单独设置与临时加入优先。" Localize="false" />
+    <Text Key="catalog.copy.3aaa26113647e845" Content="崩溃分析" Localize="false" />
+    <Text Key="catalog.copy.3d13868593ae4eeb" Content="界面语言" Localize="false" />
+    <Text Key="catalog.copy.3d7d10b1c631978c" Content="IPv4 优先" Localize="false" />
+    <Text Key="catalog.copy.3e3040bf2ce21dff" Content="不隔离" Localize="false" />
+    <Text Key="catalog.copy.3ead916bdc23c0e6" Content="动画时钟的目标帧率，1–240 fps；不改变动画时长。" Localize="false" />
+    <Text Key="catalog.copy.3fb6e525b2a48120" Content="立即生效；自动沿用当前构建的日志等级。" Localize="false" />
+    <Text Key="catalog.copy.3fd47edce45b3603" Content="关闭" Localize="false" />
+    <Text Key="catalog.copy.40f6d142cebc1585" Content="订阅方案" Localize="false" />
+    <Text Key="catalog.copy.43cb3d790f2aa8fb" Content="启动完成后生效；游戏异常退出时恢复启动器。" Localize="false" />
+    <Text Key="catalog.copy.43f3bda877293c34" Content="已安装的运行时" Localize="false" />
+    <Text Key="catalog.copy.46f801c4139378ac" Content="启动器透明度" Localize="false" />
+    <Text Key="catalog.copy.480e05a21db2241e" Content="系统区域" Localize="false" />
+    <Text Key="catalog.copy.487bc7550da2c9e2" Content="便携模式" Localize="false" />
+    <Text Key="catalog.copy.487f9059ca0adc09" Content="游戏文件与运行库的下载顺序；海外使用原始来源。" Localize="false" />
+    <Text Key="catalog.copy.49f1e2b9d18b55b5" Content="继承" Localize="false" />
+    <Text Key="catalog.copy.501986da6c15d7d4" Content="使用 MiB；自动模式按现有内存策略分配。" Localize="false" />
+    <Text Key="catalog.copy.50a1b81a61ad3dd7" Content="删除参数" Localize="false" />
+    <Text Key="catalog.copy.50cfbc4a9decb781" Content="启动时检查一次；关闭后仍可手动检查。安装更新前需要确认。" Localize="false" />
+    <Text Key="catalog.copy.51536645bb38a422" Content="中国大陆" Localize="false" />
+    <Text Key="catalog.copy.5253040db8643c85" Content="任务" Localize="false" />
+    <Text Key="catalog.copy.52d25a9e30ba94f1" Content="关于" Localize="false" />
+    <Text Key="catalog.copy.552f8f8b1402dc6d" Content="较低" Localize="false" />
+    <Text Key="catalog.copy.556a3c13b6874b0c" Content="自动生成修复方案" Localize="false" />
+    <Text Key="catalog.copy.56410fc65314dfb5" Content="启动" Localize="false" />
+    <Text Key="catalog.copy.56b6daeaafec549c" Content="立即应用浅色、深色或系统主题。" Localize="false" />
+    <Text Key="catalog.copy.57ec7620cca45f66" Content="腾讯 Kona" Localize="false" />
+    <Text Key="catalog.copy.58857e5318f3090b" Content="美国" Localize="false" />
+    <Text Key="catalog.copy.59c50d3852272e44" Content="加载器与非正式版" Localize="false" />
+    <Text Key="catalog.copy.5bd845d9a77abc81" Content="恢复继承" Localize="false" />
+    <Text Key="catalog.copy.5ca216328e84d4c6" Content="减少界面切换和展开时的动态效果。" Localize="false" />
+    <Text Key="catalog.copy.5dc1231308729d53" Content="传递给 Minecraft 的额外启动参数。" Localize="false" />
+    <Text Key="catalog.copy.5f76b2bf82dd2c5d" Content="版本" Localize="false" />
+    <Text Key="catalog.copy.6057c11467c0730b" Content="命令历史" Localize="false" />
+    <Text Key="catalog.copy.60cc98c271c231cc" Content="精简备份" Localize="false" />
+    <Text Key="catalog.copy.613fac39aaad0c75" Content="启动器安全模式" Localize="false" />
+    <Text Key="catalog.copy.62c58790dd3a97db" Content="失败后额外重试一次；不影响来源切换与文件校验。" Localize="false" />
+    <Text Key="catalog.copy.6320b4a8722a851f" Content="状态" Localize="false" />
+    <Text Key="catalog.copy.63ca81911d9ec19a" Content="立即应用界面强调色。" Localize="false" />
+    <Text Key="catalog.copy.6518cf1fcb303a64" Content="资源包" Localize="false" />
+    <Text Key="catalog.copy.67035e6b7f82acdb" Content="蓝色" Localize="false" />
+    <Text Key="catalog.copy.67ff7775ee009846" Content="下次启动生效；系统可能拒绝提高优先级。" Localize="false" />
+    <Text Key="catalog.copy.682d9bdda5aff766" Content="服务器列表" Localize="false" />
+    <Text Key="catalog.copy.699ea2523018c8ac" Content="快照" Localize="false" />
+    <Text Key="catalog.copy.6b02f7e0e085f52a" Content="开发者选项" Localize="false" />
+    <Text Key="catalog.copy.6bdb4435095e5d28" Content="正在保存…" Localize="false" />
+    <Text Key="catalog.copy.6d82d484e54cf457" Content="继承中" Localize="false" />
+    <Text Key="catalog.copy.6f4a69151ae79608" Content="启动前补全缺失或损坏的游戏文件；不关闭预检。" Localize="false" />
+    <Text Key="catalog.copy.72732d2ac2f6de64" Content="自动 Repair Plan" Localize="false" />
+    <Text Key="catalog.copy.7700380bf9bd7354" Content="JVM 参数" Localize="false" />
+    <Text Key="catalog.copy.776e862b6d0e9031" Content="用于日期和数字；更改后重启生效。" Localize="false" />
+    <Text Key="catalog.copy.77e1ea5c5688eea4" Content="路径" Localize="false" />
+    <Text Key="catalog.copy.797cebbb03b3e395" Content="启动前命令" Localize="false" />
+    <Text Key="catalog.copy.7a8bee740f9d0e06" Content="自动回滚" Localize="false" />
+    <Text Key="catalog.copy.7bfb3516d712be1e" Content="设置未保存" Localize="false" />
+    <Text Key="catalog.copy.7e88429f466fbc40" Content="诊断数据" Localize="false" />
+    <Text Key="catalog.copy.7eb336e42cb5076b" Content="自动" Localize="false" />
+    <Text Key="catalog.copy.82f301e2ba0228ab" Content="上次正常版本" Localize="false" />
+    <Text Key="catalog.copy.84d4da5cad300809" Content="下载共享速度上限，单位 KiB/s；0 不限速，新任务生效。" Localize="false" />
+    <Text Key="catalog.copy.8525fed239dc4e36" Content="关闭时安装独立版本；开启后依赖原版。下次安装生效。" Localize="false" />
+    <Text Key="catalog.copy.8533c8b6c8766c9f" Content="游戏选项" Localize="false" />
+    <Text Key="catalog.copy.855b5d4a658b6f02" Content="包装 Java 宿主的程序与参数；留空直接启动。" Localize="false" />
+    <Text Key="catalog.copy.8aefb4ba27753972" Content="跟随当前版本" Localize="false" />
+    <Text Key="catalog.copy.8b784b6288058b41" Content="架构" Localize="false" />
+    <Text Key="catalog.copy.8cdf1da0d4c7e55e" Content="启动与窗口" Localize="false" />
+    <Text Key="catalog.copy.8da97ddda990e7c4" Content="开启" Localize="false" />
+    <Text Key="catalog.copy.9233607fdac6c264" Content="Launcher 透明度" Localize="false" />
+    <Text Key="catalog.copy.92b742d80072559b" Content="实例信息" Localize="false" />
+    <Text Key="catalog.copy.93a48223a516e074" Content="正式版" Localize="false" />
+    <Text Key="catalog.copy.96cb3d88d4858754" Content="崩溃报告" Localize="false" />
+    <Text Key="catalog.copy.9937e365aaf3a085" Content="简体中文" Localize="false" />
+    <Text Key="catalog.copy.99b1486ff2b222d3" Content="龙井 Java" Localize="false" />
+    <Text Key="catalog.copy.9efe01f647d67d91" Content="窗口" Localize="false" />
+    <Text Key="catalog.copy.a0b515fc30208fc1" Content="启动前检查" Localize="false" />
+    <Text Key="catalog.copy.a3434acddb75d8fb" Content="存储" Localize="false" />
+    <Text Key="catalog.copy.a3ba53fadbaed9d7" Content="调试" Localize="false" />
+    <Text Key="catalog.copy.a42c8d6a892a2bb0" Content="高级参数" Localize="false" />
+    <Text Key="catalog.copy.a644428ae54619b0" Content="直接连接使用加密 DNS；代理连接由代理解析。" Localize="false" />
+    <Text Key="catalog.copy.a67cd968c4001cb5" Content="兼容性检查" Localize="false" />
+    <Text Key="catalog.copy.a6b75d0680322a61" Content="深色" Localize="false" />
+    <Text Key="catalog.copy.a87cf2ecb1567b67" Content="优先选择兼容的发行版；未找到时使用其他兼容 Java。" Localize="false" />
+    <Text Key="catalog.copy.a8b7a4480407ac8a" Content="警告" Localize="false" />
+    <Text Key="catalog.copy.a986f94e5e1e4ee2" Content="云账户" Localize="false" />
+    <Text Key="catalog.copy.aa0819dfc4d8d782" Content="浅色" Localize="false" />
+    <Text Key="catalog.copy.aa1e899dd35771b0" Content="橙色" Localize="false" />
+    <Text Key="catalog.copy.ac29e57a46f41c30" Content="最小化" Localize="false" />
+    <Text Key="catalog.copy.b1c27820fec23edb" Content="高" Localize="false" />
+    <Text Key="catalog.copy.b2c48db2fd181406" Content="缺少兼容 Java 时自动下载；关闭时先询问。" Localize="false" />
+    <Text Key="catalog.copy.b3b5b1c0f702ed1e" Content="游戏启动前执行的本机命令；留空不执行。" Localize="false" />
+    <Text Key="catalog.copy.b6fc09bdfd4b658e" Content="隐藏后恢复" Localize="false" />
+    <Text Key="catalog.copy.ba6b025bb675ecd2" Content="资源文件验证策略" Localize="false" />
+    <Text Key="catalog.copy.bb5313044acd31b3" Content="无法读取设置，请重新打开设置页。" Localize="false" />
+    <Text Key="catalog.copy.c20756588291ca63" Content="中国台湾" Localize="false" />
+    <Text Key="catalog.copy.c30fd87eb5fd49a2" Content="历史磁盘日志保留 1–90 天；只清理启动器拥有的日志。" Localize="false" />
+    <Text Key="catalog.copy.c580e388f0647617" Content="设置未保存：" Localize="false" />
+    <Text Key="catalog.copy.c69ec2ffb0db8ca4" Content="实时" Localize="false" />
+    <Text Key="catalog.copy.c95dc99afe57b285" Content="截图" Localize="false" />
+    <Text Key="catalog.copy.ca8c03c6f3e906cf" Content="界面保留的日志条数，50–2000；不会删除磁盘日志。" Localize="false" />
+    <Text Key="catalog.copy.ce0001a83383889b" Content="请先填写 Java 可执行文件路径，再选择手动。" Localize="false" />
+    <Text Key="catalog.copy.cfdfd2a8cc340d0a" Content="非正式版" Localize="false" />
+    <Text Key="catalog.copy.d2909f1647e7c891" Content="其他" Localize="false" />
+    <Text Key="catalog.copy.d52065e3b606194f" Content="Mesa 软件渲染" Localize="false" />
+    <Text Key="catalog.copy.d772866356f942b9" Content="只影响新安装版本；不移动已有存档、模组等内容。" Localize="false" />
+    <Text Key="catalog.copy.d8d98ef47e23d67c" Content="自动选择，或输入 Java 可执行文件路径" Localize="false" />
+    <Text Key="catalog.copy.d9363eeb833c6cfc" Content="每行一个参数，应用后用于下次启动。" Localize="false" />
+    <Text Key="catalog.copy.daa6d02a55bc3de9" Content="资源" Localize="false" />
+    <Text Key="catalog.copy.db913a6827ebd709" Content="官方优先" Localize="false" />
+    <Text Key="catalog.copy.dd29c4ef967a202e" Content="诊断信息 · 用户体验改进计划" Localize="false" />
+    <Text Key="catalog.copy.de6811e73d403172" Content="更新日志" Localize="false" />
+    <Text Key="catalog.copy.df3d58c7d84b85f2" Content="设置" Localize="false" />
+    <Text Key="catalog.copy.dfbad24e7f4a9cb8" Content="较高" Localize="false" />
+    <Text Key="catalog.copy.e353f6b3b95a9db8" Content="此平台不支持" Localize="false" />
+    <Text Key="catalog.copy.e3ca04a9cb133d2f" Content="缓存" Localize="false" />
+    <Text Key="catalog.copy.e6e2c696df92cabf" Content="优先尝试所选地址族；保留其他地址族的连接回退。" Localize="false" />
+    <Text Key="catalog.copy.e7028601e7da793d" Content="信息" Localize="false" />
+    <Text Key="catalog.copy.e8f88f51ccb085ea" Content="安装" Localize="false" />
+    <Text Key="catalog.copy.edf875f11bedb518" Content="同时处理的游戏文件数，1–64；新安装和启动前补全生效。" Localize="false" />
+    <Text Key="catalog.copy.edff333007c478ce" Content="包装命令" Localize="false" />
+    <Text Key="catalog.copy.eed8e45d95df9f6b" Content="用于下次检查；CI 使用 Alpha 更新。已开始的更新保持原通道。" Localize="false" />
+    <Text Key="catalog.copy.f0986442c697567a" Content="原子更新" Localize="false" />
+    <Text Key="catalog.copy.f0ef39242684353e" Content="IPv6 优先" Localize="false" />
+    <Text Key="catalog.copy.f26386f253b63842" Content="跟随页面" Localize="false" />
+    <Text Key="catalog.copy.f36cac96220bb1e4" Content="暂不可用" Localize="false" />
+    <Text Key="catalog.copy.f4896949ed55c37f" Content="等待命令成功后启动游戏；关闭时与启动流程并行执行。" Localize="false" />
+    <Text Key="catalog.copy.f58a2874a36ed33d" Content="详细跟踪" Localize="false" />
+    <Text Key="catalog.copy.fe843aba10f36459" Content="发行商" Localize="false" />
+    <Text Key="catalog.copy.ffe0b3cee830cabc" Content="游戏退出后关闭" Localize="false" />
+    <Text Key="catalog.copy.fffd360456a394a1" Content="签名验证" Localize="false" />
+      <Text Key="catalog.english" Content="English" Localize="false" />
+    <Text Key="catalog.java" Content="Java" Localize="false" />
+    <Text Key="catalog.alpha" Content="Alpha" Localize="false" />
+    <Text Key="catalog.beta" Content="Beta" Localize="false" />
+    <Text Key="catalog.ci" Content="CI" Localize="false" />
+    <Text Key="catalog.vendor.temurin" Content="Temurin" Localize="false" />
+    <Text Key="catalog.vendor.semeru" Content="IBM Semeru" Localize="false" />
+    <Text Key="catalog.vendor.graalvm" Content="GraalVM" Localize="false" />
+    <Text Key="catalog.vendor.openjdk" Content="OpenJDK" Localize="false" />
+</ContentHost>
+</nxml-page>

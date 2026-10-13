@@ -2,8 +2,8 @@ using System.Globalization;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Capabilities;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Tests;

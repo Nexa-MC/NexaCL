@@ -29,16 +29,16 @@ internal sealed class DesktopContentWorkspaceRoutes(XsrQueryRouter queries, XsrC
     private async Task<TReply> Query<TQuery, TReply>(XsrSemanticId semantic, TQuery query, CancellationToken token)
         where TQuery : notnull
     {
-        if (!queries.TryResolve(semantic, out var route)) throw new IOException("工作区能力尚未注册。");
+        if (!queries.TryResolve(semantic, out var route)) throw new IOException(ProductPresentationText.Raw("workspace.query-unregistered"));
         var result = await queries.QueryAsync<TQuery, TReply>(route, query, cancellationToken: token).ConfigureAwait(false);
-        if (!result.IsSuccess) { token.ThrowIfCancellationRequested(); throw new IOException(result.Error?.Message ?? "工作区查询失败。"); }
+        if (!result.IsSuccess) { token.ThrowIfCancellationRequested(); throw new IOException(result.Error?.Message ?? ProductPresentationText.Raw("workspace.query-failed")); }
         return result.Value!;
     }
     private async Task Command<TCommand>(XsrSemanticId semantic, TCommand command, CancellationToken token)
         where TCommand : notnull
     {
-        if (!commands.TryResolve(semantic, out var route)) throw new IOException("工作区操作尚未注册。");
+        if (!commands.TryResolve(semantic, out var route)) throw new IOException(ProductPresentationText.Raw("workspace.command-unregistered"));
         var result = await commands.Dispatch(route, command, cancellationToken: token).Completion.ConfigureAwait(false);
-        if (!result.IsSuccess) { token.ThrowIfCancellationRequested(); throw new IOException(result.Error?.Message ?? "工作区操作失败。"); }
+        if (!result.IsSuccess) { token.ThrowIfCancellationRequested(); throw new IOException(result.Error?.Message ?? ProductPresentationText.Raw("workspace.command-failed")); }
     }
 }

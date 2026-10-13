@@ -1,0 +1,1255 @@
+{
+  "captures": [
+    {
+      "manifest": "nxml-settings-dark-bedrock-install-1040.json",
+      "image": "nxml-settings-dark-bedrock-install-1040.png",
+      "sha256": "a911c7ca93945a7db0b83ba455a12b2d77a9eff160d99b972b019911e2d9548d",
+      "facts": {
+        "stage": "bedrock-install",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product LaunchPageController, InstallCatalogRuntime, bound BedrockInstallPageController and shipped NXML/NSS",
+        "data": "controlled immediate typed game and Fabric metadata, offline profile in isolated fixture ports, empty installed-instance scan, actual platform Store support gate; no network, authentication, game or Store/browser operations",
+        "interactions": "actual launch navigation intents and installation choice/game/Fabric control activation; install draft/caret/focus retained across widths; owned workspace and visible geometry checks; no install/start/Store/browser actions",
+        "focused": "TitleBack",
+        "sceneNodes": 27
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-bedrock-install-810.json",
+      "image": "nxml-settings-dark-bedrock-install-810.png",
+      "sha256": "7ab0a232ba1122e66347ea9846a6b6b4e5668547abb98437086a4207cd34dfcb",
+      "facts": {
+        "stage": "bedrock-install",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product LaunchPageController, InstallCatalogRuntime, bound BedrockInstallPageController and shipped NXML/NSS",
+        "data": "controlled immediate typed game and Fabric metadata, offline profile in isolated fixture ports, empty installed-instance scan, actual platform Store support gate; no network, authentication, game or Store/browser operations",
+        "interactions": "actual launch navigation intents and installation choice/game/Fabric control activation; install draft/caret/focus retained across widths; owned workspace and visible geometry checks; no install/start/Store/browser actions",
+        "focused": "TitleBack",
+        "sceneNodes": 27
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-global-catalog-editor-1040.json",
+      "image": "nxml-settings-dark-global-catalog-editor-1040.png",
+      "sha256": "3665b36e81a6bf2c28d1cc2d8019b4def90eb9d0ce8be188c9cc6e42b729e9d8",
+      "facts": {
+        "stage": "global-catalog-editor",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsArgument.game.arguments.0",
+        "sceneNodes": 114
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-global-catalog-editor-810.json",
+      "image": "nxml-settings-dark-global-catalog-editor-810.png",
+      "sha256": "34c5744e115f70b8b111f58b5d734563dbbc41cbc9da8088f37132b90653042d",
+      "facts": {
+        "stage": "global-catalog-editor",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsArgument.game.arguments.0",
+        "sceneNodes": 113
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-global-custom-workspace-1040.json",
+      "image": "nxml-settings-dark-global-custom-workspace-1040.png",
+      "sha256": "70ea15849ca3d22ea6db458c190ac09298ab8786ab4d27e73b722053db353654",
+      "facts": {
+        "stage": "global-custom-workspace",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 72
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-global-custom-workspace-810.json",
+      "image": "nxml-settings-dark-global-custom-workspace-810.png",
+      "sha256": "f769d3c7b30b61009fd277fa7c452f150b40affeaded5b35d41207bb561b298d",
+      "facts": {
+        "stage": "global-custom-workspace",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 71
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-global-proxy-1040.json",
+      "image": "nxml-settings-dark-global-proxy-1040.png",
+      "sha256": "082964a9066c4ed9111b4c24b11ae6875f167901531fa5b46c6921478d6d4054",
+      "facts": {
+        "stage": "global-proxy",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsInput.network.proxy-address",
+        "sceneNodes": 114
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-global-proxy-810.json",
+      "image": "nxml-settings-dark-global-proxy-810.png",
+      "sha256": "3af1b4026abdfcf1d6e74b43e85d231d9419435e3a92f6265a5b7b037e5008e8",
+      "facts": {
+        "stage": "global-proxy",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsInput.network.proxy-address",
+        "sceneNodes": 113
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-content-scrolled-1040.json",
+      "image": "nxml-settings-dark-instance-content-scrolled-1040.png",
+      "sha256": "dee679b858887a53b39c0c3285150619421cd0e68a1fe1e2d1ce8118137319e1",
+      "facts": {
+        "stage": "instance-content-scrolled",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 97
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-content-scrolled-810.json",
+      "image": "nxml-settings-dark-instance-content-scrolled-810.png",
+      "sha256": "276aad33a39e3be1cc9d64aa5e53f9ee7f7eaeac15ae0bb4a1d1960667dc026f",
+      "facts": {
+        "stage": "instance-content-scrolled",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 97
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-content-search-1040.json",
+      "image": "nxml-settings-dark-instance-content-search-1040.png",
+      "sha256": "d980e14796e4543c048d6d440b4762190095ae05eea888dfec62d4c790249ea2",
+      "facts": {
+        "stage": "instance-content-search",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ManagementContentSearch",
+        "sceneNodes": 106
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-content-search-810.json",
+      "image": "nxml-settings-dark-instance-content-search-810.png",
+      "sha256": "877083d3ba9126acb67da9d789862ad3f09ac42381863739973fb86f4cfc17e0",
+      "facts": {
+        "stage": "instance-content-search",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ManagementContentSearch",
+        "sceneNodes": 106
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-export-editor-1040.json",
+      "image": "nxml-settings-dark-instance-export-editor-1040.png",
+      "sha256": "132819514dddd2a563b41ef37dbc2bcfe09fd08c90bf5662662adc13e104c323",
+      "facts": {
+        "stage": "instance-export-editor",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ExportName",
+        "sceneNodes": 70
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-export-editor-810.json",
+      "image": "nxml-settings-dark-instance-export-editor-810.png",
+      "sha256": "1ecbf48f2075d2d7b1dc65558394892f5dfe7c1133f9920266e568946cf612ba",
+      "facts": {
+        "stage": "instance-export-editor",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ExportName",
+        "sceneNodes": 70
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-recovery-1040.json",
+      "image": "nxml-settings-dark-instance-recovery-1040.png",
+      "sha256": "0d1b160ee794547a3e2d86bc0a616aed69dee94ebb2cdae52fd24ca73698e694",
+      "facts": {
+        "stage": "instance-recovery",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 82
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-recovery-810.json",
+      "image": "nxml-settings-dark-instance-recovery-810.png",
+      "sha256": "49e80dd03589b9a52ec92b032c07d3949115fb01aa5b01e29b0e97925b70ad10",
+      "facts": {
+        "stage": "instance-recovery",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 82
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-recovery-next-1040.json",
+      "image": "nxml-settings-dark-instance-recovery-next-1040.png",
+      "sha256": "76aa848f1f90ca285cac7956d1f259c9871be757ce87b378774ce99707a42a93",
+      "facts": {
+        "stage": "instance-recovery-next",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 73
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-recovery-next-810.json",
+      "image": "nxml-settings-dark-instance-recovery-next-810.png",
+      "sha256": "5f6a0ac24fd89aca3561d0cf830013de0d15e5d1357e0971a152ac03d40d05a3",
+      "facts": {
+        "stage": "instance-recovery-next",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 73
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-screenshot-crop-1040.json",
+      "image": "nxml-settings-dark-instance-screenshot-crop-1040.png",
+      "sha256": "0308350378be2f71338fe4ca26ef343c6d0a77ecb9e5909de5059c865696614d",
+      "facts": {
+        "stage": "instance-screenshot-crop",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ScreenshotCropWidth",
+        "sceneNodes": 110
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-screenshot-crop-810.json",
+      "image": "nxml-settings-dark-instance-screenshot-crop-810.png",
+      "sha256": "53afa735f2fbab88d3a80c73fe55a2e6c03e477f7b28db59351558ced6c59a35",
+      "facts": {
+        "stage": "instance-screenshot-crop",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ScreenshotCropWidth",
+        "sceneNodes": 101
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-screenshot-modal-1040.json",
+      "image": "nxml-settings-dark-instance-screenshot-modal-1040.png",
+      "sha256": "1a04ffbc79b2d2d2a83609f6e459a8797f7b3872f2c88cf931d210b281443f5f",
+      "facts": {
+        "stage": "instance-screenshot-modal",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ScreenshotPreview.Close",
+        "sceneNodes": 92
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-screenshot-modal-810.json",
+      "image": "nxml-settings-dark-instance-screenshot-modal-810.png",
+      "sha256": "1a04ffbc79b2d2d2a83609f6e459a8797f7b3872f2c88cf931d210b281443f5f",
+      "facts": {
+        "stage": "instance-screenshot-modal",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ScreenshotPreview.Close",
+        "sceneNodes": 92
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-server-editor-1040.json",
+      "image": "nxml-settings-dark-instance-server-editor-1040.png",
+      "sha256": "a4755cad7e0c38b6cf3ca8301b50fdba886e2bae00d2eccf5dc147158a4dbb71",
+      "facts": {
+        "stage": "instance-server-editor",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ServerName",
+        "sceneNodes": 76
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-server-editor-810.json",
+      "image": "nxml-settings-dark-instance-server-editor-810.png",
+      "sha256": "59c6abd85c4040dd1be9e80bc8759bf4785e479e421a2f5194a13cc85de81738",
+      "facts": {
+        "stage": "instance-server-editor",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ServerName",
+        "sceneNodes": 62
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-world-snapshots-1040.json",
+      "image": "nxml-settings-dark-instance-world-snapshots-1040.png",
+      "sha256": "e6496e70cd9959e51346da715e5e289c96d33d8f0dac9f5134a6d7cec12ce04d",
+      "facts": {
+        "stage": "instance-world-snapshots",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 77
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-instance-world-snapshots-810.json",
+      "image": "nxml-settings-dark-instance-world-snapshots-810.png",
+      "sha256": "e3b8389e0465db500f4cc39f4ec3bb4eb0e20aa8442087abd96eb7e61af6664e",
+      "facts": {
+        "stage": "instance-world-snapshots",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 73
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-java-install-1040.json",
+      "image": "nxml-settings-dark-java-install-1040.png",
+      "sha256": "bb1ae732ad1054351d3200e4c92d8aef0f0b81bb368101d5fd11f07a3645d784",
+      "facts": {
+        "stage": "java-install",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product LaunchPageController, InstallCatalogRuntime, bound BedrockInstallPageController and shipped NXML/NSS",
+        "data": "controlled immediate typed game and Fabric metadata, offline profile in isolated fixture ports, empty installed-instance scan, actual platform Store support gate; no network, authentication, game or Store/browser operations",
+        "interactions": "actual launch navigation intents and installation choice/game/Fabric control activation; install draft/caret/focus retained across widths; owned workspace and visible geometry checks; no install/start/Store/browser actions",
+        "focused": "JavaInstallVersionInput",
+        "sceneNodes": 40
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-java-install-810.json",
+      "image": "nxml-settings-dark-java-install-810.png",
+      "sha256": "9bbcea10a1a4cc4b626c90a6f3eb64b3e74191158717639650332f7385e3d8aa",
+      "facts": {
+        "stage": "java-install",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product LaunchPageController, InstallCatalogRuntime, bound BedrockInstallPageController and shipped NXML/NSS",
+        "data": "controlled immediate typed game and Fabric metadata, offline profile in isolated fixture ports, empty installed-instance scan, actual platform Store support gate; no network, authentication, game or Store/browser operations",
+        "interactions": "actual launch navigation intents and installation choice/game/Fabric control activation; install draft/caret/focus retained across widths; owned workspace and visible geometry checks; no install/start/Store/browser actions",
+        "focused": "JavaInstallVersionInput",
+        "sceneNodes": 40
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-launch-home-1040.json",
+      "image": "nxml-settings-dark-launch-home-1040.png",
+      "sha256": "c166435eed990a84d30e884dff53949dd432108e8735e7a2a756287e834a35e3",
+      "facts": {
+        "stage": "launch-home",
+        "theme": "dark",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product LaunchPageController, InstallCatalogRuntime, bound BedrockInstallPageController and shipped NXML/NSS",
+        "data": "controlled immediate typed game and Fabric metadata, offline profile in isolated fixture ports, empty installed-instance scan, actual platform Store support gate; no network, authentication, game or Store/browser operations",
+        "interactions": "actual launch navigation intents and installation choice/game/Fabric control activation; install draft/caret/focus retained across widths; owned workspace and visible geometry checks; no install/start/Store/browser actions",
+        "focused": "ExportName",
+        "sceneNodes": 63
+      }
+    },
+    {
+      "manifest": "nxml-settings-dark-launch-home-810.json",
+      "image": "nxml-settings-dark-launch-home-810.png",
+      "sha256": "b7c3841e5b8d0445eabcf5f71765c3cf36a8fb60e6a663bcf86a0f8db73938fe",
+      "facts": {
+        "stage": "launch-home",
+        "theme": "dark",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product LaunchPageController, InstallCatalogRuntime, bound BedrockInstallPageController and shipped NXML/NSS",
+        "data": "controlled immediate typed game and Fabric metadata, offline profile in isolated fixture ports, empty installed-instance scan, actual platform Store support gate; no network, authentication, game or Store/browser operations",
+        "interactions": "actual launch navigation intents and installation choice/game/Fabric control activation; install draft/caret/focus retained across widths; owned workspace and visible geometry checks; no install/start/Store/browser actions",
+        "focused": "ExportName",
+        "sceneNodes": 63
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-bedrock-install-1040.json",
+      "image": "nxml-settings-light-bedrock-install-1040.png",
+      "sha256": "eb35dc7f8fc2aad29d0a145c4bf3648a7ac71f21ae9f57d54b3124aa2758ef82",
+      "facts": {
+        "stage": "bedrock-install",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product LaunchPageController, InstallCatalogRuntime, bound BedrockInstallPageController and shipped NXML/NSS",
+        "data": "controlled immediate typed game and Fabric metadata, offline profile in isolated fixture ports, empty installed-instance scan, actual platform Store support gate; no network, authentication, game or Store/browser operations",
+        "interactions": "actual launch navigation intents and installation choice/game/Fabric control activation; install draft/caret/focus retained across widths; owned workspace and visible geometry checks; no install/start/Store/browser actions",
+        "focused": "TitleBack",
+        "sceneNodes": 27
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-bedrock-install-810.json",
+      "image": "nxml-settings-light-bedrock-install-810.png",
+      "sha256": "705c0934010661000093414b32a28865ca1626f454c4f7ae268865a5c87e257c",
+      "facts": {
+        "stage": "bedrock-install",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product LaunchPageController, InstallCatalogRuntime, bound BedrockInstallPageController and shipped NXML/NSS",
+        "data": "controlled immediate typed game and Fabric metadata, offline profile in isolated fixture ports, empty installed-instance scan, actual platform Store support gate; no network, authentication, game or Store/browser operations",
+        "interactions": "actual launch navigation intents and installation choice/game/Fabric control activation; install draft/caret/focus retained across widths; owned workspace and visible geometry checks; no install/start/Store/browser actions",
+        "focused": "TitleBack",
+        "sceneNodes": 27
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-global-catalog-editor-1040.json",
+      "image": "nxml-settings-light-global-catalog-editor-1040.png",
+      "sha256": "bd6bdb202625836ba87df79f3351a345eae36bf5fbfecc2b7d7331d385038dc5",
+      "facts": {
+        "stage": "global-catalog-editor",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsArgument.game.arguments.0",
+        "sceneNodes": 114
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-global-catalog-editor-810.json",
+      "image": "nxml-settings-light-global-catalog-editor-810.png",
+      "sha256": "c9f7f58f1e8270974164191ace9e8d5b6e389465775dc3cdff61da73ad1b4d71",
+      "facts": {
+        "stage": "global-catalog-editor",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsArgument.game.arguments.0",
+        "sceneNodes": 113
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-global-custom-workspace-1040.json",
+      "image": "nxml-settings-light-global-custom-workspace-1040.png",
+      "sha256": "be2d56da96bf42044d2684ea38afafbca20c26125340d61dd88ccc7254f9e999",
+      "facts": {
+        "stage": "global-custom-workspace",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 72
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-global-custom-workspace-810.json",
+      "image": "nxml-settings-light-global-custom-workspace-810.png",
+      "sha256": "9edf58b8251d5bd45f6885161dd376aaaad91eede204bd381d92dd2025e4696c",
+      "facts": {
+        "stage": "global-custom-workspace",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 71
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-global-proxy-1040.json",
+      "image": "nxml-settings-light-global-proxy-1040.png",
+      "sha256": "3a31400e76f976e033d208c3a150ae09fd4d8705e5ae24d469155797d067d20b",
+      "facts": {
+        "stage": "global-proxy",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsInput.network.proxy-address",
+        "sceneNodes": 114
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-global-proxy-810.json",
+      "image": "nxml-settings-light-global-proxy-810.png",
+      "sha256": "034c08a9168a6aac46d8cd73f0859be076b7d3c3a272ca7c18673574b78841b4",
+      "facts": {
+        "stage": "global-proxy",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsInput.network.proxy-address",
+        "sceneNodes": 113
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-content-scrolled-1040.json",
+      "image": "nxml-settings-light-instance-content-scrolled-1040.png",
+      "sha256": "a7d8cb7115b35a3c06598bfeca1812b11ff3587ce3e0843f16c7a3dbd6572f30",
+      "facts": {
+        "stage": "instance-content-scrolled",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 97
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-content-scrolled-810.json",
+      "image": "nxml-settings-light-instance-content-scrolled-810.png",
+      "sha256": "48be94904a82f59e7d49d15195bf5d63c07daf8b17d87c98d1a2328346824643",
+      "facts": {
+        "stage": "instance-content-scrolled",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 97
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-content-search-1040.json",
+      "image": "nxml-settings-light-instance-content-search-1040.png",
+      "sha256": "75069e3c8f9191b94329e384c33c7fab4829a7100b41949d06f96e0e80c2f420",
+      "facts": {
+        "stage": "instance-content-search",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ManagementContentSearch",
+        "sceneNodes": 106
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-content-search-810.json",
+      "image": "nxml-settings-light-instance-content-search-810.png",
+      "sha256": "1d39972eb6d0575c9d98d63cfc91471f4b01b071e45706162b688a194e6aa171",
+      "facts": {
+        "stage": "instance-content-search",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ManagementContentSearch",
+        "sceneNodes": 106
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-export-editor-1040.json",
+      "image": "nxml-settings-light-instance-export-editor-1040.png",
+      "sha256": "1edce9707c30dfa283762a4793e3d2f0d54dbffc6897f346a74abd5dc6d878ca",
+      "facts": {
+        "stage": "instance-export-editor",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ExportName",
+        "sceneNodes": 70
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-export-editor-810.json",
+      "image": "nxml-settings-light-instance-export-editor-810.png",
+      "sha256": "5ab9ca44b05546b4015807349dd4f2fc95b1a84d7920b3755e1dbaceca8ff383",
+      "facts": {
+        "stage": "instance-export-editor",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ExportName",
+        "sceneNodes": 70
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-recovery-1040.json",
+      "image": "nxml-settings-light-instance-recovery-1040.png",
+      "sha256": "6967e5207922934a28184a9210a8c8425dbcfa3c37a4970bfdbaa9cd6168cefa",
+      "facts": {
+        "stage": "instance-recovery",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 82
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-recovery-810.json",
+      "image": "nxml-settings-light-instance-recovery-810.png",
+      "sha256": "dd52a06288b1e2129cd8cce8fc7597dcd74b315ed4bbd2dd1e505265d447d369",
+      "facts": {
+        "stage": "instance-recovery",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 82
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-recovery-next-1040.json",
+      "image": "nxml-settings-light-instance-recovery-next-1040.png",
+      "sha256": "f32c8b59d7095676b4eb4c53ba67f37bcb1c368386a466259a5b656810014770",
+      "facts": {
+        "stage": "instance-recovery-next",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 73
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-recovery-next-810.json",
+      "image": "nxml-settings-light-instance-recovery-next-810.png",
+      "sha256": "bd611b54469f45cbd087c813844abd181839a24b25476db3aafb7de4ef9d6a68",
+      "facts": {
+        "stage": "instance-recovery-next",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 73
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-screenshot-crop-1040.json",
+      "image": "nxml-settings-light-instance-screenshot-crop-1040.png",
+      "sha256": "b9c72ca546240a52925770d8090f023a0d0598f17b9ece8afaf4dd5a6c36c9a7",
+      "facts": {
+        "stage": "instance-screenshot-crop",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ScreenshotCropWidth",
+        "sceneNodes": 110
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-screenshot-crop-810.json",
+      "image": "nxml-settings-light-instance-screenshot-crop-810.png",
+      "sha256": "ffa405651c2bb6b31a58810b8b8cf10ad157f589846b195c2a52fa399336540a",
+      "facts": {
+        "stage": "instance-screenshot-crop",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ScreenshotCropWidth",
+        "sceneNodes": 101
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-screenshot-modal-1040.json",
+      "image": "nxml-settings-light-instance-screenshot-modal-1040.png",
+      "sha256": "08913ed7efb8ba46e24bb02bc925523746fe62dcf4d976d571b461a640189088",
+      "facts": {
+        "stage": "instance-screenshot-modal",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ScreenshotPreview.Close",
+        "sceneNodes": 92
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-screenshot-modal-810.json",
+      "image": "nxml-settings-light-instance-screenshot-modal-810.png",
+      "sha256": "377c136ab78761c7fc6e1bd92455eaaf1c1217776c3e3298d81a4cf373518c3d",
+      "facts": {
+        "stage": "instance-screenshot-modal",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ScreenshotPreview.Close",
+        "sceneNodes": 83
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-server-editor-1040.json",
+      "image": "nxml-settings-light-instance-server-editor-1040.png",
+      "sha256": "ffde89fcff1c08df0b0e1d4264a99330c751daa5066acf4318ea54b711672679",
+      "facts": {
+        "stage": "instance-server-editor",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ServerName",
+        "sceneNodes": 76
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-server-editor-810.json",
+      "image": "nxml-settings-light-instance-server-editor-810.png",
+      "sha256": "1de2bbe8d5252714da444cfd52903ba8d2b371f09c552786d305834659dd94f9",
+      "facts": {
+        "stage": "instance-server-editor",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "ServerName",
+        "sceneNodes": 62
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-world-snapshots-1040.json",
+      "image": "nxml-settings-light-instance-world-snapshots-1040.png",
+      "sha256": "e163db1088afde319fa39454edc66eeb3a9c3120710bc1e60b7b5d04b40c0d7b",
+      "facts": {
+        "stage": "instance-world-snapshots",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 77
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-instance-world-snapshots-810.json",
+      "image": "nxml-settings-light-instance-world-snapshots-810.png",
+      "sha256": "602ac56545c00999e68bb846787b4c3da865025a1b1575000ca413d101a8b996",
+      "facts": {
+        "stage": "instance-world-snapshots",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product SettingsPageController and shipped NXML/NSS",
+        "data": "controlled typed management, identity, server, world, recovery, export and encoded PNG fixtures; temporary real settings store; actual local read-only advanced runtime capture; no network, account or game operations",
+        "interactions": "actual renderer command activation, draft editing, caret/focus checks, pointer scrolling, screenshot modal/crop toggle and close; no export/server/crop writes",
+        "focused": "SettingsPager",
+        "sceneNodes": 73
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-java-install-1040.json",
+      "image": "nxml-settings-light-java-install-1040.png",
+      "sha256": "d702b083373d08ce75a01d943e428af466498e64aa354c629ab6dad7187364ae",
+      "facts": {
+        "stage": "java-install",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product LaunchPageController, InstallCatalogRuntime, bound BedrockInstallPageController and shipped NXML/NSS",
+        "data": "controlled immediate typed game and Fabric metadata, offline profile in isolated fixture ports, empty installed-instance scan, actual platform Store support gate; no network, authentication, game or Store/browser operations",
+        "interactions": "actual launch navigation intents and installation choice/game/Fabric control activation; install draft/caret/focus retained across widths; owned workspace and visible geometry checks; no install/start/Store/browser actions",
+        "focused": "JavaInstallVersionInput",
+        "sceneNodes": 40
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-java-install-810.json",
+      "image": "nxml-settings-light-java-install-810.png",
+      "sha256": "77e7f70ba45f1a1c42e0ef022f3e1bce5f4ef9bcb7a76cf8e5bdfb7c4008b587",
+      "facts": {
+        "stage": "java-install",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product LaunchPageController, InstallCatalogRuntime, bound BedrockInstallPageController and shipped NXML/NSS",
+        "data": "controlled immediate typed game and Fabric metadata, offline profile in isolated fixture ports, empty installed-instance scan, actual platform Store support gate; no network, authentication, game or Store/browser operations",
+        "interactions": "actual launch navigation intents and installation choice/game/Fabric control activation; install draft/caret/focus retained across widths; owned workspace and visible geometry checks; no install/start/Store/browser actions",
+        "focused": "JavaInstallVersionInput",
+        "sceneNodes": 40
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-launch-home-1040.json",
+      "image": "nxml-settings-light-launch-home-1040.png",
+      "sha256": "6bc4365a761fb1db2830a028a4ddef028f598a534ff8904723ec6a041969423b",
+      "facts": {
+        "stage": "launch-home",
+        "theme": "light",
+        "width": 1040,
+        "height": 740,
+        "requestedWidth": 1040,
+        "viewportWidth": 1040,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product LaunchPageController, InstallCatalogRuntime, bound BedrockInstallPageController and shipped NXML/NSS",
+        "data": "controlled immediate typed game and Fabric metadata, offline profile in isolated fixture ports, empty installed-instance scan, actual platform Store support gate; no network, authentication, game or Store/browser operations",
+        "interactions": "actual launch navigation intents and installation choice/game/Fabric control activation; install draft/caret/focus retained across widths; owned workspace and visible geometry checks; no install/start/Store/browser actions",
+        "focused": "ExportName",
+        "sceneNodes": 63
+      }
+    },
+    {
+      "manifest": "nxml-settings-light-launch-home-810.json",
+      "image": "nxml-settings-light-launch-home-810.png",
+      "sha256": "c659089ea1cb37d5be6eae8a345a41cb0cbedf988bd5ad9cca9f5d3243d3b707",
+      "facts": {
+        "stage": "launch-home",
+        "theme": "light",
+        "width": 810,
+        "height": 740,
+        "requestedWidth": 810,
+        "viewportWidth": 810,
+        "viewportHeight": 740,
+        "minimumWindowWidth": 810,
+        "renderer": "actual Avalonia native window RenderTargetBitmap; product LaunchPageController, InstallCatalogRuntime, bound BedrockInstallPageController and shipped NXML/NSS",
+        "data": "controlled immediate typed game and Fabric metadata, offline profile in isolated fixture ports, empty installed-instance scan, actual platform Store support gate; no network, authentication, game or Store/browser operations",
+        "interactions": "actual launch navigation intents and installation choice/game/Fabric control activation; install draft/caret/focus retained across widths; owned workspace and visible geometry checks; no install/start/Store/browser actions",
+        "focused": "ExportName",
+        "sceneNodes": 63
+      }
+    }
+  ],
+  "selected": [
+    {
+      "file": "nxml-settings-light-instance-content-scrolled-810.png",
+      "sha256": "48be94904a82f59e7d49d15195bf5d63c07daf8b17d87c98d1a2328346824643",
+      "theme": "light",
+      "stage": "instance-content-scrolled",
+      "width": 810
+    },
+    {
+      "file": "nxml-settings-dark-instance-screenshot-modal-810.png",
+      "sha256": "1a04ffbc79b2d2d2a83609f6e459a8797f7b3872f2c88cf931d210b281443f5f",
+      "theme": "dark",
+      "stage": "instance-screenshot-modal",
+      "width": 810
+    },
+    {
+      "file": "nxml-settings-light-instance-server-editor-1040.png",
+      "sha256": "ffde89fcff1c08df0b0e1d4264a99330c751daa5066acf4318ea54b711672679",
+      "theme": "light",
+      "stage": "instance-server-editor",
+      "width": 1040
+    },
+    {
+      "file": "nxml-settings-dark-instance-export-editor-810.png",
+      "sha256": "1ecbf48f2075d2d7b1dc65558394892f5dfe7c1133f9920266e568946cf612ba",
+      "theme": "dark",
+      "stage": "instance-export-editor",
+      "width": 810
+    },
+    {
+      "file": "nxml-settings-light-launch-home-1040.png",
+      "sha256": "6bc4365a761fb1db2830a028a4ddef028f598a534ff8904723ec6a041969423b",
+      "theme": "light",
+      "stage": "launch-home",
+      "width": 1040
+    },
+    {
+      "file": "nxml-settings-dark-java-install-810.png",
+      "sha256": "9bbcea10a1a4cc4b626c90a6f3eb64b3e74191158717639650332f7385e3d8aa",
+      "theme": "dark",
+      "stage": "java-install",
+      "width": 810
+    },
+    {
+      "file": "nxml-settings-light-bedrock-install-810.png",
+      "sha256": "705c0934010661000093414b32a28865ca1626f454c4f7ae268865a5c87e257c",
+      "theme": "light",
+      "stage": "bedrock-install",
+      "width": 810
+    }
+  ]
+}

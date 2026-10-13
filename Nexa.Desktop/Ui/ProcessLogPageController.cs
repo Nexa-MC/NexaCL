@@ -1,8 +1,8 @@
-﻿using Nexa.Xsr.Renderer.Nxml;
-using Nexa.Services.Minecraft;
+﻿using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Process;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 

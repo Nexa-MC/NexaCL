@@ -1,9 +1,9 @@
 ﻿using System.Collections.Concurrent;
-using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Resources;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -93,8 +93,15 @@ internal sealed partial class ResourcesPageController : IDisposable
         IndexResources(Page);
         _workspace = AppendResource(_entities["ResourceWorkspaceSlot"], "ResourceWorkspace.d.nxml", DesktopResourcesText.Defaults());
         _filters = AppendResource(_entities["ResourceFilterSlot"], "ResourceFilters.d.nxml", new()
-        { ["game"] = L(DesktopResourcesText.Raw("copy.8be216be7a84")), ["loader"] = L(DesktopResourcesText.Raw("copy.7a2bd8b6cb0e")), ["provider"] = L(DesktopResourcesText.Raw("copy.9f357adb6100")), ["tag"] = L(DesktopResourcesText.Raw("copy.a1054434857f")),
-          ["loaderVisible"] = "true", ["hideInstalled"] = L(DesktopResourcesText.Raw("copy.b55ae05faf55")), ["hideLibraries"] = L(DesktopResourcesText.Raw("copy.cedf91a64972")) });
+        {
+            ["game"] = L(DesktopResourcesText.Raw("copy.8be216be7a84")),
+            ["loader"] = L(DesktopResourcesText.Raw("copy.7a2bd8b6cb0e")),
+            ["provider"] = L(DesktopResourcesText.Raw("copy.9f357adb6100")),
+            ["tag"] = L(DesktopResourcesText.Raw("copy.a1054434857f")),
+            ["loaderVisible"] = "true",
+            ["hideInstalled"] = L(DesktopResourcesText.Raw("copy.b55ae05faf55")),
+            ["hideLibraries"] = L(DesktopResourcesText.Raw("copy.cedf91a64972"))
+        });
         _search = _entities["ResourceSearch"]; _game = _entities["ResourceGame"]; _loader = _entities["ResourceLoader"];
         InitializeResourceTrack("ResourceCategory", index =>
         { _favoriteMode = index == 0; if (!_favoriteMode) _filter = _filter with { Kind = (ResourceKind)(index - 1), Tag = "" }; ResetCategoryFilters(); Search(); });
@@ -307,8 +314,10 @@ internal sealed partial class ResourcesPageController : IDisposable
         });
         BindResource("ResourceWebsite", () => _open(new Uri(detail.Project.Website)), _detailActions);
         AppendResource(_detailBody, "ResourceDetailVersionsTitle.d.nxml", new()
-        { ["title"] = ResourceFormat(_filter.GameVersion.Length > 0 ? "VersionsGame" : "Versions",
-            ("count", detail.Versions.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)), ("game", _filter.GameVersion)) });
+        {
+            ["title"] = ResourceFormat(_filter.GameVersion.Length > 0 ? "VersionsGame" : "Versions",
+            ("count", detail.Versions.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)), ("game", _filter.GameVersion))
+        });
         if (detail.Versions.Count == 0) AppendResource(_detailBody, "ResourceDetailEmpty.d.nxml", new());
         foreach (var version in detail.Versions.Skip(_detailPage * 20).Take(20))
         {
@@ -316,7 +325,8 @@ internal sealed partial class ResourcesPageController : IDisposable
             string id = ResourceIdentity(version.Id);
             AppendResource(_detailBody, "ResourceVersion.d.nxml", new()
             {
-                ["row"] = "ResourceVersion." + id, ["channel"] = version.Channel,
+                ["row"] = "ResourceVersion." + id,
+                ["channel"] = version.Channel,
                 ["icon"] = release ? DesktopResourcesText.Raw("icon-release") : beta ? DesktopResourcesText.Raw("icon-beta") : DesktopResourcesText.Raw("icon-alpha"),
                 ["typeClass"] = DesktopResourcesText.Raw(release ? "release-style" : beta ? "beta-style" : "alpha-style"),
                 ["name"] = version.Name,
@@ -333,7 +343,8 @@ internal sealed partial class ResourcesPageController : IDisposable
         {
             AppendResource(_detailBody, "ResourceVersionPages.d.nxml", new()
             {
-                ["previous"] = Flag(_detailPage > 0), ["next"] = Flag((_detailPage + 1) * 20 < detail.Versions.Count),
+                ["previous"] = Flag(_detailPage > 0),
+                ["next"] = Flag((_detailPage + 1) * 20 < detail.Versions.Count),
                 ["page"] = ResourceFormat("Page", ("page", (_detailPage + 1).ToString(System.Globalization.CultureInfo.InvariantCulture)),
                     ("pages", ((detail.Versions.Count + 19) / 20).ToString(System.Globalization.CultureInfo.InvariantCulture)))
             });
@@ -471,14 +482,20 @@ internal sealed partial class ResourcesPageController : IDisposable
         _optionalVisible = true;
         Clear(_detailBody, _detailActions);
         AppendResource(_detailBody, "ResourceOptionalHeading.d.nxml", new()
-        { ["summary"] = ResourceFormat("OptionalSummary", ("count", plan.Versions.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-            ("cycles", plan.HasCycles ? L(DesktopResourcesText.Raw("copy.3efa6b72a5b3")) : "")) });
+        {
+            ["summary"] = ResourceFormat("OptionalSummary", ("count", plan.Versions.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            ("cycles", plan.HasCycles ? L(DesktopResourcesText.Raw("copy.3efa6b72a5b3")) : ""))
+        });
         foreach (var option in plan.Optional)
         {
             string id = ResourceIdentity(option.Source.ProjectId);
             AppendResource(_detailBody, "ResourceOptionalRow.d.nxml", new()
-            { ["row"] = "ResourceOptional." + id, ["name"] = option.Name, ["toggle"] = "ResourceOptionalToggle." + id,
-                ["selected"] = L(_optionalSelection.Contains(option.Source) ? DesktopResourcesText.Raw("copy.d2f5277505a4") : DesktopResourcesText.Raw("copy.40f9b4605c33")) });
+            {
+                ["row"] = "ResourceOptional." + id,
+                ["name"] = option.Name,
+                ["toggle"] = "ResourceOptionalToggle." + id,
+                ["selected"] = L(_optionalSelection.Contains(option.Source) ? DesktopResourcesText.Raw("copy.d2f5277505a4") : DesktopResourcesText.Raw("copy.40f9b4605c33"))
+            });
             BindResource("ResourceOptionalToggle." + id, () =>
             {
                 if (!_optionalSelection.Add(option.Source)) _optionalSelection.Remove(option.Source);

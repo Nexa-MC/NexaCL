@@ -1,0 +1,82 @@
+<nxml-page>
+  <StackPanel>
+    <Text Key="settings.action.back" Content="返回" />
+    <Text Key="settings.action.cancel" Content="取消" />
+    <Text Key="settings.action.restore" Content="恢复" />
+    <Text Key="settings.action.remove" Content="移除" />
+    <Text Key="settings.action.delete" Content="删除" />
+    <Text Key="settings.action.continue" Content="继续" />
+    <Text Key="settings.storage.migrationUnavailable" Content="迁移暂时不可用。" />
+    <Text Key="settings.storage.migrationPreviewFailed" Content="无法生成迁移预览。" />
+    <Text Key="settings.storage.cleanupUnavailable" Content="清理暂时不可用。" />
+    <Text Key="settings.storage.cleanupPreviewFailed" Content="无法生成清理预览。" />
+    <Text Key="settings.storage.locationReadFailed" Content="无法读取存储位置，请重新启动后重试。" />
+    <Text Key="settings.storage.previewFailed" Content="无法生成存储预览。" />
+    <Text Key="settings.storage.cleanupEmpty" Content="没有符合条件的清理项。" />
+    <Text Key="settings.storage.cancelMessage" Content="取消待完成迁移，继续使用当前数据位置。已存在的数据不会被删除。" />
+    <Text Key="settings.storage.cancelTitle" Content="取消待迁移" />
+    <Text Key="settings.storage.migrationTitle" Content="迁移启动器数据" />
+    <Text Key="settings.storage.cleanupTitle" Content="确认安全清理" />
+    <Text Key="settings.storage.cancelAction" Content="取消迁移" />
+    <Text Key="settings.storage.migrationAction" Content="排队并关闭" />
+    <Text Key="settings.storage.cleanupAction" Content="清理" />
+    <Text Key="settings.storage.operationUnavailable" Content="暂时无法执行存储操作。" />
+    <Text Key="settings.storage.migrationCancelled" Content="待迁移已取消。" />
+    <Text Key="settings.storage.cleanupComplete" Content="符合条件的项目已清理。" />
+    <Text Key="settings.storage.operationIncomplete" Content="存储操作未完成。" />
+    <Text Key="settings.storage.operationFailed" Content="存储操作未完成，请重新预览。" />
+    <Text Key="settings.transfer.previewFailed" Content="无法生成设置预览，请重试。" />
+    <Text Key="settings.transfer.resetInvalid" Content="无法恢复设置，现有设置未作更改。" />
+    <Text Key="settings.transfer.importInvalid" Content="设置文件的格式、值或作用域不符合要求，未作更改。" />
+    <Text Key="settings.transfer.resetEmpty" Content="没有需要恢复的设置。" />
+    <Text Key="settings.transfer.importEmpty" Content="未发现可导入的更改。" />
+    <Text Key="settings.transfer.otherSetting" Content="其他设置" />
+    <Text Key="settings.transfer.restartRequired" Content="部分设置需要重启后生效。" />
+    <Text Key="settings.transfer.resetGlobalTitle" Content="恢复默认" />
+    <Text Key="settings.transfer.resetInstanceTitle" Content="恢复继承" />
+    <Text Key="settings.transfer.importTitle" Content="导入设置" />
+    <Text Key="settings.transfer.importAction" Content="应用更改" />
+    <Text Key="settings.transfer.applyUnavailable" Content="暂时无法应用设置。" />
+    <Text Key="settings.transfer.resetComplete" Content="设置已恢复。" />
+    <Text Key="settings.transfer.importComplete" Content="设置已导入。" />
+    <Text Key="settings.transfer.resetFailed" Content="设置未恢复；可能已发生更改，请重新预览。" />
+    <Text Key="settings.transfer.importFailed" Content="设置未导入；可能已发生更改，请重新选择文件并预览。" />
+    <Text Key="settings.transfer.exportComplete" Content="设置已导出。" />
+    <Text Key="settings.transfer.exportFailed" Content="无法导出设置，原文件未被替换。" />
+    <Text Key="settings.java.brand.EclipseTemurin" Content="Temurin" />
+    <Text Key="settings.java.brand.IbmSemeru" Content="IBM Semeru" />
+    <Text Key="settings.java.brand.OpenJdk" Content="OpenJDK" />
+    <Text Key="settings.java.brand.GraalVmCommunity" Content="GraalVM" />
+    <Text Key="settings.java.brand.JetBrains" Content="JetBrains" />
+    <Text Key="settings.java.brand.TencentKona" Content="Tencent Kona" />
+    <Text Key="settings.java.architecture.X86" Content="x86" />
+    <Text Key="settings.java.architecture.X64" Content="x64" />
+    <Text Key="settings.java.architecture.Arm" Content="ARM" />
+    <Text Key="settings.java.architecture.Arm64" Content="ARM64" />
+    <Text Key="settings.java.unknownBrand" Content="未知发行方" />
+    <Text Key="settings.java.unknownArchitecture" Content="未知架构" />
+    <Text Key="settings.java.removeRegistryTitle" Content="移除 Java 登记" />
+    <Text Key="settings.java.deleteManagedTitle" Content="删除托管 Java" />
+    <Text Key="settings.java.pickFailed" Content="无法选择 Java，请重试。" />
+    <Text Key="settings.java.managementFailed" Content="Java 管理未完成。" />
+    <Text Key="settings.platform.remediationMessage" Content="将对当前选中的实例执行此操作。" />
+    <Text Key="settings.platform.remediationComplete" Content="修复操作已完成。" />
+    <Text Key="settings.platform.remediationIncomplete" Content="修复操作未完成。" />
+    <Text Key="settings.platform.remediationFailed" Content="修复操作未完成，请查看任务详情。" />
+    <Text Key="settings.logs.openKey" Content="Management.打开日志目录" Localize="false" />
+    <Text Key="settings.logs.exportKey" Content="Management.导出日志" Localize="false" />
+    <Text Key="settings.logs.cancelKey" Content="Management.取消日志导出" Localize="false" />
+    <Text Key="settings.logs.openFailed" Content="无法打开日志目录，请检查目录是否存在。" />
+    <Text Key="settings.logs.exportComplete" Content="日志事实已导出到所选目录。" />
+    <Text Key="settings.logs.exportFailed" Content="日志未导出，请检查日志和保存目录是否可访问。" />
+    <Text Key="settings.about.sourceKey" Content="Management.源代码" Localize="false" />
+    <Text Key="settings.about.licenseKey" Content="Management.完整许可证" Localize="false" />
+    <Text Key="settings.about.contributorsKey" Content="Management.贡献者" Localize="false" />
+    <Text Key="settings.diagnostics.exportKey" Content="Management.导出诊断包" Localize="false" />
+    <Text Key="settings.diagnostics.cancelKey" Content="Management.取消诊断包导出" Localize="false" />
+    <Text Key="settings.diagnostics.exportComplete" Content="诊断包已导出到所选目录。" />
+    <Text Key="settings.diagnostics.exportFailed" Content="诊断包未导出，请检查保存目录是否可写。" />
+    <Text Key="settings.trace.captureFailed" Content="无法捕获 XSR Trace，请重试。" />
+    <Text Key="settings.advanced.paletteBlocked" Content="请先完成当前对话框，再打开命令面板。" />
+  </StackPanel>
+</nxml-page>

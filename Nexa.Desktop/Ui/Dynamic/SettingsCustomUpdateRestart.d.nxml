@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Button Key="SettingsRestartUpdate" Content="重新启动" Label="重新启动" Command="ui.settings.update.restart" Class="settings-catalog-action settings-custom-update-action" />
+</nxml-dynamic>

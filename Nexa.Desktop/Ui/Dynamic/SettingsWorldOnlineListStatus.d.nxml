@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Key="OnlineListStatus" Content="已关联 {data matched} · {data completed}/{data total} · {data status}" Localize="false" Class="world-online-list-status" MaxLines="1" TrimOverflow="true" /></nxml-dynamic>

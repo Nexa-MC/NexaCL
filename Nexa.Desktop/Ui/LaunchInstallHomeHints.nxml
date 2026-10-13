@@ -1,0 +1,18 @@
+<StackPanel>
+  <Text Key="hint.0" Content="今天也要元气满满地启动 Minecraft 哦！" />
+  <Text Key="hint.1" Content="版本设置里可以单独给某个版本指定 Java 和内存。" />
+  <Text Key="hint.2" Content="启动前请确认账户档案已选好，否则会跳转到登录页。" />
+  <Text Key="hint.3" Content="没有本地版本时，点启动会引导你前往下载页安装游戏。" />
+  <Text Key="hint.4" Content="在社区页可以搜索 Mod、整合包、资源包与光影。" />
+  <Text Key="hint.5" Content="下载社区资源不会打断当前页面，任务进度在右下角查看。" />
+  <Text Key="hint.6" Content="游戏崩溃时，可在版本文件夹的 logs/latest.log 查看日志。" />
+  <Text Key="hint.7" Content="实例隔离开启后，Mod 与配置会写在版本文件夹内。" />
+  <Text Key="hint.8" Content="自定义 JVM 参数请谨慎填写，错误参数可能导致无法启动。" />
+  <Text Key="hint.9" Content="正版登录后可在账户页查看与刷新皮肤。" />
+  <Text Key="hint.10" Content="想快速进服？在版本设置的服务器页添加地址后一键启动。" />
+  <Text Key="hint.11" Content="光影需要 Iris / OptiFine 等支持，否则版本页不会显示光影入口。" />
+  <Text Key="hint.12" Content="投影（.litematic 等）需要安装 Litematica 等投影类 Mod。" />
+  <Text Key="hint.13" Content="设置 → 个性化 可以调整主题色与窗口背景。" />
+  <Text Key="hint.14" Content="任务管理页可以取消正在进行的下载与安装任务。" />
+  <Text Key="hint.15" Content="感谢使用 Nexa，也欢迎向社区反馈问题与建议！" />
+</StackPanel>

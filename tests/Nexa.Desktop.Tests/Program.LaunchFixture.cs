@@ -8,8 +8,8 @@ using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Services.Settings;
 using Nexa.Services.Tasks;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -23,6 +23,7 @@ internal static partial class Program
         private readonly string _temporaryDirectory;
         private IDisposable? _launchObserverSubscription;
         private readonly bool _ownsMinecraftRuntime;
+        private readonly BedrockInstallPageController _bedrockInstall;
 
         public LaunchPageFixture(
             IMinecraftInstanceSource source,
@@ -87,6 +88,8 @@ internal static partial class Program
                 Library,
                 Feedback, accountCommands: enableSkins ? Onboarding.Commands : null,
                 timeProvider: timeProvider, directoryEffects: directoryEffects, installCatalogCommands: InstallCatalog.Commands, installCatalogQueries: InstallCatalog.Queries, recoveryQueries: Foundation.Queries);
+            _bedrockInstall = new(Shell, Intents, Store, Feedback, () => { }, _ => { });
+            Controller.BedrockInstallPage = _bedrockInstall.Page;
             AccountForm = new AccountFormController(Shell, Intents, Onboarding.Commands, Store,
                 Controller.AccountBody, Feedback, accountEffects, host.Logging);
             _launchObserverSubscription = storeObservation.Subscribe(Controller.StateObserver);
@@ -111,6 +114,7 @@ internal static partial class Program
         public void Dispose()
         {
             AccountForm.Dispose();
+            _bedrockInstall.Dispose();
             Onboarding.Dispose();
             _launchObserverSubscription?.Dispose();
             Controller.DisposeAsync().AsTask().GetAwaiter().GetResult();

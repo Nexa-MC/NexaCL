@@ -1,0 +1,12 @@
+<nxml-dynamic>
+  <Button Key="{data row}" Label="{data label}" Command="ui.account.select" Selected="{data selected}" Localize="false" Class="{data style}">
+    <StackPanel Class="layout-AccountProfileRow-2">
+      <Image Key="{data avatar_key}" Source="{data avatar}" Class="layout-AccountProfileRow-ProfileAvatar" />
+      <StackPanel Class="layout-AccountProfileRow-4">
+        <Text Key="{data name_key}" Content="{data name}" Localize="false" Class="{data name_style}" />
+        <Text Key="{data detail_key}" Content="{data detail}" Localize="false" Class="layout-AccountProfileRow-ProfileDetail launch-install-home-profile-detail" />
+      </StackPanel>
+      <Button Key="{data delete_key}" Label="删除档案 {data name}" Icon="lucide/trash-2" Command="ui.account.delete" Localize="false" Class="layout-AccountProfileRow-ProfileDelete launch-install-home-profile-delete" />
+    </StackPanel>
+  </Button>
+</nxml-dynamic>

@@ -11,17 +11,14 @@ internal sealed partial class SettingsPageController
             if (!_pages.TryGetValue(page.Id, out var body))
             {
                 body = _dynamic.Append(_pager, DesktopMarkup.Dynamic("SettingsSection.d.nxml", new Dictionary<string, string> { ["id"] = page.Id }));
-                _shell.Tree.GetComponent<XsrUiScroll>(body)!.ShowsVerticalIndicator = true;
-                _shell.Tree.SetComponent(body, new XsrUiScrollGesture());
-                _shell.Tree.SetComponent(body, new XsrUiTransition { Key = page.Id, MovesSelf = true });
                 _pages[page.Id] = body;
             }
-            _shell.Tree.Detach(body); _shell.Tree.Attach(body, _pager);
             if (page.Id == _selected) _sections = body;
             var button = _dynamic.Append(_navigationRoot, DesktopMarkup.Dynamic("SettingsNavigationOption.d.nxml",
                 NavigationData(page.Id, page.Label, false)));
             _navigation[button] = page.Id;
         }
+        _dynamic.Reorder(_pager, Pages.Select(page => _pages[page.Id]).ToArray());
         UpdateNavigation();
     }
 
@@ -30,7 +27,7 @@ internal sealed partial class SettingsPageController
         ["key"] = "SettingsNav." + id,
         ["label"] = label,
         ["selected"] = Flag(selected),
-        ["width"] = (width ?? Math.Max(64, label.Length * 14 + 24)).ToString(System.Globalization.CultureInfo.InvariantCulture),
+        ["width"] = (width ?? CatalogCaptionWidth("navigation", label)).ToString(System.Globalization.CultureInfo.InvariantCulture),
         ["style"] = selected ? "settings-navigation-option settings-navigation-option-selected" : "settings-navigation-option",
     };
 
@@ -42,7 +39,7 @@ internal sealed partial class SettingsPageController
         {
             bool selected = id == _selected;
             string label = _shell.Tree.GetComponent<XsrUiText>(button)!.Content;
-            double width = Math.Max(64, _shell.Renderer.LocalizeText(label).Sum(character => character > 127 ? 14 : 8) + 24);
+            double width = CatalogCaptionWidth("navigation", _shell.Renderer.LocalizeText(label));
             var projected = (label, width, selected);
             if (!_navigationProjection.TryGetValue(button, out var previous) || previous != projected)
             {

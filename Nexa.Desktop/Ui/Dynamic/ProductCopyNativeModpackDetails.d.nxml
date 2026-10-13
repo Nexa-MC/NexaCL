@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data format} · {data version}&#10;Minecraft {data game}{data loader}&#10;安装到：{data root}&#10;独立版本：{data instance}&#10;必选文件 {data required} 个，可选文件 {data optional} 个。默认仅安装必选客户端文件。" Localize="false" /></nxml-dynamic>

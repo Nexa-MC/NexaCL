@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<StackPanel Key="{data row}" Class="settings-custom-actions"><Button Key="{data select}" Content="{data label}" Label="{data label}" Command="ui.settings.launch-profile.action" Enabled="{data enabled}" Localize="false" Class="settings-catalog-action settings-custom-action" /><Button Key="{data delete}" Content="删除配置" Label="删除配置" Command="ui.settings.launch-profile.action" Enabled="{data enabled}"  Class="settings-catalog-action settings-custom-action" /></StackPanel>
+</nxml-dynamic>

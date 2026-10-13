@@ -1,26 +1,15 @@
-
-using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Accounts;
-
-
-
-
-
-
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
-
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
 
 internal sealed partial class LaunchPageController
 {
-
     private void RefreshAccountPresentation()
     {
-        XsrCollectionSnapshot<LaunchProfileView> roster = _store.ReadCollection<LaunchProfileView>(
-            _accountProfilesId);
+        XsrCollectionSnapshot<LaunchProfileView> roster = _store.ReadCollection<LaunchProfileView>(_accountProfilesId);
         int selected = SelectedAccountIndex;
         bool refreshSkins = roster.Revision != _accountRosterRevision || selected != _presentedAccountIndex;
         if (roster.Revision != _accountRosterRevision)
@@ -30,19 +19,15 @@ internal sealed partial class LaunchPageController
             _presentedAccountIndex = -2;
             _skinRevision = -1;
         }
-
         if (selected != _presentedAccountIndex)
         {
             StyleAccountRows();
             _presentedAccountIndex = selected;
             LaunchProfileView profile = roster.Items.FirstOrDefault(item => item.Index == selected);
-            string avatar = LaunchProfilePresentation.Avatar(profile.Uuid ?? string.Empty);
-            XsrUiEntityId image = _pageEntities["AccountAvatar"];
-            _shell.Tree.GetComponent<XsrUiImage>(image)!.Source = avatar;
-            _shell.Tree.MarkDirty(image, XsrUiDirtyKinds.Paint);
+            _homeAvatarSource = LaunchProfilePresentation.Avatar(profile.Uuid ?? string.Empty);
+            ReloadLaunchHomeWorkspace();
             _skinRevision = -1;
         }
-
         if (refreshSkins && _accountCommands?.TryResolve(AccountSkinContract.RefreshRoute, out XsrCommandId skinRoute) == true)
             _ = _accountCommands.Dispatch(skinRoute, new AccountRefreshSkinsCommand(), cancellationToken: _lifetimeCancellation.Token).Completion;
         RefreshSkinPresentation(roster.Items, selected);
@@ -54,30 +39,18 @@ internal sealed partial class LaunchPageController
             ? "form:" + ReadCell(AccountFormState.Mode) + ":" + _store.Read<AccountLoginSnapshot>(_store.Resolve(AccountOnboardingState.Login)).Value?.Phase
             : picker ? "roster" : "selected:" + selected;
         Publish(LaunchPageState.AccountTransitionKey, motionKey);
-        if (_accountMotionKey != motionKey)
-        {
-            var body = _pageEntities["AccountBody"];
-            var transition = _shell.Tree.GetComponent<XsrUiTransition>(body);
-            if (transition is null) _shell.Tree.SetComponent(body, transition = new XsrUiTransition());
-            transition.Key = "account:" + motionKey;
-            _shell.Tree.MarkDirty(_pageEntities["AccountBody"], XsrUiDirtyKinds.Paint);
-            _accountMotionKey = motionKey;
-        }
         Publish(LaunchPageState.AccountRosterVisibleKey, picker && !onboarding);
         Publish(LaunchPageState.AccountSelectedVisibleKey, !picker && !onboarding);
         Publish(LaunchPageState.AccountCanReturnKey, hasSelection);
         Publish(LaunchPageState.AccountTitleKey, onboarding
-            ? _store.ReadAppliedValue(_store.Resolve(AccountFormState.Key("title"))) as string ?? "添加账户"
-            : picker && hasSelection ? "切换档案" : "账户");
+            ? _store.ReadAppliedValue(_store.Resolve(AccountFormState.Key("title"))) as string ?? HomeCopy("account.add")
+            : HomeCopy(picker && hasSelection ? "account.switch" : "account.title"));
         Publish(LaunchPageState.AccountBackVisibleKey, onboarding || (picker && hasSelection));
         Publish(LaunchPageState.AccountAddVisibleKey, !onboarding);
         Publish(LaunchPageState.AccountHintVisibleKey, roster.Count == 0 || roster.Availability == XsrStateAvailability.Unavailable);
         Publish(LaunchPageState.AccountHintKey, roster.Availability == XsrStateAvailability.Unavailable
-            ? "账户安全存储不可用，原档案已保留。\n请解锁系统密钥库并重启后重试。" : roster.Count == 0
-            ? "还没有账户档案。\n点击上方＋添加，或导入旧档案。"
-            : string.Empty);
-        if (_presentedAccountPicker is { } previous && previous != picker
-            && _shell.Stage.Navigation.Current == _launchPage)
+            ? HomeCopy("account.unavailable") : roster.Count == 0 ? HomeCopy("account.empty") : string.Empty);
+        if (_presentedAccountPicker is { } previous && previous != picker && _shell.Stage.Navigation.Current == _launchPage)
         {
             XsrUiEntityId focus = picker
                 ? _accountRowEntities.GetValueOrDefault(selected, _accountRowEntities.Values.FirstOrDefault())
@@ -89,7 +62,6 @@ internal sealed partial class LaunchPageController
         UpdateLaunchButton();
     }
 
-
     private void RefreshSkinPresentation(IReadOnlyList<LaunchProfileView> profiles, int selected)
     {
         var skins = _store.ReadCollection<AccountSkinSnapshot>(_store.Resolve(AccountSkinContract.SkinsKey));
@@ -100,157 +72,82 @@ internal sealed partial class LaunchPageController
         {
             XsrUiRasterImage? raster = images.TryGetValue(AccountSkinContract.ProfileKey(profile), out AccountSkinSnapshot? skin)
                 && skin.Image is { } png ? LaunchProfilePresentation.Head(png) : null;
-            if (_accountRowEntities.TryGetValue(profile.Index, out XsrUiEntityId row))
-                _shell.Tree.Walk(row, entity =>
-                {
-                    if (_shell.Tree.Name(entity).StartsWith("ProfileAvatar:", StringComparison.Ordinal)) SetRaster(entity, raster);
-                    return true;
-                });
+            if (_homeProfileAvatars.TryGetValue(profile.Index, out var avatar)) SetRaster(avatar, raster);
             if (profile.Index == selected) SetRaster(_pageEntities["AccountAvatar"], raster);
         }
     }
 
-
+    // Raster construction is the bounded renderer media primitive; the template owns the image.
     private void SetRaster(XsrUiEntityId entity, XsrUiRasterImage? raster)
     {
         _shell.Tree.GetComponent<XsrUiImage>(entity)!.Raster = raster;
         _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Paint);
     }
 
-
-    /// <summary>
-    /// Rebuilds the account card's profile list: one clickable row per roster profile, the
-    /// selected one highlighted. Rows emit <see cref="AccountSelectCommand"/> with themselves
-    /// as the intent source, so the renderer keeps owning invocation and correlation.
-    /// </summary>
     private void BuildAccountRows(IReadOnlyList<LaunchProfileView> profiles)
     {
-        if (!_pageEntities.TryGetValue("AccountRows", out XsrUiEntityId rowsHost))
+        if (!_pageEntities.TryGetValue("AccountRows", out XsrUiEntityId rowsHost)) return;
+        // Compile every supplied fact before retiring or changing retained rows.
+        var projections = profiles.Select(profile => (Profile: profile, Data: HomeProfileData(profile))).ToArray();
+        var fragments = projections.Select(item => DesktopMarkup.Dynamic("LaunchInstallHomeProfile.d.nxml",
+            item.Data, _shell.Renderer.LocalizeText)).ToArray();
+        List<XsrUiEntityId> order = [];
+        for (int index = 0; index < projections.Length; index++)
         {
-            return;
-        }
-
-        XsrUiTree tree = _shell.Tree;
-        foreach (XsrUiEntityId row in _accountRowEntities.Values)
-        {
-            tree.Destroy(row);
-        }
-
-        _accountRowEntities.Clear();
-        _accountRowIndexes.Clear();
-
-        foreach (LaunchProfileView profile in profiles)
-        {
-            XsrUiEntityId row = NxmlUiLoader.Load(new NxmlHostIr(ProjectProfileNode(_accountRowTemplate.Root, profile)),
-                tree, _store, rowsHost);
-            tree.SetComponent(row, new XsrUiSelection());
-            tree.Walk(row, entity =>
+            var item = projections[index];
+            if (!_accountRowEntities.TryGetValue(item.Profile.Index, out var row))
             {
-                string key = tree.Name(entity);
-                if (key.StartsWith("ProfileName:", StringComparison.Ordinal)
-                    || key.StartsWith("ProfileDetail:", StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(profile.Info)) DesktopLiteralText.Preserve(tree, entity);
-                return true;
-            });
-            _accountRowEntities[profile.Index] = row;
-            _accountRowIndexes[row] = profile.Index;
+                row = HomeDynamic.Append(rowsHost, fragments[index]);
+                _accountRowEntities[item.Profile.Index] = row;
+                _accountRowIndexes[row] = item.Profile.Index;
+                _homeProfileAvatars[item.Profile.Index] = HomeNodes(row)[item.Data["avatar_key"]];
+            }
+            else HomeDynamic.Reload(row, fragments[index]);
+            _homeProfiles[item.Profile.Index] = item.Profile;
+            _homeProjections[row] = item.Data;
+            order.Add(row);
         }
-
-        tree.MarkDirty(rowsHost, XsrUiDirtyKinds.Structure);
-        StyleAccountRows();
-    }
-
-
-    private static NxmlIrNode ProjectProfileNode(NxmlIrNode node, LaunchProfileView profile) => node with
-    {
-        Key = node.Key == "AccountRow" ? $"account-row:{profile.Index}" : $"{node.Key}:{profile.Index}",
-        Label = node.Key == "AccountRow" ? $"选择 {profile.Username}，{ProfileKind(profile.Kind)}"
-            : node.Key == "ProfileDelete" ? $"删除档案 {profile.Username}" : node.Label,
-        Content = node.Key switch
+        var wanted = profiles.Select(profile => profile.Index).ToHashSet();
+        foreach (var pair in _accountRowEntities.ToArray())
         {
-            "ProfileName" => profile.Username,
-            "ProfileDetail" => LaunchProfilePresentation.Description(profile),
-            _ => node.Content,
-        },
-        ImageSource = node.Key == "ProfileAvatar" ? LaunchProfilePresentation.Avatar(profile.Uuid) : node.ImageSource,
-        Children = [.. node.Children.Select(child => ProjectProfileNode(child, profile))],
-    };
-
-
-    private static string ProfileKind(LaunchProfileKind kind) => kind switch
-    {
-        LaunchProfileKind.Microsoft => "Microsoft 账户",
-        LaunchProfileKind.ThirdParty => "第三方账户",
-        LaunchProfileKind.Offline => "离线账户",
-        LaunchProfileKind.LittleSkin => "LittleSkin 账户",
-        LaunchProfileKind.NCloud => "NCloud 账户",
-        _ => "账户档案",
-    };
-
+            if (wanted.Contains(pair.Key)) continue;
+            _accountRowEntities.Remove(pair.Key);
+            _accountRowIndexes.Remove(pair.Value);
+            _homeProfiles.Remove(pair.Key);
+            _homeProfileAvatars.Remove(pair.Key);
+            _homeProjections.Remove(pair.Value);
+            HomeDynamic.Remove(pair.Value);
+        }
+        HomeDynamic.Reorder(rowsHost, order);
+    }
 
     private void StyleAccountRows()
     {
-        foreach ((int index, XsrUiEntityId row) in _accountRowEntities)
-        {
-            bool selected = index == SelectedAccountIndex;
-            if (_shell.Tree.GetComponent<XsrUiSelection>(row) is { } selection)
-            {
-                selection.IsSelected = selected;
-            }
-
-            ApplyVisual(
-                row,
-                selected ? BadgeBackground : ProfileSurface,
-                PrimaryText,
-                cornerRadius: XsrUiCornerRadii.Inset, hover: PickerBackground);
-            _shell.Tree.Walk(row, entity =>
-            {
-                string key = _shell.Tree.Name(entity);
-                if (key.StartsWith("ProfileDelete:", StringComparison.Ordinal))
-                {
-                    ApplyVisual(entity, XsrUiColor.Transparent, ProfileSecondaryText, XsrUiCornerRadii.Pill(28),
-                        hover: new XsrUiColor(255, 224, 224));
-                    return true;
-                }
-                bool detail = key.StartsWith("ProfileDetail:", StringComparison.Ordinal);
-                StyleText(entity, detail ? ProfileSecondaryText : selected ? BadgeText : PrimaryText,
-                    fontSize: detail ? 12 : 14, weight: detail ? 400 : 600);
-                return true;
-            });
-        }
+        foreach (var pair in _homeProfiles)
+            ReloadHome(_accountRowEntities[pair.Key], "LaunchInstallHomeProfile.d.nxml", HomeProfileData(pair.Value));
     }
-
 
     private void NavigateToDownload()
     {
         _ = _shell.Select(DownloadNavigationId);
         ShowInstallRoot();
-        _feedback.Info("请在安装页选择或下载游戏版本。");
+        _feedback.Info(HomeCopy("navigate.download"));
     }
-
 
     private void PublishProfileFacts()
     {
         IReadOnlyList<LaunchProfileView> profiles = ReadProfiles();
         int index = SelectedAccountIndex;
-        if (_pageEntities.TryGetValue("AccountName", out var accountName))
+        if (profiles.Any(profile => profile.Index == index))
         {
-            bool placeholder = index < 0 || index >= profiles.Count;
-            if (_shell.Tree.GetComponent<XsrUiText>(accountName) is { } nameText) nameText.Localize = placeholder;
-            if (_shell.Tree.GetComponent<XsrUiSemantic>(accountName) is { } nameLabel) nameLabel.Localize = placeholder;
-        }
-        if (index >= 0 && index < profiles.Count)
-        {
-            if (_pageEntities.TryGetValue("AccountKind", out var accountKind)
-                && _shell.Tree.GetComponent<XsrUiText>(accountKind) is { } kindText)
-                kindText.Localize = profiles[index].Kind == LaunchProfileKind.ThirdParty || string.IsNullOrWhiteSpace(profiles[index].Info);
-            Publish(LaunchPageState.ProfileNameKey, profiles[index].Username);
-            Publish(LaunchPageState.ProfileKindKey, LaunchProfilePresentation.Description(profiles[index]));
+            var profile = profiles.First(profile => profile.Index == index);
+            Publish(LaunchPageState.ProfileNameKey, profile.Username);
+            Publish(LaunchPageState.ProfileKindKey, HomeProfileDescription(profile));
         }
         else
         {
-            Publish(LaunchPageState.ProfileNameKey, NoAccountName);
+            Publish(LaunchPageState.ProfileNameKey, HomeCopy("account.none"));
             Publish(LaunchPageState.ProfileKindKey, string.Empty);
         }
     }
-
 }

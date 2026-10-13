@@ -1,0 +1,4 @@
+<nxml-page><StackPanel>
+  <StackPanel Key="navigation" MinWidth="64" Width="8" Height="14" Padding="24,0,0,0" />
+  <StackPanel Key="option" MinWidth="48" Width="7" Height="12" Padding="24,0,0,0" />
+</StackPanel></nxml-page>

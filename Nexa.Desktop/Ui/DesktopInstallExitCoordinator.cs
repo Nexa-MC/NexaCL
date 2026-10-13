@@ -8,7 +8,8 @@ using Nexa.Xsr.State;
 namespace Nexa.Desktop.Ui;
 
 internal sealed class DesktopInstallExitCoordinator(
-    XsrStateStore store, XsrCommandRouter commands, DesktopFeedbackService feedback, Action close, XsrCommandRouter? javaCommands = null)
+    XsrStateStore store, XsrCommandRouter commands, DesktopFeedbackService feedback, Action close, XsrCommandRouter? javaCommands = null,
+    Func<string, string>? localize = null)
 {
     private int _busy;
     private volatile bool _approved;
@@ -27,8 +28,8 @@ internal sealed class DesktopInstallExitCoordinator(
         if (Interlocked.Exchange(ref _busy, 1) != 0) return false;
         if (active.Length == 0 && _stopFailed)
         {
-            feedback.ShowDialog("install.exit.retry", "安装撤回尚未完成", "恢复记录已保留。处理任务提示中的问题后，可重试取消或回滚。",
-                "重试撤回并退出", "留在启动器", accepted =>
+            feedback.ShowDialog("install.exit.retry", ProductPresentationText.Raw("native.install.exit.retry-title"), ProductPresentationText.Raw("native.install.exit.retry-message"),
+                ProductPresentationText.Raw("native.install.exit.retry-exit"), ProductPresentationText.Raw("native.install.exit.remain"), accepted =>
                 {
                     if (accepted) _ = StopAsync(false); else Interlocked.Exchange(ref _busy, 0);
                 });
@@ -38,11 +39,11 @@ internal sealed class DesktopInstallExitCoordinator(
             || item.Title.StartsWith("继续修改", StringComparison.Ordinal)
             || item.TaskId.StartsWith("install-recovery:queue:", StringComparison.Ordinal));
         Guid dialogId = Guid.Empty;
-        dialogId = feedback.ShowDialog("install.exit", "安装尚未完成", "暂停后，下次启动会继续。取消安装或回滚修改会撤回当前运行及排队恢复的任务。",
-            "暂停并退出", "留在启动器", accepted =>
+        dialogId = feedback.ShowDialog("install.exit", ProductPresentationText.Raw("native.install.exit.title"), ProductPresentationText.Raw("native.install.exit.message"),
+            ProductPresentationText.Raw("native.install.exit.pause-exit"), ProductPresentationText.Raw("native.install.exit.remain"), accepted =>
             {
                 if (accepted) _ = StopAsync(true); else Interlocked.Exchange(ref _busy, 0);
-            }, modifications ? "取消安装／回滚并退出" : "取消安装并退出", () => { if (feedback.DismissDialog(dialogId)) _ = StopAsync(false); });
+            }, ProductPresentationText.Raw(modifications ? "native.install.exit.rollback-exit" : "native.install.exit.cancel-exit"), () => { if (feedback.DismissDialog(dialogId)) _ = StopAsync(false); });
         return false;
     }
 
@@ -50,13 +51,13 @@ internal sealed class DesktopInstallExitCoordinator(
     {
         try
         {
-            if (!commands.TryResolve(MinecraftInstallRoutes.Stop, out var route)) throw new InvalidOperationException("安装停止路由未注册。");
+            if (!commands.TryResolve(MinecraftInstallRoutes.Stop, out var route)) throw new InvalidOperationException(ProductPresentationText.Term("native.install.exit.stop-route-missing", localize));
             var result = await Task.Run(async () => await commands.Dispatch(route, new MinecraftInstallStopCommand(pause)).Completion.ConfigureAwait(false)).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 _stopFailed = true;
                 feedback.Error(result.Error?.Code == MinecraftErrors.InvalidRequestCode
-                    ? result.Error.Message : "未能安全停止安装，请查看任务状态后重试。");
+                    ? result.Error.Message : ProductPresentationText.Raw("native.install.exit.stop-failed"));
                 return;
             }
             if (javaCommands is not null && javaCommands.TryResolve(JavaInstallRoutes.Stop, out var javaRoute))
@@ -65,7 +66,7 @@ internal sealed class DesktopInstallExitCoordinator(
                 if (!javaResult.IsSuccess)
                 {
                     _stopFailed = true;
-                    feedback.Error(javaResult.Error?.Message ?? "Java 安装尚未安全停止。");
+                    feedback.Error(javaResult.Error?.Message ?? ProductPresentationText.Raw("native.install.exit.java-stop-pending"));
                     return;
                 }
             }
@@ -73,7 +74,7 @@ internal sealed class DesktopInstallExitCoordinator(
             close();
         }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { _stopFailed = true; feedback.Error("未能安全停止安装：" + error.Message); }
+        { _stopFailed = true; feedback.Error(ProductPresentationText.Format("NativeInstallStopFailure", localize, ("error", error.Message)), localizeMessage: false); }
         finally { Interlocked.Exchange(ref _busy, 0); }
     }
 }

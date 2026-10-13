@@ -1,14 +1,10 @@
 using System.Globalization;
-
 using Nexa.Services.Accounts;
-
-
 using Nexa.Services.Minecraft;
-
 using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Process;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -23,7 +19,7 @@ internal sealed partial class LaunchPageController
         string? root = Path.GetDirectoryName(Path.GetDirectoryName(instanceDirectory));
         if (!Nexa.Core.PathIdentity.Comparer.Equals(root, ReadCell(LaunchPageState.InstanceDirectoryKey))
             || Path.GetFileName(instanceDirectory) != ReadCell(LaunchPageState.SelectedInstanceKey))
-        { _feedback.Warn("当前版本已变化，请重新打开服务器列表。"); return; }
+        { _feedback.Warn(HomeCopy("launch.server-changed")); return; }
         _shell.Stage.Navigation.Replace(_launchPage);
         _launchRequest = StartLaunchAsync(Path.GetFileName(instanceDirectory), _launchPage, address);
     }
@@ -32,20 +28,20 @@ internal sealed partial class LaunchPageController
     {
         if (_store.ReadAppliedValue(_libraryId) is MinecraftLibrarySnapshot { IsProvisional: true })
         {
-            _feedback.Warn("请先刷新并校验本地版本。");
+            _feedback.Warn(HomeCopy("launch.refresh-required"));
             return;
         }
         IReadOnlyList<LaunchProfileView> profiles = ReadProfiles();
         int selected = SelectedAccountIndex;
         if (!profiles.Any(profile => profile.Index == selected))
         {
-            _feedback.Warn(AccountNeedLoginSummary);
+            _feedback.Warn(HomeCopy("account.need-login"));
             return;
         }
 
         if (!_minecraft.Commands.TryResolve(MinecraftRouteIds.Start, out XsrCommandId commandId))
         {
-            _feedback.Error("启动失败：产品启动命令未注册。");
+            _feedback.Error(HomeCopy("launch.route-unavailable"));
             return;
         }
 
@@ -54,11 +50,11 @@ internal sealed partial class LaunchPageController
 
         // The launching page replicates the legacy launching card: reset facts, narrate the
         // pipeline through the launch progress cells, and return on failure or cancellation.
-        Publish(LaunchPageState.LaunchingTitleKey, "正在启动");
+        Publish(LaunchPageState.LaunchingTitleKey, HomeCopy("launch.title.busy"));
         Publish(LaunchPageState.LaunchingNameKey, ReadCell(LaunchPageState.InstanceSummaryKey));
-        Publish(LaunchPageState.LaunchingStageKey, "初始化");
-        Publish(LaunchPageState.LaunchingMethodKey, "等待账户档案");
-        Publish(LaunchPageState.LaunchingPercentKey, "0%");
+        Publish(LaunchPageState.LaunchingStageKey, HomeCopy("launch.stage.initialize"));
+        Publish(LaunchPageState.LaunchingMethodKey, HomeCopy("launch.method.waiting"));
+        Publish(LaunchPageState.LaunchingPercentKey, HomeFormat("Percent", new() { ["value"] = "0" }));
         Publish(LaunchPageState.LaunchingSpeedVisibleKey, false);
         Publish(LaunchPageState.LaunchingHintKey, LaunchWidgetHints.BuiltIn[_hintIndex]);
         RefreshLaunchingDisplay();
@@ -79,12 +75,12 @@ internal sealed partial class LaunchPageController
             // The window confirmation (or its platform fallback) already passed: success
             // closes the page immediately so the user is back at the library while the game
             // warms up, instead of parking on a 游戏已启动 card until the session ends.
-            _feedback.Info("Minecraft 已启动。");
+            _feedback.Info(HomeCopy("launch.started"));
             RequestCloseLaunchingPage();
             return;
         }
 
-        _feedback.Error($"启动失败：{result.Error?.Message}");
+        _feedback.Error(HomeFormat("LaunchFailure", new() { ["error"] = result.Error?.Message ?? string.Empty }), localizeMessage: false);
         RequestCloseLaunchingPage();
     }
 
@@ -106,7 +102,7 @@ internal sealed partial class LaunchPageController
             return;
         }
 
-        Publish(LaunchPageState.LaunchingStageKey, "已请求取消启动");
+        Publish(LaunchPageState.LaunchingStageKey, HomeCopy("launch.cancel-requested"));
         if (_minecraft.Commands.TryResolve(MinecraftRouteIds.LaunchCancel, out XsrCommandId route))
         {
             await _minecraft.Commands.Dispatch(route, new MinecraftCancelLaunchCommand(),
@@ -151,7 +147,7 @@ internal sealed partial class LaunchPageController
         if (!LaunchBusy
             || !_minecraft.Commands.TryResolve(MinecraftRouteIds.AcquireDecide, out XsrCommandId route))
         {
-            _feedback.Error("Java 下载确认命令未注册。");
+            _feedback.Error(HomeCopy("launch.java-decision-unavailable"));
             return;
         }
 
@@ -161,7 +157,7 @@ internal sealed partial class LaunchPageController
             cancellationToken: _lifetimeCancellation.Token).Completion.ConfigureAwait(false);
         if (!_disposed && !result.IsSuccess)
         {
-            _feedback.Error($"Java 下载确认失败：{result.Error?.Message}");
+            _feedback.Error(HomeFormat("JavaDecisionFailure", new() { ["error"] = result.Error?.Message ?? string.Empty }), localizeMessage: false);
         }
     }
 
@@ -197,25 +193,25 @@ internal sealed partial class LaunchPageController
         if (stage.Length > 0)
         {
             Publish(LaunchPageState.LaunchingStageKey,
-                LaunchStageDisplay.GetValueOrDefault(stage, stage));
+                HomeFind("launch.stage." + stage) ?? stage);
         }
 
         double progress = _store.ReadAppliedValue(_store.Resolve(MinecraftLaunchProgressState.ProgressKey)) is double value
             ? Math.Clamp(value, 0d, 1d)
             : 0d;
-        Publish(LaunchPageState.LaunchingPercentKey, Math.Round(progress * 100) + "%");
+        Publish(LaunchPageState.LaunchingPercentKey, HomeFormat("Percent", new() { ["value"] = Math.Round(progress * 100).ToString(CultureInfo.InvariantCulture) }));
 
         string method = ReadServiceCell(MinecraftLaunchProgressState.MethodKey);
         Publish(LaunchPageState.LaunchingMethodKey,
-            method.Length == 0 ? "等待账户档案" : LaunchMethodDisplay.GetValueOrDefault(method, method));
+            method.Length == 0 ? HomeCopy("launch.method.waiting") : HomeFind("launch.method." + method) ?? method);
 
         string speed = ReadServiceCell(MinecraftLaunchProgressState.SpeedKey);
         Publish(LaunchPageState.LaunchingSpeedKey, speed);
         Publish(LaunchPageState.LaunchingSpeedVisibleKey, speed.Length > 0);
 
         bool launched = _store.ReadAppliedValue(_store.Resolve(MinecraftLaunchProgressState.LaunchedKey)) is bool running && running;
-        Publish(LaunchPageState.LaunchingTitleKey, launched ? "游戏已启动" : "正在启动");
-        Publish(LaunchPageState.LaunchingCancelLabelKey, launched ? "返回" : "取消");
+        Publish(LaunchPageState.LaunchingTitleKey, launched ? HomeCopy("launch.title.started") : HomeCopy("launch.title.busy"));
+        Publish(LaunchPageState.LaunchingCancelLabelKey, launched ? HomeCopy("launch.back") : HomeCopy("launch.cancel"));
     }
 
 
@@ -232,12 +228,12 @@ internal sealed partial class LaunchPageController
         {
             _javaAcquisitionDialog = _feedback.ShowDialog(
                 "minecraft.java.acquire",
-                $"需要 Java {major}",
-                $"未找到兼容的 Java {major}。请选择已安装的 Java，或自动下载。",
-                "自动下载",
-                "取消",
+                HomeFormat("JavaRequiredTitle", new() { ["major"] = major.ToString(CultureInfo.InvariantCulture) }),
+                HomeFormat("JavaRequiredDescription", new() { ["major"] = major.ToString(CultureInfo.InvariantCulture) }),
+                HomeCopy("launch.java.download"),
+                HomeCopy("launch.cancel"),
                 approve => _ = DecideAcquisitionAsync(approve),
-                "选择 Java 版本", ShowJavaVersionChoice);
+                HomeCopy("launch.java.select"), ShowJavaVersionChoice, localizeMessage: false, localizeTitle: false);
         }
         else if (!pending && _javaAcquisitionDialog is { } dialog)
         {
@@ -259,9 +255,10 @@ internal sealed partial class LaunchPageController
         if (_preflightAttempt == prompt.Attempt) return;
         _preflightAttempt = prompt.Attempt;
         bool blocked = prompt.Report.Issues.Any(static issue => issue.Severity == Nexa.Services.Capabilities.PreflightSeverity.Blocked);
-        string message = string.Join("\n\n", prompt.Report.CollapsedIssues.Select(issue => $"{issue.Title}\n{issue.Description}"));
-        _preflightDialog = _feedback.ShowDialog("minecraft.preflight", blocked ? "需要先处理启动问题" : "启动前请确认",
-            message, blocked ? "返回" : "仍然启动", "取消", approve => _ = DecidePreflightAsync(prompt.Attempt, approve && !blocked));
+        string message = string.Join(HomeTerms.Value["launch.preflight.separator"], prompt.Report.CollapsedIssues.Select(issue =>
+            HomeFormat("PreflightIssue", new() { ["title"] = _shell.Renderer.LocalizeText(issue.Title), ["description"] = _shell.Renderer.LocalizeText(issue.Description) })));
+        _preflightDialog = _feedback.ShowDialog("minecraft.preflight", blocked ? HomeCopy("launch.preflight.blocked") : HomeCopy("launch.preflight.confirm"),
+            message, blocked ? HomeCopy("launch.back") : HomeCopy("launch.preflight.proceed"), HomeCopy("launch.cancel"), approve => _ = DecidePreflightAsync(prompt.Attempt, approve && !blocked), localizeMessage: false);
     }
 
 

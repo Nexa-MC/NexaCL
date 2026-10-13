@@ -4,8 +4,8 @@ using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Input.Raw;
 using Avalonia.VisualTree;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia.Tests;

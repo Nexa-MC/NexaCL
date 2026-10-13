@@ -1,8 +1,8 @@
 ﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Tests;
@@ -87,11 +87,15 @@ internal static partial class Program
         Click("FileWorkspace.Save"); AssertEqual(1, writes);
 
         void Forward(XsrSemanticId key)
-        { fixture.Foundation.Queries.TryResolve(key, out var route); queries.Register<SettingsCatalogQuery, SettingsCatalogSnapshot>(key,
-            (q, ct) => fixture.Foundation.Queries.QueryAsync<SettingsCatalogQuery, SettingsCatalogSnapshot>(route, q, cancellationToken: ct)); }
+        {
+            fixture.Foundation.Queries.TryResolve(key, out var route); queries.Register<SettingsCatalogQuery, SettingsCatalogSnapshot>(key,
+            (q, ct) => fixture.Foundation.Queries.QueryAsync<SettingsCatalogQuery, SettingsCatalogSnapshot>(route, q, cancellationToken: ct));
+        }
         void ForwardEffective()
-        { fixture.Foundation.Queries.TryResolve(SettingsPolicyContract.EffectiveQuery, out var route); queries.Register<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(SettingsPolicyContract.EffectiveQuery,
-            (q, ct) => fixture.Foundation.Queries.QueryAsync<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(route, q, cancellationToken: ct)); }
+        {
+            fixture.Foundation.Queries.TryResolve(SettingsPolicyContract.EffectiveQuery, out var route); queries.Register<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(SettingsPolicyContract.EffectiveQuery,
+            (q, ct) => fixture.Foundation.Queries.QueryAsync<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(route, q, cancellationToken: ct));
+        }
         static InstanceFileSavePreview Preview(InstanceFileSavePreviewQuery q) => new(q.Original, q.Text, "updated", 123, 124, 41, 41);
         XsrUiEntityId Find(string key, bool required = true)
         { XsrUiEntityId entity = default; fixture.Shell.Tree.Walk(settings.Page, e => { if (fixture.Shell.Tree.Name(e) == key) entity = e; return true; }); if (required) AssertTrue(entity.IsAssigned); return entity; }

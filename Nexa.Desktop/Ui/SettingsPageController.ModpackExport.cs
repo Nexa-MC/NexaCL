@@ -1,6 +1,6 @@
 using Nexa.Services.Minecraft.Management;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -19,8 +19,9 @@ internal sealed partial class SettingsPageController
     internal void ConfigureExport(Func<Task<string?>> picker) => _pickExportDirectory = picker;
     private void CancelExport()
     {
-        _exportStop?.Cancel(); _exportStop?.Dispose(); _exportStop = null; _exportRead = null; _exportPreview = null;
+        _exportStop?.Cancel(); _exportStop?.Dispose(); _exportStop = null; ObserveRetiredInstanceToolRead(_exportRead); ObserveRetiredInstanceToolRead(_exportDirectoryRead); _exportRead = null; _exportPreview = null;
         _exportInstance = null; _exportError = null; _exportLoaded = false; _exportDirectoryRead = null;
+        _exportName = _exportVersion = _exportPath = default;
         _exportNameDraft = ""; _exportVersionDraft = "1.0.0"; _exportPathDraft = "";
         _exportCategories.Clear(); _exportCategories.UnionWith(["mods", "config", "defaultconfigs"]);
     }
@@ -38,7 +39,7 @@ internal sealed partial class SettingsPageController
                 _exportPathDraft = Path.Combine(directory, Path.GetFileName(_instance) + ".mrpack");
                 if (_shell.Tree.IsAlive(_exportPath)) _shell.Renderer.SetTextInputValue(_exportPath, _exportPathDraft);
             }
-            else if (picking.IsFaulted) _feedback.Error("无法选择导出目录。");
+            else if (picking.IsFaulted) _feedback.Error(WorldTerm("export.pick-error"));
         }
         if (!_exportLoaded && _exportRead is null && _queries.TryResolve(InstanceModpackExportContract.Preview, out var route))
         {
@@ -48,8 +49,8 @@ internal sealed partial class SettingsPageController
         if (_exportRead is not { IsCompleted: true } read) return;
         _exportRead = null; _exportLoaded = true;
         if (PendingQuery.Succeeded(read)) _exportPreview = read.Result.Value;
-        else _exportError = "无法读取导出范围，请检查目录后刷新。";
-        BuildSections();
+        else _exportError = WorldTerm("export.read-error");
+        if (_management is { } snapshot) BuildModpackExport(snapshot);
     }
     private void CaptureExportDrafts()
     {
@@ -57,53 +58,68 @@ internal sealed partial class SettingsPageController
             ? _shell.Tree.GetComponent<XsrUiTextInput>(field)!.ReadDraft() : fallback;
         _exportNameDraft = Draft(_exportName, _exportNameDraft); _exportVersionDraft = Draft(_exportVersion, _exportVersionDraft); _exportPathDraft = Draft(_exportPath, _exportPathDraft);
     }
+    private XsrUiEntityId _exportRoot;
+    private readonly Dictionary<string, XsrUiEntityId> _exportCategoryViews = [];
     private void BuildModpackExport(InstanceManagementSnapshot snapshot)
     {
+        if (!_shell.Tree.IsAlive(_sections)) return;
         if (_exportNameDraft.Length == 0) _exportNameDraft = Path.GetFileName(snapshot.InstanceDirectory);
-        var metadata = FormGroup(_sections, "ExportMetadata", "整合包信息");
-        ManagementFactIn(metadata, "Minecraft", snapshot.GameVersion);
-        ManagementFactIn(metadata, "已记录版本", snapshot.ModpackVersion.Length > 0 ? snapshot.ModpackVersion : "未记录");
-        _exportName = ManagementField(metadata, "ExportName", "包名称", _exportNameDraft);
-        _exportVersion = ManagementField(metadata, "ExportVersion", "包版本", _exportVersionDraft);
-        _exportPath = ManagementField(metadata, "ExportPath", "保存到", _exportPathDraft, "完整 .mrpack 文件路径");
-        if (_pickExportDirectory is not null) ManagementButton(metadata, "选择保存目录", () =>
+        bool initialize = !_shell.Tree.IsAlive(_exportRoot) || _shell.Tree.Parent(_exportRoot) != _sections;
+        var preview = _exportPreview;
+        var nodes = WorldView(_sections, ref _exportRoot, "Export", new()
         {
-            if (_exportDirectoryRead is not null) return;
-            _exportDirectoryRead = _pickExportDirectory(); WakeOnPlatformCompletion(_exportDirectoryRead);
-        }, 128);
-        if (_exportPreview is { } preview)
+            ["gameVersion"] = snapshot.GameVersion,
+            ["recordedVersion"] = snapshot.ModpackVersion.Length > 0 ? snapshot.ModpackVersion : WorldTerm("unrecorded"),
+            ["name"] = _exportNameDraft,
+            ["version"] = _exportVersionDraft,
+            ["path"] = _exportPathDraft,
+            ["picker"] = Flag(_pickExportDirectory is not null),
+            ["preview"] = Flag(preview is not null),
+            ["enabled"] = Flag(_managementWrite is null),
+            ["loading"] = Flag(preview is null && _exportError is null),
+            ["hasError"] = Flag(_exportError is not null),
+            ["error"] = _exportError ?? ""
+        });
+        _exportName = nodes["ExportName"]; _exportVersion = nodes["ExportVersion"]; _exportPath = nodes["ExportPath"];
+        if (initialize)
         {
-            var categories = FormGroup(_sections, "ExportCategories", "包含的内容");
-            foreach (var category in preview.Categories)
-            {
-                bool selected = _exportCategories.Contains(category.Id);
-                var row = Stack(categories, "ExportCategory." + category.Id, XsrUiOrientation.Horizontal, 12);
-                var choice = ToggleControl(row, "ExportCategoryChoice." + category.Id, category.Label, selected,
-                    ManagementAction, checkBox: true);
-                _shell.Tree.GetComponent<XsrUiElement>(choice)!.Weight = 1;
-                _shell.Tree.GetComponent<XsrUiElement>(choice)!.Width = null;
-                Text(row, category.FileCount + " 个文件", 12, Muted, 36);
-                Text(row, (category.Bytes / 1048576d).ToString("0.0", System.Globalization.CultureInfo.CurrentCulture) + " MiB", 12, Muted, 36);
-                _managementActions[choice] = () =>
-                {
-                    CaptureExportDrafts();
-                    if (!_exportCategories.Remove(category.Id)) _exportCategories.Add(category.Id);
-                    _shell.Tree.GetComponent<XsrUiToggle>(choice)!.IsChecked = _exportCategories.Contains(category.Id);
-                    _shell.Tree.MarkDirty(choice, XsrUiDirtyKinds.Paint);
-                };
-            }
-            Text(_sections, "配置和模组默认包含。存档与游戏选项需自行选择；分享前请检查配置中的敏感信息和文件的分发许可。", 12, Muted, 32);
-            ManagementButton(_sections, "导出整合包", () =>
-            {
-                if (_managementWrite is not null || _instance is null || !_commands.TryResolve(InstanceModpackExportContract.Export, out var route)) return;
-                _managementWriteInstance = _instance;
-                _managementWrite = _commands.Dispatch(route, new InstanceModpackExportCommand(_instance,
-                    _shell.Tree.GetComponent<XsrUiTextInput>(_exportPath)!.ReadDraft(),
-                    _shell.Tree.GetComponent<XsrUiTextInput>(_exportName)!.ReadDraft(),
-                    _shell.Tree.GetComponent<XsrUiTextInput>(_exportVersion)!.ReadDraft(), preview.Categories.Where(c => _exportCategories.Contains(c.Id)).Select(c => c.Id).ToArray())).Completion;
-                WakeOnPlatformCompletion(_managementWrite);
-            }, 120);
+            _shell.Renderer.SetTextInputValue(_exportName, _exportNameDraft); _shell.Renderer.SetTextInputValue(_exportVersion, _exportVersionDraft); _shell.Renderer.SetTextInputValue(_exportPath, _exportPathDraft);
         }
-        else Text(_sections, _exportError ?? "正在统计可导出的文件…", 13, Muted, 28);
+        BindWorldAction(nodes, WorldKey("ExportChoose"), () =>
+        {
+            if (_exportDirectoryRead is not null || _pickExportDirectory is null) return;
+            _exportDirectoryRead = _pickExportDirectory(); WakeOnPlatformCompletion(_exportDirectoryRead);
+        });
+        var categories = preview?.Categories.ToArray() ?? [];
+        RetireWorldRows(_exportCategoryViews, categories.Select(category => category.Id));
+        foreach (var category in categories)
+        {
+            string key = "ExportCategory." + InstanceToolIdentity(category.Id), choice = "ExportCategoryChoice." + category.Id;
+            var row = WorldRow(nodes["Export.Categories"], _exportCategoryViews, category.Id, "ExportCategory", new()
+            {
+                ["key"] = key,
+                ["choice"] = choice,
+                ["label"] = category.Label,
+                ["selected"] = Flag(_exportCategories.Contains(category.Id)),
+                ["files"] = WorldNumber(category.FileCount),
+                ["size"] = (category.Bytes / 1048576d).ToString("0.0", System.Globalization.CultureInfo.CurrentCulture)
+            });
+            BindWorldAction(row, choice, () =>
+            {
+                CaptureExportDrafts();
+                if (!_exportCategories.Remove(category.Id)) _exportCategories.Add(category.Id);
+                BuildModpackExport(snapshot);
+            });
+        }
+        _dynamic.Reorder(nodes["Export.Categories"], categories.Select(category => _exportCategoryViews[category.Id]).ToArray());
+        BindWorldAction(nodes, WorldKey("Export"), () =>
+        {
+            if (preview is null || _managementWrite is not null || _instance is null || !_commands.TryResolve(InstanceModpackExportContract.Export, out var route)) return;
+            _managementWriteInstance = _instance;
+            _managementWrite = _commands.Dispatch(route, new InstanceModpackExportCommand(_instance,
+                _shell.Tree.GetComponent<XsrUiTextInput>(_exportPath)!.ReadDraft(), _shell.Tree.GetComponent<XsrUiTextInput>(_exportName)!.ReadDraft(),
+                _shell.Tree.GetComponent<XsrUiTextInput>(_exportVersion)!.ReadDraft(), preview.Categories.Where(c => _exportCategories.Contains(c.Id)).Select(c => c.Id).ToArray())).Completion;
+            WakeOnPlatformCompletion(_managementWrite); BuildModpackExport(snapshot);
+        });
     }
 }

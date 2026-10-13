@@ -1,6 +1,6 @@
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
-using Nexa.Xsr;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -9,12 +9,12 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
 {
     private static readonly XsrUiContextMenuItem[] DesktopMenuItems =
     [
-        new("启动", XsrSemanticId.Parse("ui.navigation.launch")),
-        new("安装", XsrSemanticId.Parse("ui.navigation.download")),
-        new("资源", XsrSemanticId.Parse("ui.navigation.community")),
-        new("设置", XsrSemanticId.Parse("ui.navigation.settings")),
-        new("最小化", XsrSemanticId.Parse("ui.desktop.minimize")),
-        new("退出", XsrSemanticId.Parse("ui.desktop.exit")),
+        new(ProductPresentationText.Raw("native.desktop.launch"), XsrSemanticId.Parse("ui.navigation.launch")),
+        new(ProductPresentationText.Raw("native.desktop.install"), XsrSemanticId.Parse("ui.navigation.download")),
+        new(ProductPresentationText.Raw("native.desktop.resources"), XsrSemanticId.Parse("ui.navigation.community")),
+        new(ProductPresentationText.Raw("native.desktop.settings"), XsrSemanticId.Parse("ui.navigation.settings")),
+        new(ProductPresentationText.Raw("native.desktop.minimize"), XsrSemanticId.Parse("ui.desktop.minimize")),
+        new(ProductPresentationText.Raw("native.desktop.exit"), XsrSemanticId.Parse("ui.desktop.exit")),
     ];
     private readonly XsrStateStore _state;
     private readonly AvaloniaUiPlatformActions _platform;
@@ -95,7 +95,7 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
     {
         if (DesktopActivation.TryParse(uri, out DesktopDestination destination))
             _platform.PostToWindow(() => { if (!_disposed) _activate(destination); });
-        else _report("不支持的 nexacl:// 链接。");
+        else _report(ProductPresentationText.Raw("native.desktop.unsupported-protocol"));
     }
     internal void ActivateProtocol(string uri) => OnProtocol(uri);
     private void OnIntent(object? sender, DesktopUiIntentEventArgs args)
@@ -120,7 +120,7 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
     {
         if (_disposed) return;
         HasExplicitActivation = true;
-        if (_pendingFiles.Count >= 16) { _report("待处理整合包过多，请完成当前确认后重试。"); return; }
+        if (_pendingFiles.Count >= 16) { _report(ProductPresentationText.Raw("native.drop.pending-limit")); return; }
         _pendingFiles.Enqueue(file);
         _shell.Tree.MarkDirty(_shell.Root, XsrUiDirtyKinds.Paint);
     }
@@ -128,7 +128,7 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
     {
         if (_disposed || _pendingFiles.Count == 0) return;
         _platform.RestoreWindow();
-        if (_openFile is null) { _report("当前界面尚不能接收整合包文件。"); _pendingFiles.Clear(); return; }
+        if (_openFile is null) { _report(ProductPresentationText.Raw("native.desktop.no-file-receiver")); _pendingFiles.Clear(); return; }
         while (_pendingFiles.TryDequeue(out string? file)) _openFile(file);
     }
     private void OnChanged(XsrStateChange change) { if (_keys.Contains(change.Id)) ApplyPolicy(); }

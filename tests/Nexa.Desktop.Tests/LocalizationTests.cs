@@ -116,7 +116,14 @@ internal static partial class Program
             foreach (var attribute in document.Descendants().Attributes().Where(attribute => attribute.Name.LocalName is "Content" or "Label" or "Placeholder"))
             {
                 string source = attribute.Value;
-                if (source.Any(character => character is >= '\u4e00' and <= '\u9fff'))
+                var text = attribute.Parent;
+                string? key = text?.Attribute("Key")?.Value;
+                bool identityTerms = Path.GetFileName(resource) is "ProductCopySettingsTerms.nxml" or "SettingsContentTerms.nxml" or "SettingsWorldTerms.nxml";
+                bool rawActionIdentity = identityTerms && attribute.Name.LocalName == "Content"
+                    && text is not null && text.Name.LocalName == "Text" && text.Attribute("Localize")?.Value == "false"
+                    && key is not null && (key.StartsWith("action.", StringComparison.Ordinal) || key.EndsWith("Key", StringComparison.Ordinal))
+                    && source.StartsWith("Management.", StringComparison.Ordinal);
+                if (!rawActionIdentity && source.Any(character => character is >= '\u4e00' and <= '\u9fff'))
                     AssertFalse(catalog.Translate(source) == source);
             }
         }

@@ -1,8 +1,8 @@
 using Nexa.Desktop.Ui;
 using Nexa.Services.Resources;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Tests;
@@ -41,8 +41,9 @@ internal static partial class Program
             Open(); AssertEqual(1, reads.Count); AssertEqual(instance, reads[0].Query.InstanceDirectory);
             var localDetail = FindByKey(fixture.Shell, scene, "ManagementContentDetail").Entity;
             var back = FindByKey(fixture.Shell, scene, "Management.返回列表").Entity;
-            var scroll = fixture.Shell.Tree.GetComponent<XsrUiScroll>(fixture.Shell.Tree.Parent(localDetail))!;
-            scroll.OffsetY = 400; fixture.Shell.Tree.MarkDirty(fixture.Shell.Tree.Parent(localDetail), XsrUiDirtyKinds.Layout); scene = fixture.Shell.Render(new(1000, 650));
+            var detailPage = ContentScrollAncestor(fixture.Shell.Tree, localDetail);
+            var scroll = fixture.Shell.Tree.GetComponent<XsrUiScroll>(detailPage)!;
+            scroll.OffsetY = 400; fixture.Shell.Tree.MarkDirty(detailPage, XsrUiDirtyKinds.Layout); scene = fixture.Shell.Render(new(1000, 650));
             AssertTrue(scene.Nodes.Any(node => node.Text == "正在识别文件并获取项目资料…"));
             Emit(fixture.Intents, "ui.settings.management.action", back); scene = fixture.Shell.Render(new(1000, 650));
             AssertTrue(reads[0].Token.IsCancellationRequested);
@@ -50,8 +51,9 @@ internal static partial class Program
             reads[0].Completion.SetResult(new(new("Old", "旧结果", "", "", 1, "https://modrinth.com/project/Old"), "1", [], null));
             scene = fixture.Shell.Render(new(1000, 650)); AssertFalse(scene.Nodes.Any(node => node.Text == "旧结果"));
             localDetail = FindByKey(fixture.Shell, scene, "ManagementContentDetail").Entity;
-            scroll = fixture.Shell.Tree.GetComponent<XsrUiScroll>(fixture.Shell.Tree.Parent(localDetail))!;
-            scroll.OffsetY = 400; fixture.Shell.Tree.MarkDirty(fixture.Shell.Tree.Parent(localDetail), XsrUiDirtyKinds.Layout); scene = fixture.Shell.Render(new(1000, 650));
+            detailPage = ContentScrollAncestor(fixture.Shell.Tree, localDetail);
+            scroll = fixture.Shell.Tree.GetComponent<XsrUiScroll>(detailPage)!;
+            scroll.OffsetY = 400; fixture.Shell.Tree.MarkDirty(detailPage, XsrUiDirtyKinds.Layout); scene = fixture.Shell.Render(new(1000, 650));
             double previousOffset = scroll.OffsetY;
             reads[1].Completion.SetResult(new(new("A", "Name", "中文简介", "Author", 12345, "https://modrinth.com/project/A") { ChineseName = "中文名称", Sources = [new(ResourceProvider.Modrinth, "A")] }, "1.0.0", [], null));
             AssertTrue(SpinWait.SpinUntil(() => { scene = fixture.Shell.Render(new(1000, 650)); return scene.Nodes.Any(node => node.Text == "中文名称"); }, TimeSpan.FromSeconds(5)));
@@ -62,7 +64,7 @@ internal static partial class Program
             // no longer the download count. Prove that the actual count remains reachable.
             for (int offset = 0; offset <= 4096 && !scene.Nodes.Any(node => node.Text == "12.3k"); offset += 128)
             {
-                scroll.OffsetY = offset; fixture.Shell.Tree.MarkDirty(fixture.Shell.Tree.Parent(localDetail), XsrUiDirtyKinds.Layout);
+                scroll.OffsetY = offset; fixture.Shell.Tree.MarkDirty(detailPage, XsrUiDirtyKinds.Layout);
                 scene = fixture.Shell.Render(new(1000, 650));
             }
             AssertTrue(scene.Nodes.Any(node => node.Text == "12.3k"));

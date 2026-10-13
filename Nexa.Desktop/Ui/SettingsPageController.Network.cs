@@ -1,6 +1,6 @@
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Ui;
@@ -15,10 +15,8 @@ internal sealed partial class SettingsPageController
     private readonly Dictionary<string, XsrUiEntityId> _proxyInputs = [];
     private readonly Dictionary<XsrUiEntityId, string> _proxyModes = [];
     private readonly Dictionary<string, string> _proxyCommitted = [];
-    private XsrUiEntityId _proxyTrack, _proxyProtocolTrack, _proxyManual, _proxyProtocolHint;
+    private XsrUiEntityId _proxyWorkspace, _proxyTrack, _proxyProtocolTrack, _proxyProtocolHint;
     private readonly Dictionary<XsrUiEntityId, string> _proxyProtocols = [];
-    private static readonly XsrUiVisualStyleSnapshot ProxyOption = DesktopMarkup.Visual("settings-proxy-option").Snapshot();
-    private static readonly XsrUiVisualStyleSnapshot ProxySelectedOption = DesktopMarkup.Visual("settings-proxy-option-selected").Snapshot();
     private string? _proxyHintTemplate;
     private string _proxyDraftProtocol = "http";
     private string _proxyDraftMode = "1";
@@ -35,33 +33,28 @@ internal sealed partial class SettingsPageController
         _proxySavedDrafts = preserveDraft && _proxyInitialized && _selected == "network"
             ? _proxyInputs.Where(pair => _shell.Tree.IsAlive(pair.Value)).ToDictionary(pair => pair.Key,
                 pair => _shell.Tree.GetComponent<XsrUiTextInput>(pair.Value)!.ReadDraft()) : null;
-        _proxyInputs.Clear(); _proxyModes.Clear(); _proxyProtocols.Clear(); _proxyTrack = default;
+        _proxyInputs.Clear(); _proxyModes.Clear(); _proxyProtocols.Clear(); _proxyWorkspace = _proxyTrack = default;
         if (_proxySavedDrafts is null)
         { _proxyCommitted.Clear(); _proxyInitialized = false; _proxyRevision = -1; }
     }
 
     private void BuildProxyPreferences()
     {
-        var root = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsProxy.d.nxml"));
+        var root = _proxyWorkspace = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsCustomProxy.d.nxml", ProxyProjection()));
         var names = new Dictionary<string, XsrUiEntityId>(StringComparer.Ordinal);
         _shell.Tree.Walk(root, entity => { names[_shell.Tree.Name(entity)] = entity; return true; });
         _proxyTrack = names["SettingsProxyMode"]; _proxyProtocolTrack = names["SettingsProxyProtocol"];
-        _proxyManual = names["SettingsProxyManual"]; _proxyProtocolHint = names["SettingsProxyHint"];
+        _proxyProtocolHint = names["SettingsProxyHint"];
         _proxyHintTemplate = null;
-        foreach (var (track, thumb) in new[] { (_proxyTrack, names["SettingsProxyModeThumb"]), (_proxyProtocolTrack, names["SettingsProxyProtocolThumb"]) })
-        {
-            _shell.Tree.SetComponent(track, new XsrUiSegmentedTrack(thumb));
-            _shell.Tree.SetComponent(thumb, new XsrUiTransition());
-        }
         foreach (string value in new[] { "1", "0", "2" })
         {
             var option = names["SettingsProxyMode." + value];
-            _proxyModes[option] = value; _shell.Tree.SetComponent(option, new XsrUiSelection());
+            _proxyModes[option] = value;
         }
         foreach (string protocol in new[] { "http", "https", "socks4", "socks5", "pac" })
         {
             var option = names["SettingsProxyProtocol." + protocol];
-            _proxyProtocols[option] = protocol; _shell.Tree.SetComponent(option, new XsrUiSelection());
+            _proxyProtocols[option] = protocol;
         }
         foreach (string key in ProxyKeys)
         {
@@ -90,6 +83,7 @@ internal sealed partial class SettingsPageController
                 _proxyInitialized = false; _revision = -1;
                 return;
             }
+            _feedback.Error(CustomFormat("ProxySaveFailure", new() { ["error"] = completed.IsCompletedSuccessfully ? completed.Result.Error?.Message ?? "" : CustomCopy("network.proxyFailed") }), localizeMessage: false);
         }
         if (_values is null || !_proxyTrack.IsAssigned || !_shell.Tree.IsAlive(_proxyTrack)) return;
         if (!_proxyInitialized || _values.Revision != _proxyRevision && !ProxyHasDraft)
@@ -109,16 +103,13 @@ internal sealed partial class SettingsPageController
             }
             _proxyRevision = _values.Revision; _proxyInitialized = true;
         }
-        DesktopElementVisibility.Set(_shell.Tree, _proxyManual, _proxyDraftMode == "2");
         string addressDraft = _shell.Tree.GetComponent<XsrUiTextInput>(_proxyInputs["network.proxy-address"])!.ReadDraft();
         if (_proxyDraftProtocol != "pac" && Uri.TryCreate(addressDraft, UriKind.Absolute, out var draftUri)
             && draftUri.Scheme is "http" or "https" or "socks4" or "socks5") _proxyDraftProtocol = draftUri.Scheme;
         foreach (var (option, protocol) in _proxyProtocols)
         {
             bool selected = protocol == _proxyDraftProtocol;
-            _shell.Tree.GetComponent<XsrUiSelection>(option)!.IsSelected = selected;
             if (selected) _shell.Tree.GetComponent<XsrUiSegmentedTrack>(_proxyProtocolTrack)!.Selected = option;
-            ApplyProxyOptionVisual(option, selected);
         }
         string hintTemplate = _proxyDraftProtocol switch
         {
@@ -131,27 +122,37 @@ internal sealed partial class SettingsPageController
             _dynamic.Replace(_proxyProtocolHint, DesktopMarkup.Dynamic(hintTemplate));
             _proxyHintTemplate = hintTemplate;
         }
-        var password = _proxyInputs["network.proxy-password"];
-        DesktopElementVisibility.Set(_shell.Tree, _shell.Tree.Parent(password), _proxyDraftProtocol is not ("socks4"));
         foreach (var (option, value) in _proxyModes)
         {
             bool selected = value == _proxyDraftMode;
-            _shell.Tree.GetComponent<XsrUiSelection>(option)!.IsSelected = selected;
             if (selected) _shell.Tree.GetComponent<XsrUiSegmentedTrack>(_proxyTrack)!.Selected = option;
-            ApplyProxyOptionVisual(option, selected);
         }
+        _dynamic.Reload(_proxyWorkspace, DesktopMarkup.Dynamic("SettingsCustomProxy.d.nxml", ProxyProjection()));
     }
 
-    private void ApplyProxyOptionVisual(XsrUiEntityId option, bool selected)
+    private Dictionary<string, string> ProxyProjection()
     {
-        if (_shell.Tree.GetComponent<XsrUiVisualStyle>(option)?.Snapshot() == (selected ? ProxySelectedOption : ProxyOption)) return;
-        _shell.Tree.SetComponent(option, DesktopMarkup.Visual(selected ? "settings-proxy-option-selected" : "settings-proxy-option"));
+        Dictionary<string, string> data = new() { ["manual"] = Flag(_proxyDraftMode == "2"), ["password"] = Flag(_proxyDraftProtocol != "socks4"), ["enabled"] = Flag(_writing is null) };
+        foreach (string value in new[] { "1", "0", "2" })
+        {
+            bool selected = value == _proxyDraftMode; data["mode" + value] = Flag(selected);
+            data["mode" + value + "Style"] = selected ? "settings-proxy-option-selected settings-proxy-mode" : "settings-proxy-option settings-proxy-mode";
+        }
+        foreach (string protocol in new[] { "http", "https", "socks4", "socks5", "pac" })
+        {
+            bool selected = protocol == _proxyDraftProtocol; data["protocol" + protocol] = Flag(selected);
+            data["protocol" + protocol + "Style"] = selected ? "settings-proxy-option-selected settings-proxy-protocol" : "settings-proxy-option settings-proxy-protocol";
+        }
+        return data;
     }
 
     private void HandleProxyIntent(DesktopUiIntent intent)
     {
         if (_selected != "network" || _instanceDirectory is not null || _writing is not null || !_proxyInitialized
-            || !_shell.Tree.IsAlive(intent.Source)) return;
+            || !_shell.Tree.IsAlive(intent.Source) || !_shell.Tree.IsAlive(_proxyWorkspace)
+            || _shell.Tree.GetComponent<XsrUiInput>(intent.Source)?.Enabled != true) return;
+        for (var node = intent.Source; node.IsAssigned; node = _shell.Tree.Parent(node))
+            if (_shell.Tree.GetComponent<XsrUiElement>(node)?.IsVisible == false) return;
         if (intent.Command == ProxyMode && _proxyModes.TryGetValue(intent.Source, out var mode))
         { _proxyDraftMode = mode; UpdateProxyPreferences(); return; }
         if (intent.Command == ProxyProtocol && _proxyProtocols.TryGetValue(intent.Source, out var protocol))
@@ -165,9 +166,9 @@ internal sealed partial class SettingsPageController
             _shell.Renderer.SetTextInputValue(input, scheme + "://" + tail);
             UpdateProxyPreferences(); return;
         }
-        if (intent.Command == ProxyReload && _shell.Tree.Name(intent.Source) == "SettingsProxyReload")
+        if (intent.Command == ProxyReload && intent.Source == CatalogNodes(_proxyWorkspace)["SettingsProxyReload"])
         { _proxyInitialized = false; UpdateProxyPreferences(); return; }
-        if (intent.Command != ProxyApply || _shell.Tree.Name(intent.Source) != "SettingsProxyApply"
+        if (intent.Command != ProxyApply || intent.Source != CatalogNodes(_proxyWorkspace)["SettingsProxyApply"]
             || !_commands.TryResolve(SettingsPolicyContract.BatchCommand, out var route)) return;
         List<SettingsMutation> changes = [new("network.proxy-mode", SettingsLayer.Global, new(SettingsOverrideMode.Custom, _proxyDraftMode))];
         foreach (var (key, input) in _proxyInputs)
@@ -182,7 +183,6 @@ internal sealed partial class SettingsPageController
     private async Task<XsrResult> SaveProxyAsync(XsrCommandId route, SettingsBatchCommand command)
     {
         var result = await _commands.Dispatch(route, command).Completion.ConfigureAwait(false);
-        if (!_disposed && !result.IsSuccess) _feedback.Error("代理配置未保存：" + result.Error?.Message);
         return result;
     }
 }

@@ -1,7 +1,7 @@
 using System.Globalization;
 using Nexa.Services.Logging;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -41,7 +41,7 @@ internal sealed partial class SettingsPageController
         if (_runtimeTraceRead is not { IsCompleted: true } read) return;
         _runtimeTraceRead = null; _runtimeTraceStop?.Dispose(); _runtimeTraceStop = null;
         if (PendingQuery.Succeeded(read)) _runtimeTraceSnapshot = read.Result.Value;
-        else if (!read.IsCanceled) _feedback.Error("无法捕获 XSR Trace，请重试。");
+        else if (!read.IsCanceled) _feedback.Error(ProductPresentationText.Raw("settings.trace.captureFailed"));
         ReloadCatalog(_runtimeTraceRoot, ("enabled", "true"));
         BuildRuntimeTraceRows();
     }

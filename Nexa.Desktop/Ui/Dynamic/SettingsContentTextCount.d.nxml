@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data count} / {data total} 项{data incomplete}" Localize="false" /></nxml-dynamic>

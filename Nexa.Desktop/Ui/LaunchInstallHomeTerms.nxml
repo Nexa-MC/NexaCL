@@ -1,0 +1,65 @@
+<StackPanel>
+  <Text Key="account.title" Content="账户" />
+  <Text Key="account.add" Content="添加账户" />
+  <Text Key="account.switch" Content="切换档案" />
+  <Text Key="account.none" Content="未选择账户" />
+  <Text Key="account.unavailable" Content="账户安全存储不可用，原档案已保留。&#10;请解锁系统密钥库并重启后重试。" />
+  <Text Key="account.empty" Content="还没有账户档案。&#10;点击上方＋添加，或导入旧档案。" />
+  <Text Key="account.need-login" Content="请选择或创建一个账户档案后再启动。" />
+  <Text Key="account.microsoft" Content="Microsoft 账户" />
+  <Text Key="account.third-party" Content="第三方账户" />
+  <Text Key="account.offline" Content="离线账户" />
+  <Text Key="account.little-skin" Content="LittleSkin 账户" />
+  <Text Key="account.ncloud" Content="NCloud 账户" />
+  <Text Key="account.profile" Content="账户档案" />
+  <Text Key="widget.about.current" Content="关于 Nexa，当前卡片" />
+  <Text Key="widget.about.open" Content="查看关于 Nexa" />
+  <Text Key="widget.trivia.current" Content="你知道吗，当前卡片" />
+  <Text Key="widget.trivia.open" Content="查看你知道吗" />
+  <Text Key="widget.echo.current" Content="回声洞，当前卡片" />
+  <Text Key="widget.echo.open" Content="查看回声洞" />
+  <Text Key="navigate.download" Content="请在安装页选择或下载游戏版本。" />
+  <Text Key="launch.scanning" Content="正在扫描本地版本…" />
+  <Text Key="launch.no-instances" Content="未找到可启动的游戏版本" />
+  <Text Key="launch.no-profile" Content="未选择档案" />
+  <Text Key="launch.download" Content="下载游戏" />
+  <Text Key="launch.start" Content="启动游戏" />
+  <Text Key="launch.unsupported" Content="暂不支持启动" />
+  <Text Key="launch.validating-cache" Content="正在校验已缓存的版本…" />
+  <Text Key="launch.provisional" Content="版本待校验" />
+  <Text Key="launch.busy-action" Content="正在启动…" />
+  <Text Key="launch.server-changed" Content="当前版本已变化，请重新打开服务器列表。" />
+  <Text Key="launch.refresh-required" Content="请先刷新并校验本地版本。" />
+  <Text Key="launch.route-unavailable" Content="启动失败：产品启动命令未注册。" />
+  <Text Key="launch.title.busy" Content="正在启动" />
+  <Text Key="launch.title.started" Content="游戏已启动" />
+  <Text Key="launch.stage.initialize" Content="初始化" />
+  <Text Key="launch.method.waiting" Content="等待账户档案" />
+  <Text Key="launch.started" Content="Minecraft 已启动。" />
+  <Text Key="launch.cancel-requested" Content="已请求取消启动" />
+  <Text Key="launch.java-decision-unavailable" Content="Java 下载确认命令未注册。" />
+  <Text Key="launch.java.download" Content="自动下载" />
+  <Text Key="launch.java.select" Content="选择 Java 版本" />
+  <Text Key="launch.cancel" Content="取消" />
+  <Text Key="launch.back" Content="返回" />
+  <Text Key="launch.preflight.blocked" Content="需要先处理启动问题" />
+  <Text Key="launch.preflight.confirm" Content="启动前请确认" />
+  <Text Key="launch.preflight.proceed" Content="仍然启动" />
+  <Text Key="launch.preflight.separator" Content="&#10;&#10;" />
+  <Text Key="launch.stage.get_java" Content="获取 Java" />
+  <Text Key="launch.stage.login" Content="登录" />
+  <Text Key="launch.stage.complete_files" Content="补全文件" />
+  <Text Key="launch.stage.get_arguments" Content="获取启动参数" />
+  <Text Key="launch.stage.extract_natives" Content="解压 Natives" />
+  <Text Key="launch.stage.pre_launch" Content="预启动处理" />
+  <Text Key="launch.stage.preflight" Content="检查启动条件" />
+  <Text Key="launch.stage.start_process" Content="启动进程" />
+  <Text Key="launch.stage.wait_window" Content="等待游戏窗口" />
+  <Text Key="launch.stage.end" Content="完成" />
+  <Text Key="launch.method.offline" Content="离线模式" />
+  <Text Key="launch.method.microsoft" Content="微软登录" />
+  <Text Key="profile.style.default" Content="layout-AccountProfileRow-AccountRow launch-install-home-profile" />
+  <Text Key="profile.style.selected" Content="layout-AccountProfileRow-AccountRow launch-install-home-profile launch-install-home-profile-selected" />
+  <Text Key="profile.name-style.default" Content="layout-AccountProfileRow-ProfileName launch-install-home-profile-name" />
+  <Text Key="profile.name-style.selected" Content="layout-AccountProfileRow-ProfileName launch-install-home-profile-name launch-install-home-profile-name-selected" />
+</StackPanel>

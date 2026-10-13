@@ -1,7 +1,7 @@
 using System.Globalization;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -158,17 +158,24 @@ internal sealed partial class SettingsPageController
         _dynamic.Append(_stateInspectorBody, DesktopMarkup.Dynamic(count < snapshot.Total ? "SettingsStateSummaryLimited.d.nxml" : "SettingsStateSummary.d.nxml",
             new Dictionary<string, string>
             {
-                ["page"] = (_stateInspectorPage + 1).ToString(CultureInfo.InvariantCulture), ["pages"] = pages.ToString(CultureInfo.InvariantCulture),
-                ["total"] = snapshot.Total.ToString(CultureInfo.InvariantCulture), ["limit"] = StateInspectorMaximumRows.ToString(CultureInfo.InvariantCulture)
+                ["page"] = (_stateInspectorPage + 1).ToString(CultureInfo.InvariantCulture),
+                ["pages"] = pages.ToString(CultureInfo.InvariantCulture),
+                ["total"] = snapshot.Total.ToString(CultureInfo.InvariantCulture),
+                ["limit"] = StateInspectorMaximumRows.ToString(CultureInfo.InvariantCulture)
             }, _shell.Renderer.LocalizeText));
         foreach (var entry in snapshot.Rows.Skip(_stateInspectorPage * StateInspectorPageSize).Take(StateInspectorPageSize))
         {
             string name = "SettingsDiagnostics.State.Entry." + entry.SemanticId;
             _dynamic.Append(_stateInspectorBody, DesktopMarkup.Dynamic("SettingsStateEntry.d.nxml", new Dictionary<string, string>
             {
-                ["row"] = name, ["idKey"] = name + ".Id", ["metadataKey"] = name + ".Metadata",
-                ["id"] = entry.SemanticId, ["owner"] = entry.Owner, ["kind"] = entry.Kind,
-                ["revision"] = entry.Revision.ToString(CultureInfo.InvariantCulture), ["availability"] = entry.Availability
+                ["row"] = name,
+                ["idKey"] = name + ".Id",
+                ["metadataKey"] = name + ".Metadata",
+                ["id"] = entry.SemanticId,
+                ["owner"] = entry.Owner,
+                ["kind"] = entry.Kind,
+                ["revision"] = entry.Revision.ToString(CultureInfo.InvariantCulture),
+                ["availability"] = entry.Availability
             }, _shell.Renderer.LocalizeText));
         }
     }

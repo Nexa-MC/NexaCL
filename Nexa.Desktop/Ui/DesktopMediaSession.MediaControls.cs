@@ -1,7 +1,7 @@
 using System.Globalization;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 
 namespace Nexa.Desktop.Ui;
 

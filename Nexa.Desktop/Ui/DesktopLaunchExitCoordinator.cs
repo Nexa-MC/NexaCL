@@ -21,7 +21,7 @@ internal sealed class DesktopLaunchExitCoordinator : IDisposable
         if (!_waiting)
         {
             _waiting = true;
-            _feedback.Info("等待游戏退出、临时文件恢复和退出钩子完成后关闭启动器。");
+            _feedback.Info(ProductPresentationText.Raw("native.launch.exit.wait"));
             _ = CompleteAsync();
         }
         return false;
@@ -37,7 +37,7 @@ internal sealed class DesktopLaunchExitCoordinator : IDisposable
         catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
         {
-            _dispatch(() => { if (_disposed) return; _waiting = false; _feedback.Error("启动清理未能完成，请检查运行日志后重试退出。"); });
+            _dispatch(() => { if (_disposed) return; _waiting = false; _feedback.Error(ProductPresentationText.Raw("native.launch.exit.failure")); });
         }
     }
 

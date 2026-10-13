@@ -1,7 +1,7 @@
 ﻿using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Process;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -104,41 +104,41 @@ internal sealed partial class VersionSelectionController
             _shell.Tree.Walk(row, entity => { _actions.Remove(entity); return true; });
             _versions.Remove(row); _windowRows.Remove(id); _views.Remove(row); _dynamic.Remove(row);
         }
-        foreach(var spacer in _windowSpacers) _dynamic.Remove(spacer);
+        foreach (var spacer in _windowSpacers) _dynamic.Remove(spacer);
         _windowSpacers.Clear();
         List<XsrUiEntityId> arranged = [];
         int cursor = 0;
         foreach (int index in order)
         {
-            VersionSpacer(host,(index-cursor)*VersionRowStride,arranged);
+            VersionSpacer(host, (index - cursor) * VersionRowStride, arranged);
             MinecraftInstanceDescriptor instance = _shown[index];
             bool created = !_windowRows.TryGetValue(instance.Id, out XsrUiEntityId row);
             if (created)
             {
-                row = Append(host,"VersionSelectionRow.d.nxml",VersionRowData(instance,snapshot));
+                row = Append(host, "VersionSelectionRow.d.nxml", VersionRowData(instance, snapshot));
                 _windowRows.Add(instance.Id, row);
                 _versions.Add(row, (snapshot.RootDirectory, instance.Id));
                 _actions[row] = (snapshot.RootDirectory, instance.Id);
                 _shell.Tree.SetComponent(row, new XsrUiModifiedClick(XsrSemanticId.Parse("ui.versions.toggle-transfer"),
                     XsrSemanticId.Parse("ui.versions.extend-transfer"), XsrSemanticId.Parse("ui.versions.add-range")));
-                var nodes=Nodes(row);
-                foreach(string key in new[]{"LibraryRowModify","LibraryRowSettings","LibraryRowDelete"})
-                    _actions[nodes[key+":"+RowSuffix(instance.Id)]]=(snapshot.RootDirectory,instance.Id);
+                var nodes = Nodes(row);
+                foreach (string key in new[] { "LibraryRowModify", "LibraryRowSettings", "LibraryRowDelete" })
+                    _actions[nodes[key + ":" + RowSuffix(instance.Id)]] = (snapshot.RootDirectory, instance.Id);
             }
             arranged.Add(row);
             if (created || refresh) ProjectVersionRow(row, instance, snapshot);
             cursor = index + 1;
         }
-        if (cursor < _shown.Count) VersionSpacer(host, (_shown.Count - cursor) * VersionRowStride - VersionRowGap,arranged);
-        _dynamic.Reorder(host,arranged);
+        if (cursor < _shown.Count) VersionSpacer(host, (_shown.Count - cursor) * VersionRowStride - VersionRowGap, arranged);
+        _dynamic.Reorder(host, arranged);
     }
 
-    private void VersionSpacer(XsrUiEntityId host, double height,List<XsrUiEntityId> arranged)
+    private void VersionSpacer(XsrUiEntityId host, double height, List<XsrUiEntityId> arranged)
     {
-        if(height<=0)return;
-        var spacer=_dynamic.Append(host,DesktopMarkup.Dynamic("VersionSelectionSpacer.d.nxml",new Dictionary<string,string>
-        { ["key"]="LibraryVersionSpacer."+Number(_windowSpacers.Count),["height"]=Number(height) }));
-        _windowSpacers.Add(spacer);arranged.Add(spacer);
+        if (height <= 0) return;
+        var spacer = _dynamic.Append(host, DesktopMarkup.Dynamic("VersionSelectionSpacer.d.nxml", new Dictionary<string, string>
+        { ["key"] = "LibraryVersionSpacer." + Number(_windowSpacers.Count), ["height"] = Number(height) }));
+        _windowSpacers.Add(spacer); arranged.Add(spacer);
     }
 
     private XsrUiEntityId NavigateVersionFocus(XsrUiEntityId origin, bool forward)
@@ -185,14 +185,14 @@ internal sealed partial class VersionSelectionController
 
     private void ProjectVersionRow(XsrUiEntityId row, MinecraftInstanceDescriptor instance, MinecraftLibrarySnapshot snapshot)
     {
-        Reload(row,VersionRowData(instance,snapshot));
-        _shell.Tree.SetComponent(row,_transferSelection.Contains(instance.Id)?_selectedTransfer!:VersionTransfer([instance.DirectoryPath]));
-        _shell.Tree.SetComponent(row,new XsrUiContextMenu([
+        Reload(row, VersionRowData(instance, snapshot));
+        _shell.Tree.SetComponent(row, _transferSelection.Contains(instance.Id) ? _selectedTransfer! : VersionTransfer([instance.DirectoryPath]));
+        _shell.Tree.SetComponent(row, new XsrUiContextMenu([
             new(Copy("menu.modify"),XsrSemanticId.Parse("ui.versions.modify")),
             new(Copy("menu.settings"),XsrSemanticId.Parse("ui.versions.settings")),
             new(Copy("menu.delete"),XsrSemanticId.Parse("ui.versions.delete")),
         ]));
-        var image=_shell.Tree.GetComponent<XsrUiImage>(Nodes(row)["LibraryRowIcon:"+RowSuffix(instance.Id)])!;
-        image.Raster=instance.Icon is { } icon ? new(icon,[]){FitToBounds=true,AspectRatio=(double)icon.Width/icon.Height}:null;
+        var image = _shell.Tree.GetComponent<XsrUiImage>(Nodes(row)["LibraryRowIcon:" + RowSuffix(instance.Id)])!;
+        image.Raster = instance.Icon is { } icon ? new(icon, []) { FitToBounds = true, AspectRatio = (double)icon.Width / icon.Height } : null;
     }
 }

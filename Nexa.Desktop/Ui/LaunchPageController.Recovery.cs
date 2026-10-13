@@ -10,9 +10,10 @@ internal sealed partial class LaunchPageController
 
     private bool TryShowCrashDialog(MinecraftProcessFailure failure)
     {
-        string reason = CrashSummary(failure.Report) + "\n\n" + failure.Report.Message;
+        string reason = ProductPresentationText.Format("CrashReason", _shell.Renderer.LocalizeText, ("summary", CrashSummary(failure.Report)), ("message", failure.Report.Message));
         if (!_feedback.TryShowMessageDialog("minecraft.crash." + failure.SessionId,
-            failure.InstanceId + " · 游戏异常退出", reason + "\n\n正在比较上次成功运行后的更改…", "知道了", out var id))
+            ProductPresentationText.Format("CrashTitle", _shell.Renderer.LocalizeText, ("instance", failure.InstanceId)),
+            ProductPresentationText.Format("CrashComparing", _shell.Renderer.LocalizeText, ("reason", reason)), ProductPresentationText.Raw("crash.acknowledge"), out var id, localizeMessage: false, localizeTitle: false))
             return false;
         _ = LoadCrashChangesAsync(failure, id, reason);
         return true;
@@ -25,7 +26,7 @@ internal sealed partial class LaunchPageController
             if (string.IsNullOrWhiteSpace(failure.InstanceDirectory) || _recoveryQueries is null
                 || !_recoveryQueries.TryResolve(InstanceRecoveryContract.Query, out var route))
             {
-                _feedback.TryUpdateMessageDialog(dialogId, reason + "\n\n无法确定本次运行的实例，未比较更改。");
+                _feedback.TryUpdateMessageDialog(dialogId, ProductPresentationText.Format("CrashMissingInstance", _shell.Renderer.LocalizeText, ("reason", reason)), localizeMessage: false);
                 return;
             }
             using var stop = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
@@ -49,7 +50,7 @@ internal sealed partial class LaunchPageController
             if (_disposed) return;
             if (!result.IsSuccess)
             {
-                _feedback.TryUpdateMessageDialog(dialogId, reason + "\n\n更改比较未完成。" + result.Error?.Message);
+                _feedback.TryUpdateMessageDialog(dialogId, ProductPresentationText.Format("CrashComparisonFailed", _shell.Renderer.LocalizeText, ("reason", reason), ("error", result.Error?.Message ?? "")), localizeMessage: false);
                 return;
             }
             new CrashChangesPresentation(_feedback, dialogId, reason, result.Value!,
@@ -58,7 +59,7 @@ internal sealed partial class LaunchPageController
         catch (OperationCanceledException) { }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
         {
-            _feedback.TryUpdateMessageDialog(dialogId, reason + "\n\n暂时无法读取更改清单。");
+            _feedback.TryUpdateMessageDialog(dialogId, ProductPresentationText.Format("CrashComparisonUnreadable", _shell.Renderer.LocalizeText, ("reason", reason)), localizeMessage: false);
         }
     }
 
@@ -69,15 +70,20 @@ internal sealed partial class LaunchPageController
         var categories = report.Changes.GroupBy(change => change.Category).OrderBy(group => group.Key, StringComparer.Ordinal).ToArray();
         IReadOnlyList<InstanceRecoveryChange> changes = categoryIndex >= 0 ? categories[categoryIndex].ToArray()
             : index < 0 ? report.Changes : [report.Changes[index]];
-        string description = categoryIndex >= 0 ? $"仅恢复{RecoveryExplanation.Display(categories[categoryIndex].Key)}的 {changes.Count} 项更改。"
-            : index < 0 ? $"恢复全部 {changes.Count} 项更改。" :
-            $"第 {index + 1}/{report.Changes.Count} 项：{RecoveryExplanation.Display(changes[0].Category)} · {RecoveryExplanation.Display(changes[0].Path)}";
-        _feedback.ShowDialog("recovery.crash.choose", "恢复上次成功运行的状态", reason + "\n\n" + description + "\n存档、截图和日志不受影响。",
-            categoryIndex >= 0 ? "回滚此类" : index < 0 ? "回滚全部" : "回滚此项", "取消", accepted =>
+        string description = categoryIndex >= 0 ? ProductPresentationText.Format("CrashRestoreCategory", _shell.Renderer.LocalizeText,
+                ("category", RecoveryExplanation.Display(categories[categoryIndex].Key)), ("count", changes.Count.ToString(System.Globalization.CultureInfo.CurrentCulture)))
+            : index < 0 ? ProductPresentationText.Format("CrashRestoreAll", _shell.Renderer.LocalizeText, ("count", changes.Count.ToString(System.Globalization.CultureInfo.CurrentCulture)))
+            : ProductPresentationText.Format("CrashRestoreItem", _shell.Renderer.LocalizeText,
+                ("index", (index + 1).ToString(System.Globalization.CultureInfo.CurrentCulture)), ("count", report.Changes.Count.ToString(System.Globalization.CultureInfo.CurrentCulture)),
+                ("category", RecoveryExplanation.Display(changes[0].Category)), ("path", RecoveryExplanation.Display(changes[0].Path)));
+        _feedback.ShowDialog("recovery.crash.choose", ProductPresentationText.Raw("crash.restoreTitle"),
+            ProductPresentationText.Format("CrashRestoreBody", _shell.Renderer.LocalizeText, ("reason", reason), ("description", description)),
+            ProductPresentationText.Raw(categoryIndex >= 0 ? "crash.restoreCategory" : index < 0 ? "crash.restoreAll" : "crash.restoreItem"), ProductPresentationText.Raw("crash.cancel"),
+            accepted =>
             {
                 if (accepted) _ = RestoreCrashChangesAsync(failure, report, revision, changes, route);
-            }, categoryIndex >= 0 ? (categoryIndex + 1 < categories.Length ? "下一类" : "逐项选择")
-                : index < 0 ? "按类别选择" : "下一项", () =>
+            }, categoryIndex >= 0 ? (categoryIndex + 1 < categories.Length ? ProductPresentationText.Raw("crash.nextCategory") : ProductPresentationText.Raw("crash.chooseItems"))
+                : index < 0 ? ProductPresentationText.Raw("crash.chooseCategories") : ProductPresentationText.Raw("crash.nextItem"), () =>
             {
                 // A new dialog lifetime is needed: same-key updates intentionally retain callbacks.
                 if (_feedback.Snapshot().Dialog is { } dialog) _feedback.DismissDialog(dialog.Id);
@@ -88,7 +94,7 @@ internal sealed partial class LaunchPageController
                 }
                 else if (index < 0) ShowCrashRecoveryChoices(failure, reason, report, categoryIndex: 0);
                 else ShowCrashRecoveryChoices(failure, reason, report, (index + 1) % report.Changes.Count);
-            });
+            }, localizeMessage: false);
     }
 
     private async Task RestoreCrashChangesAsync(MinecraftProcessFailure failure, InstanceRecoveryReport report, Guid revision,
@@ -99,11 +105,11 @@ internal sealed partial class LaunchPageController
         if (_disposed) return;
         if (result.IsSuccess)
         {
-            _feedback.Info("已恢复所选更改。");
+            _feedback.Info(ProductPresentationText.Raw("crash.restored"));
             if (_libraryCommands.TryResolve(Nexa.Services.Minecraft.MinecraftLibraryRoutes.Refresh, out var refresh))
                 _ = _libraryCommands.Dispatch(refresh, new Nexa.Services.Minecraft.MinecraftLibraryRefreshCommand());
         }
-        else _feedback.Error(result.Error?.Message ?? "恢复未完成，快照与原错误记录已保留。");
+        else _feedback.Error(result.Error?.Message ?? ProductPresentationText.Raw("crash.restoreError"));
         TryShowCrashDialog(failure);
     }
 }
@@ -120,18 +126,21 @@ internal sealed class CrashChangesPresentation(DesktopFeedbackService feedback, 
     {
         if (report.UnavailableReason is { } unavailable)
         {
-            feedback.TryUpdateMessageDialog(dialogId, reason + "\n\n" + unavailable);
+            feedback.TryUpdateMessageDialog(dialogId, ProductPresentationText.Format("CrashUnavailable", localize, ("reason", reason), ("unavailable", unavailable)), localizeMessage: false);
             return;
         }
         int count = report.Changes.Count, pages = Math.Max(1, (count + PageSize - 1) / PageSize);
-        string heading = count == 0 ? "与上次成功运行相比，恢复范围内没有更改。"
-            : $"上次成功运行后的更改 · {count} 项（{_page + 1}/{pages}）";
+        string heading = count == 0 ? ProductPresentationText.Term("crash.noChanges", localize)
+            : ProductPresentationText.Format("CrashChangesHeading", localize, ("count", count.ToString(System.Globalization.CultureInfo.CurrentCulture)),
+                ("page", (_page + 1).ToString(System.Globalization.CultureInfo.CurrentCulture)), ("pages", pages.ToString(System.Globalization.CultureInfo.CurrentCulture)));
         var rows = report.Changes.Skip(_page * PageSize).Take(PageSize).Select(change =>
-            $"{RecoveryExplanation.Kind(change.Kind, localize)} · {RecoveryExplanation.Category(change.Category, localize)}\n{RecoveryExplanation.Display(change.Path)}");
-        string body = reason + "\n\n" + RecoveryExplanation.Summary(report.Changes, localize) + "\n\n" + heading + "\n" + string.Join("\n\n", rows);
-        feedback.TryUpdateMessageDialog(dialogId, body, pages > 1 ? (_page + 1 == pages ? "回到首批" : "下一批更改") : null,
+            ProductPresentationText.Format("CrashChangesRow", localize, ("kind", RecoveryExplanation.Kind(change.Kind, localize)),
+                ("category", RecoveryExplanation.Category(change.Category, localize)), ("path", RecoveryExplanation.Display(change.Path))));
+        string body = ProductPresentationText.Format("CrashChangesBody", localize, ("reason", reason), ("summary", RecoveryExplanation.Summary(report.Changes, localize)),
+            ("heading", heading), ("rows", string.Join("\n\n", rows)));
+        feedback.TryUpdateMessageDialog(dialogId, body, pages > 1 ? (_page + 1 == pages ? ProductPresentationText.Raw("crash.firstPage") : ProductPresentationText.Raw("crash.nextPage")) : null,
             pages > 1 ? () => { _page = (_page + 1) % pages; Show(); }
-        : null, count > 0 && restore is not null ? "回滚更改…" : null, count > 0 ? restore : null);
+        : null, count > 0 && restore is not null ? ProductPresentationText.Raw("crash.rollback") : null, count > 0 ? restore : null, localizeMessage: false);
     }
 
 }

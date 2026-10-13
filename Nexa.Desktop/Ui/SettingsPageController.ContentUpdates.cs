@@ -1,7 +1,7 @@
 using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Resources;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -22,7 +22,7 @@ internal sealed partial class SettingsPageController
 
     private void HandleContentSelectionIntent(DesktopUiIntent intent)
     {
-        if (!_shell.Tree.IsAlive(intent.Source) || !_contentSelectionRows.TryGetValue(intent.Source, out var row)) return;
+        if (!ContentActionCurrent(intent.Source) || !_contentSelectionRows.TryGetValue(intent.Source, out var row)) return;
         SelectContentRow(row.Query, intent.Command == ContentSelectionToggle ? XsrUiClickModifiers.Toggle
             : intent.Command == ContentSelectionAddRange ? XsrUiClickModifiers.Toggle | XsrUiClickModifiers.Extend
             : XsrUiClickModifiers.Extend);
@@ -42,24 +42,19 @@ internal sealed partial class SettingsPageController
     {
         if (_contentChangelogRead is not { IsCompleted: true } completed) return;
         _contentChangelogRead = null;
-        _contentChangelog = PendingQuery.Succeeded(completed) ? completed.Result.Value!.Text : "暂时无法获取更新日志。";
-        if (string.IsNullOrWhiteSpace(_contentChangelog)) _contentChangelog = "此版本未提供更新日志。";
+        _contentChangelog = PendingQuery.Succeeded(completed) ? completed.Result.Value!.Text : ContentTerm("copy.f93aad25e6b3");
+        if (string.IsNullOrWhiteSpace(_contentChangelog)) _contentChangelog = ContentTerm("copy.b94ec5a65cc6");
         if (_onlineSection.IsAssigned && _shell.Tree.IsAlive(_onlineSection)) RenderOnlineContent();
     }
 
     private void BuildContentUpdateActions(XsrUiEntityId parent)
     {
         if (_resourceCommands?.TryResolve(ResourceCatalogContract.UpdateContentBatch, out _) != true) return;
-        var row = Stack(parent, "ContentUpdateActions", XsrUiOrientation.Horizontal, 10);
-        _contentSelectionCount = Text(row, "", 12, Muted, 32);
-        _shell.Tree.GetComponent<XsrUiElement>(_contentSelectionCount)!.Weight = 1;
-        _shell.Tree.SetComponent(_contentSelectionCount, new XsrUiLiveRegion(XsrUiLiveSetting.Polite));
-        _contentSelectionClear = ActionButton(row, "ContentSelectionClear", "清除选择", ManagementAction, 84);
-        _managementActions[_contentSelectionClear] = () =>
-        { _selectedContentUpdates.Clear(); _contentSelectionAnchor = null; UpdateContentSelectionPresentation(); };
-        _contentSelectionUpdate = ActionButton(row, "Management.更新已选择", "更新已选择", ManagementAction, 106);
-        _managementActions[_contentSelectionUpdate] = () => DispatchContentUpdates(selectedOnly: true);
-        ManagementButton(row, "更新全部已识别", () => DispatchContentUpdates(selectedOnly: false), 136);
+        _contentUpdateWorkspace = AppendContent(parent, "SettingsContentUpdates.d.nxml", new() { ["caption"] = "", ["clearEnabled"] = "false", ["updateEnabled"] = "false", ["enabled"] = ContentFlag(_managementWrite is null) });
+        var nodes = ContentNodes(_contentUpdateWorkspace); _contentSelectionCount = nodes["ContentSelectionCount"]; _contentSelectionClear = nodes["ContentSelectionClear"]; _contentSelectionUpdate = nodes[ContentKey("updateSelected")];
+        BindContentAction(nodes, "ContentSelectionClear", () => { _selectedContentUpdates.Clear(); _contentSelectionAnchor = null; UpdateContentSelectionPresentation(); });
+        BindContentAction(nodes, ContentKey("updateSelected"), () => DispatchContentUpdates(selectedOnly: true));
+        BindContentAction(nodes, ContentKey("updateAll"), () => DispatchContentUpdates(selectedOnly: false));
         UpdateContentSelectionPresentation();
     }
 
@@ -69,29 +64,19 @@ internal sealed partial class SettingsPageController
         var updates = _onlineList.Where(pair => pair.Key.InstanceDirectory == _instance && pair.Key.PageId == _selected
             && pair.Value.UpdateVersion is not null && (!selectedOnly || _selectedContentUpdates.Contains(pair.Key)))
             .Select(pair => new ResourceContentUpdateCommand(pair.Key, new(pair.Value.UpdateVersion!.Provider, pair.Value.UpdateVersion.ProjectId), pair.Value.UpdateVersion.Id)).ToArray();
-        if (updates.Length == 0) { _feedback.Error("没有已识别且可更新的选中内容。"); return; }
-        if (updates.Length > 100) { _feedback.Error("一次最多更新 100 项，请分批选择。"); return; }
+        if (updates.Length == 0) { _feedback.Error(ContentTerm("copy.fe2c27764524")); return; }
+        if (updates.Length > 100) { _feedback.Error(ContentTerm("copy.30e9a80e5440")); return; }
         _managementWriteInstance = _instance;
         _managementWrite = _resourceCommands.Dispatch(route, new ResourceContentUpdateBatchCommand(updates)).Completion;
         CancelOnlineList(); _selectedContentUpdates.Clear(); WakeOnPlatformCompletion(_managementWrite);
         BuildSections(true);
     }
 
-    private void BuildContentUpdateSelection(XsrUiEntityId row, InstanceContentEntry item)
+    private void BuildContentUpdateSelection(XsrUiEntityId row, XsrUiEntityId mark, InstanceContentEntry item)
     {
         if (OnlineFile(item) is not { } query || _resourceCommands?.TryResolve(ResourceCatalogContract.UpdateContentBatch, out _) != true) return;
-        _shell.Tree.SetComponent(row, new XsrUiInput { Clickable = true, Focusable = true });
-        _shell.Tree.SetComponent(row, new XsrUiSemantic(XsrUiSemanticRole.ListItem, item.DisplayName.Length > 0 ? item.DisplayName : item.Name));
-        _shell.Tree.SetComponent(row, new XsrUiSelection());
-        _shell.Tree.SetComponent(row, new XsrUiCommandBinding(ManagementAction));
         _shell.Tree.SetComponent(row, new XsrUiModifiedClick(ContentSelectionToggle, ContentSelectionExtend, ContentSelectionAddRange));
-        var mark = Element(row, "ContentSelectionMark." + item.Name, XsrUiSemanticRole.None, null, 3, 28);
-        _shell.Tree.GetComponent<XsrUiElement>(mark)!.Margin = new(5, 0, 0, 0);
-        _shell.Tree.GetComponent<XsrUiElement>(mark)!.HorizontalAlignment = XsrUiAlignment.Start;
-        _shell.Tree.SetComponent(mark, new XsrUiOverlayLayer());
-        Style(mark, Blue, Blue, 1.5);
-        _contentSelectionRows[row] = (query, mark);
-        RegisterContentAction(row, () => SelectContentRow(query, XsrUiClickModifiers.None));
+        _contentSelectionRows[row] = (query, mark); RegisterContentAction(row, () => SelectContentRow(query, XsrUiClickModifiers.None));
     }
 
     private void SelectContentRow(ResourceContentOnlineQuery query, XsrUiClickModifiers modifiers)
@@ -122,45 +107,34 @@ internal sealed partial class SettingsPageController
         {
             if (!_shell.Tree.IsAlive(entity)) continue;
             bool selected = _selectedContentUpdates.Contains(row.Query);
-            _shell.Tree.GetComponent<XsrUiSelection>(entity)!.IsSelected = selected;
-            Style(entity, selected ? new(231, 240, 255) : White, Ink, 12);
-            _shell.Tree.GetComponent<XsrUiElement>(row.Mark)!.IsVisible = selected;
-            _shell.Tree.MarkDirty(row.Mark, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+            ReloadContent(entity, ("selected", ContentFlag(selected)), ("selectedStyle", selected ? "settings-content-file-card settings-content-card-selected" : "settings-content-file-card"));
         }
         if (!_contentSelectionCount.IsAssigned || !_shell.Tree.IsAlive(_contentSelectionCount)) return;
         int count = _selectedContentUpdates.Count(query => query.InstanceDirectory == _instance && query.PageId == _selected);
-        int updates = _onlineList.Count(pair => pair.Key.InstanceDirectory == _instance && pair.Key.PageId == _selected
-            && _selectedContentUpdates.Contains(pair.Key) && pair.Value.UpdateVersion is not null);
-        string caption = count == 0 ? "点击选择，Ctrl 多选，Shift 连选" : string.Format(System.Globalization.CultureInfo.CurrentCulture,
-            _shell.Renderer.LocalizeText("已选 {0} 项 · 可更新 {1} 项"), count, updates);
-        _shell.Tree.SetComponent(_contentSelectionCount, new XsrUiText(caption) { TrimOverflow = true, MaxLines = 1 });
-        _shell.Tree.SetComponent(_contentSelectionCount, new XsrUiSemantic(XsrUiSemanticRole.Status, caption));
-        _shell.Tree.GetComponent<XsrUiInput>(_contentSelectionClear)!.Enabled = count > 0;
-        _shell.Tree.GetComponent<XsrUiInput>(_contentSelectionUpdate)!.Enabled = updates > 0 && _managementWrite is null;
-        _shell.Tree.MarkDirty(_contentSelectionCount, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-        _shell.Tree.MarkDirty(_contentSelectionClear, XsrUiDirtyKinds.Paint);
-        _shell.Tree.MarkDirty(_contentSelectionUpdate, XsrUiDirtyKinds.Paint);
+        int updates = _onlineList.Count(pair => pair.Key.InstanceDirectory == _instance && pair.Key.PageId == _selected && _selectedContentUpdates.Contains(pair.Key) && pair.Value.UpdateVersion is not null);
+        ReloadContent(_contentUpdateWorkspace, ("caption", count == 0 ? ContentTerm("selectionHint") : ContentFormat("SelectionCount", ("count", count.ToString(System.Globalization.CultureInfo.CurrentCulture)), ("updates", updates.ToString(System.Globalization.CultureInfo.CurrentCulture)))),
+            ("clearEnabled", ContentFlag(count > 0)), ("updateEnabled", ContentFlag(updates > 0 && _managementWrite is null)), ("enabled", ContentFlag(_managementWrite is null)));
     }
 
-    private void BuildContentUpdateHistory(InstanceManagementSnapshot snapshot)
+    private void BuildContentUpdateHistory(XsrUiEntityId parent, InstanceManagementSnapshot snapshot)
     {
         if (snapshot.ContentUpdates.Count == 0) return;
-        Text(_sections, "内容更新事务", 16, Ink, 30, 600);
+        var root = AppendContent(parent, "SettingsContentHistory.d.nxml", new()); var rows = ContentNodes(root)["ContentHistory.Rows"];
         foreach (var item in snapshot.ContentUpdates.Take(20))
         {
-            var row = Stack(_sections, "ContentUpdateRecord", XsrUiOrientation.Horizontal, 12);
-            var label = Text(row, item.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm", System.Globalization.CultureInfo.CurrentCulture) + " · "
-                + string.Format(System.Globalization.CultureInfo.CurrentCulture, _shell.Renderer.LocalizeText("{0} 项"), item.Items) + " · "
-                + _shell.Renderer.LocalizeText(item.Phase == "rolled-back" ? "已撤回" : item.Phase == "committed" ? "已完成" : "需要恢复"), 13, Ink, 38);
-            _shell.Tree.GetComponent<XsrUiElement>(label)!.Weight = 1;
-            if (item.Phase == "rolled-back") continue;
-            ManagementButton(row, "联合撤回", () =>
+            var row = AppendContent(rows, "SettingsContentHistoryRow.d.nxml", new()
+            {
+                ["enabled"] = ContentFlag(_managementWrite is null),
+                ["rollback"] = ContentFlag(item.Phase != "rolled-back"),
+                ["caption"] = ContentFormat("UpdateRecord", ("created", item.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm", System.Globalization.CultureInfo.CurrentCulture)), ("items", item.Items.ToString(System.Globalization.CultureInfo.CurrentCulture)), ("phase", ContentTerm(item.Phase == "rolled-back" ? "rolledBack" : item.Phase == "committed" ? "committed" : "needsRecovery")))
+            });
+            BindContentAction(ContentNodes(row), "ContentHistory.Rollback", () =>
             {
                 if (_managementWrite is not null || _instance != snapshot.InstanceDirectory || !_commands.TryResolve(InstanceManagementContract.RollbackContentUpdate, out var route)) return;
-                _managementWriteInstance = snapshot.InstanceDirectory;
-                _managementWrite = _commands.Dispatch(route, new InstanceContentUpdateRollbackCommand(snapshot.InstanceDirectory, item.Id)).Completion;
-                WakeOnPlatformCompletion(_managementWrite);
-            }, 90);
+                _managementWriteInstance = snapshot.InstanceDirectory; _managementWrite = _commands.Dispatch(route, new InstanceContentUpdateRollbackCommand(snapshot.InstanceDirectory, item.Id)).Completion; WakeOnPlatformCompletion(_managementWrite);
+            });
         }
     }
+
+
 }

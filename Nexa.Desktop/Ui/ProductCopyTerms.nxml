@@ -1,0 +1,42 @@
+<StackPanel>
+<Text Key="recovery.empty" Content="恢复范围内没有更改。" />
+<Text Key="recovery.added" Content="新增" />
+<Text Key="recovery.removed" Content="删除" />
+<Text Key="recovery.enabled" Content="启用" />
+<Text Key="recovery.disabled" Content="停用" />
+<Text Key="recovery.modified" Content="修改" />
+<Text Key="category.dependencies" Content="版本依赖" />
+<Text Key="category.mods" Content="模组" />
+<Text Key="category.config" Content="配置" />
+<Text Key="category.resourcepacks" Content="资源包" />
+<Text Key="category.shaderpacks" Content="光影包" />
+<Text Key="category.version-settings" Content="版本设置" />
+<Text Key="category.options" Content="游戏选项" />
+<Text Key="category.version-files" Content="版本文件" />
+<Text Key="category.launch-settings" Content="启动设置" />
+<Text Key="crash.acknowledge" Content="知道了" />
+<Text Key="crash.restoreTitle" Content="恢复上次成功运行的状态" />
+<Text Key="crash.restoreCategory" Content="回滚此类" />
+<Text Key="crash.restoreAll" Content="回滚全部" />
+<Text Key="crash.restoreItem" Content="回滚此项" />
+<Text Key="crash.cancel" Content="取消" />
+<Text Key="crash.nextCategory" Content="下一类" />
+<Text Key="crash.chooseItems" Content="逐项选择" />
+<Text Key="crash.chooseCategories" Content="按类别选择" />
+<Text Key="crash.nextItem" Content="下一项" />
+<Text Key="crash.restored" Content="已恢复所选更改。" />
+<Text Key="crash.restoreError" Content="恢复未完成，快照与原错误记录已保留。" />
+<Text Key="crash.noChanges" Content="与上次成功运行相比，恢复范围内没有更改。" />
+<Text Key="crash.firstPage" Content="回到首批" />
+<Text Key="crash.nextPage" Content="下一批更改" />
+<Text Key="crash.rollback" Content="回滚更改…" />
+<Text Key="profile.microsoft" Content="Microsoft 账户" />
+<Text Key="profile.littleskin" Content="LittleSkin 账户" />
+<Text Key="profile.thirdparty" Content="第三方账户" />
+<Text Key="profile.ncloud" Content="NCloud 账户" />
+<Text Key="profile.offline" Content="离线账户" />
+<Text Key="workspace.query-unregistered" Content="工作区能力尚未注册。" />
+<Text Key="workspace.query-failed" Content="工作区查询失败。" />
+<Text Key="workspace.command-unregistered" Content="工作区操作尚未注册。" />
+<Text Key="workspace.command-failed" Content="工作区操作失败。" />
+</StackPanel>

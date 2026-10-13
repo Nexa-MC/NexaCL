@@ -1,8 +1,8 @@
 ﻿using System.Globalization;
 using System.Text;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -22,6 +22,8 @@ internal sealed partial class SettingsPageController
         public List<HookLine> Lines { get; set; } = [new("", "")];
         public List<(XsrUiEntityId Entity, int Index, string Original, string Presented)> Inputs { get; } = [];
         public string Committed { get; set; } = "";
+        public Dictionary<int, XsrUiEntityId> RowViews { get; } = [];
+        public XsrUiEntityId ActionsView { get; set; }
         public bool Initialized { get; set; }
         public int Page { get; set; }
     }
@@ -127,38 +129,47 @@ internal sealed partial class SettingsPageController
     private void BuildHookRows(HookEditor editor)
     {
         foreach (var key in _hookActions.Where(pair => pair.Value.Editor == editor).Select(pair => pair.Key).ToArray()) _hookActions.Remove(key);
-        _dynamic.Clear(editor.Rows);
+        var previousInputs = editor.Inputs.ToDictionary(input => input.Index);
         editor.Inputs.Clear();
         editor.Page = Math.Clamp(editor.Page, 0, (editor.Lines.Count - 1) / HookLinesPerPage);
         int start = editor.Page * HookLinesPerPage;
+        int last = Math.Min(editor.Lines.Count, start + HookLinesPerPage);
+        foreach (int index in editor.RowViews.Keys.Where(index => index < start || index >= last).ToArray())
+        { _dynamic.Remove(editor.RowViews[index]); editor.RowViews.Remove(index); }
         for (int index = start; index < Math.Min(editor.Lines.Count, start + HookLinesPerPage); index++)
         {
             string inputKey = "SettingsHookLine." + editor.Entry.SettingKey + "." + index;
             string removeKey = "SettingsHookRemove." + editor.Entry.SettingKey + "." + index;
-            var row = _dynamic.Append(editor.Rows, DesktopMarkup.Dynamic("SettingsHookRow.d.nxml", new Dictionary<string, string>
+            var fragment = DesktopMarkup.Dynamic("SettingsCustomHookRow.d.nxml", new Dictionary<string, string>
             {
                 ["input"] = inputKey,
                 ["remove"] = removeKey,
-                ["label"] = string.Format(CultureInfo.InvariantCulture, _shell.Renderer.LocalizeText("命令行 {0}"), index + 1),
-                ["removeLabel"] = string.Format(CultureInfo.InvariantCulture, _shell.Renderer.LocalizeText("删除命令行 {0}"), index + 1),
-            }));
+                ["index"] = (index + 1).ToString(CultureInfo.InvariantCulture),
+            }, _shell.Renderer.LocalizeText);
+            if (editor.RowViews.TryGetValue(index, out var row)) _dynamic.Reload(row, fragment);
+            else editor.RowViews[index] = row = _dynamic.Append(editor.Rows, fragment);
             var nodes = CatalogNodes(row); var input = nodes[inputKey]; var remove = nodes[removeKey];
-            _shell.Renderer.SetTextInputValue(input, editor.Lines[index].Text);
+            if (!previousInputs.TryGetValue(index, out var previous) || previous.Entity != input || previous.Original != editor.Lines[index].Text)
+                _shell.Renderer.SetTextInputValue(input, editor.Lines[index].Text);
             editor.Inputs.Add((input, index, editor.Lines[index].Text, _shell.Tree.GetComponent<XsrUiTextInput>(input)!.ReadDraft()));
             _hookActions[remove] = (editor, index);
         }
         string addKey = "SettingsHookAdd." + editor.Entry.SettingKey;
         string previousKey = "SettingsHookPrevious." + editor.Entry.SettingKey;
         string nextKey = "SettingsHookNext." + editor.Entry.SettingKey;
-        var actions = _dynamic.Append(editor.Rows, DesktopMarkup.Dynamic("SettingsHookActions.d.nxml", new Dictionary<string, string>
+        var actionsFragment = DesktopMarkup.Dynamic("SettingsCustomHookActions.d.nxml", new Dictionary<string, string>
         {
             ["add"] = addKey,
             ["previous"] = previousKey,
             ["next"] = nextKey,
             ["pages"] = Flag(editor.Lines.Count > HookLinesPerPage),
-            ["page"] = (editor.Page + 1) + " / " + ((editor.Lines.Count - 1) / HookLinesPerPage + 1),
-        }));
-        var actionNodes = CatalogNodes(actions);
+            ["page"] = (editor.Page + 1).ToString(CultureInfo.InvariantCulture),
+            ["total"] = ((editor.Lines.Count - 1) / HookLinesPerPage + 1).ToString(CultureInfo.InvariantCulture),
+        }, _shell.Renderer.LocalizeText);
+        if (_shell.Tree.IsAlive(editor.ActionsView)) _dynamic.Reload(editor.ActionsView, actionsFragment);
+        else editor.ActionsView = _dynamic.Append(editor.Rows, actionsFragment);
+        _dynamic.Reorder(editor.Rows, Enumerable.Range(start, last - start).Select(index => editor.RowViews[index]).Append(editor.ActionsView).ToArray());
+        var actionNodes = CatalogNodes(editor.ActionsView);
         _hookActions[actionNodes[addKey]] = (editor, -1);
         if (editor.Lines.Count > HookLinesPerPage)
         { _hookActions[actionNodes[previousKey]] = (editor, -1); _hookActions[actionNodes[nextKey]] = (editor, 1); }

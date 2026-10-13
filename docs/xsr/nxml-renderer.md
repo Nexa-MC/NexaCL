@@ -12,6 +12,43 @@ IDs or the separately versioned plugin UI IR. Host markup/IR is not a plugin ABI
 - NXML runtime: apply already validated IR to a tree. No service resolution or reflection.
 - Desktop: selects external pages, supplies state and dynamic data/behavior.
 
+### Additive finite control facts, 2026-10-13
+
+`SegmentThumb` declares a local key in the same loaded IR document; a stack or
+stack-layout Dynamic track resolves it to one declared transition-bearing thumb.
+Missing, duplicate, self, or foreign-document targets fail before attachment.
+`SegmentWidth` declares a positive finite expanded width on a command control.
+These facts create renderer track/reveal components without changing their live
+selection, drag, scroll or reveal progress during reload; changing the declarations
+requires replacement. Tracks may reference a declared sibling thumb in their own
+workspace, keeping dynamic options direct children for keyboard and drag routing.
+
+`Checked` is a literal/data-projected boolean for command controls whose role is
+CheckBox or Switch. Loading creates the existing renderer toggle; reload updates
+its value while retaining input and toggle identity. `TransitionMovesSelf` optionally
+declares the existing transition behavior and requires `TransitionKey`; it is an
+immutable reload contract. No script, service lookup or new plugin wire shape is added.
+`SelectionRequired` declares the existing group policy on a stack or stack-layout
+Dynamic group, including an inventory that permits no selected row. Group identity
+and policy remain fixed across reload.
+Text input placeholder copy may reload in place; maximum length, password and tab
+contracts stay fixed and reload never changes the draft, caret or selection.
+The renderer honors the semantic `Localize=false` marker for input placeholders,
+as it does for labels and ordinary text. A localized template substitutes literal
+data after translating its format; drawing must not translate the resulting data.
+Externally styled shell title text retains its declared typography across palette
+changes; the programmatic renderer shell keeps its canonical defaults.
+Feedback distinguishes already localized, data-bearing titles/messages from raw
+vocabulary keys. Dialogs and notifications preserve that literal marker through
+refresh and notification-detail expansion; default raw-copy callers keep their
+existing localization behavior. Dock viewport arrangement/exit motion, parsed
+Minecraft formatting spans, user background/raster data, literal host title data
+and renderer-owned selection/scroll/input/motion updates remain narrow compiled
+bridges; they may not create ordinary product layouts or style variants.
+Input hit testing skips destroyed entities left in the last scene. Escape routing
+also requires the dismiss target to be alive and visible in the current tree, so
+owned removal or a newly staged modal cannot revive a retired or obscured action.
+
 ## File contract
 
 Pages are `.nxml`. Reusable components are `.c.nxml`, with a single

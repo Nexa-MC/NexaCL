@@ -1,7 +1,7 @@
 using Nexa.Core.Media;
 using Nexa.Services.Minecraft.Management;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -107,6 +107,7 @@ internal sealed partial class SettingsPageController
 
     private void CancelScreenshotThumbnails()
     {
+        foreach (var retired in _screenshotThumbnailReads.Values) ObserveRetiredInstanceToolRead(retired);
         _screenshotThumbnailStop?.Cancel(); _screenshotThumbnailStop?.Dispose(); _screenshotThumbnailStop = null;
         _screenshotThumbnailReads.Clear(); _screenshotThumbnailFailures.Clear(); _screenshotIconEntities.Clear();
         _screenshotLayout = null; _screenshotLayoutEntries = null; _screenshotVisibleSlots = null;

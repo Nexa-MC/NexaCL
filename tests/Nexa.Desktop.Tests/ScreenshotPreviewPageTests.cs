@@ -3,8 +3,8 @@ using Nexa.Core.Media;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Tests;
@@ -27,7 +27,7 @@ internal static partial class Program
         using var page = new ScreenshotPageFixture(entries);
         var tree = page.Fixture.Shell.Tree;
         var list = page.Find("ManagementContentList").Entity;
-        var sections = tree.Parent(list);
+        var sections = ContentScrollAncestor(tree, list);
         var scrolling = tree.GetComponent<XsrUiScroll>(sections)!;
         void AssertBounded()
         {
@@ -135,7 +135,7 @@ internal static partial class Program
         page.Pump(() => pending.Count == 3);
         var icon = page.Scene.Nodes.First(node => page.Fixture.Shell.Tree.Name(node.Entity) == "ManagementContentIcon" && node.RasterImage is not null);
         AssertEqual(png.Key, icon.RasterImage!.Image.Key);
-        var section = page.Fixture.Shell.Tree.Parent(page.Find("ManagementContentList").Entity);
+        var section = ContentScrollAncestor(page.Fixture.Shell.Tree, page.Find("ManagementContentList").Entity);
         var scroll = page.Fixture.Shell.Tree.GetComponent<XsrUiScroll>(section)!;
         scroll.OffsetY = 2000; page.Fixture.Shell.Tree.MarkDirty(section, XsrUiDirtyKinds.Layout); page.Render();
         scroll.OffsetY = 0; page.Fixture.Shell.Tree.MarkDirty(section, XsrUiDirtyKinds.Layout); page.Render();
@@ -163,7 +163,7 @@ internal static partial class Program
         page.Emit("ui.settings.screenshot-preview.action", "ScreenshotPreview.Crop");
         AssertEqual("400", page.Fixture.Shell.Tree.GetComponent<XsrUiTextInput>(page.Find("ScreenshotCropWidth").Entity)!.ReadDraft());
         var retired = page.Find("ScreenshotPreview.Close").Entity;
-        page.Emit("ui.settings.management.action", "Management.刷新");
+        page.Emit("ui.settings.screenshot-preview.action", "ScreenshotPreview.Refresh");
         page.Pump(() => !page.Scene.Nodes.Any(node => page.Fixture.Shell.Tree.Name(node.Entity) == "ScreenshotPreview"));
         page.Emit("ui.settings.screenshot-preview.action", retired);
         AssertFalse(page.Scene.Nodes.Any(node => page.Fixture.Shell.Tree.Name(node.Entity) == "ScreenshotPreview"));
@@ -231,7 +231,7 @@ internal static partial class Program
         AssertEqual(0L, page.Settings.ScreenshotThumbnailReservedBytes);
         for (int frame = 0; frame < 8; frame++) { page.Render(); AssertQuota(); }
         AssertEqual(4, pending.Count);
-        var sections = page.Fixture.Shell.Tree.Parent(page.Find("ManagementContentList").Entity);
+        var sections = ContentScrollAncestor(page.Fixture.Shell.Tree, page.Find("ManagementContentList").Entity);
         page.Fixture.Shell.Tree.GetComponent<XsrUiScroll>(sections)!.OffsetY = 100_000;
         page.Fixture.Shell.Tree.MarkDirty(sections, XsrUiDirtyKinds.Layout); page.Render();
         page.Pump(() => pending.Count > 4);

@@ -4,9 +4,9 @@ using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
 using Nexa.Services.Setup;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
-using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Tests;
@@ -22,18 +22,18 @@ internal static partial class Program
         await startup.InvokeAsync(async () =>
         {
             using var fixture = LibraryFixture(LaunchProfileKind.Microsoft);
-            File.WriteAllText(Path.Combine(output,"preview-data.txt"),"Actual Avalonia rendering of product controllers/templates. Skin/cape/profile identities and pending setup settings are read-only fixtures. No sign-in, account persistence, setup completion or game launch is performed.");
-            foreach(bool dark in WardrobePreviewThemes)
+            File.WriteAllText(Path.Combine(output, "preview-data.txt"), "Actual Avalonia rendering of product controllers/templates. Skin/cape/profile identities and pending setup settings are read-only fixtures. No sign-in, account persistence, setup completion or game launch is performed.");
+            foreach (bool dark in WardrobePreviewThemes)
             {
-                fixture.Shell.Renderer.ColorScheme=new(dark);string theme=dark?"dark":"light";
-                Emit(fixture.Intents,"ui.account.add");fixture.Shell.Render(new(1000,640));
-                await Capture(fixture.Shell,"account-providers-"+theme);
-                Emit(fixture.Intents,"ui.account.third-party");fixture.Shell.Render(new(1000,640));
-                fixture.Shell.Renderer.SetTextInputValue(FindEntity(fixture.Shell,"AuthUsername"),"literal user");
-                fixture.Shell.Renderer.SetTextInputValue(FindEntity(fixture.Shell,"AuthServer"),"https://example.invalid/auth");
-                await Capture(fixture.Shell,"account-third-party-"+theme);
-                await Capture(fixture.Shell,"account-third-party-compact-"+theme,800,600);
-                Emit(fixture.Intents,"ui.account.close");fixture.Shell.Render(new(1000,640));
+                fixture.Shell.Renderer.ColorScheme = new(dark); string theme = dark ? "dark" : "light";
+                Emit(fixture.Intents, "ui.account.add"); fixture.Shell.Render(new(1000, 640));
+                await Capture(fixture.Shell, "account-providers-" + theme);
+                Emit(fixture.Intents, "ui.account.third-party"); fixture.Shell.Render(new(1000, 640));
+                fixture.Shell.Renderer.SetTextInputValue(FindEntity(fixture.Shell, "AuthUsername"), "literal user");
+                fixture.Shell.Renderer.SetTextInputValue(FindEntity(fixture.Shell, "AuthServer"), "https://example.invalid/auth");
+                await Capture(fixture.Shell, "account-third-party-" + theme);
+                await Capture(fixture.Shell, "account-third-party-compact-" + theme, 800, 600);
+                Emit(fixture.Intents, "ui.account.close"); fixture.Shell.Render(new(1000, 640));
             }
             var queries = new XsrQueryRouterBuilder();
             var current = new AccountWardrobeResolvedTextures(null, null, true, null, null);
@@ -56,26 +56,26 @@ internal static partial class Program
                 await Capture(fixture.Shell, "wardrobe-compact-" + (dark ? "dark" : "light"), 800, 600);
             }
             fixture.Shell.Stage.Navigation.Replace(wardrobe.Page);
-            WardrobeEmit(fixture,"ui.wardrobe.browse","WardrobeBrowse");fixture.Shell.Render(new(1000,640));
-            foreach(bool dark in WardrobePreviewThemes)
+            WardrobeEmit(fixture, "ui.wardrobe.browse", "WardrobeBrowse"); fixture.Shell.Render(new(1000, 640));
+            foreach (bool dark in WardrobePreviewThemes)
             {
-                fixture.Shell.Renderer.ColorScheme=new(dark);
-                await Capture(fixture.Shell,"wardrobe-local-"+(dark?"dark":"light"),800,600);
+                fixture.Shell.Renderer.ColorScheme = new(dark);
+                await Capture(fixture.Shell, "wardrobe-local-" + (dark ? "dark" : "light"), 800, 600);
             }
-            WardrobeEmit(fixture,"ui.wardrobe.local.close","WardrobeLocalClose");fixture.Shell.Render(new(1000,640));
-            var publicQueries=LibraryQueries(fixture);
-            publicQueries.Register<WardrobeCatalogQuery,WardrobeCatalogPage>(WardrobeCatalogContract.Read,(query,_)=>
-                ValueTask.FromResult(XsrResult.Success(LibraryPage(query,Enumerable.Range(1,12).Select(i=>LibraryItem(i,WardrobeCatalogKind.Skin)).ToArray()))));
-            using var publicLibrary=new WardrobeLibraryPageController(fixture.Shell,fixture.Intents,publicQueries.Build(new NoopDispatchObserver()),
-                new XsrCommandRouterBuilder().Build(new NoopDispatchObserver()),fixture.Store,fixture.Feedback);
+            WardrobeEmit(fixture, "ui.wardrobe.local.close", "WardrobeLocalClose"); fixture.Shell.Render(new(1000, 640));
+            var publicQueries = LibraryQueries(fixture);
+            publicQueries.Register<WardrobeCatalogQuery, WardrobeCatalogPage>(WardrobeCatalogContract.Read, (query, _) =>
+                ValueTask.FromResult(XsrResult.Success(LibraryPage(query, Enumerable.Range(1, 12).Select(i => LibraryItem(i, WardrobeCatalogKind.Skin)).ToArray()))));
+            using var publicLibrary = new WardrobeLibraryPageController(fixture.Shell, fixture.Intents, publicQueries.Build(new NoopDispatchObserver()),
+                new XsrCommandRouterBuilder().Build(new NoopDispatchObserver()), fixture.Store, fixture.Feedback);
             fixture.Shell.Stage.Navigation.Replace(publicLibrary.Page);
-            foreach(bool dark in WardrobePreviewThemes)
+            foreach (bool dark in WardrobePreviewThemes)
             {
-                fixture.Shell.Renderer.ColorScheme=new(dark);string theme=dark?"dark":"light";
-                await Capture(fixture.Shell,"wardrobe-library-"+theme);
-                await Capture(fixture.Shell,"wardrobe-library-compact-"+theme,800,600);
+                fixture.Shell.Renderer.ColorScheme = new(dark); string theme = dark ? "dark" : "light";
+                await Capture(fixture.Shell, "wardrobe-library-" + theme);
+                await Capture(fixture.Shell, "wardrobe-library-compact-" + theme, 800, 600);
             }
-            fixture.Shell.Stage.Navigation.Replace(wardrobe.Page);fixture.Shell.Render(new(1000,640));
+            fixture.Shell.Stage.Navigation.Replace(wardrobe.Page); fixture.Shell.Render(new(1000, 640));
             publicLibrary.Dispose();
             wardrobe.Dispose();
             foreach (bool dark in WardrobePreviewThemes)
@@ -103,15 +103,15 @@ internal static partial class Program
                 if (step < 3) { Emit(fixture.Intents, "ui.setup.next"); fixture.Shell.Render(new(1000, 640)); }
             }
             setup.Dispose();
-            using var required=new FirstRunController(fixture.Shell,fixture.Intents,fixture.Store,
-                FirstRunRuntimeComposer.Compose(service),service.Read() with {TelemetryRequired=true},()=>Task.FromResult<string?>(null),()=>{});
-            Emit(fixture.Intents,"ui.setup.next");fixture.Shell.Render(new(1000,640));
-            Emit(fixture.Intents,"ui.setup.next");fixture.Shell.Render(new(1000,640));
-            foreach(bool dark in WardrobePreviewThemes)
+            using var required = new FirstRunController(fixture.Shell, fixture.Intents, fixture.Store,
+                FirstRunRuntimeComposer.Compose(service), service.Read() with { TelemetryRequired = true }, () => Task.FromResult<string?>(null), () => { });
+            Emit(fixture.Intents, "ui.setup.next"); fixture.Shell.Render(new(1000, 640));
+            Emit(fixture.Intents, "ui.setup.next"); fixture.Shell.Render(new(1000, 640));
+            foreach (bool dark in WardrobePreviewThemes)
             {
-                fixture.Shell.Renderer.ColorScheme=new(dark);
-                await Capture(fixture.Shell,"setup-required-"+(dark?"dark":"light"));
-                await Capture(fixture.Shell,"setup-required-compact-"+(dark?"dark":"light"),800,600);
+                fixture.Shell.Renderer.ColorScheme = new(dark);
+                await Capture(fixture.Shell, "setup-required-" + (dark ? "dark" : "light"));
+                await Capture(fixture.Shell, "setup-required-compact-" + (dark ? "dark" : "light"), 800, 600);
             }
             async Task Capture(XsrUiShell shell, string name, int width = 1000, int height = 640)
             {

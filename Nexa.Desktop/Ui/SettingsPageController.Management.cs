@@ -1,7 +1,7 @@
 using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -12,6 +12,14 @@ internal sealed partial class SettingsPageController
     private Task<XsrResult<InstanceManagementSnapshot>>? _managementRead;
     private CancellationTokenSource? _managementStop;
     private bool _managementLoaded;
+    private long _contentScopeGeneration;
+    private Guid _contentRemovalDialog;
+    private void RetireContentScope()
+    {
+        Interlocked.Increment(ref _contentScopeGeneration); CancelModRemovalPreview();
+        if (_contentRemovalDialog != Guid.Empty) _feedback.DismissDialog(_contentRemovalDialog);
+        _contentRemovalDialog = default;
+    }
     private string? _managementError;
     private readonly Dictionary<XsrUiEntityId, Action> _managementActions = [];
     private readonly List<XsrUiEntityId> _contentActions = [];
@@ -31,13 +39,15 @@ internal sealed partial class SettingsPageController
     internal Action? ManagementChanged { get; set; }
     private IReadOnlyList<SettingsCatalogPage> ManagementPages => _management is { } snapshot
         ? snapshot.Pages.Where(page => InstanceDevelopmentMode || !IsDevelopmentPage(page.Id)).Select(page => new SettingsCatalogPage(page.Id, page.Label)).ToArray()
-        : [new("overview", "总览"), new("game", "游戏设置")];
+        : [new("overview", ContentTerm("copy.a33db5730556")), new("game", ContentTerm("copy.57444f5c18ae"))];
 
     private void CancelManagementRead()
     {
+        RetireContentScope();
         CloseScreenshotPreview(); CancelScreenshotThumbnails();
-        CancelOnlineList(); CancelServers(); CancelExport(); CancelFileWorkspace(); CancelWorldHealth(); CancelInstanceDiagnostics();
+        CancelOnlineList(); CancelServers(); CancelExport(); CancelFileWorkspace(); CancelWorldHealth(); CancelWorldDetails(); CancelInstanceDiagnostics();
         CancelAdvancedLaunchDiagnostics();
+        ObserveRetiredInstanceToolRead(_managementRead);
         _managementStop?.Cancel(); _managementStop?.Dispose(); _managementStop = null;
         _managementRead = null; _managementLoaded = false;
     }
@@ -76,7 +86,7 @@ internal sealed partial class SettingsPageController
             if (_managementWriteInstance == _instance)
             {
                 if (!PendingQuery.Succeeded(writing))
-                    _feedback.Error(writing.IsCompletedSuccessfully ? writing.Result.Error?.Message ?? "版本更改未完成。" : "版本更改未完成。");
+                    _feedback.Error(writing.IsCompletedSuccessfully ? writing.Result.Error?.Message ?? ContentTerm("copy.488e471d233b") : ContentTerm("copy.488e471d233b"));
                 else { _contentDetail = null; ManagementChanged?.Invoke(); }
                 CancelManagementRead();
             }
@@ -105,25 +115,27 @@ internal sealed partial class SettingsPageController
             if (!ManagementPages.Any(page => page.Id == _selected)) _selected = "overview";
             RebuildManagementNavigation();
         }
-        else _managementError = "无法读取版本内容，请检查目录后重试。";
+        else _managementError = ContentTerm("copy.ef9445a3331c");
         BuildSections(); UpdateEditors();
     }
 
     private void RebuildManagementNavigation()
     {
+        if (_navigation.Count == Pages.Count && _navigation.Values.SequenceEqual(Pages.Select(page => page.Id))
+            && _navigation.All(pair => _shell.Tree.GetComponent<XsrUiText>(pair.Key)?.Content == Pages.First(page => page.Id == pair.Value).Label))
+        {
+            _sections = _pages[_selected];
+            int selectedIndex = Pages.ToList().FindIndex(page => page.Id == _selected);
+            if (_shell.Tree.GetComponent<XsrUiPager>(_pager)!.PageIndex != selectedIndex)
+                _shell.Renderer.RebasePagerPage(_pager, selectedIndex);
+            UpdateNavigation(); return;
+        }
         foreach (var page in _pages.Keys.Where(id => !Pages.Any(item => item.Id == id)).ToArray())
-        { _shell.Tree.Destroy(_pages[page]); _pages.Remove(page); }
-        foreach (var entity in _navigation.Keys) _shell.Tree.Destroy(entity);
+        { _dynamic.Remove(_pages[page]); _pages.Remove(page); }
+        foreach (var entity in _navigation.Keys) _dynamic.Remove(entity);
         _navigation.Clear();
-        _shell.Tree.SetComponent(_pager, new XsrUiPager(XsrUiOrientation.Horizontal));
         BuildNavigation();
         _shell.Renderer.RebasePagerPage(_pager, Pages.ToList().FindIndex(page => page.Id == _selected));
-    }
-
-    private void ManagementButton(XsrUiEntityId parent, string label, Action action, double width = 84)
-    {
-        var button = ActionButton(parent, "Management." + label, label, ManagementAction, width);
-        _managementActions[button] = action;
     }
 
     private void RefreshManagement()
@@ -133,19 +145,11 @@ internal sealed partial class SettingsPageController
         _onlineListInstance = _instance; _onlineListPage = _selected; _onlineListRefresh = true;
     }
 
-    private void ManagementRefreshIcon(XsrUiEntityId toolbar, bool spacer = false)
-    {
-        if (spacer) _shell.Tree.GetComponent<XsrUiElement>(Element(toolbar, "ManagementToolbarSpacer", XsrUiSemanticRole.None, null))!.Weight = 1;
-        var button = RefreshIcon(toolbar, "Management.刷新", ManagementAction);
-        _shell.Tree.GetComponent<XsrUiInput>(button)!.Enabled = _managementWrite is null;
-        _managementActions[button] = RefreshManagement;
-    }
-
     private void OpenContentDirectory(string directory)
     {
         try { OpenManagementDirectory?.Invoke(directory); }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { _feedback.Error("无法打开目录，请检查目录是否存在。"); }
+        { _feedback.Error(ContentTerm("copy.e4614fb4bc41")); }
     }
 
     private void ToggleMod(InstanceContentEntry entry)
@@ -159,75 +163,73 @@ internal sealed partial class SettingsPageController
 
     private void BuildManagementSection()
     {
-        _shell.Tree.GetComponent<XsrUiStackPanel>(_sections)!.Spacing = 12;
+        _contentFileViews.Clear(); _contentBefore = _contentAfter = _contentMiddle = _contentEmpty = default; _contentPinnedName = null;
+        _contentWorkspaceInstance = _instance; _contentWorkspacePage = _selected;
         if (_contentDetail is { } detail) { BuildContentDetail(detail); return; }
         _shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY = _scrollPositions.GetValueOrDefault(_selected);
-        var toolbar = Stack(_sections, "ManagementToolbar", XsrUiOrientation.Horizontal, 10);
         if (_selected == "overview") BuildInstanceDevelopmentMode();
         if (_management is not { } snapshot)
         {
-            Text(_sections, _managementError ?? "正在读取版本内容…", 13, Muted, 28);
-            ManagementRefreshIcon(toolbar, spacer: true);
-            return;
+            var loading = AppendContent(_sections, "SettingsContentLoading.d.nxml", new() { ["enabled"] = ContentFlag(_managementWrite is null), ["message"] = _managementError ?? ContentTerm("loading") });
+            BindContentAction(ContentNodes(loading), ContentKey("refresh"), RefreshManagement); return;
         }
         var page = snapshot.Pages.First(item => item.Id == _selected);
-        if (page.Directory is null) ManagementRefreshIcon(toolbar, spacer: true);
         if (page.Directory is { } directory)
         {
-            _contentSearch = Element(toolbar, "ManagementContentSearch", XsrUiSemanticRole.TextInput, "搜索内容", height: 36);
-            _shell.Tree.GetComponent<XsrUiElement>(_contentSearch)!.Weight = 1;
-            _shell.Tree.GetComponent<XsrUiElement>(_contentSearch)!.Padding = new(12, 0, 12, 0);
-            _shell.Tree.SetComponent(_contentSearch, new XsrUiTextInput { Placeholder = "搜索名称、文件名或版本" });
-            _shell.Tree.SetComponent(_contentSearch, new XsrUiInput { Focusable = true, Clickable = true });
-            Style(_contentSearch, new(241, 244, 248), Ink, 10, 13);
-            _shell.Renderer.SetTextInputValue(_contentSearch, _contentFilter);
-            ManagementButton(toolbar, "打开文件夹", () => OpenContentDirectory(directory), 100);
-            if (_selected == "screenshots") ManagementButton(toolbar, _screenshotTimeline ? "画廊" : "时间线", () =>
-            { _screenshotTimeline = !_screenshotTimeline; BuildSections(true); }, 84);
-            ManagementRefreshIcon(toolbar);
             _contentSnapshot = snapshot.Contents.FirstOrDefault(item => item.PageId == _selected);
-            if (_selected == "mods") BuildModCategories();
-            var location = Stack(_sections, "ManagementLocation", XsrUiOrientation.Horizontal, 12);
-            var path = Text(location, directory, 12, Muted, 24);
-            DesktopLiteralText.Preserve(_shell.Tree, path);
-            _shell.Tree.GetComponent<XsrUiElement>(path)!.Weight = 1;
-            _contentCount = Text(location, $"{_contentSnapshot?.Entries.Count ?? 0} 项" + (_contentSnapshot?.Complete == false ? " · 未全部列出" : ""), 12, Muted, 24);
+            _contentWorkspace = AppendContent(_sections, "SettingsContentManagement.d.nxml", new()
+            {
+                ["enabled"] = ContentFlag(_managementWrite is null),
+                ["directory"] = directory,
+                ["hasCategories"] = ContentFlag(_selected == "mods"),
+                ["hasOnlineStatus"] = ContentFlag(_selected is "mods" or "resourcepacks" or "shaderpacks"),
+                ["hasUpdates"] = ContentFlag(_selected is "mods" or "resourcepacks" or "shaderpacks" && _resourceCommands?.TryResolve(Nexa.Services.Resources.ResourceCatalogContract.UpdateContentBatch, out _) == true),
+                ["screenshots"] = ContentFlag(_selected == "screenshots"),
+                ["timelineLabel"] = ContentTerm(_screenshotTimeline ? "gallery" : "timeline"),
+                ["timelineVisible"] = ContentFlag(!_screenshotTimeline),
+                ["galleryVisible"] = ContentFlag(_screenshotTimeline),
+                ["count"] = "",
+                ["error"] = "",
+                ["hasError"] = "false"
+            });
+            var nodes = ContentNodes(_contentWorkspace);
+            _contentSearch = nodes["ManagementContentSearch"]; _contentCount = nodes["ManagementContentCount"];
+            _contentList = nodes["ManagementContentList"]; _contentParking = nodes["ContentManagement.Parking"];
+            _shell.Renderer.SetTextInputValue(_contentSearch, _contentFilter);
+            BindContentAction(nodes, ContentKey("folder"), () => OpenContentDirectory(directory));
+            BindContentAction(nodes, ContentKey("refresh"), RefreshManagement);
+            void SwitchScreenshotLayout()
+            {
+                bool focused = _shell.Renderer.Focused == nodes[ContentKey("timelineAction")] || _shell.Renderer.Focused == nodes[ContentKey("galleryAction")];
+                bool visibleFocus = _shell.Tree.IsAlive(_shell.Renderer.Focused) && _shell.Tree.GetComponent<XsrUiInput>(_shell.Renderer.Focused)?.IsFocusVisible == true;
+                _screenshotTimeline = !_screenshotTimeline; _contentWindowStart = -1; UpdateContentWindow(); ReloadContentManagement();
+                if (focused) _shell.Renderer.Focus(nodes[ContentKey(_screenshotTimeline ? "galleryAction" : "timelineAction")], visibleFocus);
+            }
+            BindContentAction(nodes, ContentKey("timelineAction"), SwitchScreenshotLayout); BindContentAction(nodes, ContentKey("galleryAction"), SwitchScreenshotLayout);
+            if (_selected == "mods") BuildModCategories(nodes["ContentManagement.Categories"]);
             if (_selected is "mods" or "resourcepacks" or "shaderpacks")
             {
-                BuildContentUpdateActions(_sections);
-                _onlineListStatus = Text(location, "正在关联在线信息", 11, Muted, 24);
-                _shell.Tree.GetComponent<XsrUiElement>(_onlineListStatus)!.Width = 268;
-                _shell.Tree.GetComponent<XsrUiVisualStyle>(_onlineListStatus)!.TextAlignment = XsrUiTextAlignment.End;
-                DesktopLiteralText.Preserve(_shell.Tree, _onlineListStatus);
-                UpdateOnlineListStatus();
+                BuildContentUpdateActions(nodes["ContentManagement.Updates"]);
+                BuildOnlineListStatus(nodes["ContentManagement.OnlineStatus"]);
             }
-            if (_managementError is not null) Text(_sections, _managementError, 13, Muted, 28);
-            if (_contentSnapshot?.Error is { } error) Text(_sections, error, 13, Muted, 28);
-            _contentList = Stack(_sections, "ManagementContentList", XsrUiOrientation.Vertical, 0);
-            ApplyContentFilter();
-            UpdateContentWindow();
+            ApplyContentFilter(); UpdateContentWindow(); ReloadContentManagement();
         }
         else if (_selected == "overview")
         {
-            var information = FormGroup(_sections, "ManagementOverview", "版本信息");
-            ManagementFactIn(information, "版本名称", System.IO.Path.GetFileName(snapshot.InstanceDirectory));
-            ManagementFactIn(information, "Minecraft", snapshot.GameVersion);
-            ManagementFactIn(information, "实例目录", snapshot.InstanceDirectory);
-            ManagementFactIn(information, "游戏目录", snapshot.GameDirectory);
-            if (snapshot.Description.Length > 0) ManagementFactIn(information, "描述", snapshot.Description);
-            if (OpenManagementDirectory is not null) ManagementButton(information, "打开版本文件夹", () => OpenContentDirectory(snapshot.InstanceDirectory), 128);
+            var information = AppendContent(_sections, "SettingsContentOverview.d.nxml", new() { ["enabled"] = ContentFlag(_managementWrite is null), ["open"] = ContentFlag(OpenManagementDirectory is not null) });
+            var nodes = ContentNodes(information); var facts = nodes["ContentOverview.Facts"];
+            AppendContentFact(facts, "instanceName", System.IO.Path.GetFileName(snapshot.InstanceDirectory));
+            AppendContentFact(facts, "minecraft", snapshot.GameVersion); AppendContentFact(facts, "instanceDirectory", snapshot.InstanceDirectory); AppendContentFact(facts, "gameDirectory", snapshot.GameDirectory);
+            if (snapshot.Description.Length > 0) AppendContentFact(facts, "description", snapshot.Description);
+            BindContentAction(nodes, ContentKey("instanceFolder"), () => OpenContentDirectory(snapshot.InstanceDirectory));
         }
         else if (_selected == "recovery") { BuildRecoveryStorage(snapshot); BuildRecoveryTimeline(snapshot); }
         else if (_selected == "trash") BuildContentTrash(snapshot);
         else if (_selected == "contentgraph") BuildContentGraph(snapshot);
         else if (_selected == "files") BuildInstanceFiles();
         else if (_selected == "diagnostics") BuildInstanceDiagnostics();
-        else if (_selected == "modpack")
-        {
-            BuildModpackExport(snapshot);
-        }
-        else if (_selected == "servers")
-            BuildServers();
+        else if (_selected == "modpack") BuildModpackExport(snapshot);
+        else if (_selected == "servers") BuildServers();
         BuildOfflineReadiness(snapshot);
         if (_selected is "overview" or "servers") BuildInstanceIdentity();
         if (_selected == "diagnostics") BuildAdvancedLaunchDiagnostics();
@@ -239,62 +241,97 @@ internal sealed partial class SettingsPageController
     {
         if (!_contentList.IsAssigned || !_shell.Tree.IsAlive(_contentList) || _contentSnapshot is not { } snapshot) return;
         if (_selected == "screenshots") { UpdateScreenshotWaterfall(snapshot); return; }
-        int columns = 1;
-        double rowHeight = _selected == "resourcepacks" ? 104 : 84;
-        int rows = (snapshot.Entries.Count + columns - 1) / columns;
-        int start = Math.Clamp((int)((_shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY - 92) / rowHeight) - 3, 0, Math.Max(0, rows - 1));
-        int count = Math.Min(rows - start, (int)Math.Ceiling(_shell.Renderer.Viewport.Height / rowHeight) + 8);
-        if (_contentWindowStart == start && _contentWindowCount == count && _contentColumns == columns) return;
-        _contentWindowStart = start; _contentWindowCount = count; _contentColumns = columns;
-        _contentIconEntities.Clear();
-        _contentSelectionRows.Clear();
-        foreach (var action in _contentActions) _managementActions.Remove(action);
-        _contentActions.Clear();
-        foreach (var child in _shell.Tree.Children(_contentList).ToArray()) _shell.Tree.Destroy(child);
-        if (rows == 0) Text(_contentList, _contentFilter.Length == 0 && (_selected != "mods" || _modCategory == "all") ? "此目录中还没有内容。" : "没有匹配的内容。", 13, Muted, 48);
-        Element(_contentList, "ManagementContentBefore", XsrUiSemanticRole.None, null, height: start * rowHeight);
-        for (int rowIndex = start; rowIndex < start + count; rowIndex++)
+        var metrics = ContentMetric("files");
+        double rowHeight = _selected == "resourcepacks" ? metrics.Width!.Value : metrics.Height!.Value;
+        int rows = snapshot.Entries.Count;
+        int start = Math.Clamp((int)((_shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY - metrics.Padding.Left) / rowHeight) - (int)metrics.Padding.Top, 0, Math.Max(0, rows - 1));
+        int count = Math.Min(rows - start, (int)Math.Ceiling(_shell.Renderer.Viewport.Height / rowHeight) + (int)metrics.Padding.Right);
+        string? focusedName = _contentFileViews.FirstOrDefault(pair => ContentContainsFocus(pair.Value.Root, _shell.Renderer.Focused)).Key;
+        int pinned = focusedName is null ? -1 : snapshot.Entries.ToList().FindIndex(item => item.Name == focusedName);
+        var indices = Enumerable.Range(start, count).Concat(pinned >= 0 ? [pinned] : Array.Empty<int>()).Distinct().Order().ToArray();
+        if (_contentWindowStart == start && _contentWindowCount == count && _contentColumns == 1 && _contentPinnedName == focusedName) return;
+        var projections = indices.ToDictionary(index => index, index => ContentFileProjection(snapshot.Entries[index], rowHeight - metrics.Spacing));
+        foreach (var data in projections.Values) _ = DesktopMarkup.Dynamic("SettingsContentFileCard.d.nxml", data);
+        _contentPinnedName = focusedName;
+        _contentWindowStart = start; _contentWindowCount = count; _contentColumns = 1;
+        _contentIconEntities.Clear(); _contentSelectionRows.Clear();
+        foreach (var view in _contentFileViews.Values) _dynamic.Move(view.Root, _contentParking);
+        foreach (var fragment in new[] { _contentBefore, _contentAfter, _contentMiddle, _contentEmpty }.Where(_shell.Tree.IsAlive)) _dynamic.Move(fragment, _contentParking);
+        if (!_contentBefore.IsAssigned)
         {
-            var row = Stack(_contentList, "ManagementContentRow", XsrUiOrientation.Horizontal, 0);
-            var layout = _shell.Tree.GetComponent<XsrUiElement>(row)!;
-            layout.Height = rowHeight - 8;
-            layout.Margin = new(0, 0, 0, 8);
-            Style(row, White, Ink, 12);
-            foreach (var item in snapshot.Entries.Skip(rowIndex * columns).Take(columns))
-            {
-                var body = Stack(row, "ManagementContentBody", XsrUiOrientation.Horizontal, 14);
-                var bodyLayout = _shell.Tree.GetComponent<XsrUiElement>(body)!;
-                bodyLayout.Weight = 1;
-                bodyLayout.VerticalAlignment = XsrUiAlignment.Stretch;
-                bodyLayout.Padding = new(16, 10, 16, 10);
-                _contentIconEntities[item.Name] = ContentImage(body, item, 48, 48);
-                var text = Stack(body, "ManagementContentIdentity", XsrUiOrientation.Vertical, 2);
-                _shell.Tree.GetComponent<XsrUiElement>(text)!.Weight = 1;
-                if (_selected == "resourcepacks")
-                {
-                    ContentName(text, ResourcePackTitle(item), 15, 26);
-                    ContentName(text, item.Description, 12, item.UpdateAvailable == true ? 22 : 40, maxLines: item.UpdateAvailable == true ? 1 : 2, foreground: Muted);
-                    if (item.UpdateAvailable == true) Text(text, "可更新至 " + item.UpdateVersion, 12, Muted, 22);
-                }
-                else
-                {
-                    ContentName(text, item.DisplayName.Length == 0 ? item.Name : item.DisplayName, 15, 26);
-                    Text(text, item.Name + (item.Enabled == false ? " · 已禁用" : "") + (item.PackageProblem.Length > 0 ? " · 包异常" : item.UpdateAvailable == true ? " · 可更新" : ""), 12, Muted, 22);
-                }
-                if (_selected is "mods" or "resourcepacks" or "shaderpacks")
-                {
-                    BuildContentUpdateSelection(row, item);
-                    string release = _selected == "mods" ? item.Version : OnlineFile(item) is { } key && _onlineList.TryGetValue(key, out var online) ? online.InstalledVersion ?? "" : "";
-                    var version = Text(body, release.Length > 0 ? release : _selected == "mods" ? "版本未标注" : "", 12, Muted, 24);
-                    _shell.Tree.GetComponent<XsrUiElement>(version)!.Width = 116;
-                    _shell.Tree.GetComponent<XsrUiVisualStyle>(version)!.TextAlignment = XsrUiTextAlignment.End;
-                }
-                BuildContentRowActions(body, item);
-            }
+            _contentBefore = AppendContent(_contentParking, "SettingsContentSpacer.d.nxml", new() { ["key"] = "ManagementContentBefore", ["height"] = "0" });
+            _contentAfter = AppendContent(_contentParking, "SettingsContentSpacer.d.nxml", new() { ["key"] = "ManagementContentAfter", ["height"] = "0" });
+            _contentMiddle = AppendContent(_contentParking, "SettingsContentSpacer.d.nxml", new() { ["key"] = "ManagementContentMiddle", ["height"] = "0" });
+            _contentEmpty = AppendContent(_contentParking, "SettingsContentEmpty.d.nxml", new() { ["message"] = "" });
         }
-        UpdateContentSelectionPresentation();
-        Element(_contentList, "ManagementContentAfter", XsrUiSemanticRole.None, null, height: (rows - start - count) * rowHeight);
-        _shell.Tree.MarkDirty(_contentList, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+        List<XsrUiEntityId> order = [];
+        if (rows == 0)
+        {
+            ReloadContent(_contentEmpty, ("message", ContentTerm(_contentFilter.Length == 0 && (_selected != "mods" || _modCategory == "all") ? "empty" : "noMatches")));
+            _dynamic.Move(_contentEmpty, _contentList); order.Add(_contentEmpty);
+        }
+        int cursor = 0, spacerIndex = 0; var spacers = new[] { _contentBefore, _contentMiddle, _contentAfter };
+        void Gap(int size)
+        {
+            if (size <= 0) return; var spacer = spacers[spacerIndex++]; ReloadContent(spacer, ("height", ContentNumber(size * rowHeight))); _dynamic.Move(spacer, _contentList); order.Add(spacer);
+        }
+        var live = indices.Select(index => snapshot.Entries[index].Name).ToHashSet(StringComparer.Ordinal);
+        foreach (int index in indices)
+        {
+            Gap(index - cursor); cursor = index + 1;
+            var item = snapshot.Entries[index];
+            if (_contentFileViews.TryGetValue(item.Name, out var retired) && !SameContentFileIdentity(retired.Item, item)) { RemoveContentView(retired.Root); _contentFileViews.Remove(item.Name); }
+            if (!_contentFileViews.TryGetValue(item.Name, out var view))
+            {
+                var root = AppendContent(_contentParking, "SettingsContentFileCard.d.nxml", projections[index]);
+                var nodes = ContentNodes(root); view = new(root, nodes["ManagementContentIcon"], nodes["ContentSelectionMark." + ContentFileKey(item.Name)], item);
+                _contentFileViews[item.Name] = view; BuildContentRowActions(nodes, item);
+            }
+            else { ReloadContent(view.Root, projections[index].Select(pair => (pair.Key, pair.Value)).ToArray()); view = view with { Item = item }; _contentFileViews[item.Name] = view; BuildContentRowActions(ContentNodes(view.Root), item); }
+            BindContentImage(view.Icon, item); ApplyContentFormatting(ContentNodes(view.Root)["ContentFile.Title"], _selected == "resourcepacks" ? ResourcePackTitle(item) : item.DisplayName.Length == 0 ? item.Name : item.DisplayName);
+            if (_selected == "resourcepacks") ApplyContentFormatting(ContentNodes(view.Root)["ContentFile.Description"], item.Description);
+            _dynamic.Move(view.Root, _contentList); order.Add(view.Root); _contentIconEntities[item.Name] = view.Icon;
+            BuildContentUpdateSelection(view.Root, view.Mark, item);
+        }
+        Gap(rows - cursor); _dynamic.Reorder(_contentList, order);
+        foreach (var obsolete in _contentFileViews.Where(pair => !live.Contains(pair.Key)).ToArray()) { RemoveContentView(obsolete.Value.Root); _contentFileViews.Remove(obsolete.Key); }
+        UpdateContentSelectionPresentation(); _shell.Tree.MarkDirty(_contentList, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+    }
+
+    private Dictionary<string, string> ContentFileProjection(InstanceContentEntry item, double rowHeight)
+    {
+        string key = ContentFileKey(item.Name);
+        bool pack = _selected == "resourcepacks", available = item.UpdateAvailable == true; var copy = ContentMetric("fileCopy");
+        var query = OnlineFile(item); var online = query is not null && _onlineList.TryGetValue(query, out var linked) ? linked : null;
+        string release = _selected == "mods" ? item.Version : online?.InstalledVersion ?? "";
+        return new()
+        {
+            ["height"] = ContentNumber(rowHeight),
+            ["icon"] = ContentIcon(),
+            ["title"] = StripContentFormatting(pack ? ResourcePackTitle(item) : item.DisplayName.Length == 0 ? item.Name : item.DisplayName),
+            ["description"] = pack ? StripContentFormatting(item.Description) : ContentFormat("FileDescription", ("name", item.Name), ("disabled", item.Enabled == false ? ContentTerm("disabledSuffix") : ""), ("state", item.PackageProblem.Length > 0 ? ContentTerm("problemSuffix") : available ? ContentTerm("updateSuffix") : "")),
+            ["descriptionHeight"] = ContentNumber(pack && !available ? copy.Width!.Value : copy.Height!.Value),
+            ["descriptionLines"] = ContentNumber(pack && !available ? copy.MaxHeight!.Value : copy.MinHeight!.Value),
+            ["update"] = available ? ContentFormat("UpdateVersion", ("version", item.UpdateVersion)) : "",
+            ["hasUpdate"] = ContentFlag(pack && available),
+            ["version"] = release.Length > 0 ? release : _selected == "mods" ? ContentTerm("unmarkedVersion") : "",
+            ["versionVisible"] = ContentFlag(_selected is "mods" or "resourcepacks" or "shaderpacks"),
+            ["actions"] = "ManagementContentActions." + key,
+            ["details"] = "ManagementContentDetails." + key,
+            ["toggle"] = "ManagementContentToggle." + key,
+            ["updateKey"] = "ManagementContentUpdate." + key,
+            ["remove"] = "ManagementContentRemove." + key,
+            ["toggleLabel"] = ContentTerm(item.Enabled == false ? "enable" : "disable"),
+            ["toggleIcon"] = ContentTerms.Value[item.Enabled == false ? "icon.enable" : "icon.disable"],
+            ["canToggle"] = ContentFlag(item.Enabled is not null && _commands.TryResolve(InstanceManagementContract.SetModEnabled, out _)),
+            ["canUpdate"] = ContentFlag(online is { IsStale: false, UpdateVersion: not null } && _resourceCommands?.TryResolve(Nexa.Services.Resources.ResourceCatalogContract.UpdateContent, out _) == true),
+            ["canRemove"] = ContentFlag(_commands.TryResolve(InstanceManagementContract.RemoveContent, out _)),
+            ["enabled"] = ContentFlag(_managementWrite is null),
+            ["selectable"] = ContentFlag(query is not null && _resourceCommands?.TryResolve(Nexa.Services.Resources.ResourceCatalogContract.UpdateContentBatch, out _) == true),
+            ["selected"] = ContentFlag(query is not null && _selectedContentUpdates.Contains(query)),
+            ["selectedStyle"] = query is not null && _selectedContentUpdates.Contains(query) ? "settings-content-file-card settings-content-card-selected" : "settings-content-file-card",
+            ["mark"] = "ContentSelectionMark." + key
+        };
     }
 
     private void ApplyContentFilter()
@@ -304,8 +341,7 @@ internal sealed partial class SettingsPageController
         _selectedContentUpdates.RemoveWhere(query => query.InstanceDirectory == _instance && query.PageId == _selected && !liveFiles.Contains(query));
         if (_contentSelectionAnchor is { } selectionAnchor && !liveFiles.Contains(selectionAnchor)) _contentSelectionAnchor = null;
         _contentSnapshot = source with { Entries = source.Entries.Select(LinkedContent).Where(item => (_selected != "mods" || MatchesModCategory(item, _modCategory)) && ((item.Name.Contains(_contentFilter, StringComparison.OrdinalIgnoreCase) || StripContentFormatting(item.Name).Contains(_contentFilter, StringComparison.OrdinalIgnoreCase)) || (StripContentFormatting(item.DisplayName).Contains(_contentFilter, StringComparison.OrdinalIgnoreCase) || StripContentFormatting(item.Description).Contains(_contentFilter, StringComparison.OrdinalIgnoreCase)) || item.Version.Contains(_contentFilter, StringComparison.OrdinalIgnoreCase))).ToArray() };
-        if (_contentCount.IsAssigned && _shell.Tree.IsAlive(_contentCount))
-            _shell.Tree.SetComponent(_contentCount, new XsrUiText($"{_contentSnapshot.Entries.Count} / {source.Entries.Count} 项" + (source.Complete ? "" : " · 未全部列出")));
+        ReloadContentManagement();
         _contentWindowStart = -1;
     }
 
@@ -320,42 +356,36 @@ internal sealed partial class SettingsPageController
             return;
         }
         long? previewGeneration = page == "screenshots" && _screenshotPreviewQuery is { } file && SameScreenshot(item, file) ? _screenshotPreviewGeneration : null;
-        var removalDialog = _feedback.ShowDialog("content.remove", "移除内容", $"将“{item.Name}”移至已移除内容，可随时还原。", "移除", "取消", accepted =>
+        long contentGeneration = _contentScopeGeneration;
+        var removalDialog = _feedback.ShowDialog("content.remove", ContentTerm("removeTitle"), ContentFormat("RemoveContent", ("name", item.Name)), ContentTerm("remove"), ContentTerm("cancel"), accepted =>
         {
-            if (!accepted || _managementWrite is not null || _instance != snapshot.InstanceDirectory
+            if (_contentScopeGeneration == contentGeneration) _contentRemovalDialog = default;
+            if (!accepted || _managementWrite is not null || _instance != snapshot.InstanceDirectory || _contentScopeGeneration != contentGeneration || _selected != page || !_visible
                 || previewGeneration is { } generation && (_screenshotPreviewGeneration != generation || _selected != "screenshots" || !_visible)) return;
             _managementWriteInstance = snapshot.InstanceDirectory;
             _managementWrite = _commands.Dispatch(route, new InstanceContentRemoveCommand(snapshot.InstanceDirectory, page, item.Name, item.IsDirectory, item.Size, item.ModifiedUtcTicks)).Completion;
             WakeOnPlatformCompletion(_managementWrite);
-        });
+        }, localizeMessage: false);
+        _contentRemovalDialog = removalDialog;
         if (previewGeneration is not null) _screenshotRemovalDialog = removalDialog;
     }
 
     private void BuildContentTrash(InstanceManagementSnapshot snapshot)
     {
-        BuildContentUpdateHistory(snapshot);
-        Text(_sections, "移除的内容仍保存在游戏目录中。还原不会覆盖同名文件。", 13, Muted, 30);
-        int pages = Math.Max(1, (snapshot.Trash.Count + 9) / 10);
-        _trashPage = Math.Clamp(_trashPage, 0, pages - 1);
-        if (snapshot.Trash.Count == 0) Text(_sections, "没有已移除的内容。", 13, Muted, 28);
+        int pages = Math.Max(1, (snapshot.Trash.Count + 9) / 10); _trashPage = Math.Clamp(_trashPage, 0, pages - 1);
+        var root = AppendContent(_sections, "SettingsContentTrash.d.nxml", new() { ["enabled"] = ContentFlag(_managementWrite is null), ["empty"] = ContentFlag(snapshot.Trash.Count == 0), ["hasPages"] = ContentFlag(pages > 1), ["next"] = ContentFormat("NextPage", ("page", (_trashPage + 1).ToString(System.Globalization.CultureInfo.CurrentCulture)), ("pages", pages.ToString(System.Globalization.CultureInfo.CurrentCulture))) });
+        var nodes = ContentNodes(root); BuildContentUpdateHistory(nodes["ContentTrash.History"], snapshot);
         foreach (var item in snapshot.Trash.Skip(_trashPage * 10).Take(10))
         {
-            var card = Stack(_sections, "ContentTrashRow", XsrUiOrientation.Vertical, 0);
-            Style(card, White, Ink, 12);
-            var row = Stack(card, "ContentTrashBody", XsrUiOrientation.Horizontal, 12);
-            _shell.Tree.GetComponent<XsrUiElement>(row)!.Padding = new(16, 8, 16, 8);
-            var name = Text(row, item.Name, 14, Ink, 38);
-            DesktopLiteralText.Preserve(_shell.Tree, name);
-            _shell.Tree.GetComponent<XsrUiElement>(name)!.Weight = 1;
-            ManagementButton(row, "还原", () =>
+            var row = AppendContent(nodes["ContentTrash.Rows"], "SettingsContentTrashRow.d.nxml", new() { ["name"] = item.Name, ["enabled"] = ContentFlag(_managementWrite is null) });
+            BindContentAction(ContentNodes(row), "ContentTrash.Restore", () =>
             {
                 if (_managementWrite is not null || _instance != snapshot.InstanceDirectory || !_commands.TryResolve(InstanceManagementContract.RestoreContent, out var route)) return;
-                _managementWriteInstance = snapshot.InstanceDirectory;
-                _managementWrite = _commands.Dispatch(route, new InstanceContentRestoreCommand(snapshot.InstanceDirectory, item.Id)).Completion;
-                WakeOnPlatformCompletion(_managementWrite);
-            }, 64);
+                _managementWriteInstance = snapshot.InstanceDirectory; _managementWrite = _commands.Dispatch(route, new InstanceContentRestoreCommand(snapshot.InstanceDirectory, item.Id)).Completion; WakeOnPlatformCompletion(_managementWrite);
+            });
         }
-        if (pages > 1) ManagementButton(_sections, $"{_trashPage + 1}/{pages} · 下一页", () =>
-        { _trashPage = (_trashPage + 1) % pages; BuildSections(true); }, 140);
+        BindContentAction(nodes, "ContentTrash.Next", () => { _trashPage = (_trashPage + 1) % pages; BuildSections(true); });
     }
+
+
 }

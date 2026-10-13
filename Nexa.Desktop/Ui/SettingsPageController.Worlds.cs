@@ -1,6 +1,6 @@
 using Nexa.Services.Minecraft.Management;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -12,68 +12,99 @@ internal sealed partial class SettingsPageController
     private Task<XsrResult<InstanceWorldMetadata>>? _worldMetadataRead;
     private (string Instance, string World) _worldMetadataTarget;
     private bool _worldMetadataFailed;
+    private CancellationTokenSource? _worldMetadataStop;
+    private XsrUiEntityId _worldDetailsRoot, _worldDetailsSlot;
+    private readonly Dictionary<string, XsrUiEntityId> _worldPackViews = [];
 
     private void BuildWorldDetails(XsrUiEntityId parent, InstanceContentEntry item)
     {
-        BuildWorldHealth(parent, item);
-        if (item.World is not { } world)
+        _worldDetailsSlot = parent;
+        var target = (_instance!, item.Name);
+        if (_worldMetadataTarget != target)
         {
-            var target = (_instance!, item.Name);
-            if (_worldMetadataTarget != target) { _worldMetadataTarget = target; _worldMetadataRead = null; _worldMetadataFailed = false; }
-            if (!_worldMetadataFailed && _worldMetadataRead is null && _queries.TryResolve(InstanceWorldContract.Read, out var route))
-            {
-                _worldMetadataRead = _queries.QueryAsync<InstanceWorldMetadataQuery, InstanceWorldMetadata>(route, new(_instance!, item.Name)).AsTask();
-                WakeOnPlatformCompletion(_worldMetadataRead);
-            }
-            Text(parent, _worldMetadataRead is not null ? "正在读取世界元数据…" : "无法读取此世界的 level.dat，已保留文件。", 13, Muted, 28); return;
+            CancelWorldDetails(); _worldMetadataTarget = target;
         }
-        ManagementFactIn(parent, "世界名称", world.LevelName, true);
-        if (world.DataVersion is { } dataVersion) ManagementFactIn(parent, "数据版本", dataVersion.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        if (world.LastPlayed is { } played) ManagementFactIn(parent, "上次游玩", played.ToLocalTime().ToString("yyyy/MM/dd HH:mm", System.Globalization.CultureInfo.CurrentCulture));
-        if (world.Seed is { } seed) ManagementFactIn(parent, "世界种子", seed.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        if (world.GameMode is { } mode) ManagementFactIn(parent, "游戏模式", mode switch { 0 => "生存", 1 => "创造", 2 => "冒险", 3 => "旁观", _ => mode.ToString(System.Globalization.CultureInfo.InvariantCulture) });
-        if (world.Difficulty is { } difficulty) ManagementFactIn(parent, "难度", difficulty switch { 0 => "和平", 1 => "简单", 2 => "普通", 3 => "困难", _ => difficulty.ToString(System.Globalization.CultureInfo.InvariantCulture) });
-        ManagementFactIn(parent, "极限模式", world.Hardcore ? "是" : "否");
-        if (!world.SizeComplete) Text(parent, "世界大小超过本次扫描预算，未显示部分总量。", 12, Muted, 28);
-        var actions = Stack(parent, "WorldManagementActions", XsrUiOrientation.Horizontal, 10);
-        ManagementButton(actions, world.Locked ? "解除编辑保护" : "锁定编辑", () => DispatchWorld(InstanceWorldContract.SetLock,
-            new InstanceWorldLockCommand(_instance!, item.Name, !world.Locked, world.Revision)), 116);
-        if (_commands.TryResolve(InstanceWorldContract.Backup, out _)) ManagementButton(actions, "备份世界", () => DispatchWorld(InstanceWorldContract.Backup,
-            new InstanceWorldBackupCommand(_instance!, item.Name, world.Revision)), 96);
-        if (!world.Locked)
+        var world = item.World;
+        if (world is null && !_worldMetadataFailed && _worldMetadataRead is null && _queries.TryResolve(InstanceWorldContract.Read, out var route))
         {
-            ManagementButton(actions, "复制世界", () => DispatchWorld(InstanceWorldContract.Copy,
-                new InstanceWorldCopyCommand(_instance!, item.Name, item.Name + "-copy-" + DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture), world.Revision)), 96);
-            if (world.DataPacksSupported && SelectDataPackFileAsync is not null) ManagementButton(actions, "导入数据包", () =>
-            {
-                if (_worldImportPicker is { IsCompleted: false } || _managementWrite is not null) return;
-                _worldImportTarget = (_instance!, item.Name, world.Revision); _worldImportPicker = SelectDataPackFileAsync!(); WakeOnPlatformCompletion(_worldImportPicker);
-            }, 106);
+            _worldMetadataStop = new();
+            _worldMetadataRead = _queries.QueryAsync<InstanceWorldMetadataQuery, InstanceWorldMetadata>(route, new(_instance!, item.Name), cancellationToken: _worldMetadataStop.Token).AsTask();
+            WakeOnPlatformCompletion(_worldMetadataRead);
         }
-        BuildWorldSnapshots(parent, item);
-        Text(parent, "世界数据包", 16, Ink, 28, 600);
-        if (!world.DataPacksSupported) { Text(parent, "此世界的数据版本不支持 Minecraft 数据包。", 13, Muted, 28); return; }
-        if (world.DataPacks.Count == 0) Text(parent, "此世界尚未安装数据包。", 13, Muted, 28);
-        foreach (var pack in world.DataPacks)
+        var nodes = WorldView(parent, ref _worldDetailsRoot, "Details", new()
         {
-            var row = Stack(parent, "WorldDataPack", XsrUiOrientation.Horizontal, 12);
-            var label = Text(row, pack.Name + " · " + _shell.Renderer.LocalizeText(pack.Trashed ? "已移除" : pack.Enabled ? "已启用" : "已停用"), 13, Ink, 36);
-            DesktopLiteralText.Preserve(_shell.Tree, label); _shell.Tree.GetComponent<XsrUiElement>(label)!.Weight = 1;
-            if (world.Locked) continue;
-            if (pack.Trashed)
+            ["reading"] = Flag(world is null && _worldMetadataRead is not null),
+            ["unreadable"] = Flag(world is null && _worldMetadataRead is null),
+            ["hasWorld"] = Flag(world is not null),
+            ["name"] = world?.LevelName ?? "",
+            ["hasDataVersion"] = Flag(world?.DataVersion is not null),
+            ["dataVersion"] = world?.DataVersion is { } dataVersion ? WorldNumber(dataVersion) : "",
+            ["hasPlayed"] = Flag(world?.LastPlayed is not null),
+            ["played"] = world?.LastPlayed?.ToLocalTime().ToString("yyyy/MM/dd HH:mm", System.Globalization.CultureInfo.CurrentCulture) ?? "",
+            ["hasSeed"] = Flag(world?.Seed is not null),
+            ["seed"] = world?.Seed is { } seed ? WorldNumber(seed) : "",
+            ["hasMode"] = Flag(world?.GameMode is not null),
+            ["mode"] = world?.GameMode is { } mode ? WorldTerms.Value.ContainsKey("mode." + WorldNumber(mode)) ? WorldTerm("mode." + WorldNumber(mode)) : WorldNumber(mode) : "",
+            ["hasDifficulty"] = Flag(world?.Difficulty is not null),
+            ["difficulty"] = world?.Difficulty is { } difficulty ? WorldTerms.Value.ContainsKey("difficulty." + WorldNumber(difficulty)) ? WorldTerm("difficulty." + WorldNumber(difficulty)) : WorldNumber(difficulty) : "",
+            ["hardcore"] = WorldTerm(world?.Hardcore == true ? "yes" : "no"),
+            ["incomplete"] = Flag(world is { SizeComplete: false }),
+            ["locked"] = Flag(world?.Locked == true),
+            ["unlocked"] = Flag(world is { Locked: false }),
+            ["backup"] = Flag(world is not null && _commands.TryResolve(InstanceWorldContract.Backup, out _)),
+            ["import"] = Flag(world is { Locked: false, DataPacksSupported: true } && SelectDataPackFileAsync is not null),
+            ["unsupported"] = Flag(world is { DataPacksSupported: false }),
+            ["supported"] = Flag(world?.DataPacksSupported == true),
+            ["emptyPacks"] = Flag(world is { DataPacksSupported: true, DataPacks.Count: 0 })
+        });
+        BuildWorldHealth(nodes["WorldDetails.Health"], item);
+        if (world is null) return;
+        string instance = _instance!, name = item.Name;
+        BindWorldAction(nodes, WorldKey(world.Locked ? "Unlock" : "Lock"), () => DispatchWorld(InstanceWorldContract.SetLock,
+            new InstanceWorldLockCommand(instance, name, !world.Locked, world.Revision)));
+        BindWorldAction(nodes, WorldKey("Backup"), () => DispatchWorld(InstanceWorldContract.Backup, new InstanceWorldBackupCommand(instance, name, world.Revision)));
+        BindWorldAction(nodes, WorldKey("Copy"), () => DispatchWorld(InstanceWorldContract.Copy,
+            new InstanceWorldCopyCommand(instance, name, name + "-copy-" + DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture), world.Revision)));
+        BindWorldAction(nodes, WorldKey("Import"), () =>
+        {
+            if (_worldImportPicker is { IsCompleted: false } || _managementWrite is not null || SelectDataPackFileAsync is null) return;
+            _worldImportTarget = (instance, name, world.Revision); _worldImportPicker = SelectDataPackFileAsync(); WakeOnPlatformCompletion(_worldImportPicker);
+        });
+        BuildWorldSnapshots(nodes["WorldDetails.Snapshots"], item);
+        var packs = world.DataPacksSupported ? world.DataPacks.Select((pack, index) => (Pack: pack, Key: "WorldPack." + InstanceToolIdentity(pack.Id + "\0" + pack.TrashName + "\0" + WorldNumber(index)))).ToArray() : [];
+        RetireWorldRows(_worldPackViews, packs.Select(pack => pack.Key));
+        foreach (var (pack, key) in packs)
+        {
+            var row = WorldRow(nodes["WorldDetails.Packs"], _worldPackViews, key, "DataPack", new()
             {
-                ManagementButton(row, "还原数据包", () => DispatchWorld(InstanceWorldContract.RestoreDataPack,
-                    new InstanceWorldDataPackRestoreCommand(_instance!, item.Name, pack.TrashName, world.Revision)), 106);
-                continue;
-            }
-            if (pack.Id != "vanilla") ManagementButton(row, pack.Enabled ? "停用" : "启用", () => DispatchWorld(InstanceWorldContract.SetDataPackEnabled,
-                new InstanceWorldDataPackCommand(_instance!, item.Name, pack.Id, !pack.Enabled, world.Revision)), 64);
-            if (!pack.BuiltIn && !pack.Enabled) ManagementButton(row, "移至回收", () => DispatchWorld(InstanceWorldContract.RemoveDataPack,
-                new InstanceWorldDataPackRemoveCommand(_instance!, item.Name, pack.Name, world.Revision)), 90);
+                ["key"] = key,
+                ["name"] = pack.Name,
+                ["state"] = WorldTerm(pack.Trashed ? "pack.trashed" : pack.Enabled ? "pack.enabled" : "pack.disabled"),
+                ["restore"] = key + ".Restore",
+                ["enable"] = key + ".Enable",
+                ["disable"] = key + ".Disable",
+                ["remove"] = key + ".Remove",
+                ["canRestore"] = Flag(!world.Locked && pack.Trashed),
+                ["canEnable"] = Flag(!world.Locked && !pack.Trashed && pack.Id != "vanilla" && !pack.Enabled),
+                ["canDisable"] = Flag(!world.Locked && !pack.Trashed && pack.Id != "vanilla" && pack.Enabled),
+                ["canRemove"] = Flag(!world.Locked && !pack.Trashed && !pack.BuiltIn && !pack.Enabled)
+            });
+            BindWorldAction(row, key + ".Restore", () => DispatchWorld(InstanceWorldContract.RestoreDataPack, new InstanceWorldDataPackRestoreCommand(instance, name, pack.TrashName, world.Revision)));
+            foreach (string action in new[] { ".Enable", ".Disable" }) BindWorldAction(row, key + action, () => DispatchWorld(InstanceWorldContract.SetDataPackEnabled, new InstanceWorldDataPackCommand(instance, name, pack.Id, !pack.Enabled, world.Revision)));
+            BindWorldAction(row, key + ".Remove", () => DispatchWorld(InstanceWorldContract.RemoveDataPack, new InstanceWorldDataPackRemoveCommand(instance, name, pack.Name, world.Revision)));
         }
-        Text(parent, "数据包更改将在下次加载世界时生效。", 12, Muted, 28);
+        _dynamic.Reorder(nodes["WorldDetails.Packs"], packs.Select(pack => _worldPackViews[pack.Key]).ToArray());
     }
-
+    private void CancelWorldDetails()
+    {
+        _worldMetadataStop?.Cancel(); _worldMetadataStop?.Dispose(); _worldMetadataStop = null;
+        ObserveRetiredInstanceToolRead(_worldMetadataRead); ObserveRetiredInstanceToolRead(_worldImportPicker);
+        _worldMetadataRead = null; _worldImportPicker = null; _worldMetadataTarget = default; _worldImportTarget = default; _worldMetadataFailed = false;
+    }
+    private void RefreshWorldDetails()
+    {
+        if (_visible && _selected == "saves" && _contentDetail is { } item && _shell.Tree.IsAlive(_worldDetailsSlot)) BuildWorldDetails(_worldDetailsSlot, item);
+    }
     private void DispatchWorld<T>(XsrSemanticId id, T command) where T : notnull
     {
         if (_instance is null || _managementWrite is not null || !_commands.TryResolve(id, out var route)) return;
@@ -81,14 +112,14 @@ internal sealed partial class SettingsPageController
     }
     private void UpdateWorldPlatformAction()
     {
-        UpdateWorldHealth();
+        UpdateWorldPresentation(); UpdateWorldHealth();
         if (_worldMetadataRead is { IsCompleted: true } reading)
         {
-            _worldMetadataRead = null; _worldMetadataFailed = !PendingQuery.Succeeded(reading);
+            _worldMetadataRead = null; _worldMetadataStop?.Dispose(); _worldMetadataStop = null; _worldMetadataFailed = !PendingQuery.Succeeded(reading);
             if (_instance == _worldMetadataTarget.Instance && _contentDetail?.Name == _worldMetadataTarget.World && _selected == "saves")
             {
                 if (!_worldMetadataFailed) _contentDetail = _contentDetail with { World = reading.Result.Value };
-                BuildSections(true);
+                RefreshWorldDetails();
             }
         }
         if (_worldImportPicker is { IsCompleted: true } picker)
@@ -96,8 +127,7 @@ internal sealed partial class SettingsPageController
             _worldImportPicker = null;
             if (picker.IsCompletedSuccessfully && picker.Result is { } source && _instance == _worldImportTarget.Instance && _contentDetail?.Name == _worldImportTarget.World)
                 DispatchWorld(InstanceWorldContract.ImportDataPack, new InstanceWorldDataPackImportCommand(_worldImportTarget.Instance, _worldImportTarget.World, source, _worldImportTarget.Revision));
-            else if (!picker.IsCompletedSuccessfully) { _ = picker.Exception; _feedback.Error("无法选择数据包文件。"); }
+            else if (!picker.IsCompletedSuccessfully) { _ = picker.Exception; _feedback.Error(WorldTerm("world.import-error")); }
         }
-
     }
 }

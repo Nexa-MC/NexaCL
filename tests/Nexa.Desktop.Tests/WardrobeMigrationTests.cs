@@ -1,9 +1,9 @@
 ﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
-using Nexa.Xsr;
 namespace Nexa.Desktop.Tests;
 
 internal static partial class Program

@@ -450,7 +450,7 @@ internal static partial class Program
 
         stage.Renderer.Viewport = new XsrUiSize(200, 100);
         _ = stage.Renderer.Render();
-        AssertEqual(emptyOverlay, stage.Renderer.HitTest(new XsrUiPoint(20, 20)));
+        AssertEqual(pageButton, stage.Renderer.HitTest(new XsrUiPoint(20, 20)));
         AssertTrue(stage.Renderer.PointerPressed(new XsrUiPoint(20, 20)));
         AssertTrue(stage.Renderer.PointerReleased(new XsrUiPoint(20, 20)));
         AssertEqual("page.activate", intents.Drain().Single().Command.ToString());
@@ -520,6 +520,45 @@ internal static partial class Program
         var intent = intents.Drain().Single();
         AssertEqual("dialog.cancel", intent.Command.ToString());
         AssertEqual(dialog, intent.Source);
+
+        XsrUiEntityId top = tree.Create("top-dialog-layer");
+        tree.SetComponent(top, new XsrUiSemantic(XsrUiSemanticRole.Dialog, "Top confirm"));
+        tree.SetComponent(top, new XsrUiDismissBinding("top.cancel".AsXsrId()));
+        XsrUiEntityId label = tree.Create("top-dialog-label");
+        tree.SetComponent(label, new XsrUiText("Temporary detail"));
+        tree.Attach(label, top);
+        stage.Show(top, modal: true);
+        // A newly staged modal already blocks the older scene's dismiss route.
+        AssertFalse(stage.Renderer.HandleKey(XsrUiKey.Escape));
+        AssertEqual(0, intents.Count);
+        _ = stage.Renderer.Render();
+        tree.Destroy(label);
+        // Owned child retirement may precede the next scene, while its modal stays live.
+        AssertTrue(stage.Renderer.HandleKey(XsrUiKey.Escape));
+        intent = intents.Drain().Single();
+        AssertEqual("top.cancel", intent.Command.ToString());
+        AssertEqual(top, intent.Source);
+
+        AssertTrue(stage.Dismiss(top));
+        tree.Destroy(top);
+        AssertFalse(stage.Renderer.HandleKey(XsrUiKey.Escape));
+        AssertEqual(0, intents.Count);
+        AssertFalse(stage.Renderer.Activate(page));
+        _ = stage.Renderer.Render();
+        AssertTrue(stage.Renderer.HandleKey(XsrUiKey.Escape));
+        intent = intents.Drain().Single();
+        AssertEqual("dialog.cancel", intent.Command.ToString());
+        AssertEqual(dialog, intent.Source);
+
+        AssertTrue(stage.Dismiss(dialog));
+        tree.Destroy(dialog);
+        AssertFalse(stage.Renderer.HandleKey(XsrUiKey.Escape));
+        AssertEqual(0, intents.Count);
+        _ = stage.Renderer.Render();
+        AssertTrue(stage.Renderer.Activate(page));
+        intent = intents.Drain().Single();
+        AssertEqual("page.activate", intent.Command.ToString());
+        AssertEqual(page, intent.Source);
     }
 
     private static void StageDismissRemovesTopOverlay()

@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Nexa.Xsr.Renderer;
@@ -71,7 +71,6 @@ internal sealed partial class ResourcesPageController
     private void InitializeResourceTrack(string name, Action<int> selected)
     {
         var track = _entities[name]; var options = _shell.Tree.Children(track).Where(entity => _shell.Tree.GetComponent<XsrUiSelection>(entity) is not null).ToArray();
-        _shell.Tree.SetComponent(track, new XsrUiSegmentedTrack(_entities[name + "Thumb"]));
         _segments.Add((track, double.Parse(_resourceViews[_workspace].Data[name + ".0_width"], CultureInfo.InvariantCulture)));
         foreach (var (option, index) in options.Select((option, index) => (option, index)))
         {

@@ -1,0 +1,5 @@
+<nxml-dynamic>
+  <Button Key="WidgetAboutIndicator" Label="{state launch.widget.about-label}" Command="ui.launch.widget.about" Localize="false" Height="{data height}" Class="layout-LaunchPage-WidgetAboutIndicator">
+    <StackPanel Key="WidgetAboutDot" Height="{data height}" Background="{data paint}" Class="layout-LaunchPage-WidgetAboutDot" />
+  </Button>
+</nxml-dynamic>

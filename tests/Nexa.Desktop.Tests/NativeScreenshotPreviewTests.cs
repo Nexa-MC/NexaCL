@@ -7,9 +7,9 @@ using Nexa.Core.Media;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Settings;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
-using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using SkiaSharp;
 

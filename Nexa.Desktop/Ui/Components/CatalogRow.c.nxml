@@ -1,9 +1,0 @@
-<nxml-component>
-  <Button Key="CatalogRow" Label="选择版本" Command="ui.install.catalog.select" Class="layout-CatalogRow-CatalogRow">
-    <StackPanel Class="layout-CatalogRow-2">
-      <Image Key="CatalogCheck" Source="lucide/check" Class="layout-CatalogRow-CatalogCheck" />
-      <Text Key="CatalogName" Class="layout-CatalogRow-CatalogName" />
-      <Text Key="CatalogDetail" Class="layout-CatalogRow-CatalogDetail" />
-    </StackPanel>
-  </Button>
-</nxml-component>

@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
 using Nexa.Services.Logging;
 using Nexa.Services.Setup;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -25,10 +25,14 @@ internal sealed partial class SettingsPageController
     private long _contentAiPolicyRevision = -1;
     private bool _contentWorkspaceLoaded;
     private string? _contentWorkspaceMessage;
+    private XsrUiEntityId _contentWorkspacePanel, _contentMigrationPanel, _contentDiagnosticPanel, _contentSummaryView, _contentRetentionView, _contentMessageView;
+    private bool _contentSummaryStatistics;
+    private readonly Dictionary<string, XsrUiEntityId> _contentBackupViews = new(StringComparer.Ordinal);
+    private readonly List<XsrUiEntityId> _contentHistoryViews = [];
     private sealed record DiagnosticRawConfirmation(DiagnosticRawPreview Preview, string Destination);
-    private sealed record ContentWorkspaceResult(string? Message = null, ContentStoreStatistics? Statistics = null,
+    private sealed record ContentWorkspaceResult(CustomText? Message = null, ContentStoreStatistics? Statistics = null,
         IReadOnlyList<ContentBackupManifest>? Backups = null, IReadOnlyList<DurableDiagnosticEntry>? History = null,
-        string? Confirmation = null, Func<CancellationToken, Task<ContentWorkspaceResult>>? Apply = null, ContentBackupRetentionPolicy? Retention = null,
+        CustomText? Confirmation = null, Func<CancellationToken, Task<ContentWorkspaceResult>>? Apply = null, ContentBackupRetentionPolicy? Retention = null,
         DiagnosticAiConfirmation? AiConfirmation = null, DiagnosticAiSuggestion? AiSuggestion = null, DiagnosticRawConfirmation? RawConfirmation = null);
     private bool ContentWorkspaceBusy => _contentWorkspaceTask is not null || _contentWorkspaceDialog != Guid.Empty;
 
@@ -41,14 +45,29 @@ internal sealed partial class SettingsPageController
 
     private void BuildContentWorkspace()
     {
-        _contentWorkspaceActions.Clear();
+        _contentWorkspaceActions.Clear(); _contentBackupViews.Clear(); _contentHistoryViews.Clear();
+        _contentWorkspacePanel = _contentMigrationPanel = _contentDiagnosticPanel = _contentSummaryView = _contentRetentionView = _contentMessageView = default;
         if (_instanceDirectory is not null || _selected != "storage" || _contentBackups is null) return;
         var availability = new Dictionary<string, string> { ["enabled"] = Flag(!ContentWorkspaceBusy) };
-        var panel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsContentWorkspace.d.nxml",
+        _contentWorkspacePanel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsContentWorkspace.d.nxml",
             new Dictionary<string, string>(availability) { ["truncated"] = Flag(_contentBackupRows.Count > 16) }));
-        var nodes = CatalogNodes(panel);
-        if (_contentStoreStatistics is { } stats)
-            _dynamic.Append(nodes["ContentWorkspace.Summary"], DesktopMarkup.Dynamic("SettingsContentStats.d.nxml", new Dictionary<string, string>
+        _contentMigrationPanel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsLegacyMigration.d.nxml", availability));
+        _contentDiagnosticPanel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsDurableDiagnostics.d.nxml", availability));
+        BuildDiagnosticAiWorkspace();
+        RefreshContentWorkspacePresentation();
+    }
+
+    private void RefreshContentWorkspacePresentation()
+    {
+        if (!_shell.Tree.IsAlive(_contentWorkspacePanel) || _instanceDirectory is not null || _selected != "storage") return;
+        var availability = new Dictionary<string, string> { ["enabled"] = Flag(!ContentWorkspaceBusy) };
+        _dynamic.Reload(_contentWorkspacePanel, DesktopMarkup.Dynamic("SettingsContentWorkspace.d.nxml",
+            new Dictionary<string, string>(availability) { ["truncated"] = Flag(_contentBackupRows.Count > 16) }));
+        _dynamic.Reload(_contentMigrationPanel, DesktopMarkup.Dynamic("SettingsLegacyMigration.d.nxml", availability));
+        _dynamic.Reload(_contentDiagnosticPanel, DesktopMarkup.Dynamic("SettingsDurableDiagnostics.d.nxml", availability));
+        var nodes = CatalogNodes(_contentWorkspacePanel);
+        var summary = _contentStoreStatistics is { } stats
+            ? DesktopMarkup.Dynamic("SettingsContentStats.d.nxml", new Dictionary<string, string>
             {
                 ["backups"] = stats.Backups.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ["objects"] = stats.Objects.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -56,44 +75,70 @@ internal sealed partial class SettingsPageController
                 ["logical"] = stats.LogicalBytes.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ["reclaimableBytes"] = stats.ReclaimableBytes.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ["savedBytes"] = Math.Max(0, stats.LogicalBytes - stats.ReferencedBytes).ToString(System.Globalization.CultureInfo.InvariantCulture),
-                ["reclaimable"] = Flag(stats.ReclaimableBytes > 0), ["clean"] = Flag(stats.ReclaimableBytes == 0)
-            }, _shell.Renderer.LocalizeText));
-        else _dynamic.Append(nodes["ContentWorkspace.Summary"], DesktopMarkup.Dynamic("SettingsContentIntro.d.nxml"));
-        foreach (var (name, kind) in new[] { ("Refresh", "refresh"), ("Capture", "capture"), ("Import", "import"), ("Prune", "prune") })
-            RegisterWorkspaceAction(nodes, name, kind);
-        var retention = _dynamic.Append(nodes["ContentWorkspace.RetentionSlot"], DesktopMarkup.Dynamic(
-            _contentRetention.Enabled ? "SettingsContentRetentionOn.d.nxml" : "SettingsContentRetentionOff.d.nxml", availability));
-        RegisterWorkspaceAction(CatalogNodes(retention), "Retention", "retention");
-        foreach (var manifest in _contentBackupRows.Take(16))
+                ["reclaimable"] = Flag(stats.ReclaimableBytes > 0),
+                ["clean"] = Flag(stats.ReclaimableBytes == 0)
+            }, _shell.Renderer.LocalizeText)
+            : DesktopMarkup.Dynamic("SettingsContentIntro.d.nxml");
+        if (_shell.Tree.IsAlive(_contentSummaryView) && _contentSummaryStatistics == (_contentStoreStatistics is not null)) _dynamic.Reload(_contentSummaryView, summary);
+        else _contentSummaryView = _dynamic.Replace(nodes["ContentWorkspace.Summary"], summary);
+        _contentSummaryStatistics = _contentStoreStatistics is not null;
+        foreach (var (name, kind) in new[] { ("Refresh", "refresh"), ("Capture", "capture"), ("Import", "import"), ("Prune", "prune") }) RegisterWorkspaceAction(nodes, name, kind);
+        var retention = DesktopMarkup.Dynamic(_contentRetention.Enabled ? "SettingsContentRetentionOn.d.nxml" : "SettingsContentRetentionOff.d.nxml", availability);
+        if (_shell.Tree.IsAlive(_contentRetentionView)) _dynamic.Reload(_contentRetentionView, retention);
+        else _contentRetentionView = _dynamic.Append(nodes["ContentWorkspace.RetentionSlot"], retention);
+        RegisterWorkspaceAction(CatalogNodes(_contentRetentionView), "Retention", "retention");
+        var backups = _contentBackupRows.Take(16).ToArray(); var live = backups.Select(manifest => manifest.Identity).ToHashSet(StringComparer.Ordinal);
+        foreach (string identity in _contentBackupViews.Keys.Where(identity => !live.Contains(identity)).ToArray())
         {
-            var row = _dynamic.Append(nodes["ContentWorkspace.Backups"], DesktopMarkup.Dynamic("SettingsContentBackup.d.nxml", new Dictionary<string, string>(availability)
+            var retired = _contentBackupViews[identity];
+            foreach (var action in CatalogNodes(retired).Values) _contentWorkspaceActions.Remove(action);
+            _dynamic.Remove(retired); _contentBackupViews.Remove(identity);
+        }
+        foreach (var manifest in backups)
+        {
+            var fragment = DesktopMarkup.Dynamic("SettingsContentBackup.d.nxml", new Dictionary<string, string>(availability)
             {
                 ["row"] = "ContentWorkspace.Backup." + manifest.Identity,
                 ["actions"] = "ContentWorkspace.Actions." + manifest.Identity,
-                ["name"] = manifest.Label, ["files"] = manifest.Files.Count.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["name"] = manifest.Label,
+                ["files"] = manifest.Files.Count.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ["created"] = manifest.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.CurrentCulture),
                 ["verify"] = "ContentWorkspace.Verify." + manifest.Identity,
                 ["restore"] = "ContentWorkspace.Restore." + manifest.Identity,
                 ["export"] = "ContentWorkspace.Export." + manifest.Identity
-            }, _shell.Renderer.LocalizeText));
+            }, _shell.Renderer.LocalizeText);
+            if (_contentBackupViews.TryGetValue(manifest.Identity, out var row)) _dynamic.Reload(row, fragment);
+            else _contentBackupViews[manifest.Identity] = row = _dynamic.Append(nodes["ContentWorkspace.Backups"], fragment);
             var actions = CatalogNodes(row);
-            foreach (var (name, kind) in new[] { ("Verify", "verify"), ("Restore", "restore"), ("Export", "export") })
-                RegisterWorkspaceAction(actions, name + "." + manifest.Identity, kind, manifest.Identity);
+            foreach (var (name, kind) in new[] { ("Verify", "verify"), ("Restore", "restore"), ("Export", "export") }) RegisterWorkspaceAction(actions, name + "." + manifest.Identity, kind, manifest.Identity);
         }
-        var migration = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsLegacyMigration.d.nxml", availability));
-        RegisterWorkspaceAction(CatalogNodes(migration), "Migrate", "migrate");
-        var diagnostics = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsDurableDiagnostics.d.nxml", availability));
-        var diagnosticNodes = CatalogNodes(diagnostics);
-        RegisterWorkspaceAction(diagnosticNodes, "Raw", "raw");
-        foreach (var entry in _durableDiagnosticRows.Take(12))
-            _dynamic.Append(diagnosticNodes["DurableDiagnosticWorkspace.History"], DesktopMarkup.Dynamic("SettingsDurableDiagnosticRow.d.nxml", new Dictionary<string, string>
+        _dynamic.Reorder(nodes["ContentWorkspace.Backups"], backups.Select(manifest => _contentBackupViews[manifest.Identity]).ToArray());
+        RegisterWorkspaceAction(CatalogNodes(_contentMigrationPanel), "Migrate", "migrate");
+        var diagnostics = CatalogNodes(_contentDiagnosticPanel); RegisterWorkspaceAction(diagnostics, "Raw", "raw");
+        var history = _durableDiagnosticRows.Take(12).ToArray();
+        while (_contentHistoryViews.Count > history.Length)
+        { _dynamic.Remove(_contentHistoryViews[^1]); _contentHistoryViews.RemoveAt(_contentHistoryViews.Count - 1); }
+        for (int index = 0; index < history.Length; index++)
+        {
+            var entry = history[index];
+            var fragment = DesktopMarkup.Dynamic("SettingsDurableDiagnosticRow.d.nxml", new Dictionary<string, string>
             {
                 ["timestamp"] = entry.Timestamp.ToLocalTime().ToString("MM-dd HH:mm", System.Globalization.CultureInfo.CurrentCulture),
-                ["module"] = entry.Module, ["operation"] = entry.Operation, ["stage"] = entry.Stage, ["outcome"] = entry.Outcome.ToString()
-            }));
-        BuildDiagnosticAiWorkspace();
+                ["module"] = entry.Module,
+                ["operation"] = entry.Operation,
+                ["stage"] = entry.Stage,
+                ["outcome"] = entry.Outcome.ToString()
+            }, _shell.Renderer.LocalizeText);
+            if (index < _contentHistoryViews.Count) _dynamic.Reload(_contentHistoryViews[index], fragment);
+            else _contentHistoryViews.Add(_dynamic.Append(diagnostics["DurableDiagnosticWorkspace.History"], fragment));
+        }
         if (_contentWorkspaceMessage is { } message)
-            _dynamic.Append(nodes["ContentWorkspace.Message"], DesktopMarkup.Dynamic("SettingsContentMessage.d.nxml", new Dictionary<string, string> { ["text"] = message }));
+        {
+            var fragment = DesktopMarkup.Dynamic("SettingsContentMessage.d.nxml", new Dictionary<string, string> { ["text"] = message });
+            if (_shell.Tree.IsAlive(_contentMessageView)) _dynamic.Reload(_contentMessageView, fragment);
+            else _contentMessageView = _dynamic.Append(nodes["ContentWorkspace.Message"], fragment);
+        }
+        RefreshDiagnosticAiWorkspace();
     }
 
     private void RegisterWorkspaceAction(Dictionary<string, XsrUiEntityId> nodes, string name, string kind, string? identity = null)
@@ -113,10 +158,10 @@ internal sealed partial class SettingsPageController
         string? raw = action.Kind is "raw" or "ai-raw" ? _diagnosticRawCapture?.Invoke() : null;
         _contentWorkspaceTask = aiDraft is not null ? PreviewDiagnosticAiAsync(aiDraft, raw, _contentWorkspaceStop.Token)
             : RunContentWorkspaceAsync(action.Kind, action.Identity, raw, _contentWorkspaceStop.Token);
-        ObserveTransfer(_contentWorkspaceTask); BuildSections(); UpdateEditors();
+        ObserveTransfer(_contentWorkspaceTask); RefreshContentWorkspacePresentation();
     }
 
-    private async Task<ContentWorkspaceResult> RefreshContentWorkspaceAsync(string? message, CancellationToken token) => new(message,
+    private async Task<ContentWorkspaceResult> RefreshContentWorkspaceAsync(CustomText? message, CancellationToken token) => new(message,
         await _contentBackups!.StatisticsAsync(token).ConfigureAwait(false), await _contentBackups.ListAsync(token).ConfigureAwait(false),
         await _diagnosticHistory!.ReadAsync(token).ConfigureAwait(false), Retention: await _contentBackups.ReadRetentionAsync(token).ConfigureAwait(false));
 
@@ -127,56 +172,56 @@ internal sealed partial class SettingsPageController
         {
             var policy = await _contentBackups!.ReadRetentionAsync(token).ConfigureAwait(false);
             var changed = policy with { Enabled = !policy.Enabled };
-            return new(Confirmation: changed.Enabled ? $"启用空闲时自动清理：保留最多 {policy.KeepCount} 个、{policy.KeepDays} 天的备份，始终保留最新备份；仅删除未引用对象。" : "停用自动备份清理，现有备份保持原状。",
-                Apply: async cancellation => { await _contentBackups.SetRetentionAsync(changed, cancellation).ConfigureAwait(false); return await RefreshContentWorkspaceAsync("备份保留策略已保存。", cancellation).ConfigureAwait(false); });
+            return new(Confirmation: changed.Enabled ? CustomFormatted("Retention", ("count", CustomNumber(policy.KeepCount)), ("days", CustomNumber(policy.KeepDays))) : CustomTerm("content.retentionOff"),
+                Apply: async cancellation => { await _contentBackups.SetRetentionAsync(changed, cancellation).ConfigureAwait(false); return await RefreshContentWorkspaceAsync(CustomTerm("content.retentionSaved"), cancellation).ConfigureAwait(false); });
         }
         if (kind == "verify")
         {
             var report = await _contentBackups!.VerifyOfflineAsync(identity!, token).ConfigureAwait(false);
-            return new(report.Ready ? $"离线就绪：{report.VerifiedFiles} 个文件均已校验。" : $"尚未离线就绪：{report.MissingOrCorruptPaths.Count} 个文件缺失或损坏。\n" + string.Join('\n', report.MissingOrCorruptPaths.Take(8)));
+            return new(report.Ready ? CustomFormatted("BackupReady", ("count", CustomNumber(report.VerifiedFiles))) : CustomFormatted("BackupNotReady", ("count", CustomNumber(report.MissingOrCorruptPaths.Count)), ("paths", string.Join('\n', report.MissingOrCorruptPaths.Take(8)))));
         }
         if (kind == "prune")
         {
             var policy = await _contentBackups!.ReadRetentionAsync(token).ConfigureAwait(false);
             var preview = await _contentBackups.PreviewPruneAsync(policy.KeepCount, policy.KeepDays, token).ConfigureAwait(false);
-            return new(Confirmation: $"保留最新备份；清理超过 {policy.KeepCount} 个或 {policy.KeepDays} 天的旧备份。\n将删除 {preview.BackupIdentities.Count} 个清单，回收 {preview.Objects} 个未引用对象（{preview.Bytes} 字节）。",
-                Apply: async cancellation => { await _contentBackups.ApplyPruneAsync(policy.KeepCount, policy.KeepDays, preview.Revision, cancellation).ConfigureAwait(false); return await RefreshContentWorkspaceAsync("备份清理完成。", cancellation).ConfigureAwait(false); });
+            return new(Confirmation: CustomFormatted("Prune", ("count", CustomNumber(policy.KeepCount)), ("days", CustomNumber(policy.KeepDays)), ("backups", CustomNumber(preview.BackupIdentities.Count)), ("objects", CustomNumber(preview.Objects)), ("bytes", CustomNumber(preview.Bytes))),
+                Apply: async cancellation => { await _contentBackups.ApplyPruneAsync(policy.KeepCount, policy.KeepDays, preview.Revision, cancellation).ConfigureAwait(false); return await RefreshContentWorkspaceAsync(CustomTerm("content.pruned"), cancellation).ConfigureAwait(false); });
         }
         if (kind == "import")
         {
             string? file = await _contentChooseFile!(token).ConfigureAwait(false); token.ThrowIfCancellationRequested(); if (file is null) return new();
-            return new(Confirmation: "导入所选薄备份清单，不下载对象；完成后报告本地对象可用情况。",
-                Apply: async cancellation => { await _contentBackups!.ImportThinAsync(file, cancellation).ConfigureAwait(false); return await RefreshContentWorkspaceAsync("薄备份已导入；请使用离线校验检查本地对象。", cancellation).ConfigureAwait(false); });
+            return new(Confirmation: CustomTerm("content.importPreview"),
+                Apply: async cancellation => { await _contentBackups!.ImportThinAsync(file, cancellation).ConfigureAwait(false); return await RefreshContentWorkspaceAsync(CustomTerm("content.imported"), cancellation).ConfigureAwait(false); });
         }
         if (kind == "migrate")
         {
             string? source = await _contentChooseDirectory!(token).ConfigureAwait(false); token.ThrowIfCancellationRequested(); if (source is null) return new();
             string? parent = await _contentChooseDirectory(token).ConfigureAwait(false); token.ThrowIfCancellationRequested(); if (parent is null) return new();
             var preview = await _legacyMigration!.PreviewAsync(source, Path.Combine(parent, "NexaCL-import"), token).ConfigureAwait(false);
-            return new(Confirmation: $"迁移 {preview.Settings} 个设置、{preview.OfflineAccounts} 个离线账户；{preview.ReauthenticationAccounts} 个在线账户需重新登录。\n目标：{preview.DestinationDirectory}\n" + string.Join('\n', preview.Warnings),
-                Apply: async cancellation => { await _legacyMigration.ApplyAsync(preview, cancellation).ConfigureAwait(false); return new("迁移副本已创建。可在设置的数据位置中选择该目录；源数据保持原状。"); });
+            return new(Confirmation: CustomFormatted("Migrate", ("settings", CustomNumber(preview.Settings)), ("offline", CustomNumber(preview.OfflineAccounts)), ("online", CustomNumber(preview.ReauthenticationAccounts)), ("destination", preview.DestinationDirectory), ("warnings", string.Join('\n', preview.Warnings))),
+                Apply: async cancellation => { await _legacyMigration.ApplyAsync(preview, cancellation).ConfigureAwait(false); return new(CustomTerm("content.migrated")); });
         }
         string? directory = await _contentChooseDirectory!(token).ConfigureAwait(false); token.ThrowIfCancellationRequested(); if (directory is null) return new();
         if (kind == "capture")
-            return new(Confirmation: "将复制并校验所选文件夹，保存为独立备份。请确保游戏已退出。\n" + directory,
-                Apply: async cancellation => { await _contentBackups!.CaptureAsync(directory, Path.GetFileName(Path.TrimEndingDirectorySeparator(directory)) is { Length: > 0 } name ? name : "备份", cancellation).ConfigureAwait(false); return await RefreshContentWorkspaceAsync("独立备份已创建。", cancellation).ConfigureAwait(false); });
+            return new(Confirmation: CustomFormatted("Capture", ("directory", directory)),
+                Apply: async cancellation => { await _contentBackups!.CaptureAsync(directory, Path.GetFileName(Path.TrimEndingDirectorySeparator(directory)) is { Length: > 0 } name ? name : CustomRaw("content.backupName"), cancellation).ConfigureAwait(false); return await RefreshContentWorkspaceAsync(CustomTerm("content.captured"), cancellation).ConfigureAwait(false); });
         if (kind == "restore")
         {
             string destination = Path.Combine(directory, "restore-" + identity);
-            return new(Confirmation: "恢复到新的副本目录，现有文件不会被覆盖：\n" + destination,
-                Apply: async cancellation => { await _contentBackups!.RestoreAsync(identity!, destination, cancellation).ConfigureAwait(false); return new("备份副本已校验并恢复：" + destination); });
+            return new(Confirmation: CustomFormatted("Restore", ("destination", destination)),
+                Apply: async cancellation => { await _contentBackups!.RestoreAsync(identity!, destination, cancellation).ConfigureAwait(false); return new(CustomFormatted("Restored", ("destination", destination))); });
         }
         if (kind == "export")
         {
             string destination = Path.Combine(directory, "nexa-thin-" + identity + ".json");
-            return new(Confirmation: "薄备份包含文件路径和 SHA-256 身份，不包含文件正文。\n" + destination,
-                Apply: async cancellation => { await _contentBackups!.ExportThinAsync(identity!, destination, cancellation).ConfigureAwait(false); return new("薄备份已导出。"); });
+            return new(Confirmation: CustomFormatted("Export", ("destination", destination)),
+                Apply: async cancellation => { await _contentBackups!.ExportThinAsync(identity!, destination, cancellation).ConfigureAwait(false); return new(CustomTerm("content.exported")); });
         }
         if (kind == "raw")
         {
             var preview = await _contentBackups!.PreviewRawAsync(raw ?? "", token).ConfigureAwait(false); string destination = Path.Combine(directory, "nexa-raw-" + DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture) + ".txt");
             return new(RawConfirmation: new(preview, destination),
-                Apply: async cancellation => { await _contentBackups.ExportRawAsync(destination, preview, preview.Revision, cancellation).ConfigureAwait(false); return new("脱敏诊断工作区已导出。"); });
+                Apply: async cancellation => { await _contentBackups.ExportRawAsync(destination, preview, preview.Revision, cancellation).ConfigureAwait(false); return new(CustomTerm("content.rawExported")); });
         }
         return new();
     }
@@ -185,21 +230,23 @@ internal sealed partial class SettingsPageController
     {
         CaptureDiagnosticAiDraft();
         bool visible = _visible && _instanceDirectory is null && _selected == "storage";
-        if (!visible) { if (ContentWorkspaceBusy) CancelContentWorkspace(); _diagnosticAiDraft["key"] = ""; return; }
+        if (!visible) { if (ContentWorkspaceBusy) CancelContentWorkspace(); ClearDiagnosticAiSecret(); return; }
         if (_contentAiPolicyRevision >= 0 && (!DiagnosticAiEnabled || _store.Read<long>(_revisionId).Value != _contentAiPolicyRevision))
-        { CancelContentWorkspace(); _diagnosticAiDraft["key"] = ""; _feedback.Info("AI 设置已改变，请重新预览。"); }
+        { CancelContentWorkspace(); ClearDiagnosticAiSecret(); _feedback.Info(CustomCopy("ai.policyChanged")); }
         // The current controls must consume their queued intent before refresh completion replaces them.
         if (_pending.Any(intent => intent.Command == Choice || intent.Command == ContentWorkspaceAction)) return;
         if (_diagnosticAiWorkspaceEnabled is { } builtEnabled && builtEnabled != DiagnosticAiEnabled)
         {
-            if (!DiagnosticAiEnabled) _diagnosticAiDraft["key"] = "";
-            BuildSections(); UpdateEditors();
+            if (!DiagnosticAiEnabled) ClearDiagnosticAiSecret();
+            RefreshContentWorkspacePresentation();
         }
         if (_contentBackups is null) return;
+        if (_contentWorkspaceActions.Count == 0) RefreshContentWorkspacePresentation();
         if (!_contentWorkspaceLoaded && _contentWorkspaceTask is null)
         {
             _contentWorkspaceLoaded = true; _contentWorkspaceStop = new();
             _contentWorkspaceTask = RefreshContentWorkspaceAsync(null, _contentWorkspaceStop.Token); ObserveTransfer(_contentWorkspaceTask);
+            RefreshContentWorkspacePresentation();
         }
         if (_contentWorkspaceTask is { IsCompleted: true } completed)
         {
@@ -213,35 +260,36 @@ internal sealed partial class SettingsPageController
                 if (result.Backups is not null) _contentBackupRows = result.Backups;
                 if (result.History is not null) _durableDiagnosticRows = result.History;
                 if (result.Retention is not null) _contentRetention = result.Retention;
-                if (result.Message is not null) { _contentWorkspaceMessage = result.Message; _feedback.Info(result.Message); }
+                if (result.Message is not null) { _contentWorkspaceMessage = ProjectCustomText(result.Message); _feedback.Info(_contentWorkspaceMessage, localizeMessage: false); }
                 if (result.AiSuggestion is { } suggestion) PresentDiagnosticAiSuggestion(suggestion);
                 string? confirmation = result.AiConfirmation is { } ai ? FormatDiagnosticAiConfirmation(ai)
-                    : result.RawConfirmation is { } raw ? FormatDiagnosticRawConfirmation(raw) : result.Confirmation;
+                    : result.RawConfirmation is { } raw ? FormatDiagnosticRawConfirmation(raw) : result.Confirmation is { } text ? ProjectCustomText(text) : null;
                 if (result.Apply is { } apply && confirmation is not null)
                 {
                     long generation = _contentWorkspaceGeneration;
-                    _contentWorkspaceDialog = _feedback.ShowDialog("settings.content-workspace", "确认存储操作", confirmation, "确认", "返回",
+                    _contentWorkspaceDialog = _feedback.ShowDialog("settings.content-workspace", CustomCopy("content.confirmTitle"), confirmation, CustomCopy("content.confirm"), CustomCopy("content.back"),
                         accepted => { if (Volatile.Read(ref _contentWorkspaceGeneration) == generation) _contentWorkspaceDecisions.Enqueue((generation, accepted, apply)); },
-                        localizeMessage: result.AiConfirmation is null && result.RawConfirmation is null);
+                        localizeMessage: false);
                 }
             }
-            BuildSections(); UpdateEditors();
+            RefreshContentWorkspacePresentation();
         }
         while (_contentWorkspaceDecisions.TryDequeue(out var decision))
         {
             if (decision.Generation != _contentWorkspaceGeneration || _contentWorkspaceStop?.IsCancellationRequested != false) continue;
             _contentWorkspaceDialog = default;
             if (decision.Accepted) { _contentWorkspaceTask = decision.Action(_contentWorkspaceStop.Token); ObserveTransfer(_contentWorkspaceTask); }
-            BuildSections(); UpdateEditors();
+            RefreshContentWorkspacePresentation();
         }
     }
 
     private string FormatDiagnosticRawConfirmation(DiagnosticRawConfirmation confirmation)
-    {
-        string format = _shell.Renderer.LocalizeText("导出脱敏文本 {0} 字节；内容可能包含您自行输入的未标记个人信息，请检查预览。\n{1}\n");
-        return string.Format(System.Globalization.CultureInfo.CurrentCulture, format, confirmation.Preview.Utf8Bytes,
-            confirmation.Destination) + confirmation.Preview.RedactedText;
-    }
+        => CustomFormat("RawConfirmation", new()
+        {
+            ["bytes"] = confirmation.Preview.Utf8Bytes.ToString(System.Globalization.CultureInfo.CurrentCulture),
+            ["destination"] = confirmation.Destination,
+            ["preview"] = confirmation.Preview.RedactedText,
+        });
 
     private void CancelContentWorkspace()
     {

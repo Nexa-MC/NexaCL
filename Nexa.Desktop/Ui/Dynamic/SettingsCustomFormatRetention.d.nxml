@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="启用空闲时自动清理：保留最多 {data count} 个、{data days} 天的备份，始终保留最新备份；仅删除未引用对象。" Localize="false" /></nxml-dynamic>

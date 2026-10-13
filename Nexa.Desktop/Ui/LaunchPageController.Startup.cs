@@ -25,11 +25,6 @@ internal sealed partial class LaunchPageController
     {
         if (_shell.Stage.Navigation.Current != _javaInstallPage) return;
         _startupCatalogOffline = true;
-        foreach (var status in _catalogStatus.Values)
-        {
-            _shell.Tree.GetComponent<Nexa.Xsr.Renderer.XsrUiText>(status)!.Content = "版本来源暂时不可用，请稍后重试。";
-            _shell.Tree.GetComponent<Nexa.Xsr.Renderer.XsrUiElement>(status)!.IsVisible = true;
-        }
-        _shell.Tree.MarkDirty(_javaInstallPage, Nexa.Xsr.Renderer.XsrUiDirtyKinds.Paint);
+        foreach (string page in _catalogStatus.Keys) ProjectInstallStatus(page, InstallCopy("catalog.offline"));
     }
 }

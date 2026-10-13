@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<StackPanel Class="settings-content-workspace"><Text Content="内容更新事务" Class="settings-content-heading" /><Dynamic Key="ContentHistory.Rows" /></StackPanel>
+</nxml-dynamic>

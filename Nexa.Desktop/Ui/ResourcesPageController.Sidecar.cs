@@ -75,8 +75,15 @@ internal sealed partial class ResourcesPageController
             _ => "ResourceExtensionText.d.nxml",
         };
         var fragment = AppendResource(parent, template, new()
-        { ["key"] = name, ["labelKey"] = name + ".Label", ["label"] = node.Label, ["caption"] = node.Label,
-          ["submit"] = name + ".Submit", ["visible"] = Flag(node.Visible), ["enabled"] = Flag(node.Enabled) });
+        {
+            ["key"] = name,
+            ["labelKey"] = name + ".Label",
+            ["label"] = node.Label,
+            ["caption"] = node.Label,
+            ["submit"] = name + ".Submit",
+            ["visible"] = Flag(node.Visible),
+            ["enabled"] = Flag(node.Enabled)
+        });
         var entity = _entities[name]; _moduleFragments[node.Id] = fragment;
         if (node.Kind is SidecarUiNodeKind.Button or SidecarUiNodeKind.Toggle)
             BindResource(name, () => RunSidecarAction(activation, node.Id), _moduleActions);
@@ -88,7 +95,8 @@ internal sealed partial class ResourcesPageController
         }
         if (node.Kind == SidecarUiNodeKind.Image && node.Image is { } image)
             _shell.Tree.GetComponent<XsrUiImage>(entity)!.Raster = new(image,
-                [new(new(0, 0, image.Width, image.Height), new(0, 0, 1, 1))]) { FitToBounds = true };
+                [new(new(0, 0, image.Width, image.Height), new(0, 0, 1, 1))])
+            { FitToBounds = true };
         _moduleNodes[node.Id] = entity;
     }
     private void UpdateSidecarNode(XsrUiNodeView node)

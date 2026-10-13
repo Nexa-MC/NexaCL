@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Dynamic Key="{data key}" Width="{data width}" Height="{data height}" Class="settings-content-screenshot-column" />
+</nxml-dynamic>

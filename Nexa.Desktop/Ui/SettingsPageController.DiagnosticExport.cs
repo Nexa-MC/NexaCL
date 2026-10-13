@@ -21,7 +21,7 @@ internal sealed partial class SettingsPageController
     {
         var row = _dynamic.Append(parent, DesktopMarkup.Dynamic("SettingsDiagnosticActionsIdle.d.nxml", new Dictionary<string, string> { ["enabled"] = "false" }));
         var nodes = CatalogNodes(row);
-        var export = nodes["Management.导出诊断包"]; var cancel = nodes["Management.取消诊断包导出"];
+        var export = nodes[ProductPresentationText.Raw("settings.diagnostics.exportKey")]; var cancel = nodes[ProductPresentationText.Raw("settings.diagnostics.cancelKey")];
         _managementActions[export] = () => WakeOnPlatformCompletion(ExportDiagnosticsAsync());
         _managementActions[cancel] = CancelDiagnosticExport;
         _diagnosticControls.Add((row, export, cancel));
@@ -52,11 +52,11 @@ internal sealed partial class SettingsPageController
         {
             if (_disposed) { stop.Cancel(); return; }
             bool saved = await export(stop.Token).ConfigureAwait(false);
-            if (!_disposed && !stop.IsCancellationRequested && saved) _feedback.Info("诊断包已导出到所选目录。");
+            if (!_disposed && !stop.IsCancellationRequested && saved) _feedback.Info(ProductPresentationText.Raw("settings.diagnostics.exportComplete"));
         }
         catch (OperationCanceledException) { }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed && !stop.IsCancellationRequested) _feedback.Error("诊断包未导出，请检查保存目录是否可写。"); }
+        { if (!_disposed && !stop.IsCancellationRequested) _feedback.Error(ProductPresentationText.Raw("settings.diagnostics.exportFailed")); }
         finally
         {
             Interlocked.CompareExchange(ref _diagnosticStop, null, stop);

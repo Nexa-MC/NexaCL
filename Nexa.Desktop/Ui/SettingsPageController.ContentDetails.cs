@@ -8,37 +8,19 @@ internal sealed partial class SettingsPageController
 {
     private void RegisterContentAction(XsrUiEntityId entity, Action action)
     {
-        _managementActions[entity] = action;
-        _contentActions.Add(entity);
+        long generation = _contentScopeGeneration;
+        _managementActions[entity] = () => { if (_contentScopeGeneration == generation && ContentActionCurrent(entity)) action(); };
+        if (!_contentActions.Contains(entity)) _contentActions.Add(entity);
     }
 
-    private void BuildContentRowActions(XsrUiEntityId parent, InstanceContentEntry item)
+    private void BuildContentRowActions(Dictionary<string, XsrUiEntityId> nodes, InstanceContentEntry item)
     {
-        var actions = Stack(parent, "ManagementContentActions." + item.Name, XsrUiOrientation.Horizontal, 6);
-        ContentActionPill(actions, "ManagementContentDetails." + item.Name, "详情", "lucide/info", () => OpenContentDetail(item));
-        if (item.Enabled is { } enabled && _commands.TryResolve(InstanceManagementContract.SetModEnabled, out _))
-            ContentActionPill(actions, "ManagementContentToggle." + item.Name, enabled ? "禁用" : "启用",
-                enabled ? "lucide/pause" : "lucide/play", () => ToggleMod(item));
-        if (OnlineFile(item) is { } query && _onlineList.TryGetValue(query, out var online)
-            && !online.IsStale && online.UpdateVersion is { } update
-            && _resourceCommands?.TryResolve(Nexa.Services.Resources.ResourceCatalogContract.UpdateContent, out _) == true)
-            ContentActionPill(actions, "ManagementContentUpdate." + item.Name, "更新", "lucide/download", () => UpdateOnlinePack(query, update));
-        if (_commands.TryResolve(InstanceManagementContract.RemoveContent, out _))
-            ContentActionPill(actions, "ManagementContentRemove." + item.Name, "删除", "lucide/trash-2", () => RemoveContent(item));
-    }
-
-    private XsrUiEntityId ContentActionPill(XsrUiEntityId parent, string name, string label, string icon, Action action)
-    {
-        var button = ActionButton(parent, name, label, ManagementAction, 76);
-        _shell.Tree.GetComponent<XsrUiElement>(button)!.Height = 32;
-        _shell.Tree.SetComponent(button, new XsrUiImage(icon));
-        var style = _shell.Tree.GetComponent<XsrUiVisualStyle>(button)!;
-        style.HoverExpand = true; style.CornerRadius = 16;
-        style.Background = DesktopUiPalette.CapsuleBackground;
-        style.Foreground = DesktopUiPalette.CapsuleForeground;
-        _shell.Tree.GetComponent<XsrUiInput>(button)!.Enabled = _managementWrite is null;
-        RegisterContentAction(button, action);
-        return button;
+        string key = ContentFileKey(item.Name);
+        RegisterContentAction(nodes["ManagementContentDetails." + key], () => OpenContentDetail(item));
+        RegisterContentAction(nodes["ManagementContentToggle." + key], () => ToggleMod(item));
+        if (OnlineFile(item) is { } query && _onlineList.TryGetValue(query, out var online) && online.UpdateVersion is { } update)
+            RegisterContentAction(nodes["ManagementContentUpdate." + key], () => UpdateOnlinePack(query, update));
+        RegisterContentAction(nodes["ManagementContentRemove." + key], () => RemoveContent(item));
     }
 
     private void OpenContentDetail(InstanceContentEntry item)
@@ -50,83 +32,91 @@ internal sealed partial class SettingsPageController
         _shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY = 0;
     }
 
+    private readonly Dictionary<string, XsrUiEntityId> _contentDetailFacts = new(StringComparer.Ordinal);
     private void BuildContentDetail(InstanceContentEntry item)
     {
-        var header = Stack(_sections, "ManagementDetailToolbar", XsrUiOrientation.Horizontal, 10);
-        ManagementButton(header, "返回列表", () =>
-        {
-            _contentDetail = null;
-            _scrollPositions[_selected] = _contentReturnOffset;
-            BuildSections(true);
-        }, 86);
-        var spacer = Element(header, "DetailToolbarSpace", XsrUiSemanticRole.None, null);
-        _shell.Tree.GetComponent<XsrUiElement>(spacer)!.Weight = 1;
-        if (item.Enabled is { } enabled)
-        {
-            Text(header, "启用模组", 13, Ink, 32);
-            BuildBinaryChoice(header, "ManagementModToggle." + item.Name, "启用模组", enabled, _ => ToggleMod(item));
-        }
-        ManagementButton(header, "移至已移除内容", () => RemoveContent(item), 116);
-        var surface = Stack(_sections, "ManagementContentDetail", XsrUiOrientation.Vertical, 0);
-        Style(surface, White, Ink, 16);
-        var hero = Stack(surface, "ManagementContentDetailBody", XsrUiOrientation.Vertical, 16);
-        _shell.Tree.GetComponent<XsrUiElement>(hero)!.Padding = new(16, 16, 16, 16);
-        var identity = Stack(hero, "ContentDetailIdentity", XsrUiOrientation.Horizontal, 18);
-        ContentImage(identity, item, 72, 72);
-        var titles = Stack(identity, "ContentDetailTitles", XsrUiOrientation.Vertical, 4);
-        _shell.Tree.GetComponent<XsrUiElement>(titles)!.Weight = 1;
-        if (_selected == "resourcepacks") ContentName(titles, ResourcePackTitle(item), 21, 34);
-        else ContentName(titles, item.DisplayName.Length > 0 ? item.DisplayName : item.Name, 21, 34);
-        Text(titles, Pages.First(page => page.Id == _selected).Label + (item.Enabled is { } active ? active ? " · 已启用" : " · 已停用" : ""), 13, Muted, 26);
-        if (item.Description.Length > 0)
-        {
-            ContentName(hero, item.Description, 14, null, maxLines: 0);
-        }
+        _contentWorkspace = AppendContent(_sections, "SettingsContentDetail.d.nxml", ContentDetailProjection(item));
+        var nodes = ContentNodes(_contentWorkspace);
+        BindContentAction(nodes, ContentKey("back"), () => { _contentDetail = null; _scrollPositions[_selected] = _contentReturnOffset; BuildSections(true); });
+        BindContentDetailToggle(nodes, item);
+        BindContentAction(nodes, ContentKey("remove"), () => { if (_contentDetail is { } current) RemoveContent(current); });
+        string? directory = _management?.Pages.FirstOrDefault(page => page.Id == _selected)?.Directory;
+        BindContentAction(nodes, "ContentDetail.Folder", () => { if (directory is not null) OpenContentDirectory(item.IsDirectory ? System.IO.Path.Combine(directory, item.Name) : directory); });
+        BindContentImage(nodes["ContentDetail.Icon"], item);
+        ApplyContentFormatting(nodes["ContentDetail.Title"], _selected == "resourcepacks" ? ResourcePackTitle(item) : item.DisplayName.Length > 0 ? item.DisplayName : item.Name);
+        ApplyContentFormatting(nodes["ContentDetail.Description"], item.Description);
+        _contentDetailFacts.Clear(); ProjectContentDetailFacts(nodes["ContentDetail.Facts"], item);
+        if (_selected == "saves") BuildWorldDetails(nodes["ContentDetail.World"], item);
+        BuildOnlineContent(nodes["ContentDetail.Online"], item); BuildContentIntegrity(nodes["ContentDetail.Integrity"], item);
+    }
+
+    private Dictionary<string, string> ContentDetailProjection(InstanceContentEntry item) => new()
+    {
+        ["enabled"] = ContentFlag(_managementWrite is null),
+        ["canToggle"] = ContentFlag(item.Enabled is not null),
+        ["active"] = ContentFlag(item.Enabled == true),
+        ["toggleLabel"] = ContentTerm(item.Enabled == false ? "enable" : "disable"),
+        ["inactive"] = ContentFlag(item.Enabled == false),
+        ["toggleTrack"] = "ManagementModToggle." + ContentFileKey(item.Name),
+        ["toggleTrue"] = "ManagementModToggle." + ContentFileKey(item.Name) + ".true",
+        ["toggleFalse"] = "ManagementModToggle." + ContentFileKey(item.Name) + ".false",
+        ["activeStyle"] = item.Enabled == true ? "settings-content-binary-option settings-content-category-selected" : "settings-content-binary-option",
+        ["inactiveStyle"] = item.Enabled == false ? "settings-content-binary-option settings-content-category-selected" : "settings-content-binary-option",
+        ["icon"] = ContentIcon(),
+        ["title"] = StripContentFormatting(_selected == "resourcepacks" ? ResourcePackTitle(item) : item.DisplayName.Length > 0 ? item.DisplayName : item.Name),
+        ["subtitle"] = ContentFormat("DetailSubtitle", ("page", _shell.Renderer.LocalizeText(Pages.First(page => page.Id == _selected).Label)), ("state", item.Enabled is { } active ? ContentTerm(active ? "enabledSuffix" : "disabledDetailSuffix") : "")),
+        ["description"] = StripContentFormatting(item.Description),
+        ["hasDescription"] = ContentFlag(item.Description.Length > 0),
+        ["folderLabel"] = ContentTerm(item.IsDirectory ? "openContentFolder" : "openContainingFolder"),
+        ["hasDirectory"] = ContentFlag(_management?.Pages.FirstOrDefault(page => page.Id == _selected)?.Directory is not null)
+    };
+
+    private void ReloadContentDetail()
+    {
+        if (_contentDetail is not { } item) return;
+        ReloadContent(_contentWorkspace, ContentDetailProjection(item).Select(pair => (pair.Key, pair.Value)).ToArray());
+        var nodes = ContentNodes(_contentWorkspace); BindContentImage(nodes["ContentDetail.Icon"], item);
+        ApplyContentFormatting(nodes["ContentDetail.Title"], _selected == "resourcepacks" ? ResourcePackTitle(item) : item.DisplayName.Length > 0 ? item.DisplayName : item.Name);
+        ApplyContentFormatting(nodes["ContentDetail.Description"], item.Description); BindContentDetailToggle(nodes, item);
+        ProjectContentDetailFacts(nodes["ContentDetail.Facts"], item);
+        if (_selected == "saves") BuildWorldDetails(nodes["ContentDetail.World"], item);
+        BuildOnlineContent(nodes["ContentDetail.Online"], item); BuildContentIntegrity(nodes["ContentDetail.Integrity"], item);
+    }
+    private void ProjectContentDetailFacts(XsrUiEntityId slot, InstanceContentEntry item)
+    {
+        Dictionary<string, string> facts = new(StringComparer.Ordinal);
         if (_selected == "mods")
         {
-            if (item.PackageProblem.Length > 0) ManagementFactIn(hero, "包检测", item.PackageProblem);
-            ManagementFactIn(hero, "更新", item.UpdateAvailable == true ? "可更新至 " + item.UpdateVersion
-                : item.UpdateAvailable == false ? "未发现更新" : "尚未检测或未识别");
+            if (item.PackageProblem.Length > 0) facts["package"] = item.PackageProblem;
+            facts["update"] = item.UpdateAvailable == true ? ContentFormat("UpdateVersion", ("version", item.UpdateVersion)) : ContentTerm(item.UpdateAvailable == false ? "noUpdates" : "unchecked");
         }
-        if (_selected == "saves") BuildWorldDetails(hero, item);
-        ManagementFactIn(hero, "文件名", item.Name);
-        if (item.Version.Length > 0) ManagementFactIn(hero, _selected == "resourcepacks" ? "资源包格式" : "版本", item.Version);
-        ManagementFactIn(hero, "大小", item.Size is { } bytes ? FormatContentSize(bytes) : "文件夹");
-        ManagementFactIn(hero, "修改时间", new DateTime(item.ModifiedUtcTicks, DateTimeKind.Utc).ToLocalTime().ToString("yyyy/MM/dd HH:mm", System.Globalization.CultureInfo.CurrentCulture));
-        string? directory = _management?.Pages.FirstOrDefault(page => page.Id == _selected)?.Directory;
-        if (directory is not null)
+        facts["filename"] = item.Name; if (item.Version.Length > 0) facts[_selected == "resourcepacks" ? "packFormat" : "version"] = item.Version;
+        facts["size"] = item.Size is { } bytes ? FormatContentSize(bytes) : ContentTerm("folder");
+        facts["modified"] = new DateTime(item.ModifiedUtcTicks, DateTimeKind.Utc).ToLocalTime().ToString("yyyy/MM/dd HH:mm", System.Globalization.CultureInfo.CurrentCulture);
+        if (_management?.Pages.FirstOrDefault(page => page.Id == _selected)?.Directory is { } directory) facts["directory"] = directory;
+        foreach (var old in _contentDetailFacts.Where(pair => !facts.ContainsKey(pair.Key)).ToArray()) { RemoveContentView(old.Value); _contentDetailFacts.Remove(old.Key); }
+        List<XsrUiEntityId> order = [];
+        foreach (var (key, value) in facts)
         {
-            ManagementFactIn(hero, "所在目录", directory);
-            ManagementButton(hero, item.IsDirectory ? "打开内容文件夹" : "打开所在文件夹", () => OpenContentDirectory(item.IsDirectory ? System.IO.Path.Combine(directory, item.Name) : directory), 128);
+            if (!_contentDetailFacts.TryGetValue(key, out var root))
+            {
+                var text = AppendContentFact(slot, key, value); root = _shell.Tree.Parent(text); _contentDetailFacts[key] = root;
+            }
+            else ReloadContent(root, ("value", value), ("label", ContentTerm("fact." + key)));
+            order.Add(root);
         }
-        BuildOnlineContent(hero, item);
-        BuildContentIntegrity(hero, item);
+        _dynamic.Reorder(slot, order);
     }
-
-    private void ManagementFactIn(XsrUiEntityId parent, string label, string value, bool? literal = null)
+    private void BindContentDetailToggle(Dictionary<string, XsrUiEntityId> nodes, InstanceContentEntry item)
     {
-        var row = Stack(parent, "ContentDetailFact", XsrUiOrientation.Horizontal, 20);
-        _shell.Tree.GetComponent<XsrUiElement>(Text(row, label, 12, Muted, 28))!.Width = 90;
-        var content = Text(row, value, 13, Ink, 28);
-        if (literal ?? (label is "文件名" or "所在目录" or "版本" or "资源包格式" or "作者" or "名称" or "已安装版本" or "版本名称" or "实例目录" or "游戏目录")) DesktopLiteralText.Preserve(_shell.Tree, content);
-        _shell.Tree.GetComponent<XsrUiElement>(content)!.Weight = 1;
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(content)!.TextAlignment = XsrUiTextAlignment.End;
+        string key = ContentFileKey(item.Name);
+        var enabled = nodes["ManagementModToggle." + key + ".true"]; var disabled = nodes["ManagementModToggle." + key + ".false"];
+        _shell.Tree.GetComponent<XsrUiSegmentedTrack>(nodes["ManagementModToggle." + key])!.Selected = item.Enabled == true ? enabled : disabled;
+        RegisterContentAction(enabled, () => { if (item.Enabled == false) ToggleMod(item); }); RegisterContentAction(disabled, () => { if (item.Enabled == true) ToggleMod(item); });
     }
 
-    private static string FormatContentSize(long bytes) => bytes >= 1024 * 1024
-        ? $"{bytes / (1024d * 1024):N1} MB" : $"{bytes / 1024d:N1} KB";
-
-    private XsrUiEntityId ContentImage(XsrUiEntityId parent, InstanceContentEntry item, double? width, double height, string name = "ManagementContentIcon")
-    {
-        string placeholder = _selected switch { "mods" => "lucide/blocks", "resourcepacks" => "nexa/content-package", "shaderpacks" => "nexa/content-shader", "saves" => "nexa/content-world", _ => "nexa/content-image" };
-        var entity = Element(parent, name, XsrUiSemanticRole.None, null, width, height);
-        Style(entity, new(242, 245, 249), Muted, 10);
-        var image = new XsrUiImage(placeholder);
-        if (item.Icon is { } png)
-            image.Raster = new(png, [new(new(0, 0, png.Width, png.Height), new(0, 0, 1, 1))]) { FitToBounds = true };
-        _shell.Tree.SetComponent(entity, image);
-        return entity;
-    }
+    private string FormatContentSize(long bytes) => bytes >= 1024 * 1024
+        ? ContentFormat("SizeMb", ("value", (bytes / (1024d * 1024)).ToString("N1", System.Globalization.CultureInfo.CurrentCulture))) : ContentFormat("SizeKb", ("value", (bytes / 1024d).ToString("N1", System.Globalization.CultureInfo.CurrentCulture)));
 
     private static string ResourcePackTitle(InstanceContentEntry item) =>
         !item.IsDirectory && item.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ? item.Name[..^4] : item.Name;
@@ -146,9 +136,10 @@ internal sealed partial class SettingsPageController
     }
 
     // Legacy Minecraft formatting is presentation only; raw control codes never become labels.
-    private void ContentName(XsrUiEntityId parent, string value, double size, double? height, int maxLines = 1, XsrUiColor? foreground = null, bool literal = true)
+    private void ApplyContentFormatting(XsrUiEntityId entity, string value)
     {
-        XsrUiColor color = foreground ?? Ink;
+        XsrUiColor foreground = _shell.Tree.GetComponent<XsrUiVisualStyle>(entity)!.Foreground;
+        XsrUiColor color = foreground;
         bool bold = false, italic = false, underline = false, strike = false;
         var plain = new StringBuilder();
         List<XsrUiTextRun> runs = [];
@@ -176,15 +167,11 @@ internal sealed partial class SettingsPageController
             else if (code == 'o') italic = true;
             else if (code == 'n') underline = true;
             else if (code == 'm') strike = true;
-            else if (code == 'r') { color = foreground ?? Ink; bold = italic = underline = strike = false; }
+            else if (code == 'r') { color = foreground; bold = italic = underline = strike = false; }
         }
         Flush();
-        var entity = Text(parent, plain.ToString(), size, foreground ?? Ink, height ?? 0, maxLines == 1 ? 550 : 400);
-        if (literal) DesktopLiteralText.Preserve(_shell.Tree, entity);
-        _shell.Tree.GetComponent<XsrUiElement>(entity)!.Height = height;
         var text = _shell.Tree.GetComponent<XsrUiText>(entity)!;
-        text.Runs = literal ? runs.AsReadOnly() : [];
-        text.MaxLines = maxLines;
-        _shell.Tree.GetComponent<XsrUiVisualStyle>(entity)!.WrapText = maxLines != 1;
+        text.Content = plain.ToString(); text.Localize = false; text.Runs = runs.AsReadOnly();
+        _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Paint);
     }
 }

@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<StackPanel Class="settings-content-toolbar"><Text Content="{data caption}" Localize="false" Class="settings-content-history-caption" /><Button Key="ContentHistory.Rollback" Content="联合撤回" Label="联合撤回" Command="ui.settings.management.action" Enabled="{data enabled}" Width="90" Class="settings-content-button" IsVisible="{data rollback}"/></StackPanel>
+</nxml-dynamic>

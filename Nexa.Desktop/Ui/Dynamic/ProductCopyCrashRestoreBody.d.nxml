@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data reason}&#10;&#10;{data description}&#10;存档、截图和日志不受影响。" Localize="false" /></nxml-dynamic>

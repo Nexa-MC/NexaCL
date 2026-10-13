@@ -1,8 +1,8 @@
 using Nexa.Services.Composition;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Install;
-using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -33,7 +33,7 @@ internal sealed class MinecraftDropController : IDisposable
     private void OnDrop(IReadOnlyList<string> paths)
     {
         if (_disposed) return;
-        if (paths.Count != 1) { _feedback.Error("请每次拖入一个文件或文件夹。"); return; }
+        if (paths.Count != 1) { _feedback.Error(ProductPresentationText.Raw("native.drop.single-item")); return; }
         if (Interlocked.CompareExchange(ref _busy, 1, 0) != 0) return;
         var snapshot = (MinecraftLibrarySnapshot?)_store.ReadAppliedValue(_store.Resolve(MinecraftLibraryContract.StateKey));
         _ = InspectAsync(paths[0], snapshot?.RootDirectory, snapshot?.SelectedInstanceId ?? "");
@@ -42,10 +42,10 @@ internal sealed class MinecraftDropController : IDisposable
     internal void OpenFile(string file)
     {
         if (_disposed) return;
-        if (!DesktopActivation.TryFile(file, out string admitted)) { _feedback.Error("不支持的本地整合包路径。"); return; }
+        if (!DesktopActivation.TryFile(file, out string admitted)) { _feedback.Error(ProductPresentationText.Raw("native.drop.invalid-path")); return; }
         lock (_activationGate)
         {
-            if (_fileActivations.Count >= 16) { _feedback.Error("待处理整合包过多，请完成当前确认后重试。"); return; }
+            if (_fileActivations.Count >= 16) { _feedback.Error(ProductPresentationText.Raw("native.drop.pending-limit")); return; }
             _fileActivations.Enqueue(admitted);
         }
         PumpFileActivations();
@@ -76,56 +76,58 @@ internal sealed class MinecraftDropController : IDisposable
             if (!_imports.Queries.TryResolve(MinecraftFolderImportContract.Inspect, out var route)) return;
             var result = await _imports.Queries.QueryAsync<MinecraftFolderInspectQuery, MinecraftFolderInspection>(route, new(path), cancellationToken: _lifetime.Token).ConfigureAwait(false);
             if (_disposed) return;
-            if (!result.IsSuccess) { _feedback.Error(result.Error?.Message ?? "无法读取拖入的文件夹。"); return; }
+            if (!result.IsSuccess) { _feedback.Error(result.Error?.Message ?? ProductPresentationText.Raw("native.drop.read-folder")); return; }
             var item = result.Value!;
             if (item.Kind is MinecraftFolderKind.Modpack or MinecraftFolderKind.Jar && target is null)
-            { _feedback.Error("请先选择游戏目录，再拖入文件。"); return; }
+            { _feedback.Error(ProductPresentationText.Raw("native.drop.select-root")); return; }
             if (item.Modpack is { } pack && target is not null)
             {
-                _jarDialog = _feedback.ShowDialog("modpack.install", "安装 " + pack.Name,
-                    $"{pack.Format} · {pack.Version}\nMinecraft {pack.Game}" + (pack.Loader is null ? "" : $" · {pack.Loader} {pack.Build}")
-                    + $"\n安装到：{target}\n独立版本：{pack.InstanceId}\n必选文件 {pack.RequiredFiles} 个，可选文件 {pack.OptionalFiles} 个。默认仅安装必选客户端文件。",
-                    "开始安装", "取消", accepted =>
+                _jarDialog = _feedback.ShowDialog("modpack.install", NativeFormat("ModpackInstallTitle", ("name", pack.Name)),
+                    NativeFormat("ModpackDetails", ("format", pack.Format), ("version", pack.Version), ("game", pack.Game),
+                        ("loader", pack.Loader is null ? "" : NativeFormat("ModpackLoader", ("loader", pack.Loader.Value.ToString()), ("build", pack.Build ?? ""))),
+                        ("root", target), ("instance", pack.InstanceId), ("required", pack.RequiredFiles.ToString(System.Globalization.CultureInfo.CurrentCulture)), ("optional", pack.OptionalFiles.ToString(System.Globalization.CultureInfo.CurrentCulture))),
+                    ProductPresentationText.Raw("native.drop.modpack-install"), ProductPresentationText.Raw("native.common.cancel"), accepted =>
                     {
                         if (accepted) _ = ExecuteModpackAsync(pack, target, false);
                         else ReleaseBusy();
-                    }, pack.OptionalFiles > 0 ? "包含可选文件" : null, pack.OptionalFiles > 0 ? () =>
+                    }, pack.OptionalFiles > 0 ? ProductPresentationText.Raw("native.drop.include-optional") : null, pack.OptionalFiles > 0 ? () =>
                     {
                         _feedback.DismissDialog(_jarDialog);
                         _ = ExecuteModpackAsync(pack, target, true);
                     }
-                : null);
+                : null, localizeMessage: false, localizeTitle: false);
                 awaitingChoice = true;
                 return;
             }
             if (item.Jar is { } jar && target is not null)
             {
-                _jarDialog = _feedback.ShowDialog("jar.use", "如何使用 " + item.Name,
-                    string.IsNullOrEmpty(instanceId) ? "当前没有选择版本。添加模组或修改核心前，请先选择版本。" : $"当前版本：{instanceId}。模组将添加到此版本实际使用的 mods 目录。",
-                    "添加模组", "取消", accepted =>
+                _jarDialog = _feedback.ShowDialog("jar.use", NativeFormat("JarUseTitle", ("name", item.Name)),
+                    string.IsNullOrEmpty(instanceId) ? ProductPresentationText.Term("native.drop.no-instance", _platform.LocalizeDesktopText)
+                        : NativeFormat("JarTarget", ("instance", instanceId)),
+                    ProductPresentationText.Raw("native.drop.add-mod"), ProductPresentationText.Raw("native.common.cancel"), accepted =>
                     {
                         if (accepted) _ = ExecuteJarAsync(jar, target, instanceId, LocalJarAction.Mod);
                         else ReleaseBusy();
-                    }, "其他用途", () => ShowOtherJarUses(jar, target, instanceId));
+                    }, ProductPresentationText.Raw("native.drop.other-uses"), () => ShowOtherJarUses(jar, target, instanceId), localizeMessage: false, localizeTitle: false);
                 awaitingChoice = true;
                 return;
             }
             if (item.Kind == MinecraftFolderKind.Unsupported)
-            { _feedback.Error("未识别到游戏目录、版本目录、JAR 或受支持的整合包。"); return; }
+            { _feedback.Error(ProductPresentationText.Raw("native.drop.unsupported")); return; }
             if (item.Kind == MinecraftFolderKind.Version && target is null) return;
             bool root = item.Kind == MinecraftFolderKind.GameRoot;
-            _feedback.ShowDialog("folder.import", root ? "添加游戏目录" : "导入 " + item.Name,
-                root ? item.Path : $"复制到 {target}。源文件保留，同名版本不会覆盖。共享的库和资源不包含在此次复制中。",
-                root ? "添加目录" : "导入", "取消", confirmed =>
+            _feedback.ShowDialog("folder.import", root ? ProductPresentationText.Raw("native.drop.root-title") : NativeFormat("FolderImportTitle", ("name", item.Name)),
+                root ? item.Path : NativeFormat("FolderCopy", ("target", target!)),
+                ProductPresentationText.Raw(root ? "native.drop.add-root" : "native.drop.import"), ProductPresentationText.Raw("native.common.cancel"), confirmed =>
                 {
                     if (confirmed && !_disposed) _ = ExecuteAsync(item, target);
                     else ReleaseBusy();
-                });
+                }, localizeMessage: false, localizeTitle: root);
             awaitingChoice = true;
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed) _feedback.Error("无法识别拖入内容：" + error.Message); }
+        { if (!_disposed) _feedback.Error(NativeFormat("InspectFailure", ("error", error.Message)), localizeMessage: false); }
         finally { if (!awaitingChoice) ReleaseBusy(); }
     }
 
@@ -136,11 +138,11 @@ internal sealed class MinecraftDropController : IDisposable
             if (_disposed || !_imports.Commands.TryResolve(MinecraftModpackContract.Install, out var route)) return;
             var result = await _imports.Commands.Dispatch(route, new MinecraftModpackCommand(pack, root, includeOptional), cancellationToken: _lifetime.Token).Completion.ConfigureAwait(false);
             if (!_disposed && !result.IsSuccess && result.Error?.Code != XsrRuntimeErrors.Cancelled().Code)
-                _feedback.Error(result.Error?.Message ?? "整合包安装未完成。");
+                _feedback.Error(result.Error?.Message ?? ProductPresentationText.Raw("native.drop.modpack-incomplete"));
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed) _feedback.Error("整合包安装未完成：" + error.Message); }
+        { if (!_disposed) _feedback.Error(NativeFormat("ModpackFailure", ("error", error.Message)), localizeMessage: false); }
         finally { ReleaseBusy(); }
     }
 
@@ -148,13 +150,13 @@ internal sealed class MinecraftDropController : IDisposable
     {
         if (_disposed) return;
         _feedback.DismissDialog(_jarDialog);
-        _jarDialog = _feedback.ShowDialog("jar.other", "选择 JAR 用途",
-            "核心补丁会合并归档内容并备份原核心，只支持拥有独立核心的版本。加载器安装会执行此安装器，创建独立版本。",
-            "Patch 版本核心", "取消", accepted =>
+        _jarDialog = _feedback.ShowDialog("jar.other", ProductPresentationText.Raw("native.drop.jar-purpose-title"),
+            ProductPresentationText.Raw("native.drop.jar-purpose-message"),
+            ProductPresentationText.Raw("native.drop.patch-core"), ProductPresentationText.Raw("native.common.cancel"), accepted =>
             {
                 if (accepted) _ = ExecuteJarAsync(jar, root, instanceId, LocalJarAction.CorePatch);
                 else ReleaseBusy();
-            }, "安装加载器", () =>
+            }, ProductPresentationText.Raw("native.drop.install-loader"), () =>
             {
                 _feedback.DismissDialog(_jarDialog);
                 _ = ExecuteJarAsync(jar, root, instanceId, LocalJarAction.Loader);
@@ -168,11 +170,11 @@ internal sealed class MinecraftDropController : IDisposable
             if (_disposed || !_imports.Commands.TryResolve(MinecraftLocalJarContract.Import, out var route)) return;
             var result = await _imports.Commands.Dispatch(route, new MinecraftLocalJarCommand(jar, root, instanceId, action), cancellationToken: _lifetime.Token).Completion.ConfigureAwait(false);
             if (!_disposed && !result.IsSuccess && result.Error?.Code != XsrRuntimeErrors.Cancelled().Code)
-                _feedback.Error(result.Error?.Message ?? "JAR 导入未完成。");
+                _feedback.Error(result.Error?.Message ?? ProductPresentationText.Raw("native.drop.jar-incomplete"));
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed) _feedback.Error("JAR 导入未完成：" + error.Message); }
+        { if (!_disposed) _feedback.Error(NativeFormat("JarFailure", ("error", error.Message)), localizeMessage: false); }
         finally { ReleaseBusy(); }
     }
 
@@ -192,13 +194,16 @@ internal sealed class MinecraftDropController : IDisposable
                 result = await _imports.Commands.Dispatch(route, new MinecraftFolderImportCommand(item.Path, target!), cancellationToken: _lifetime.Token).Completion.ConfigureAwait(false);
             }
             if (!_disposed && !result.IsSuccess && result.Error?.Code != XsrRuntimeErrors.Cancelled().Code)
-                _feedback.Error(result.Error?.Message ?? "导入未完成。");
+                _feedback.Error(result.Error?.Message ?? ProductPresentationText.Raw("native.drop.import-incomplete"));
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { if (!_disposed) _feedback.Error("导入未完成：" + error.Message); }
+        { if (!_disposed) _feedback.Error(NativeFormat("ImportFailure", ("error", error.Message)), localizeMessage: false); }
         finally { ReleaseBusy(); }
     }
+
+    private string NativeFormat(string name, params (string Key, string Value)[] data)
+        => ProductPresentationText.Format("Native" + name, _platform.LocalizeDesktopText, data);
 
     public void Dispose()
     {

@@ -1,12 +1,12 @@
 ﻿using System.Globalization;
-using Nexa.Xsr.Renderer.Nxml;
 using System.Text.Json;
 using System.Threading.Channels;
 using Nexa.Core.Media;
 using Nexa.Services.Settings;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
-using Nexa.Xsr;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -14,8 +14,8 @@ namespace Nexa.Desktop.Ui;
 
 internal static class DesktopAppearancePresentationState
 {
-    internal static readonly XsrSemanticId LogoVisible=XsrSemanticId.Parse("shell.appearance.logo_visible");
-    internal static void Declare(XsrStateStoreBuilder builder)=>builder.Cell<bool>(LogoVisible,"Nexa.Desktop.Appearance");
+    internal static readonly XsrSemanticId LogoVisible = XsrSemanticId.Parse("shell.appearance.logo_visible");
+    internal static void Declare(XsrStateStoreBuilder builder) => builder.Cell<bool>(LogoVisible, "Nexa.Desktop.Appearance");
 }
 
 /// <summary>Bounded local appearance assets are loaded off the render thread and published immutably.</summary>
@@ -52,10 +52,10 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
         _revision = state.Resolve(SettingsPolicyContract.RevisionKey);
         _background = shell.Content;
         _backgroundPresentation = DesktopBackgroundPresentation.GetOrCreate(shell.Tree, _background);
-        _dynamic=new(shell.Tree,state);
-        XsrUiEntityId slot=default;
-        shell.Tree.Walk(shell.TitleBar,entity=>{if(shell.Tree.Name(entity)=="CustomLauncherLogoSlot")slot=entity;return true;});
-        _logo=_dynamic.Append(slot,DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml",new Dictionary<string,string>{["visible"]="false"}));
+        _dynamic = new(shell.Tree, state);
+        XsrUiEntityId slot = default;
+        shell.Tree.Walk(shell.TitleBar, entity => { if (shell.Tree.Name(entity) == "CustomLauncherLogoSlot") slot = entity; return true; });
+        _logo = _dynamic.Append(slot, DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml", new Dictionary<string, string> { ["visible"] = "false" }));
         state.Changed += OnState;
         shell.Renderer.FramePreparing += OnFrame;
         _policyWorker = RunPolicyAsync(); _policy.Writer.TryWrite(true);
@@ -85,11 +85,11 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
         string Read(string key) => values.GetValueOrDefault(key) ?? "";
         try { _palette = ParsePalette(Read("appearance.custom-theme")); }
         catch (Exception error) when (error is InvalidDataException or JsonException)
-        { _palette = null; _log(DesktopBootstrapText.Format("PaletteFailure",new Dictionary<string,string>{["error"]=error.Message},_shell.Renderer.LocalizeText)); }
+        { _palette = null; _log(DesktopBootstrapText.Format("PaletteFailure", new Dictionary<string, string> { ["error"] = error.Message }, _shell.Renderer.LocalizeText)); }
         string logo = Read("appearance.logo-path"), background = Read("appearance.background-path");
         DesktopBackgroundAppearance appearance;
         try { appearance = DesktopBackgroundAppearance.Read(values); }
-        catch (InvalidDataException error) { appearance = DesktopBackgroundAppearance.Default; _log(DesktopBootstrapText.Format("BackgroundFailure",new Dictionary<string,string>{["error"]=error.Message},_shell.Renderer.LocalizeText)); }
+        catch (InvalidDataException error) { appearance = DesktopBackgroundAppearance.Default; _log(DesktopBootstrapText.Format("BackgroundFailure", new Dictionary<string, string> { ["error"] = error.Message }, _shell.Renderer.LocalizeText)); }
         _platform.PostToWindow(() => { if (!_disposed) _backgroundPresentation.SetAppearance(appearance); });
         long generation = Interlocked.Increment(ref _generation);
         _assetLoad = LoadAssetsAsync(logo, background, appearance, generation);
@@ -132,14 +132,14 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
                 if (_disposed || generation != Volatile.Read(ref _generation)) return;
                 _logoPath = logo; _backgroundPath = background;
                 _logoImage = logoImage; _backgroundImage = backgroundImage;
-                _dynamic.Reload(_logo,DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml",new Dictionary<string,string>{["visible"]=logoImage is null?"false":"true"}));
-                _state.Publish(_state.Resolve(DesktopAppearancePresentationState.LogoVisible),logoImage is not null);
+                _dynamic.Reload(_logo, DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml", new Dictionary<string, string> { ["visible"] = logoImage is null ? "false" : "true" }));
+                _state.Publish(_state.Resolve(DesktopAppearancePresentationState.LogoVisible), logoImage is not null);
                 _shell.Tree.SetComponent(_logo, logoImage is null ? null : new XsrUiRasterImage(logoImage, []) { FitToBounds = true, AspectRatio = (double)logoImage.Width / logoImage.Height });
                 _backgroundPresentation.SetStatic(backgroundImage, appearance);
             });
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or OperationCanceledException)
-        { if (!_stop.IsCancellationRequested) _log(DesktopBootstrapText.Format("ImageFailure",new Dictionary<string,string>{["error"]=error.Message},_shell.Renderer.LocalizeText)); }
+        { if (!_stop.IsCancellationRequested) _log(DesktopBootstrapText.Format("ImageFailure", new Dictionary<string, string> { ["error"] = error.Message }, _shell.Renderer.LocalizeText)); }
     }
     internal static async Task<PngImage?> LoadAsync(string path, CancellationToken token)
     {
@@ -161,7 +161,7 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
         await _policyWorker.ConfigureAwait(false);
         await _assetLoad.ConfigureAwait(false);
         _shell.Renderer.ColorScheme = _shell.Renderer.ColorScheme with { CustomPalette = null };
-        _dynamic.Remove(_logo); _state.Publish(_state.Resolve(DesktopAppearancePresentationState.LogoVisible),false); _backgroundPresentation.ResetStatic();
+        _dynamic.Remove(_logo); _state.Publish(_state.Resolve(DesktopAppearancePresentationState.LogoVisible), false); _backgroundPresentation.ResetStatic();
         _stop.Dispose();
     }
 }

@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="{data name}，当前页" Localize="false" />
+</nxml-dynamic>

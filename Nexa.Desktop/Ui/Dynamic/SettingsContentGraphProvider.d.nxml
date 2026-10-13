@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Button Key="{data key}" Content="定位" Label="定位" Command="ui.settings.management.action" Enabled="{data enabled}" Width="54" Class="settings-content-button" />
+</nxml-dynamic>

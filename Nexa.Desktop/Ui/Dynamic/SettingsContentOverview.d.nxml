@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<SettingsForm Key="ManagementOverview"><Text Content="版本信息" Class="settings-form-label" /><StackPanel Class="settings-form-surface"><StackPanel Class="settings-form-body"><Dynamic Key="ContentOverview.Facts" Class="settings-content-facts" /><Button Key="Management.打开版本文件夹" Content="打开版本文件夹" Label="打开版本文件夹" Command="ui.settings.management.action" Enabled="{data enabled}" Width="128" Class="settings-content-button" IsVisible="{data open}"/></StackPanel></StackPanel></SettingsForm>
+</nxml-dynamic>

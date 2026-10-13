@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Nexa.Services.Settings;
 using Nexa.Xsr.Renderer;
 
@@ -9,6 +9,16 @@ internal sealed partial class SettingsPageController
     private readonly Dictionary<XsrUiEntityId, (string Template, Dictionary<string, string> Data)> _catalogViews = [];
     private readonly Dictionary<XsrUiEntityId, XsrUiEntityId> _inheritRows = [], _autoModeViews = [];
     private static string Flag(bool value) => value ? "true" : "false";
+    private static string CatalogCopy(string key) => ProductPresentationText.Raw(key);
+    private static readonly Lazy<Dictionary<string, Nexa.Xsr.Renderer.Nxml.NxmlIrNode>> CatalogMetrics = new(() =>
+        DesktopMarkup.Load("SettingsCatalogMetrics.nxml").Root.Children.ToDictionary(node => node.Key!, StringComparer.Ordinal));
+
+    private static double CatalogCaptionWidth(string kind, string caption)
+    {
+        var metric = CatalogMetrics.Value[kind];
+        return Math.Max(metric.MinWidth!.Value,
+            caption.Sum(character => character > 127 ? metric.Height!.Value : metric.Width!.Value) + metric.Padding.Left);
+    }
 
     private XsrUiEntityId AppendCatalog(XsrUiEntityId slot, string template, Dictionary<string, string> data)
     {
@@ -20,10 +30,15 @@ internal sealed partial class SettingsPageController
     private void ReloadCatalog(XsrUiEntityId root, params (string Key, string Value)[] values)
     {
         var view = _catalogViews[root];
+        var candidate = new Dictionary<string, string>(view.Data, StringComparer.Ordinal);
         bool changed = false;
         foreach (var (key, value) in values)
-            if (view.Data.GetValueOrDefault(key) != value) { view.Data[key] = value; changed = true; }
-        if (changed) _dynamic.Reload(root, DesktopMarkup.Dynamic(view.Template, view.Data));
+            if (candidate.GetValueOrDefault(key) != value) { candidate[key] = value; changed = true; }
+        if (changed)
+        {
+            _dynamic.Reload(root, DesktopMarkup.Dynamic(view.Template, candidate));
+            _catalogViews[root] = (view.Template, candidate);
+        }
     }
 
     private Dictionary<string, XsrUiEntityId> CatalogNodes(XsrUiEntityId root)
@@ -40,7 +55,7 @@ internal sealed partial class SettingsPageController
         bool required = key == "diagnostics.telemetry" && TelemetryRequired;
         bool inherit = enabled && !required && _instanceDirectory is not null && key != "instance.development-mode";
         bool multiline = key is "game.pre-launch" or "game.post-exit" or "game.environment" or "game.classpath-head" or "game.jvm" or "game.arguments";
-        string label = key == "diagnostics.telemetry" ? "诊断信息 · 用户体验改进计划" : DisplayLabel(entry.Label);
+        string label = key == "diagnostics.telemetry" ? CatalogCopy("catalog.copy.dd29c4ef967a202e") : DisplayLabel(entry.Label);
         string? hint = SettingHint(key);
         var row = AppendCatalog(parent, "SettingsCatalogRow.d.nxml", new()
         {
@@ -53,7 +68,7 @@ internal sealed partial class SettingsPageController
                 + (multiline ? " settings-catalog-labels-top" : ""),
             ["inheritKey"] = "SettingsInherit." + key,
             ["inheritVisible"] = Flag(inherit),
-            ["inheritLabel"] = "继承",
+            ["inheritLabel"] = CatalogCopy("catalog.copy.49f1e2b9d18b55b5"),
             ["controls"] = "SettingsControlSlot",
         });
         var nodes = CatalogNodes(row);
@@ -63,10 +78,10 @@ internal sealed partial class SettingsPageController
         {
             string reason = entry.Availability switch
             {
-                SettingsCapabilityAvailability.PlatformUnsupported => "此平台不支持",
-                SettingsCapabilityAvailability.DependencyMissing => "缺少依赖",
-                SettingsCapabilityAvailability.TemporarilyUnavailable => "暂不可用",
-                _ => "尚未可用",
+                SettingsCapabilityAvailability.PlatformUnsupported => CatalogCopy("catalog.copy.e353f6b3b95a9db8"),
+                SettingsCapabilityAvailability.DependencyMissing => CatalogCopy("catalog.copy.0ee882fbcb4d2488"),
+                SettingsCapabilityAvailability.TemporarilyUnavailable => CatalogCopy("catalog.copy.f36cac96220bb1e4"),
+                _ => CatalogCopy("catalog.copy.1e0c0ff9dbad0fc5"),
             };
             _dynamic.Append(controls, DesktopMarkup.Dynamic("SettingsCatalogUnavailable.d.nxml", new Dictionary<string, string>
             { ["reason"] = _shell.Renderer.LocalizeText(reason), ["accessible"] = _shell.Renderer.LocalizeText(label) + ", " + _shell.Renderer.LocalizeText(reason) }));
@@ -75,7 +90,7 @@ internal sealed partial class SettingsPageController
         if (inherit)
         {
             var button = AppendCatalog(nodes["SettingsInheritSlot"], "SettingsCatalogInherit.d.nxml", new()
-            { ["key"] = "SettingsInherit." + key, ["inheritLabel"] = "继承" });
+            { ["key"] = "SettingsInherit." + key, ["inheritLabel"] = CatalogCopy("catalog.copy.49f1e2b9d18b55b5") });
             _inheritButtons[button] = key; _inheritRows[button] = button;
         }
         if (key is "game.pre-launch" or "game.post-exit" or "game.environment" or "game.classpath-head")
@@ -88,7 +103,7 @@ internal sealed partial class SettingsPageController
         {
             ["input"] = "SettingsInput." + key,
             ["label"] = entry.Label,
-            ["placeholder"] = key switch { "java.runtime" => "自动选择，或输入 Java 可执行文件路径", "game.memory" => "自动分配，或输入 MiB", _ => entry.Label },
+            ["placeholder"] = key switch { "java.runtime" => CatalogCopy("catalog.copy.d8d98ef47e23d67c"), "game.memory" => CatalogCopy("catalog.copy.17fc89da68477c26"), _ => entry.Label },
             ["maximum"] = key == "game.wrapper" ? "32768" : "2048",
             ["apply"] = "SettingsEdit." + key,
             ["mode"] = "SettingsMode." + key,
@@ -105,8 +120,6 @@ internal sealed partial class SettingsPageController
         if (definition.SupportsAuto)
         {
             var track = nodes["SettingsMode." + key]; var thumb = nodes["SettingsModeThumb"];
-            _shell.Tree.SetComponent(thumb, new XsrUiTransition());
-            _shell.Tree.SetComponent(track, new XsrUiSegmentedTrack(thumb));
             var automatic = nodes["SettingsAuto." + key]; var manual = nodes["SettingsManual." + key];
             _choices[automatic] = (editor, "auto"); _choices[manual] = (editor, "__manual__");
             _autoModes[track] = (editor, automatic, manual); _autoModeViews[track] = inputRoot;

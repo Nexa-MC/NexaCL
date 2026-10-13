@@ -1,14 +1,8 @@
-﻿
-using Nexa.Xsr.Renderer.Nxml;
-
-
-
 
 using Nexa.Services.Minecraft.Install;
-
-
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 
 
 
@@ -23,30 +17,20 @@ internal sealed partial class LaunchPageController
         _selectedInstallVersion = version;
         ChooseInstallGame(version);
         _ = _shell.Renderer.SetTextInputValue(_javaInstallEntities["JavaInstallVersionInput"], version);
-        StyleInstallChoices(
-            _javaInstallEntities,
-            ["JavaVersion1211", "JavaVersion1206", "JavaVersion1201"],
-            key,
-            InstallJavaTint,
-            InstallJavaAccent);
+
     }
 
 
     private void SelectInstallLoader(string loader, string key)
     {
         _selectedInstallLoader = loader;
-        if (loader == "原版 Minecraft") _selectedInstallBuilds.Clear();
+        if (loader == LaunchInstallText.Raw("loader.vanilla")) _selectedInstallBuilds.Clear();
         _selectedInstallAddons.Clear();
         foreach (InstallLoader addon in _selectedInstallBuilds.Keys.Where(kind => QueryInstallEligibility()?.Loaders.Any(item => item.Loader == kind && item.IsAddon) == true))
             _selectedInstallAddons.Add(addon == InstallLoader.FabricApi ? "Fabric API" : addon == InstallLoader.Qsl ? "QSL" : "OptiFabric");
-        StyleInstallChoices(
-            _javaInstallEntities,
-            JavaInstallLoaderKeys,
-            key,
-            InstallJavaTint,
-            InstallJavaAccent);
-        UpdateInstallAddonStyle("Fabric API", "JavaFabricApiSelect", selected: false);
-        UpdateInstallAddonStyle("QSL", "JavaQslSelect", selected: false);
+        foreach (string choice in JavaInstallLoaderKeys) ProjectInstallChoice(choice, choice == key);
+        ProjectInstallAddon("Fabric API", "JavaFabricApiSelect", selected: false);
+        ProjectInstallAddon("QSL", "JavaQslSelect", selected: false);
         JavaInstallSubpage? selectedPage = JavaInstallSubpages.FirstOrDefault(candidate => candidate.Loader == loader);
         UpdateJavaInstallSubpageVisibility(selectedPage?.PageKey ?? "JavaMinecraftPage");
     }
@@ -66,23 +50,23 @@ internal sealed partial class LaunchPageController
             _selectedInstallAddons.Remove(addon);
         }
 
-        UpdateInstallAddonStyle(addon, key, selected);
+        ProjectInstallAddon(addon, key, selected);
     }
 
 
     private void NotifyInstallUnavailable()
     {
-        if (_editingInstall && _installEdit is null) { _feedback.Warn("正在读取版本信息。"); return; }
-        if (!_installGameChosen) { _feedback.Warn("请先选择 Minecraft 版本。"); return; }
+        if (_editingInstall && _installEdit is null) { _feedback.Warn(InstallCopy("copy.8599bb4a4f3b")); return; }
+        if (!_installGameChosen) { _feedback.Warn(InstallCopy("copy.26a1214b777a")); return; }
         if (QueryInstallEligibility()?.CommitError is { } conflict) { _feedback.Warn(conflict); return; }
         string requested = _shell.Tree.GetComponent<XsrUiTextInput>(_javaInstallEntities["JavaInstallVersionInput"])
             ?.ReadDraft().Trim() ?? string.Empty;
-        if (_editingInstall && requested.Length == 0) { _feedback.Warn("请输入版本名称。"); return; }
+        if (_editingInstall && requested.Length == 0) { _feedback.Warn(InstallCopy("copy.ff4c49f3fa06")); return; }
         if (_editingInstall && _editPlan?.Kind == MinecraftInstallEditKind.Unchanged && requested == _installEdit?.InstanceId) return;
         string version = requested.Length == 0 ? _selectedInstallVersion : requested;
-        string selection = _selectedInstallBuilds.Count == 0 ? _selectedInstallLoader : string.Join(" + ", _selectedInstallBuilds.Select(pair => pair.Key + " " + pair.Value));
+        string selection = _selectedInstallBuilds.Count == 0 ? _selectedInstallLoader : string.Join(LaunchInstallText.Raw("selection.separator"), _selectedInstallBuilds.Select(pair => InstallFormat("SelectionBuild", ("loader", pair.Key.ToString()), ("build", pair.Value))));
         // The selection is real: dispatch the install run and follow it in the task center.
-        if (!BeginInstallRun(version)) { _feedback.Warn($"无法开始安装 Java 版 {version}（{selection}）。"); }
+        if (!BeginInstallRun(version)) { _feedback.Warn(InstallFormat("InstallUnavailable", ("version", version), ("selection", selection))); }
     }
 
 
@@ -120,13 +104,13 @@ internal sealed partial class LaunchPageController
             }
             else
             {
-                _feedback.Warn("一次只能选择一个主加载器。");
+                _feedback.Warn(InstallCopy("copy.e0eac3f0bbfa"));
                 return false;
             }
         }
 
         string root = _installEdit?.RootDirectory ?? ReadCell(LaunchPageState.InstanceDirectoryKey);
-        if (string.IsNullOrWhiteSpace(root)) { _feedback.Warn("尚未确定 Minecraft 目录。"); return false; }
+        if (string.IsNullOrWhiteSpace(root)) { _feedback.Warn(InstallCopy("copy.fe50d3e377bb")); return false; }
         _ = _installRunCommands.Dispatch(route, new MinecraftInstallCommand(
             root,
             _selectedInstallVersion,
@@ -168,7 +152,11 @@ internal sealed partial class LaunchPageController
             OpenSubpage(page, source);
     }
 
-    private void OnShellStyleChanged(object? sender, EventArgs e) => UpdateTitleBar();
+    private void OnShellStyleChanged(object? sender, EventArgs e)
+    {
+        UpdateTitleBar();
+        RefreshLaunchHomePresentation();
+    }
 
 
     private void UpdateTitleBar()
@@ -185,7 +173,7 @@ internal sealed partial class LaunchPageController
                 // an explicit epoch instead of treating unrelated scene revisions as entry.
                 transition.BoundKey = default;
                 transition.Key = epoch;
-                _shell.Tree.SetComponent(_titleEntities[key], transition);
+                _shell.Tree.MarkDirty(_titleEntities[key], XsrUiDirtyKinds.Paint);
             }
         }
         XsrUiTransition main = _shell.Tree.GetComponent<XsrUiTransition>(_titleEntities["TitleMain"])!;
@@ -194,190 +182,66 @@ internal sealed partial class LaunchPageController
         title.Source = _titleEntities["TitleMain"];
         if (depth != _titleNavigationDepth)
         {
-            main.OffsetX = title.OffsetX = depth > _titleNavigationDepth ? 12 : -12;
+            main.OffsetX = title.OffsetX = (depth > _titleNavigationDepth ? 1 : -1) * LaunchInstallText.Metric("title-motion").Width!.Value;
             _titleNavigationDepth = depth;
         }
         bool subpage = _shell.Stage.Navigation.Depth > 1;
-        _shell.Tree.GetComponent<XsrUiElement>(_titleEntities["TitleBrand"])!.IsVisible = !subpage;
-        _shell.Tree.MarkDirty(_titleEntities["TitleBrand"], XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-        Publish(LaunchPageState.TitleTransitionKey, subpage
-            ? _shell.Tree.GetComponent<XsrUiSemantic>(_shell.Stage.Navigation.Current)?.Label ?? string.Empty : "NexaCL");
-        foreach (string key in new[] { "TitleMain", "TitleBack", "TitleSubpage" })
-        {
-            XsrUiEntityId entity = _titleEntities[key];
-            _shell.Tree.GetComponent<XsrUiElement>(entity)!.IsVisible = key == "TitleMain" ? !subpage : subpage;
-            XsrUiVisualStyle style = RequireVisual(entity);
-            style.Foreground = _shell.Palette.TitleBarText;
-            style.FontSize = 17;
-            style.FontWeight = 600;
-            if (key == "TitleBack")
-            {
-                style.Hover = new XsrUiColor(255, 255, 255, 50);
-                style.CornerRadius = XsrUiCornerRadii.Pill(30);
-            }
-            if (key == "TitleSubpage")
-                _shell.Tree.GetComponent<XsrUiText>(entity)!.Content = subpage
-                    ? _shell.Tree.GetComponent<XsrUiSemantic>(_shell.Stage.Navigation.Current)?.Label ?? string.Empty
-                    : string.Empty;
-            _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-        }
+        string caption = subpage ? _shell.Stage.Navigation.Current == _javaInstallPage
+            ? InstallCopy(_editingInstall ? "edit.title" : "install.title")
+            : _shell.Tree.GetComponent<XsrUiSemantic>(_shell.Stage.Navigation.Current)?.Label ?? string.Empty : string.Empty;
+        Publish(LaunchPageState.TitleRootKey, !subpage);
+        Publish(LaunchPageState.TitleSubpageKey, subpage);
+        Publish(LaunchPageState.TitleCaptionKey, caption);
+        Publish(LaunchPageState.TitleTransitionKey, subpage ? caption : "NexaCL");
     }
 
 
-    private (XsrUiEntityId Page, Dictionary<string, XsrUiEntityId> Entities) LoadInstallPage()
-    {
-        (XsrUiEntityId page, Dictionary<string, XsrUiEntityId> entities) = LoadStandalonePage(
-            "Ui.InstallPage.nxml", "install-page-loader");
-        StyleInstallPage(entities);
-        return (page, entities);
-    }
-
+    private (XsrUiEntityId Page, Dictionary<string, XsrUiEntityId> Entities) LoadInstallPage() => LoadStandalonePage("InstallPage.nxml");
 
     private (XsrUiEntityId Page, Dictionary<string, XsrUiEntityId> Entities) LoadJavaInstallPage()
     {
-        (XsrUiEntityId page, Dictionary<string, XsrUiEntityId> entities) = LoadStandalonePage(
-            "Ui.JavaInstallPage.nxml", "java-install-page-loader");
-        StyleJavaInstallPage(entities);
+        var page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("JavaInstallPage.nxml"), _shell.Tree, _store);
+        var slot = _shell.Tree.Children(page).Single();
+        _installWorkspace = AppendInstall(slot, "LaunchInstallJavaWorkspace.d.nxml", JavaInstallWorkspaceData());
+        var entities = InstallNodes(page);
+        Publish(LaunchPageState.JavaInstallTitleKey, InstallCopy("install.title"));
         _ = _shell.Renderer.SetTextInputValue(entities["JavaInstallVersionInput"], _selectedInstallVersion);
-        StyleInstallChoices(
-            entities,
-            ["JavaVersion1211", "JavaVersion1206", "JavaVersion1201"],
-            "JavaVersion1211",
-            InstallJavaTint,
-            InstallJavaAccent);
-        StyleInstallChoices(
-            entities,
-            JavaInstallLoaderKeys,
-            string.Empty,
-            InstallJavaTint,
-            InstallJavaAccent);
         return (page, entities);
     }
 
+    private XsrUiEntityId LoadBedrockInstallPage() => BedrockInstallPageController.LoadPlaceholder(_shell, _store);
 
-    private XsrUiEntityId LoadBedrockInstallPage()
+    private Dictionary<string, XsrUiEntityId> InstallNodes(XsrUiEntityId page)
     {
-        (XsrUiEntityId page, Dictionary<string, XsrUiEntityId> entities) = LoadStandalonePage(
-            "Ui.BedrockInstallPage.nxml", "bedrock-install-page-loader");
-        StyleBedrockInstallPage(entities);
-        return page;
-    }
-
-
-    private (XsrUiEntityId Page, Dictionary<string, XsrUiEntityId> Entities) LoadStandalonePage(
-        string resource,
-        string hostKey)
-    {
-        NxmlHostIr ir = DesktopMarkup.Compile(NxmlParser.Parse(ReadEmbeddedResource(resource)));
-        XsrUiEntityId host = _shell.Tree.Create(hostKey);
-        XsrUiEntityId page = NxmlUiLoader.Load(ir, _shell.Tree, _store, host);
-        _shell.Tree.Detach(page);
-        _shell.Tree.Destroy(host);
-
         Dictionary<string, XsrUiEntityId> entities = [];
-        _shell.Tree.Walk(page, entity =>
-        {
-            string key = _shell.Tree.Name(entity);
-            if (key.Length > 0)
-            {
-                entities[key] = entity;
-            }
-
-            return true;
-        });
-        return (page, entities);
+        _shell.Tree.Walk(page, entity => { entities[_shell.Tree.Name(entity)] = entity; return true; });
+        return entities;
     }
 
-
-    /// <summary>
-    /// Applies a restrained, solid-surface hierarchy: one obvious primary choice per card,
-    /// compact supporting copy, and no glass material. Motion itself remains renderer-owned
-    /// (press/hover and navigator presentation), so this styling never invents a second clock.
-    /// </summary>
-    private void StyleInstallPage(Dictionary<string, XsrUiEntityId> entities)
+    private (XsrUiEntityId Page, Dictionary<string, XsrUiEntityId> Entities) LoadStandalonePage(string resource)
     {
-        ApplyVisual(entities["InstallJavaChoice"], InstallJavaTint, PrimaryText,
-            XsrUiCornerRadii.Surface, border: CardBorder, hover: InstallJavaHover);
-        ApplyVisual(entities["InstallBedrockChoice"], InstallBedrockTint, PrimaryText,
-            XsrUiCornerRadii.Surface, border: CardBorder, hover: InstallBedrockHover);
-        ApplyVisual(entities["InstallJavaArtwork"], XsrUiColor.Transparent, InstallJavaAccent,
-            XsrUiCornerRadii.Inset);
-        ApplyVisual(entities["InstallBedrockArtwork"], XsrUiColor.Transparent, InstallBedrockAccent,
-            XsrUiCornerRadii.Inset);
-        StyleText(entities, "InstallJavaTitle", PrimaryText, 28, 650);
-        StyleText(entities, "InstallBedrockTitle", PrimaryText, 28, 650);
-        AlignText(entities, "InstallJavaTitle", XsrUiTextAlignment.Center);
-        AlignText(entities, "InstallBedrockTitle", XsrUiTextAlignment.Center);
+        var page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load(resource), _shell.Tree, _store);
+        return (page, InstallNodes(page));
     }
-
-
-    private void StyleJavaInstallPage(Dictionary<string, XsrUiEntityId> entities)
-    {
-        ApplyVisual(entities["JavaInstallVersionInput"], new(255, 255, 255), PrimaryText,
-            XsrUiCornerRadii.Inset, border: CardBorder);
-        StyleText(entities, "JavaInstallVersionInput", PrimaryText, 14);
-        ApplyVisual(entities["JavaInstallStart"], InstallJavaAccent, new(255, 255, 255),
-            XsrUiCornerRadii.Pill(40), hover: LaunchButtonHover);
-        StyleText(entities, "JavaInstallStart", new(255, 255, 255), 13, 650);
-        AlignText(entities, "JavaInstallStart", XsrUiTextAlignment.Center);
-
-        // Navigation, catalog and commit action are separate spatial groups. The pager and
-        // press transitions remain owned by UI.Next, preserving interruptible motion.
-        ApplyVisual(entities["JavaInstallPagerTabs"], XsrUiColor.Transparent, PrimaryText,
-            10);
-        _shell.Tree.SetComponent(entities["JavaInstallPagerTabs"], new XsrUiSegmentedTrack(entities["JavaInstallThumb"]));
-        _shell.Tree.SetComponent(entities["JavaInstallThumb"], new XsrUiTransition());
-        ApplyVisual(entities["JavaInstallThumb"], new(255, 255, 255), PrimaryText, 8);
-        ApplyVisual(entities["JavaInstallEntryRow"], XsrUiColor.Transparent, PrimaryText,
-            XsrUiCornerRadii.Surface);
-
-        ApplyVisual(entities["JavaMinecraftVersions"], new(255, 255, 255), PrimaryText, XsrUiCornerRadii.Surface, border: CardBorder);
-        foreach (JavaInstallSubpage subpage in JavaInstallSubpages)
-        {
-            if (entities.TryGetValue(subpage.PageKey, out XsrUiEntityId page))
-            {
-                ApplyVisual(page, XsrUiColor.Transparent, PrimaryText, 0);
-            }
-
-            StyleText(entities, subpage.PageKey + "Title", PrimaryText, 19, 650);
-            _shell.Tree.SetComponent(entities[subpage.TabKey], new XsrUiSegmentReveal(_shell.Tree.GetComponent<XsrUiElement>(entities[subpage.TabKey])!.Width!.Value));
-            ApplyPagerTab(entities, subpage.TabKey, active: subpage.PageKey == "JavaMinecraftPage");
-        }
-    }
-
-
-    private void StyleBedrockInstallPage(Dictionary<string, XsrUiEntityId> entities)
-    {
-        StyleText(entities, "BedrockInstallTitle", InstallBedrockAccent, 20, 650);
-        StyleText(entities, "BedrockInstallDescription", SecondaryText, 13);
-        SetWrap(entities, "BedrockInstallDescription");
-        ApplyVisual(entities["BedrockInstallCard"], InstallBedrockTint, PrimaryText,
-            XsrUiCornerRadii.Surface, border: CardBorder);
-        StyleText(entities, "BedrockInstallReturn", SecondaryText, 13);
-        SetWrap(entities, "BedrockInstallReturn");
-    }
-
 
     private void UpdateJavaInstallSubpageVisibility(string? preferredPage = null)
     {
         XsrUiEntityId pagerEntity = _javaInstallEntities["JavaInstallPager"];
         XsrUiEntityId[] previousPages = VisibleJavaInstallPages(pagerEntity);
-        foreach (JavaInstallSubpage subpage in JavaInstallSubpages)
-        {
-            bool visible = ShouldShowJavaInstallSubpage(subpage);
-            SetInstallEntityVisible(subpage.PageKey, visible);
-            SetInstallEntityVisible(subpage.TabKey, visible);
-        }
+        var visibility = JavaInstallSubpages.Select(subpage => (Subpage: subpage, Visible: ShouldShowJavaInstallSubpage(subpage))).ToArray();
+        ReloadInstall(_installWorkspace, visibility.Select(item => (item.Subpage.PageKey + "_visible", InstallFlag(item.Visible))).ToArray());
+        foreach (var item in visibility)
+            _shell.Renderer.SetSegmentExpanded(_javaInstallEntities[item.Subpage.TabKey], item.Visible, immediate: !_attached);
 
         if (_selectedInstallLoader != "Fabric")
         {
             _selectedInstallAddons.Remove("Fabric API");
-            UpdateInstallAddonStyle("Fabric API", "JavaFabricApiSelect", selected: false);
+            ProjectInstallAddon("Fabric API", "JavaFabricApiSelect", selected: false);
         }
         if (_selectedInstallLoader != "Quilt")
         {
             _selectedInstallAddons.Remove("QSL");
-            UpdateInstallAddonStyle("QSL", "JavaQslSelect", selected: false);
+            ProjectInstallAddon("QSL", "JavaQslSelect", selected: false);
         }
 
         string target = preferredPage ?? _activeJavaInstallPage;
@@ -406,30 +270,6 @@ internal sealed partial class LaunchPageController
             _ => ParseInstallLoader(subpage.Loader)
         };
         return QueryInstallEligibility()?.Loaders.Any(item => item.Loader == loader && item.Visible) == true;
-    }
-
-
-    private void SetInstallEntityVisible(string key, bool visible)
-    {
-        if (!_javaInstallEntities.TryGetValue(key, out XsrUiEntityId entity))
-        {
-            return;
-        }
-
-        if (_shell.Tree.GetComponent<XsrUiSegmentReveal>(entity) is not null)
-        {
-            _shell.Renderer.SetSegmentExpanded(entity, visible, immediate: !_attached);
-            return;
-        }
-        XsrUiElement element = _shell.Tree.GetComponent<XsrUiElement>(entity) ?? new XsrUiElement();
-        if (element.IsVisible == visible)
-        {
-            return;
-        }
-
-        element.IsVisible = visible;
-        _shell.Tree.SetComponent(entity, element);
-        _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
     }
 
 
@@ -471,206 +311,22 @@ internal sealed partial class LaunchPageController
 
         _presentedJavaInstallPage = current;
         _activeJavaInstallPage = active.PageKey;
-        foreach (JavaInstallSubpage subpage in JavaInstallSubpages)
-        {
-            ApplyPagerTab(_javaInstallEntities, subpage.TabKey, subpage.PageKey == active.PageKey);
-        }
+        ProjectJavaInstallTabs(active.PageKey);
     }
 
-
-    private void ApplyPagerTab(Dictionary<string, XsrUiEntityId> entities, string key, bool active)
+    private void ProjectJavaInstallTabs(string activePage)
     {
-        if (!entities.TryGetValue(key, out XsrUiEntityId entity))
+        List<(string Key, string Value)> values = [];
+        foreach (var subpage in JavaInstallSubpages)
         {
-            return;
+            bool active = subpage.PageKey == activePage;
+            values.Add((subpage.TabKey + "_selected", InstallFlag(active)));
+            values.Add((subpage.TabKey + "_style", LaunchInstallText.Raw(active ? "style.tab-active" : "style.tab")));
+            values.Add((subpage.TabKey + "_label", InstallFormat(active ? "TabCurrent" : "TabView", ("name", InstallCopy("tab." + subpage.TabKey)))));
         }
-
-        ApplyVisual(entity,
-            XsrUiColor.Transparent,
-            active ? BadgeText : DesktopUiPalette.CapsuleForeground,
-            0,
-            hover: XsrUiColor.Transparent);
-        if (active && entities.TryGetValue("JavaInstallPagerTabs", out XsrUiEntityId tabs))
-            _shell.Tree.GetComponent<XsrUiSegmentedTrack>(tabs)!.Selected = entity;
-        StyleText(entity, active ? BadgeText : DesktopUiPalette.CapsuleForeground, 13, active ? 650 : 500);
-        AlignText(entity, XsrUiTextAlignment.Center);
-        XsrUiSelection selection = _shell.Tree.GetComponent<XsrUiSelection>(entity) ?? new XsrUiSelection();
-        selection.IsSelected = active;
-        _shell.Tree.SetComponent(entity, selection);
-        XsrUiSemantic? semantic = _shell.Tree.GetComponent<XsrUiSemantic>(entity);
-        if (semantic is not null)
-        {
-            string name = JavaInstallSubpageName(key);
-            semantic.Label = active
-                ? $"{name}，当前页"
-                : $"查看 {name} 设置";
-        }
-
-        _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-    }
-
-
-    private void UpdateInstallAddonStyle(string addon, string key, bool selected)
-    {
-        if (!_javaInstallEntities.TryGetValue(key, out XsrUiEntityId entity))
-        {
-            return;
-        }
-
-        ApplyVisual(entity,
-            selected ? InstallJavaTint : new(255, 255, 255),
-            selected ? InstallJavaAccent : PrimaryText,
-            XsrUiCornerRadii.Pill(36),
-            border: selected ? InstallSelectedBorder : CardBorder,
-            hover: selected ? InstallJavaTint : PickerBackground);
-        StyleText(entity, selected ? InstallJavaAccent : PrimaryText, 13, selected ? 650 : 550);
-        AlignText(entity, XsrUiTextAlignment.Center);
-        XsrUiSelection selection = _shell.Tree.GetComponent<XsrUiSelection>(entity) ?? new XsrUiSelection();
-        selection.IsSelected = selected;
-        _shell.Tree.SetComponent(entity, selection);
-        XsrUiSemantic? semantic = _shell.Tree.GetComponent<XsrUiSemantic>(entity);
-        if (semantic is not null)
-        {
-            semantic.Label = selected ? $"移除 {addon}" : $"添加 {addon}";
-        }
-        _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-    }
-
-
-    private static string JavaInstallSubpageName(string tabKey) => tabKey switch
-    {
-        "JavaMinecraftTab" => "Minecraft",
-        "JavaForgeTab" => "Forge",
-        "JavaCleanroomTab" => "Cleanroom",
-        "JavaNeoForgeTab" => "NeoForge",
-        "JavaFabricTab" => "Fabric",
-        "JavaLegacyFabricTab" => "Legacy Fabric",
-        "JavaFabricApiTab" => "Fabric API",
-        "JavaQuiltTab" => "Quilt",
-        "JavaQslTab" => "QSL",
-        "JavaOptiFabricTab" => "OptiFabric",
-        "JavaLabyModTab" => "LabyMod",
-        "JavaOptiFineTab" => "OptiFine",
-        "JavaLiteLoaderTab" => "LiteLoader",
-        _ => "安装选项",
-    };
-
-
-    private void StyleInstallChoices(
-        Dictionary<string, XsrUiEntityId> entities,
-        IReadOnlyList<string> keys,
-        string selectedKey,
-        XsrUiColor selectedBackground,
-        XsrUiColor accent)
-    {
-        foreach (string key in keys)
-        {
-            if (!entities.TryGetValue(key, out XsrUiEntityId entity))
-            {
-                continue;
-            }
-
-            bool selected = key == selectedKey;
-            if (key.StartsWith("JavaVersion", StringComparison.Ordinal))
-            {
-                ApplyVisual(entity, selected ? ProfileSurface : XsrUiColor.Transparent, PrimaryText,
-                    XsrUiCornerRadii.Inset, hover: PickerBackground);
-                StyleText(entities, key + "Name", selected ? BadgeText : PrimaryText, 15, selected ? 600 : 400);
-                XsrUiEntityId check = entities[key + "Check"];
-                ApplyVisual(check, XsrUiColor.Transparent, selected ? BadgeText : XsrUiColor.Transparent, 0);
-                XsrUiSelection rowSelection = _shell.Tree.GetComponent<XsrUiSelection>(entity) ?? new XsrUiSelection();
-                rowSelection.IsSelected = selected;
-                _shell.Tree.SetComponent(entity, rowSelection);
-                _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-                continue;
-            }
-
-            ApplyVisual(entity,
-                selected ? selectedBackground : new(255, 255, 255),
-                selected ? accent : PrimaryText,
-                XsrUiCornerRadii.Inset,
-                border: selected ? InstallSelectedBorder : CardBorder,
-                hover: selected ? selectedBackground : PickerBackground);
-            StyleText(entity, selected ? accent : PrimaryText, 13, selected ? 650 : 550);
-            XsrUiSelection selection = _shell.Tree.GetComponent<XsrUiSelection>(entity) ?? new XsrUiSelection();
-            selection.IsSelected = selected;
-            _shell.Tree.SetComponent(entity, selection);
-            _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-        }
-    }
-
-
-    private void SetWrap(Dictionary<string, XsrUiEntityId> entities, string key)
-    {
-        if (entities.TryGetValue(key, out XsrUiEntityId entity))
-        {
-            RequireVisual(entity).WrapText = true;
-            _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
-        }
-    }
-
-
-    /// <summary>
-    /// Loads the dedicated launching page: the legacy launching card (centered 420px card with
-    /// the progress bar, key/value rows, trivia hint, and cancel) as its own navigation page.
-    /// </summary>
-    private (XsrUiEntityId Page, Dictionary<string, XsrUiEntityId> Entities) LoadLaunchingPage()
-    {
-        NxmlDocument document = NxmlParser.Parse(ReadEmbeddedResource("Ui.LaunchingPage.nxml"));
-        NxmlHostIr ir = DesktopMarkup.Compile(document);
-        XsrUiEntityId parent = _shell.Tree.Create("launching-page-loader");
-        XsrUiEntityId page = NxmlUiLoader.Load(ir, _shell.Tree, _store, parent);
-        _shell.Tree.Detach(page);
-        _shell.Tree.Destroy(parent);
-
-        Dictionary<string, XsrUiEntityId> entities = [];
-        _shell.Tree.Walk(
-            page,
-            entity =>
-            {
-                string key = _shell.Tree.Name(entity);
-                if (key.Length > 0)
-                {
-                    entities[key] = entity;
-                }
-
-                return true;
-            });
-
-        XsrUiVisualStyle card = RequireVisual(entities["LaunchingCard"]);
-        card.Background = CardBackground;
-        card.Foreground = PrimaryText;
-        card.Border = CardBorder;
-        card.BorderWidth = 1;
-        card.Surface = XsrUiSurfaceKind.Solid;
-        card.CornerRadius = XsrUiCornerRadii.Surface;
-        _shell.Tree.MarkDirty(entities["LaunchingCard"], XsrUiDirtyKinds.Paint);
-        StyleText(entities, "LaunchingTitle", PrimaryText, 22, 600);
-        StyleText(entities, "LaunchingName", SecondaryText, 14);
-        foreach ((string label, string value) in new[]
-        {
-            ("LaunchingStageLabel", "LaunchingStageValue"),
-            ("LaunchingMethodLabel", "LaunchingMethodValue"),
-            ("LaunchingPercentLabel", "LaunchingPercentValue"),
-            ("LaunchingSpeedLabel", "LaunchingSpeedValue"),
-        })
-        {
-            StyleText(entities, label, SecondaryText, 12);
-            StyleText(entities, value, PrimaryText, 12);
-        }
-
-        StyleText(entities, "LaunchingHintTitle", SecondaryText, 11, 600);
-        StyleText(entities, "LaunchingHintValue", SecondaryText, 12);
-        AlignText(entities, "LaunchingHintTitle", XsrUiTextAlignment.Center);
-        AlignText(entities, "LaunchingHintValue", XsrUiTextAlignment.Center);
-        ApplyVisual(entities["LaunchProgressTrack"], LaunchProgressTrack, PrimaryText, cornerRadius: 2);
-        ApplyVisual(entities["LaunchProgressFill"], LaunchProgressFill, LaunchProgressFill, cornerRadius: 2);
-        ApplyVisual(entities["LaunchingHintBox"], PickerBackground, PrimaryText, XsrUiCornerRadii.Inset);
-        ApplyVisual(entities["LaunchingCancelButton"], PickerBackground, PrimaryText,
-            XsrUiCornerRadii.Pill(40));
-        StyleText(entities, "LaunchingCancelButton", PrimaryText, 14, 600);
-        AlignText(entities, "LaunchingCancelButton", XsrUiTextAlignment.Center);
-        return (page, entities);
+        ReloadInstall(_installWorkspace, values.ToArray());
+        var selected = JavaInstallSubpages.First(subpage => subpage.PageKey == activePage);
+        _shell.Tree.GetComponent<XsrUiSegmentedTrack>(_javaInstallEntities["JavaInstallPagerTabs"])!.Selected = _javaInstallEntities[selected.TabKey];
     }
 
 }

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.Win32;
+using Nexa.Desktop.Ui;
 
 namespace Nexa.Desktop;
 
@@ -70,14 +71,14 @@ internal static class DesktopProtocolRegistration
             {
                 string? bundle = AppContext.BaseDirectory;
                 while (bundle is not null && !bundle.EndsWith(".app", StringComparison.OrdinalIgnoreCase)) bundle = Path.GetDirectoryName(bundle.TrimEnd(Path.DirectorySeparatorChar));
-                if (bundle is null) return "nexacl:// 协议需要使用 NexaCL.app 应用包。";
+                if (bundle is null) return ProductPresentationText.Raw("native.protocol.bundleRequired");
                 return await RunAsync("/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister",
                     ["-f", bundle], cancellationToken).ConfigureAwait(false);
             }
-            return "当前平台不支持 nexacl:// 协议注册。";
+            return ProductPresentationText.Raw("native.protocol.unsupported");
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception or OperationCanceledException)
-        { return "nexacl:// 协议注册失败：" + error.Message; }
+        { return ProductPresentationText.Format("ProtocolRegistrationFailure", static value => value, ("error", error.Message)); }
     }
 
     private static async Task<string?> RunAsync(string executable, string[] arguments, CancellationToken token)
@@ -93,6 +94,7 @@ internal static class DesktopProtocolRegistration
             try { process.Kill(); } catch (InvalidOperationException) { }
             throw;
         }
-        return process.ExitCode == 0 ? null : "nexacl:// 协议注册工具返回错误：" + process.ExitCode;
+        return process.ExitCode == 0 ? null : ProductPresentationText.Format("ProtocolRegistrationToolFailure", static value => value,
+            ("code", process.ExitCode.ToString(System.Globalization.CultureInfo.CurrentCulture)));
     }
 }

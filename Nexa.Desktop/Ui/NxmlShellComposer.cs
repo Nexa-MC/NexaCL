@@ -1,6 +1,6 @@
-﻿using Nexa.Xsr.Renderer.Nxml;
+﻿using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
-using Nexa.Xsr;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -11,8 +11,6 @@ namespace Nexa.Desktop.Ui;
 /// </summary>
 public static class NxmlShellComposer
 {
-    private const string ResourceSuffix = "Ui.Shell.nxml";
-
     public static XsrUiShell Compose(
         XsrStateStore state,
         XsrUiShellOptions? options = null,
@@ -39,7 +37,8 @@ public static class NxmlShellComposer
     {
         ArgumentNullException.ThrowIfNull(state);
         options ??= new XsrUiShellOptions();
-        state.Publish(state.Resolve(FirstRunState.NavigationVisible),true);
+        state.Publish(state.Resolve(FirstRunState.NavigationVisible), true);
+        state.Publish(state.Resolve(LaunchPageState.TitleRootKey), true);
 
         // The checked-in product shell deliberately owns its four product destinations, matching
         // the legacy experimental navigation registry. A composition root must not claim a
@@ -52,13 +51,9 @@ public static class NxmlShellComposer
                 nameof(options));
         }
 
-        NxmlDocument document = NxmlParser.Parse(ReadTemplate());
-        NxmlHostIr ir = DesktopMarkup.Compile(document);
+        NxmlHostIr ir = DesktopMarkup.Load("Shell.nxml");
         XsrUiTree tree = runtimeContext?.Tree ?? new();
-        XsrUiEntityId templateHost = tree.Create("pxml-shell-host");
-        XsrUiEntityId root = NxmlUiLoader.Load(ir, tree, state, templateHost);
-        tree.Detach(root);
-        tree.Destroy(templateHost);
+        XsrUiEntityId root = NxmlUiLoader.LoadDetached(ir, tree, state);
 
         XsrUiEntityId titleBar = FindDirectChild(tree, root, XsrUiSemanticRole.TitleBar);
         XsrUiEntityId body = tree.Children(root).Single(child =>
@@ -146,8 +141,4 @@ public static class NxmlShellComposer
             : throw new InvalidOperationException($"The NXML shell has no '{role}' entity.");
     }
 
-    private static string ReadTemplate()
-    {
-        return DesktopMarkup.Read(ResourceSuffix);
-    }
 }

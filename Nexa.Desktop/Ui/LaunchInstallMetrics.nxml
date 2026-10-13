@@ -1,0 +1,6 @@
+<nxml-page>
+  <StackPanel>
+    <StackPanel Key="catalog" Class="launch-install-virtual-metrics" />
+    <ContentHost Key="title-motion" Class="launch-install-title-motion" />
+  </StackPanel>
+</nxml-page>

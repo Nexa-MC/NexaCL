@@ -1,3 +1,3 @@
 <nxml-dynamic>
-  <SettingsStatus Key="SettingsSaveStatus" Content="{data message}" Label="{data message}" Class="settings-save-status" />
+  <SettingsStatus Key="SettingsSaveStatus" Content="{data message}" Label="{data message}" LiveSetting="Polite" Class="settings-save-status" />
 </nxml-dynamic>

@@ -1,8 +1,9 @@
 ﻿using Nexa.Xsr.Renderer.Nxml;
 namespace Nexa.Desktop.Ui;
+
 internal static class DesktopVersionText
 {
-    private static readonly Lazy<Dictionary<string,string>> Terms = new(() =>
+    private static readonly Lazy<Dictionary<string, string>> Terms = new(() =>
     {
         var nodes = DesktopMarkup.Load("VersionSelectionTerms.nxml").Root.Children;
         if (nodes.Any(node => node.Recipe != NxmlRuntimeRecipe.Text || string.IsNullOrWhiteSpace(node.Key)
@@ -12,7 +13,7 @@ internal static class DesktopVersionText
     });
     internal static string Raw(string key) => Terms.Value[key];
     internal static string? Find(string key) => Terms.Value.GetValueOrDefault(key);
-    internal static string Format(string name, Dictionary<string,string> data, Func<string,string>? localize = null)
+    internal static string Format(string name, Dictionary<string, string> data, Func<string, string>? localize = null)
     {
         var node = DesktopMarkup.Dynamic("VersionText" + name + ".d.nxml", data, localize).Root;
         if (node.Recipe != NxmlRuntimeRecipe.Text || node.Content is null || node.Bindings.Count != 0 || node.Children.Count != 0)

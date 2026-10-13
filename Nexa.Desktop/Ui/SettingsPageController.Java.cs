@@ -1,7 +1,7 @@
 ﻿using Nexa.Services.Minecraft.Java;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -40,7 +40,6 @@ internal sealed partial class SettingsPageController
         if (!_shell.Tree.IsAlive(_javaInventoryGroup))
         {
             _javaInventoryGroup = _dynamic.Append(parent.IsAssigned ? parent : _sections, DesktopMarkup.Dynamic("SettingsJavaInventory.d.nxml", projection));
-            _shell.Tree.SetComponent(_javaInventoryGroup, new XsrUiSelectionGroup(isSelectionRequired: false));
         }
         else _dynamic.Reload(_javaInventoryGroup, DesktopMarkup.Dynamic("SettingsJavaInventory.d.nxml", projection));
         var nodes = CatalogNodes(_javaInventoryGroup);
@@ -59,23 +58,30 @@ internal sealed partial class SettingsPageController
                 var runtime = candidate.Installation;
                 string brand = runtime.Brand switch
                 {
-                    JavaBrand.EclipseTemurin => "Temurin",
-                    JavaBrand.IbmSemeru => "IBM Semeru",
-                    JavaBrand.OpenJdk => "OpenJDK",
-                    JavaBrand.GraalVmCommunity => "GraalVM",
-                    JavaBrand.JetBrains => "JetBrains",
-                    JavaBrand.TencentKona => "Tencent Kona",
-                    JavaBrand.Unknown => _shell.Renderer.LocalizeText("未知发行方"),
+                    JavaBrand.EclipseTemurin => ProductPresentationText.Raw("settings.java.brand.EclipseTemurin"),
+                    JavaBrand.IbmSemeru => ProductPresentationText.Raw("settings.java.brand.IbmSemeru"),
+                    JavaBrand.OpenJdk => ProductPresentationText.Raw("settings.java.brand.OpenJdk"),
+                    JavaBrand.GraalVmCommunity => ProductPresentationText.Raw("settings.java.brand.GraalVmCommunity"),
+                    JavaBrand.JetBrains => ProductPresentationText.Raw("settings.java.brand.JetBrains"),
+                    JavaBrand.TencentKona => ProductPresentationText.Raw("settings.java.brand.TencentKona"),
+                    JavaBrand.Unknown => ProductPresentationText.Term("settings.java.unknownBrand", _shell.Renderer.LocalizeText),
                     _ => runtime.Brand.ToString()
                 };
                 string architecture = runtime.Architecture switch
-                { JavaArchitecture.X86 => "x86", JavaArchitecture.X64 => "x64", JavaArchitecture.Arm => "ARM", JavaArchitecture.Arm64 => "ARM64", _ => _shell.Renderer.LocalizeText("未知架构") };
+                {
+                    JavaArchitecture.X86 => ProductPresentationText.Raw("settings.java.architecture.X86"),
+                    JavaArchitecture.X64 => ProductPresentationText.Raw("settings.java.architecture.X64"),
+                    JavaArchitecture.Arm => ProductPresentationText.Raw("settings.java.architecture.Arm"),
+                    JavaArchitecture.Arm64 => ProductPresentationText.Raw("settings.java.architecture.Arm64"),
+                    _ => ProductPresentationText.Term("settings.java.unknownArchitecture", _shell.Renderer.LocalizeText)
+                };
                 bool managed = _javaInventory.ManagedRuntimes.Any(entry => Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, runtime.JavaExecutablePath));
                 var row = _dynamic.Append(body, DesktopMarkup.Dynamic("SettingsJavaRuntime.d.nxml", new Dictionary<string, string>
                 {
                     ["row"] = "SettingsJavaRuntime." + index,
                     ["labels"] = "SettingsJavaRuntime.Label." + index,
-                    ["name"] = $"Java {runtime.Version} · {brand} · {architecture}",
+                    ["name"] = ProductPresentationText.Format("SettingsJavaRuntimeName", _shell.Renderer.LocalizeText,
+                        ("version", runtime.Version.ToString()), ("brand", brand), ("architecture", architecture)),
                     ["path"] = runtime.JavaExecutablePath,
                     ["managed"] = Flag(managed),
                     ["external"] = Flag(!managed),
@@ -128,9 +134,7 @@ internal sealed partial class SettingsPageController
             ["offStyle"] = optionStyle + (!enabled ? " settings-catalog-option-selected" : ""),
         }));
         var nodes = CatalogNodes(controls);
-        var thumb = nodes["SettingsJavaEnabled.Thumb"];
-        _shell.Tree.SetComponent(thumb, new XsrUiTransition());
-        _shell.Tree.SetComponent(nodes[key], new XsrUiSegmentedTrack(thumb) { Selected = nodes[key + (enabled ? ".true" : ".false")] });
+        _shell.Tree.GetComponent<XsrUiSegmentedTrack>(nodes[key])!.Selected = nodes[key + (enabled ? ".true" : ".false")];
         RegisterContentAction(nodes[key + ".true"], () => { if (!enabled) ManageJava(executable, JavaRuntimeManagementAction.Enable); });
         RegisterContentAction(nodes[key + ".false"], () => { if (enabled) ManageJava(executable, JavaRuntimeManagementAction.Disable); });
         var actions = nodes["SettingsJavaManagement.Actions"];
@@ -142,12 +146,13 @@ internal sealed partial class SettingsPageController
             {
                 long revision = _javaInventory.RegistryRevision;
                 long generation = _javaRegistryGeneration;
-                _feedback.ShowDialog("java.registry.remove", "移除 Java 登记", "移除此 Java 的手动登记，保留磁盘上的文件。\n" + executable,
-                    "移除", "取消", accepted =>
+                _feedback.ShowDialog("java.registry.remove", ProductPresentationText.Raw("settings.java.removeRegistryTitle"),
+                    ProductPresentationText.Format("SettingsJavaRemoveRegistry", _shell.Renderer.LocalizeText, ("path", executable)),
+                    ProductPresentationText.Raw("settings.action.remove"), ProductPresentationText.Raw("settings.action.cancel"), accepted =>
                     {
                         if (accepted && generation == _javaRegistryGeneration && IsJavaInventoryPage && _instanceDirectory is null && _javaInventory?.RegistryRevision == revision)
                             ManageJava(executable, JavaRuntimeManagementAction.Remove);
-                    });
+                    }, localizeMessage: false);
             });
         }
         if (_javaInventory.ManagedRuntimes.FirstOrDefault(entry => Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, executable)) is { } managed)
@@ -158,13 +163,14 @@ internal sealed partial class SettingsPageController
             {
                 long revision = _javaInventory.RegistryRevision;
                 long generation = _javaRegistryGeneration;
-                _feedback.ShowDialog("java.managed.delete", "删除托管 Java", "删除此启动器安装的 Java 文件。正在使用、已修改或包含额外文件的运行时会保留。\n" + managed.Directory,
-                    "删除", "取消", accepted =>
+                _feedback.ShowDialog("java.managed.delete", ProductPresentationText.Raw("settings.java.deleteManagedTitle"),
+                    ProductPresentationText.Format("SettingsJavaDeleteManaged", _shell.Renderer.LocalizeText, ("path", managed.Directory)),
+                    ProductPresentationText.Raw("settings.action.delete"), ProductPresentationText.Raw("settings.action.cancel"), accepted =>
                     {
                         if (accepted && generation == _javaRegistryGeneration && IsJavaInventoryPage && _instanceDirectory is null && _javaInventory?.RegistryRevision == revision
                             && _javaInventory.ManagedRuntimes.Any(entry => entry == managed))
                             ManageJava(executable, JavaRuntimeManagementAction.DeleteManaged, revision, managed.Identity);
-                    });
+                    }, localizeMessage: false);
             });
         }
 
@@ -226,13 +232,13 @@ internal sealed partial class SettingsPageController
         {
             _javaPick = null;
             if (picking.IsCompletedSuccessfully && picking.Result is { } path) ManageJava(path, JavaRuntimeManagementAction.Add, _javaPickRevision);
-            else if (!picking.IsCanceled && !picking.IsCompletedSuccessfully) _feedback.Error("无法选择 Java，请重试。");
+            else if (!picking.IsCanceled && !picking.IsCompletedSuccessfully) _feedback.Error(ProductPresentationText.Raw("settings.java.pickFailed"));
             BuildJavaInventory();
         }
         if (_javaManagementWrite is { IsCompleted: true } writing)
         {
             _javaManagementWrite = null;
-            if (!writing.IsCanceled && !PendingQuery.Succeeded(writing)) _feedback.Error(writing.IsCompletedSuccessfully ? writing.Result.Error?.Message ?? "Java 管理未完成。" : "Java 管理未完成。");
+            if (!writing.IsCanceled && !PendingQuery.Succeeded(writing)) _feedback.Error(writing.IsCompletedSuccessfully ? writing.Result.Error?.Message ?? ProductPresentationText.Raw("settings.java.managementFailed") : ProductPresentationText.Raw("settings.java.managementFailed"));
             CancelJavaInventory(); StartJavaInventory(refresh: true); BuildJavaInventory();
         }
         if (!_javaInventoryRequested) { StartJavaInventory(refresh: false); BuildJavaInventory(); }

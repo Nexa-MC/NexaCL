@@ -1,9 +1,9 @@
 ﻿using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Resources;
 using Nexa.Xsr;
-using Nexa.Xsr.Runtime;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Nxml;
+using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Ui;
 
@@ -70,8 +70,12 @@ internal sealed partial class ResourcesPageController
         _filterAnchor = _entities["Resource" + kind];
         var metric = DesktopResourcesText.Metric("overlay");
         _filterOverlay = AppendResource(_entities["ResourceOverlaySlot"], "ResourceFilterDropdown.d.nxml", new()
-        { ["height"] = Number(Math.Min(metric.MaxHeight!.Value, Math.Max(metric.Height!.Value, _shell.Renderer.Viewport.Height - metric.Margin.Left))),
-          ["searchable"] = Flag(kind == "Game"), ["anchor"] = "Resource" + kind, ["indicator"] = "true" });
+        {
+            ["height"] = Number(Math.Min(metric.MaxHeight!.Value, Math.Max(metric.Height!.Value, _shell.Renderer.Viewport.Height - metric.Margin.Left))),
+            ["searchable"] = Flag(kind == "Game"),
+            ["anchor"] = "Resource" + kind,
+            ["indicator"] = "true"
+        });
         var names = new Dictionary<string, XsrUiEntityId>(StringComparer.Ordinal);
         _shell.Tree.Walk(_filterOverlay, entity => { names[_shell.Tree.Name(entity)] = entity; return true; });
         _filterCard = names["ResourceFilterCard"];

@@ -1,7 +1,6 @@
-using System.Globalization;
 using Nexa.Services.Minecraft.Management;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -13,29 +12,30 @@ internal sealed partial class SettingsPageController
     private string? _serverInstance, _serverError;
     private bool _serverLoaded;
     private int? _serverEditing;
-    private XsrUiEntityId _serverName, _serverAddress;
+    private XsrUiEntityId _serverName, _serverAddress, _serverWorkspaceRoot, _serverEditorRoot;
+    private int? _serverEditorProjection;
     internal Action<string, string>? JoinManagementServer { get; set; }
     private Task<XsrResult<InstanceServerStatus>>? _serverStatusRead;
     private int _serverStatusIndex;
     private readonly Dictionary<int, InstanceServerStatus> _serverStatuses = [];
-    private readonly Dictionary<int, XsrUiEntityId> _serverStatusLabels = [];
+    private readonly Dictionary<string, XsrUiEntityId> _serverViews = [];
     private void CancelServers()
     {
-        _serverStop?.Cancel(); _serverStop?.Dispose(); _serverStop = null; _serverRead = null;
-        _serverList = null; _serverInstance = null; _serverLoaded = false; _serverEditing = null; _serverError = null;
-        _serverStatusRead = null; _serverStatuses.Clear(); _serverStatusLabels.Clear();
+        _serverStop?.Cancel(); _serverStop?.Dispose(); _serverStop = null;
+        ObserveRetiredInstanceToolRead(_serverRead); ObserveRetiredInstanceToolRead(_serverStatusRead);
+        _serverRead = null; _serverList = null; _serverInstance = null; _serverLoaded = false; _serverEditing = null; _serverError = null;
+        _serverStatusRead = null; _serverStatuses.Clear(); _serverEditorProjection = null;
     }
     private void UpdateServers()
     {
         if (_selected != "servers") { if (_serverInstance is not null) CancelServers(); return; }
         if (_instance != _serverInstance) { CancelServers(); _serverInstance = _instance; }
-        if (_selected != "servers" || _instance is null || !_managementLoaded) return;
+        if (_instance is null || !_managementLoaded) return;
         if (_serverStatusRead is { IsCompleted: true } status)
         {
             _serverStatusRead = null;
             if (PendingQuery.Succeeded(status)) _serverStatuses[_serverStatusIndex] = status.Result.Value!;
-            if (_serverStatusLabels.TryGetValue(_serverStatusIndex, out var label) && _shell.Tree.IsAlive(label))
-                _shell.Tree.SetComponent(label, new XsrUiText(ServerStatusLabel(_serverStatusIndex)) { Localize = false });
+            BuildServers();
         }
         if (!_serverLoaded && _serverRead is null && _queries.TryResolve(InstanceServerListContract.Read, out var route))
         {
@@ -45,78 +45,106 @@ internal sealed partial class SettingsPageController
         if (_serverRead is not { IsCompleted: true } read) return;
         _serverRead = null; _serverLoaded = true;
         if (PendingQuery.Succeeded(read)) _serverList = read.Result.Value;
-        else _serverError = "无法读取服务器列表。请检查 servers.dat，原文件未修改。";
-        BuildSections();
-    }
-    private XsrUiEntityId ManagementField(XsrUiEntityId parent, string key, string caption, string value, string placeholder = "")
-    {
-        var row = Stack(parent, key + "Row", XsrUiOrientation.Horizontal, 12);
-        var label = Text(row, caption, 13, Muted, 36); _shell.Tree.GetComponent<XsrUiElement>(label)!.Width = 100;
-        var input = Element(row, key, XsrUiSemanticRole.TextInput, caption, height: 36);
-        _shell.Tree.GetComponent<XsrUiElement>(input)!.Weight = 1; _shell.Tree.GetComponent<XsrUiElement>(input)!.Padding = new(12, 0, 12, 0);
-        Style(input, new(241, 245, 250), Ink, 9, 13);
-        _shell.Tree.SetComponent(input, new XsrUiTextInput { Placeholder = placeholder });
-        _shell.Tree.SetComponent(input, new XsrUiInput { Focusable = true, Clickable = true });
-        _shell.Renderer.SetTextInputValue(input, value); return input;
+        else _serverError = WorldTerm("server.read-error");
+        BuildServers();
     }
     private void BuildServers()
     {
-        _serverStatusLabels.Clear();
-        if (_serverList is not { } list) { Text(_sections, _serverError ?? "正在读取服务器列表…", 13, Muted, 28); return; }
-        var bar = Stack(_sections, "ServerToolbar", XsrUiOrientation.Horizontal, 10);
-        Text(bar, $"{list.Entries.Count} 个服务器", 13, Muted, 36);
-        ManagementButton(bar, "添加服务器", () => { _serverEditing = -1; BuildSections(); }, 108);
+        if (!_shell.Tree.IsAlive(_sections)) return;
+        var list = _serverList;
+        var nodes = WorldView(_sections, ref _serverWorkspaceRoot, "Servers", new()
+        {
+            ["loading"] = Flag(list is null && _serverError is null),
+            ["hasError"] = Flag(_serverError is not null),
+            ["error"] = _serverError ?? "",
+            ["loaded"] = Flag(list is not null),
+            ["count"] = WorldNumber(list?.Entries.Count ?? 0)
+        });
+        BindWorldAction(nodes, WorldKey("ServerAdd"), () => { _serverEditing = -1; BuildServers(); });
+        if (list is null) return;
         if (_serverEditing is { } editing)
         {
-            var entry = editing >= 0 ? list.Entries[editing] : new(-1, "", "");
-            var editor = FormGroup(_sections, "ServerEditor", editing < 0 ? "添加服务器" : "编辑服务器");
-            _serverName = ManagementField(editor, "ServerName", "名称", entry.Name);
-            _serverAddress = ManagementField(editor, "ServerAddress", "地址", entry.Address, "example.org:25565");
-            var actions = Stack(editor, "ServerEditorActions", XsrUiOrientation.Horizontal, 8);
-            ManagementButton(actions, "取消", () => { _serverEditing = null; BuildSections(); }, 64);
-            ManagementButton(actions, "保存", () =>
+            if (editing >= list.Entries.Count) { _serverEditing = null; RemoveWorldView(ref _serverEditorRoot); }
+            else
             {
-                string name = _shell.Tree.GetComponent<XsrUiTextInput>(_serverName)!.ReadDraft(), address = _shell.Tree.GetComponent<XsrUiTextInput>(_serverAddress)!.ReadDraft();
-                var updated = list.Entries.ToList(); var changed = entry with { Name = name, Address = address };
-                if (editing < 0) updated.Add(changed); else updated[editing] = changed;
-                SaveServers(updated);
-            }, 64);
+                if (_serverEditorProjection != editing) { RemoveWorldView(ref _serverEditorRoot); }
+                bool initialize = !_shell.Tree.IsAlive(_serverEditorRoot) || _shell.Tree.Parent(_serverEditorRoot) != nodes["Servers.Editor"];
+                var entry = editing >= 0 ? list.Entries[editing] : new(-1, "", "");
+                var editor = WorldView(nodes["Servers.Editor"], ref _serverEditorRoot, "ServerEditor", new()
+                { ["adding"] = Flag(editing < 0), ["editing"] = Flag(editing >= 0), ["name"] = entry.Name, ["address"] = entry.Address });
+                _serverEditorProjection = editing; _serverName = editor["ServerName"]; _serverAddress = editor["ServerAddress"];
+                if (initialize) { _shell.Renderer.SetTextInputValue(_serverName, entry.Name); _shell.Renderer.SetTextInputValue(_serverAddress, entry.Address); }
+                BindWorldAction(editor, WorldKey("Cancel"), () => { _serverEditing = null; BuildServers(); });
+                BindWorldAction(editor, WorldKey("Save"), () =>
+                {
+                    string name = _shell.Tree.GetComponent<XsrUiTextInput>(_serverName)!.ReadDraft(), address = _shell.Tree.GetComponent<XsrUiTextInput>(_serverAddress)!.ReadDraft();
+                    var updated = list.Entries.ToList(); var changed = entry with { Name = name, Address = address };
+                    if (editing < 0) updated.Add(changed); else updated[editing] = changed;
+                    SaveServers(updated);
+                });
+            }
         }
-        foreach (var (entry, index) in list.Entries.Select((e, i) => (e, i)))
+        else { RemoveWorldView(ref _serverEditorRoot); _serverEditorProjection = null; }
+        var entries = list.Entries.Select((entry, index) => (Entry: entry, Index: index, Key: "ServerEntry." + WorldNumber(index))).ToArray();
+        RetireWorldRows(_serverViews, entries.Select(entry => entry.Key));
+        foreach (var (entry, index, key) in entries)
         {
-            var card = Stack(_sections, "ServerEntry." + index, XsrUiOrientation.Vertical, 8); Style(card, White, Ink, 12);
-            var body = Stack(card, "ServerEntryBody", XsrUiOrientation.Vertical, 8);
-            _shell.Tree.GetComponent<XsrUiElement>(body)!.Padding = new(16, 10, 16, 10);
-            var row = Stack(body, "ServerEntryIdentity", XsrUiOrientation.Horizontal, 10);
-            var identity = Stack(row, "ServerIdentity", XsrUiOrientation.Vertical, 2); _shell.Tree.GetComponent<XsrUiElement>(identity)!.Weight = 1;
-            ContentName(identity, entry.Name, 15, 26); ContentName(identity, entry.Address, 12, 22, foreground: Muted);
-            _serverStatusLabels[index] = Text(identity, ServerStatusLabel(index), 12, Muted, 24);
-            DesktopLiteralText.Preserve(_shell.Tree, _serverStatusLabels[index]);
-            ManagementButton(row, "检查状态", () =>
+            string check = index == 0 ? WorldKey("ServerCheck") : key + ".Check", join = index == 0 ? WorldKey("ServerJoin") : key + ".Join",
+                edit = index == 0 ? WorldKey("ServerEdit") : key + ".Edit", up = index == 0 ? WorldKey("ServerUp") : key + ".Up",
+                down = index == 0 ? WorldKey("ServerDown") : key + ".Down", remove = index == 0 ? WorldKey("ServerRemove") : key + ".Remove";
+            var row = WorldRow(nodes["Servers.Rows"], _serverViews, key, "ServerRow", new()
+            {
+                ["key"] = key,
+                ["nameKey"] = key + ".Name",
+                ["addressKey"] = key + ".Address",
+                ["name"] = StripContentFormatting(entry.Name),
+                ["address"] = StripContentFormatting(entry.Address),
+                ["status"] = _serverStatusRead is not null && _serverStatusIndex == index ? WorldTerm("server.connecting") : ServerStatusLabel(index),
+                ["check"] = check,
+                ["join"] = join,
+                ["edit"] = edit,
+                ["up"] = up,
+                ["down"] = down,
+                ["remove"] = remove,
+                ["canCheck"] = Flag(_serverStatusRead is null),
+                ["canJoin"] = Flag(JoinManagementServer is not null),
+                ["canUp"] = Flag(index > 0),
+                ["canDown"] = Flag(index + 1 < list.Entries.Count)
+            });
+            ApplyContentFormatting(row[key + ".Name"], entry.Name); ApplyContentFormatting(row[key + ".Address"], entry.Address);
+            BindWorldAction(row, check, () =>
             {
                 if (_serverStatusRead is not null || _serverInstance is null || !_queries.TryResolve(InstanceServerListContract.Status, out var route)) return;
                 _serverStatusIndex = index;
                 _serverStatusRead = _queries.QueryAsync<InstanceServerStatusQuery, InstanceServerStatus>(route, new(_serverInstance, list.Revision, entry.SourceIndex), cancellationToken: _serverStop?.Token ?? default).AsTask();
-                _shell.Tree.SetComponent(_serverStatusLabels[index], new XsrUiText("正在连接…")); WakeOnPlatformCompletion(_serverStatusRead);
-            }, 84);
-            if (JoinManagementServer is not null) ManagementButton(row, "加入", () => JoinManagementServer(_serverInstance!, entry.Address), 60);
-            var actions = Stack(body, "ServerEntryActions", XsrUiOrientation.Horizontal, 8);
-            ManagementButton(actions, "编辑", () => { _serverEditing = index; BuildSections(); }, 60);
-            if (index > 0) ManagementButton(actions, "上移", () =>
-            { var items = list.Entries.ToList(); (items[index - 1], items[index]) = (items[index], items[index - 1]); SaveServers(items); }, 60);
-            if (index + 1 < list.Entries.Count) ManagementButton(actions, "下移", () =>
-            { var items = list.Entries.ToList(); (items[index + 1], items[index]) = (items[index], items[index + 1]); SaveServers(items); }, 60);
-            ManagementButton(actions, "移除", () => _feedback.ShowDialog("server.remove", "移除服务器", "只从此版本的列表移除此服务器。", "移除", "取消", accepted => { if (accepted && _serverInstance == _instance && ReferenceEquals(_serverList, list)) SaveServers(list.Entries.Where((_, i) => i != index).ToArray()); }), 60);
+                WakeOnPlatformCompletion(_serverStatusRead); BuildServers();
+            });
+            BindWorldAction(row, join, () => JoinManagementServer?.Invoke(_serverInstance!, entry.Address));
+            BindWorldAction(row, edit, () => { _serverEditing = index; BuildServers(); });
+            BindWorldAction(row, up, () => { if (index <= 0) return; var items = list.Entries.ToList(); (items[index - 1], items[index]) = (items[index], items[index - 1]); SaveServers(items); });
+            BindWorldAction(row, down, () => { if (index + 1 >= list.Entries.Count) return; var items = list.Entries.ToList(); (items[index + 1], items[index]) = (items[index], items[index + 1]); SaveServers(items); });
+            BindWorldAction(row, remove, () => _feedback.ShowDialog("server.remove", WorldTerm("server.remove-title"), WorldTerm("server.remove-message"), WorldTerm("remove"), WorldTerm("cancel"),
+                accepted => { if (accepted && _serverInstance == _instance && _selected == "servers" && ReferenceEquals(_serverList, list)) SaveServers(list.Entries.Where((_, i) => i != index).ToArray()); }, localizeMessage: false));
         }
+        _dynamic.Reorder(nodes["Servers.Rows"], entries.Select(entry => _serverViews[entry.Key]).ToArray());
     }
-    private string ServerStatusLabel(int index) => _serverStatuses.TryGetValue(index, out var status)
-        ? status.Reachable ? $"{status.Milliseconds} ms · {status.OnlinePlayers?.ToString(CultureInfo.InvariantCulture) ?? "?"}/{status.MaxPlayers?.ToString(CultureInfo.InvariantCulture) ?? "?"} {_shell.Renderer.LocalizeText("人")} · {status.Version} · {ProtocolCompatibility(status)} · {status.Description}" : status.Description
-        : _shell.Renderer.LocalizeText("状态未检查");
+    private string ServerStatusLabel(int index)
+    {
+        if (!_serverStatuses.TryGetValue(index, out var status)) return WorldTerm("server.unchecked");
+        if (!status.Reachable) return status.Description;
+        return WorldFormat("ServerStatusFormat", new()
+        {
+            ["milliseconds"] = WorldNumber(status.Milliseconds),
+            ["online"] = status.OnlinePlayers is { } online ? WorldNumber(online) : "?",
+            ["maximum"] = status.MaxPlayers is { } maximum ? WorldNumber(maximum) : "?",
+            ["version"] = status.Version,
+            ["compatibility"] = ProtocolCompatibility(status),
+            ["description"] = status.Description
+        });
+    }
     private string ProtocolCompatibility(InstanceServerStatus status) => status.ServerProtocol is { } server && status.ClientProtocol is { } client
-        ? server == client ? _shell.Renderer.LocalizeText("协议号一致（模组与认证另行检查）")
-            : _shell.Renderer.LocalizeText("协议号不同") + ": " + _shell.Renderer.LocalizeText("客户端") + " " + client.ToString(CultureInfo.InvariantCulture)
-                + " / " + _shell.Renderer.LocalizeText("服务器") + " " + server.ToString(CultureInfo.InvariantCulture)
-        : _shell.Renderer.LocalizeText("协议兼容无法判定（缺少已校验客户端或服务器协议号）");
+        ? server == client ? WorldTerm("server.protocol-same") : WorldFormat("ServerProtocolFormat", new() { ["client"] = WorldNumber(client), ["server"] = WorldNumber(server) })
+        : WorldTerm("server.protocol-unknown");
     private void SaveServers(IReadOnlyList<InstanceServerEntry> entries)
     {
         if (_managementWrite is not null || _instance is null || _serverList is null || !_commands.TryResolve(InstanceServerListContract.Save, out var route)) return;

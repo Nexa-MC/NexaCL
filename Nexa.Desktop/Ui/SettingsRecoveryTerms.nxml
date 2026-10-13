@@ -1,0 +1,6 @@
+<nxml-page><StackPanel>
+<Text Key="estimated" Content="（已统计）" /><Text Key="latest" Content=" · 最新" />
+<Text Key="confirmTitle" Content="回滚所选更改" /><Text Key="restore" Content="回滚" /><Text Key="cancel" Content="取消" />
+<Text Key="kind.Added" Content="新增" /><Text Key="kind.Removed" Content="删除" /><Text Key="kind.Enabled" Content="启用" /><Text Key="kind.Disabled" Content="停用" /><Text Key="kind.Modified" Content="修改" />
+<Text Key="category.版本依赖" Content="版本依赖" /><Text Key="category.模组" Content="模组" /><Text Key="category.配置" Content="配置" /><Text Key="category.资源包" Content="资源包" /><Text Key="category.光影包" Content="光影包" /><Text Key="category.版本设置" Content="版本设置" /><Text Key="category.游戏选项" Content="游戏选项" /><Text Key="category.版本文件" Content="版本文件" /><Text Key="category.启动设置" Content="启动设置" />
+</StackPanel></nxml-page>

@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="迁移 {data settings} 个设置、{data offline} 个离线账户；{data online} 个在线账户需重新登录。&#10;目标：{data destination}&#10;{data warnings}" Localize="false" /></nxml-dynamic>

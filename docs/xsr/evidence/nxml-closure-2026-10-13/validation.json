@@ -1,0 +1,195 @@
+{
+  "date": "2026-10-13",
+  "branch": "refactor/xsr",
+  "sourceBaseCommit": "1a968e43d957918a2216ae3fb3970d599db0b212",
+  "platform": "Linux x64",
+  "dotnetSdk": "10.0.401",
+  "checks": [
+    {
+      "command": "dotnet build NexaCL.slnx -c Release --no-restore",
+      "exitCode": 0,
+      "log": "nxml-closure-solution-build2.log",
+      "logSha256": "3adf1a89c625c590b8ae72ff17e2507fcf6e378f7420e4c81d482d9ded0f4477"
+    },
+    {
+      "command": "dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll",
+      "exitCode": 0,
+      "log": "nxml-closure-desktop-tests9.log",
+      "logSha256": "d893fe6c1bb8c9ee946dc94b036889cb71b371b3c9a37a824d8df9dd90edc4ae"
+    },
+    {
+      "command": "dotnet tests/Nexa.Xsr.Renderer.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Tests.dll",
+      "exitCode": 0,
+      "log": "nxml-closure-renderer-tests3.log",
+      "logSha256": "d8d3cc93840bd8d5d5c97b68db7d5022aa60ff152dfe94534f5955a82e563f84"
+    },
+    {
+      "command": "dotnet tests/Nexa.Xsr.Renderer.Nxml.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Nxml.Tests.dll",
+      "exitCode": 0,
+      "log": "nxml-closure-primitives-tests6.log",
+      "logSha256": "a07423378c595c8fa2e101228b6f541f69d4a35b3d4773548d16dee7c3fae181"
+    },
+    {
+      "command": "dotnet tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll",
+      "exitCode": 0,
+      "log": "nxml-closure-backend-tests.log",
+      "logSha256": "c8dc8005fb1a91918d03adf083b86623ab8a3d48c68155fc3d5b99bb8e737f70"
+    },
+    {
+      "command": "dotnet tests/Nexa.Xsr.ArchitectureTests/bin/Release/net10.0/Nexa.Xsr.ArchitectureTests.dll --repo-root .",
+      "exitCode": 0,
+      "log": "nxml-closure-architecture-tests4.log",
+      "logSha256": "f12a9c35e743e25f33c99963bb115e5c33e40819b36c085436f43566512937ed"
+    },
+    {
+      "command": "dotnet format NexaCL.slnx --no-restore --verify-no-changes --diagnostics IDE0055 IMPORTS",
+      "exitCode": 0,
+      "log": "nxml-closure-format4.log",
+      "logSha256": "239c224f01960886368326d9ef5ebdcce071dcd0996d157bef6a963fc1eaa49c"
+    },
+    {
+      "command": "NEXA_DATA_DIR=<isolated-directory> dotnet Nexa.Desktop/bin/Release/net10.0/Nexa.Desktop.dll --validate-shell",
+      "exitCode": 0,
+      "log": "nxml-closure-shell10.log",
+      "logSha256": "4449ac203787a47d85180fde8628066630a33197790048bdedd5f2fa171e24cb"
+    },
+    {
+      "command": "DISPLAY=:99 dbus-run-session -- dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-nxml-settings-preview light <output-directory>",
+      "exitCode": 0,
+      "log": "nxml-closure-native-light6.log",
+      "logSha256": "47e474f1fd2994c333d17566d02ffb9b21d6e23950ff67987d94d8200a153258"
+    },
+    {
+      "command": "DISPLAY=:99 dbus-run-session -- dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-nxml-settings-preview dark <output-directory>",
+      "exitCode": 0,
+      "log": "nxml-closure-native-dark2.log",
+      "logSha256": "30f80c09b06750a975ebdf49e8c4852537af414e4f333831981f405d0e5b4755"
+    }
+  ],
+  "publications": [
+    {
+      "kind": "aot",
+      "rid": "linux-x64",
+      "publish": {
+        "command": "dotnet publish Nexa.Desktop -c Release -r linux-x64 --no-build -p:PublishAot=true -p:StripSymbols=true -m:1 -nr:false -o <output-directory>",
+        "exitCode": 0,
+        "log": "nxml-closure-aot-publish4.log",
+        "logSha256": "dadfce68c7b6b3eaa13870c3908e54f9c2d5c9c216d2b8819ce7d3ce54dbb34c"
+      },
+      "shell": {
+        "command": "NEXA_DATA_DIR=<isolated-directory> <output-directory>/Nexa.Desktop --validate-shell",
+        "exitCode": 0,
+        "log": "nxml-closure-aot-shell2.log",
+        "logSha256": "8dac455c1194607a78b589e755c997774aed2ad96f185c345eef540d91b93300"
+      },
+      "setup": {
+        "command": "NEXA_DATA_DIR=<separate-isolated-directory> <output-directory>/Nexa.Desktop --validate-setup",
+        "exitCode": 0,
+        "log": "nxml-closure-aot-setup2.log",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "closureMarkers": [
+        "Dynamic launch home validation passed:",
+        "Dynamic Bedrock validation passed:",
+        "NXML primitive segment validation passed:",
+        "Dynamic launch/install validation passed:",
+        "Dynamic settings global validation passed:",
+        "Dynamic settings content validation passed:",
+        "Dynamic settings world/server/export/recovery validation passed:",
+        "Dynamic settings migration validation passed:"
+      ],
+      "compiledSourceBuild": {
+        "command": "dotnet publish Nexa.Desktop -c Release -r linux-x64 -p:PublishAot=true -p:StripSymbols=true -o <output-directory>",
+        "exitCode": 0,
+        "log": "nxml-closure-aot-publish2.log",
+        "logSha256": "216e18350960ced800ad23a381ce3b5fa3993257e4bcd688855c763c6b4194f8"
+      },
+      "executableSha256": "a118b2cedd3a81eb9daadbb754400eaaabb03793c5d7f7dc9778a43f4cbbf26c",
+      "externalAssets": {
+        "count": 694,
+        "nxml": 636,
+        "nss": 57,
+        "json": 1,
+        "missing": 0,
+        "extra": 0,
+        "contentMismatch": 0
+      },
+      "warningIds": [
+        "IL2098"
+      ]
+    },
+    {
+      "kind": "trimmed",
+      "rid": "linux-x64",
+      "publish": {
+        "command": "dotnet publish Nexa.Desktop -c Release -r linux-x64 --self-contained true --no-build -p:PublishTrimmed=true -p:TrimMode=link -m:1 -nr:false -o <output-directory>",
+        "exitCode": 0,
+        "log": "nxml-closure-trim-publish3.log",
+        "logSha256": "dfe6c80dc1cb2894a0dee42f6485eeea783a6314c8a053953ef684d3a395ef7e"
+      },
+      "shell": {
+        "command": "NEXA_DATA_DIR=<isolated-directory> <output-directory>/Nexa.Desktop --validate-shell",
+        "exitCode": 0,
+        "log": "nxml-closure-trim-shell2.log",
+        "logSha256": "fa6a56d67bc66e51e43fa6fba624c2190377a3f309a21ef402bf9307b75ac7d0"
+      },
+      "setup": {
+        "command": "NEXA_DATA_DIR=<separate-isolated-directory> <output-directory>/Nexa.Desktop --validate-setup",
+        "exitCode": 0,
+        "log": "nxml-closure-trim-setup2.log",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "closureMarkers": [
+        "Dynamic launch home validation passed:",
+        "Dynamic Bedrock validation passed:",
+        "NXML primitive segment validation passed:",
+        "Dynamic launch/install validation passed:",
+        "Dynamic settings global validation passed:",
+        "Dynamic settings content validation passed:",
+        "Dynamic settings world/server/export/recovery validation passed:",
+        "Dynamic settings migration validation passed:"
+      ],
+      "compiledSourceBuild": {
+        "command": "dotnet publish Nexa.Desktop -c Release -r linux-x64 --self-contained true -p:PublishTrimmed=true -p:TrimMode=link -m:1 -nr:false -o <output-directory>",
+        "exitCode": 0,
+        "log": "nxml-closure-trim-publish2.log",
+        "logSha256": "b8eb3e20b886216a65cd7352424c84e85a04f4920ac30d913e1a5babaac31f8b"
+      },
+      "executableSha256": "b53faf8a5031a4b5aa38faba608be1418b6ec1e7763acd7d331bbf72bf3a5e6a",
+      "externalAssets": {
+        "count": 694,
+        "nxml": 636,
+        "nss": 57,
+        "json": 1,
+        "missing": 0,
+        "extra": 0,
+        "contentMismatch": 0
+      },
+      "warningIds": [
+        "IL2098"
+      ]
+    }
+  ],
+  "nativeCaptures": {
+    "stages": 15,
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "widthsDip": [
+      1040,
+      810
+    ],
+    "captures": 60,
+    "selected": 7,
+    "captureIndex": "capture-index.json"
+  },
+  "limits": [
+    "Typed fixtures and isolated temporary directories; no live provider/game execution.",
+    "Server-save/export writes are counted at zero. World/snapshot/recovery mutation routes are not registered in the read-only publication fixture.",
+    "Native captures are Linux Avalonia RenderTargetBitmap(window), not Windows DWM/compositor/tray acceptance.",
+    "The first trimmed publish failed with MSB4166 child-node exits; the recorded final publish uses one MSBuild node and no node reuse.",
+    "Existing Jint IL2098 is unsuppressed in both publication paths. External asset EOF whitespace was normalized after the compiled builds; final --no-build publications refresh those assets over unchanged C# inputs and are re-executed.",
+    "The formatter emitted a workspace-loading warning and exited 0 without formatting violations."
+  ]
+}

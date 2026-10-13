@@ -11,6 +11,9 @@ The user-requested constraints take precedence:
 
 ## Documents
 
+- [nxml-renderer.md](nxml-renderer.md) — current renderer, external NXML/NSS contracts and owned dynamic projections
+- [nxml-migration-remaining.md](nxml-migration-remaining.md) — current product presentation inventory and dated migration evidence
+- [evidence/nxml-closure-2026-10-13/README.md](evidence/nxml-closure-2026-10-13/README.md) — rendered closure previews, interaction manifests and capture digests
 - [work-scheduling.md](work-scheduling.md) — 共享资源 admission、Launch Quiet Mode 与可见提示生命周期
 - [download-trust.md](download-trust.md) — Minecraft 权威元数据、摘要绑定、旧任务与更新权限约束
 - [update-signature-policy.md](update-signature-policy.md) — 固定发布密钥、签名算法、认证过期策略与封套预算

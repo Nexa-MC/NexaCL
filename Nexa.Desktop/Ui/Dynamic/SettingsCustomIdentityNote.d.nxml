@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<TextInput Key="{data input}" Label="备注行 {data index}" Localize="false" MaximumLength="8192" PreserveTabs="true" Class="settings-custom-input" />
+</nxml-dynamic>

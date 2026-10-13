@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data kind} {data count} 项{data category}" Localize="false" /></nxml-dynamic>

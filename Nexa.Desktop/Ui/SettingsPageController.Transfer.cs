@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Ui;
@@ -23,6 +23,9 @@ internal sealed partial class SettingsPageController
     private bool _settingsResetApplying;
     private Guid _settingsImportDialog;
     private long _settingsTransferGeneration;
+    private XsrUiEntityId _settingsTransferPanel;
+    private string? _settingsTransferPanelInstance;
+    private string? _settingsTransferPanelSection;
     private readonly ConcurrentQueue<(long Generation, bool Accepted, ImportResult Result)> _settingsImportDecisions = new();
     private bool SettingsTransferBusy => _settingsImportRead is not null || _settingsExportWrite is not null
         || _settingsImportApply is not null || _settingsImportDialog != Guid.Empty;
@@ -31,23 +34,36 @@ internal sealed partial class SettingsPageController
         Func<string, CancellationToken, Task<bool>> save)
     { _readSettingsDocument = read; _saveSettingsDocument = save; }
 
+    private Dictionary<string, string> SettingsTransferProjection() => new()
+    {
+        ["importEnabled"] = Flag(_readSettingsDocument is not null && !SettingsTransferBusy),
+        ["exportEnabled"] = Flag(_saveSettingsDocument is not null && !SettingsTransferBusy),
+        ["resetEnabled"] = Flag(!SettingsTransferBusy && _queries.TryResolve(SettingsPolicyContract.ResetPreviewQuery, out _)
+            && _commands.TryResolve(SettingsPolicyContract.ResetCommand, out _)),
+        ["global"] = Flag(_instance is null),
+        ["instance"] = Flag(_instance is not null),
+    };
+
     private void BuildSettingsTransfer()
     {
-        _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsTransfer.d.nxml", new Dictionary<string, string>
-        {
-            ["importEnabled"] = Flag(_readSettingsDocument is not null && !SettingsTransferBusy),
-            ["exportEnabled"] = Flag(_saveSettingsDocument is not null && !SettingsTransferBusy),
-            ["resetEnabled"] = Flag(!SettingsTransferBusy && _queries.TryResolve(SettingsPolicyContract.ResetPreviewQuery, out _)
-                && _commands.TryResolve(SettingsPolicyContract.ResetCommand, out _)),
-            ["global"] = Flag(_instance is null),
-            ["instance"] = Flag(_instance is not null),
-        }));
+        _settingsTransferPanelInstance = _instance; _settingsTransferPanelSection = _selected;
+        _settingsTransferPanel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsTransfer.d.nxml", SettingsTransferProjection()));
+    }
+
+    private void RefreshSettingsTransferPresentation()
+    {
+        if (!_shell.Tree.IsAlive(_settingsTransferPanel) || _settingsTransferPanelInstance != _instance || _settingsTransferPanelSection != _selected) return;
+        _dynamic.Reload(_settingsTransferPanel, DesktopMarkup.Dynamic("SettingsTransfer.d.nxml", SettingsTransferProjection()));
     }
 
     private void HandleSettingsTransfer(XsrSemanticId command, XsrUiEntityId source)
     {
         if (!(_instanceDirectory is null && _selected == "storage" || _instanceDirectory is not null && _selected == "game")) return;
-        if (!_shell.Tree.IsAlive(source) || _shell.Tree.Name(source) != (command == ImportSettings ? "SettingsImport" : command == ResetSettings ? "SettingsReset" : "SettingsExport")) return;
+        if (!_shell.Tree.IsAlive(source) || !_shell.Tree.IsAlive(_settingsTransferPanel)
+            || _settingsTransferPanelInstance != _instance || _settingsTransferPanelSection != _selected
+            || _shell.Tree.GetComponent<XsrUiInput>(source)?.Enabled != true) return;
+        string key = command == ImportSettings ? "SettingsImport" : command == ResetSettings ? "SettingsReset" : "SettingsExport";
+        if (CatalogNodes(_settingsTransferPanel)[key] != source) return;
         if (SettingsTransferBusy) return;
         if (command == ImportSettings && _readSettingsDocument is null || command == ExportSettings && _saveSettingsDocument is null) return;
         CancelSettingsTransfer();
@@ -56,7 +72,7 @@ internal sealed partial class SettingsPageController
         if (command == ImportSettings) { _settingsImportRead = ReadImportAsync(instance, token); ObserveTransfer(_settingsImportRead); }
         else if (command == ResetSettings) { _settingsImportRead = ReadResetAsync(instance, token); ObserveTransfer(_settingsImportRead); }
         else { _settingsExportWrite = ExportAsync(instance, token); ObserveTransfer(_settingsExportWrite); }
-        BuildSections();
+        RefreshSettingsTransferPresentation();
     }
 
     private async Task<ImportResult?> ReadResetAsync(string? instance, CancellationToken token)
@@ -105,27 +121,30 @@ internal sealed partial class SettingsPageController
         if (_settingsImportRead is { IsCompleted: true } reading)
         {
             _settingsImportRead = null; changed = true;
-            if (reading.IsFaulted) _feedback.Error("无法生成设置预览，请重试。");
+            if (reading.IsFaulted) _feedback.Error(ProductPresentationText.Raw("settings.transfer.previewFailed"));
             else if (reading.IsCompletedSuccessfully && reading.Result is { } imported)
             {
-                if (imported.Preview.Errors.Count > 0) _feedback.Error(imported.Reset ? "无法恢复设置，现有设置未作更改。" : "设置文件的格式、值或作用域不符合要求，未作更改。");
-                else if (imported.Preview.Changes.Count == 0) _feedback.Info(imported.Reset ? "没有需要恢复的设置。" : "未发现可导入的更改。");
+                if (imported.Preview.Errors.Count > 0) _feedback.Error(ProductPresentationText.Raw(imported.Reset ? "settings.transfer.resetInvalid" : "settings.transfer.importInvalid"));
+                else if (imported.Preview.Changes.Count == 0) _feedback.Info(ProductPresentationText.Raw(imported.Reset ? "settings.transfer.resetEmpty" : "settings.transfer.importEmpty"));
                 else
                 {
                     long generation = _settingsTransferGeneration;
                     string labels = string.Join('\n', imported.Preview.Changes.Take(16).Select(change => _shell.Renderer.LocalizeText(DisplayLabel(
-                        _catalog!.Entries.FirstOrDefault(entry => entry.SettingKey == change.Key)?.Label ?? "其他设置"))));
-                    string message = _shell.Renderer.LocalizeText((imported.Reset ? "将恢复 " : "将导入 ") + imported.Preview.Changes.Count + " 项设置。") + "\n" + labels;
-                    if (imported.Preview.Changes.Count > 16) message += "\n" + _shell.Renderer.LocalizeText("另有 " + (imported.Preview.Changes.Count - 16) + " 项更改。");
+                        _catalog!.Entries.FirstOrDefault(entry => entry.SettingKey == change.Key)?.Label ?? ProductPresentationText.Raw("settings.transfer.otherSetting")))));
+                    string message = ProductPresentationText.Format(imported.Reset ? "SettingsTransferResetCount" : "SettingsTransferImportCount", _shell.Renderer.LocalizeText,
+                        ("count", imported.Preview.Changes.Count.ToString(System.Globalization.CultureInfo.CurrentCulture))) + "\n" + labels;
+                    if (imported.Preview.Changes.Count > 16) message += "\n" + ProductPresentationText.Format("SettingsTransferMoreCount", _shell.Renderer.LocalizeText,
+                        ("count", (imported.Preview.Changes.Count - 16).ToString(System.Globalization.CultureInfo.CurrentCulture)));
                     if (imported.Preview.Changes.Any(change => SettingsPolicySchema.ByKey[change.Key].Timing == SettingsApplyTiming.Restart))
-                        message += "\n" + _shell.Renderer.LocalizeText("部分设置需要重启后生效。");
+                        message += "\n" + ProductPresentationText.Term("settings.transfer.restartRequired", _shell.Renderer.LocalizeText);
                     _settingsImportDialog = _feedback.ShowDialog(imported.Reset ? "settings.reset" : "settings.import",
-                        imported.Reset ? (_instance is null ? "恢复默认" : "恢复继承") : "导入设置", message, imported.Reset ? "恢复" : "应用更改", "取消",
+                        ProductPresentationText.Raw(imported.Reset ? (_instance is null ? "settings.transfer.resetGlobalTitle" : "settings.transfer.resetInstanceTitle") : "settings.transfer.importTitle"), message,
+                        ProductPresentationText.Raw(imported.Reset ? "settings.action.restore" : "settings.transfer.importAction"), ProductPresentationText.Raw("settings.action.cancel"),
                         accepted =>
                         {
                             if (Volatile.Read(ref _settingsTransferGeneration) == generation)
                                 _settingsImportDecisions.Enqueue((generation, accepted, imported));
-                        });
+                        }, localizeMessage: false);
                 }
             }
         }
@@ -136,7 +155,7 @@ internal sealed partial class SettingsPageController
             if (!decision.Accepted) continue;
             _settingsResetApplying = decision.Result.Reset;
             if (!_commands.TryResolve(_settingsResetApplying ? SettingsPolicyContract.ResetCommand : SettingsPolicyContract.ImportCommand, out var route))
-            { _feedback.Error("暂时无法应用设置。"); continue; }
+            { _feedback.Error(ProductPresentationText.Raw("settings.transfer.applyUnavailable")); continue; }
             _settingsImportApply = _settingsResetApplying
                 ? _commands.Dispatch(route, new SettingsResetCommand(decision.Result.Preview.Revision, _instance), cancellationToken: _settingsTransferStop.Token).Completion
                 : _commands.Dispatch(route, new SettingsImportCommand(decision.Result.Document,
@@ -146,16 +165,16 @@ internal sealed partial class SettingsPageController
         if (_settingsImportApply is { IsCompleted: true } applying)
         {
             _settingsImportApply = null; changed = true;
-            if (PendingQuery.Succeeded(applying)) _feedback.Info(_settingsResetApplying ? "设置已恢复。" : "设置已导入。");
-            else if (!applying.IsCanceled) _feedback.Error(_settingsResetApplying ? "设置未恢复；可能已发生更改，请重新预览。" : "设置未导入；可能已发生更改，请重新选择文件并预览。");
+            if (PendingQuery.Succeeded(applying)) _feedback.Info(ProductPresentationText.Raw(_settingsResetApplying ? "settings.transfer.resetComplete" : "settings.transfer.importComplete"));
+            else if (!applying.IsCanceled) _feedback.Error(ProductPresentationText.Raw(_settingsResetApplying ? "settings.transfer.resetFailed" : "settings.transfer.importFailed"));
         }
         if (_settingsExportWrite is { IsCompleted: true } exporting)
         {
             _settingsExportWrite = null; changed = true;
-            if (exporting.IsCompletedSuccessfully && exporting.Result) _feedback.Info("设置已导出。");
-            else if (exporting.IsFaulted) _feedback.Error("无法导出设置，原文件未被替换。");
+            if (exporting.IsCompletedSuccessfully && exporting.Result) _feedback.Info(ProductPresentationText.Raw("settings.transfer.exportComplete"));
+            else if (exporting.IsFaulted) _feedback.Error(ProductPresentationText.Raw("settings.transfer.exportFailed"));
         }
-        if (changed) { BuildSections(); UpdateEditors(); }
+        if (changed) RefreshSettingsTransferPresentation();
     }
 
     private void CancelSettingsTransfer()

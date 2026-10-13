@@ -1,5 +1,5 @@
-﻿using Nexa.Xsr.Renderer;
-using Nexa.Xsr;
+﻿using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Xsr.Renderer.Nxml;
 
@@ -89,6 +89,11 @@ public sealed record NxmlIrNode
     public bool? ModalLayer { get; init; }
     public string? AnchorKey { get; init; }
     public double AnchorGap { get; init; } = 4;
+    public string? SegmentThumbKey { get; init; }
+    public double? SegmentWidth { get; init; }
+    public bool? Checked { get; init; }
+    public bool? SelectionRequired { get; init; }
+    public bool? TransitionMovesSelf { get; init; }
     public XsrUiOverlayMotionKind? OverlayMotion { get; init; }
     public XsrUiLiveSetting? LiveSetting { get; init; }
     public XsrSemanticId? DismissCommand { get; init; }

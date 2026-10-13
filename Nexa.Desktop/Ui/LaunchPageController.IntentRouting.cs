@@ -1,15 +1,13 @@
 using System.Globalization;
-using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
 using Nexa.Services.Foundation;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Install;
-
 using Nexa.Services.Minecraft.Launch;
-
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -70,7 +68,7 @@ internal sealed partial class LaunchPageController
         }
         else if (command == InstallLoaderVanillaCommand)
         {
-            SelectInstallLoader("原版 Minecraft", string.Empty);
+            SelectInstallLoader(LaunchInstallText.Raw("loader.vanilla"), string.Empty);
         }
         else if (command == InstallLoaderForgeCommand)
         {
@@ -138,7 +136,7 @@ internal sealed partial class LaunchPageController
         }
         else if (command == LaunchSettingsCommand)
         {
-            OpenBoundSubpage(_versionSettingsPage, e.Intent.Source, "版本设置页面未绑定。");
+            OpenBoundSubpage(_versionSettingsPage, e.Intent.Source, InstallCopy("copy.b4acd16bf9ae"));
         }
         else if (command == LaunchModifyCommand)
         {
@@ -146,7 +144,7 @@ internal sealed partial class LaunchPageController
         }
         else if (command == AccountWardrobeCommand)
         {
-            OpenBoundSubpage(_wardrobePage, e.Intent.Source, "更衣橱页面未绑定。");
+            OpenBoundSubpage(_wardrobePage, e.Intent.Source, InstallCopy("copy.7b91e37cba7e"));
         }
         else if (command.Value == "ui.launch.restore")
         {
@@ -217,14 +215,14 @@ internal sealed partial class LaunchPageController
         if (!_foundationCommands.TryResolve(FoundationRouteIds.AccountRemoveProfile, out XsrCommandId route)) return;
         XsrResult result = await _foundationCommands.Dispatch(route, new AccountRemoveProfileCommand(index, revision),
             cancellationToken: _lifetimeCancellation.Token).Completion.ConfigureAwait(false);
-        if (!_disposed && !result.IsSuccess) _feedback.Error($"删除档案失败：{result.Error?.Message}");
+        if (!_disposed && !result.IsSuccess) _feedback.Error(InstallFormat("DeleteProfileFailed", ("message", result.Error?.Message ?? "")));
     }
 
     private async Task SelectAccountAsync(int index, long revision)
     {
         if (!_foundationCommands.TryResolve(FoundationRouteIds.AccountSelectProfile, out XsrCommandId route))
         {
-            _feedback.Error("账户切换命令未注册。");
+            _feedback.Error(InstallCopy("copy.a6e55436e782"));
             return;
         }
 
@@ -233,6 +231,6 @@ internal sealed partial class LaunchPageController
             .Completion.ConfigureAwait(false);
         if (_disposed) return;
         if (result.IsSuccess) Publish(LaunchPageState.AccountPickerKey, false);
-        else _feedback.Error($"切换档案失败：{result.Error?.Message}");
+        else _feedback.Error(InstallFormat("SwitchProfileFailed", ("message", result.Error?.Message ?? "")));
     }
 }

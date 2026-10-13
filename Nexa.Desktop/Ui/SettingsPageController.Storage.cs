@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Nexa.Services.Setup;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -23,6 +23,7 @@ internal sealed partial class SettingsPageController
     private bool _storageApplyingCancel;
     private bool _storageStatusUnavailable;
     private bool _storageRebuildPending;
+    private XsrUiEntityId _storageLocationPanel, _storageCleanupPanel;
     private CancellationTokenSource? _storageStop;
     private long _storageGeneration;
     private Guid _storageDialog;
@@ -32,13 +33,10 @@ internal sealed partial class SettingsPageController
     internal void ConfigureStoragePreferences(Func<CancellationToken, Task<string?>> chooseDirectory, Action queuedClose)
     { _chooseStorageDirectory = chooseDirectory; _closeForStorageMigration = queuedClose; }
 
-    private void BuildStoragePreferences()
+    private Dictionary<string, string> StorageLocationProjection()
     {
-        if (_instanceDirectory is not null || _selected != "storage") return;
-        _storageRebuildPending = false;
-        bool locked = _storageStatus?.LocationLocked == true;
-        bool pending = _storageStatus?.MigrationPending == true;
-        _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsStorageLocation.d.nxml", new Dictionary<string, string>
+        bool locked = _storageStatus?.LocationLocked == true, pending = _storageStatus?.MigrationPending == true;
+        return new()
         {
             ["loading"] = Flag(_storageStatus is null),
             ["loaded"] = Flag(_storageStatus is not null),
@@ -52,13 +50,31 @@ internal sealed partial class SettingsPageController
             ["cancelVisible"] = Flag(pending),
             ["cancelEnabled"] = Flag(!StoragePreferencesBusy && _storageStatus?.PendingTransaction is not null
                 && _commands.TryResolve(StoragePreferencesContract.CancelMigration, out _)),
-        }));
+        };
+    }
+
+    private Dictionary<string, string> StorageCleanupProjection() => new()
+    {
+        ["enabled"] = Flag(!StoragePreferencesBusy && _queries.TryResolve(StoragePreferencesContract.CleanupPreview, out _)
+            && _commands.TryResolve(StoragePreferencesContract.Cleanup, out _)),
+    };
+
+    private void BuildStoragePreferences()
+    {
+        if (_instanceDirectory is not null || _selected != "storage") return;
+        _storageRebuildPending = false;
+        _storageLocationPanel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsStorageLocation.d.nxml", StorageLocationProjection()));
         BuildStorageLocations();
-        _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsStorageCleanup.d.nxml", new Dictionary<string, string>
-        {
-            ["enabled"] = Flag(!StoragePreferencesBusy && _queries.TryResolve(StoragePreferencesContract.CleanupPreview, out _)
-                && _commands.TryResolve(StoragePreferencesContract.Cleanup, out _)),
-        }));
+        _storageCleanupPanel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsStorageCleanup.d.nxml", StorageCleanupProjection()));
+    }
+
+    private void RefreshStoragePreferencesPresentation()
+    {
+        if (_instanceDirectory is not null || _selected != "storage" || !_shell.Tree.IsAlive(_storageLocationPanel) || !_shell.Tree.IsAlive(_storageCleanupPanel)) return;
+        _dynamic.Reload(_storageLocationPanel, DesktopMarkup.Dynamic("SettingsStorageLocation.d.nxml", StorageLocationProjection()));
+        _dynamic.Reload(_storageCleanupPanel, DesktopMarkup.Dynamic("SettingsStorageCleanup.d.nxml", StorageCleanupProjection()));
+        RefreshStorageLocationsPresentation();
+        _storageRebuildPending = false;
     }
 
     private void HandleStoragePreferences(XsrSemanticId command, XsrUiEntityId source)
@@ -66,10 +82,12 @@ internal sealed partial class SettingsPageController
         if (_instanceDirectory is not null || _selected != "storage" || StoragePreferencesBusy || !_shell.Tree.IsAlive(source)) return;
         string name = command == MoveStorage ? "SettingsStorageMove" : command == CancelStorageMigration ? "SettingsStorageCancel"
             : command == CleanStorageTemporary ? "SettingsStorageCleanTemporary" : "SettingsStorageCleanTasks";
-        if (_shell.Tree.Name(source) != name || _shell.Tree.GetComponent<XsrUiInput>(source)?.Enabled != true) return;
+        var owner = command == MoveStorage || command == CancelStorageMigration ? _storageLocationPanel : _storageCleanupPanel;
+        if (!_shell.Tree.IsAlive(owner) || !CatalogNodes(owner).TryGetValue(name, out var current) || source != current
+            || _shell.Tree.GetComponent<XsrUiInput>(source)?.Enabled != true) return;
         CancelStoragePreferences(); _storageStop = new();
         _storagePreviewRead = ReadStoragePreviewAsync(command, _storageStop.Token);
-        ObserveTransfer(_storagePreviewRead); BuildSections();
+        ObserveTransfer(_storagePreviewRead); RefreshStoragePreferencesPresentation();
     }
 
     private async Task<StoragePreview?> ReadStoragePreviewAsync(XsrSemanticId command, CancellationToken token)
@@ -80,15 +98,15 @@ internal sealed partial class SettingsPageController
             string? selected = await _chooseStorageDirectory!(token).ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
             if (selected is null) return null;
-            if (!_queries.TryResolve(StoragePreferencesContract.MigrationPreview, out var route)) throw new IOException("迁移暂时不可用。");
+            if (!_queries.TryResolve(StoragePreferencesContract.MigrationPreview, out var route)) throw new IOException(ProductPresentationText.Raw("settings.storage.migrationUnavailable"));
             var preview = await _queries.QueryAsync<StorageMigrationQuery, StorageMigrationPreview>(route, new(selected), cancellationToken: token).ConfigureAwait(false);
-            if (!preview.IsSuccess) throw new IOException(preview.Error?.Message ?? "无法生成迁移预览。");
+            if (!preview.IsSuccess) throw new IOException(preview.Error?.Message ?? ProductPresentationText.Raw("settings.storage.migrationPreviewFailed"));
             return new(preview.Value, null);
         }
-        if (!_queries.TryResolve(StoragePreferencesContract.CleanupPreview, out var cleanupRoute)) throw new IOException("清理暂时不可用。");
+        if (!_queries.TryResolve(StoragePreferencesContract.CleanupPreview, out var cleanupRoute)) throw new IOException(ProductPresentationText.Raw("settings.storage.cleanupUnavailable"));
         StorageCleanupKind kind = command == CleanStorageTemporary ? StorageCleanupKind.TemporaryFiles : StorageCleanupKind.FinishedTasks;
         var cleanup = await _queries.QueryAsync<StorageCleanupQuery, StorageCleanupPreview>(cleanupRoute, new(kind), cancellationToken: token).ConfigureAwait(false);
-        if (!cleanup.IsSuccess) throw new IOException(cleanup.Error?.Message ?? "无法生成清理预览。");
+        if (!cleanup.IsSuccess) throw new IOException(cleanup.Error?.Message ?? ProductPresentationText.Raw("settings.storage.cleanupPreviewFailed"));
         return new(null, cleanup.Value);
     }
 
@@ -111,28 +129,29 @@ internal sealed partial class SettingsPageController
             else
             {
                 _storageStatusUnavailable = true;
-                _feedback.Error(status.IsCompletedSuccessfully ? status.Result.Error?.Message ?? "无法读取存储位置，请重新启动后重试。" : "无法读取存储位置，请重新启动后重试。");
+                _feedback.Error(status.IsCompletedSuccessfully ? status.Result.Error?.Message ?? ProductPresentationText.Raw("settings.storage.locationReadFailed") : ProductPresentationText.Raw("settings.storage.locationReadFailed"));
             }
         }
         if (_storagePreviewRead is { IsCompleted: true } reading)
         {
             _storagePreviewRead = null; changed = true;
-            if (reading.IsFaulted) _feedback.Error(reading.Exception?.GetBaseException().Message ?? "无法生成存储预览。");
+            if (reading.IsFaulted) _feedback.Error(reading.Exception?.GetBaseException().Message ?? ProductPresentationText.Raw("settings.storage.previewFailed"));
             else if (reading.IsCompletedSuccessfully && reading.Result is { } preview)
             {
-                if (preview.Cleanup is { Entries.Count: 0 }) _feedback.Info("没有符合条件的清理项。");
+                if (preview.Cleanup is { Entries.Count: 0 }) _feedback.Info(ProductPresentationText.Raw("settings.storage.cleanupEmpty"));
                 else
                 {
                     long generation = _storageGeneration;
-                    string message = preview.CancelTransaction is not null ? "取消待完成迁移，继续使用当前数据位置。已存在的数据不会被删除。" : preview.Migration is { } migration
-                        ? "将在下次启动时复制 " + migration.Files + " 个文件（" + migration.Bytes + " 字节）。\n"
-                            + migration.SourceDirectory + "\n→ " + migration.DestinationDirectory
-                            + "\n确认后启动器关闭；旧数据保留，独立游戏路径保持原位置。"
-                        : "将清理 " + preview.Cleanup!.Entries.Count + " 项（" + preview.Cleanup.Entries.Sum(entry => entry.Bytes) + " 字节）。\n"
-                            + string.Join('\n', preview.Cleanup.Entries.Take(12).Select(entry => entry.Identity));
-                    _storageDialog = _feedback.ShowDialog("settings.storage", preview.CancelTransaction is not null ? "取消待迁移" : preview.Migration is not null ? "迁移启动器数据" : "确认安全清理", message,
-                        preview.CancelTransaction is not null ? "取消迁移" : preview.Migration is not null ? "排队并关闭" : "清理", "返回",
-                        accepted => { if (Volatile.Read(ref _storageGeneration) == generation) _storageDecisions.Enqueue((generation, accepted, preview)); });
+                    string message = preview.CancelTransaction is not null ? ProductPresentationText.Term("settings.storage.cancelMessage", _shell.Renderer.LocalizeText) : preview.Migration is { } migration
+                        ? ProductPresentationText.Format("SettingsStorageMigration", _shell.Renderer.LocalizeText,
+                            ("files", migration.Files.ToString(System.Globalization.CultureInfo.CurrentCulture)), ("bytes", migration.Bytes.ToString(System.Globalization.CultureInfo.CurrentCulture)),
+                            ("source", migration.SourceDirectory), ("destination", migration.DestinationDirectory))
+                        : ProductPresentationText.Format("SettingsStorageCleanup", _shell.Renderer.LocalizeText,
+                            ("count", preview.Cleanup!.Entries.Count.ToString(System.Globalization.CultureInfo.CurrentCulture)), ("bytes", preview.Cleanup.Entries.Sum(entry => entry.Bytes).ToString(System.Globalization.CultureInfo.CurrentCulture)),
+                            ("identities", string.Join('\n', preview.Cleanup.Entries.Take(12).Select(entry => entry.Identity))));
+                    _storageDialog = _feedback.ShowDialog("settings.storage", ProductPresentationText.Raw(preview.CancelTransaction is not null ? "settings.storage.cancelTitle" : preview.Migration is not null ? "settings.storage.migrationTitle" : "settings.storage.cleanupTitle"), message,
+                        ProductPresentationText.Raw(preview.CancelTransaction is not null ? "settings.storage.cancelAction" : preview.Migration is not null ? "settings.storage.migrationAction" : "settings.storage.cleanupAction"), ProductPresentationText.Raw("settings.action.back"),
+                        accepted => { if (Volatile.Read(ref _storageGeneration) == generation) _storageDecisions.Enqueue((generation, accepted, preview)); }, localizeMessage: false);
                 }
             }
         }
@@ -145,7 +164,7 @@ internal sealed partial class SettingsPageController
             _storageApplyingCancel = decision.Preview.CancelTransaction is not null;
             if (!_commands.TryResolve(decision.Preview.CancelTransaction is not null ? StoragePreferencesContract.CancelMigration
                 : _storageApplyingMove ? StoragePreferencesContract.Migrate : StoragePreferencesContract.Cleanup, out var route))
-            { _feedback.Error("暂时无法执行存储操作。"); continue; }
+            { _feedback.Error(ProductPresentationText.Raw("settings.storage.operationUnavailable")); continue; }
             _storageApply = decision.Preview.CancelTransaction is { } transaction
                 ? _commands.Dispatch(route, new StorageMigrationCancelCommand(transaction), cancellationToken: _storageStop.Token).Completion
                 : decision.Preview.Migration is { } migration
@@ -159,15 +178,15 @@ internal sealed partial class SettingsPageController
             if (PendingQuery.Succeeded(applying))
             {
                 if (_storageApplyingMove) _closeForStorageMigration?.Invoke();
-                else _feedback.Info(_storageApplyingCancel ? "待迁移已取消。" : "符合条件的项目已清理。");
+                else _feedback.Info(ProductPresentationText.Raw(_storageApplyingCancel ? "settings.storage.migrationCancelled" : "settings.storage.cleanupComplete"));
             }
-            else if (!applying.IsCanceled) _feedback.Error(applying.IsCompletedSuccessfully ? applying.Result.Error?.Message ?? "存储操作未完成。" : "存储操作未完成，请重新预览。");
+            else if (!applying.IsCanceled) _feedback.Error(applying.IsCompletedSuccessfully ? applying.Result.Error?.Message ?? ProductPresentationText.Raw("settings.storage.operationIncomplete") : ProductPresentationText.Raw("settings.storage.operationFailed"));
         }
         if (changed) _storageRebuildPending = true;
-        // Status completion runs before the intent loop. Keep a clicked source alive until
-        // that loop consumes it; an unrelated asynchronous fact refresh must not drop input.
+        // Status completion runs before the intent loop. Consume queued intents before
+        // applying changed availability to their retained controls.
         if (_storageRebuildPending && _catalog is not null && _instanceDirectory is null && _selected == "storage"
-            && _pending.IsEmpty) BuildSections();
+            && _pending.IsEmpty) RefreshStoragePreferencesPresentation();
     }
 
     private void CancelStoragePreferences()

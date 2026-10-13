@@ -1,10 +1,10 @@
 ﻿using System.Collections.Concurrent;
 using System.Globalization;
-using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Composition;
 using Nexa.Services.Tasks;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -345,7 +345,7 @@ internal sealed class TaskCenterController : IDisposable
         var ordered = entries.OrderBy(static entry => entry.IsTerminal)
             .Select(entry => _cards[entry.TaskId].Root).ToArray();
         if (!_shell.Tree.Children(list).SequenceEqual(ordered))
-            foreach (var root in ordered) _shell.Tree.Attach(root, list);
+            _dynamic.Reorder(list, ordered);
     }
 
     private PresentedCard CreateCard(TaskCenterEntry entry)
@@ -381,8 +381,8 @@ internal sealed class TaskCenterController : IDisposable
         {
             ["key"] = $"task-card:{entry.TaskId}",
             ["title"] = _shell.Renderer.LocalizeText(entry.Title),
-            ["stage"] = entry.IsTerminal ? _shell.Renderer.LocalizeText(entry.Detail) : TaskFormat("TaskStage", new()
-            { ["stage"] = _shell.Renderer.LocalizeText(entry.Stage), ["detail"] = _shell.Renderer.LocalizeText(entry.Detail) }),
+            ["stage"] = entry.IsTerminal ? entry.Detail : TaskFormat("TaskStage", new()
+            { ["stage"] = _shell.Renderer.LocalizeText(entry.Stage), ["detail"] = entry.Detail }),
             ["icon"] = entry.State switch
             {
                 TaskCenterEntryState.Finished => DesktopPresentationText.Raw("task.icon.finished"),
@@ -407,7 +407,7 @@ internal sealed class TaskCenterController : IDisposable
             ["show-meta"] = Flag(entry.TotalFiles > 0 || entry.SpeedBytesPerSecond > 0 && !entry.IsTerminal),
             ["files"] = entry.TotalFiles > 0 ? TaskFormat("TaskFiles", new() { ["completed"] = Number(entry.CompletedFiles), ["total"] = Number(entry.TotalFiles) }) : "",
             ["speed"] = entry.SpeedBytesPerSecond > 0 && !entry.IsTerminal ? FormatSpeed(entry.SpeedBytesPerSecond) : "",
-            ["error"] = _shell.Renderer.LocalizeText(entry.ErrorMessage ?? ""),
+            ["error"] = entry.ErrorMessage ?? "",
             ["show-error"] = Flag(entry.State == TaskCenterEntryState.Failed && !string.IsNullOrEmpty(entry.ErrorMessage)),
             ["action-label"] = TaskTerm(entry.IsTerminal ? "task.dismiss" : "task.cancel"),
             ["action"] = entry.IsTerminal ? "ui.tasks.card.dismiss" : "ui.tasks.card.cancel",
@@ -443,7 +443,7 @@ internal sealed class TaskCenterController : IDisposable
                 TaskCenterEntryState.Failed => "TaskStepFailed",
                 _ => "TaskStepPending"
             }, step.State is TaskCenterEntryState.Running or TaskCenterEntryState.Failed
-                ? new() { ["name"] = _shell.Renderer.LocalizeText(step.Name), ["detail"] = _shell.Renderer.LocalizeText(step.Detail) }
+                ? new() { ["name"] = _shell.Renderer.LocalizeText(step.Name), ["detail"] = step.Detail }
                 : new() { ["name"] = _shell.Renderer.LocalizeText(step.Name) }),
         });
 

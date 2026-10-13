@@ -215,6 +215,7 @@ public sealed partial class XsrUiShell
 
         SelectedNavigationId = initial;
         Stage = new XsrUiStage(Tree, state, Root, Content, new ShellIntentSink(this), stateBridge);
+        CaptureDeclaredTitleTypography();
         FinishComposition();
     }
 }

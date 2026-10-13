@@ -1,5 +1,5 @@
-﻿using Nexa.Xsr.Renderer;
-using Nexa.Xsr;
+﻿using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Xsr.Renderer.Nxml.Tests;
@@ -8,6 +8,12 @@ internal static partial class Program
 {
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("declarative controls retain track reveal and toggle objects", DeclarativeControlFactsRetainLiveObjects),
+        ("declarative controls reject invalid references atomically", DeclarativeControlFactsRejectInvalidReferencesAtomically),
+        ("placeholder reload retains draft caret and input contract", PlaceholderReloadRetainsDraftCaretAndInputContract),
+        ("literal input placeholders respect reloaded localization policy", LiteralInputPlaceholdersRespectReloadedLocalizationPolicy),
+        ("mixed input placeholders localize formats before literal data", MixedInputPlaceholdersLocalizeFormatsBeforeLiteralData),
+        ("declarative sibling thumb and self transition load", DeclarativeSiblingThumbAndSelfTransitionLoad),
         ("external components compose without generated CLR types", ExternalComponentsComposeWithoutGeneratedTypes),
         ("external components reject cycles and expansion bombs", ExternalComponentsRejectCyclesAndExpansionBombs),
         ("NSS cascade preserves explicit values", NssRulesPreserveCascadeAndExplicitValues),

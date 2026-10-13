@@ -1,7 +1,7 @@
 using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
 
@@ -14,7 +14,12 @@ internal sealed partial class SettingsPageController
     private Task<XsrResult<InstanceIdentitySnapshot>>? _identityRead;
     private Task<XsrResult>? _identityWrite;
     private string? _identityInstance;
-    private XsrUiEntityId _identityGroup;
+    private XsrUiEntityId _identityGroup, _identityBody, _identityHistory, _identityNoteActions;
+    private bool _identityBodyReady;
+    private readonly Dictionary<int, XsrUiEntityId> _identityNoteRows = [];
+    private readonly List<XsrUiEntityId> _identityMismatchRows = [];
+    private string? _identityControlsRevision;
+    private string? _identityWriteInstance;
     private bool _identityStarred, _identityOfflineAllowed, _identityIsolation;
     internal Action<string>? LaunchManagementInstance { get; set; }
     internal Action<string>? ModifyManagementInstance { get; set; }
@@ -54,15 +59,18 @@ internal sealed partial class SettingsPageController
         if (_selected == "overview")
         {
             _identityStarred = draft.Starred; _identityIsolation = draft.Isolation;
-            SetButton("InstanceIdentityStar", _identityStarred ? "已收藏 · 点击取消" : "收藏此实例");
-            SetButton("InstanceIdentityIsolation", _identityIsolation ? "游戏目录：此实例（点击改为共享）" : "游戏目录：共享根目录（点击改为隔离）");
+            ReloadIdentityPresentation();
             _identityNotes.Clear(); _identityNotes.AddRange(draft.Notes); _identityNotesPage = draft.NotesPage;
-            if (_shell.Tree.IsAlive(_identityNotesGroup)) BuildIdentityNoteRows();
+            if (_shell.Tree.IsAlive(_identityNotesGroup))
+            {
+                BuildIdentityNoteRows();
+                foreach (var line in _identityNoteInputs) _shell.Renderer.SetTextInputValue(line.Input, _identityNotes[line.Index]);
+            }
         }
         else
         {
             _identityOfflineAllowed = draft.OfflineAllowed;
-            SetButton("InstanceOfflinePolicy", _identityOfflineAllowed ? "允许离线档案 · 点击收紧" : "要求在线账户 · 点击允许离线");
+            ReloadIdentityPresentation();
         }
         if (focus is not null) _shell.Tree.Walk(_identityGroup, entity =>
         { if (_shell.Tree.Name(entity) == focus) _shell.Renderer.Focus(entity, showIndicator: false); return true; });
@@ -70,146 +78,191 @@ internal sealed partial class SettingsPageController
 
     private void ResetIdentityControls()
     {
-        _identityGroup = _identityNotesGroup = default;
+        _identityGroup = _identityBody = _identityNotesGroup = _identityHistory = _identityNoteActions = default;
         _identityActions.Clear(); _identityInputs.Clear(); _identityNoteInputs.Clear();
+        _identityNoteRows.Clear(); _identityMismatchRows.Clear(); _identityControlsRevision = null;
     }
+
+    private string IdentityTemplate => _selected == "overview" ? "SettingsCustomIdentityOverview.d.nxml" : "SettingsCustomIdentityServer.d.nxml";
 
     private void BuildInstanceIdentity()
     {
         if (_instance is null || _selected is not ("overview" or "servers")) return;
-        _identityGroup = FormGroup(_sections, "InstanceIdentity", _selected == "overview" ? "实例信息" : "服务器要求与环境匹配");
+        _identityGroup = _dynamic.Append(_sections, DesktopMarkup.Dynamic(_selected == "overview" ? "SettingsCustomIdentityWorkspaceOverview.d.nxml" : "SettingsCustomIdentityWorkspaceServer.d.nxml"));
         BuildIdentityControls();
+    }
+
+    private Dictionary<string, string> IdentityProjection() => new()
+    {
+        ["loading"] = Flag(_identity is null && !_identityFailed),
+        ["failed"] = Flag(_identity is null && _identityFailed),
+        ["ready"] = Flag(_identity is not null),
+        ["enabled"] = Flag(_identityWrite is null),
+        ["refreshKey"] = ContentKey("refresh"),
+        ["managementEnabled"] = Flag(_managementWrite is null),
+        ["loader"] = _identity?.Loader ?? "",
+        ["java"] = _identity?.JavaPreference ?? "",
+        ["launchCount"] = _identity?.LaunchCount.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "",
+        ["stableIdentity"] = _identity is null ? "" : _identity.Identity.Length == 0 ? CustomCopy("identity.generated") : _identity.Identity,
+        ["canLaunch"] = Flag(LaunchManagementInstance is not null),
+        ["canModify"] = Flag(ModifyManagementInstance is not null),
+        ["icon"] = Flag(_identity?.Icon is not null),
+        ["iconNotice"] = _identity?.IconNotice ?? "",
+        ["hasIconNotice"] = Flag(_identity?.IconNotice.Length > 0),
+        ["isolationLabel"] = CustomCopy(_identityIsolation ? "identity.isolated" : "identity.shared"),
+        ["starLabel"] = CustomCopy(_identityStarred ? "identity.starred" : "identity.unstarred"),
+        ["offlineLabel"] = CustomCopy(_identityOfflineAllowed ? "identity.offline" : "identity.online"),
+        ["authentication"] = CustomCopy(_identity?.AuthenticationLocked == true ? "identity.locked" : "identity.editable"),
+        ["authenticationEnabled"] = Flag(_identity?.AuthenticationLocked != true),
+        ["undeclared"] = Flag(_identity?.EnvironmentRequirementsDeclared != true),
+        ["matched"] = Flag(_identity?.EnvironmentRequirementsDeclared == true && _identity.EnvironmentMismatches.Count == 0),
+        ["mismatched"] = Flag(_identity?.EnvironmentRequirementsDeclared == true && _identity.EnvironmentMismatches.Count > 0),
+    };
+
+    private void ReloadIdentityPresentation()
+    {
+        if (!_shell.Tree.IsAlive(_identityGroup)) return;
+        bool ready = _identity is not null;
+        var fragment = DesktopMarkup.Dynamic(ready ? IdentityTemplate : "SettingsCustomIdentityLoading.d.nxml", IdentityProjection(), _shell.Renderer.LocalizeText);
+        if (_shell.Tree.IsAlive(_identityBody) && _identityBodyReady == ready) _dynamic.Reload(_identityBody, fragment);
+        else
+        {
+            _identityBody = _dynamic.Replace(CatalogNodes(_identityGroup)["InstanceIdentity.Body"], fragment);
+            _identityHistory = _identityNotesGroup = _identityNoteActions = default;
+            _identityInputs.Clear(); _identityNoteInputs.Clear(); _identityNoteRows.Clear(); _identityMismatchRows.Clear();
+        }
+        _identityBodyReady = ready;
     }
 
     private void BuildIdentityControls()
     {
         if (!_shell.Tree.IsAlive(_identityGroup)) return;
-        foreach (var child in _shell.Tree.Children(_identityGroup).ToArray()) _shell.Tree.Destroy(child);
-        _identityActions.Clear(); _identityInputs.Clear(); _identityNoteInputs.Clear();
+        bool initialize = _identity is not null && _identityControlsRevision != _identity.Revision;
+        if (initialize)
+        {
+            _identityStarred = _identity!.Fields.Starred; _identityIsolation = _identity.Fields.InstanceIsolation;
+            _identityOfflineAllowed = _identity.Server.OfflineLaunchAllowed;
+        }
+        ReloadIdentityPresentation();
+        var nodes = CatalogNodes(_identityGroup);
+        _identityActions.Clear();
         if (_identity is null)
         {
-            Text(_identityGroup, _identityFailed ? "无法读取实例信息；现有文件已保留。" : "正在读取实例信息…", 12, Muted, 24);
-            if (_identityFailed) Add(_identityGroup, "InstanceIdentityRetry", "重新读取", () => { _identityFailed = false; StartIdentityRead(); BuildIdentityControls(); });
+            _identityActions[nodes["InstanceIdentityRetry"]] = () => { _identityFailed = false; StartIdentityRead(); BuildIdentityControls(); };
             return;
         }
+        _identityActions[nodes["InstanceIdentitySave"]] = SaveIdentity;
+        _identityActions[nodes["InstanceIdentityReload"]] = () =>
+        { _identity = null; _identityControlsRevision = null; CancelIdentityRead(); StartIdentityRead(); BuildIdentityControls(); };
+        var fields = _identity.Fields; var server = _identity.Server;
+        Dictionary<string, string> values;
         if (_selected == "overview")
         {
-            ManagementFactIn(_identityGroup, "加载器", _identity.Loader);
-            ManagementFactIn(_identityGroup, "实例记录的 Java 偏好", _identity.JavaPreference);
-            ManagementFactIn(_identityGroup, "已记录启动次数", _identity.LaunchCount.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            BuildObservedInstanceHistory(_identityGroup);
-            if (LaunchManagementInstance is not null) Add(_identityGroup, "InstanceOverviewLaunch", "启动此实例", () => LaunchManagementInstance(_instance!));
-            if (ModifyManagementInstance is not null) Add(_identityGroup, "InstanceOverviewModify", "修改版本与目录名", () => ModifyManagementInstance(_instance!));
-            ManagementFactIn(_identityGroup, "稳定身份", _identity.Identity.Length == 0 ? "首次保存时生成" : _identity.Identity);
-            Input("name", "显示名称", _identity.Fields.DisplayName, 256);
-            Input("description", "描述", _identity.Fields.Description, 8192);
-            Input("icon", "本地图标 PNG 完整路径", _identity.Fields.IconPath, 4096);
-            if (_identity.Icon is { } icon)
+            BindContentAction(nodes, ContentKey("refresh"), RefreshManagement);
+            values = new()
             {
-                var preview = Element(_identityGroup, "InstanceIdentityIconPreview", XsrUiSemanticRole.Image, "实例图标", 64, 64);
-                _shell.Tree.SetComponent(preview, new XsrUiRasterImage(icon, []) { FitToBounds = true, AspectRatio = (double)icon.Width / icon.Height });
+                ["name"] = fields.DisplayName,
+                ["description"] = fields.Description,
+                ["icon"] = fields.IconPath,
+                ["tags"] = string.Join(", ", fields.Tags),
+                ["group"] = fields.Group,
+                ["custom-info"] = fields.CustomInfo,
+                ["modpack-project"] = fields.ModpackProject,
+                ["modpack-version"] = fields.ModpackVersion
+            };
+            if (LaunchManagementInstance is not null) _identityActions[nodes["InstanceOverviewLaunch"]] = () => LaunchManagementInstance(_instance!);
+            if (ModifyManagementInstance is not null) _identityActions[nodes["InstanceOverviewModify"]] = () => ModifyManagementInstance(_instance!);
+            _identityActions[nodes["InstanceIdentityIsolation"]] = () => { _identityIsolation = !_identityIsolation; ReloadIdentityPresentation(); };
+            _identityActions[nodes["InstanceIdentityStar"]] = () => { _identityStarred = !_identityStarred; ReloadIdentityPresentation(); };
+            if (initialize && _identity.Icon is { } icon)
+                _shell.Tree.SetComponent(nodes["InstanceIdentityIconPreview"], new XsrUiRasterImage(icon, []) { FitToBounds = true, AspectRatio = (double)icon.Width / icon.Height });
+            if (initialize)
+            {
+                _dynamic.Clear(nodes["InstanceNotes.Rows"]); _identityNoteRows.Clear();
+                _identityNotes.Clear(); _identityNotes.AddRange(fields.Notes.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n'));
+                _identityNotesPage = 0;
             }
-            if (_identity.IconNotice.Length > 0) Text(_identityGroup, _identity.IconNotice, 12, Muted, 26);
-            Input("tags", "标签（逗号分隔）", string.Join(", ", _identity.Fields.Tags), 2048);
-            Input("group", "分组", _identity.Fields.Group, 128);
-            Input("custom-info", "启动版本描述", _identity.Fields.CustomInfo, 512);
-            Input("modpack-project", "整合包项目 ID", _identity.Fields.ModpackProject, 256);
-            Input("modpack-version", "整合包版本", _identity.Fields.ModpackVersion, 128);
-            _identityIsolation = _identity.Fields.InstanceIsolation;
-            Add(_identityGroup, "InstanceIdentityIsolation", _identityIsolation ? "游戏目录：此实例（点击改为共享）" : "游戏目录：共享根目录（点击改为隔离）", () =>
-            {
-                _identityIsolation = !_identityIsolation;
-                SetButton("InstanceIdentityIsolation", _identityIsolation ? "游戏目录：此实例（点击改为共享）" : "游戏目录：共享根目录（点击改为隔离）");
-            });
-            _identityStarred = _identity.Fields.Starred;
-            Add(_identityGroup, "InstanceIdentityStar", _identityStarred ? "已收藏 · 点击取消" : "收藏此实例", () =>
-            { _identityStarred = !_identityStarred; SetButton("InstanceIdentityStar", _identityStarred ? "已收藏 · 点击取消" : "收藏此实例"); });
-            _identityNotes.Clear(); _identityNotes.AddRange(_identity.Fields.Notes.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n'));
-            _identityNotesPage = 0;
-            _identityNotesGroup = FormGroup(_identityGroup, "InstanceNotes", "备注"); BuildIdentityNoteRows();
+            _identityNotesGroup = nodes["InstanceNotes.Rows"];
+            BuildIdentityNoteRows();
+            BuildObservedInstanceHistory(nodes["InstanceIdentity.History"]);
         }
         else
         {
-            ManagementFactIn(_identityGroup, "认证配置", _identity.AuthenticationLocked ? "已锁定" : "可编辑");
-            Input("login", "登录要求：0 不限 / 1 Microsoft / 2 第三方 / 3 两者之一", _identity.Server.LoginRequirement.ToString(System.Globalization.CultureInfo.InvariantCulture), 1, _identity.AuthenticationLocked);
-            Input("auth", "认证服务器 HTTPS 地址", _identity.Server.AuthServerAddress, 2048, _identity.AuthenticationLocked);
-            Input("register", "注册页面 HTTPS 地址", _identity.Server.AuthRegisterAddress, 2048, _identity.AuthenticationLocked);
-            Input("auth-name", "认证服务器名称", _identity.Server.AuthServerDisplayName, 256, _identity.AuthenticationLocked);
-            Input("default-server", "默认服务器", _identity.Server.DefaultServer, 512);
-            Input("game-version", "服务器要求的 Minecraft 版本（空白不约束）", _identity.Server.ExpectedGameVersion, 64);
-            Input("loader", "服务器要求的加载器（如 Fabric；空白不约束）", _identity.Server.ExpectedLoader, 64);
-            Input("mods", "服务器必需模组 ID（逗号分隔）", string.Join(", ", _identity.Server.RequiredMods), 16384);
-            _identityOfflineAllowed = _identity.Server.OfflineLaunchAllowed;
-            Add(_identityGroup, "InstanceOfflinePolicy", _identityOfflineAllowed ? "允许离线档案 · 点击收紧" : "要求在线账户 · 点击允许离线", () =>
-            { _identityOfflineAllowed = !_identityOfflineAllowed; SetButton("InstanceOfflinePolicy", _identityOfflineAllowed ? "允许离线档案 · 点击收紧" : "要求在线账户 · 点击允许离线"); });
-            Text(_identityGroup, !_identity.EnvironmentRequirementsDeclared ? "未声明服务器环境要求。"
-                : _identity.EnvironmentMismatches.Count == 0 ? "已声明的服务器环境要求与当前实例一致。" : "服务器环境不匹配：", 12, Blue, 26);
-            foreach (string mismatch in _identity.EnvironmentMismatches.Take(128)) Text(_identityGroup, mismatch, 12, Muted, 26);
-            Text(_identityGroup, "离线档案准入与 Java 兼容、文件完整性和账户认证分别执行，后者始终强制。", 12, Muted, 26);
+            values = new()
+            {
+                ["login"] = server.LoginRequirement.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["auth"] = server.AuthServerAddress,
+                ["register"] = server.AuthRegisterAddress,
+                ["auth-name"] = server.AuthServerDisplayName,
+                ["default-server"] = server.DefaultServer,
+                ["game-version"] = server.ExpectedGameVersion,
+                ["loader"] = server.ExpectedLoader,
+                ["mods"] = string.Join(", ", server.RequiredMods)
+            };
+            _identityActions[nodes["InstanceOfflinePolicy"]] = () => { _identityOfflineAllowed = !_identityOfflineAllowed; ReloadIdentityPresentation(); };
+            var mismatches = _identity.EnvironmentMismatches.Take(128).ToArray();
+            while (_identityMismatchRows.Count > mismatches.Length)
+            { _dynamic.Remove(_identityMismatchRows[^1]); _identityMismatchRows.RemoveAt(_identityMismatchRows.Count - 1); }
+            for (int index = 0; index < mismatches.Length; index++)
+            {
+                var fragment = DesktopMarkup.Dynamic("SettingsCustomIdentityMismatch.d.nxml", new Dictionary<string, string>
+                { ["key"] = "InstanceIdentity.Mismatch." + index, ["text"] = mismatches[index] });
+                if (index < _identityMismatchRows.Count) _dynamic.Reload(_identityMismatchRows[index], fragment);
+                else _identityMismatchRows.Add(_dynamic.Append(nodes["InstanceIdentity.Mismatches"], fragment));
+            }
         }
-        var actions = Stack(_identityGroup, "InstanceIdentityActions", XsrUiOrientation.Horizontal, 6);
-        Add(actions, "InstanceIdentitySave", "保存更改", SaveIdentity);
-        Add(actions, "InstanceIdentityReload", "重新读取", () => { _identity = null; _identityRead = null; StartIdentityRead(); BuildIdentityControls(); });
-        _shell.Tree.MarkDirty(_identityGroup, XsrUiDirtyKinds.Layout);
-
-        void Input(string key, string label, string value, int maximum, bool readOnly = false)
+        foreach (var (key, value) in values)
         {
-            Text(_identityGroup, label, 12, Muted, 24);
-            var input = Element(_identityGroup, "InstanceIdentityInput." + key, XsrUiSemanticRole.TextInput, label, height: 30);
-            _shell.Tree.SetComponent(input, new XsrUiTextInput { MaximumLength = maximum, PreserveTabs = true });
-            _shell.Tree.SetComponent(input, new XsrUiInput { Clickable = !readOnly, Focusable = !readOnly, Enabled = !readOnly });
-            _shell.Tree.GetComponent<XsrUiElement>(input)!.Padding = new(8, 0, 8, 0);
-            Style(input, new(244, 247, 251), Ink, 6); _shell.Renderer.SetTextInputValue(input, value);
+            var input = nodes["InstanceIdentityInput." + key];
+            if (!initialize && _identityInputs.ContainsKey(key)) continue;
+            _shell.Renderer.SetTextInputValue(input, value);
             _identityInputs[key] = (input, value, _shell.Tree.GetComponent<XsrUiTextInput>(input)!.ReadDraft());
         }
-    }
-
-    private void Add(XsrUiEntityId parent, string name, string label, Action action)
-    {
-        var button = ActionButton(parent, name, label, IdentityAction, Math.Max(112, label.Length * 13 + 20));
-        _identityActions[button] = action;
-    }
-
-    private void SetButton(string name, string label)
-    {
-        foreach (var entity in _identityActions.Keys)
-            if (_shell.Tree.Name(entity) == name)
-            {
-                _shell.Tree.GetComponent<XsrUiText>(entity)!.Content = label;
-                _shell.Tree.GetComponent<XsrUiSemantic>(entity)!.Label = label;
-                _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Paint);
-            }
+        _identityControlsRevision = _identity.Revision;
     }
 
     private void CaptureIdentityNotes()
     {
-        foreach (var line in _identityNoteInputs) _identityNotes[line.Index] = _shell.Tree.GetComponent<XsrUiTextInput>(line.Input)!.ReadDraft();
+        foreach (var line in _identityNoteInputs)
+            if (_shell.Tree.IsAlive(line.Input)) _identityNotes[line.Index] = _shell.Tree.GetComponent<XsrUiTextInput>(line.Input)!.ReadDraft();
     }
 
     private void BuildIdentityNoteRows()
     {
         foreach (var key in _identityActions.Keys.Where(entity => _shell.Tree.Name(entity).StartsWith("InstanceNote", StringComparison.Ordinal)).ToArray()) _identityActions.Remove(key);
-        foreach (var child in _shell.Tree.Children(_identityNotesGroup).ToArray()) _shell.Tree.Destroy(child);
         _identityNoteInputs.Clear(); _identityNotesPage = Math.Clamp(_identityNotesPage, 0, (_identityNotes.Count - 1) / 32);
-        int first = _identityNotesPage * 32;
-        for (int index = first; index < Math.Min(_identityNotes.Count, first + 32); index++)
+        int first = _identityNotesPage * 32, last = Math.Min(_identityNotes.Count, first + 32);
+        foreach (int index in _identityNoteRows.Keys.Where(index => index < first || index >= last).ToArray())
+        { _dynamic.Remove(_identityNoteRows[index]); _identityNoteRows.Remove(index); }
+        for (int index = first; index < last; index++)
         {
-            var input = Element(_identityNotesGroup, "InstanceNoteInput." + index, XsrUiSemanticRole.TextInput, "备注行 " + (index + 1), height: 30);
-            _shell.Tree.SetComponent(input, new XsrUiTextInput { MaximumLength = 8192, PreserveTabs = true });
-            _shell.Tree.SetComponent(input, new XsrUiInput { Focusable = true, Clickable = true });
-            Style(input, new(244, 247, 251), Ink, 6); _shell.Renderer.SetTextInputValue(input, _identityNotes[index]);
+            var fragment = DesktopMarkup.Dynamic("SettingsCustomIdentityNote.d.nxml", new Dictionary<string, string>
+            { ["input"] = "InstanceNoteInput." + index, ["index"] = (index + 1).ToString(System.Globalization.CultureInfo.InvariantCulture) }, _shell.Renderer.LocalizeText);
+            if (!_identityNoteRows.TryGetValue(index, out var input))
+            {
+                input = _dynamic.Append(_identityNotesGroup, fragment); _identityNoteRows[index] = input;
+                _shell.Renderer.SetTextInputValue(input, _identityNotes[index]);
+            }
+            else _dynamic.Reload(input, fragment);
             _identityNoteInputs.Add((input, index));
         }
-        var actions = Stack(_identityNotesGroup, "InstanceNotesActions", XsrUiOrientation.Horizontal, 6);
-        Add(actions, "InstanceNoteAdd", "添加备注行", () =>
-        { if (_identityNotes.Count >= 8193) return; CaptureIdentityNotes(); _identityNotes.Add(""); _identityNotesPage = (_identityNotes.Count - 1) / 32; BuildIdentityNoteRows(); });
+        var actionsFragment = DesktopMarkup.Dynamic("SettingsCustomIdentityNoteActions.d.nxml", new Dictionary<string, string>
+        {
+            ["enabled"] = Flag(_identityWrite is null),
+            ["pages"] = Flag(_identityNotes.Count > 32),
+            ["page"] = (_identityNotesPage + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["total"] = ((_identityNotes.Count - 1) / 32 + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
+        }, _shell.Renderer.LocalizeText);
+        if (_shell.Tree.IsAlive(_identityNoteActions)) _dynamic.Reload(_identityNoteActions, actionsFragment);
+        else _identityNoteActions = _dynamic.Append(CatalogNodes(_identityGroup)["InstanceNotes.Actions"], actionsFragment);
+        var nodes = CatalogNodes(_identityNoteActions);
+        _identityActions[nodes["InstanceNoteAdd"]] = () =>
+        { if (_identityNotes.Count >= 8193) return; CaptureIdentityNotes(); _identityNotes.Add(""); _identityNotesPage = (_identityNotes.Count - 1) / 32; BuildIdentityNoteRows(); };
         if (_identityNotes.Count > 32)
         {
-            Add(actions, "InstanceNotePrevious", "上一页", () => { CaptureIdentityNotes(); _identityNotesPage--; BuildIdentityNoteRows(); });
-            Add(actions, "InstanceNoteNext", "下一页", () => { CaptureIdentityNotes(); _identityNotesPage++; BuildIdentityNoteRows(); });
-            Text(actions, (_identityNotesPage + 1) + " / " + ((_identityNotes.Count - 1) / 32 + 1), 12, Muted, 24);
+            _identityActions[nodes["InstanceNotePrevious"]] = () => { CaptureIdentityNotes(); _identityNotesPage--; BuildIdentityNoteRows(); };
+            _identityActions[nodes["InstanceNoteNext"]] = () => { CaptureIdentityNotes(); _identityNotesPage++; BuildIdentityNoteRows(); };
         }
-        _shell.Tree.MarkDirty(_identityNotesGroup, XsrUiDirtyKinds.Layout);
     }
 
     private void StartIdentityRead()
@@ -233,15 +286,21 @@ internal sealed partial class SettingsPageController
         if (_identityWrite is { IsCompleted: true } written)
         {
             _identityWrite = null;
+            if (_identityWriteInstance != _instance) { _ = written.Exception; return; }
             if (written.IsCompletedSuccessfully && written.Result.IsSuccess)
-            { _feedback.Info("实例信息已保存。"); _identity = null; _identityRead = null; StartIdentityRead(); RefreshManagement(); ManagementChanged?.Invoke(); }
-            else _feedback.Error("实例信息未保存：" + (written.IsCompletedSuccessfully ? written.Result.Error?.Message : "请检查文件权限。"));
+            { _feedback.Info(CustomCopy("identity.saved")); _identity = null; _identityRead = null; StartIdentityRead(); RefreshManagement(); ManagementChanged?.Invoke(); }
+            else _feedback.Error(CustomFormat("IdentitySaveFailure", new() { ["error"] = written.IsCompletedSuccessfully ? written.Result.Error?.Message ?? "" : CustomCopy("identity.permissions") }), localizeMessage: false);
         }
         if (_identity is null && _identityRead is null && !_identityFailed) StartIdentityRead();
-        if (_identityRead is not { IsCompleted: true } reading) return;
+        if (_identityRead is not { IsCompleted: true } reading)
+        {
+            if (_selected == "overview" && _identity is not null && _shell.Tree.IsAlive(_identityGroup))
+                BuildObservedInstanceHistory(CatalogNodes(_identityGroup)["InstanceIdentity.History"]);
+            return;
+        }
         _identityRead = null;
         if (PendingQuery.Succeeded(reading)) { _identity = reading.Result.Value; BuildIdentityControls(); }
-        else { _identityFailed = true; _feedback.Error("无法读取实例信息；文件已保留。"); BuildIdentityControls(); }
+        else { _identityFailed = true; _feedback.Error(CustomCopy("identity.readFailed")); BuildIdentityControls(); }
     }
 
     private void SaveIdentity()
@@ -272,7 +331,7 @@ internal sealed partial class SettingsPageController
         }
         else
         {
-            if (!int.TryParse(Draft("login", server.LoginRequirement.ToString(System.Globalization.CultureInfo.InvariantCulture)), out int login)) { _feedback.Error("请选择有效的登录要求。"); return; }
+            if (!int.TryParse(Draft("login", server.LoginRequirement.ToString(System.Globalization.CultureInfo.InvariantCulture)), out int login)) { _feedback.Error(CustomCopy("identity.invalidLogin")); return; }
             server = server with
             {
                 LoginRequirement = login,
@@ -286,7 +345,9 @@ internal sealed partial class SettingsPageController
                 OfflineLaunchAllowed = _identityOfflineAllowed
             };
         }
+        _identityWriteInstance = _instance;
         _identityWrite = _commands.Dispatch(route, new InstanceIdentitySaveCommand(_instance, _identity.Revision, fields, server)).Completion;
         WakeOnPlatformCompletion(_identityWrite);
+        ReloadIdentityPresentation();
     }
 }

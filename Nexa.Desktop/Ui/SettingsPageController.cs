@@ -1,8 +1,8 @@
-﻿using System.Collections.Concurrent;
-using Nexa.Xsr.Renderer.Nxml;
+using System.Collections.Concurrent;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -59,13 +59,8 @@ internal sealed partial class SettingsPageController : IDisposable
         var names = new Dictionary<string, XsrUiEntityId>();
         shell.Tree.Walk(Page, entity => { names[shell.Tree.Name(entity)] = entity; return true; });
         _navigationRoot = names["SettingsNavigation"]; _pager = names["SettingsPager"];
-        var thumb = _dynamic.Append(_navigationRoot, DesktopMarkup.Dynamic("SettingsNavigationThumb.d.nxml"));
         _saveStatus = _dynamic.Append(names["SettingsSaveStatusSlot"], DesktopMarkup.Dynamic("SettingsSaveStatus.d.nxml",
             new Dictionary<string, string> { ["message"] = "" }));
-        shell.Tree.SetComponent(_saveStatus, new XsrUiLiveRegion(XsrUiLiveSetting.Polite));
-        shell.Tree.SetComponent(_navigationRoot, new XsrUiScrollGesture());
-        shell.Tree.SetComponent(_navigationRoot, new XsrUiSegmentedTrack(thumb));
-        shell.Tree.SetComponent(thumb, new XsrUiTransition());
         _intents.IntentEmitted += OnIntent;
         _shell.Renderer.FramePreparing += OnFrame;
     }
@@ -111,6 +106,12 @@ internal sealed partial class SettingsPageController : IDisposable
             CancelOnlineContent(); CancelModRemovalPreview(); CancelInstanceDiagnostics();
             CancelAdvancedLaunchDiagnostics(); ReleaseContentGraph();
             _pending.Clear(); _instance = null; _values = null; _reading = null; _revision = -1;
+            if (hadInstance)
+            {
+                _selected = "overview";
+                if (_pages.TryGetValue(_selected, out var overview)) _sections = overview;
+                UpdateNavigation();
+            }
             if (hadInstance && _catalog is not null) BuildSections();
             return;
         }
@@ -141,7 +142,7 @@ internal sealed partial class SettingsPageController : IDisposable
         }
         if (_writing is { IsCompleted: true } completedWrite)
         {
-            PresentSaveStatus(completedWrite.IsCompletedSuccessfully && completedWrite.Result.IsSuccess ? "已保存" : "设置未保存");
+            PresentSaveStatus(completedWrite.IsCompletedSuccessfully && completedWrite.Result.IsSuccess ? CatalogCopy("catalog.copy.1bd91a7d0c53c936") : CatalogCopy("catalog.copy.7bfb3516d712be1e"));
             _writing = null;
         }
         long revision = _store.Read<long>(_revisionId).Value;
@@ -163,7 +164,7 @@ internal sealed partial class SettingsPageController : IDisposable
                 if (developer != _developer) { _developer = developer; BuildSections(); }
                 UpdateEditors();
             }
-            else { _revision = revision; _feedback.Error("无法读取设置，请重新打开设置页。"); }
+            else { _revision = revision; _feedback.Error(CatalogCopy("catalog.copy.bb5313044acd31b3")); }
         }
         UpdateHookInheritance();
 
@@ -186,7 +187,7 @@ internal sealed partial class SettingsPageController : IDisposable
             if (IsSettingsTransferIntent(intent.Command)) { HandleSettingsTransfer(intent.Command, intent.Source); continue; }
             if (intent.Command == ScreenshotPreviewAction) { HandleScreenshotPreviewIntent(intent); continue; }
             if (intent.Command == ManagementAction && _managementActions.TryGetValue(intent.Source, out var action)) { action(); continue; }
-            if (IsUpdateIntent(intent.Command)) { HandleUpdateIntent(intent.Command); continue; }
+            if (IsUpdateIntent(intent.Command)) { HandleUpdateIntent(intent); continue; }
             if (intent.Command == Inherit && _inheritButtons.TryGetValue(intent.Source, out var inheritKey)
                 && _writing is null && _commands.TryResolve(SettingsPolicyContract.SetCommand, out var inheritRoute))
             {
@@ -213,7 +214,7 @@ internal sealed partial class SettingsPageController : IDisposable
                 }
             }
         }
-        if (_writing is not null) PresentSaveStatus("正在保存…");
+        if (_writing is not null) PresentSaveStatus(CatalogCopy("catalog.copy.6bdb4435095e5d28"));
         UpdateLaunchProfiles();
         if (deferFactUpdates)
         {
@@ -222,6 +223,7 @@ internal sealed partial class SettingsPageController : IDisposable
             UpdateHardwareAdvice();
         }
         UpdateManagement();
+        UpdateRecoveryStorage();
         UpdateOfflineReadiness();
         UpdateWorldSnapshots(); UpdateIdentity();
         UpdateOnlineContent(); UpdateContentIntegrity();
@@ -249,6 +251,8 @@ internal sealed partial class SettingsPageController : IDisposable
     private void SwitchPage(string page)
     {
         if (!Pages.Any(item => item.Id == page)) return;
+        RetireContentScope();
+        CancelWorldDetails();
         CloseScreenshotPreview(restoreFocus: false); CancelScreenshotThumbnails();
         CancelContentIntegrity();
         RetireHardwareAdvice(); RetireDeveloperDiagnostics(); RetireRuntimeDiagnostics(); RetireRuntimeTrace(); CancelNetworkProbe(); CancelAdvancedWorkspace();
@@ -280,6 +284,11 @@ internal sealed partial class SettingsPageController : IDisposable
 
     private void BuildSections(bool navigating = false)
     {
+        if (!navigating && (TryReloadContentManagement() || TryReloadRecoveryStorage()))
+        {
+            UpdateEditors();
+            return;
+        }
         ResetRuntimeDiagnosticControls();
         ResetRuntimeTraceControls();
         ResetInstanceDiagnosticControls();
@@ -293,7 +302,7 @@ internal sealed partial class SettingsPageController : IDisposable
         var drafts = !navigating ? _editors.Values.Where(item => item.Input.IsAssigned).ToDictionary(item => item.Entry.Id,
             item => _shell.Tree.GetComponent<XsrUiTextInput>(item.Input)!.ReadDraft()) : [];
         if (!navigating) _scrollPositions[_selected] = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY;
-        foreach (var child in _shell.Tree.Children(_sections).ToArray()) _shell.Tree.Destroy(child);
+        _dynamic.Clear(_sections);
         ResetDeveloperDiagnosticControls();
         _catalogViews.Clear(); _inheritRows.Clear(); _autoModeViews.Clear();
         _javaChoices.Clear(); _javaChoiceViews.Clear();
@@ -337,10 +346,10 @@ internal sealed partial class SettingsPageController : IDisposable
             { ["label"] = Pages.First(page => page.Id == _selected).Label }));
         }
         if (_instanceDirectory is not null && _selected == "game") BuildLaunchProfiles();
-        foreach (var section in available.GroupBy(item => (Section: item.DeveloperOnly ? "开发者" : _instanceDirectory is not null ? InstanceSettingGroup(item) : item.Section, item.DeveloperOnly))
-            .OrderBy(group => _instanceDirectory is null ? 0 : group.Key.Section switch { "启动与窗口" => 0, "Java 与内存" => 1, "服务器" => 2, _ => 3 }))
+        foreach (var section in available.GroupBy(item => (Section: item.DeveloperOnly ? CatalogCopy("catalog.copy.38084d301e3f1a31") : _instanceDirectory is not null ? InstanceSettingGroup(item) : item.Section, item.DeveloperOnly))
+            .OrderBy(group => _instanceDirectory is null ? 0 : group.Key.Section switch { var copy when copy == CatalogCopy("catalog.copy.8cdf1da0d4c7e55e") => 0, var copy when copy == CatalogCopy("catalog.copy.2720b4221e5e4ca3") => 1, var copy when copy == CatalogCopy("catalog.copy.2388cbc6a486af9f") => 2, _ => 3 }))
         {
-            var cardContent = FormGroup(_sections, "SettingsGroup." + section.First().Id, DisplayLabel(section.Key.Section));
+            var cardContent = AppendSettingsForm(_sections, "SettingsGroup." + section.First().Id, DisplayLabel(section.Key.Section));
             var rows = section.ToArray();
             for (int i = 0; i < rows.Length; i++)
             {
@@ -348,7 +357,7 @@ internal sealed partial class SettingsPageController : IDisposable
                 if (i + 1 < rows.Length)
                     _dynamic.Append(cardContent, DesktopMarkup.Dynamic("SettingsCatalogDivider.d.nxml"));
             }
-            if (_instanceDirectory is not null && section.Key.Section == "Java 与内存") BuildJavaInventory(cardContent);
+            if (_instanceDirectory is not null && section.Key.Section == CatalogCopy("catalog.copy.2720b4221e5e4ca3")) BuildJavaInventory(cardContent);
         }
         if (_instanceDirectory is null && _selected == "network") { BuildProxyPreferences(); BuildNetworkDiagnostics(); }
         if (_instanceDirectory is null && _selected == "privacy") { BuildDiskLogActions(); BuildPrivacyDiagnosticExport(); BuildContentTrustStates(); }
@@ -377,48 +386,39 @@ internal sealed partial class SettingsPageController : IDisposable
             _shell.Tree.Walk(_sections, entity => { if (_shell.Tree.Name(entity) == focus) _shell.Renderer.Focus(entity); return true; });
     }
 
-    private XsrUiEntityId SettingsCard(string name, XsrUiThickness padding, double spacing = 0, double radius = 12)
-    {
-        var surface = Stack(_sections, name, XsrUiOrientation.Vertical, 0);
-        Style(surface, White, Ink, radius);
-        var body = Stack(surface, name + ".Body", XsrUiOrientation.Vertical, spacing);
-        _shell.Tree.GetComponent<XsrUiElement>(body)!.Padding = padding;
-        return body;
-    }
-
     private static string? SettingHint(string? key) => key switch
     {
-        "general.region" => "用于日期和数字；更改后重启生效。",
-        "updates.channel" => "用于下次检查；CI 使用 Alpha 更新。已开始的更新保持原通道。",
-        "updates.auto-check" => "启动时检查一次；关闭后仍可手动检查。安装更新前需要确认。",
-        "diagnostics.log-level" => "立即生效；自动沿用当前构建的日志等级。",
-        "diagnostics.log-lines" => "界面保留的日志条数，50–2000；不会删除磁盘日志。",
-        "diagnostics.disk-log-days" => "历史磁盘日志保留 1–90 天；只清理启动器拥有的日志。",
-        "game.process-priority" => "下次启动生效；系统可能拒绝提高优先级。",
-        "game.title" => "下次启动生效；留空保留游戏标题。",
-        "game.default-isolation" => "只影响新安装版本；不移动已有存档、模组等内容。",
-        "game.launcher-visibility" => "启动完成后生效；游戏异常退出时恢复启动器。",
-        "game.jvm" => "每行一个参数，应用后用于下次启动。",
-        "install.inherit-vanilla" => "关闭时安装独立版本；开启后依赖原版。下次安装生效。",
-        "game.arguments" => "传递给 Minecraft 的额外启动参数。",
-        "game.wrapper" => "包装 Java 宿主的程序与参数；留空直接启动。",
-        "game.pre-launch" => "游戏启动前执行的本机命令；留空不执行。",
-        "game.pre-launch-wait" => "等待命令成功后启动游戏；关闭时与启动流程并行执行。",
-        "game.memory" => "使用 MiB；自动模式按现有内存策略分配。",
-        "java.auto-install" => "缺少兼容 Java 时自动下载；关闭时先询问。",
-        "java.vendor" => "优先选择兼容的发行版；未找到时使用其他兼容 Java。",
-        "network.file-concurrency" => "同时处理的游戏文件数，1–64；新安装和启动前补全生效。",
-        "network.file-retry" => "失败后额外重试一次；不影响来源切换与文件校验。",
-        "network.game-source" => "游戏文件与运行库的下载顺序；海外使用原始来源。",
-        "network.bandwidth-kib" => "下载共享速度上限，单位 KiB/s；0 不限速，新任务生效。",
-        "network.ip-stack" => "优先尝试所选地址族；保留其他地址族的连接回退。",
-        "network.doh" => "直接连接使用加密 DNS；代理连接由代理解析。",
-        "game.server" => "默认地址，可带端口；版本单独设置与临时加入优先。",
-        "game.auto-repair" => "启动前补全缺失或损坏的游戏文件；不关闭预检。",
-        "appearance.animations-disabled" => "减少界面切换和展开时的动态效果。",
-        "appearance.animation-fps" => "动画时钟的目标帧率，1–240 fps；不改变动画时长。",
-        "appearance.theme-mode" => "立即应用浅色、深色或系统主题。",
-        "appearance.accent" => "立即应用界面强调色。",
+        "general.region" => CatalogCopy("catalog.copy.776e862b6d0e9031"),
+        "updates.channel" => CatalogCopy("catalog.copy.eed8e45d95df9f6b"),
+        "updates.auto-check" => CatalogCopy("catalog.copy.50cfbc4a9decb781"),
+        "diagnostics.log-level" => CatalogCopy("catalog.copy.3fb6e525b2a48120"),
+        "diagnostics.log-lines" => CatalogCopy("catalog.copy.ca8c03c6f3e906cf"),
+        "diagnostics.disk-log-days" => CatalogCopy("catalog.copy.c30fd87eb5fd49a2"),
+        "game.process-priority" => CatalogCopy("catalog.copy.67ff7775ee009846"),
+        "game.title" => CatalogCopy("catalog.copy.0b68f43e8196aeff"),
+        "game.default-isolation" => CatalogCopy("catalog.copy.d772866356f942b9"),
+        "game.launcher-visibility" => CatalogCopy("catalog.copy.43cb3d790f2aa8fb"),
+        "game.jvm" => CatalogCopy("catalog.copy.d9363eeb833c6cfc"),
+        "install.inherit-vanilla" => CatalogCopy("catalog.copy.8525fed239dc4e36"),
+        "game.arguments" => CatalogCopy("catalog.copy.5dc1231308729d53"),
+        "game.wrapper" => CatalogCopy("catalog.copy.855b5d4a658b6f02"),
+        "game.pre-launch" => CatalogCopy("catalog.copy.b3b5b1c0f702ed1e"),
+        "game.pre-launch-wait" => CatalogCopy("catalog.copy.f4896949ed55c37f"),
+        "game.memory" => CatalogCopy("catalog.copy.501986da6c15d7d4"),
+        "java.auto-install" => CatalogCopy("catalog.copy.b2c48db2fd181406"),
+        "java.vendor" => CatalogCopy("catalog.copy.a87cf2ecb1567b67"),
+        "network.file-concurrency" => CatalogCopy("catalog.copy.edf875f11bedb518"),
+        "network.file-retry" => CatalogCopy("catalog.copy.62c58790dd3a97db"),
+        "network.game-source" => CatalogCopy("catalog.copy.487f9059ca0adc09"),
+        "network.bandwidth-kib" => CatalogCopy("catalog.copy.84d4da5cad300809"),
+        "network.ip-stack" => CatalogCopy("catalog.copy.e6e2c696df92cabf"),
+        "network.doh" => CatalogCopy("catalog.copy.a644428ae54619b0"),
+        "game.server" => CatalogCopy("catalog.copy.38941425982294bf"),
+        "game.auto-repair" => CatalogCopy("catalog.copy.6f4a69151ae79608"),
+        "appearance.animations-disabled" => CatalogCopy("catalog.copy.5ca216328e84d4c6"),
+        "appearance.animation-fps" => CatalogCopy("catalog.copy.3ead916bdc23c0e6"),
+        "appearance.theme-mode" => CatalogCopy("catalog.copy.56b6daeaafec549c"),
+        "appearance.accent" => CatalogCopy("catalog.copy.63ca81911d9ec19a"),
         _ => null,
     };
 
@@ -435,7 +435,7 @@ internal sealed partial class SettingsPageController : IDisposable
         foreach (var (button, key) in _inheritButtons)
         {
             var value = _values?.Values.FirstOrDefault(item => item.Key == key);
-            string label = value?.Source >= SettingsLayer.Instance ? "恢复继承" : "继承中";
+            string label = value?.Source >= SettingsLayer.Instance ? CatalogCopy("catalog.copy.5bd845d9a77abc81") : CatalogCopy("catalog.copy.6d82d484e54cf457");
             ReloadCatalog(_inheritRows[button], ("inheritLabel", label));
         }
         UpdateNavigationWidths(); UpdateShiftSelectors(); UpdateAutomaticModes(); UpdateArgumentEditors(); UpdateHookEditors();
@@ -463,7 +463,7 @@ internal sealed partial class SettingsPageController : IDisposable
             if (string.IsNullOrWhiteSpace(selectedValue))
             {
                 if (editor.Entry.Definition!.Kind == SettingsValueKind.Number) selectedValue = editor.Entry.Definition.DefaultValue;
-                else { _feedback.Info("请先填写 Java 可执行文件路径，再选择手动。"); return; }
+                else { _feedback.Info(CatalogCopy("catalog.copy.ce0001a83383889b")); return; }
             }
         }
         string raw = selectedValue ?? (editor.Input.IsAssigned ? _shell.Tree.GetComponent<XsrUiTextInput>(editor.Input)!.ReadDraft()
@@ -478,7 +478,9 @@ internal sealed partial class SettingsPageController : IDisposable
         var result = mutation.Layer == SettingsLayer.Instance && _selected == "game"
             ? await SaveLaunchLayerAsync(mutation).ConfigureAwait(false)
             : await _commands.Dispatch(route, mutation).Completion.ConfigureAwait(false);
-        if (!_disposed && !result.IsSuccess) _feedback.Error("设置未保存：" + result.Error?.Message);
+        if (!_disposed && !result.IsSuccess)
+            _feedback.Error(ProductPresentationText.Format("SettingsSaveFailure", _shell.Renderer.LocalizeText,
+                ("error", result.Error?.Message ?? string.Empty)), localizeMessage: false);
         return result;
     }
 
@@ -489,86 +491,51 @@ internal sealed partial class SettingsPageController : IDisposable
         _dynamic.Reload(_saveStatus, DesktopMarkup.Dynamic("SettingsSaveStatus.d.nxml", new Dictionary<string, string> { ["message"] = message }));
     }
 
-    private XsrUiEntityId Element(XsrUiEntityId parent, string name, XsrUiSemanticRole role, string? label, double? width = null, double? height = null)
-    {
-        var entity = _shell.Tree.Create(name); _shell.Tree.Attach(entity, parent);
-        _shell.Tree.SetComponent(entity, new XsrUiElement { Width = width, Height = height, VerticalAlignment = XsrUiAlignment.Center });
-        _shell.Tree.SetComponent(entity, new XsrUiSemantic(role, label));
-        return entity;
-    }
-    private XsrUiEntityId Stack(XsrUiEntityId parent, string name, XsrUiOrientation orientation, double spacing)
-    {
-        var entity = Element(parent, name, XsrUiSemanticRole.None, null);
-        _shell.Tree.SetComponent(entity, new XsrUiStackPanel(orientation) { Spacing = spacing });
-        return entity;
-    }
-    private XsrUiEntityId Text(XsrUiEntityId parent, string content, double size, XsrUiColor ink, double height, double weight = 400)
-    {
-        var entity = Element(parent, "SettingsText", XsrUiSemanticRole.Text, content, height: height);
-        _shell.Tree.SetComponent(entity, new XsrUiText(content) { MaxLines = 1, TrimOverflow = true }); Style(entity, XsrUiColor.Transparent, ink, 0, size, weight);
-        return entity;
-    }
-    private void Style(XsrUiEntityId entity, XsrUiColor background, XsrUiColor foreground, double radius, double size = 13, double weight = 400)
-    {
-        var style = _shell.Tree.GetComponent<XsrUiVisualStyle>(entity);
-        if (style is null)
-        {
-            style = new XsrUiVisualStyle();
-            _shell.Tree.SetComponent(entity, style);
-        }
-        else if (style.Background == background && style.Foreground == foreground
-            && style.CornerRadius == radius && style.FontSize == size && style.FontWeight == weight
-            && style.Surface == XsrUiSurfaceKind.Solid && style.Hover == DesktopUiPalette.CapsuleHover) return;
-        style.Background = background; style.Foreground = foreground; style.CornerRadius = radius;
-        style.FontSize = size; style.FontWeight = weight;
-        style.Surface = XsrUiSurfaceKind.Solid; style.Hover = DesktopUiPalette.CapsuleHover;
-        _shell.Tree.MarkDirty(entity, XsrUiDirtyKinds.Paint);
-    }
     private static string DisplayLabel(string label) => label switch
     {
-        "[ Off / On ]" => "开发者选项",
-        "Launcher Logo" => "启动器标志",
-        "Launcher 透明度" => "启动器透明度",
-        "GPU / Renderer" => "显卡与渲染器",
-        "Game Resource Handoff" => "游戏资源交接",
-        "Assets 验证策略" => "资源文件验证策略",
-        "Launch Preflight" => "启动前检查",
-        "Compatibility Check" => "兼容性检查",
-        "自动 Repair Plan" => "自动生成修复方案",
-        "JVM Arguments" => "JVM 参数",
-        "Game Arguments" => "游戏参数",
-        "Wrapper Command" => "包装命令",
-        "Pre-launch Command" => "启动前命令",
-        "Runtime List" => "已安装的运行时",
-        "Version" => "版本",
-        "Vendor" => "发行商",
-        "Architecture" => "架构",
-        "Path" => "路径",
-        "Status" => "状态",
-        "Snapshot" => "快照",
-        "Cache" => "缓存",
-        "Portable Mode" => "便携模式",
-        "Cloud Account" => "云账户",
-        "Plan" => "订阅方案",
-        "Minecraft Options" => "游戏选项",
-        "Server List" => "服务器列表",
-        "Resource Packs" => "资源包",
-        "Command History" => "命令历史",
-        "Creative Hotbars" => "创造模式快捷栏",
-        "Screenshots" => "截图",
-        "Instance Metadata" => "实例信息",
-        "Worlds" => "世界",
-        "Config" => "配置文件",
-        "Thin Backup" => "精简备份",
-        "Crash Report" => "崩溃报告",
-        "Diagnostic Data" => "诊断数据",
-        "Crash Analyzer" => "崩溃分析",
-        "Release Notes" => "更新日志",
-        "Signature Verification" => "签名验证",
-        "Atomic Update" => "原子更新",
-        "Last Known Good" => "上次正常版本",
-        "Auto Rollback" => "自动回滚",
-        "Launcher Safe Mode" => "启动器安全模式",
+        "[ Off / On ]" => CatalogCopy("catalog.copy.6b02f7e0e085f52a"),
+        "Launcher Logo" => CatalogCopy("catalog.copy.36769ec63d49e00b"),
+        var copy when copy == CatalogCopy("catalog.copy.9233607fdac6c264") => CatalogCopy("catalog.copy.46f801c4139378ac"),
+        "GPU / Renderer" => CatalogCopy("catalog.copy.0fa12acfea2ecfbd"),
+        "Game Resource Handoff" => CatalogCopy("catalog.copy.2bab706cf8cc7ab1"),
+        var copy when copy == CatalogCopy("catalog.copy.0443f45b075ec245") => CatalogCopy("catalog.copy.ba6b025bb675ecd2"),
+        "Launch Preflight" => CatalogCopy("catalog.copy.a0b515fc30208fc1"),
+        "Compatibility Check" => CatalogCopy("catalog.copy.a67cd968c4001cb5"),
+        var copy when copy == CatalogCopy("catalog.copy.72732d2ac2f6de64") => CatalogCopy("catalog.copy.556a3c13b6874b0c"),
+        "JVM Arguments" => CatalogCopy("catalog.copy.7700380bf9bd7354"),
+        "Game Arguments" => CatalogCopy("catalog.copy.0eb838056acb6db9"),
+        "Wrapper Command" => CatalogCopy("catalog.copy.edff333007c478ce"),
+        "Pre-launch Command" => CatalogCopy("catalog.copy.797cebbb03b3e395"),
+        "Runtime List" => CatalogCopy("catalog.copy.43f3bda877293c34"),
+        "Version" => CatalogCopy("catalog.copy.5f76b2bf82dd2c5d"),
+        "Vendor" => CatalogCopy("catalog.copy.fe843aba10f36459"),
+        "Architecture" => CatalogCopy("catalog.copy.8b784b6288058b41"),
+        "Path" => CatalogCopy("catalog.copy.77e1ea5c5688eea4"),
+        "Status" => CatalogCopy("catalog.copy.6320b4a8722a851f"),
+        "Snapshot" => CatalogCopy("catalog.copy.699ea2523018c8ac"),
+        "Cache" => CatalogCopy("catalog.copy.e3ca04a9cb133d2f"),
+        "Portable Mode" => CatalogCopy("catalog.copy.487bc7550da2c9e2"),
+        "Cloud Account" => CatalogCopy("catalog.copy.a986f94e5e1e4ee2"),
+        "Plan" => CatalogCopy("catalog.copy.40f6d142cebc1585"),
+        "Minecraft Options" => CatalogCopy("catalog.copy.8533c8b6c8766c9f"),
+        "Server List" => CatalogCopy("catalog.copy.682d9bdda5aff766"),
+        "Resource Packs" => CatalogCopy("catalog.copy.6518cf1fcb303a64"),
+        "Command History" => CatalogCopy("catalog.copy.6057c11467c0730b"),
+        "Creative Hotbars" => CatalogCopy("catalog.copy.16d36cbb4d2b5579"),
+        "Screenshots" => CatalogCopy("catalog.copy.c95dc99afe57b285"),
+        "Instance Metadata" => CatalogCopy("catalog.copy.92b742d80072559b"),
+        "Worlds" => CatalogCopy("catalog.copy.33650a369521ec29"),
+        "Config" => CatalogCopy("catalog.copy.1d27f02ed278ebc9"),
+        "Thin Backup" => CatalogCopy("catalog.copy.60cc98c271c231cc"),
+        "Crash Report" => CatalogCopy("catalog.copy.96cb3d88d4858754"),
+        "Diagnostic Data" => CatalogCopy("catalog.copy.7e88429f466fbc40"),
+        "Crash Analyzer" => CatalogCopy("catalog.copy.3aaa26113647e845"),
+        "Release Notes" => CatalogCopy("catalog.copy.de6811e73d403172"),
+        "Signature Verification" => CatalogCopy("catalog.copy.fffd360456a394a1"),
+        "Atomic Update" => CatalogCopy("catalog.copy.f0986442c697567a"),
+        "Last Known Good" => CatalogCopy("catalog.copy.82f301e2ba0228ab"),
+        "Auto Rollback" => CatalogCopy("catalog.copy.7a8bee740f9d0e06"),
+        "Launcher Safe Mode" => CatalogCopy("catalog.copy.613fac39aaad0c75"),
         _ => label,
     };
     public void Dispose()

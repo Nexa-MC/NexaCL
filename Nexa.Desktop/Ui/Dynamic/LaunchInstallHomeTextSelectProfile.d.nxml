@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="选择 {data name}，{data kind}" Localize="false" />
+</nxml-dynamic>

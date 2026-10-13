@@ -1,16 +1,16 @@
 <nxml-page>
   <Page Key="InstallPage" Label="安装">
     <StackPanel Key="InstallChoices" Class="layout-InstallPage-InstallChoices">
-      <Button Key="InstallJavaChoice" Label="安装 Java 版 Minecraft" Command="ui.install.java" Class="layout-InstallPage-InstallJavaChoice">
+      <Button Key="InstallJavaChoice" Label="安装 Java 版 Minecraft" Command="ui.install.java" Class="layout-InstallPage-InstallJavaChoice launch-install-InstallJavaChoice">
         <StackPanel Key="InstallJavaChoiceContent" Class="layout-InstallPage-InstallJavaChoiceContent">
-          <ContentHost Key="InstallJavaArtwork" Class="layout-InstallPage-InstallJavaArtwork" />
-          <Text Key="InstallJavaTitle" Content="Java" Class="layout-InstallPage-InstallJavaTitle" />
+          <ContentHost Key="InstallJavaArtwork" Class="layout-InstallPage-InstallJavaArtwork launch-install-InstallJavaArtwork" />
+          <Text Key="InstallJavaTitle" Content="Java" Class="layout-InstallPage-InstallJavaTitle launch-install-InstallJavaTitle" />
         </StackPanel>
       </Button>
-      <Button Key="InstallBedrockChoice" Label="安装 Bedrock 版 Minecraft" Command="ui.install.bedrock" Class="layout-InstallPage-InstallBedrockChoice">
+      <Button Key="InstallBedrockChoice" Label="安装 Bedrock 版 Minecraft" Command="ui.install.bedrock" Class="layout-InstallPage-InstallBedrockChoice launch-install-InstallBedrockChoice">
         <StackPanel Key="InstallBedrockChoiceContent" Class="layout-InstallPage-InstallBedrockChoiceContent">
-          <ContentHost Key="InstallBedrockArtwork" Class="layout-InstallPage-InstallBedrockArtwork" />
-          <Text Key="InstallBedrockTitle" Content="Bedrock" Class="layout-InstallPage-InstallBedrockTitle" />
+          <ContentHost Key="InstallBedrockArtwork" Class="layout-InstallPage-InstallBedrockArtwork launch-install-InstallBedrockArtwork" />
+          <Text Key="InstallBedrockTitle" Content="Bedrock" Class="layout-InstallPage-InstallBedrockTitle launch-install-InstallBedrockTitle" />
         </StackPanel>
       </Button>
     </StackPanel>

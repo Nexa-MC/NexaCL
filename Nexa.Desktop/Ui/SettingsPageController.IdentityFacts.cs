@@ -5,7 +5,7 @@ namespace Nexa.Desktop.Ui;
 
 internal sealed partial class SettingsPageController
 {
-    private void BuildObservedInstanceHistory(XsrUiEntityId parent)
+    private void BuildObservedInstanceHistory(XsrUiEntityId slot)
     {
         if (!_store.TryResolve(MinecraftProcessStateComposition.SessionsKey, out var state)) return;
         var items = _store.ReadCollection<MinecraftProcessSnapshot>(state).Items;
@@ -18,15 +18,19 @@ internal sealed partial class SettingsPageController
             seconds += Math.Max(0, ((item.EndedAt ?? DateTimeOffset.UtcNow) - item.StartedAt).TotalSeconds);
             count++;
         }
-        ManagementFactIn(parent, "最近启动（本次启动器）", latest is { } at
-            ? at.ToLocalTime().ToString("g", System.Globalization.CultureInfo.CurrentCulture) : "本次启动器尚未启动此实例");
-        ManagementFactIn(parent, "已观察进程用时（截至当前快照）", (seconds / 60).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " 分钟");
-        Text(parent, "统计限于本次启动器最近 256 条进程记录，" + count.ToString(System.Globalization.CultureInfo.InvariantCulture) + " 条属于此实例；先前历史未记录。", 11, Muted, 34);
-        if (_offlineReport is { } report)
-            ManagementFactIn(parent, "实例健康（本地依赖）", report.Ready ? "离线依赖校验通过" : report.Complete ? "发现缺失或校验问题" : "检查不完整");
-        else ManagementFactIn(parent, "实例健康（本地依赖）", "尚未检查，请运行下方离线就绪检查");
-        if (_values?.Values.FirstOrDefault(value => value.Key == "game.memory") is { } memory)
-            ManagementFactIn(parent, "有效启动内存", memory.Value.Mode == Nexa.Services.Settings.SettingsOverrideMode.Auto
-                ? "自动分配（启动时计算）" : (memory.Value.Value ?? "未知") + " MiB · " + memory.Source);
+        var memory = _values?.Values.FirstOrDefault(value => value.Key == "game.memory");
+        var data = new Dictionary<string, string>
+        {
+            ["latest"] = latest is { } at ? at.ToLocalTime().ToString("g", System.Globalization.CultureInfo.CurrentCulture) : CustomCopy("identity.notLaunched"),
+            ["minutes"] = (seconds / 60).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture),
+            ["count"] = count.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["health"] = CustomCopy(_offlineReport is { } report ? report.Ready ? "identity.healthy" : report.Complete ? "identity.unhealthy" : "identity.incomplete" : "identity.unchecked"),
+            ["hasMemory"] = Flag(memory is not null),
+            ["memory"] = memory is null ? "" : memory.Value.Mode == Nexa.Services.Settings.SettingsOverrideMode.Auto ? CustomCopy("identity.autoMemory")
+                : CustomFormat("Memory", new() { ["value"] = memory.Value.Value ?? CustomCopy("identity.unknown"), ["source"] = memory.Source.ToString() }),
+        };
+        var fragment = DesktopMarkup.Dynamic("SettingsCustomIdentityHistory.d.nxml", data, _shell.Renderer.LocalizeText);
+        if (_shell.Tree.IsAlive(_identityHistory)) _dynamic.Reload(_identityHistory, fragment);
+        else _identityHistory = _dynamic.Append(slot, fragment);
     }
 }

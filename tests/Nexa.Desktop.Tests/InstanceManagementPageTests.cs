@@ -181,7 +181,7 @@ internal static partial class Program
             scene = fixture.Shell.Render(new(1000, 650));
             var list = FindByKey(fixture.Shell, scene, "ManagementContentList");
             AssertTrue(fixture.Shell.Tree.Children(list.Entity).Count < 40);
-            var body = fixture.Shell.Tree.Parent(list.Entity);
+            var body = ContentScrollAncestor(fixture.Shell.Tree, list.Entity);
             fixture.Shell.Tree.GetComponent<XsrUiScroll>(body)!.OffsetY = 100000;
             scene = fixture.Shell.Render(new(1000, 650));
             scene = fixture.Shell.Render(new(1000, 650));
@@ -204,7 +204,7 @@ internal static partial class Program
             Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.saves").Entity);
             scene = fixture.Shell.Render(new(1000, 650));
             AssertFalse(scene.Nodes.Any(node => node.Text == "移除"));
-            Emit(fixture.Intents, "ui.settings.management.action", FindByKey(fixture.Shell, scene, "ManagementContentDetails.My World").Entity);
+            Emit(fixture.Intents, "ui.settings.management.action", FindByKey(fixture.Shell, scene, "ManagementContentDetails." + ContentUnsafeTestKey("My World")).Entity);
             scene = fixture.Shell.Render(new(1000, 650));
             AssertTrue(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "ManagementContentDetail"));
             Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.shaderpacks").Entity);

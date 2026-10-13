@@ -1,15 +1,4 @@
-﻿using Nexa.Xsr.State;
-using Nexa.Services.Minecraft.Launch;
-using Nexa.Services.Minecraft.Process;
-using Nexa.Services.Minecraft.Management;
-using Nexa.Services.Setup;
-using Nexa.Services.Logging;
-using Nexa.Services.Capabilities;
-using Nexa.Services.Minecraft.Java;
-using Nexa.Services.Settings;
-using Nexa.Xsr;
-using Nexa.Xsr.Runtime;
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -17,8 +6,19 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Nexa.Desktop.Ui;
+using Nexa.Services.Capabilities;
+using Nexa.Services.Logging;
+using Nexa.Services.Minecraft.Java;
+using Nexa.Services.Minecraft.Launch;
+using Nexa.Services.Minecraft.Management;
+using Nexa.Services.Minecraft.Process;
+using Nexa.Services.Settings;
+using Nexa.Services.Setup;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
+using Nexa.Xsr.Runtime;
+using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Tests;
 
@@ -586,42 +586,42 @@ internal static partial class Program
                 surface!.CommitScene(); surface.CommitScene();
             }, timeout.Token);
             await Task.Delay(500, timeout.Token);
-            Nexa.Services.Minecraft.MinecraftLibrarySnapshot? libraryBeforeVersions=null;
+            Nexa.Services.Minecraft.MinecraftLibrarySnapshot? libraryBeforeVersions = null;
             await startup.InvokeAsync(() =>
             {
                 Capture("resources");
-                Emit(f.Intents,"ui.resources.action",resources!.Find("ResourceLoader"));
-                surface!.CommitScene();Capture("resources-loader");
-                Emit(f.Intents,"ui.navigation.launch");surface.CommitScene();
-                var libraryKey=f.Store.Resolve(Nexa.Services.Minecraft.MinecraftLibraryContract.StateKey);
-                libraryBeforeVersions=f.Store.Read<Nexa.Services.Minecraft.MinecraftLibrarySnapshot>(libraryKey).Value;
-                var versions=new[]{Nexa.Services.Minecraft.MinecraftVersionKind.Forge,Nexa.Services.Minecraft.MinecraftVersionKind.Fabric,
+                Emit(f.Intents, "ui.resources.action", resources!.Find("ResourceLoader"));
+                surface!.CommitScene(); Capture("resources-loader");
+                Emit(f.Intents, "ui.navigation.launch"); surface.CommitScene();
+                var libraryKey = f.Store.Resolve(Nexa.Services.Minecraft.MinecraftLibraryContract.StateKey);
+                libraryBeforeVersions = f.Store.Read<Nexa.Services.Minecraft.MinecraftLibrarySnapshot>(libraryKey).Value;
+                var versions = new[]{Nexa.Services.Minecraft.MinecraftVersionKind.Forge,Nexa.Services.Minecraft.MinecraftVersionKind.Fabric,
                     Nexa.Services.Minecraft.MinecraftVersionKind.NeoForge,Nexa.Services.Minecraft.MinecraftVersionKind.Release}
-                    .Select(kind=>{var item=Instance("1.21.1-"+kind);return item with{Version=item.Version with{Kind=kind}};}).ToArray();
-                f.Store.Publish(libraryKey,libraryBeforeVersions with{Revision=libraryBeforeVersions.Revision+1,Instances=versions,SelectedInstanceId=versions[0].Id,IsLoading=false});
-                f.Shell.Renderer.Activate(FindByKey(f.Shell,surface.Scene!,"InstanceListButton").Entity);surface.CommitScene();
-            },timeout.Token);
-            await Task.Delay(350,timeout.Token);
+                    .Select(kind => { var item = Instance("1.21.1-" + kind); return item with { Version = item.Version with { Kind = kind } }; }).ToArray();
+                f.Store.Publish(libraryKey, libraryBeforeVersions with { Revision = libraryBeforeVersions.Revision + 1, Instances = versions, SelectedInstanceId = versions[0].Id, IsLoading = false });
+                f.Shell.Renderer.Activate(FindByKey(f.Shell, surface.Scene!, "InstanceListButton").Entity); surface.CommitScene();
+            }, timeout.Token);
+            await Task.Delay(350, timeout.Token);
             await startup.InvokeAsync(() =>
             {
-                surface!.CommitScene();Capture("versions");
-                var search=FindByKey(f.Shell,surface.Scene!,"LibrarySearch").Entity;
-                f.Shell.Renderer.SetTextInputValue(search,"Fabric");f.Shell.Renderer.Focus(search,showIndicator:false);
-                surface.CommitScene();Capture("versions-search");
-                f.Shell.Renderer.SetTextInputValue(search,"");surface.CommitScene();
-                f.Shell.Renderer.Activate(FindByKey(f.Shell,surface.Scene!,"LibraryChooseDirectory").Entity);surface.CommitScene();
-                var rename=surface.Scene!.Nodes.FirstOrDefault(node=>f.Shell.Tree.Name(node.Entity).StartsWith("LibraryDirectoryRename:directory:",StringComparison.Ordinal));
-                if(rename.Entity.IsAssigned){f.Shell.Renderer.Activate(rename.Entity);surface.CommitScene();}
-                window!.Width=820;window.UpdateLayout();surface.CommitScene();
-            },timeout.Token);
-            await Task.Delay(500,timeout.Token);
+                surface!.CommitScene(); Capture("versions");
+                var search = FindByKey(f.Shell, surface.Scene!, "LibrarySearch").Entity;
+                f.Shell.Renderer.SetTextInputValue(search, "Fabric"); f.Shell.Renderer.Focus(search, showIndicator: false);
+                surface.CommitScene(); Capture("versions-search");
+                f.Shell.Renderer.SetTextInputValue(search, ""); surface.CommitScene();
+                f.Shell.Renderer.Activate(FindByKey(f.Shell, surface.Scene!, "LibraryChooseDirectory").Entity); surface.CommitScene();
+                var rename = surface.Scene!.Nodes.FirstOrDefault(node => f.Shell.Tree.Name(node.Entity).StartsWith("LibraryDirectoryRename:directory:", StringComparison.Ordinal));
+                if (rename.Entity.IsAssigned) { f.Shell.Renderer.Activate(rename.Entity); surface.CommitScene(); }
+                window!.Width = 820; window.UpdateLayout(); surface.CommitScene();
+            }, timeout.Token);
+            await Task.Delay(500, timeout.Token);
             await startup.InvokeAsync(() =>
             {
-                surface!.CommitScene();Capture("directories");
-                if(libraryBeforeVersions is not null)f.Store.Publish(f.Store.Resolve(Nexa.Services.Minecraft.MinecraftLibraryContract.StateKey),
-                    libraryBeforeVersions with{Revision=libraryBeforeVersions.Revision+2});
-                f.Shell.Stage.Navigation.Replace(controller.Page);window!.Width=1040;window.UpdateLayout();surface.CommitScene();
-            },timeout.Token);
+                surface!.CommitScene(); Capture("directories");
+                if (libraryBeforeVersions is not null) f.Store.Publish(f.Store.Resolve(Nexa.Services.Minecraft.MinecraftLibraryContract.StateKey),
+                    libraryBeforeVersions with { Revision = libraryBeforeVersions.Revision + 2 });
+                f.Shell.Stage.Navigation.Replace(controller.Page); window!.Width = 1040; window.UpdateLayout(); surface.CommitScene();
+            }, timeout.Token);
             DesktopTaskBubblePresenter? taskBubble = null;
             TaskCenterController? taskPage = null;
             using var taskRuntime = Nexa.Services.Composition.TaskCenterRuntimeComposer.Compose(f.Foundation.Host);
@@ -685,33 +685,33 @@ internal static partial class Program
                 overlayNotifications = [f.Feedback.Info("更新已就绪，重启后安装。"), f.Feedback.Warn("部分资源暂时无法连接。"),
                     f.Feedback.Error("示例错误：literal <metadata> {state secret}")];
                 surface!.CommitScene();
-            },timeout.Token);
-            await Task.Delay(500,timeout.Token);
+            }, timeout.Token);
+            await Task.Delay(500, timeout.Token);
             await startup.InvokeAsync(() =>
             {
                 surface!.CommitScene(); Capture("global-notifications");
                 foreach (var notification in overlayNotifications) f.Feedback.DismissNotification(notification);
                 surface.CommitScene();
-                f.Feedback.ShowDialog("native.global.fixture", "选择 Java", string.Join('\n', Enumerable.Range(1,18)
-                    .Select(index => "预览记录 " + index + "：literal <metadata> {data text}")), "自动下载", "取消", static _=>{},
-                    "选择 Java", static ()=>{}, localizeMessage:false);
-                window!.Width=820; window.UpdateLayout(); surface.CommitScene();
+                f.Feedback.ShowDialog("native.global.fixture", "选择 Java", string.Join('\n', Enumerable.Range(1, 18)
+                    .Select(index => "预览记录 " + index + "：literal <metadata> {data text}")), "自动下载", "取消", static _ => { },
+                    "选择 Java", static () => { }, localizeMessage: false);
+                window!.Width = 820; window.UpdateLayout(); surface.CommitScene();
             }, timeout.Token);
-            await Task.Delay(350,timeout.Token);
+            await Task.Delay(350, timeout.Token);
             await startup.InvokeAsync(() =>
             {
                 surface!.CommitScene(); Capture("global-dialog-narrow");
-                f.Feedback.ResolveDialog(f.Feedback.Snapshot().Dialog!.Id,false);surface.CommitScene();
-            },timeout.Token);
+                f.Feedback.ResolveDialog(f.Feedback.Snapshot().Dialog!.Id, false); surface.CommitScene();
+            }, timeout.Token);
             await Eventually(() => !f.FeedbackPresenter.PresentedDialogRoot.IsAssigned);
             await startup.InvokeAsync(() =>
             {
-                overlayPalette=new(f.Shell,f.Intents,f.Store,actions,static _=>{});
-                AssertTrue(overlayPalette.Open());surface!.CommitScene();
-                f.Shell.Renderer.SetTextInputValue(overlayPalette.Find("CommandPaletteSearch"),"设置");surface.CommitScene();
-                Capture("global-palette-narrow");overlayPalette.Close();overlayPalette.Dispose();
-                window!.Width=1040;window.UpdateLayout();surface.CommitScene();
-            },timeout.Token);
+                overlayPalette = new(f.Shell, f.Intents, f.Store, actions, static _ => { });
+                AssertTrue(overlayPalette.Open()); surface!.CommitScene();
+                f.Shell.Renderer.SetTextInputValue(overlayPalette.Find("CommandPaletteSearch"), "设置"); surface.CommitScene();
+                Capture("global-palette-narrow"); overlayPalette.Close(); overlayPalette.Dispose();
+                window!.Width = 1040; window.UpdateLayout(); surface.CommitScene();
+            }, timeout.Token);
             await SelectCategory("general");
             await Task.Delay(600, timeout.Token);
             await SelectCategory("appearance");

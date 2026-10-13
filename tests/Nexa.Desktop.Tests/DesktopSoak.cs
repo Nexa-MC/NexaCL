@@ -5,8 +5,8 @@ using Nexa.Desktop.Ui;
 using Nexa.Services.Logging;
 using Nexa.Services.Scheduling;
 using Nexa.Services.Tasks;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Tests;

@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="Java 下载确认失败：{data error}" Localize="false" />
+</nxml-dynamic>

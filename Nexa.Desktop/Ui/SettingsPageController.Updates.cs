@@ -1,7 +1,7 @@
 using Nexa.Services.Settings;
 using Nexa.Services.Updates;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Ui;
@@ -37,7 +37,9 @@ internal sealed partial class SettingsPageController
     private Action<Uri>? _openUpdateLink;
     private Task<XsrResult<NexaUpdateStatus>>? _updateReading;
     private NexaUpdateOffer? _updateOffer;
-    private string _updateStatus = "通过 Cloudflare 检查当前平台的新版本。";
+    private string _updateStatus = "";
+    private XsrUiEntityId _updateCard;
+    private readonly Dictionary<string, XsrUiEntityId> _updateActionViews = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _updateStop = new();
 
     internal void ConfigureUpdates(XsrQueryRouter queries, NexaUpdateQuery query, Action<Uri> open,
@@ -50,8 +52,14 @@ internal sealed partial class SettingsPageController
 
     private static bool IsUpdateIntent(XsrSemanticId id) => id == CheckUpdate || id == DownloadUpdate || id == PortableUpdate || id == UpdateNotes
         || id == InstallUpdate || id == RestartUpdate || id == RollbackUpdate;
-    private void HandleUpdateIntent(XsrSemanticId id)
+    private void HandleUpdateIntent(DesktopUiIntent intent)
     {
+        if (!_visible || _selected != "advanced" || !_shell.Tree.IsAlive(intent.Source)
+            || _shell.Tree.GetComponent<XsrUiInput>(intent.Source)?.Enabled != true
+            || !_shell.Tree.IsAlive(_updateCard)) return;
+        var nodes = CatalogNodes(_updateCard);
+        if (intent.Source != nodes["SettingsCheckUpdate"] && !_updateActionViews.ContainsValue(intent.Source)) return;
+        var id = intent.Command;
         if (id == RestartUpdate && UpdateNeedsRestart) { _restartForUpdate?.Invoke(); return; }
         if (id == InstallUpdate && !AutomaticUpdateInProgress && _automaticStatus?.CanInstall == true && _automaticUpdates is not null && _updateQuery is not null)
         {
@@ -60,20 +68,20 @@ internal sealed partial class SettingsPageController
             if (version is null || channel is not ("alpha" or "beta" or "stable")) return;
             _automaticRecoveryAttempted = true;
             _automaticInstalling = _automaticUpdates.InstallAsync(version, channel, _updateStop.Token);
-            WakeOnPlatformCompletion(_automaticInstalling); _updateStatus = "正在更新…"; BuildSections(); return;
+            WakeOnPlatformCompletion(_automaticInstalling); _updateStatus = CustomCopy("update.installing"); RefreshUpdateCard(); return;
         }
         if (id == RollbackUpdate && !AutomaticUpdateInProgress && _automaticStatus?.CanRollback == true && _automaticUpdates is not null)
         { _automaticRecoveryAttempted = true; _automaticInstalling = _automaticUpdates.RollbackAsync(_updateStop.Token); WakeOnPlatformCompletion(_automaticInstalling); return; }
         if (id == CheckUpdate && _updateReading is null && StartUpdateCheck())
         {
-            BuildSections();
+            RefreshUpdateCard();
         }
         else if (_updateOffer is { } offer && id != CheckUpdate)
         {
             string url = id == DownloadUpdate ? offer.InstallerUrl : id == PortableUpdate ? offer.PortableUrl : offer.ReleaseUrl;
             try { _openUpdateLink?.Invoke(new Uri(url)); }
             catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-            { _feedback.Error("无法打开下载页面，请稍后重试。"); }
+            { _feedback.Error(CustomCopy("update.openFailed")); }
         }
     }
 
@@ -87,9 +95,9 @@ internal sealed partial class SettingsPageController
         if (_updateReadingQuery != _updateQuery) { _ = task.Exception; return; }
         _updateOffer = PendingQuery.Succeeded(task) ? task.Result.Value!.Offer : null;
         _updateOfferChannel = _updateOffer is null ? null : _updateReadingQuery?.Channel;
-        _updateStatus = !PendingQuery.Succeeded(task) ? "暂时无法检查更新，请重试。"
-            : _updateOffer is null ? "此通道没有可用的新版本。" : "新版本 " + _updateOffer.Version + " 已可下载。";
-        if (_selected == "advanced") BuildSections();
+        _updateStatus = !PendingQuery.Succeeded(task) ? CustomCopy("update.checkFailed")
+            : _updateOffer is null ? CustomCopy("update.noOffer") : CustomFormat("UpdateOffer", new() { ["version"] = _updateOffer.Version });
+        if (_selected == "advanced") RefreshUpdateCard();
     }
 
     private bool StartUpdateCheck()
@@ -97,7 +105,7 @@ internal sealed partial class SettingsPageController
         if (_updateQuery is null || _updateQueries?.TryResolve(NexaUpdateContract.Check, out var route) != true) return false;
         _updateCheckStop = CancellationTokenSource.CreateLinkedTokenSource(_updateStop.Token);
         _updateReadingQuery = _updateQuery;
-        _updateStatus = "正在检查更新…";
+        _updateStatus = CustomCopy("update.checking");
         _updateReading = _updateQueries.QueryAsync<NexaUpdateQuery, NexaUpdateStatus>(route, _updateReadingQuery, cancellationToken: _updateCheckStop.Token).AsTask();
         WakeOnPlatformCompletion(_updateReading);
         return true;
@@ -129,14 +137,14 @@ internal sealed partial class SettingsPageController
             _updateReading = null; _updateReadingQuery = null;
             _updateQuery = query; _updateOffer = null; _updateOfferChannel = null;
             if (!AutomaticUpdateInProgress && !UpdateNeedsRestart)
-                _updateStatus = "通过 Cloudflare 检查当前平台的新版本。";
+                _updateStatus = CustomCopy("update.initial");
         }
         if (!_startupUpdateChecked)
         {
             _startupUpdateChecked = true;
             if (policy.AutomaticCheck) StartUpdateCheck();
         }
-        if (changed && _visible && _selected == "advanced" && _catalog is not null) BuildSections();
+        if (changed && _visible && _selected == "advanced" && _catalog is not null) RefreshUpdateCard();
     }
 
     private void UpdateAutomaticState()
@@ -151,11 +159,10 @@ internal sealed partial class SettingsPageController
             if (operation.IsCompletedSuccessfully)
             {
                 _automaticStatus = operation.Result;
-                _updateStatus = _automaticStatus.Phase == "rolledback"
-                    ? "已回滚更新。" : "更新完成。";
-                if (UpdateNeedsRestart) _updateStatus += "重新启动后生效。";
+                _updateStatus = CustomCopy(_automaticStatus.Phase == "rolledback" ? "update.rolledBack" : "update.complete");
+                if (UpdateNeedsRestart) _updateStatus = CustomFormat("UpdateRestart", new() { ["status"] = _updateStatus });
             }
-            else { _ = operation.Exception; _updateStatus = "更新未完成。可以继续更新，或下载安装包。"; }
+            else { _ = operation.Exception; _updateStatus = CustomCopy("update.incomplete"); }
             changed = true;
         }
         if (_automaticReading is { IsCompleted: true } reading)
@@ -168,8 +175,8 @@ internal sealed partial class SettingsPageController
                 _automaticStatus = reading.Result;
                 if (_automaticInstalling is null && _automaticStatus.Phase is "complete" or "rolledback")
                 {
-                    _updateStatus = _automaticStatus.Phase == "rolledback" ? "已回滚更新。" : "更新完成。";
-                    if (UpdateNeedsRestart) _updateStatus += "重新启动后生效。";
+                    _updateStatus = CustomCopy(_automaticStatus.Phase == "rolledback" ? "update.rolledBack" : "update.complete");
+                    if (UpdateNeedsRestart) _updateStatus = CustomFormat("UpdateRestart", new() { ["status"] = _updateStatus });
                 }
                 if (!_automaticRecoveryAttempted && _automaticInstalling is null && _automaticStatus.CanInstall && _automaticStatus.Version is { } version
                     && _automaticStatus.Channel is { } channel && _automaticStatus.Phase is "verifying" or "downloading" or "preparing" or "activating" or "paused")
@@ -179,7 +186,7 @@ internal sealed partial class SettingsPageController
                     WakeOnPlatformCompletion(_automaticInstalling);
                 }
             }
-            else { _ = reading.Exception; _updateStatus = "此安装位置无法自动更新，请使用系统安装包。"; changed = true; }
+            else { _ = reading.Exception; _updateStatus = CustomCopy("update.unsupported"); changed = true; }
             if (AutomaticUpdateInProgress)
             {
                 _automaticRefreshDelay = Task.Delay(500, _updateStop.Token);
@@ -188,37 +195,52 @@ internal sealed partial class SettingsPageController
         }
         if (AutomaticUpdateInProgress && _automaticReading is null && _automaticRefreshDelay is not { IsCompleted: false })
         { _automaticRefreshDelay = null; _automaticReading = _automaticUpdates!.ReadAsync(_updateStop.Token); WakeOnPlatformCompletion(_automaticReading); }
-        if (changed && _selected == "advanced") BuildSections();
+        if (changed && _selected == "advanced") RefreshUpdateCard();
+    }
+
+    private Dictionary<string, string> UpdateCardProjection()
+    {
+        string? phase = AutomaticUpdateInProgress ? _automaticStatus?.Phase : null;
+        return new()
+        {
+            ["version"] = _updateQuery?.CurrentVersion ?? "",
+            ["canCheck"] = Flag(_updateReading is null),
+            ["status"] = _updateStatus.Length == 0 ? CustomCopy("update.initial") : _updateStatus,
+            ["downloading"] = Flag(phase == "downloading"),
+            ["preparing"] = Flag(phase == "preparing"),
+            ["activating"] = Flag(phase == "activating"),
+            ["verifying"] = Flag(AutomaticUpdateInProgress && phase is not ("downloading" or "preparing" or "activating")),
+        };
     }
 
     private void BuildUpdateCard()
     {
+        _updateActionViews.Clear(); _updateCard = default;
         if (_updateQuery is null) return;
-        var card = SettingsCard("SettingsUpdateCard", new(20, 18, 20, 18), spacing: 10, radius: 18);
-        var header = Stack(card, "SettingsUpdateHeader", XsrUiOrientation.Horizontal, 12);
-        var title = Text(header, Program.ProductDisplayTitle(_updateQuery.CurrentVersion), 19, Ink, 28, 600);
-        _shell.Tree.GetComponent<XsrUiElement>(title)!.Weight = 1;
-        var check = RefreshIcon(header, "SettingsCheckUpdate", CheckUpdate);
-        _shell.Tree.GetComponent<XsrUiInput>(check)!.Enabled = _updateReading is null;
-        Text(card, _updateStatus, 13, Muted, 22);
-        if (AutomaticUpdateInProgress)
-            Text(card, _automaticStatus?.Phase switch { "downloading" => "正在下载并校验", "preparing" => "正在准备新版本", "activating" => "正在切换版本", _ => "正在验证发布信息" }, 13, Muted, 22);
-        var actions = Stack(card, "SettingsUpdateActions", XsrUiOrientation.Horizontal, 10);
+        _updateCard = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsCustomUpdate.d.nxml", UpdateCardProjection(), _shell.Renderer.LocalizeText));
+        RefreshUpdateCard();
+    }
+
+    private void RefreshUpdateCard()
+    {
+        if (!_shell.Tree.IsAlive(_updateCard) || _selected != "advanced") return;
+        _dynamic.Reload(_updateCard, DesktopMarkup.Dynamic("SettingsCustomUpdate.d.nxml", UpdateCardProjection(), _shell.Renderer.LocalizeText));
+        var nodes = CatalogNodes(_updateCard); var slot = nodes["SettingsUpdateActions"];
+        List<string> actions = [];
         if (_updateOffer is not null)
         {
-            if (_automaticStatus?.CanInstall == true && !AutomaticUpdateInProgress && _updateQuery.Channel is "alpha" or "beta" or "stable")
-                ActionButton(actions, "SettingsInstallUpdate", "立即更新", InstallUpdate, 100);
-            ActionButton(actions, "SettingsDownloadUpdate", "下载安装包", DownloadUpdate, 112);
-            ActionButton(actions, "SettingsPortableUpdate", "便携包", PortableUpdate, 80);
-            ActionButton(actions, "SettingsUpdateNotes", "GitHub / 更新日志", UpdateNotes, 144);
+            if (_automaticStatus?.CanInstall == true && !AutomaticUpdateInProgress && _updateQuery?.Channel is "alpha" or "beta" or "stable") actions.Add("Install");
+            actions.AddRange(["Download", "Portable", "Notes"]);
         }
-        if (UpdateNeedsRestart && _automaticInstalling is null)
-            ActionButton(actions, "SettingsRestartUpdate", "重新启动", RestartUpdate, 100);
+        if (UpdateNeedsRestart && _automaticInstalling is null) actions.Add("Restart");
         else if (_updateOffer is null && _automaticStatus?.Version is not null && _automaticStatus.CanInstall
             && _automaticStatus.Channel is "alpha" or "beta" or "stable"
-            && _automaticStatus.Phase is not ("complete" or "rolledback") && _automaticInstalling is null)
-            ActionButton(actions, "SettingsResumeUpdate", "继续更新", InstallUpdate, 100);
-        if (_automaticStatus?.CanRollback == true && !AutomaticUpdateInProgress)
-            ActionButton(actions, "SettingsRollbackUpdate", "回滚更新", RollbackUpdate, 100);
+            && _automaticStatus.Phase is not ("complete" or "rolledback") && _automaticInstalling is null) actions.Add("Resume");
+        if (_automaticStatus?.CanRollback == true && !AutomaticUpdateInProgress) actions.Add("Rollback");
+        foreach (string name in _updateActionViews.Keys.Where(name => !actions.Contains(name)).ToArray())
+        { _dynamic.Remove(_updateActionViews[name]); _updateActionViews.Remove(name); }
+        foreach (string name in actions)
+            if (!_updateActionViews.ContainsKey(name)) _updateActionViews[name] = _dynamic.Append(slot, DesktopMarkup.Dynamic("SettingsCustomUpdate" + name + ".d.nxml"));
+        _dynamic.Reorder(slot, actions.Select(name => _updateActionViews[name]).ToArray());
     }
 }

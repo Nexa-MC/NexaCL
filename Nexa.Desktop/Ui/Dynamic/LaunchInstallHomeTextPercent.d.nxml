@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Text Content="{data value}%" Localize="false" />
+</nxml-dynamic>

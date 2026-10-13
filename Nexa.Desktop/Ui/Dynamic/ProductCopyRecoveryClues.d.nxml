@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data summary}&#10;&#10;建议先检查：&#10;{data clues}&#10;这些是变化线索，尚未确定为崩溃原因。" Localize="false" /></nxml-dynamic>

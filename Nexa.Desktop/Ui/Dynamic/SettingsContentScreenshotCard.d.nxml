@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Node Key="{data key}" Height="{data height}" Label="{data label}" Localize="false" Role="Button" Command="ui.settings.management.action" Clickable="true" Focusable="true" Class="settings-content-screenshot-card" Recipe="StackLayout" Kind="SettingsContentButton"><StackPanel Key="ManagementScreenshotBody" Class="settings-content-screenshot-card-body"><Image Key="ManagementContentIcon" Source="nexa/content-image" Height="{data imageHeight}" Class="settings-content-screenshot-image" /><Text Content="{data name}" Localize="false" Class="settings-content-screenshot-card-name" /><Text Content="{data timestamp}" Localize="false" IsVisible="{data showTimestamp}" Class="settings-content-screenshot-card-time" /></StackPanel></Node>
+</nxml-dynamic>

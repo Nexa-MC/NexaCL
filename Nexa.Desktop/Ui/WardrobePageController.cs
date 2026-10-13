@@ -2,10 +2,10 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
-using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Services.Accounts;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -29,14 +29,14 @@ internal sealed class WardrobePageController : IDisposable
         internal AccountWardrobeResolvedTextures? Loaded;
         internal AccountWardrobeResolvedTextures? Presented;
         internal WardrobePlayerView PresentedView;
-        internal Dictionary<string,string> Projection=[];
+        internal Dictionary<string, string> Projection = [];
     }
     private readonly NxmlDynamicContent _dynamic;
     private readonly XsrUiEntityId _workspace;
-    private readonly Dictionary<string,string> _presentation=DesktopWardrobeText.Defaults(library:false);
-    private Dictionary<string,string> _applied=[];
-    private string _copyStamp="";
-    private double _trackHeight=Required(DesktopWardrobeText.Metric("track").MinHeight);
+    private readonly Dictionary<string, string> _presentation = DesktopWardrobeText.Defaults(library: false);
+    private Dictionary<string, string> _applied = [];
+    private string _copyStamp = "";
+    private double _trackHeight = Required(DesktopWardrobeText.Metric("track").MinHeight);
     private readonly XsrUiShell _shell;
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrQueryRouter _queries;
@@ -73,7 +73,7 @@ internal sealed class WardrobePageController : IDisposable
     private string _status = Raw("read-account");
     private string? _operationNotice;
     private XsrUiSize _viewport;
-    private double _skinOffset, _capeOffset, _cardWidth=CardWidth(Required(DesktopWardrobeText.Metric("track").MinHeight)), _cardHeight=Required(DesktopWardrobeText.Metric("track").MinHeight), _trackWidth=Required(DesktopWardrobeText.Metric("track").MinWidth);
+    private double _skinOffset, _capeOffset, _cardWidth = CardWidth(Required(DesktopWardrobeText.Metric("track").MinHeight)), _cardHeight = Required(DesktopWardrobeText.Metric("track").MinHeight), _trackWidth = Required(DesktopWardrobeText.Metric("track").MinWidth);
     private bool Busy => _reading is not null || _previewing is not null || _writing is not null || _picking is not null;
     internal const int CapePageSize = 12; // Bounded lazy image window; the horizontal track retains every card.
 
@@ -81,16 +81,16 @@ internal sealed class WardrobePageController : IDisposable
         XsrCommandRouter commands, XsrStateStore store, DesktopFeedbackService feedback)
     {
         _shell = shell; _intents = intents; _queries = queries; _commands = commands; _store = store; _feedback = feedback;
-        _dynamic=new(shell.Tree,store);
-        Page=NxmlUiLoader.LoadDetached(DesktopMarkup.Load("WardrobePage.nxml"),shell.Tree,store);
-        var slot=shell.Tree.Children(Page).Single();
-        _workspace=_dynamic.Append(slot,DesktopMarkup.Dynamic("WardrobeWorkspace.d.nxml",_presentation));
-        shell.Tree.Walk(_workspace,entity=>
+        _dynamic = new(shell.Tree, store);
+        Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("WardrobePage.nxml"), shell.Tree, store);
+        var slot = shell.Tree.Children(Page).Single();
+        _workspace = _dynamic.Append(slot, DesktopMarkup.Dynamic("WardrobeWorkspace.d.nxml", _presentation));
+        shell.Tree.Walk(_workspace, entity =>
         {
-            string name=shell.Tree.Name(entity);if(name.Length>0)_nodes[name]=entity;
-            if(shell.Tree.GetComponent<XsrUiCommandBinding>(entity)is{}binding)
+            string name = shell.Tree.Name(entity); if (name.Length > 0) _nodes[name] = entity;
+            if (shell.Tree.GetComponent<XsrUiCommandBinding>(entity) is { } binding)
             {
-                if(!_staticSources.TryGetValue(binding.Command.Value,out var sources))_staticSources[binding.Command.Value]=sources=[];
+                if (!_staticSources.TryGetValue(binding.Command.Value, out var sources)) _staticSources[binding.Command.Value] = sources = [];
                 sources.Add(entity);
             }
             return true;
@@ -128,7 +128,7 @@ internal sealed class WardrobePageController : IDisposable
     }
     private void OnFrame(object? sender, EventArgs args)
     {
-        string copy=_shell.Renderer.LocalizeText(Raw("read-account"));if(copy!=_copyStamp){_copyStamp=copy;_dirty=true;}
+        string copy = _shell.Renderer.LocalizeText(Raw("read-account")); if (copy != _copyStamp) { _copyStamp = copy; _dirty = true; }
         if (_disposed) return;
         bool visible = _shell.Stage.Navigation.Current == Page;
         if (!visible) { if (_visible) { Retire(); } _visible = false; return; }
@@ -158,14 +158,14 @@ internal sealed class WardrobePageController : IDisposable
             }
             fixedHeight += Math.Max(0, visibleChildren - 1) *
                 _shell.Tree.GetComponent<XsrUiStackPanel>(_nodes["WardrobeContent"])!.Spacing;
-            var metric=DesktopWardrobeText.Metric("track");
-            double trackHeight=Math.Max(Required(metric.MinHeight),(contentViewport.ViewportHeight-fixedHeight)/2);
-            double height=Math.Clamp(trackHeight-metric.Margin.Top,Required(metric.MinHeight),Required(metric.MaxHeight));
-            if(_trackHeight!=trackHeight)
+            var metric = DesktopWardrobeText.Metric("track");
+            double trackHeight = Math.Max(Required(metric.MinHeight), (contentViewport.ViewportHeight - fixedHeight) / 2);
+            double height = Math.Clamp(trackHeight - metric.Margin.Top, Required(metric.MinHeight), Required(metric.MaxHeight));
+            if (_trackHeight != trackHeight)
             {
-                _trackHeight=trackHeight;
-                foreach(string track in new[]{"WardrobeSkinTrack","WardrobeCapeTrack"})_presentation[track+"_height"]=Number(trackHeight);
-                _dirty=true;
+                _trackHeight = trackHeight;
+                foreach (string track in new[] { "WardrobeSkinTrack", "WardrobeCapeTrack" }) _presentation[track + "_height"] = Number(trackHeight);
+                _dirty = true;
             }
             if (Math.Abs(height - _cardHeight) > .5)
             {
@@ -188,12 +188,12 @@ internal sealed class WardrobePageController : IDisposable
                 if (child != _nodes["WardrobeCurrentCard"])
                     reserved += (element.Height ?? 0) + element.Padding.Vertical + element.Margin.Vertical;
             }
-            reserved+=Math.Max(0,count-1)*DesktopWardrobeText.Metric("rail").Spacing;
+            reserved += Math.Max(0, count - 1) * DesktopWardrobeText.Metric("rail").Spacing;
             var card = _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeCurrentCard"])!;
-            double height=Math.Max(Required(DesktopWardrobeText.Metric("current-card").MinHeight),railViewport.ViewportHeight-reserved-card.Padding.Vertical);
+            double height = Math.Max(Required(DesktopWardrobeText.Metric("current-card").MinHeight), railViewport.ViewportHeight - reserved - card.Padding.Vertical);
             if (card.Height != height)
             {
-                _presentation["WardrobeCurrentCard_height"]=Number(height);_dirty=true;
+                _presentation["WardrobeCurrentCard_height"] = Number(height); _dirty = true;
             }
         }
         long selections = Volatile.Read(ref _selectionEvents), rosters = Volatile.Read(ref _rosterEvents);
@@ -329,7 +329,7 @@ internal sealed class WardrobePageController : IDisposable
         {
             string track = command.Contains(".skin.", StringComparison.Ordinal) ? "WardrobeSkins" : "WardrobeCapes";
             var scroll = Scroll(track);
-            scroll.OffsetX = Math.Max(0, scroll.OffsetX + (command.EndsWith("next", StringComparison.Ordinal) ? 1 : -1) * Math.Max(_cardWidth+TrackSpacing,_trackWidth-TrackSpacing));
+            scroll.OffsetX = Math.Max(0, scroll.OffsetX + (command.EndsWith("next", StringComparison.Ordinal) ? 1 : -1) * Math.Max(_cardWidth + TrackSpacing, _trackWidth - TrackSpacing));
             _shell.Tree.MarkDirty(_nodes[track], XsrUiDirtyKinds.Layout); return;
         }
         if (command is "ui.wardrobe.classic" or "ui.wardrobe.slim")
@@ -449,9 +449,9 @@ internal sealed class WardrobePageController : IDisposable
         Text("WardrobeProfileKind", profileCaption.Content, profileCaption.Literal);
         Text("WardrobeStatus", _status); Text("WardrobeLocalStatus", _status);
         Visible("WardrobeStatus", !_localOpen && _status != Raw("ready") && !string.IsNullOrWhiteSpace(_status));
-        Text("WardrobeClassic",Format("Choice",("marker",!_slim?Raw("choice-marker"):""),("label",_shell.Renderer.LocalizeText(Raw("copy.fc09417885b9")))),literal:true);Text("WardrobeSlim",Format("Choice",("marker",_slim?Raw("choice-marker"):""),("label",_shell.Renderer.LocalizeText(Raw("copy.252d2d8a440b")))),literal:true);
-        _presentation["WardrobeCurrentView_label"]=ViewCaption(_currentView);
-        Text("WardrobeSkinCount",Format("Count",("count",_skinCards.Count)),literal:true);Text("WardrobeCapeCount",Format("Count",("count",_capeCards.Count)),literal:true);
+        Text("WardrobeClassic", Format("Choice", ("marker", !_slim ? Raw("choice-marker") : ""), ("label", _shell.Renderer.LocalizeText(Raw("copy.fc09417885b9")))), literal: true); Text("WardrobeSlim", Format("Choice", ("marker", _slim ? Raw("choice-marker") : ""), ("label", _shell.Renderer.LocalizeText(Raw("copy.252d2d8a440b")))), literal: true);
+        _presentation["WardrobeCurrentView_label"] = ViewCaption(_currentView);
+        Text("WardrobeSkinCount", Format("Count", ("count", _skinCards.Count)), literal: true); Text("WardrobeCapeCount", Format("Count", ("count", _capeCards.Count)), literal: true);
         Text("WardrobeSkinsEmpty", _snapshot is not null
             ? Raw("copy.5621b9ced9f2")
             : _observedIdentity is null ? Raw("copy.df5f107f6bca")
@@ -502,7 +502,7 @@ internal sealed class WardrobePageController : IDisposable
             _presentedCurrent = current; _presentedCurrentView = _currentView;
         }
         var head = _shell.Tree.GetComponent<XsrUiImage>(_nodes["WardrobeHeadPreview"])!;
-        _presentation["WardrobeHeadPreview_source"]=LaunchProfilePresentation.Avatar(profile.Uuid??"");
+        _presentation["WardrobeHeadPreview_source"] = LaunchProfilePresentation.Avatar(profile.Uuid ?? "");
         head.Raster = _preview is { } selected ? LaunchProfilePresentation.Head(selected.Image) : null;
         _shell.Tree.GetComponent<XsrUiImage>(_nodes["WardrobeTexturePreview"])!.Raster = _preview is { } draft
             ? new XsrUiRasterImage(draft.Image, []) { FitToBounds = true } : null;
@@ -517,7 +517,7 @@ internal sealed class WardrobePageController : IDisposable
             ProjectCard(card);
         }
         ReloadWorkspace();
-        _shell.Tree.MarkDirty(Page,XsrUiDirtyKinds.Paint);
+        _shell.Tree.MarkDirty(Page, XsrUiDirtyKinds.Paint);
         _skinOffset = Scroll("WardrobeSkins").OffsetX; _capeOffset = Scroll("WardrobeCapes").OffsetX;
     }
     private Nexa.Core.Media.PngImage? CurrentSkin(LaunchProfileView profile) => _store.ReadCollection<AccountSkinSnapshot>(_store.Resolve(AccountSkinContract.SkinsKey)).Items
@@ -530,14 +530,14 @@ internal sealed class WardrobePageController : IDisposable
             string server = profile.AuthServer.Trim();
             if (!server.Contains("://", StringComparison.Ordinal)) server = "https://" + server;
             if (Uri.TryCreate(server, UriKind.Absolute, out var address) && !string.IsNullOrEmpty(address.Host))
-                return (Format("ThirdParty",("host",address.Host)),true);
+                return (Format("ThirdParty", ("host", address.Host)), true);
         }
         return !string.IsNullOrWhiteSpace(profile.Info)
             ? (profile.Info, true) : (LaunchProfilePresentation.Description(profile), false);
     }
     private static string ViewLabel(WardrobePlayerView view) => view switch
     { WardrobePlayerView.Isometric => Raw("copy.bc295ff5696c"), WardrobePlayerView.Front => Raw("copy.740f5e8102e0"), WardrobePlayerView.Back => Raw("copy.2d270b6ce44a"), WardrobePlayerView.Left => Raw("copy.6a24b14f33c7"), WardrobePlayerView.Right => Raw("copy.1cf1d4d0b24b"), WardrobePlayerView.Top => Raw("copy.6f2a4a02e60e"), _ => Raw("copy.3f049887991b") };
-    private string ViewCaption(WardrobePlayerView view)=>Format("View",("view",_shell.Renderer.LocalizeText(ViewLabel(view))));
+    private string ViewCaption(WardrobePlayerView view) => Format("View", ("view", _shell.Renderer.LocalizeText(ViewLabel(view))));
     private void UpdateTrackButtons(string prefix, int count, double offset)
     {
         Enable(prefix + "Previous", !Busy && offset > 0);
@@ -557,102 +557,123 @@ internal sealed class WardrobePageController : IDisposable
         foreach (var card in capes) AddCard(card, _nodes["WardrobeCapes"], _capeCards);
         SetCardMetrics();
     }
-    private void AddCard(AccountWardrobeCard card,XsrUiEntityId parent,List<CardVisual> cards)
+    private void AddCard(AccountWardrobeCard card, XsrUiEntityId parent, List<CardVisual> cards)
     {
-        var data=CardProjection(card,card.Kind==AccountWardrobeTextureKind.Cape?WardrobePlayerView.Back:WardrobePlayerView.Front);
-        var container=_dynamic.Append(parent,DesktopMarkup.Dynamic("WardrobeCard.d.nxml",data));
-        var nodes=new Dictionary<string,XsrUiEntityId>();
-        _shell.Tree.Walk(container,node=>{nodes[_shell.Tree.Name(node)]=node;return true;});
-        XsrUiEntityId apply=default;
-        if(card.CanApply&&!card.IsActive)
-            apply=_dynamic.Append(nodes[data["apply_slot"]],DesktopMarkup.Dynamic("WardrobeCardApply.d.nxml",ApplyProjection(card)));
-        var visual=new CardVisual(card,container,nodes[data["body"]],nodes[data["image"]],nodes[data["details"]],nodes[data["view"]],apply){Projection=data};
-        cards.Add(visual);_viewSources[visual.ViewButton]=visual;if(apply.IsAssigned)_applySources[apply]=visual;
+        var data = CardProjection(card, card.Kind == AccountWardrobeTextureKind.Cape ? WardrobePlayerView.Back : WardrobePlayerView.Front);
+        var container = _dynamic.Append(parent, DesktopMarkup.Dynamic("WardrobeCard.d.nxml", data));
+        var nodes = new Dictionary<string, XsrUiEntityId>();
+        _shell.Tree.Walk(container, node => { nodes[_shell.Tree.Name(node)] = node; return true; });
+        XsrUiEntityId apply = default;
+        if (card.CanApply && !card.IsActive)
+            apply = _dynamic.Append(nodes[data["apply_slot"]], DesktopMarkup.Dynamic("WardrobeCardApply.d.nxml", ApplyProjection(card)));
+        var visual = new CardVisual(card, container, nodes[data["body"]], nodes[data["image"]], nodes[data["details"]], nodes[data["view"]], apply) { Projection = data };
+        cards.Add(visual); _viewSources[visual.ViewButton] = visual; if (apply.IsAssigned) _applySources[apply] = visual;
     }
-    private Dictionary<string,string> ApplyProjection(AccountWardrobeCard card)
+    private Dictionary<string, string> ApplyProjection(AccountWardrobeCard card)
     {
-        bool cape=card.Kind==AccountWardrobeTextureKind.Cape;
-        return new(){["key"]=(cape?"WardrobeCape.":"WardrobeSkinApply.")+SafeSuffix(card.Id),
-            ["caption"]=_shell.Renderer.LocalizeText(Raw(cape?"use-cape":"use-skin")),
-            ["command"]=cape?"ui.wardrobe.cape.choose":"ui.wardrobe.skin.choose",
-            ["enabled"]=Flag(!Busy&&!_localOpen&&_snapshot is not null)};
+        bool cape = card.Kind == AccountWardrobeTextureKind.Cape;
+        return new()
+        {
+            ["key"] = (cape ? "WardrobeCape." : "WardrobeSkinApply.") + SafeSuffix(card.Id),
+            ["caption"] = _shell.Renderer.LocalizeText(Raw(cape ? "use-cape" : "use-skin")),
+            ["command"] = cape ? "ui.wardrobe.cape.choose" : "ui.wardrobe.skin.choose",
+            ["enabled"] = Flag(!Busy && !_localOpen && _snapshot is not null)
+        };
     }
-    private Dictionary<string,string> CardProjection(AccountWardrobeCard card,WardrobePlayerView view)=>ProjectCard(_shell,card,view,_cardWidth,_cardHeight);
-    internal static Dictionary<string,string> ProjectCard(XsrUiShell shell,AccountWardrobeCard card,WardrobePlayerView view,double width,double height)
+    private Dictionary<string, string> CardProjection(AccountWardrobeCard card, WardrobePlayerView view) => ProjectCard(_shell, card, view, _cardWidth, _cardHeight);
+    internal static Dictionary<string, string> ProjectCard(XsrUiShell shell, AccountWardrobeCard card, WardrobePlayerView view, double width, double height)
     {
-        if(!double.IsFinite(width)||!double.IsFinite(height)||width<=0||height<=0)throw new ArgumentException("Invalid wardrobe card viewport.");
-        string ViewCaption(WardrobePlayerView selected)=>DesktopWardrobeText.Format("View",new Dictionary<string,string>{["view"]=shell.Renderer.LocalizeText(ViewLabel(selected))},shell.Renderer.LocalizeText);
-        string prefix=card.Kind==AccountWardrobeTextureKind.Cape?"WardrobeCape":"WardrobeSkin",suffix=SafeSuffix(card.Id);
-        var axis=DesktopWardrobeText.Metric("card-axis");bool horizontal=height<Required(axis.Height);
-        var image=DesktopWardrobeText.Metric("horizontal-image");var vertical=DesktopWardrobeText.Metric("vertical-image");var labels=DesktopWardrobeText.Metric("card-labels");
-        var aspect=DesktopWardrobeText.Metric("image-aspect");double imageHeight=horizontal?Math.Clamp(height-image.Margin.Top,Required(image.MinHeight),Required(image.MaxHeight))
-            :Math.Max(Required(vertical.MinHeight),height-(card.CanApply&&!card.IsActive?vertical.Margin.Top:vertical.Margin.Bottom));
-        double imageWidth=horizontal?imageHeight*Required(aspect.Width)/Required(aspect.Height):width-DesktopWardrobeText.Metric("card-body").Margin.Horizontal;
-        return new(){["container"]=prefix+"Card."+suffix,["body"]=prefix+"Body."+suffix,["image"]=prefix+"Preview."+suffix,
-            ["details"]=prefix+"Details."+suffix,["title_key"]=prefix+"Title."+suffix,["source_key"]=prefix+"Source."+suffix,
-            ["apply_slot"]=prefix+"ApplySlot."+suffix,["view_layer"]=prefix+"ViewLayer."+suffix,["view"]=prefix+"View."+suffix,
-            ["width"]=Number(width),["height"]=Number(height),["orientation"]=horizontal?"Horizontal":"Vertical",
-            ["image_width"]=Number(imageWidth),["image_height"]=Number(imageHeight),["image_weight"]=horizontal?"0":"1",
-            ["image_alignment"]=horizontal?"Center":"Stretch",["details_weight"]=horizontal?"1":"0",
-            ["title_height"]=Number(Required(horizontal?labels.MinHeight:labels.Height)),["source_height"]=Number(Required(horizontal?labels.MinWidth:labels.Width)),
-            ["title"]=card.Title,["source"]=shell.Renderer.LocalizeText(card.Source),["view_label"]=ViewCaption(view),
-            ["title_variant"]=Raw(horizontal?"card-title-start":"card-title-center"),["source_variant"]=Raw(horizontal?"card-source-start":"card-source-center")};
+        if (!double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0) throw new ArgumentException("Invalid wardrobe card viewport.");
+        string ViewCaption(WardrobePlayerView selected) => DesktopWardrobeText.Format("View", new Dictionary<string, string> { ["view"] = shell.Renderer.LocalizeText(ViewLabel(selected)) }, shell.Renderer.LocalizeText);
+        string prefix = card.Kind == AccountWardrobeTextureKind.Cape ? "WardrobeCape" : "WardrobeSkin", suffix = SafeSuffix(card.Id);
+        var axis = DesktopWardrobeText.Metric("card-axis"); bool horizontal = height < Required(axis.Height);
+        var image = DesktopWardrobeText.Metric("horizontal-image"); var vertical = DesktopWardrobeText.Metric("vertical-image"); var labels = DesktopWardrobeText.Metric("card-labels");
+        var aspect = DesktopWardrobeText.Metric("image-aspect"); double imageHeight = horizontal ? Math.Clamp(height - image.Margin.Top, Required(image.MinHeight), Required(image.MaxHeight))
+            : Math.Max(Required(vertical.MinHeight), height - (card.CanApply && !card.IsActive ? vertical.Margin.Top : vertical.Margin.Bottom));
+        double imageWidth = horizontal ? imageHeight * Required(aspect.Width) / Required(aspect.Height) : width - DesktopWardrobeText.Metric("card-body").Margin.Horizontal;
+        return new()
+        {
+            ["container"] = prefix + "Card." + suffix,
+            ["body"] = prefix + "Body." + suffix,
+            ["image"] = prefix + "Preview." + suffix,
+            ["details"] = prefix + "Details." + suffix,
+            ["title_key"] = prefix + "Title." + suffix,
+            ["source_key"] = prefix + "Source." + suffix,
+            ["apply_slot"] = prefix + "ApplySlot." + suffix,
+            ["view_layer"] = prefix + "ViewLayer." + suffix,
+            ["view"] = prefix + "View." + suffix,
+            ["width"] = Number(width),
+            ["height"] = Number(height),
+            ["orientation"] = horizontal ? "Horizontal" : "Vertical",
+            ["image_width"] = Number(imageWidth),
+            ["image_height"] = Number(imageHeight),
+            ["image_weight"] = horizontal ? "0" : "1",
+            ["image_alignment"] = horizontal ? "Center" : "Stretch",
+            ["details_weight"] = horizontal ? "1" : "0",
+            ["title_height"] = Number(Required(horizontal ? labels.MinHeight : labels.Height)),
+            ["source_height"] = Number(Required(horizontal ? labels.MinWidth : labels.Width)),
+            ["title"] = card.Title,
+            ["source"] = shell.Renderer.LocalizeText(card.Source),
+            ["view_label"] = ViewCaption(view),
+            ["title_variant"] = Raw(horizontal ? "card-title-start" : "card-title-center"),
+            ["source_variant"] = Raw(horizontal ? "card-source-start" : "card-source-center")
+        };
     }
     private void ProjectCard(CardVisual card)
     {
-        var data=CardProjection(card.Card,card.View);
-        if(!Same(data,card.Projection)){_dynamic.Reload(card.Container,DesktopMarkup.Dynamic("WardrobeCard.d.nxml",data));card.Projection=data;}
-        if(card.Apply.IsAssigned)_dynamic.Reload(card.Apply,DesktopMarkup.Dynamic("WardrobeCardApply.d.nxml",ApplyProjection(card.Card)));
+        var data = CardProjection(card.Card, card.View);
+        if (!Same(data, card.Projection)) { _dynamic.Reload(card.Container, DesktopMarkup.Dynamic("WardrobeCard.d.nxml", data)); card.Projection = data; }
+        if (card.Apply.IsAssigned) _dynamic.Reload(card.Apply, DesktopMarkup.Dynamic("WardrobeCardApply.d.nxml", ApplyProjection(card.Card)));
     }
     private void ApplyResponsiveLayout()
     {
-        if(_viewport==_shell.Renderer.Viewport)return;
-        _viewport=_shell.Renderer.Viewport;var view=DesktopWardrobeText.Metric("view");var railMetric=DesktopWardrobeText.Metric("rail");
-        bool compact=_viewport.Height<=Required(view.Height);
-        double rail=_viewport.Width>=Required(view.MaxWidth)?Required(railMetric.MaxWidth):_viewport.Width<=Required(view.MinWidth)?Required(railMetric.MinWidth):Required(railMetric.Width);
-        var railPadding=(compact?DesktopWardrobeText.Metric("rail-compact"):railMetric).Padding;
-        var content=DesktopWardrobeText.Metric("content");var contentHeight=compact?DesktopWardrobeText.Metric("content-compact"):content;
-        var edgeMetric=_viewport.Width>=Required(content.MaxWidth)?DesktopWardrobeText.Metric("content-large"):_viewport.Width<=Required(content.MinWidth)?DesktopWardrobeText.Metric("content-narrow"):content;
-        double edge=edgeMetric.Padding.Left;
-        _presentation["WardrobeRailSurface_width"]=Number(rail);_presentation["WardrobeProfileRail_width"]=Number(rail-railPadding.Horizontal);
-        _presentation["WardrobeProfileRail_padding"]=Thickness(railPadding);
-        _presentation["WardrobeContent_padding"]=Thickness(new(edge,contentHeight.Padding.Top,edge,contentHeight.Padding.Bottom));
-        _presentation["WardrobeContent_spacing"]=Number(contentHeight.Spacing);
-        _presentation["WardrobeCapeHeader_margin"]=Thickness(new(0,contentHeight.Spacing,0,0));
-        foreach(var pair in new[]{("WardrobeMainHeader","header"),("WardrobeStatus","status"),("WardrobeSkinSubtitle","skin-subtitle"),("WardrobeCapeSubtitle","cape-subtitle")})
+        if (_viewport == _shell.Renderer.Viewport) return;
+        _viewport = _shell.Renderer.Viewport; var view = DesktopWardrobeText.Metric("view"); var railMetric = DesktopWardrobeText.Metric("rail");
+        bool compact = _viewport.Height <= Required(view.Height);
+        double rail = _viewport.Width >= Required(view.MaxWidth) ? Required(railMetric.MaxWidth) : _viewport.Width <= Required(view.MinWidth) ? Required(railMetric.MinWidth) : Required(railMetric.Width);
+        var railPadding = (compact ? DesktopWardrobeText.Metric("rail-compact") : railMetric).Padding;
+        var content = DesktopWardrobeText.Metric("content"); var contentHeight = compact ? DesktopWardrobeText.Metric("content-compact") : content;
+        var edgeMetric = _viewport.Width >= Required(content.MaxWidth) ? DesktopWardrobeText.Metric("content-large") : _viewport.Width <= Required(content.MinWidth) ? DesktopWardrobeText.Metric("content-narrow") : content;
+        double edge = edgeMetric.Padding.Left;
+        _presentation["WardrobeRailSurface_width"] = Number(rail); _presentation["WardrobeProfileRail_width"] = Number(rail - railPadding.Horizontal);
+        _presentation["WardrobeProfileRail_padding"] = Thickness(railPadding);
+        _presentation["WardrobeContent_padding"] = Thickness(new(edge, contentHeight.Padding.Top, edge, contentHeight.Padding.Bottom));
+        _presentation["WardrobeContent_spacing"] = Number(contentHeight.Spacing);
+        _presentation["WardrobeCapeHeader_margin"] = Thickness(new(0, contentHeight.Spacing, 0, 0));
+        foreach (var pair in new[] { ("WardrobeMainHeader", "header"), ("WardrobeStatus", "status"), ("WardrobeSkinSubtitle", "skin-subtitle"), ("WardrobeCapeSubtitle", "cape-subtitle") })
         {
-            var metric=DesktopWardrobeText.Metric(pair.Item2);_presentation[pair.Item1+"_height"]=Number(Required(compact?metric.MinHeight:metric.Height));
+            var metric = DesktopWardrobeText.Metric(pair.Item2); _presentation[pair.Item1 + "_height"] = Number(Required(compact ? metric.MinHeight : metric.Height));
         }
-        var track=DesktopWardrobeText.Metric("track");_trackWidth=Math.Max(Required(track.MinWidth),_viewport.Width-rail-edge*2-track.Margin.Left);
-        var estimate=DesktopWardrobeText.Metric("estimate");_cardHeight=Math.Clamp((_viewport.Height-Required(compact?estimate.MinHeight:estimate.Height))/2-track.Margin.Top,Required(track.MinHeight),Required(track.MaxHeight));
-        _cardWidth=CardWidth(_cardHeight);
-        var local=DesktopWardrobeText.Metric("local");var padding=_shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeLocalPanel"])!.Padding;
-        _presentation["WardrobeLocalPanel_width"]=Number(Math.Min(Required(local.Width),Math.Max(Required(local.MinWidth),_viewport.Width-local.Margin.Horizontal))-padding.Horizontal);
-        _presentation["WardrobeLocalPanel_maxheight"]=Number(Math.Min(Required(local.Height),Math.Max(Required(local.MinHeight),_viewport.Height-local.Margin.Vertical))-padding.Vertical);
-        _dirty=true;SetCardMetrics();
+        var track = DesktopWardrobeText.Metric("track"); _trackWidth = Math.Max(Required(track.MinWidth), _viewport.Width - rail - edge * 2 - track.Margin.Left);
+        var estimate = DesktopWardrobeText.Metric("estimate"); _cardHeight = Math.Clamp((_viewport.Height - Required(compact ? estimate.MinHeight : estimate.Height)) / 2 - track.Margin.Top, Required(track.MinHeight), Required(track.MaxHeight));
+        _cardWidth = CardWidth(_cardHeight);
+        var local = DesktopWardrobeText.Metric("local"); var padding = _shell.Tree.GetComponent<XsrUiElement>(_nodes["WardrobeLocalPanel"])!.Padding;
+        _presentation["WardrobeLocalPanel_width"] = Number(Math.Min(Required(local.Width), Math.Max(Required(local.MinWidth), _viewport.Width - local.Margin.Horizontal)) - padding.Horizontal);
+        _presentation["WardrobeLocalPanel_maxheight"] = Number(Math.Min(Required(local.Height), Math.Max(Required(local.MinHeight), _viewport.Height - local.Margin.Vertical)) - padding.Vertical);
+        _dirty = true; SetCardMetrics();
     }
     private static double CardWidth(double height)
     {
-        var axis=DesktopWardrobeText.Metric("card-axis");var aspect=DesktopWardrobeText.Metric("image-aspect");
-        if(height<Required(axis.Height))
+        var axis = DesktopWardrobeText.Metric("card-axis"); var aspect = DesktopWardrobeText.Metric("image-aspect");
+        if (height < Required(axis.Height))
         {
-            var image=DesktopWardrobeText.Metric("horizontal-image");var card=DesktopWardrobeText.Metric("horizontal-card");
-            return Math.Clamp(Math.Clamp(height-image.Margin.Top,Required(image.MinHeight),Required(image.MaxHeight))*Required(aspect.Width)/Required(aspect.Height)+card.Padding.Left,Required(card.MinWidth),Required(card.MaxWidth));
+            var image = DesktopWardrobeText.Metric("horizontal-image"); var card = DesktopWardrobeText.Metric("horizontal-card");
+            return Math.Clamp(Math.Clamp(height - image.Margin.Top, Required(image.MinHeight), Required(image.MaxHeight)) * Required(aspect.Width) / Required(aspect.Height) + card.Padding.Left, Required(card.MinWidth), Required(card.MaxWidth));
         }
-        var vertical=DesktopWardrobeText.Metric("vertical-card");
-        return Math.Clamp((height-vertical.Padding.Top)*Required(aspect.Width)/Required(aspect.Height)+vertical.Padding.Left,Required(vertical.MinWidth),Required(vertical.MaxWidth));
+        var vertical = DesktopWardrobeText.Metric("vertical-card");
+        return Math.Clamp((height - vertical.Padding.Top) * Required(aspect.Width) / Required(aspect.Height) + vertical.Padding.Left, Required(vertical.MinWidth), Required(vertical.MaxWidth));
     }
-    private void SetCardMetrics(){foreach(var card in _skinCards.Concat(_capeCards))ProjectCard(card);}
-    private double TrackSpacing=>_shell.Tree.GetComponent<XsrUiStackPanel>(_nodes["WardrobeSkins"])!.Spacing;
-    private static double Required(double? value)=>value is >0&&double.IsFinite(value.Value)?value.Value:throw new NxmlCompileException("Incomplete wardrobe viewport metric.");
-    private static string SafeSuffix(string value)=>value.Length<=90&&!value.Any(char.IsWhiteSpace)&&!value.Contains('{')&&!value.Contains('}')?value:"h"+Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
-    private static string Number(double value)=>value.ToString("R",CultureInfo.InvariantCulture);
-    private static string Flag(bool value)=>value?"true":"false";
-    private static string Thickness(XsrUiThickness value)=>string.Join(",",Number(value.Left),Number(value.Top),Number(value.Right),Number(value.Bottom));
-    private static bool Same(Dictionary<string,string> a,Dictionary<string,string> b)=>a.Count==b.Count&&a.All(pair=>b.TryGetValue(pair.Key,out var value)&&value==pair.Value);
-    private string Format(string name,params(string Key,object Value)[] values)=>DesktopWardrobeText.Format(name,values.ToDictionary(pair=>pair.Key,pair=>Convert.ToString(pair.Value,CultureInfo.CurrentCulture)??""),_shell.Renderer.LocalizeText);
-    private static string Raw(string key)=>DesktopWardrobeText.Raw(key);
-    private void ReloadWorkspace(){if(Same(_presentation,_applied))return;_dynamic.Reload(_workspace,DesktopMarkup.Dynamic("WardrobeWorkspace.d.nxml",_presentation));_applied=new(_presentation);}
+    private void SetCardMetrics() { foreach (var card in _skinCards.Concat(_capeCards)) ProjectCard(card); }
+    private double TrackSpacing => _shell.Tree.GetComponent<XsrUiStackPanel>(_nodes["WardrobeSkins"])!.Spacing;
+    private static double Required(double? value) => value is > 0 && double.IsFinite(value.Value) ? value.Value : throw new NxmlCompileException("Incomplete wardrobe viewport metric.");
+    private static string SafeSuffix(string value) => value.Length <= 90 && !value.Any(char.IsWhiteSpace) && !value.Contains('{') && !value.Contains('}') ? value : "h" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
+    private static string Number(double value) => value.ToString("R", CultureInfo.InvariantCulture);
+    private static string Flag(bool value) => value ? "true" : "false";
+    private static string Thickness(XsrUiThickness value) => string.Join(",", Number(value.Left), Number(value.Top), Number(value.Right), Number(value.Bottom));
+    private static bool Same(Dictionary<string, string> a, Dictionary<string, string> b) => a.Count == b.Count && a.All(pair => b.TryGetValue(pair.Key, out var value) && value == pair.Value);
+    private string Format(string name, params (string Key, object Value)[] values) => DesktopWardrobeText.Format(name, values.ToDictionary(pair => pair.Key, pair => Convert.ToString(pair.Value, CultureInfo.CurrentCulture) ?? ""), _shell.Renderer.LocalizeText);
+    private static string Raw(string key) => DesktopWardrobeText.Raw(key);
+    private void ReloadWorkspace() { if (Same(_presentation, _applied)) return; _dynamic.Reload(_workspace, DesktopMarkup.Dynamic("WardrobeWorkspace.d.nxml", _presentation)); _applied = new(_presentation); }
     private XsrUiScroll Scroll(string node) => _shell.Tree.GetComponent<XsrUiScroll>(_nodes[node])!;
     private void ClearCards()
     {
@@ -674,13 +695,13 @@ internal sealed class WardrobePageController : IDisposable
             _shell.Tree.GetComponent<XsrUiImage>(_nodes[name])!.Raster = null;
         ClearCards();
     }
-    private void Text(string name,string content,bool literal=false)=>_presentation[name+"_text"]=literal?content:_shell.Renderer.LocalizeText(content);
-    private void Enable(string name,bool enabled)=>_presentation[name+"_enabled"]=Flag(enabled);
-    private void Visible(string name,bool visible)=>_presentation[name+"_visible"]=Flag(visible);
+    private void Text(string name, string content, bool literal = false) => _presentation[name + "_text"] = literal ? content : _shell.Renderer.LocalizeText(content);
+    private void Enable(string name, bool enabled) => _presentation[name + "_enabled"] = Flag(enabled);
+    private void Visible(string name, bool visible) => _presentation[name + "_visible"] = Flag(visible);
     public void Dispose()
     {
         if (_disposed) return; _disposed = true;
         _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame; _store.Changed -= OnStateChanged;
-        Retire();_stop.Dispose();_dynamic.Remove(_workspace);
+        Retire(); _stop.Dispose(); _dynamic.Remove(_workspace);
     }
 }

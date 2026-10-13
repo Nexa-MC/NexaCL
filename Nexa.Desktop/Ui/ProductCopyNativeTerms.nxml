@@ -1,0 +1,56 @@
+<StackPanel>
+  <Text Key="native.protocol.bundleRequired" Content="nexacl:// 协议需要使用 NexaCL.app 应用包。" />
+  <Text Key="native.protocol.unsupported" Content="当前平台不支持 nexacl:// 协议注册。" />
+  <Text Key="native.common.cancel" Content="取消" />
+  <Text Key="native.desktop.launch" Content="启动" />
+  <Text Key="native.desktop.install" Content="安装" />
+  <Text Key="native.desktop.resources" Content="资源" />
+  <Text Key="native.desktop.settings" Content="设置" />
+  <Text Key="native.desktop.minimize" Content="最小化" />
+  <Text Key="native.desktop.exit" Content="退出" />
+  <Text Key="native.desktop.unsupported-protocol" Content="不支持的 nexacl:// 链接。" />
+  <Text Key="native.desktop.no-file-receiver" Content="当前界面尚不能接收整合包文件。" />
+  <Text Key="native.media.play-pause" Content="音乐播放 / 暂停" />
+  <Text Key="native.media.next" Content="下一首音乐" />
+  <Text Key="native.media.mute" Content="音乐静音 / 恢复" />
+  <Text Key="native.media.stop" Content="停止音乐" />
+  <Text Key="native.clipboard.link-title" Content="检测到 NexaCL 链接" />
+  <Text Key="native.clipboard.link-message" Content="是否打开剪贴板中的 NexaCL 页面链接？" />
+  <Text Key="native.clipboard.open" Content="打开" />
+  <Text Key="native.clipboard.ignore" Content="忽略" />
+  <Text Key="native.drop.single-item" Content="请每次拖入一个文件或文件夹。" />
+  <Text Key="native.drop.invalid-path" Content="不支持的本地整合包路径。" />
+  <Text Key="native.drop.pending-limit" Content="待处理整合包过多，请完成当前确认后重试。" />
+  <Text Key="native.drop.read-folder" Content="无法读取拖入的文件夹。" />
+  <Text Key="native.drop.select-root" Content="请先选择游戏目录，再拖入文件。" />
+  <Text Key="native.drop.modpack-install" Content="开始安装" />
+  <Text Key="native.drop.include-optional" Content="包含可选文件" />
+  <Text Key="native.drop.no-instance" Content="当前没有选择版本。添加模组或修改核心前，请先选择版本。" />
+  <Text Key="native.drop.add-mod" Content="添加模组" />
+  <Text Key="native.drop.other-uses" Content="其他用途" />
+  <Text Key="native.drop.unsupported" Content="未识别到游戏目录、版本目录、JAR 或受支持的整合包。" />
+  <Text Key="native.drop.root-title" Content="添加游戏目录" />
+  <Text Key="native.drop.add-root" Content="添加目录" />
+  <Text Key="native.drop.import" Content="导入" />
+  <Text Key="native.drop.modpack-incomplete" Content="整合包安装未完成。" />
+  <Text Key="native.drop.jar-purpose-title" Content="选择 JAR 用途" />
+  <Text Key="native.drop.jar-purpose-message" Content="核心补丁会合并归档内容并备份原核心，只支持拥有独立核心的版本。加载器安装会执行此安装器，创建独立版本。" />
+  <Text Key="native.drop.patch-core" Content="Patch 版本核心" />
+  <Text Key="native.drop.install-loader" Content="安装加载器" />
+  <Text Key="native.drop.jar-incomplete" Content="JAR 导入未完成。" />
+  <Text Key="native.drop.import-incomplete" Content="导入未完成。" />
+  <Text Key="native.install.exit.retry-title" Content="安装撤回尚未完成" />
+  <Text Key="native.install.exit.retry-message" Content="恢复记录已保留。处理任务提示中的问题后，可重试取消或回滚。" />
+  <Text Key="native.install.exit.retry-exit" Content="重试撤回并退出" />
+  <Text Key="native.install.exit.remain" Content="留在启动器" />
+  <Text Key="native.install.exit.title" Content="安装尚未完成" />
+  <Text Key="native.install.exit.message" Content="暂停后，下次启动会继续。取消安装或回滚修改会撤回当前运行及排队恢复的任务。" />
+  <Text Key="native.install.exit.pause-exit" Content="暂停并退出" />
+  <Text Key="native.install.exit.rollback-exit" Content="取消安装／回滚并退出" />
+  <Text Key="native.install.exit.cancel-exit" Content="取消安装并退出" />
+  <Text Key="native.install.exit.stop-failed" Content="未能安全停止安装，请查看任务状态后重试。" />
+  <Text Key="native.install.exit.java-stop-pending" Content="Java 安装尚未安全停止。" />
+  <Text Key="native.install.exit.stop-route-missing" Content="安装停止路由未注册。" />
+  <Text Key="native.launch.exit.wait" Content="等待游戏退出、临时文件恢复和退出钩子完成后关闭启动器。" />
+  <Text Key="native.launch.exit.failure" Content="启动清理未能完成，请检查运行日志后重试退出。" />
+</StackPanel>

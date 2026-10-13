@@ -2,9 +2,9 @@ using System.Threading.Channels;
 using Nexa.Core.Media;
 using Nexa.Services.Scheduling;
 using Nexa.Services.Settings;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
-using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
 
@@ -15,10 +15,10 @@ internal sealed partial class DesktopMediaSession : IAsyncDisposable
 {
     private static readonly XsrUiContextMenuItem[] OwnedMenuItems =
     [
-        new("音乐播放 / 暂停", XsrSemanticId.Parse("ui.media.play-pause")),
-        new("下一首音乐", XsrSemanticId.Parse("ui.media.next")),
-        new("音乐静音 / 恢复", XsrSemanticId.Parse("ui.media.mute")),
-        new("停止音乐", XsrSemanticId.Parse("ui.media.stop")),
+        new(ProductPresentationText.Raw("native.media.play-pause"), XsrSemanticId.Parse("ui.media.play-pause")),
+        new(ProductPresentationText.Raw("native.media.next"), XsrSemanticId.Parse("ui.media.next")),
+        new(ProductPresentationText.Raw("native.media.mute"), XsrSemanticId.Parse("ui.media.mute")),
+        new(ProductPresentationText.Raw("native.media.stop"), XsrSemanticId.Parse("ui.media.stop")),
     ];
     private readonly XsrQueryRouter _queries;
     private readonly XsrCommandRouter _commands;

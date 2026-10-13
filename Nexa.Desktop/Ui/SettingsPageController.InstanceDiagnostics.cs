@@ -1,9 +1,9 @@
 using System.Globalization;
 using Nexa.Core;
 using Nexa.Services.Minecraft.Process;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Nxml;
-using Nexa.Xsr;
 
 namespace Nexa.Desktop.Ui;
 

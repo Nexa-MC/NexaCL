@@ -1,6 +1,6 @@
 ﻿using Nexa.Services.Tasks;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -41,7 +41,8 @@ internal sealed class DesktopTaskBubblePresenter : IDisposable
     private ITimer? _exitTimer;
     private bool _pageVisible;
     private bool _closing;
-    private (string Caption, string Label, bool Details, double Progress)? _projection;
+    private (string Caption, string Label, bool Details, double Progress, bool Visible, bool Enabled)? _projection;
+    private bool _bubbleVisible, _bubbleEnabled = true;
     private bool _disposed;
 
     public DesktopTaskBubblePresenter(XsrUiShell shell, XsrStateStore store, TimeProvider? timeProvider = null)
@@ -53,7 +54,7 @@ internal sealed class DesktopTaskBubblePresenter : IDisposable
         _wakeState = store.Resolve(TaskBubbleState.Revision);
 
         _layer = new(shell, store, "ShellBubbleLayer.nxml");
-        _root = _layer.Append("TaskBubble.d.nxml", Data(BubbleTerm("bubble.task"), BubbleTerm("bubble.open"), false, 0));
+        _root = _layer.Append("SettingsCustomTaskBubble.d.nxml", Data(BubbleTerm("bubble.task"), BubbleTerm("bubble.open"), false, 0, false, true));
         DesktopBubbleLayout.Register(shell, _root, 1);
         _motion = shell.Tree.GetComponent<XsrUiOverlayMotion>(_root)!;
         XsrUiEntityId fill = default;
@@ -64,12 +65,14 @@ internal sealed class DesktopTaskBubblePresenter : IDisposable
         _shell.Renderer.FramePreparing += OnFramePreparing;
     }
 
-    private static Dictionary<string, string> Data(string caption, string label, bool details, double progress) => new()
+    private static Dictionary<string, string> Data(string caption, string label, bool details, double progress, bool visible, bool enabled) => new()
     {
         ["caption"] = caption,
         ["label"] = label,
         ["details"] = details ? "true" : "false",
         ["progress"] = progress.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        ["visible"] = visible ? "true" : "false",
+        ["enabled"] = enabled ? "true" : "false",
     };
 
     internal XsrUiEntityId Root => _root;
@@ -160,10 +163,10 @@ internal sealed class DesktopTaskBubblePresenter : IDisposable
         int percent = (int)Math.Round(target * 100d);
         string label = summary.ActiveCount > 0 ? BubbleFormat("TaskBubbleLabel", new()
         { ["percent"] = percent.ToString(System.Globalization.CultureInfo.CurrentCulture) }) : BubbleTerm("bubble.records");
-        var projection = (caption, label, showDetails, target);
+        var projection = (caption, label, showDetails, target, _bubbleVisible, _bubbleEnabled);
         if (_projection != projection)
         {
-            _layer.Reload(_root, "TaskBubble.d.nxml", Data(caption, label, showDetails, target));
+            _layer.Reload(_root, "SettingsCustomTaskBubble.d.nxml", Data(caption, label, showDetails, target, _bubbleVisible, _bubbleEnabled));
             _projection = projection;
         }
     }
@@ -201,14 +204,25 @@ internal sealed class DesktopTaskBubblePresenter : IDisposable
             Timeout.InfiniteTimeSpan);
     }
 
-    private void SetVisible(bool visible) => DesktopElementVisibility.Set(_shell.Tree, _root, visible);
+    private void SetVisible(bool visible)
+    {
+        if (_bubbleVisible == visible) return;
+        _bubbleVisible = visible; ReloadBubbleLifetime();
+    }
 
     private void SetEnabled(bool enabled)
     {
-        if (_shell.Tree.GetComponent<XsrUiInput>(_root) is { } input)
-        {
-            input.Enabled = enabled;
-        }
+        if (_bubbleEnabled == enabled) return;
+        _bubbleEnabled = enabled; ReloadBubbleLifetime();
+    }
+
+    private void ReloadBubbleLifetime()
+    {
+        var projected = _projection;
+        string caption = projected?.Caption ?? BubbleTerm("bubble.task"), label = projected?.Label ?? BubbleTerm("bubble.open");
+        bool details = projected?.Details ?? false; double progress = projected?.Progress ?? 0;
+        _layer.Reload(_root, "SettingsCustomTaskBubble.d.nxml", Data(caption, label, details, progress, _bubbleVisible, _bubbleEnabled));
+        _projection = (caption, label, details, progress, _bubbleVisible, _bubbleEnabled);
     }
 
     private bool IsVisible(XsrUiEntityId entity) =>

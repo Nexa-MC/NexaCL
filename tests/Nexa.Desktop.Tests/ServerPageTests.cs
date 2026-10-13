@@ -2,8 +2,8 @@ using Nexa.Desktop.Ui;
 using Nexa.Services.Minecraft.Management;
 using Nexa.Services.Resources;
 using Nexa.Services.Settings;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Tests;

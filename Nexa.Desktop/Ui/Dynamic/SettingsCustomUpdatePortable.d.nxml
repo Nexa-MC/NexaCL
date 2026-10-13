@@ -1,0 +1,3 @@
+<nxml-dynamic>
+<Button Key="SettingsPortableUpdate" Content="便携包" Label="便携包" Command="ui.settings.update.portable" Class="settings-catalog-action settings-custom-update-action" />
+</nxml-dynamic>

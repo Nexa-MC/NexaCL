@@ -1,7 +1,7 @@
 ﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
-using Nexa.Xsr.Renderer;
 using Nexa.Xsr;
+using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Tests;
@@ -111,7 +111,7 @@ internal static partial class Program
             else
             {
                 AssertFalse(LibraryEnabled(fixture, "WardrobeLibraryCard.201.Apply"));
-                AssertTrue(LibraryText(fixture,"WardrobeLibraryAccountNotice").Contains(kind==LaunchProfileKind.Offline?"preview":"authorization",StringComparison.OrdinalIgnoreCase));
+                AssertTrue(LibraryText(fixture, "WardrobeLibraryAccountNotice").Contains(kind == LaunchProfileKind.Offline ? "preview" : "authorization", StringComparison.OrdinalIgnoreCase));
             }
             if (kind == LaunchProfileKind.ThirdParty)
             {
