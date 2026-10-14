@@ -11,12 +11,18 @@ internal sealed class DesktopScreenshotGalleryLayout
     private static readonly double MinimumCardWidth = Metrics.Width!.Value;
     private static readonly double HeadingHeight = Metrics.Height!.Value;
 
-    private DesktopScreenshotGalleryLayout(double availableWidth)
+    private DesktopScreenshotGalleryLayout(double availableWidth, double? minimumCardWidth, double? gap, int? columns)
     {
-        double width = double.IsFinite(availableWidth) ? Math.Max(1, availableWidth) : MinimumCardWidth;
-        ColumnCount = (int)Math.Clamp(Math.Floor((width + Gap) / (MinimumCardWidth + Gap)), 1, 12);
-        CardWidth = (width - (ColumnCount - 1) * Gap) / ColumnCount;
+        double minimum = minimumCardWidth ?? MinimumCardWidth;
+        Spacing = gap ?? Gap;
+        if (!double.IsFinite(minimum) || minimum <= 0 || !double.IsFinite(Spacing) || Spacing < 0 || columns is < 1 or > 12)
+            throw new ArgumentException("Screenshot gallery metrics must be finite and use 1–12 columns.");
+        double width = double.IsFinite(availableWidth) ? Math.Max(1, availableWidth) : minimum;
+        ColumnCount = columns ?? (int)Math.Clamp(Math.Floor((width + Spacing) / (minimum + Spacing)), 1, 12);
+        CardWidth = Math.Max(1, (width - (ColumnCount - 1) * Spacing) / ColumnCount);
     }
+
+    internal double Spacing { get; }
 
     internal int ColumnCount { get; }
     internal double CardWidth { get; }
@@ -30,11 +36,14 @@ internal sealed class DesktopScreenshotGalleryLayout
     }
 
     internal static DesktopScreenshotGalleryLayout Create(IReadOnlyList<InstanceContentEntry> entries,
-        double availableWidth, bool timeline)
+        double availableWidth, bool timeline, double? minimumCardWidth = null, double? gap = null,
+        double? minimumImageHeight = null, int? columns = null)
     {
         ArgumentNullException.ThrowIfNull(entries);
-        var layout = new DesktopScreenshotGalleryLayout(availableWidth);
-        var columns = Enumerable.Range(0, layout.ColumnCount).Select(_ => new List<Slot>()).ToArray();
+        if (minimumImageHeight is { } minimumHeight && (!double.IsFinite(minimumHeight) || minimumHeight <= 0))
+            throw new ArgumentException("A screenshot minimum image height must be finite and positive.", nameof(minimumImageHeight));
+        var layout = new DesktopScreenshotGalleryLayout(availableWidth, minimumCardWidth, gap, columns);
+        var projectedColumns = Enumerable.Range(0, layout.ColumnCount).Select(_ => new List<Slot>()).ToArray();
         double[] tops = new double[layout.ColumnCount];
         var ordered = entries.Select((item, index) => new IndexedEntry(index, item, LocalDate(item.ModifiedUtcTicks)));
         if (timeline)
@@ -48,8 +57,8 @@ internal sealed class DesktopScreenshotGalleryLayout
             if (timeline && (!hasGroup || entry.Date != previousDate))
             {
                 double groupTop = tops.Max();
-                columns[0].Add(new(-1, null, groupTop, HeadingHeight, 0, entry.Date));
-                Array.Fill(tops, groupTop + HeadingHeight + Gap);
+                projectedColumns[0].Add(new(-1, null, groupTop, HeadingHeight, 0, entry.Date));
+                Array.Fill(tops, groupTop + HeadingHeight + layout.Spacing);
                 hasGroup = true;
                 previousDate = entry.Date;
             }
@@ -63,12 +72,13 @@ internal sealed class DesktopScreenshotGalleryLayout
                     && sourceWidth > 0 && sourceHeight > 0
                     ? imageWidth * sourceHeight / sourceWidth
                     : imageWidth * Metrics.Margin.Left / Metrics.Margin.Top;
+            if (minimumImageHeight is { } minimumImage) imageHeight = Math.Max(imageHeight, minimumImage);
             double height = imageHeight + CardPadding * 2 + Metrics.Padding.Top + Metrics.Padding.Right + (timeline ? Metrics.Padding.Bottom : 0);
-            columns[column].Add(new(entry.Index, entry.Item, tops[column], height, imageHeight, null));
-            tops[column] += height + Gap;
+            projectedColumns[column].Add(new(entry.Index, entry.Item, tops[column], height, imageHeight, null));
+            tops[column] += height + layout.Spacing;
         }
-        layout.Columns = columns;
-        layout.Height = entries.Count == 0 ? 0 : tops.Max() - Gap;
+        layout.Columns = projectedColumns;
+        layout.Height = entries.Count == 0 ? 0 : tops.Max() - layout.Spacing;
         return layout;
     }
 

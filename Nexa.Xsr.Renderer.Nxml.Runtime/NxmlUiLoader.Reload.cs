@@ -1,4 +1,4 @@
-﻿using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Xsr.Renderer.Nxml;
 
@@ -10,6 +10,12 @@ public sealed partial class NxmlUiLoader
     {
         var allowed = before with
         {
+            Minimum = before.Recipe == NxmlRuntimeRecipe.RangeInput ? after.Minimum : before.Minimum,
+            Maximum = before.Recipe == NxmlRuntimeRecipe.RangeInput ? after.Maximum : before.Maximum,
+            Step = before.Recipe == NxmlRuntimeRecipe.RangeInput ? after.Step : before.Step,
+            RangeValue = before.Recipe == NxmlRuntimeRecipe.RangeInput ? after.RangeValue : before.RangeValue,
+            StyleIdentity = after.StyleIdentity,
+            StyleSource = after.StyleSource,
             Orientation = !before.Scrollable && (before.Recipe == NxmlRuntimeRecipe.StackLayout
                 || before.Recipe == NxmlRuntimeRecipe.DynamicSlot && before.SlotLayout == NxmlRuntimeRecipe.StackLayout)
                 ? after.Orientation : before.Orientation,
@@ -47,6 +53,7 @@ public sealed partial class NxmlUiLoader
         if (allowed != after || !before.Bindings.SequenceEqual(after.Bindings) || !tree.IsAlive(entity)
             || tree.Name(entity) != (before.Key ?? before.Kind) || before.Children.Count != after.Children.Count)
             throw new NxmlLoadException("Reload cannot change fragment shape, identity, bindings or input/transition contracts; use Replace.");
+        if (after.Recipe == NxmlRuntimeRecipe.RangeInput) ValidateRangeFacts(after);
         if (before.Recipe == NxmlRuntimeRecipe.DynamicSlot) return;
         var children = tree.Children(entity);
         if (children.Count != before.Children.Count) throw new NxmlLoadException("The fragment structure changed outside its owner.");
@@ -56,6 +63,19 @@ public sealed partial class NxmlUiLoader
     internal static void ApplyReload(NxmlIrNode before, NxmlIrNode after, XsrUiEntityId entity, XsrUiTree tree)
     {
         XsrUiDirtyKinds dirty = XsrUiDirtyKinds.None;
+        if (!SameStyleIdentity(before.StyleIdentity, after.StyleIdentity))
+        {
+            tree.SetComponent(entity, after.StyleIdentity);
+            dirty |= XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint;
+        }
+        if (!before.StyleSource.SequenceEqual(after.StyleSource))
+            tree.SetComponent(entity, new NxmlAuthoredStyleSource(after.StyleSource));
+        if (before.Minimum != after.Minimum || before.Maximum != after.Maximum || before.Step != after.Step || before.RangeValue != after.RangeValue)
+        {
+            var range = tree.GetComponent<XsrUiRangeInput>(entity) ?? throw new NxmlLoadException("The range input contract is missing.");
+            range.Reset(after.Minimum, after.Maximum, after.Step, after.RangeValue, preserveValue: before.RangeValue == after.RangeValue);
+            dirty |= XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint;
+        }
         if (before.Width != after.Width || before.Height != after.Height || before.MinWidth != after.MinWidth
             || before.MaxWidth != after.MaxWidth || before.MinHeight != after.MinHeight || before.MaxHeight != after.MaxHeight
             || before.Weight != after.Weight || before.HorizontalAlignment != after.HorizontalAlignment
@@ -158,6 +178,19 @@ public sealed partial class NxmlUiLoader
         var children = tree.Children(entity);
         for (int i = 0; i < children.Count; i++) ApplyReload(before.Children[i], after.Children[i], children[i], tree);
     }
+
+    private static void ValidateRangeFacts(NxmlIrNode node)
+    {
+        if (node.Role != XsrUiSemanticRole.Slider || !double.IsFinite(node.Minimum) || !double.IsFinite(node.Maximum)
+            || !double.IsFinite(node.Step) || !double.IsFinite(node.RangeValue) || node.Minimum >= node.Maximum
+            || node.Step <= 0 || node.Step > node.Maximum - node.Minimum || Math.Abs(node.Minimum) > 1e12 || Math.Abs(node.Maximum) > 1e12
+            || (node.Maximum - node.Minimum) / node.Step > 1e9 || node.RangeValue < node.Minimum || node.RangeValue > node.Maximum)
+            throw new NxmlLoadException("Range input facts require finite bounded limits and a value within their range.");
+    }
+
+    private static bool SameStyleIdentity(XsrUiStyleIdentity? before, XsrUiStyleIdentity? after) =>
+        before is null ? after is null : after is not null && before.Kind == after.Kind && before.Key == after.Key
+            && before.Role == after.Role && before.Classes.SequenceEqual(after.Classes, StringComparer.Ordinal);
 
     private static XsrUiVisualStyle CreateVisual(XsrUiVisualStyleSnapshot visual) => new()
     {

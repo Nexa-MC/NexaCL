@@ -19,18 +19,19 @@ internal sealed record DesktopBackgroundAppearance(XsrUiImageFitMode FitMode, Xs
             "stretch" => XsrUiImageFitMode.Stretch,
             _ => XsrUiImageFitMode.Cover,
         };
-        int opacity = int.TryParse(values.GetValueOrDefault("appearance.background-opacity"), NumberStyles.Integer,
-            CultureInfo.InvariantCulture, out int parsed) ? Math.Clamp(parsed, 0, 100) : 100;
+        double opacity = double.TryParse(values.GetValueOrDefault("appearance.background-opacity"), NumberStyles.Float,
+            CultureInfo.InvariantCulture, out double parsed) && double.IsFinite(parsed) ? Math.Clamp(parsed, 0, 100) : 100;
         return new(fit, ParseColor(values.GetValueOrDefault("appearance.background-color") ?? "auto"), opacity / 100.0);
     }
 
     internal static XsrUiColor? ParseColor(string text)
     {
         if (text == "auto") return null;
-        if (text.Length != 7 || text[0] != '#' || text.AsSpan(1).ContainsAnyExcept(HexDigits)
+        if (text.Length is not (7 or 9) || text[0] != '#' || text.AsSpan(1).ContainsAnyExcept(HexDigits)
             || !uint.TryParse(text.AsSpan(1), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out uint rgb))
-            throw new InvalidDataException("背景颜色必须采用 auto 或 #RRGGBB。");
-        return new XsrUiColor((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
+            throw new InvalidDataException("Background color must be auto, #RRGGBB or #RRGGBBAA.");
+        return text.Length == 7 ? new XsrUiColor((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb)
+            : new((byte)(rgb >> 24), (byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
     }
 
     internal XsrUiRasterImage CreateRaster(PngImage image) => new(image, [])
@@ -51,6 +52,7 @@ internal sealed class DesktopBackgroundPresentation
     private readonly XsrUiRasterImage? _originalImage;
     private PngImage? _staticImage, _videoFrame;
     private DesktopBackgroundAppearance _appearance = DesktopBackgroundAppearance.Default;
+    private long _generation;
 
     private DesktopBackgroundPresentation(XsrUiTree tree, XsrUiEntityId carrier)
     {
@@ -75,6 +77,15 @@ internal sealed class DesktopBackgroundPresentation
     internal void SetVideo(PngImage frame, DesktopBackgroundAppearance appearance)
     {
         _videoFrame = frame; _appearance = appearance; Present();
+    }
+    internal void SetVideo(PngImage frame, DesktopBackgroundAppearance appearance, long generation)
+    {
+        if (generation != _generation) return; SetVideo(frame, appearance);
+    }
+    internal void BeginGeneration(long generation)
+    {
+        if (generation < _generation) return;
+        _generation = generation; _videoFrame = null; Present();
     }
 
     internal void SetAppearance(DesktopBackgroundAppearance appearance)

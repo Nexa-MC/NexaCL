@@ -22,6 +22,7 @@ internal static class DesktopAppearancePresentationState
 internal sealed class CustomAppearanceSession : IAsyncDisposable
 {
     private readonly XsrQueryRouter _queries;
+    private readonly DesktopEffectiveAppearanceSource? _effectiveAppearance;
     private readonly XsrStateStore _state;
     private readonly XsrStateId _revision;
     private readonly XsrUiShell _shell;
@@ -45,9 +46,9 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
     private bool _disposed;
 
     internal CustomAppearanceSession(XsrQueryRouter queries, XsrStateStore state, XsrUiShell shell,
-        AvaloniaUiPlatformActions platform, Action<string> log)
+        AvaloniaUiPlatformActions platform, Action<string> log, DesktopEffectiveAppearanceSource? effectiveAppearance = null)
     {
-        _queries = queries; _state = state; _shell = shell; _platform = platform; _log = log;
+        _queries = queries; _effectiveAppearance = effectiveAppearance; _state = state; _shell = shell; _platform = platform; _log = log;
         _token = _stop.Token;
         _revision = state.Resolve(SettingsPolicyContract.RevisionKey);
         _background = shell.Content;
@@ -55,10 +56,16 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
         _dynamic = new(shell.Tree, state);
         XsrUiEntityId slot = default;
         shell.Tree.Walk(shell.TitleBar, entity => { if (shell.Tree.Name(entity) == "CustomLauncherLogoSlot") slot = entity; return true; });
-        _logo = _dynamic.Append(slot, DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml", new Dictionary<string, string> { ["visible"] = "false" }));
+        _logo = _dynamic.Append(slot, DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml", new Dictionary<string, string> { ["visible"] = "false", ["source"] = "" }));
         state.Changed += OnState;
         shell.Renderer.FramePreparing += OnFrame;
-        _policyWorker = RunPolicyAsync(); _policy.Writer.TryWrite(true);
+        if (_effectiveAppearance is not null)
+        {
+            _effectiveAppearance.Changed += OnEffectiveAppearance;
+            if (_effectiveAppearance.Current is { } snapshot) ApplyPrepared(snapshot);
+        }
+        _policyWorker = _effectiveAppearance is null ? RunPolicyAsync() : ReadEffectiveInitialAsync();
+        if (_effectiveAppearance is null) _policy.Writer.TryWrite(true);
     }
     internal static XsrUiCustomPalette? ParsePalette(string text)
     {
@@ -77,22 +84,67 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
         }
         return new(Read("background"), Read("foreground"), Read("accent"));
     }
-    private void OnState(XsrStateChange change) { if (change.Id == _revision) _policy.Writer.TryWrite(true); }
+    private void OnEffectiveAppearance()
+    {
+        if (_effectiveAppearance?.Current is { } snapshot) ApplyPrepared(snapshot);
+    }
+    private void OnState(XsrStateChange change) { if (_effectiveAppearance is null && change.Id == _revision) _policy.Writer.TryWrite(true); }
     private void ApplyPolicy(SettingsEffectiveSnapshot settings)
     {
         if (_disposed) return;
         var values = settings.Values.ToDictionary(item => item.Key, item => item.Value.Value);
         string Read(string key) => values.GetValueOrDefault(key) ?? "";
-        try { _palette = ParsePalette(Read("appearance.custom-theme")); }
+        try { Volatile.Write(ref _palette, ParsePalette(Read("appearance.custom-theme"))); }
         catch (Exception error) when (error is InvalidDataException or JsonException)
         { _palette = null; _log(DesktopBootstrapText.Format("PaletteFailure", new Dictionary<string, string> { ["error"] = error.Message }, _shell.Renderer.LocalizeText)); }
         string logo = Read("appearance.logo-path"), background = Read("appearance.background-path");
         DesktopBackgroundAppearance appearance;
         try { appearance = DesktopBackgroundAppearance.Read(values); }
         catch (InvalidDataException error) { appearance = DesktopBackgroundAppearance.Default; _log(DesktopBootstrapText.Format("BackgroundFailure", new Dictionary<string, string> { ["error"] = error.Message }, _shell.Renderer.LocalizeText)); }
-        _platform.PostToWindow(() => { if (!_disposed) _backgroundPresentation.SetAppearance(appearance); });
         long generation = Interlocked.Increment(ref _generation);
-        _assetLoad = LoadAssetsAsync(logo, background, appearance, generation);
+        long themeGeneration = _effectiveAppearance?.Current?.Generation ?? 0;
+        _platform.PostToWindow(() =>
+        {
+            if (!_disposed && generation == Volatile.Read(ref _generation)
+                && (_effectiveAppearance is null || _effectiveAppearance.IsCurrent(themeGeneration))) _backgroundPresentation.SetAppearance(appearance);
+        });
+        _assetLoad = LoadAssetsAsync(logo, background, appearance, generation, themeGeneration);
+    }
+
+    private void ApplyPrepared(DesktopEffectiveAppearanceSnapshot snapshot)
+    {
+        if (_disposed || _effectiveAppearance?.IsCurrent(snapshot.Generation) != true) return;
+        Interlocked.Increment(ref _generation); // Retire any legacy path read already in flight.
+        var values = snapshot.Settings.Values.ToDictionary(item => item.Key, item => item.Value.Value);
+        try { Volatile.Write(ref _palette, ParsePalette(values.GetValueOrDefault("appearance.custom-theme") ?? "")); }
+        catch (Exception error) when (error is InvalidDataException or JsonException)
+        { _palette = null; _log(DesktopBootstrapText.Format("PaletteFailure", new Dictionary<string, string> { ["error"] = error.Message }, _shell.Renderer.LocalizeText)); }
+        DesktopBackgroundAppearance appearance;
+        try { appearance = DesktopBackgroundAppearance.Read(values); }
+        catch (InvalidDataException error)
+        { appearance = DesktopBackgroundAppearance.Default; _log(DesktopBootstrapText.Format("BackgroundFailure", new Dictionary<string, string> { ["error"] = error.Message }, _shell.Renderer.LocalizeText)); }
+        _logoImage = snapshot.HasPreparedImages ? snapshot.Logo : null; _backgroundImage = snapshot.HasPreparedImages ? snapshot.Background : null;
+        bool logoVisible = snapshot.HasPreparedImages && (snapshot.Logo is not null || !string.IsNullOrEmpty(snapshot.LogoResourceId));
+        _dynamic.Reload(_logo, DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml", new Dictionary<string, string>
+        { ["visible"] = logoVisible ? "true" : "false", ["source"] = snapshot.HasPreparedImages ? snapshot.LogoResourceId ?? "" : "" }));
+        _state.Publish(_state.Resolve(DesktopAppearancePresentationState.LogoVisible), logoVisible);
+        _shell.Tree.SetComponent(_logo, _logoImage is null ? null : new XsrUiRasterImage(_logoImage, [])
+        { FitToBounds = true, AspectRatio = (double)_logoImage.Width / _logoImage.Height });
+        _backgroundPresentation.SetStatic(_backgroundImage, appearance);
+        _shell.Renderer.ColorScheme = _shell.Renderer.ColorScheme with { CustomPalette = _palette };
+        _initialReady.TrySetResult();
+    }
+
+    private async Task ReadEffectiveInitialAsync()
+    {
+        try
+        {
+            await _effectiveAppearance!.ReadAsync(_token).ConfigureAwait(false);
+            if (_effectiveAppearance.Current is null) _initialReady.TrySetException(new IOException(DesktopBootstrapText.Raw("appearance.error.initial")));
+            else _initialReady.TrySetResult();
+        }
+        catch (OperationCanceledException) { _initialReady.TrySetCanceled(_token); }
+        catch (Exception error) { _initialReady.TrySetException(error); throw; }
     }
     private async Task RunPolicyAsync()
     {
@@ -114,7 +166,7 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
     {
         if (!_disposed) _shell.Renderer.ColorScheme = _shell.Renderer.ColorScheme with { CustomPalette = _palette };
     }
-    private async Task LoadAssetsAsync(string logo, string background, DesktopBackgroundAppearance appearance, long generation)
+    private async Task LoadAssetsAsync(string logo, string background, DesktopBackgroundAppearance appearance, long generation, long themeGeneration = 0)
     {
         try
         {
@@ -129,10 +181,10 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
             finally { _loading.Release(); }
             _platform.PostToWindow(() =>
             {
-                if (_disposed || generation != Volatile.Read(ref _generation)) return;
+                if (_disposed || generation != Volatile.Read(ref _generation) || _effectiveAppearance is not null && !_effectiveAppearance.IsCurrent(themeGeneration)) return;
                 _logoPath = logo; _backgroundPath = background;
                 _logoImage = logoImage; _backgroundImage = backgroundImage;
-                _dynamic.Reload(_logo, DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml", new Dictionary<string, string> { ["visible"] = logoImage is null ? "false" : "true" }));
+                _dynamic.Reload(_logo, DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml", new Dictionary<string, string> { ["visible"] = logoImage is null ? "false" : "true", ["source"] = "" }));
                 _state.Publish(_state.Resolve(DesktopAppearancePresentationState.LogoVisible), logoImage is not null);
                 _shell.Tree.SetComponent(_logo, logoImage is null ? null : new XsrUiRasterImage(logoImage, []) { FitToBounds = true, AspectRatio = (double)logoImage.Width / logoImage.Height });
                 _backgroundPresentation.SetStatic(backgroundImage, appearance);
@@ -155,7 +207,8 @@ internal sealed class CustomAppearanceSession : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
-        _disposed = true; _state.Changed -= OnState; _shell.Renderer.FramePreparing -= OnFrame;
+        _disposed = true; _state.Changed -= OnState;
+        if (_effectiveAppearance is not null) _effectiveAppearance.Changed -= OnEffectiveAppearance; _shell.Renderer.FramePreparing -= OnFrame;
         _policy.Writer.TryComplete();
         await _stop.CancelAsync().ConfigureAwait(false);
         await _policyWorker.ConfigureAwait(false);

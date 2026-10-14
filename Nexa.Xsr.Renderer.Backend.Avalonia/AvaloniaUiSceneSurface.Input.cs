@@ -140,6 +140,8 @@ public sealed partial class AvaloniaUiSceneSurface
             Key.Down => XsrUiKey.Down,
             Key.Left => XsrUiKey.Left,
             Key.Right => XsrUiKey.Right,
+            Key.Home => XsrUiKey.Home,
+            Key.End => XsrUiKey.End,
             Key.Escape => XsrUiKey.Escape,
             _ => null,
         };

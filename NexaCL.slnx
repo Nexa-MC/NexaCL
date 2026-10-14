@@ -56,6 +56,8 @@
     <Project Path="Nexa.Services.Setup.Contracts/Nexa.Services.Setup.Contracts.csproj" />
     <Project Path="Nexa.Services.Telemetry/Nexa.Services.Telemetry.csproj" />
     <Project Path="Nexa.Services.Telemetry.Contracts/Nexa.Services.Telemetry.Contracts.csproj" />
+    <Project Path="Nexa.Services.Themes/Nexa.Services.Themes.csproj" />
+    <Project Path="Nexa.Services.Themes.Contracts/Nexa.Services.Themes.Contracts.csproj" />
     <Project Path="Nexa.Services.Updates/Nexa.Services.Updates.csproj" />
     <Project Path="Nexa.Services.Updates.Contracts/Nexa.Services.Updates.Contracts.csproj" />
   </Folder>
@@ -85,6 +87,7 @@
     <Project Path="tests/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj" />
     <Project Path="tests/Nexa.Sidecar.Tests/Nexa.Sidecar.Tests.csproj" />
     <Project Path="tests/Nexa.Services.Tests/Nexa.Services.Tests.csproj" />
+    <Project Path="tests/Nexa.Services.Themes.Tests/Nexa.Services.Themes.Tests.csproj" />
     <Project Path="tests/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj" />
     <Project Path="tools/CapabilityProbe/CapabilityProbe.csproj" />
     <Project Path="tools/Nexa.Minecraft.Benchmarks/Nexa.Minecraft.Benchmarks.csproj" />

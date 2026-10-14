@@ -62,14 +62,16 @@ public sealed partial class AvaloniaUiSceneSurface
                     new AvaloniaUiTextInputActions(
                         (entity, value) => { _shell.Renderer.SetTextInputValue(entity, value); CommitScene(); },
                         (entity, start, end) => { _shell.Renderer.SetTextSelection(entity, start, end); CommitScene(); },
-                        (entity, value) => { _shell.Renderer.SetTextPreedit(entity, value); CommitScene(); }));
+                        (entity, value) => { _shell.Renderer.SetTextPreedit(entity, value); CommitScene(); }),
+                    rangeFromAutomation: (entity, value) => { _shell.Renderer.RequestRangeValue(entity, value); CommitScene(); });
                 _controls.Add(node.Entity, control);
                 _childIndexes[control] = Children.Count;
                 Children.Add(control);
                 geometryChanged = true;
             }
 
-            geometryChanged |= control.Node.Rect != node.Rect;
+            geometryChanged |= control.Node.Rect != node.Rect || control.Node.LayoutRect != node.LayoutRect;
+            control.SetThemeResources(ResourcesFor(node));
             control.SetRasterPresentationEnabled(_rasterPresentationEnabled);
             control.Apply(node, new XsrUiSize(Bounds.Width, Bounds.Height));
             DriveSegmentReveal(node);
@@ -91,6 +93,7 @@ public sealed partial class AvaloniaUiSceneSurface
         ConfigureSelectionRelationships(scene);
         RunPageEnterAnimationsIfNavigated(scene);
         ApplyOutgoingLayers(scene);
+        RetireUnusedThemeResources(scene);
         if (_pointerInside) UpdatePointerCursor(_lastPointerPoint);
 
         if (geometryChanged) { InvalidateMeasure(); InvalidateArrange(); }

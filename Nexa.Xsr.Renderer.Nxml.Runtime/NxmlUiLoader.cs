@@ -1,4 +1,4 @@
-﻿using Nexa.Xsr;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
@@ -106,6 +106,8 @@ public sealed partial class NxmlUiLoader
         XsrUiTree tree,
         XsrStateStore state)
     {
+        if (node.StyleIdentity is { } identity) tree.SetComponent(entity, identity);
+        tree.SetComponent(entity, new NxmlAuthoredStyleSource(node.StyleSource));
         NxmlIrBinding? visibilityBinding = node.Bindings.FirstOrDefault(
             binding => binding.Property == XsrUiStateProperty.Visibility);
         if (node.Width is not null || node.Height is not null
@@ -207,6 +209,10 @@ public sealed partial class NxmlUiLoader
 
                 tree.SetComponent(entity, text);
                 break;
+            case NxmlRuntimeRecipe.RangeInput:
+                ValidateRangeFacts(node);
+                tree.SetComponent(entity, new XsrUiRangeInput(node.Minimum, node.Maximum, node.Step, node.RangeValue));
+                goto case NxmlRuntimeRecipe.CommandInput;
             case NxmlRuntimeRecipe.CommandInput:
                 XsrUiInput commandInput = new()
                 {

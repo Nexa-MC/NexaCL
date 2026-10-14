@@ -29,7 +29,7 @@
       </StackPanel>
       <Dynamic Key="ResourceFilterSlot" />
       <Dynamic Key="ResourceExtensionCard" IsVisible="{data extensionVisible}" Scroll="true" ScrollGesture="true" Class="layout-ResourcesPage-ResourceExtensionCard resource-base resource-extension" />
-      <Dynamic Key="ResourceList" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="false" StableContent="true" Class="layout-ResourcesPage-ResourceList" />
+      <Dynamic Key="ResourceList" Spacing="{data listSpacing}" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="false" StableContent="true" Class="layout-ResourcesPage-ResourceList" />
       <StackPanel Key="ResourcePagination" Class="layout-ResourcesPage-ResourcePagination">
         <Text Key="ResourceStatus" Content="{data status}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-status" Label="{data status}" />
         <StackPanel Key="ResourceNetwork" SegmentThumb="ResourceNetworkThumb" Scroll="true" ScrollGesture="true" Class="resource-base resource-track" Width="{data ResourceNetwork_width}">

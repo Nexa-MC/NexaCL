@@ -43,7 +43,7 @@
 .settings-content-category-thumb { Background: #ffffff; Foreground: #2b3340; CornerRadius: 7; Surface: Solid; }
 .settings-content-category { Width: 72; Height: 34; Background: #00000000; Foreground: #2b3340; CornerRadius: 7; FontSize: 12; FontWeight: 450; TextAlignment: Center; }
 .settings-content-category-selected { Foreground: #0b5bcb; FontWeight: 600; }
-.settings-content-metric-files { Height: 84; Width: 104; Spacing: 8; Padding: 92,3,8,0; }
+.settings-content-metric-files { Height: 84; Width: 104; Spacing: 8; Padding: 92,3,8,0; MaxHeight: 512; MaxWidth: 100000; }
 
 .settings-content-rule-title { Height: 28; FontSize: 13; FontWeight: 600; Foreground: #2b3340; }
 .settings-content-rule { FontSize: 12; Foreground: #717c8c; WrapText: true; }
@@ -93,7 +93,7 @@
 .settings-content-screenshot-card-time { Height: 20; FontSize: 11; Foreground: #717c8c; }
 .settings-content-screenshot-metric { Width: 1120; Height: 680; MinWidth: 240; MinHeight: 120; MaxWidth: 620; MaxHeight: 360; Padding: 80,56,248,520; Margin: 200,100,84,320; }
 
-.settings-content-gallery-metric { Width: 220; Height: 34; Spacing: 12; Padding: 12,8,26,28; Margin: 9,16,0,0; }
+.settings-content-gallery-metric { Width: 220; Height: 34; MaxHeight: 1024; Spacing: 12; Padding: 12,8,26,28; Margin: 9,16,0,0; }
 
 .settings-content-binary-track { Orientation: Horizontal; Spacing: 0; Width: 118; Padding: 3; Background: #f1f5fa; Foreground: #2b3340; CornerRadius: 9; Surface: Solid; }
 .settings-content-binary-option { Width: 56; Height: 34; Background: #00000000; Foreground: #2b3340; CornerRadius: 7; FontSize: 12; FontWeight: 450; TextAlignment: Center; }

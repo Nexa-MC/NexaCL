@@ -9,6 +9,7 @@ using Nexa.Services.Logging;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Settings;
 using Nexa.Services.Setup;
+using Nexa.Services.Themes;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
@@ -117,7 +118,8 @@ internal static partial class Program
             AppFolders folders = AppFolders.ResolveDefault();
             bool disableHardwareAcceleration = commandLine.SafeMode || HardwareAccelerationDisabled(folders.Root);
             bool validation = args.Contains("--validate-shell", StringComparer.OrdinalIgnoreCase)
-                || args.Contains("--validate-setup", StringComparer.OrdinalIgnoreCase);
+                || args.Contains("--validate-setup", StringComparer.OrdinalIgnoreCase)
+                || args.Contains("--validate-themes", StringComparer.OrdinalIgnoreCase);
             DesktopDestination destination = DesktopDestination.Activate;
             if (args.FirstOrDefault(argument => argument.StartsWith("nexacl:", StringComparison.OrdinalIgnoreCase)) is { } uri
                 && !DesktopActivation.TryParse(uri, out destination))
@@ -141,7 +143,7 @@ internal static partial class Program
                 UiLocalizationCatalog startupLanguage = new();
                 startupLanguage.SetLanguage("auto");
                 startup = await AvaloniaUiStartupSession.StartWithAppearanceAsync(args, disableHardwareAcceleration,
-                    ReadStartupAppearance(folders.Root), localize: startupLanguage.Translate).ConfigureAwait(false);
+                    ReadStartupAppearance(folders.Root, commandLine.SafeMode), localize: startupLanguage.Translate).ConfigureAwait(false);
                 mainToNativeSubmissionMs = System.Diagnostics.Stopwatch.GetElapsedTime(bootstrapStarted).TotalMilliseconds;
             }
             bool locationLocked = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("NEXA_DATA_DIR")
@@ -160,7 +162,7 @@ internal static partial class Program
                 try { Console.Error.WriteLine(ProductPresentationText.Raw("program.copy.9da908e4aee4f152") + storageStartup.Error?.Message); }
                 catch (IOException) { }
             }
-            startup?.SetAppearance(ReadStartupAppearance(folders.Root));
+            startup?.SetAppearance(ReadStartupAppearance(folders.Root, commandLine.SafeMode));
             while (true)
             {
                 try
@@ -268,7 +270,9 @@ internal static partial class Program
         var setup = new FirstRunService(folders.Root, LauncherStorageLocation.LocatorPath, locationLocked, ResolveInformationalVersion());
         bool validateSetup = args.Contains("--validate-setup", StringComparer.OrdinalIgnoreCase);
         // A failed queued move needs the source-root Settings UI so the user can cancel it.
-        if (validateSetup || (storageStartupError is null && !args.Contains("--validate-shell", StringComparer.OrdinalIgnoreCase) && setup.Read().Required))
+        if (validateSetup || (storageStartupError is null
+            && !args.Contains("--validate-shell", StringComparer.OrdinalIgnoreCase)
+            && !args.Contains("--validate-themes", StringComparer.OrdinalIgnoreCase) && setup.Read().Required))
         {
             setStage("first_run");
             return RunFirstRun(args, setup, validateSetup, instance, disableHardwareAcceleration, startup, setStage);
@@ -372,10 +376,15 @@ internal static partial class Program
             },
         };
         var launchDiagnostics = new Nexa.Services.Minecraft.Launch.MinecraftLaunchPlanDiagnostics();
+        DesktopThemeSession? watchedThemes = null;
+        using var themeService = new ThemePackageService(folders.Root,
+            Path.Combine(AppContext.BaseDirectory, "Themes", "BuiltIn"), DesktopThemeSession.SupportedCapabilities(),
+            snapshot => watchedThemes?.NotifyWatch(snapshot));
         FoundationRuntime runtime = FoundationRuntimeComposer.ComposeWithStorageAndMedia(host, storagePreferences, AvaloniaUiScreenshotCodec.Crop, dispatchObservation,
             configureRoutes: (commands, queries) =>
             {
                 runtimeTraces.Register(queries);
+                ThemesRuntime.Register(queries, commands, themeService);
                 MinecraftLaunchDiagnosticsRuntime.Register(queries, launchDiagnostics);
                 ContentWorkspaceRuntime.Register(commands, queries, contentBackups, legacyMigration, diagnosticHistory, diagnosticAi);
                 WorldSnapshotRuntime.Register(commands, queries, host.StateStore, contentBackups, OperatingSystem.IsMacOS() ? AvaloniaUiWorldEditLease.Acquire : null);
@@ -452,15 +461,22 @@ internal static partial class Program
         // pages inside the shell content host and dispatches the real launch command.
         setStage("attach_product_controllers");
         AvaloniaUiPlatformActions platformActions = new() { LocalizeContentPicker = shell.Renderer.LocalizeText };
-        using var appearanceSession = new DesktopAppearanceSession(shell, host.StateStore, platformActions);
-        await using var customAppearance = safeMode ? null : new CustomAppearanceSession(runtime.Queries, host.StateStore, shell, platformActions, message => host.Logging.Warn("Appearance", message));
-        await using var mediaSession = safeMode ? null : new DesktopMediaSession(runtime.Queries, runtime.Commands, host.StateStore, shell, uiIntents, platformActions, message => host.Logging.Warn("Media", message));
+        var effectiveAppearance = new DesktopEffectiveAppearanceSource();
+        await using var themes = new DesktopThemeSession(runtime.Queries, runtime.Commands, host.StateStore,
+            shell, platformActions, effectiveAppearance, message => host.Logging.Warn("Themes", message), safeMode);
+        watchedThemes = themes;
+        themes.SaveCommittedStartup = (identity, snapshot) => SaveThemeStartupCacheAsync(folders.Root, identity, snapshot);
+        using var appearanceSession = new DesktopAppearanceSession(shell, host.StateStore, platformActions, effectiveAppearance: effectiveAppearance);
+        await using var customAppearance = safeMode ? null : new CustomAppearanceSession(runtime.Queries, host.StateStore, shell, platformActions, message => host.Logging.Warn("Appearance", message), effectiveAppearance);
+        await using var mediaSession = safeMode ? null : new DesktopMediaSession(runtime.Queries, runtime.Commands, host.StateStore, shell, uiIntents, platformActions, message => host.Logging.Warn("Media", message), effectiveAppearance,
+            saveThemeVolumeAsync: themes.SetMediaVolumeAsync);
+        if (mediaSession is not null) themes.WaitForAppearanceConsumers = mediaSession.WaitForGenerationAsync;
         using var gameWindows = new DesktopGameWindowSession(host.StateStore, action => Avalonia.Threading.Dispatcher.UIThread.Post(action),
             platformActions.HideWindow, platformActions.MinimizeWindow, platformActions.RestoreWindow, platformActions.RequestClose,
             message => host.Logging.Warn("Launch", message));
         using var presentationSession = new DesktopPresentationSession(shell, host.StateStore,
             platformActions.SetWindowResizeEnabled, platformActions.SetAnimationFrameRate,
-            runtime.Queries, platformActions.PostToWindow);
+            runtime.Queries, platformActions.PostToWindow, effectiveAppearance);
         platformActions.InputObserved += kind => host.InputUsage.Record(kind switch
         {
             AvaloniaUiInputKind.Keyboard => InputUsageKind.Keyboard,
@@ -511,6 +527,10 @@ internal static partial class Program
             .RunAsync("startup_local_recovery", token => installRecovery.InitialReady.WaitAsync(token)).ConfigureAwait(false);
         launchPage.Attach();
         using SettingsPageController settingsPage = new(shell, uiIntents, runtime.Queries, runtime.Commands, host.StateStore, feedback);
+        settingsPage.ThemeSession = themes;
+        settingsPage.ConfigureThemePickers((request, token) => PickThemeResourcesAsync(platformActions, request, token),
+            token => platformActions.PickThemeOptionsFileAsync(token),
+            async token => { token.ThrowIfCancellationRequested(); var path = await platformActions.PickExportDirectoryAsync().ConfigureAwait(false); token.ThrowIfCancellationRequested(); return path; });
         settingsPage.OpenAboutLink = platformActions.OpenHttpsUri;
         settingsPage.OpenAdvancedSettingsFile = () =>
         {
@@ -598,21 +618,28 @@ internal static partial class Program
             + $"{runtime.Commands.Count} command routes, {runtime.Queries.Count} query routes over one host state store; "
             + $"Minecraft routes: {minecraft.Commands.Count} commands/{minecraft.Queries.Count} queries; "
             + $"Sidecar routes: {sidecarApi.Commands.Count} commands/{sidecarApi.Queries.Count} queries; UI style: {shell.Style}.");
-        if (args.Any(argument => string.Equals(argument, "--validate-shell", StringComparison.OrdinalIgnoreCase)))
+        bool validateThemes = args.Contains("--validate-themes", StringComparer.OrdinalIgnoreCase);
+        if (validateThemes || args.Contains("--validate-shell", StringComparer.OrdinalIgnoreCase))
         {
+            await themes.PrepareStartupAsync(CancellationToken.None).ConfigureAwait(false);
             setStage("validate_shell");
             host.Logging.Info("Launcher", "Headless shell validation started viewport=1280x800");
             XsrUiScene scene = shell.Render(new XsrUiSize(1280, 800));
-            await ValidateDynamicNetworkPageAsync(shell, settingsPage, uiIntents).ConfigureAwait(false);
-            await ValidateDynamicLaunchInstallAsync().ConfigureAwait(false);
-            await ValidateDynamicSettingsMigrationAsync(shell, host.StateStore, uiIntents).ConfigureAwait(false);
-            ValidateDynamicTaskPage(shell, taskCenterPage, host.Tasks, uiIntents);
-            ValidateDynamicDock(shell, host.StateStore);
-            ValidateDynamicGlobalOverlays(shell, host.StateStore, uiIntents, feedback);
-            ValidateDynamicVersionSelection(shell, host.StateStore);
-            ValidateDynamicBootstrap(shell, host.StateStore);
-            ValidateDynamicWardrobe(shell, host.StateStore);
-            ValidateDynamicResources(shell, host.StateStore, uiIntents);
+            if (validateThemes)
+                await ValidateThemesAsync(shell, themes, settingsPage, uiIntents, host.StateStore).ConfigureAwait(false);
+            else
+            {
+                await ValidateDynamicNetworkPageAsync(shell, settingsPage, uiIntents).ConfigureAwait(false);
+                await ValidateDynamicLaunchInstallAsync().ConfigureAwait(false);
+                await ValidateDynamicSettingsMigrationAsync(shell, host.StateStore, uiIntents).ConfigureAwait(false);
+                ValidateDynamicTaskPage(shell, taskCenterPage, host.Tasks, uiIntents);
+                ValidateDynamicDock(shell, host.StateStore);
+                ValidateDynamicGlobalOverlays(shell, host.StateStore, uiIntents, feedback);
+                ValidateDynamicVersionSelection(shell, host.StateStore);
+                ValidateDynamicBootstrap(shell, host.StateStore);
+                ValidateDynamicWardrobe(shell, host.StateStore);
+                ValidateDynamicResources(shell, host.StateStore, uiIntents);
+            }
             Console.WriteLine($"NXML shell and dynamic network templates validated: {scene.Count} shell semantic nodes.");
             host.Logging.Info("Launcher", $"Headless shell validation completed nodes={scene.Count}");
             setStage("shutdown");
@@ -660,13 +687,13 @@ internal static partial class Program
                     if (!desktopIntegration.HasExplicitActivation)
                         desktopIntegration.ActivateProtocol("nexacl://" + destination.ToString().ToLowerInvariant());
                 },
-            setLaunchHints: launchPage.SetStartupHintsVisible);
+            setLaunchHints: launchPage.SetStartupHintsVisible, effectiveAppearance: effectiveAppearance);
         int exitCode;
         try
         {
             await PrepareNormalStartupAsync(startup, shell, platformActions, launchPage, settingsPage, versionSettings,
                 resourcesPage, customAppearance, mediaSession, presentationSession, systemPreferences, setStage, host.Logging,
-                desktopIntegration, sidecarLifetime, host.StateStore).ConfigureAwait(false);
+                desktopIntegration, sidecarLifetime, host.StateStore, themes).ConfigureAwait(false);
             setStage("gui_lifetime");
             host.Logging.Info("Launcher", "Entering Avalonia GUI lifetime.");
             exitCode = AvaloniaUiShellHost.Run(shell, args, platformActions, disableHardwareAcceleration);

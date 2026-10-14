@@ -1,0 +1,301 @@
+{
+  "format": "NTP/1",
+  "id": "nexa.builtin",
+  "version": "1.0.0",
+  "name": {
+    "en-US": "Built-in",
+    "zh-CN": "内置主题"
+  },
+  "styleApi": 1,
+  "nss": "NSS/1",
+  "styles": [
+    "styles/main.nss"
+  ],
+  "requiredCapabilities": [],
+  "optionalCapabilities": [],
+  "optionsVersion": 1,
+  "options": [
+    {
+      "id": "appearance.accent",
+      "kind": "Select",
+      "default": "blue",
+      "label": {
+        "en-US": "Accent",
+        "zh-CN": "强调色"
+      },
+      "choices": [
+        {
+          "value": "blue",
+          "label": {
+            "en-US": "Blue",
+            "zh-CN": "蓝色"
+          }
+        },
+        {
+          "value": "purple",
+          "label": {
+            "en-US": "Purple",
+            "zh-CN": "紫色"
+          }
+        },
+        {
+          "value": "green",
+          "label": {
+            "en-US": "Green",
+            "zh-CN": "绿色"
+          }
+        },
+        {
+          "value": "orange",
+          "label": {
+            "en-US": "Orange",
+            "zh-CN": "橙色"
+          }
+        }
+      ],
+      "group": "color"
+    },
+    {
+      "id": "appearance.custom-theme",
+      "kind": "Text",
+      "default": "",
+      "label": {
+        "en-US": "Legacy custom theme",
+        "zh-CN": "自定义主题（旧配置）"
+      },
+      "group": "color"
+    },
+    {
+      "id": "appearance.background-path",
+      "kind": "File",
+      "default": "",
+      "label": {
+        "en-US": "Background image",
+        "zh-CN": "背景图片"
+      },
+      "resourceKind": "Image",
+      "group": "background"
+    },
+    {
+      "id": "appearance.background-fit",
+      "kind": "Select",
+      "default": "cover",
+      "label": {
+        "en-US": "Background fit",
+        "zh-CN": "背景缩放"
+      },
+      "choices": [
+        {
+          "value": "cover",
+          "label": {
+            "en-US": "Cover",
+            "zh-CN": "覆盖"
+          }
+        },
+        {
+          "value": "contain",
+          "label": {
+            "en-US": "Contain",
+            "zh-CN": "完整显示"
+          }
+        },
+        {
+          "value": "stretch",
+          "label": {
+            "en-US": "Stretch",
+            "zh-CN": "拉伸"
+          }
+        }
+      ],
+      "group": "background"
+    },
+    {
+      "id": "appearance.background-color",
+      "kind": "Text",
+      "default": "auto",
+      "label": {
+        "en-US": "Background color",
+        "zh-CN": "背景颜色"
+      },
+      "group": "background",
+      "description": {
+        "en-US": "auto follows light/dark mode; custom colors use #RRGGBB or #RRGGBBAA.",
+        "zh-CN": "auto 跟随亮暗色；自定义颜色使用 #RRGGBB 或 #RRGGBBAA。"
+      }
+    },
+    {
+      "id": "appearance.background-opacity",
+      "kind": "Range",
+      "default": 100,
+      "label": {
+        "en-US": "Background opacity",
+        "zh-CN": "背景透明度"
+      },
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "group": "background"
+    },
+    {
+      "id": "appearance.lock-window",
+      "kind": "Boolean",
+      "default": false,
+      "label": {
+        "en-US": "Lock window position",
+        "zh-CN": "锁定窗口位置"
+      },
+      "group": "window"
+    },
+    {
+      "id": "appearance.animation-fps",
+      "kind": "Range",
+      "default": 60,
+      "label": {
+        "en-US": "Animation frame rate",
+        "zh-CN": "动画帧率"
+      },
+      "min": 1,
+      "max": 240,
+      "step": 1,
+      "group": "window"
+    },
+    {
+      "id": "appearance.window-opacity",
+      "kind": "Range",
+      "default": 100,
+      "label": {
+        "en-US": "Window opacity",
+        "zh-CN": "窗口透明度"
+      },
+      "min": 40,
+      "max": 100,
+      "step": 1,
+      "group": "window"
+    },
+    {
+      "id": "appearance.window-blur",
+      "kind": "Boolean",
+      "default": false,
+      "label": {
+        "en-US": "Window blur",
+        "zh-CN": "窗口模糊"
+      },
+      "group": "window"
+    },
+    {
+      "id": "appearance.video-path",
+      "kind": "File",
+      "default": "",
+      "label": {
+        "en-US": "Background video",
+        "zh-CN": "背景视频"
+      },
+      "resourceKind": "Video",
+      "group": "video"
+    },
+    {
+      "id": "appearance.video-auto-pause",
+      "kind": "Boolean",
+      "default": true,
+      "label": {
+        "en-US": "Pause video while hidden",
+        "zh-CN": "隐藏时暂停视频"
+      },
+      "group": "video"
+    },
+    {
+      "id": "music.enabled",
+      "kind": "Boolean",
+      "default": false,
+      "label": {
+        "en-US": "Enable music",
+        "zh-CN": "启用背景音乐"
+      },
+      "group": "music"
+    },
+    {
+      "id": "music.path",
+      "kind": "Files",
+      "default": [],
+      "label": {
+        "en-US": "Music playlist",
+        "zh-CN": "音乐播放列表"
+      },
+      "resourceKind": "Audio",
+      "group": "music",
+      "visibleWhen": "option(music.enabled)"
+    },
+    {
+      "id": "music.startup",
+      "kind": "Boolean",
+      "default": false,
+      "label": {
+        "en-US": "Play during startup",
+        "zh-CN": "启动时播放"
+      },
+      "group": "music",
+      "visibleWhen": "option(music.enabled)"
+    },
+    {
+      "id": "music.autoplay",
+      "kind": "Boolean",
+      "default": true,
+      "label": {
+        "en-US": "Autoplay",
+        "zh-CN": "自动播放"
+      },
+      "group": "music",
+      "visibleWhen": "option(music.enabled)"
+    },
+    {
+      "id": "music.shuffle",
+      "kind": "Boolean",
+      "default": false,
+      "label": {
+        "en-US": "Shuffle",
+        "zh-CN": "随机播放"
+      },
+      "group": "music",
+      "visibleWhen": "option(music.enabled)"
+    },
+    {
+      "id": "music.volume",
+      "kind": "Range",
+      "default": 50,
+      "label": {
+        "en-US": "Music volume",
+        "zh-CN": "音乐音量"
+      },
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "group": "music",
+      "visibleWhen": "option(music.enabled)"
+    },
+    {
+      "id": "music.media-controls",
+      "kind": "Boolean",
+      "default": true,
+      "label": {
+        "en-US": "Show music controls",
+        "zh-CN": "显示音乐控制"
+      },
+      "group": "music",
+      "visibleWhen": "option(music.enabled)"
+    },
+    {
+      "id": "music.auto-pause",
+      "kind": "Boolean",
+      "default": true,
+      "label": {
+        "en-US": "Pause music while hidden",
+        "zh-CN": "隐藏时暂停音乐"
+      },
+      "group": "music",
+      "visibleWhen": "option(music.enabled)"
+    }
+  ],
+  "appearance": {
+    "resources": {}
+  }
+}

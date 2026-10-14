@@ -1,4 +1,4 @@
-﻿using Nexa.Xsr;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 
@@ -8,6 +8,14 @@ internal static partial class Program
 {
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("theme cascade matches identity state parent and runtime conditions", ThemeRulesMatchCascadeConditionsAndParentState),
+        ("theme compiler rejects protected and invalid unmatched declarations", ThemeCompilerRejectsUnmatchedProtectedAndInvalidDeclarations),
+        ("theme tokens options and visibility enforce bounded typed expressions", ThemeTokensOptionsAndVisibilityAreBoundedAndTyped),
+        ("theme resources prepare every branch and preserve canonical identities", ThemeResourcesArePreparedFromEveryConditionalBranch),
+        ("theme advanced layout paint and finite keyframes compile", ThemeAdvancedValuesAndFiniteKeyframesAreCompiled),
+        ("authored style sources retain draft caret and idle reload", AuthoredStyleIdentityAndSourceSurviveDynamicReload),
+        ("range reload retains draft and applies committed values", RangeInputReloadRetainsDraftAndAppliesCommittedValues),
+        ("range facts reject invalid loads atomically", RangeInputFactsRejectInvalidLoadsAtomically),
         ("declarative controls retain track reveal and toggle objects", DeclarativeControlFactsRetainLiveObjects),
         ("declarative controls reject invalid references atomically", DeclarativeControlFactsRejectInvalidReferencesAtomically),
         ("placeholder reload retains draft caret and input contract", PlaceholderReloadRetainsDraftCaretAndInputContract),

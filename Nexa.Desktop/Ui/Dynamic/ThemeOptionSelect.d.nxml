@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Dynamic Key="{data choicesKey}" Class="theme-choices" />
+</nxml-dynamic>

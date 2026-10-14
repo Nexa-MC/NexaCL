@@ -1,0 +1,7 @@
+<nxml-dynamic>
+  <StackPanel Key="{data key}" Class="theme-actions">
+    <Text Key="{data pathKey}" Content="{data path}" Label="{data path}" Localize="false" WrapText="true" Class="theme-file-path" />
+    <Text Content="{data kind}" Localize="false" Class="theme-version" />
+    <Button Key="{data revokeKey}" Content="撤销授权" Label="撤销授权" Command="ui.settings.theme.action" Enabled="{data enabled}" Class="theme-action" />
+  </StackPanel>
+</nxml-dynamic>

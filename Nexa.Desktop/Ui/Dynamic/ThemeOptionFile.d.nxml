@@ -1,0 +1,6 @@
+<nxml-dynamic>
+  <StackPanel Key="{data key}" Class="theme-actions">
+    <Text Content="{data path}" Label="{data path}" Localize="false" WrapText="true" Class="theme-file-path" />
+    <Button Key="{data removeKey}" Content="移除" Label="移除" Command="ui.settings.theme.action" Enabled="{data enabled}" Class="theme-action-small" />
+  </StackPanel>
+</nxml-dynamic>

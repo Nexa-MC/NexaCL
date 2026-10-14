@@ -54,6 +54,7 @@ public sealed partial class AvaloniaUiPlatformActions
         if (!ReferenceEquals(_transparencyOwner, window))
         { _transparencyOwner = window; _originalTransparency = window.TransparencyLevelHint.ToArray(); }
         window.Opacity = _windowOpacity;
+        if (_themeAppearance?.Appearance.WindowMaterial is { } material && material != AvaloniaUiThemeWindowMaterial.Default) return;
         window.TransparencyLevelHint = _windowBlur
             ? [WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur, WindowTransparencyLevel.Transparent]
             : _originalTransparency!;

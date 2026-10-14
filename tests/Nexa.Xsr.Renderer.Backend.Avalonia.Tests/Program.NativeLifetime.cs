@@ -164,6 +164,7 @@ internal static partial class Program
             await VerifyNativeSettingsControls(shell, surface);
             VerifyNativeAppearancePreferences(window, shell, surface);
             await VerifyNativeBrandAssetsAndCloseDecoration().ConfigureAwait(true);
+            await VerifyNativeThemeActivationAsync().ConfigureAwait(true);
             VerifyReentrantRemovalCommit(shell, surface);
             await VerifyTransitionGroupsAndMedia(shell, surface);
             VerifySharedRasterBudget();

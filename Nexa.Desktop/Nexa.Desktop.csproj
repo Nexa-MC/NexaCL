@@ -10,6 +10,7 @@
     <AssemblyMetadata Include="NexaMicrosoftClientId" Condition="'$(NexaMicrosoftClientId)' != ''" Value="$(NexaMicrosoftClientId)" />
     <AssemblyMetadata Include="NexaLittleSkinClientId" Condition="'$(NexaLittleSkinClientId)' != ''" Value="$(NexaLittleSkinClientId)" />
     <Content Include="Ui/**/*.nxml;Ui/**/*.nss;Ui/Localization/messages.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Themes/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="Assets/api-client.pfx" Condition="Exists('Assets/api-client.pfx')" />
     <Content Include="Assets/icon.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="Assets/icon.png" />
@@ -30,6 +31,7 @@
                       Private="false"
                       GlobalPropertiesToRemove="PublishAot;PublishTrimmed;PublishSingleFile;PublishReadyToRun;SelfContained;RuntimeIdentifier" />
     <NexaFunctionPatchSource Include="Ui/ResourceCaptions.cs" />
+    <ProjectReference Include="../Nexa.Services.Themes.Contracts/Nexa.Services.Themes.Contracts.csproj" />
   </ItemGroup>
   <Import Project="../eng/xsr/Xsr.FunctionPatches.targets" />
   <Import Project="../eng/xsr/Xsr.Pac.targets" />

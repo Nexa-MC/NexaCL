@@ -124,21 +124,13 @@ internal static partial class Program
             }
             if (page.Id == "appearance")
             {
-                XsrUiEntityId reserved = default;
+                foreach (string key in new[] { "Theme.Settings", "Theme.LauncherIcon", "Theme.Options", "Theme.Grants" })
+                    AssertTrue(FindEntity(fixture.Shell, key).IsAssigned);
+                AssertTrue(FindEntity(fixture.Shell, "SettingsSelector.appearance.theme-mode").IsAssigned);
+                XsrUiEntityId retired = default;
                 fixture.Shell.Tree.Walk(settings.Page, entity =>
-                {
-                    if (fixture.Shell.Tree.Name(entity) == "SettingsRow.global.appearance.414d92ec0335") reserved = entity;
-                    return true;
-                });
-                AssertTrue(reserved.IsAssigned);
-                bool unavailable = false;
-                fixture.Shell.Tree.Walk(reserved, entity =>
-                {
-                    if (fixture.Shell.Tree.GetComponent<XsrUiText>(entity)?.Content == "此平台不支持") unavailable = true;
-                    AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiCommandBinding>(entity) is null);
-                    return true;
-                });
-                AssertTrue(unavailable);
+                { if (fixture.Shell.Tree.Name(entity) == "SettingsRow.global.appearance.414d92ec0335") retired = entity; return true; });
+                AssertFalse(retired.IsAssigned);
             }
             AssertTrue(scene.Nodes.Where(item => fixture.Shell.Tree.Name(item.Entity).StartsWith("SettingsRow.", StringComparison.Ordinal)).All(item => item.Rect.Width > 0));
         }

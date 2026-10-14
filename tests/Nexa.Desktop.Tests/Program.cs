@@ -34,6 +34,11 @@ internal static partial class Program
             return;
         }
         if (Environment.GetEnvironmentVariable("NEXA_COUNTRY") is null) Environment.SetEnvironmentVariable("NEXA_COUNTRY", "CN");
+        if (args is ["--native-theme-preview", var themeMode, var themeDirectory])
+        {
+            Environment.ExitCode = RunNativeThemePreview(themeMode, themeDirectory);
+            return;
+        }
         if (args is ["--native-nxml-settings-preview", var nxmlPreviewTheme, var nxmlPreviewDirectory])
         {
             Environment.ExitCode = RunNativeNxmlSettingsPreview(nxmlPreviewTheme, nxmlPreviewDirectory);
@@ -100,11 +105,29 @@ internal static partial class Program
 
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("ThemeOptionsRetainLiteralDraftCaretAndFocusAcrossProjection", ThemeOptionsRetainLiteralDraftCaretAndFocusAcrossProjection),
+        ("StartupThemeCacheRestoresMatchedBrandAndRespectsSafeMode", StartupThemeCacheRestoresMatchedBrandAndRespectsSafeMode),
+        ("StartupThemeCacheRejectsMalformedBudgetsAndPngWithoutWrites", StartupThemeCacheRejectsMalformedBudgetsAndPngWithoutWrites),
+        ("StartupThemeCacheInvalidWritePreservesLastKnownGoodFile", StartupThemeCacheInvalidWritePreservesLastKnownGoodFile),
+        ("ThemeLifecycleInvalidPreparationReleasesCandidateAndPreservesLastKnownGood", ThemeLifecycleInvalidPreparationReleasesCandidateAndPreservesLastKnownGood),
+        ("ThemeLifecycleSupersededPreviewCannotWritePersistentSelection", ThemeLifecycleSupersededPreviewCannotWritePersistentSelection),
+        ("ThemeLifecyclePreviewRestoresCommittedSnapshotAndRefreshesDarkMode", ThemeLifecyclePreviewRestoresCommittedSnapshotAndRefreshesDarkMode),
+        ("ThemeLifecycleMirrorFailureCannotRollbackDurableCommit", ThemeLifecycleMirrorFailureCannotRollbackDurableCommit),
+        ("ThemeLifecycleSafeModeIsTemporaryAndBypassesLegacyResources", ThemeLifecycleSafeModeIsTemporaryAndBypassesLegacyResources),
+        ("ThemeLifecycleFutureChildStyleFailureRestoresBuiltInWithoutLosingDraft", ThemeLifecycleFutureChildStyleFailureRestoresBuiltInWithoutLosingDraft),
+        ("ThemeSettingsPreserveIndependentDraftsAndRejectRetiredSources", ThemeSettingsPreserveIndependentDraftsAndRejectRetiredSources),
+        ("ThemeFilePickersCreateScopedGrantsAndRevokeExactGrant", ThemeFilePickersCreateScopedGrantsAndRevokeExactGrant),
+        ("ThemePreviewRetirementCancelsPendingPickAndRestoresSelection", ThemePreviewRetirementCancelsPendingPickAndRestoresSelection),
+        ("ThemeRangeAndVisibilityPreserveTypedEditors", ThemeRangeAndVisibilityPreserveTypedEditors),
+        ("ThemeOptionSaveAndResetUseCurrentSourceRevision", ThemeOptionSaveAndResetUseCurrentSourceRevision),
+        ("ThemeRangeSliderRoutesPointerAndKeyboardThroughOwnedDraft", ThemeRangeSliderRoutesPointerAndKeyboardThroughOwnedDraft),
         ("LaunchInstallBedrockWorkspaceRetainsControlsStatusAndFocusAcrossProjection", LaunchInstallBedrockWorkspaceRetainsControlsStatusAndFocusAcrossProjection),
         ("LaunchInstallBedrockUnsupportedReloadRetainsDisabledStore", LaunchInstallBedrockUnsupportedReloadRetainsDisabledStore),
         ("LaunchInstallBedrockPlaceholderLoadsCompleteOwnedWorkspace", LaunchInstallBedrockPlaceholderLoadsCompleteOwnedWorkspace),
         ("LaunchInstallHomeOwnedProfilesRetainFocusScrollAndLiteralFactsAcrossLocale", LaunchInstallHomeOwnedProfilesRetainFocusScrollAndLiteralFactsAcrossLocale),
         ("LaunchInstallHomeWidgetFractionalDotsRetainEntitiesPagerAndTransitions", LaunchInstallHomeWidgetFractionalDotsRetainEntitiesPagerAndTransitions),
+        ("ThemeVirtualCatalogsUseSameGenerationGeometryWithoutRequeryOrDraftLoss", ThemeVirtualCatalogsUseSameGenerationGeometryWithoutRequeryOrDraftLoss),
+        ("ThemeScreenshotMetricsReflowOwnedCardsAndRetainPreviewRoutes", ThemeScreenshotMetricsReflowOwnedCardsAndRetainPreviewRoutes),
         ("LaunchInstallOwnedCatalogRetainsSelectionDraftFocusAndScroll", LaunchInstallOwnedCatalogRetainsSelectionDraftFocusAndScroll),
         ("LaunchInstallCatalogLiteralDataUsesBoundedIdentity", LaunchInstallCatalogLiteralDataUsesBoundedIdentity),
         ("LaunchInstallCatalogLocaleReloadRetainsLiteralDraftAndOwnedRows", LaunchInstallCatalogLocaleReloadRetainsLiteralDraftAndOwnedRows),

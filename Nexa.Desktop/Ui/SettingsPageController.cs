@@ -72,7 +72,7 @@ internal sealed partial class SettingsPageController : IDisposable
     private void OnIntent(object? sender, DesktopUiIntentEventArgs args)
     {
         if (_shell.Stage.Navigation.Current != Page) return;
-        if (IsContentSelectionIntent(args.Intent.Command) || IsRuntimeTraceIntent(args.Intent.Command) || IsRuntimeDiagnosticsIntent(args.Intent.Command) || args.Intent.Command == IdentityAction || args.Intent.Command == NetworkProbeStart || args.Intent.Command == NetworkTraceRefresh || args.Intent.Command == ContentWorkspaceAction || args.Intent.Command == LaunchProfileAction || IsDeveloperDiagnosticsIntent(args.Intent.Command) || IsHookIntent(args.Intent.Command) || IsProxyIntent(args.Intent.Command) || IsStoragePreferencesIntent(args.Intent.Command) || IsJavaInventoryIntent(args.Intent.Command) || IsSettingsTransferIntent(args.Intent.Command) || IsUpdateIntent(args.Intent.Command) || args.Intent.Command == ScreenshotPreviewAction || args.Intent.Command == ManagementAction || args.Intent.Command == Inherit || args.Intent.Command == Select || args.Intent.Command == Edit || args.Intent.Command == Choice || args.Intent.Command == ArgumentAdd || args.Intent.Command == ArgumentRemove || args.Intent.Command == RefreshPlatform) _pending.Enqueue(args.Intent);
+        if (args.Intent.Command == ThemeAction || IsContentSelectionIntent(args.Intent.Command) || IsRuntimeTraceIntent(args.Intent.Command) || IsRuntimeDiagnosticsIntent(args.Intent.Command) || args.Intent.Command == IdentityAction || args.Intent.Command == NetworkProbeStart || args.Intent.Command == NetworkTraceRefresh || args.Intent.Command == ContentWorkspaceAction || args.Intent.Command == LaunchProfileAction || IsDeveloperDiagnosticsIntent(args.Intent.Command) || IsHookIntent(args.Intent.Command) || IsProxyIntent(args.Intent.Command) || IsStoragePreferencesIntent(args.Intent.Command) || IsJavaInventoryIntent(args.Intent.Command) || IsSettingsTransferIntent(args.Intent.Command) || IsUpdateIntent(args.Intent.Command) || args.Intent.Command == ScreenshotPreviewAction || args.Intent.Command == ManagementAction || args.Intent.Command == Inherit || args.Intent.Command == Select || args.Intent.Command == Edit || args.Intent.Command == Choice || args.Intent.Command == ArgumentAdd || args.Intent.Command == ArgumentRemove || args.Intent.Command == RefreshPlatform) _pending.Enqueue(args.Intent);
         else if (args.Intent.Command == RemediationExecuted) OnPlatformRemediation(sender, args);
     }
     private void OnFrame(object? sender, EventArgs args)
@@ -83,6 +83,7 @@ internal sealed partial class SettingsPageController : IDisposable
         {
             if (!visible)
             {
+                RetireThemeScope();
                 CancelContentIntegrity();
                 CancelIdentityRead(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelDiagnosticExport(); CancelStoragePreferences(); CancelContentWorkspace();
                 ReleaseContentGraph();
@@ -171,6 +172,7 @@ internal sealed partial class SettingsPageController : IDisposable
         UpdateLaunchProfileAdmission();
         while (_pending.TryDequeue(out var intent))
         {
+            if (intent.Command == ThemeAction) { HandleThemeIntent(intent); continue; }
             if (IsContentSelectionIntent(intent.Command)) { HandleContentSelectionIntent(intent); continue; }
             if (intent.Command == IdentityAction && _identityWrite is null && _identityActions.TryGetValue(intent.Source, out var identityAction)) { identityAction(); continue; }
             if (intent.Command == LaunchProfileAction) { HandleLaunchProfileIntent(intent); continue; }
@@ -231,6 +233,7 @@ internal sealed partial class SettingsPageController : IDisposable
         UpdateContentGraph(); UpdateServers(); UpdateExport();
         UpdateSettingsTransfer(); UpdateJavaInventory();
         UpdateProxyPreferences(); UpdateDiskLogActions(); UpdateDiagnosticExportControls();
+        UpdateThemeSettings();
         int index = _shell.Tree.GetComponent<XsrUiPager>(_pager)!.PageIndex;
         if (index >= 0 && index < Pages.Count && Pages[index].Id != _selected)
             SwitchPage(Pages[index].Id);
@@ -251,6 +254,7 @@ internal sealed partial class SettingsPageController : IDisposable
     private void SwitchPage(string page)
     {
         if (!Pages.Any(item => item.Id == page)) return;
+        RetireThemeScope();
         RetireContentScope();
         CancelWorldDetails();
         CloseScreenshotPreview(restoreFocus: false); CancelScreenshotThumbnails();
@@ -284,7 +288,7 @@ internal sealed partial class SettingsPageController : IDisposable
 
     private void BuildSections(bool navigating = false)
     {
-        if (!navigating && (TryReloadContentManagement() || TryReloadRecoveryStorage()))
+        if (!navigating && (TryReloadThemeSettings() || TryReloadContentManagement() || TryReloadRecoveryStorage()))
         {
             UpdateEditors();
             return;
@@ -303,6 +307,7 @@ internal sealed partial class SettingsPageController : IDisposable
             item => _shell.Tree.GetComponent<XsrUiTextInput>(item.Input)!.ReadDraft()) : [];
         if (!navigating) _scrollPositions[_selected] = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY;
         _dynamic.Clear(_sections);
+        ResetThemeControls();
         ResetDeveloperDiagnosticControls();
         _catalogViews.Clear(); _inheritRows.Clear(); _autoModeViews.Clear();
         _javaChoices.Clear(); _javaChoiceViews.Clear();
@@ -339,7 +344,8 @@ internal sealed partial class SettingsPageController : IDisposable
             && (_instanceDirectory is null || item.Definition?.InstanceOverride == true) && !item.IsRuntimeDetail && (_developer || !item.DeveloperOnly)).ToArray();
         var available = entries.Where(item => item.Kind == SettingsCatalogEntryKind.Setting
             && (item.Definition is not null || item.Availability != SettingsCapabilityAvailability.Available)
-            && item.SettingKey is not ("network.proxy-mode" or "network.proxy-address" or "network.proxy-user" or "network.proxy-password")).ToArray();
+            && item.SettingKey is not ("network.proxy-mode" or "network.proxy-address" or "network.proxy-user" or "network.proxy-password"
+                or "appearance.theme-pack-id" or "appearance.launcher-icon-mode" or "appearance.launcher-icon-path")).ToArray();
         if (available.Length == 0 && _selected != "advanced" && !transfer)
         {
             _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsCategoryEmpty.d.nxml", new Dictionary<string, string>
@@ -370,6 +376,7 @@ internal sealed partial class SettingsPageController : IDisposable
         BuildRuntimeDiagnostics();
         BuildRuntimeTraceDiagnostics();
         BuildAdvancedWorkspace();
+        BuildThemeSettings();
         var scroll = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!;
         scroll.OffsetY = _scrollPositions.GetValueOrDefault(_selected);
         _shell.Tree.GetComponent<XsrUiTransition>(_sections)!.Key = _selected + ":" + _developer;
@@ -540,6 +547,7 @@ internal sealed partial class SettingsPageController : IDisposable
     };
     public void Dispose()
     {
+        RetireThemeScope();
         CancelContentIntegrity();
         RetireHardwareAdvice(); RetireDeveloperDiagnostics(); RetireRuntimeDiagnostics(); RetireRuntimeTrace(); CancelNetworkProbe(); CancelAdvancedWorkspace();
         _disposed = true; CancelIdentityRead(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelDiagnosticExport(); CancelStoragePreferences(); CancelContentWorkspace(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); _updateStop.Cancel(); _updateCheckStop?.Dispose(); _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame;

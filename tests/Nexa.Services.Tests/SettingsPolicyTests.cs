@@ -112,7 +112,8 @@ internal static partial class Program
             var (_, legacy) = PolicyFixture(port);
             AssertEqual(pair.Item2, Effective(legacy, "appearance.animation-fps").Value.Value);
         }
-        AssertEqual(SettingsCapabilityAvailability.Available, SettingsCatalog.Read(new()).Entries.Single(entry => entry.SettingKey == "appearance.animation-fps").Availability);
+        AssertFalse(SettingsCatalog.Read(new()).Entries.Any(entry => entry.SettingKey == "appearance.animation-fps"));
+        AssertEqual(SettingsApplyTiming.Immediate, SettingsPolicySchema.ByKey["appearance.animation-fps"].Timing);
     }
 
     private static void RegionFormattingSettingIsValidatedAndDurable()
@@ -268,7 +269,12 @@ internal static partial class Program
     {
         var catalog = SettingsCatalog.Read(new(true));
         AssertEqual(10, catalog.GlobalPages.Count); AssertEqual(9, catalog.InstancePages.Count); AssertEqual(10, catalog.InstanceSettingsSections.Count);
-        AssertEqual(544, catalog.Entries.Count);
+        AssertEqual(520, catalog.Entries.Count);
+        var fixedAppearance = catalog.Entries.Where(entry => entry.Page == "appearance" && !entry.DeveloperOnly && entry.Kind == SettingsCatalogEntryKind.Setting)
+            .Select(entry => entry.SettingKey).Order(StringComparer.Ordinal).ToArray();
+        AssertEqual("appearance.launcher-icon-mode|appearance.theme-mode|appearance.theme-pack-id", string.Join("|", fixedAppearance));
+        foreach (string protectedKey in new[] { "appearance.reduced-motion", "appearance.animations-disabled", "appearance.hardware-acceleration-disabled" })
+            AssertEqual("advanced", catalog.Entries.Single(entry => entry.SettingKey == protectedKey).Page);
         AssertFalse(catalog.GlobalPages.Any(page => page.Id == "cloud"));
         AssertFalse(catalog.Entries.Any(entry => entry.Page is "cloud" or "sync" || entry.Label.Contains("云同步", StringComparison.Ordinal)));
         AssertTrue(catalog.InstanceSettingsSections.Any(page => page.Id == "backup"));
@@ -354,7 +360,7 @@ internal static partial class Program
             AssertEqual("1440", result.Value!.Values.Single(item => item.Key == "game.width").Value.Value);
             AssertEqual(1L, host.StateStore.Read<long>(host.StateStore.Resolve(SettingsPolicyContract.RevisionKey)).Value);
             var content = await runtime.Queries.QueryAsync<SettingsCatalogQuery, SettingsCatalogSnapshot>(catalog, new(true));
-            AssertTrue(content.IsSuccess); AssertEqual(544, content.Value!.Entries.Count);
+            AssertTrue(content.IsSuccess); AssertEqual(520, content.Value!.Entries.Count);
             AssertTrue(runtime.Queries.TryResolve(SettingsPolicyContract.ResetPreviewQuery, out var resetPreview));
             AssertTrue(runtime.Commands.TryResolve(SettingsPolicyContract.ResetCommand, out var reset));
             var proposal = await runtime.Queries.QueryAsync<SettingsResetQuery, SettingsResetPreview>(resetPreview, new());

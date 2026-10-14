@@ -1,0 +1,50 @@
+{
+  "format": "NTP/1",
+  "id": "nexa.minimal",
+  "version": "1.0.0",
+  "name": {
+    "en-US": "Minimal",
+    "zh-CN": "简约主题"
+  },
+  "styleApi": 1,
+  "nss": "NSS/1",
+  "styles": [
+    "styles/main.nss"
+  ],
+  "requiredCapabilities": [
+    "styles.basic",
+    "tokens",
+    "options",
+    "selectors"
+  ],
+  "optionalCapabilities": [],
+  "optionsVersion": 1,
+  "options": [
+    {
+      "id": "accent",
+      "kind": "Color",
+      "default": "#68a5ff",
+      "label": {
+        "en-US": "Accent",
+        "zh-CN": "强调色"
+      }
+    },
+    {
+      "id": "title-size",
+      "kind": "Range",
+      "default": 26,
+      "label": {
+        "en-US": "Title size",
+        "zh-CN": "标题字号"
+      },
+      "min": 20,
+      "max": 32,
+      "step": 1
+    }
+  ],
+  "appearance": {
+    "accentColor": "#183a63",
+    "splashMotion": "fade",
+    "resources": {}
+  }
+}

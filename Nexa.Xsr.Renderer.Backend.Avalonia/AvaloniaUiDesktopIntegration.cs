@@ -33,6 +33,7 @@ internal sealed class AvaloniaUiDesktopIntegration : IDisposable
         window.HideToTrayRequested = TryHide;
         window.MinimizeToTrayRequested = TryMinimizeToTray;
         window.PropertyChanged += OnChanged;
+        window.ThemeTrayIconChanged += OnThemeTrayIconChanged;
         window.Closed += OnClosed;
     }
 
@@ -62,7 +63,7 @@ internal sealed class AvaloniaUiDesktopIntegration : IDisposable
         exit.Click += (_, _) => _window.RequestClose();
         menu.Items.Add(restore); menu.Items.Add(settings); menu.Items.Add(new NativeMenuItemSeparator()); menu.Items.Add(exit);
         _tray = tray;
-        _tray.Icon = _window.Icon; _tray.ToolTipText = _window.Title; _tray.Menu = menu; _tray.IsVisible = true;
+        _tray.Icon = _window.ThemeTrayIcon; _tray.ToolTipText = _window.Title; _tray.Menu = menu; _tray.IsVisible = true;
         _tray.Clicked += (_, _) => _restore();
         if (OperatingSystem.IsLinux())
         {
@@ -91,9 +92,11 @@ internal sealed class AvaloniaUiDesktopIntegration : IDisposable
         _window.HideToTray();
         return true;
     }
+    private void OnThemeTrayIconChanged(object? sender, EventArgs args) { if (_tray is not null) _tray.Icon = _window.ThemeTrayIcon; }
+
     private void OnChanged(object? sender, AvaloniaPropertyChangedEventArgs args)
     {
-        if (args.Property == Window.IconProperty && _tray is not null) _tray.Icon = _window.Icon;
+        if (args.Property == Window.IconProperty && _tray is not null) _tray.Icon = _window.ThemeTrayIcon;
         if (args.Property == Window.WindowStateProperty && _window.WindowState == WindowState.Minimized
             && _policy.MinimizeToTray && TrayAvailable) _window.HideToTray();
     }
@@ -123,6 +126,7 @@ internal sealed class AvaloniaUiDesktopIntegration : IDisposable
         _window.HideToTrayRequested = null;
         _window.MinimizeToTrayRequested = null;
         _window.PropertyChanged -= OnChanged;
+        _window.ThemeTrayIconChanged -= OnThemeTrayIconChanged;
         _window.Closed -= OnClosed;
         _tray?.Dispose(); _tray = null;
         _availabilityStop?.Cancel(); _availabilityStop?.Dispose(); _availabilityStop = null;

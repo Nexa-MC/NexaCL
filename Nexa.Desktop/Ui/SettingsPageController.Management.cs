@@ -28,6 +28,44 @@ internal sealed partial class SettingsPageController
     private XsrUiEntityId _contentList;
     private InstanceContentSnapshot? _contentSnapshot;
     private int _contentWindowStart = -1, _contentWindowCount;
+    private XsrUiVirtualLayoutMetrics _contentVirtualMetrics;
+
+    private void RegisterContentVirtualMetrics()
+    {
+        bool waterfall = _selected == "screenshots";
+        var metric = ContentMetric(waterfall ? "gallery" : "files");
+        double height = waterfall ? metric.Height!.Value : (_selected == "resourcepacks" ? metric.Width!.Value : metric.Height!.Value) - metric.Spacing;
+        _shell.Renderer.RegisterVirtualLayout(_contentList, new(waterfall ? metric.Width!.Value : metric.MaxWidth!.Value, height,
+            metric.Spacing, RealizationLimit: (int)metric.MaxHeight!.Value, SupportsThemeMetrics: true,
+            Kind: waterfall ? XsrUiVirtualLayoutKind.Waterfall : XsrUiVirtualLayoutKind.List));
+        _shell.Renderer.TryGetVirtualLayoutMetrics(_contentList, out _contentVirtualMetrics);
+    }
+
+    private bool ReadContentVirtualMetrics()
+    {
+        if (!_shell.Renderer.TryGetVirtualLayoutMetrics(_contentList, out var next)) return false;
+        var previous = _contentVirtualMetrics;
+        bool changed = previous.ItemHeight != next.ItemHeight || previous.ItemWidth != next.ItemWidth
+            || previous.Spacing != next.Spacing || previous.Columns != next.Columns
+            || previous.HasItemHeightOverride != next.HasItemHeightOverride || previous.HasColumnsOverride != next.HasColumnsOverride;
+        _contentVirtualMetrics = next;
+        if (!changed) return false;
+        if (next.Kind == XsrUiVirtualLayoutKind.List && previous.ItemHeight > 0)
+        {
+            var metric = ContentMetric("files"); var scroll = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!;
+            double header = metric.Padding.Left;
+            if (scroll.OffsetY > header)
+                scroll.OffsetY = header + (scroll.OffsetY - header) / (previous.ItemHeight + previous.Spacing) * (next.ItemHeight + next.Spacing);
+        }
+        _contentWindowStart = -1;
+        return true;
+    }
+
+    private static string ContentRowMargin(double spacing)
+    {
+        var margin = ContentMetric("files").Margin;
+        return string.Join(',', new[] { margin.Left, margin.Top, margin.Right, spacing }.Select(ContentNumber));
+    }
     private int _trashPage;
     private XsrUiEntityId _contentSearch;
     private XsrUiEntityId _contentCount;
@@ -195,6 +233,7 @@ internal sealed partial class SettingsPageController
             var nodes = ContentNodes(_contentWorkspace);
             _contentSearch = nodes["ManagementContentSearch"]; _contentCount = nodes["ManagementContentCount"];
             _contentList = nodes["ManagementContentList"]; _contentParking = nodes["ContentManagement.Parking"];
+            RegisterContentVirtualMetrics();
             _shell.Renderer.SetTextInputValue(_contentSearch, _contentFilter);
             BindContentAction(nodes, ContentKey("folder"), () => OpenContentDirectory(directory));
             BindContentAction(nodes, ContentKey("refresh"), RefreshManagement);
@@ -240,17 +279,18 @@ internal sealed partial class SettingsPageController
     private void UpdateContentWindow()
     {
         if (!_contentList.IsAssigned || !_shell.Tree.IsAlive(_contentList) || _contentSnapshot is not { } snapshot) return;
+        ReadContentVirtualMetrics();
         if (_selected == "screenshots") { UpdateScreenshotWaterfall(snapshot); return; }
         var metrics = ContentMetric("files");
-        double rowHeight = _selected == "resourcepacks" ? metrics.Width!.Value : metrics.Height!.Value;
+        double rowHeight = _contentVirtualMetrics.ItemHeight + _contentVirtualMetrics.Spacing;
         int rows = snapshot.Entries.Count;
         int start = Math.Clamp((int)((_shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY - metrics.Padding.Left) / rowHeight) - (int)metrics.Padding.Top, 0, Math.Max(0, rows - 1));
-        int count = Math.Min(rows - start, (int)Math.Ceiling(_shell.Renderer.Viewport.Height / rowHeight) + (int)metrics.Padding.Right);
+        int count = Math.Min(rows - start, Math.Min(_contentVirtualMetrics.RealizationLimit - 1, (int)Math.Ceiling(_shell.Renderer.Viewport.Height / rowHeight) + (int)metrics.Padding.Right));
         string? focusedName = _contentFileViews.FirstOrDefault(pair => ContentContainsFocus(pair.Value.Root, _shell.Renderer.Focused)).Key;
         int pinned = focusedName is null ? -1 : snapshot.Entries.ToList().FindIndex(item => item.Name == focusedName);
         var indices = Enumerable.Range(start, count).Concat(pinned >= 0 ? [pinned] : Array.Empty<int>()).Distinct().Order().ToArray();
         if (_contentWindowStart == start && _contentWindowCount == count && _contentColumns == 1 && _contentPinnedName == focusedName) return;
-        var projections = indices.ToDictionary(index => index, index => ContentFileProjection(snapshot.Entries[index], rowHeight - metrics.Spacing));
+        var projections = indices.ToDictionary(index => index, index => ContentFileProjection(snapshot.Entries[index], _contentVirtualMetrics.ItemHeight));
         foreach (var data in projections.Values) _ = DesktopMarkup.Dynamic("SettingsContentFileCard.d.nxml", data);
         _contentPinnedName = focusedName;
         _contentWindowStart = start; _contentWindowCount = count; _contentColumns = 1;
@@ -263,6 +303,7 @@ internal sealed partial class SettingsPageController
             _contentAfter = AppendContent(_contentParking, "SettingsContentSpacer.d.nxml", new() { ["key"] = "ManagementContentAfter", ["height"] = "0" });
             _contentMiddle = AppendContent(_contentParking, "SettingsContentSpacer.d.nxml", new() { ["key"] = "ManagementContentMiddle", ["height"] = "0" });
             _contentEmpty = AppendContent(_contentParking, "SettingsContentEmpty.d.nxml", new() { ["message"] = "" });
+            foreach (var spacer in new[] { _contentBefore, _contentAfter, _contentMiddle }) _shell.Renderer.ProtectVirtualGeometry(spacer);
         }
         List<XsrUiEntityId> order = [];
         if (rows == 0)
@@ -288,6 +329,7 @@ internal sealed partial class SettingsPageController
                 _contentFileViews[item.Name] = view; BuildContentRowActions(nodes, item);
             }
             else { ReloadContent(view.Root, projections[index].Select(pair => (pair.Key, pair.Value)).ToArray()); view = view with { Item = item }; _contentFileViews[item.Name] = view; BuildContentRowActions(ContentNodes(view.Root), item); }
+            _shell.Renderer.ProtectVirtualGeometry(view.Root);
             BindContentImage(view.Icon, item); ApplyContentFormatting(ContentNodes(view.Root)["ContentFile.Title"], _selected == "resourcepacks" ? ResourcePackTitle(item) : item.DisplayName.Length == 0 ? item.Name : item.DisplayName);
             if (_selected == "resourcepacks") ApplyContentFormatting(ContentNodes(view.Root)["ContentFile.Description"], item.Description);
             _dynamic.Move(view.Root, _contentList); order.Add(view.Root); _contentIconEntities[item.Name] = view.Icon;
@@ -307,6 +349,8 @@ internal sealed partial class SettingsPageController
         return new()
         {
             ["height"] = ContentNumber(rowHeight),
+            ["width"] = ContentNumber(_contentVirtualMetrics.ItemWidth),
+            ["margin"] = ContentRowMargin(_contentVirtualMetrics.Spacing),
             ["icon"] = ContentIcon(),
             ["title"] = StripContentFormatting(pack ? ResourcePackTitle(item) : item.DisplayName.Length == 0 ? item.Name : item.DisplayName),
             ["description"] = pack ? StripContentFormatting(item.Description) : ContentFormat("FileDescription", ("name", item.Name), ("disabled", item.Enabled == false ? ContentTerm("disabledSuffix") : ""), ("state", item.PackageProblem.Length > 0 ? ContentTerm("problemSuffix") : available ? ContentTerm("updateSuffix") : "")),

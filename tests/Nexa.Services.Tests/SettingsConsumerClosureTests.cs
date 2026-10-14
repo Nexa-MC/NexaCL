@@ -28,7 +28,7 @@ internal static partial class Program
     private static void ConsumerCatalogRequiresRealContractsAndKeepsFutureFeaturesReserved()
     {
         var catalog = SettingsCatalog.Read(new(true));
-        foreach (string key in new[] { "appearance.theme-mode", "appearance.accent", "game.wrapper", "game.pre-launch", "game.pre-launch-wait", "network.proxy-mode", "network.proxy-address", "network.proxy-user", "network.proxy-password", "network.doh", "network.ip-stack", "network.bandwidth-kib", "diagnostics.disk-log-days" })
+        foreach (string key in new[] { "appearance.theme-mode", "appearance.theme-pack-id", "appearance.launcher-icon-mode", "game.wrapper", "game.pre-launch", "game.pre-launch-wait", "network.proxy-mode", "network.proxy-address", "network.proxy-user", "network.proxy-password", "network.doh", "network.ip-stack", "network.bandwidth-kib", "diagnostics.disk-log-days" })
         {
             var entries = catalog.Entries.Where(entry => entry.SettingKey == key).ToArray();
             AssertTrue(entries.Length > 0);
@@ -36,9 +36,12 @@ internal static partial class Program
         }
         foreach (string id in new[] { "global.storage.launcher-data", "global.storage.move-launcher-data", "global.storage.finished-tasks", "global.storage.5ac61e098807", "global.storage.1f8794991a2c" })
             AssertEqual(SettingsCapabilityAvailability.Available, catalog.Entries.Single(entry => entry.Id == id).Availability);
-        foreach (string id in new[] { "global.general.13a5ea9202aa", "global.appearance.81b6d3198ecc" })
+        foreach (string id in new[] { "global.general.13a5ea9202aa", "global.appearance.theme-pack" })
             AssertEqual(SettingsCapabilityAvailability.Available, catalog.Entries.Single(entry => entry.Id == id).Availability);
-        foreach (string id in new[] { "global.appearance.414d92ec0335", "global.appearance.5362145d1e89" })
-            AssertEqual(SettingsCapabilityAvailability.PlatformUnsupported, catalog.Entries.Single(entry => entry.Id == id).Availability);
+        foreach (string retainedKey in new[] { "appearance.accent", "appearance.custom-theme", "appearance.window-blur", "music.path" })
+        {
+            AssertTrue(SettingsPolicySchema.ByKey.ContainsKey(retainedKey));
+            AssertFalse(catalog.Entries.Any(entry => entry.Page == "appearance" && entry.SettingKey == retainedKey));
+        }
     }
 }

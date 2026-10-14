@@ -11,6 +11,12 @@ The user-requested constraints take precedence:
 
 ## Documents
 
+- [ntp-v1.md](ntp-v1.md) — NTP/1 theme format, protected behavior and delivery gates
+- [ntp-implementation.md](ntp-implementation.md) — executed NTP/1 Linux checks, publication receipts and platform acceptance status
+- [nss-v1.md](nss-v1.md) — finite NSS/1 syntax and style API 1
+- [theme-package-architecture.md](theme-package-architecture.md) — theme service/session ownership, transactions and external publication
+- [theme-resource-security.md](theme-resource-security.md) — resource budgets, source-bound authorization and retirement
+- [theme-capabilities.md](theme-capabilities.md) — exact NTP capability names, concrete consumers and platform fallbacks
 - [nxml-renderer.md](nxml-renderer.md) — current renderer, external NXML/NSS contracts and owned dynamic projections
 - [nxml-migration-remaining.md](nxml-migration-remaining.md) — current product presentation inventory and dated migration evidence
 - [evidence/nxml-closure-2026-10-13/README.md](evidence/nxml-closure-2026-10-13/README.md) — rendered closure previews, interaction manifests and capture digests

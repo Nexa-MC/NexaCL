@@ -69,7 +69,7 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
         _shell.Tree.RenderInvalidated += OnTreeRenderInvalidated;
         _shell.StateBridge?.RenderRequested += OnStateRenderRequested;
         _shell.NavigationExpandedChanged += OnNavigationExpandedChanged;
-        SizeChanged += (_, _) => RequestCommit();
+        SizeChanged += (_, _) => OnNativeViewportChanged();
         AttachedToVisualTree += (_, _) => RequestCommit();
     }
 
@@ -84,7 +84,8 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
         _rasterPresentationEnabled = enabled;
         foreach (AvaloniaUiSceneNodeControl control in _controls.Values) control.SetRasterPresentationEnabled(enabled);
         foreach (AvaloniaUiSceneNodeControl control in _outgoingControls) control.SetRasterPresentationEnabled(enabled);
-        if (!enabled) AvaloniaUiRasterPool.Shared.TrimIdle();
+        if (!enabled) { AvaloniaUiRasterPool.Shared.TrimIdle(); RetireThemeResize(); }
+        DriveThemeAnimationClock();
     }
 
     internal bool TryGetPresentedEnterProgress(XsrUiEntityId entity, out double value)
@@ -158,7 +159,10 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
             return;
         }
 
-        XsrUiScene next = _shell.Render(new XsrUiSize(Bounds.Width, Bounds.Height));
+        _shell.Renderer.AdvanceThemeAnimations();
+        DriveThemeAnimationClock();
+        XsrUiSize presentedViewport = ThemeRenderViewport();
+        XsrUiScene next = _shell.Render(presentedViewport);
         if (!_initialFocusAssigned)
         {
             XsrUiSceneNode initial = next.Nodes.FirstOrDefault(node => node.IsFocusable && node.IsFocused);
@@ -170,19 +174,21 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
                 if (!initial.IsFocused)
                 {
                     _shell.Renderer.Focus(initial.Entity, showIndicator: false);
-                    next = _shell.Render(new XsrUiSize(Bounds.Width, Bounds.Height));
+                    next = _shell.Render(presentedViewport);
                 }
             }
         }
-        if (_scene is null || _scene.Version != next.Version)
+        if (_scene is null || _scene.Version != next.Version || _themeResourceCommitPending)
         {
             _scene = next;
             ApplyScene(next);
+            _themeResourceCommitPending = false;
             AvaloniaUiRuntimeDiagnostics.SceneCommitted();
             SceneCommitted?.Invoke(this, new AvaloniaUiSceneCommittedEventArgs(next));
         }
         // Attachment can make native focus available without changing the scene version.
         SynchronizeNativeFocus(next);
+        DriveThemeAnimationClock();
     }
 
     public void Dispose()
@@ -197,6 +203,8 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
             _disposed = true;
         }
 
+        _themeAnimationTimer?.Stop();
+        RetireThemeResize();
         AvaloniaUiMotion.CancelAll(this);
         _contextMenu?.Close();
         _shell.Tree.RenderInvalidated -= OnTreeRenderInvalidated;
@@ -208,6 +216,7 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
 
         foreach (AvaloniaUiSceneNodeControl control in _controls.Values) control.ReleasePresentation();
         foreach (AvaloniaUiSceneNodeControl control in _outgoingControls) control.ReleasePresentation();
+        ReleaseThemeResourceHistory();
         _outgoingControls.Clear();
         _controls.Clear();
         AvaloniaUiRasterPool.Shared.TrimIdle();
@@ -239,7 +248,8 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
         {
             if (TryGetNode(_scene, entity, out XsrUiSceneNode node))
             {
-                control.Arrange(new Rect(node.Rect.X, node.Rect.Y, node.Rect.Width, node.Rect.Height));
+                XsrUiRect layout = node.LayoutRect ?? node.Rect;
+                control.Arrange(new Rect(layout.X, layout.Y, layout.Width, layout.Height));
             }
         }
 

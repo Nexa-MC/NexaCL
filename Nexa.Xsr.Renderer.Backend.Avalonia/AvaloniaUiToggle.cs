@@ -30,16 +30,19 @@ internal sealed partial class AvaloniaUiSceneNodeControl
     {
         if (rect.Width <= 4 || rect.Height <= 4) return;
         double progress = Math.Clamp(PresentedToggleProgress, 0, 1);
-        var accent = ToggleFill(style);
+        var accent = style.IsComputed && style.Background.Alpha > 0 ? style.Background : ToggleFill(style);
         var surface = _node.ColorScheme.Project(OwnedToggleSurface);
         if (_node.Role == XsrUiSemanticRole.Switch)
         {
             double height = Math.Min(28, rect.Height - 4);
             double width = Math.Min(48, rect.Width - 4);
             Rect rail = new((rect.Width - width) / 2, (rect.Height - height) / 2, width, height);
-            context.DrawRectangle(Brush(_node.ColorScheme.Project(OwnedToggleRail).Background), null, new RoundedRect(rail, new CornerRadius(height / 2)));
+            context.DrawRectangle(ThemeGradient(_node.BackgroundGradient) ?? Brush(style.IsComputed && style.Background.Alpha > 0
+                ? MaterialColor(style.Background, style.Surface) : _node.ColorScheme.Project(OwnedToggleRail).Background), null, new RoundedRect(rail, new CornerRadius(height / 2)), ThemeShadow());
+            DrawThemeBackgroundImage(context, rail, style with { CornerRadius = height / 2 });
+            DrawMaterialGlaze(context, rail, style with { CornerRadius = height / 2 });
             using (context.PushOpacity(progress))
-                context.DrawRectangle(Brush(accent), null, new RoundedRect(rail, new CornerRadius(height / 2)));
+                context.DrawRectangle(ThemeGradient(_node.BackgroundGradient) ?? Brush(accent), null, new RoundedRect(rail, new CornerRadius(height / 2)));
             double diameter = height - 4;
             context.DrawEllipse(Brush(new(255, 255, 255)), null,
                 new Point(rail.X + 2 + diameter / 2 + (width - height) * progress, rail.Center.Y), diameter / 2, diameter / 2);
@@ -47,11 +50,14 @@ internal sealed partial class AvaloniaUiSceneNodeControl
         else
         {
             Rect box = new(2, (rect.Height - 20) / 2, 20, 20);
-            context.DrawRectangle(Brush(surface.Background), new Pen(Brush(surface.Border), 1),
-                new RoundedRect(box, new CornerRadius(5)));
+            context.DrawRectangle(ThemeGradient(_node.BackgroundGradient) ?? Brush(style.IsComputed && style.Background.Alpha > 0 ? style.Background : surface.Background),
+                new Pen(Brush(style.IsComputed && style.Border.Alpha > 0 ? style.Border : surface.Border), style.BorderWidth > 0 ? style.BorderWidth : 1),
+                new RoundedRect(box, new CornerRadius(5)), ThemeShadow());
+            DrawThemeBackgroundImage(context, box, style with { CornerRadius = 5 });
+            DrawMaterialGlaze(context, box, style with { CornerRadius = 5 });
             using (context.PushOpacity(progress))
             {
-                context.DrawRectangle(Brush(accent), null, new RoundedRect(box, new CornerRadius(5)));
+                context.DrawRectangle(ThemeGradient(_node.BackgroundGradient) ?? Brush(accent), null, new RoundedRect(box, new CornerRadius(5)));
                 var pen = new Pen(Brush(new(255, 255, 255)), 2);
                 context.DrawLine(pen, new(box.X + 5, box.Y + 10), new(box.X + 9, box.Y + 14));
                 context.DrawLine(pen, new(box.X + 9, box.Y + 14), new(box.X + 16, box.Y + 6));

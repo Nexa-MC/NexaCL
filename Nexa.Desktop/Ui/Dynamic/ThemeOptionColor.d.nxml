@@ -1,0 +1,6 @@
+<nxml-dynamic>
+  <StackPanel Class="theme-actions">
+    <ContentHost Key="{data swatchKey}" Background="{data color}" Class="theme-color-swatch" />
+    <TextInput Key="{data inputKey}" Label="{data label}" Placeholder="#RRGGBB / #RRGGBBAA" Localize="false" MaximumLength="9" Enabled="{data enabled}" Class="theme-input" />
+  </StackPanel>
+</nxml-dynamic>

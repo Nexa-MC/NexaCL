@@ -36,13 +36,33 @@ internal static partial class Program
                 string errors = await stderr;
                 if (generator.ExitCode != 0) throw new InvalidOperationException(errors);
             }
+            var poster = await AvaloniaUiLocalMediaPlayer.ValidateThemeMediaAsync(path, video: true);
+            AssertTrue(poster is { Width: > 0 and <= 960, Height: > 0 and <= 540 });
+            string invalidPath = Path.Combine(directory, "invalid.mp4");
+            await File.WriteAllTextAsync(invalidPath, "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1000\nhttps://example.invalid/unadmitted\n");
+            bool invalidMedia = false;
+            try { await AvaloniaUiLocalMediaPlayer.ValidateThemeMediaAsync(invalidPath, video: true); }
+            catch (InvalidDataException) { invalidMedia = true; }
+            AssertTrue(invalidMedia);
             var firstFrame = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var secondFrame = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            bool acknowledgedSecond = false, staleAfterAcknowledgement = false;
             await using var player = new AvaloniaUiLocalMediaPlayer(true, image =>
-            { AssertTrue(image.Width <= 960); AssertTrue(image.Height <= 540); firstFrame.TrySetResult(true); });
-            await player.ConfigureAsync(path, 0, true);
+            { AssertTrue(image.Width <= 960); AssertTrue(image.Height <= 540); firstFrame.TrySetResult(true); }, stampedFrame: frame =>
+            {
+                AssertEqual(path, frame.Path);
+                if (frame.Generation == 8) secondFrame.TrySetResult(true);
+                if (Volatile.Read(ref acknowledgedSecond) && frame.Generation == 7) Volatile.Write(ref staleAfterAcknowledgement, true);
+            });
+            await player.ConfigureGenerationAsync(7, path, 0, true);
             await firstFrame.Task.WaitAsync(TimeSpan.FromSeconds(10));
             AssertEqual(AvaloniaUiMediaStatus.Playing, player.State.Status);
-            await player.ConfigureAsync(path, 0, false);
+            AssertEqual(7L, player.State.Generation);
+            await player.ConfigureGenerationAsync(8, path, 0, true);
+            Volatile.Write(ref acknowledgedSecond, true);
+            await secondFrame.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            AssertFalse(Volatile.Read(ref staleAfterAcknowledgement)); AssertEqual(8L, player.State.Generation);
+            await player.ConfigureGenerationAsync(8, path, 0, false);
             AssertEqual(AvaloniaUiMediaStatus.Paused, player.State.Status);
             await player.ConfigureAsync("", 0, false);
             AssertEqual(AvaloniaUiMediaStatus.Stopped, player.State.Status);

@@ -463,6 +463,8 @@ public sealed partial class AvaloniaUiShellWindow : Window
         {
             if (AvaloniaWindowsFrame.IsLayered(this)) TransparencyLevelHint = [WindowTransparencyLevel.None];
             bool composited = UsesCompositedEdges;
+            bool nativeMaterial = PresentedThemeMaterial is AvaloniaUiThemeWindowMaterial.Acrylic or AvaloniaUiThemeWindowMaterial.Mica
+                && (ActualTransparencyLevel == WindowTransparencyLevel.AcrylicBlur || ActualTransparencyLevel == WindowTransparencyLevel.Mica);
             double restoredInset = composited && !OperatingSystem.IsMacOS() ? ChromeMargin : 0;
             double delta = restoredInset - _restoredFrameInset;
             _restoredFrameInset = restoredInset;
@@ -492,10 +494,10 @@ public sealed partial class AvaloniaUiShellWindow : Window
                 new(Color.FromRgb(body.Red, body.Green, body.Blue), 1),
             },
             };
-            Background = composited ? Brushes.Transparent : opaqueBackground;
+            Background = composited || nativeMaterial ? Brushes.Transparent : opaqueBackground;
             TransparencyBackgroundFallback = opaqueBackground;
-            _chromeSurface.Background = opaqueBackground;
-            _shadowSurface.Background = opaqueBackground;
+            _chromeSurface.Background = nativeMaterial ? Brushes.Transparent : opaqueBackground;
+            _shadowSurface.Background = nativeMaterial ? Brushes.Transparent : opaqueBackground;
             CornerRadius radius = maximized ? new CornerRadius(0) : new CornerRadius(ChromeCornerRadius);
             _shadowSurface.Margin = new Thickness(inset);
             _shadowSurface.CornerRadius = radius;

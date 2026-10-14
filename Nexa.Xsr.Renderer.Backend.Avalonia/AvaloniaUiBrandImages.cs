@@ -20,6 +20,10 @@ internal sealed class AvaloniaUiBrandImages : IDisposable
         catch { _light.Dispose(); throw; }
     }
 
+    private AvaloniaUiBrandImages(Bitmap light, Bitmap dark) { _light = light; _dark = dark; }
+
+    internal static AvaloniaUiBrandImages LoadOwned(Bitmap light, Bitmap dark) => new(light, dark);
+
     internal static AvaloniaUiBrandImages Load(Stream light, Stream dark)
     {
         ArgumentNullException.ThrowIfNull(light);

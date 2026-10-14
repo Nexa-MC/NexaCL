@@ -62,11 +62,13 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
         Action<XsrUiEntityId> invokeFromAutomation,
         Func<bool> reducedMotion,
         AvaloniaUiTextInputActions? textInputActions = null,
-        AvaloniaUiRasterPool? rasterPool = null)
+        AvaloniaUiRasterPool? rasterPool = null,
+        Action<XsrUiEntityId, double>? rangeFromAutomation = null)
     {
         _focusFromAutomation = focusFromAutomation ?? throw new ArgumentNullException(nameof(focusFromAutomation));
         _invokeFromAutomation = invokeFromAutomation ?? throw new ArgumentNullException(nameof(invokeFromAutomation));
         _reducedMotion = reducedMotion ?? throw new ArgumentNullException(nameof(reducedMotion));
+        _rangeFromAutomation = rangeFromAutomation;
         _rasterPool = rasterPool ?? AvaloniaUiRasterPool.Shared;
         IsHitTestVisible = false;
         UseLayoutRounding = false;
@@ -74,7 +76,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
         ClipToBounds = true;
         RenderTransform = new TransformGroup
         {
-            Children = { _overlayScale, _enterScale, _pressScale, _overlayTranslate, _reflowTranslate },
+            Children = { _overlayScale, _enterScale, _pressScale, _overlayTranslate, _reflowTranslate, _themeTransform },
         };
         RenderTransformOrigin = RelativePoint.Center;
         InitializeTextInput(textInputActions);
@@ -138,19 +140,39 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
         _rasterViewport = viewport;
         XsrUiSceneNode previous = _node;
         _node = node;
+        ApplyThemeGeometry(node);
         ApplyToggle(previous, node);
-        Opacity = node.PresentationOpacity;
+        Opacity = node.PresentationOpacity * (node.VisualStyle.IsDefined ? node.VisualStyle.Opacity : 1);
         UpdateRaster(node.RasterImage, node.Rect.Width, node.Rect.Height);
         UpdateTextInput(previous.TextInput, node.TextInput);
         if (previous.IsFocused != node.IsFocused) ResetCaret();
         IsEnabled = node.IsEnabled;
         Focusable = node.IsFocusable;
+        XsrUiRect layoutRect = node.LayoutRect ?? node.Rect;
         Rect? localClip = node.ClipRect is { } clip
-            ? new Rect(clip.X - node.Rect.X, clip.Y - node.Rect.Y, clip.Width, clip.Height) : null;
-        if (!_applied || localClip != _localClip)
+            ? new Rect(clip.X - layoutRect.X, clip.Y - layoutRect.Y, clip.Width, clip.Height) : null;
+        if (!_applied || localClip != _localClip || node.Transform != previous.Transform || node.ClipGeometry != previous.ClipGeometry)
         {
             _localClip = localClip;
-            Clip = localClip is { } rectangle ? new RectangleGeometry(rectangle) : null;
+            if (node.ClipGeometry is { Count: > 0 } clips)
+                Clip = CreateThemeClip(node, clips, layoutRect);
+            else if (localClip is { } rectangle && node.Transform is { } matrix)
+            {
+                var polygon = new StreamGeometry();
+                using (var path = polygon.Open())
+                {
+                    XsrUiPoint a = matrix.Unmap(new(rectangle.X + layoutRect.X, rectangle.Y + layoutRect.Y));
+                    path.BeginFigure(new Point(a.X - layoutRect.X, a.Y - layoutRect.Y), true);
+                    foreach (Point point in new[] { rectangle.TopRight, rectangle.BottomRight, rectangle.BottomLeft })
+                    {
+                        XsrUiPoint raw = matrix.Unmap(new(point.X + layoutRect.X, point.Y + layoutRect.Y));
+                        path.LineTo(new Point(raw.X - layoutRect.X, raw.Y - layoutRect.Y));
+                    }
+                    path.EndFigure(true);
+                }
+                Clip = polygon;
+            }
+            else Clip = localClip is { } plain ? new RectangleGeometry(plain) : null;
         }
         string name = node.Label ?? node.Text ?? node.Role.ToString();
         string previousName = previous.Label ?? previous.Text ?? previous.Role.ToString();
@@ -180,6 +202,8 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
                 node.IsAccessible && (node.HasRole || node.IsFocusable || node.IsClickable)
                     ? AccessibilityView.Content : AccessibilityView.Raw);
         }
+        if (_applied && previous.Range?.Value != node.Range?.Value && ControlAutomationPeer.FromElement(this) is { } rangePeer)
+            rangePeer.RaisePropertyChangedEvent(RangeValuePatternIdentifiers.ValueProperty, previous.Range?.Value, node.Range?.Value);
         if (_applied && name != previousName && ControlAutomationPeer.FromElement(this) is { } namePeer)
             namePeer.RaisePropertyChangedEvent(AutomationElementIdentifiers.NameProperty, previousName, name);
 

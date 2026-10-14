@@ -66,6 +66,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
 
     private void DrawContent(DrawingContext context, Rect rect, XsrUiVisualStyleSnapshot style)
     {
+        if (_node.Range is { } range) { DrawRange(context, rect, style, range); return; }
         if (_node.Role is XsrUiSemanticRole.Switch or XsrUiSemanticRole.CheckBox)
         {
             DrawToggle(context, rect, style);
@@ -77,20 +78,22 @@ internal sealed partial class AvaloniaUiSceneNodeControl
             return;
         }
 
-        IBrush? background = Brush(style.Background);
+        IBrush? background = ThemeGradient(_node.BackgroundGradient) ?? Brush(MaterialColor(style.Background, style.Surface));
         IPen? border = style.BorderWidth > 0 ? new Pen(Brush(style.Border), style.BorderWidth) : null;
         if (style.CornerRadius > 0)
         {
             context.DrawRectangle(
                 background,
                 border,
-                new RoundedRect(rect, new CornerRadius(style.CornerRadius)));
+                new RoundedRect(rect, new CornerRadius(style.CornerRadius)), ThemeShadow());
         }
         else
         {
-            context.DrawRectangle(background, border, rect);
+            context.DrawRectangle(background, border, new RoundedRect(rect), ThemeShadow());
         }
 
+        DrawThemeBackgroundImage(context, rect, style);
+        DrawMaterialGlaze(context, rect, style);
         DrawHoverOverlay(context, rect, style);
         if (_node.Graph is { } graph) { DrawGraph(context, rect, graph); return; }
         if (_node.TextInput is { } textInput)
@@ -107,7 +110,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
             && Bounds.Width <= CollapsedRailCenteringWidth;
         bool textVisible = _node.Text is { Length: > 0 } && !collapsedRailItem;
         bool railRow = textVisible && style.NavigationLayout;
-        if (DrawRaster(context, rect) || (_node.ImageSource is { Length: > 0 } avatarSource &&
+        if (DrawThemeImage(context, rect) || DrawRaster(context, rect) || (_node.ImageSource is { Length: > 0 } avatarSource &&
             (AvaloniaUiAvatars.TryDraw(context, avatarSource, rect) || AvaloniaUiVersionImages.TryDraw(context, avatarSource, rect))))
         {
             if (textVisible) DrawText(context, style, 0);
@@ -216,21 +219,21 @@ internal sealed partial class AvaloniaUiSceneNodeControl
         // Explicit visual-style typography wins; otherwise the semantic role decides, mirroring
         // the legacy sizes (17 px title, 12 px rail items, 14 px body text).
         double fontSize = style.FontSize > 0 ? style.FontSize : FontSizeFor(_node);
-        FontWeight weight = style.FontWeight >= 600 ? FontWeight.SemiBold : FontWeight.Normal;
+        FontWeight weight = FontWeightFor(style);
         double maxWidth = (style.WrapText || _node.TextTrimsOverflow) && Bounds.Width > x ? Bounds.Width - x : 0;
         var key = new TextCacheKey(text, fontSize, weight, style.Foreground, maxWidth,
-            _node.TextMaxLines, _node.TextTrimsOverflow, _node.TextRuns, CultureInfo.CurrentUICulture.Name);
+            _node.TextMaxLines, _node.TextTrimsOverflow, _node.TextRuns, CultureInfo.CurrentUICulture.Name, _node.FontFamily, PresentedThemeGeneration);
         if (_textKey != key || _formattedText is null)
         {
             _textKey = key;
             _formattedText = new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,
-                CachedTypeface(weight), fontSize, foreground);
+                ThemeTypeface(weight), fontSize, foreground);
             FormattedText fresh = _formattedText;
             foreach (var run in _node.TextRuns ?? [])
             {
                 if (run.Start < 0 || run.Length <= 0 || run.Start > text.Length - run.Length) continue;
                 fresh.SetForegroundBrush(Brush(run.Foreground), run.Start, run.Length);
-                fresh.SetFontFamily(CachedTypeface(run.Bold ? FontWeight.Bold : weight,
+                fresh.SetFontFamily(ThemeTypeface(run.Bold ? FontWeight.Bold : weight,
                     run.Italic ? FontStyle.Italic : FontStyle.Normal).FontFamily, run.Start, run.Length);
                 fresh.SetFontWeight(run.Bold ? FontWeight.Bold : weight, run.Start, run.Length);
                 fresh.SetFontStyle(run.Italic ? FontStyle.Italic : FontStyle.Normal, run.Start, run.Length);
@@ -277,9 +280,9 @@ internal sealed partial class AvaloniaUiSceneNodeControl
 
     private XsrUiScrollbarSnapshot LocalScrollbar(XsrUiScrollbarSnapshot scrollbar) => scrollbar with
     {
-        Track = scrollbar.Track with { X = scrollbar.Track.X - _node.Rect.X, Y = scrollbar.Track.Y - _node.Rect.Y },
-        Thumb = scrollbar.Thumb with { X = scrollbar.Thumb.X - _node.Rect.X, Y = scrollbar.Thumb.Y - _node.Rect.Y },
-        HitRect = scrollbar.HitRect with { X = scrollbar.HitRect.X - _node.Rect.X, Y = scrollbar.HitRect.Y - _node.Rect.Y },
+        Track = scrollbar.Track with { X = scrollbar.Track.X - (_node.LayoutRect ?? _node.Rect).X, Y = scrollbar.Track.Y - (_node.LayoutRect ?? _node.Rect).Y },
+        Thumb = scrollbar.Thumb with { X = scrollbar.Thumb.X - (_node.LayoutRect ?? _node.Rect).X, Y = scrollbar.Thumb.Y - (_node.LayoutRect ?? _node.Rect).Y },
+        HitRect = scrollbar.HitRect with { X = scrollbar.HitRect.X - (_node.LayoutRect ?? _node.Rect).X, Y = scrollbar.HitRect.Y - (_node.LayoutRect ?? _node.Rect).Y },
     };
 
     private static void DrawScrollbar(DrawingContext context, XsrUiScrollbarSnapshot scrollbar, XsrUiColorScheme scheme)
@@ -311,22 +314,24 @@ internal sealed partial class AvaloniaUiSceneNodeControl
         double pillX = rect.Right - pillWidth;
         var pillRect = new Rect(pillX, rect.Y, pillWidth, rect.Height);
         XsrUiColor highlight = _node.ColorScheme.Project(OwnedCapsuleHighlight).Background;
-        IBrush? pillBackground = new LinearGradientBrush
+        IBrush? pillBackground = ThemeGradient(_node.BackgroundGradient) ?? (style.IsComputed ? Brush(style.Background) : new LinearGradientBrush
         {
             StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
             EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
             GradientStops =
             [
                 new GradientStop(Color.FromArgb(highlight.Alpha, highlight.Red, highlight.Green, highlight.Blue), 0),
-                new GradientStop(Color.FromArgb(style.Background.Alpha, style.Background.Red,
+                new GradientStop(Color.FromArgb(MaterialColor(style.Background, style.Surface).Alpha, style.Background.Red,
                     style.Background.Green, style.Background.Blue), 1),
             ],
-        };
+        });
         IPen? pillBorder = style.BorderWidth > 0 ? new Pen(Brush(style.Border), style.BorderWidth) : null;
         context.DrawRectangle(
             pillBackground,
             pillBorder,
-            new RoundedRect(pillRect, new CornerRadius(pillHeight / 2)));
+            new RoundedRect(pillRect, new CornerRadius(pillHeight / 2)), ThemeShadow());
+        DrawThemeBackgroundImage(context, pillRect, style with { CornerRadius = pillHeight / 2 });
+        DrawMaterialGlaze(context, pillRect, style with { CornerRadius = pillHeight / 2 });
 
         if (_node.IsPressed) DrawHoverOverlay(context, pillRect, style with { CornerRadius = pillHeight / 2 });
 
@@ -359,7 +364,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
                 glyph,
                 CultureInfo.CurrentUICulture,
                 FlowDirection.LeftToRight,
-                CachedTypeface(FontWeightFor(style)),
+                ThemeTypeface(FontWeightFor(style)),
                 Math.Max(12, style.FontSize > 0 ? style.FontSize : 14),
                 glyphBrush);
             double glyphX = rect.Right - ((pillHeight + glyphText.Width) / 2);
@@ -379,7 +384,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
                 label,
                 CultureInfo.CurrentUICulture,
                 FlowDirection.LeftToRight,
-                CachedTypeface(FontWeightFor(style)),
+                ThemeTypeface(FontWeightFor(style)),
                 fontSize,
                 labelBrush);
             double labelX = iconX - CapsuleCaptionIconGap - labelText.Width;
@@ -395,7 +400,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
     }
 
     private static FontWeight FontWeightFor(XsrUiVisualStyleSnapshot style) =>
-        style.FontWeight >= 600 ? FontWeight.SemiBold : FontWeight.Normal;
+        (FontWeight)(int)Math.Clamp(style.FontWeight > 0 ? style.FontWeight : 400, 100, 900);
 
     protected override Size MeasureOverride(Size availableSize) => availableSize;
 
@@ -418,6 +423,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
         XsrUiSemanticRole.TitleBar => AutomationControlType.TitleBar,
         XsrUiSemanticRole.Text => AutomationControlType.Text,
         XsrUiSemanticRole.TextInput => AutomationControlType.Edit,
+        XsrUiSemanticRole.Slider => AutomationControlType.Slider,
         XsrUiSemanticRole.Image => AutomationControlType.Image,
         XsrUiSemanticRole.ProgressBar => AutomationControlType.ProgressBar,
         XsrUiSemanticRole.Dialog => AutomationControlType.Window,
@@ -431,7 +437,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
     private TextCacheKey? _textKey;
     private FormattedText? _formattedText;
     private readonly record struct TextCacheKey(string Text, double Size, FontWeight Weight, XsrUiColor Color,
-        double Width, int Lines, bool Trim, IReadOnlyList<XsrUiTextRun>? Runs, string Culture);
+        double Width, int Lines, bool Trim, IReadOnlyList<XsrUiTextRun>? Runs, string Culture, string? FontFamily, long FontRevision);
     private static readonly Dictionary<XsrUiColor, IBrush> BrushesByColor = [];
     private static Typeface CachedTypeface(FontWeight weight, FontStyle style = FontStyle.Normal) =>
         AvaloniaUiTypefaceCache.GetDefault(weight, style);

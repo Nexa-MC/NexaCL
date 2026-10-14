@@ -30,6 +30,7 @@ public sealed partial class AvaloniaUiPlatformActions
     {
         _owner = owner;
         AttachAppearance(owner);
+        AttachThemeAppearance(owner);
         AvaloniaUiMotion.SetFrameRate(_animationFrameRate);
         if (owner is Window attachedWindow) attachedWindow.CanResize = _resizeEnabled;
         if (owner is AvaloniaUiShellWindow shellWindow) shellWindow.CloseGuard = () => CloseRequested?.Invoke() ?? true;

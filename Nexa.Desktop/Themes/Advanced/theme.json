@@ -1,0 +1,274 @@
+{
+  "format": "NTP/1",
+  "id": "nexa.advanced",
+  "version": "1.0.0",
+  "name": {
+    "en-US": "Advanced",
+    "zh-CN": "高级示例主题"
+  },
+  "styleApi": 1,
+  "nss": "NSS/1",
+  "styles": [
+    "styles/main.nss"
+  ],
+  "requiredCapabilities": [
+    "styles.basic",
+    "tokens",
+    "options",
+    "selectors",
+    "conditions",
+    "viewport",
+    "grid",
+    "position",
+    "order",
+    "transform",
+    "keyframes",
+    "images",
+    "svg",
+    "fonts",
+    "opacity",
+    "gradients",
+    "shadows",
+    "transforms",
+    "animations",
+    "media",
+    "runtime-icons",
+    "startup-appearance"
+  ],
+  "optionalCapabilities": [
+    {
+      "name": "window-acrylic",
+      "fallback": "solid"
+    }
+  ],
+  "optionsVersion": 1,
+  "options": [
+    {
+      "id": "accent",
+      "kind": "Color",
+      "default": "#68a5ff",
+      "label": {
+        "en-US": "Accent"
+      },
+      "group": "style"
+    },
+    {
+      "id": "title-size",
+      "kind": "Number",
+      "default": 26,
+      "label": {
+        "en-US": "Title size"
+      },
+      "min": 20,
+      "max": 32,
+      "step": 1,
+      "group": "style"
+    },
+    {
+      "id": "ornament",
+      "kind": "Boolean",
+      "default": true,
+      "label": {
+        "en-US": "Animate title ornament"
+      },
+      "group": "style"
+    },
+    {
+      "id": "description",
+      "kind": "Text",
+      "default": "NTP/1 author template",
+      "label": {
+        "en-US": "Description"
+      },
+      "group": "style"
+    },
+    {
+      "id": "radius",
+      "kind": "Range",
+      "default": 16,
+      "label": {
+        "en-US": "Card corner radius"
+      },
+      "min": 0,
+      "max": 32,
+      "step": 1,
+      "group": "style"
+    },
+    {
+      "id": "background-fit",
+      "kind": "Select",
+      "default": "cover",
+      "label": {
+        "en-US": "Background fit"
+      },
+      "choices": [
+        {
+          "value": "cover",
+          "label": {
+            "en-US": "Cover"
+          }
+        },
+        {
+          "value": "contain",
+          "label": {
+            "en-US": "Contain"
+          }
+        },
+        {
+          "value": "stretch",
+          "label": {
+            "en-US": "Stretch"
+          }
+        }
+      ],
+      "group": "background"
+    },
+    {
+      "id": "background-opacity",
+      "kind": "Range",
+      "default": 25,
+      "label": {
+        "en-US": "Background opacity"
+      },
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "group": "background"
+    },
+    {
+      "id": "background-path",
+      "kind": "File",
+      "default": "",
+      "label": {
+        "en-US": "External background"
+      },
+      "resourceKind": "Image",
+      "group": "background"
+    },
+    {
+      "id": "media-directory",
+      "kind": "Directory",
+      "default": "",
+      "label": {
+        "en-US": "External music directory"
+      },
+      "resourceKind": "Audio",
+      "group": "media"
+    },
+    {
+      "id": "music.enabled",
+      "kind": "Boolean",
+      "default": false,
+      "label": {
+        "en-US": "Play sample music"
+      },
+      "group": "media"
+    },
+    {
+      "id": "music.path",
+      "kind": "Files",
+      "default": [],
+      "label": {
+        "en-US": "External music playlist"
+      },
+      "resourceKind": "Audio",
+      "group": "media",
+      "visibleWhen": "option(music.enabled)"
+    },
+    {
+      "id": "music.volume",
+      "kind": "Range",
+      "default": 20,
+      "label": {
+        "en-US": "Music volume"
+      },
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "group": "media",
+      "visibleWhen": "option(music.enabled)"
+    },
+    {
+      "id": "music.autoplay",
+      "kind": "Boolean",
+      "default": false,
+      "label": {
+        "en-US": "Autoplay music"
+      },
+      "group": "media",
+      "visibleWhen": "option(music.enabled)"
+    },
+    {
+      "id": "video.enabled",
+      "kind": "Boolean",
+      "default": false,
+      "label": {
+        "en-US": "Play sample video"
+      },
+      "group": "media"
+    }
+  ],
+  "appearance": {
+    "accentColor": "#68a5ff",
+    "splashMotion": "breathe",
+    "windowMaterial": "solid",
+    "resources": {
+      "launcherIcon": {
+        "expression": "asset(assets/icon.svg)",
+        "kind": "Icon",
+        "required": false,
+        "fallback": "none"
+      },
+      "windowIcon": {
+        "expression": "asset(assets/icon.svg)",
+        "kind": "Icon",
+        "required": false,
+        "fallback": "none"
+      },
+      "trayIcon": {
+        "expression": "asset(assets/icon.svg)",
+        "kind": "Icon",
+        "required": false,
+        "fallback": "none"
+      },
+      "splashIcon": {
+        "expression": "asset(assets/icon.svg)",
+        "kind": "Icon",
+        "required": false,
+        "fallback": "none"
+      },
+      "background": {
+        "expression": "asset(assets/background.svg)",
+        "kind": "Image",
+        "required": false,
+        "fallback": "none"
+      },
+      "font": {
+        "expression": "asset(fonts/DejaVuSans.ttf)",
+        "kind": "Font",
+        "required": false,
+        "fallback": "none"
+      },
+      "music": {
+        "expression": "asset(media/sample.wav)",
+        "kind": "Audio",
+        "required": false,
+        "fallback": "none"
+      },
+      "video": {
+        "expression": "asset(media/sample.mp4)",
+        "kind": "Video",
+        "required": false,
+        "fallback": "none"
+      }
+    },
+    "properties": {
+      "background-fit": "option(background-fit)",
+      "background-opacity": "option(background-opacity)",
+      "music.enabled": "option(music.enabled)",
+      "music.volume": "option(music.volume)",
+      "music.autoplay": "option(music.autoplay)",
+      "video.enabled": "option(video.enabled)"
+    }
+  }
+}

@@ -259,18 +259,21 @@ internal static partial class Program
         }, TimeSpan.FromSeconds(5)));
         AssertTrue(FindByKey(fixture.Shell, scene, "SettingsOption.appearance.theme-mode.1").IsSelected);
         AssertTrue(fixture.Shell.Renderer.ColorScheme.IsDark);
-        var purple = FindByKey(fixture.Shell, scene, "SettingsOption.appearance.accent.purple");
-        Emit(fixture.Intents, "ui.settings.choice", purple.Entity);
-        fixture.Shell.Render(new(1000, 650));
-        AssertTrue(SpinWait.SpinUntil(() => fixture.Foundation.Host.Settings.GetValue<string>("UiAccentColor").Value == "purple", TimeSpan.FromSeconds(5)));
+        // Accent is a per-theme parameter. Its shipped built-in declaration retains
+        // every previous choice; legacy persisted values still drive the compatibility consumer.
+        using var theme = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Themes", "BuiltIn", "theme.json")));
+        var accent = theme.RootElement.GetProperty("options").EnumerateArray().Single(option => option.GetProperty("id").GetString() == "appearance.accent");
+        AssertEqual("Select", accent.GetProperty("kind").GetString());
+        AssertEqual("blue|purple|green|orange", string.Join("|", accent.GetProperty("choices").EnumerateArray().Select(choice => choice.GetProperty("value").GetString())));
+        AssertFalse(Nexa.Services.Settings.SettingsCatalog.Read(new(true)).Entries.Any(entry => entry.Page == "appearance" && entry.SettingKey == "appearance.accent"));
+        AssertTrue(fixture.Foundation.Host.SettingsPolicy.Set(new("appearance.accent", Nexa.Services.Settings.SettingsLayer.Global,
+            new(Nexa.Services.Settings.SettingsOverrideMode.Custom, "purple"))).IsSuccess);
         AssertTrue(SpinWait.SpinUntil(() =>
         {
             scene = fixture.Shell.Render(new(1000, 650));
-            return !settings.SettingsWritePending
-                && FindByKey(fixture.Shell, scene, "SettingsOption.appearance.accent.purple").IsSelected
+            return fixture.Foundation.Host.Settings.GetValue<string>("UiAccentColor").Value == "purple"
                 && fixture.Shell.Renderer.ColorScheme.Accent == XsrUiAccent.Purple;
         }, TimeSpan.FromSeconds(5)));
-        AssertTrue(FindByKey(fixture.Shell, scene, "SettingsOption.appearance.accent.purple").IsSelected);
         AssertEqual(XsrUiAccent.Purple, fixture.Shell.Renderer.ColorScheme.Accent);
     }
 

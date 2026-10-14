@@ -1,4 +1,4 @@
-﻿using Nexa.Xsr;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 namespace Nexa.Xsr.Renderer.Nxml.Tests;
 
@@ -7,7 +7,7 @@ internal static partial class Program
     private static void ExternalControlCatalogIsCompleteAndDeterministic()
     {
         AssertSequence(
-            ["Button", "CheckBox", "ContentHost", "Dialog", "Dynamic", "HorizontalPager", "Image", "Navigation", "NavigationItem", "Notification", "Page", "Progress", "Shell", "StackPanel", "Text", "TextInput", "TitleBar", "VerticalPager"],
+            ["Button", "CheckBox", "ContentHost", "Dialog", "Dynamic", "HorizontalPager", "Image", "Navigation", "NavigationItem", "Notification", "Page", "Progress", "Shell", "Slider", "StackPanel", "Text", "TextInput", "TitleBar", "VerticalPager"],
             NxmlControlCatalog.Names.ToArray());
 
         if (NxmlControlCatalog.Names is IList<string> names)

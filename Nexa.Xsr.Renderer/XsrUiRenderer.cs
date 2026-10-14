@@ -83,6 +83,10 @@ public sealed partial class XsrUiRenderer
     /// </summary>
     public event EventHandler? FramePreparing;
 
+    /// <summary>Finite composition hook for committing already prepared theme candidates before host data projection.</summary>
+    public event EventHandler? ThemePreparing;
+    private bool _renderInProgress;
+
     /// <summary>
     /// Gets the currently focused entity, or an unassigned handle.
     /// </summary>
@@ -172,6 +176,26 @@ public sealed partial class XsrUiRenderer
     /// </summary>
     public XsrUiScene Render()
     {
+        if (_renderInProgress) throw new InvalidOperationException("A renderer frame cannot recursively render.");
+        _renderInProgress = true;
+        try
+        {
+            try { return RenderCore(); }
+            catch (XsrUiThemeStyleException exception)
+            {
+                IXsrUiThemeStyleProgram? failedProgram = _themeProgram;
+                long failedGeneration = ThemeActivationGeneration;
+                ThemeStyleFailed?.Invoke(this, new(exception, failedGeneration, failedProgram?.Revision ?? 0));
+                if (ReferenceEquals(failedProgram, _themeProgram) && failedGeneration == ThemeActivationGeneration) throw;
+                // A synchronous coordinator restored a prepared appearance. One bounded retry only.
+                return RenderCore();
+            }
+        }
+        finally { _renderInProgress = false; }
+    }
+
+    private XsrUiScene RenderCore()
+    {
         if (!_root.IsAssigned)
         {
             throw new InvalidOperationException("The renderer has no root entity.");
@@ -179,8 +203,10 @@ public sealed partial class XsrUiRenderer
 
         // The state bridge queues publisher-thread changes; the render thread drains them here,
         // so coalesced and derived state land in this frame's dirty set before the clean check.
+        ThemePreparing?.Invoke(this, EventArgs.Empty);
         FramePreparing?.Invoke(this, EventArgs.Empty);
         _stateBridge?.DrainAndMark(_state);
+        PrepareThemeFrame();
 
         if (_scene is not null && !_tree.HasDirtySubtree(_root))
         {
@@ -214,8 +240,10 @@ public sealed partial class XsrUiRenderer
 
         RetireScrollGesture();
         XsrUiSceneNode[] nodes = CollectNodes(_root, depth: 0);
+        RecordThemeAnimationScene(nodes);
         _sceneVersion++;
         _scene = new XsrUiScene(_sceneVersion, nodes, _outgoingLayers.ToArray());
+        _themeSnapshotsInvalidated = false;
         _inputVisited.Clear();
         int inputCapacity = Math.Max(16, nodes.Length);
         if (_inputVisited.EnsureCapacity(0) > inputCapacity * 2L)
@@ -251,6 +279,8 @@ public sealed partial class XsrUiRenderer
 
     private void PruneDeadCacheEntries()
     {
+        foreach (XsrUiEntityId entity in _themeGridMeasurements.Keys.Where(entity => !_tree.IsAlive(entity)).ToArray())
+            _themeGridMeasurements.Remove(entity);
         foreach (int id in _desiredSizes.Keys.Where(id => !_tree.IsIndexAlive(id)).ToArray())
         {
             _ = _desiredSizes.Remove(id);
@@ -338,7 +368,7 @@ public sealed partial class XsrUiRenderer
 
     private bool ParticipatesInStackFlow(XsrUiEntityId entity)
     {
-        if (!IsVisible(entity) || _tree.GetComponent<XsrUiOverlayLayer>(entity) is not null)
+        if (!IsVisible(entity) || _tree.GetComponent<XsrUiOverlayLayer>(entity) is not null || IsThemedOutOfFlow(entity))
         {
             return false;
         }

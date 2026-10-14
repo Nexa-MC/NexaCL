@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Threading.Channels;
 using Nexa.Services.Settings;
 using Nexa.Xsr;
@@ -18,6 +19,7 @@ internal sealed class DesktopPresentationSession : IDisposable
     private readonly Action<bool> _setResizeEnabled;
     private readonly Action<int>? _setAnimationFrameRate;
     private readonly XsrQueryRouter? _queries;
+    private readonly DesktopEffectiveAppearanceSource? _effectiveAppearance;
     private readonly Action<Action>? _postToRender;
     private readonly XsrStateId _policyRevision;
     private readonly CancellationTokenSource _policyStop = new();
@@ -32,31 +34,60 @@ internal sealed class DesktopPresentationSession : IDisposable
     private int? _lastFrameRate;
 
     internal DesktopPresentationSession(XsrUiShell shell, XsrStateStore state, Action<bool> setResizeEnabled,
-        Action<int>? setAnimationFrameRate = null, XsrQueryRouter? queries = null, Action<Action>? postToRender = null)
+        Action<int>? setAnimationFrameRate = null, XsrQueryRouter? queries = null, Action<Action>? postToRender = null,
+        DesktopEffectiveAppearanceSource? effectiveAppearance = null)
     {
         _shell = shell;
         _state = state;
         _setResizeEnabled = setResizeEnabled;
         _setAnimationFrameRate = setAnimationFrameRate;
-        _queries = queries; _postToRender = postToRender;
+        _queries = queries; _postToRender = postToRender; _effectiveAppearance = effectiveAppearance;
         if (queries is not null) state.TryResolve(SettingsPolicyContract.RevisionKey, out _policyRevision);
         state.TryResolve(XsrSemanticId.Parse("SystemDisableUiAnimations"), out _animationsDisabled);
         state.TryResolve(XsrSemanticId.Parse("UiLockWindowSize"), out _windowLocked);
         state.TryResolve(XsrSemanticId.Parse("UiAniFPS"), out _animationFrameRate);
         state.Changed += OnChanged;
+        if (_effectiveAppearance is not null) _effectiveAppearance.Changed += OnEffectiveAppearance;
         shell.Renderer.FramePreparing += OnFrame;
+        if (_effectiveAppearance?.Current is not null) OnEffectiveAppearance();
         OnFrame(this, EventArgs.Empty);
-        _policyWorker = queries is null ? Task.CompletedTask : ReadReducedMotionAsync(_policyStop.Token);
-        if (queries is null) _initialReady.TrySetResult();
-        if (queries is not null) _policyUpdates.Writer.TryWrite(default);
+        _policyWorker = effectiveAppearance is not null ? ReadEffectiveInitialAsync(_policyStop.Token)
+            : queries is null ? Task.CompletedTask : ReadReducedMotionAsync(_policyStop.Token);
+        if (queries is null && effectiveAppearance is null) _initialReady.TrySetResult();
+        if (queries is not null && effectiveAppearance is null) _policyUpdates.Writer.TryWrite(default);
     }
 
     private void OnChanged(XsrStateChange change)
     {
         if (Volatile.Read(ref _disposed) != 0) return;
-        if (change.Id == _policyRevision && _queries is not null) _policyUpdates.Writer.TryWrite(change);
+        if (change.Id == _policyRevision && _queries is not null && _effectiveAppearance is null) _policyUpdates.Writer.TryWrite(change);
         if (change.Id == _animationsDisabled || change.Id == _windowLocked || change.Id == _animationFrameRate)
             Interlocked.Exchange(ref _pending, 1);
+    }
+
+    private void OnEffectiveAppearance()
+    {
+        if (Volatile.Read(ref _disposed) != 0 || _effectiveAppearance?.Current is not { } snapshot) return;
+        bool reduced = snapshot.Settings.Values.Any(item => item.Key == "appearance.reduced-motion"
+            && bool.TryParse(item.Value.Value, out bool enabled) && enabled);
+        Interlocked.Exchange(ref _preferenceReducedMotion, reduced ? 1 : 0);
+        Interlocked.Exchange(ref _pending, 1);
+        OnFrame(this, EventArgs.Empty);
+        _initialReady.TrySetResult();
+    }
+
+    private async Task ReadEffectiveInitialAsync(CancellationToken token)
+    {
+        try
+        {
+            await _effectiveAppearance!.ReadAsync(token).ConfigureAwait(false);
+            // Its Changed callback applies the snapshot on the render thread. This waiter
+            // participates in readiness without querying policy or writing presentation.
+            if (_effectiveAppearance.Current is null) _initialReady.TrySetException(new IOException("No initial effective appearance snapshot was published."));
+            else _initialReady.TrySetResult();
+        }
+        catch (OperationCanceledException) { _initialReady.TrySetCanceled(token); }
+        catch (Exception error) { _initialReady.TrySetException(error); throw; }
     }
 
     private void OnFrame(object? sender, EventArgs args)
@@ -65,13 +96,19 @@ internal sealed class DesktopPresentationSession : IDisposable
         if (Interlocked.Exchange(ref _pending, 0) == 0) return;
         _shell.Renderer.ReducedMotion = Volatile.Read(ref _preferenceReducedMotion) != 0
             || _animationsDisabled.IsAssigned && _state.Read<bool>(_animationsDisabled).Value;
-        bool resizeEnabled = !_windowLocked.IsAssigned || !_state.Read<bool>(_windowLocked).Value;
+        var effective = _effectiveAppearance?.Current?.Settings.Values;
+        string? lockValue = effective?.FirstOrDefault(item => item.Key == "appearance.lock-window")?.Value.Value;
+        bool windowLocked = bool.TryParse(lockValue, out bool locked) ? locked : _windowLocked.IsAssigned && _state.Read<bool>(_windowLocked).Value;
+        bool resizeEnabled = !windowLocked;
         if (_lastResizeEnabled != resizeEnabled)
         {
             _lastResizeEnabled = resizeEnabled;
             _setResizeEnabled(resizeEnabled);
         }
         int frameRate = _animationFrameRate.IsAssigned ? (int)Math.Clamp((long)_state.Read<int>(_animationFrameRate).Value + 1, 1, 240) : 60;
+        string? rateValue = effective?.FirstOrDefault(item => item.Key == "appearance.animation-fps")?.Value.Value;
+        if (double.TryParse(rateValue, NumberStyles.Float, CultureInfo.InvariantCulture, out double themedRate) && double.IsFinite(themedRate))
+            frameRate = (int)Math.Clamp(Math.Round(themedRate, MidpointRounding.AwayFromZero), 1, 240);
         if (_lastFrameRate == frameRate) return;
         _lastFrameRate = frameRate;
         _setAnimationFrameRate?.Invoke(frameRate);
@@ -109,6 +146,7 @@ internal sealed class DesktopPresentationSession : IDisposable
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
         _state.Changed -= OnChanged;
+        if (_effectiveAppearance is not null) _effectiveAppearance.Changed -= OnEffectiveAppearance;
         _shell.Renderer.FramePreparing -= OnFrame;
         _policyUpdates.Writer.TryComplete(); _policyStop.Cancel();
         _ = ReleasePolicyAsync();

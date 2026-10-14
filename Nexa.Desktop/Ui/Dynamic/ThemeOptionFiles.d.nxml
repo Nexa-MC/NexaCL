@@ -1,0 +1,6 @@
+<nxml-dynamic>
+  <StackPanel Class="theme-rows">
+    <Dynamic Key="{data filesKey}" Class="theme-rows" />
+    <Button Key="{data pickKey}" Content="选择并授权" Label="选择并授权" Command="ui.settings.theme.action" Enabled="{data canPick}" Class="theme-action theme-picker" />
+  </StackPanel>
+</nxml-dynamic>

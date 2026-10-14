@@ -20,7 +20,7 @@ public sealed partial class XsrUiRenderer
     private void CollectNode(XsrUiEntityId entity, int depth, List<XsrUiSceneNode> nodes,
         XsrUiRect? clip = null, bool accessible = true, double offsetX = 0, double offsetY = 0,
         double opacity = 1, XsrUiOverlayMotionKind overlayMotion = XsrUiOverlayMotionKind.None,
-        bool overlayClosing = false, XsrUiRect? overlayAnchor = null)
+        bool overlayClosing = false, XsrUiRect? overlayAnchor = null, XsrUiSceneTransform? parentTransform = null, IReadOnlyList<XsrUiSceneClip>? clipGeometry = null)
     {
         if (!IsVisible(entity))
         {
@@ -60,7 +60,12 @@ public sealed partial class XsrUiRenderer
             overlayClosing = localOverlayMotion.IsClosing;
             overlayAnchor = rect;
         }
-        XsrUiVisualStyle? visualStyle = components.Get<XsrUiVisualStyle>();
+        XsrUiRect layoutRect = rect;
+        XsrUiSceneTransform? ownTransform = ThemeTransform(entity, layoutRect);
+        XsrUiSceneTransform? sceneTransform = ownTransform is { } own
+            ? parentTransform is { } inherited ? own.Then(inherited) : own : parentTransform;
+        if (sceneTransform is { } affine) rect = affine.Bounds(layoutRect);
+        XsrUiComputedStyle? themeStyle = GetThemeStyle(entity)?.Style;
         XsrUiSelection? selection = components.Get<XsrUiSelection>();
         XsrUiInput? input = components.Get<XsrUiInput>();
         bool enabled = accessible && IsEnabled(input) && (components.Get<XsrUiSegmentReveal>()?.Expanded ?? true);
@@ -79,6 +84,7 @@ public sealed partial class XsrUiRenderer
             && _arrangedSlots.TryGetValue(entity.Index, out XsrUiRect progressSlot)
                 ? progressSlot with { X = progressSlot.X + offsetX, Y = progressSlot.Y + offsetY }
                 : rect;
+        if (sceneTransform is { } clipTransform && components.Get<XsrUiProgress>() is not null) clipBounds = clipTransform.Bounds(clipBounds);
         XsrUiRect? visibleClip = clip is { } parentClip ? Intersect(clipBounds, parentClip) : null;
         if (components.Get<XsrUiSegmentReveal>() is not null) visibleClip = Intersect(rect, visibleClip ?? rect);
         if (visibleClip is { Width: <= 0 } or { Height: <= 0 }) return;
@@ -96,7 +102,7 @@ public sealed partial class XsrUiRenderer
         XsrUiScrollSnapshot? scrollSnapshot = null;
         if (scrollState is not null)
         {
-            scrollSnapshot = ProjectScroll(entity, scrollState, rect);
+            scrollSnapshot = ProjectScroll(entity, scrollState, layoutRect);
         }
         nodes.Add(new XsrUiSceneNode(
             entity,
@@ -105,11 +111,11 @@ public sealed partial class XsrUiRenderer
             semantic?.Role ?? XsrUiSemanticRole.None,
             semanticLabel,
             content,
-            image?.Source,
+            themeStyle?.ImageSource ?? image?.Source,
             enabled && (input?.IsFocused ?? false),
             animation?.Progress,
             animation is { Keyframes.Count: > 0 } ? animation.Value : null,
-            ProjectStyle(visualStyle),
+            ProjectThemeStyle(entity),
             selection?.IsSelected ?? false,
             enabled && (input?.Focusable ?? false),
             enabled && (input?.Clickable ?? false),
@@ -122,7 +128,7 @@ public sealed partial class XsrUiRenderer
             components.Get<XsrUiPager>()?.Snapshot(),
             accessible,
             LocalizeInput(components.Get<XsrUiTextInput>(), semantic?.Localize ?? true),
-            image?.Raster,
+            themeStyle?.ImageSource is null ? image?.Raster : null,
             transitionKey, transition?.OffsetX ?? 0, transition?.PresentedOffsetX ?? 0,
             transition?.OffsetY ?? 0, opacity, transition?.PresentedOffsetY ?? 0, entryOrder,
             components.Get<XsrUiProgress>()?.Presented,
@@ -138,8 +144,17 @@ public sealed partial class XsrUiRenderer
             IsStableContent(entity), ProjectTextRuns(text?.Runs))
         {
             ColorScheme = _colorScheme,
-            VerticalScrollbar = scrollSnapshot?.Scrollbar(rect, XsrUiOrientation.Vertical),
-            HorizontalScrollbar = scrollSnapshot?.Scrollbar(rect, XsrUiOrientation.Horizontal),
+            Range = components.Get<XsrUiRangeInput>()?.Snapshot(),
+            FontFamily = themeStyle?.FontFamily,
+            Shadow = themeStyle?.Shadow,
+            BackgroundImage = themeStyle?.BackgroundImage,
+            BackgroundGradient = themeStyle?.BackgroundGradient,
+            Transform = sceneTransform,
+            LayoutRect = sceneTransform is not null ? layoutRect : null,
+            ClipGeometry = clipGeometry,
+            ThemeActivationGeneration = ThemeActivationGeneration,
+            VerticalScrollbar = scrollSnapshot?.Scrollbar(layoutRect, XsrUiOrientation.Vertical),
+            HorizontalScrollbar = scrollSnapshot?.Scrollbar(layoutRect, XsrUiOrientation.Horizontal),
             Graph = components.Get<XsrUiGraph>()?.Snapshot(),
             ContextMenu = ProjectContextMenu(entity, components.Get<XsrUiContextMenu>()),
             IsChecked = components.Get<XsrUiToggle>()?.IsChecked,
@@ -165,13 +180,20 @@ public sealed partial class XsrUiRenderer
             if (!track.Dragging) PrepareTransition(track.Thumb, thumbTransition, thumbTransition.Key, rect, clip);
             thumbTransition.Outgoing = [];
             XsrUiRect presented = target with { X = track.Dragging ? track.DragX : target.X + thumbTransition.PresentedOffsetX };
-            nodes.Add(new XsrUiSceneNode(track.Thumb, presented, depth + 1, XsrUiSemanticRole.None,
+            XsrUiRect presentedBounds = sceneTransform?.Bounds(presented) ?? presented;
+            nodes.Add(new XsrUiSceneNode(track.Thumb, presentedBounds, depth + 1, XsrUiSemanticRole.None,
                 null, null, null, false, null, null,
-                ProjectStyle(_tree.GetComponent<XsrUiVisualStyle>(track.Thumb)),
-                IsEnabled: false, ClipRect: Intersect(visibleClip ?? rect, presented), IsAccessible: false,
+                ProjectThemeStyle(track.Thumb),
+                IsEnabled: false, ClipRect: Intersect(visibleClip ?? rect, presentedBounds), IsAccessible: false,
                 TransitionKey: thumbTransition.Key, TransitionOffsetX: thumbTransition.OffsetX,
                 TransitionPresentedOffsetX: thumbTransition.PresentedOffsetX)
-            { ColorScheme = _colorScheme });
+            {
+                ColorScheme = _colorScheme,
+                Transform = sceneTransform,
+                LayoutRect = sceneTransform is null ? null : presented,
+                ClipGeometry = (clipGeometry ?? []).Append(new XsrUiSceneClip(layoutRect, sceneTransform)).ToArray(),
+                ThemeActivationGeneration = ThemeActivationGeneration,
+            });
         }
 
         XsrUiPager? pageContainer = components.Get<XsrUiPager>();
@@ -180,14 +202,20 @@ public sealed partial class XsrUiRenderer
             || components.Get<XsrUiSegmentedTrack>() is not null
             ? visibleClip ?? rect
             : clip;
-        if (scrollState is not null)
+        bool establishesClip = transition is { MovesSelf: false, OffsetX: not 0 } or { MovesSelf: false, OffsetY: not 0 }
+            || pageContainer is not null || scrollState is not null || components.Get<XsrUiSegmentReveal>() is not null
+            || components.Get<XsrUiSegmentedTrack>() is not null || components.Get<XsrUiVirtualGeometry>() is not null;
+        if (establishesClip)
         {
-            XsrUiRect scrollViewport = rect with
+            XsrUiRect rawClip = layoutRect with
             {
-                Width = Math.Max(0, rect.Width - VerticalIndicatorGutter(entity)),
-                Height = Math.Max(0, rect.Height - HorizontalIndicatorGutter(entity)),
+                Width = Math.Max(0, layoutRect.Width - (scrollState is null ? 0 : VerticalIndicatorGutter(entity))),
+                Height = Math.Max(0, layoutRect.Height - (scrollState is null ? 0 : HorizontalIndicatorGutter(entity))),
             };
-            childClip = Intersect(scrollViewport, childClip ?? scrollViewport);
+            if ((clipGeometry?.Count ?? 0) >= 64) throw new InvalidOperationException("The scene clip nesting exceeds its finite budget.");
+            clipGeometry = (clipGeometry ?? []).Append(new XsrUiSceneClip(rawClip, sceneTransform)).ToArray();
+            XsrUiRect geometryBounds = sceneTransform?.Bounds(rawClip) ?? rawClip;
+            childClip = Intersect(geometryBounds, clip ?? geometryBounds);
         }
         if (transition is { MovesSelf: false })
         {
@@ -195,7 +223,7 @@ public sealed partial class XsrUiRenderer
             offsetY += transition.PresentedOffsetY;
         }
 
-        XsrUiEntityId[] children = [.. _tree.Children(entity).Where(IsVisible)];
+        XsrUiEntityId[] children = [.. OrderedChildren(entity).Where(IsVisible)];
         int modalIndex = -1;
         for (int index = 0; index < children.Length; index++)
         {
@@ -213,7 +241,7 @@ public sealed partial class XsrUiRenderer
                 accessible
                 && (pageContainer is null || pageContainer.PageIndex == pageIndex)
                 && (modalIndex < 0 || index >= modalIndex),
-                offsetX, offsetY, opacity, overlayMotion, overlayClosing, overlayAnchor);
+                offsetX, offsetY, opacity, overlayMotion, overlayClosing, overlayAnchor, sceneTransform, clipGeometry);
             pageIndex++;
         }
     }
@@ -268,10 +296,22 @@ public sealed partial class XsrUiRenderer
         return localize ? snapshot with { Placeholder = LocalizeText(snapshot.Placeholder) } : snapshot;
     }
 
+    private XsrUiSize MeasureText(string text, double fontSize, double maximumWidth, int maximumLines,
+        string? fontFamily = null, double fontWeight = 400, IReadOnlyList<XsrUiTextRun>? textRuns = null)
+    {
+        if (_textLayoutProvider is null) return MeasureFallbackText(text, fontSize, maximumWidth, maximumLines);
+        XsrUiTextLayoutMetrics metrics = _textLayoutProvider.Measure(new(text, fontFamily,
+            fontSize > 0 ? fontSize : 14, fontWeight, maximumWidth, maximumLines, TextRuns: textRuns));
+        if (!double.IsFinite(metrics.Size.Width) || !double.IsFinite(metrics.Size.Height)
+            || metrics.Size.Width < 0 || metrics.Size.Height < 0)
+            throw new InvalidOperationException("The text layout provider returned invalid geometry.");
+        return metrics.Size;
+    }
+
     // UI.Next uses a deliberately deterministic, backend-neutral text metric. Native backends
     // select their own typeface at commit time, but intrinsic text sizing must be available before
     // any backend exists so PXML layout (including title and command text) has real hit geometry.
-    private static XsrUiSize MeasureText(
+    private static XsrUiSize MeasureFallbackText(
         string text,
         double fontSize,
         double maximumWidth,

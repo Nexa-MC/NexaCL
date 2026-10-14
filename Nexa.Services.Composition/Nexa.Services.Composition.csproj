@@ -7,5 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="../Nexa.Services/Nexa.Services.csproj" />
     <ProjectReference Include="../Nexa.Xsr.Runtime/Nexa.Xsr.Runtime.csproj" />
+    <ProjectReference Include="../Nexa.Services.Themes.Contracts/Nexa.Services.Themes.Contracts.csproj" />
+    <ProjectReference Include="../Nexa.Services.Themes/Nexa.Services.Themes.csproj" />
   </ItemGroup>
 </Project>

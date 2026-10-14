@@ -1,0 +1,7 @@
+NTP/1 example assets
+
+The icon SVG, background SVG and synthesized sample WAV/MP4 were created for
+this repository as authoring fixtures. They are released under CC0 1.0:
+https://creativecommons.org/publicdomain/zero/1.0/
+The icon is a simple new vector example, not a replacement copy of the user-
+supplied neon-N artwork. DejaVuSans.ttf has its separate adjacent license.

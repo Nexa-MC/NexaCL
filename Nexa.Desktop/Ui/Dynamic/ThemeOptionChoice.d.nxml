@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <SettingsChoice Key="{data key}" Content="{data label}" Label="{data label}" Localize="false" Command="ui.settings.theme.action" Selected="{data selected}" Enabled="{data enabled}" Class="theme-action" />
+</nxml-dynamic>

@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace Nexa.Xsr.Renderer;
 
@@ -64,10 +64,11 @@ public sealed partial class XsrUiRenderer
     /// <summary>Releases captured gesture state when the platform cancels pointer capture.</summary>
     public bool CancelPointerGesture()
     {
+        bool rangeGesture = EndRangeGesture(null);
         bool scrollHandled = EndScrollGesture(cancelled: true);
         bool graphHandled = EndGraphGesture(null);
         bool segmentHandled = EndSegmentDrag();
-        bool handled = graphHandled || segmentHandled || scrollHandled || _gesturePager.IsAssigned || _pressed.IsAssigned;
+        bool handled = rangeGesture || graphHandled || segmentHandled || scrollHandled || _gesturePager.IsAssigned || _pressed.IsAssigned;
         if (_gesturePager.IsAssigned && _tree.IsAlive(_gesturePager)
             && _tree.GetComponent<XsrUiPager>(_gesturePager) is { } pager)
         {
@@ -115,7 +116,7 @@ public sealed partial class XsrUiRenderer
         _gesturePager = FindPager(HitTest(point));
         if (!_gesturePager.IsAssigned) return false;
         XsrUiPager pager = _tree.GetComponent<XsrUiPager>(_gesturePager)!;
-        _pagerGrab = point;
+        _pagerGrab = ScenePointFor(_gesturePager, point);
         _pagerGrabPosition = _pagerLastPosition = pager.Position;
         _pagerLastTimestamp = Stopwatch.GetTimestamp();
         _pagerSamples.Clear();
@@ -136,6 +137,7 @@ public sealed partial class XsrUiRenderer
             || !_paintRects.TryGetValue(_gesturePager.Index, out XsrUiRect rect)
             || (pager.Direction == XsrUiOrientation.Vertical ? rect.Height : rect.Width) <= 0)
             return false;
+        point = ScenePointFor(_gesturePager, point);
         double delta = pager.Direction == XsrUiOrientation.Vertical
             ? _pagerGrab.Y - point.Y
             : _pagerGrab.X - point.X;

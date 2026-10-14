@@ -226,6 +226,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
 
     protected override AutomationPeer OnCreateAutomationPeer()
     {
+        if (_node.Range is not null) return new AvaloniaUiSceneRangeAutomationPeer(this);
         if (_node.TextInput is not null) return new AvaloniaUiSceneTextAutomationPeer(this);
         if (_node.Role is XsrUiSemanticRole.Switch or XsrUiSemanticRole.CheckBox)
             return new AvaloniaUiSceneToggleAutomationPeer(this);

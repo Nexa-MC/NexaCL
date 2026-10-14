@@ -19,6 +19,8 @@ internal static partial class Program
         AssertTrue(policy.Set(new("game.width", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "1234"), first)).IsSuccess);
         AssertTrue(policy.Set(new("game.width", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "1500"), second)).IsSuccess);
         AssertTrue(policy.Set(new("appearance.animations-disabled", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "true"))).IsSuccess);
+        AssertTrue(policy.Set(new("appearance.theme-mode", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "1"))).IsSuccess);
+        AssertTrue(policy.Set(new("appearance.theme-pack-id", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "installed-fixture"))).IsSuccess);
         AssertTrue(policy.Set(new("network.proxy-password", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "keep-private"))).IsSuccess);
         long beforeRejectedWrite = store.Revision;
         AssertFalse(policy.Set(new("java.compatibility", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "true"))).IsSuccess);
@@ -38,10 +40,18 @@ internal static partial class Program
         AssertTrue(global.Changes.Any(change => change.Key == "network.proxy-password"));
         AssertFalse(global.Changes.Any(change => change.Key == "java.compatibility"));
         AssertTrue(global.Changes.Any(change => change.Key == "appearance.animations-disabled"));
+        AssertTrue(global.Changes.Any(change => change.Key == "appearance.theme-mode"));
+        AssertTrue(global.Changes.Any(change => change.Key == "appearance.theme-pack-id"));
+        // Theme options have their own reset route. The global settings reset must
+        // preserve legacy values retained for migration and compatibility.
+        AssertFalse(global.Changes.Any(change => change.Key == "appearance.animation-fps"));
         AssertEqual("1024", Effective(policy, "game.width").Value.Value);
         AssertTrue(policy.ApplyReset(new(global.Revision)).IsSuccess);
         AssertEqual("854", Effective(policy, "game.width").Value.Value);
-        AssertEqual(59, store.GetValue<int>("UiAniFPS").Value);
+        AssertEqual(143, store.GetValue<int>("UiAniFPS").Value);
+        AssertEqual("144", Effective(policy, "appearance.animation-fps").Value.Value);
+        AssertEqual("2", Effective(policy, "appearance.theme-mode").Value.Value);
+        AssertEqual("builtin", Effective(policy, "appearance.theme-pack-id").Value.Value);
         AssertEqual("false", Effective(policy, "appearance.animations-disabled").Value.Value);
         AssertEqual(false, store.GetValue<bool>("SystemDisableUiAnimations").Value);
         AssertEqual("", Effective(policy, "network.proxy-password").Value.Value);
@@ -49,6 +59,8 @@ internal static partial class Program
         var (_, reopened) = PolicyFixture(port);
         AssertEqual("854", Effective(reopened, "game.width", first).Value.Value);
         AssertEqual("1500", Effective(reopened, "game.width", second).Value.Value);
+        AssertEqual("144", Effective(reopened, "appearance.animation-fps").Value.Value);
+        AssertEqual("builtin", Effective(reopened, "appearance.theme-pack-id").Value.Value);
         long after = store.Revision;
         AssertEqual(0, policy.PreviewReset(new()).Changes.Count);
         AssertTrue(policy.ApplyReset(new(after)).IsSuccess);

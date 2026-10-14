@@ -36,13 +36,14 @@ public sealed partial class AvaloniaUiStartupSession
             Content = _card;
             PropertyChanged += OnThemeChanged;
             SetAppearance(appearance);
-            _card.Opacity = appearance.SuppressMotion ? 1 : .75;
+            _card.Opacity = appearance.SuppressSplashMotion ? 1 : .75;
         }
 
         internal void SetAppearance(AvaloniaUiStartupAppearance appearance)
         {
             if (_closed) return;
             _appearance = appearance;
+            _card.SetThemeSnapshot(appearance.Theme);
             RequestedThemeVariant = appearance.ThemeMode switch
             {
                 XsrUiThemeMode.Light => ThemeVariant.Light,
@@ -50,7 +51,7 @@ public sealed partial class AvaloniaUiStartupSession
                 _ => ThemeVariant.Default,
             };
             UpdateBrand();
-            if (appearance.SuppressMotion)
+            if (appearance.SuppressSplashMotion)
             {
                 AvaloniaUiMotion.CancelAll(this);
                 _card.Opacity = 1;
@@ -67,6 +68,7 @@ public sealed partial class AvaloniaUiStartupSession
             if (_closed) return;
             bool dark = AvaloniaUiBrandImages.ResolveDark(_appearance.ThemeMode, ActualThemeVariant);
             _card.ApplyAppearance(dark, _appearance.ProductVersion);
+            if (_firstRender) _card.ApplySplashMotion(_appearance.Theme?.Motion ?? AvaloniaUiThemeSplashMotion.Default, _appearance.ReducedMotion);
             Icon = _card.ProductIcon;
             TransparencyBackgroundFallback = new SolidColorBrush(dark ? Color.FromRgb(13, 26, 36) : Color.FromRgb(248, 252, 255));
         }
@@ -103,9 +105,10 @@ public sealed partial class AvaloniaUiStartupSession
             if (_firstRender) return;
             _firstRender = true;
             _rendered();
-            if (_appearance.SuppressMotion) return;
+            _card.ApplySplashMotion(_appearance.Theme?.Motion ?? AvaloniaUiThemeSplashMotion.Default, _appearance.ReducedMotion);
+            if (_appearance.SuppressSplashMotion) return;
             AvaloniaUiMotion.Animate(this, "splash-appearance", () => _card.Opacity, value => _card.Opacity = value,
-                1, AvaloniaMotionTokens.SplashAppearanceMilliseconds, reducedMotion: () => _appearance.SuppressMotion);
+                1, AvaloniaMotionTokens.SplashAppearanceMilliseconds, reducedMotion: () => _appearance.SuppressSplashMotion);
         }
 
         protected override void OnClosed(EventArgs e)

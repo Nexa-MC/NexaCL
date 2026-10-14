@@ -1,5 +1,5 @@
 <nxml-dynamic>
-  <StackPanel Key="{data row}" Class="resource-base resource-project">
+  <StackPanel Key="{data row}" Height="{data height}" MaxWidth="{data width}" Class="resource-base resource-project">
     <StackPanel Key="{data body}" Class="resource-card-body resource-project-body">
       <Image Key="ResourceProjectIcon" Label="{data title}" Localize="false" Source="{data icon}" Class="resource-base resource-project-icon" />
       <StackPanel Key="ResourceProjectCopy" Class="resource-copy">

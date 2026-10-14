@@ -104,16 +104,19 @@ public sealed partial class XsrUiRenderer
         foreach (XsrUiSceneNode node in _scene.Nodes)
         {
             if (!_tree.IsAlive(node.Entity) || !node.IsAccessible) continue;
-            if (_tree.GetComponent<XsrUiSegmentedTrack>(node.Entity) is not { } track || !node.Rect.Contains(point)) continue;
+            if (_tree.GetComponent<XsrUiSegmentedTrack>(node.Entity) is not { } track || !SceneNodeContains(node, point) || !SceneNodeClipContains(node, point)) continue;
             XsrUiSceneNode thumb = _scene.Nodes.FirstOrDefault(n => n.Entity == track.Thumb);
-            if (!thumb.Entity.IsAssigned || !thumb.Rect.Contains(point)) return false;
+            if (!thumb.Entity.IsAssigned || !SceneNodeContains(thumb, point) || !SceneNodeClipContains(thumb, point)) return false;
+            point = ScenePointFor(node.Entity, point);
+            XsrUiRect thumbRect = thumb.LayoutRect ?? thumb.Rect;
+            XsrUiRect nodeRect = node.LayoutRect ?? node.Rect;
             StopSegmentScroll(node.Entity);
             _segmentDrag = node.Entity; track.Dragging = true;
             Focus(track.Selected, showIndicator: false);
-            track.GrabOffset = point.X - thumb.Rect.X; track.DragX = thumb.Rect.X;
+            track.GrabOffset = point.X - thumbRect.X; track.DragX = thumbRect.X;
             track.ScrollStartOffset = _tree.GetComponent<XsrUiScroll>(node.Entity)?.OffsetX ?? 0;
-            track.ScrollThumbWidth = thumb.Rect.Width;
-            track.ScrollStartProgress = Math.Clamp((thumb.Rect.X - node.Rect.X) / Math.Max(1, node.Rect.Width - thumb.Rect.Width), 0, 1);
+            track.ScrollThumbWidth = thumbRect.Width;
+            track.ScrollStartProgress = Math.Clamp((thumbRect.X - nodeRect.X) / Math.Max(1, nodeRect.Width - thumbRect.Width), 0, 1);
             _tree.MarkDirty(node.Entity, XsrUiDirtyKinds.Paint);
             return true;
         }
@@ -130,6 +133,7 @@ public sealed partial class XsrUiRenderer
     {
         if (!_tree.IsAlive(_segmentDrag) || !IsInVisibleTree(_segmentDrag)) return EndSegmentDrag();
         XsrUiSegmentedTrack track = _tree.GetComponent<XsrUiSegmentedTrack>(_segmentDrag)!;
+        point = ScenePointFor(_segmentDrag, point);
         // Offscreen options participate in the catalog too. Scene hit-test flags deliberately
         // exclude clipped nodes, whereas this captured gesture moves the viewport itself.
         var segments = _tree.Children(_segmentDrag).Where(entity => IsInVisibleTree(entity)

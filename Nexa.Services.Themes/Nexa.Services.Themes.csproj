@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bounded NTP/1 package, options, resource and transaction services.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+    <RootNamespace>Nexa.Services</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Nexa.Services.Themes.Contracts/Nexa.Services.Themes.Contracts.csproj" />
+  </ItemGroup>
+</Project>

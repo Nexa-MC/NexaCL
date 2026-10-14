@@ -8,7 +8,6 @@ internal sealed partial class ResourcesPageController
 {
     private static readonly double CatalogRowHeight = DesktopResourcesText.Metric("virtual").Height!.Value;
     private static readonly double CatalogRowSpacing = DesktopResourcesText.Metric("virtual").Spacing;
-    private static readonly double CatalogRowPitch = CatalogRowHeight + CatalogRowSpacing;
     private static readonly int CatalogAttachedRows = (int)DesktopResourcesText.Metric("virtual").Width!.Value;
     private static readonly int CatalogOverscan = (int)DesktopResourcesText.Metric("virtual").Padding.Left;
     private readonly Dictionary<string, CatalogRowView> _catalogRows = new(StringComparer.Ordinal);
@@ -18,6 +17,36 @@ internal sealed partial class ResourcesPageController
     private XsrUiEntityId _catalogTopSpacer, _catalogBottomSpacer, _catalogEmpty;
     private int _windowStart = -1, _windowEnd = -1;
     private bool _windowDirty;
+    private XsrUiVirtualLayoutMetrics _catalogVirtualMetrics;
+    private string? _catalogMetricPinnedKey;
+    private double _catalogMetricPinOffset;
+    private double EffectiveCatalogHeight => _catalogVirtualMetrics.ItemHeight > 0 ? _catalogVirtualMetrics.ItemHeight : CatalogRowHeight;
+    private double EffectiveCatalogSpacing => _catalogVirtualMetrics.ItemHeight > 0 ? _catalogVirtualMetrics.Spacing : CatalogRowSpacing;
+    private double EffectiveCatalogPitch => EffectiveCatalogHeight + EffectiveCatalogSpacing;
+    private double EffectiveCatalogWidth => _catalogVirtualMetrics.ItemWidth > 0 ? _catalogVirtualMetrics.ItemWidth : DesktopResourcesText.Metric("virtual").MaxWidth!.Value;
+
+    private void InitializeCatalogVirtualMetrics()
+    {
+        _shell.Renderer.RegisterVirtualLayout(_entities["ResourceList"], new(DesktopResourcesText.Metric("virtual").MaxWidth!.Value,
+            CatalogRowHeight, CatalogRowSpacing, RealizationLimit: CatalogAttachedRows, SupportsThemeMetrics: true));
+    }
+
+    private bool UpdateCatalogVirtualMetrics(XsrUiEntityId list)
+    {
+        if (!_shell.Renderer.TryGetVirtualLayoutMetrics(list, out var next)) return false;
+        double oldPitch = EffectiveCatalogPitch;
+        bool changed = next.ItemHeight != EffectiveCatalogHeight || next.Spacing != EffectiveCatalogSpacing || next.ItemWidth != EffectiveCatalogWidth;
+        _catalogVirtualMetrics = next;
+        if (!changed) return false;
+        var scroll = _shell.Tree.GetComponent<XsrUiScroll>(list)!;
+        double index = Math.Max(0, scroll.OffsetY) / oldPitch;
+        scroll.OffsetY = index * EffectiveCatalogPitch;
+        WorkspaceResource(("listSpacing", Number(EffectiveCatalogSpacing)));
+        foreach (var row in _catalogRows.Values)
+            ReloadResource(row.Row, ("height", Number(EffectiveCatalogHeight)), ("width", Number(EffectiveCatalogWidth)));
+        _windowDirty = true;
+        return true;
+    }
 
     private sealed class CatalogRowView(string key, ResourceProject project, XsrUiEntityId row, XsrUiEntityId icon,
         XsrUiEntityId title, XsrUiEntityId description, XsrUiEntityId metadata)
@@ -60,6 +89,7 @@ internal sealed partial class ResourcesPageController
             _catalogBottomSpacer = AppendResource(parking, "ResourceSpacer.d.nxml", new() { ["key"] = "ResourceListBottomSpacer", ["height"] = "0" });
             _catalogEmpty = AppendResource(parking, "ResourceMessage.d.nxml", new() { ["key"] = "ResourceListEmpty", ["message"] = L(DesktopResourcesText.Raw("copy.661ae707311c")) });
             RegisterResourceText(_catalogEmpty, _catalogEmpty, "message");
+            foreach (var spacer in new[] { _catalogTopSpacer, _catalogBottomSpacer }) _shell.Renderer.ProtectVirtualGeometry(spacer);
             _windowDirty = true;
         }
         if (changed) _windowDirty = true;
@@ -71,12 +101,34 @@ internal sealed partial class ResourcesPageController
         if (_result is null || !_catalogTopSpacer.IsAssigned) return;
         if (_shell.Stage.Navigation.Current != Page) { DeactivateListMedia(); return; }
         var list = _entities["ResourceList"];
+        bool metricsChanged = UpdateCatalogVirtualMetrics(list);
         double offset = _shell.Tree.GetComponent<XsrUiScroll>(list)!.OffsetY;
         double viewport = DesktopResourcesText.Metric("virtual").MaxHeight!.Value;
         if (_shell.Renderer.TryGetScrollSnapshot(list, out var snapshot)) viewport = Math.Max(1, snapshot.ViewportHeight);
-        int start = Math.Clamp((int)Math.Floor(Math.Max(0, offset) / CatalogRowPitch) - CatalogOverscan, 0, _projectProjection.Count);
-        int count = Math.Min(CatalogAttachedRows, (int)Math.Ceiling(viewport / CatalogRowPitch) + CatalogOverscan * 2);
+        int start = Math.Clamp((int)Math.Floor(Math.Max(0, offset) / EffectiveCatalogPitch) - CatalogOverscan, 0, _projectProjection.Count);
+        int count = Math.Min(_catalogVirtualMetrics.RealizationLimit > 0 ? _catalogVirtualMetrics.RealizationLimit : CatalogAttachedRows, (int)Math.Ceiling(viewport / EffectiveCatalogPitch) + CatalogOverscan * 2);
         int end = Math.Min(_projectProjection.Count, start + count);
+        if (metricsChanged || _catalogMetricPinnedKey is not null)
+        {
+            bool retainedPin = false;
+            var focused = _shell.Renderer.Focused;
+            while (focused.IsAssigned && _shell.Tree.IsAlive(focused))
+            {
+                var pinned = _attachedRows.FirstOrDefault(row => row.Row == focused);
+                if (pinned is not null)
+                {
+                    int index = _projectProjection.FindIndex(project => CatalogProjectKey(project) == pinned.Key);
+                    if ((metricsChanged || _catalogMetricPinnedKey == pinned.Key && Math.Abs(offset - _catalogMetricPinOffset) < .01)
+                        && index >= start && index < start + _catalogVirtualMetrics.RealizationLimit)
+                    {
+                        end = Math.Max(end, index + 1); _catalogMetricPinnedKey = pinned.Key; _catalogMetricPinOffset = offset; retainedPin = true;
+                    }
+                    break;
+                }
+                focused = _shell.Tree.Parent(focused);
+            }
+            if (!retainedPin) _catalogMetricPinnedKey = null;
+        }
         if (_windowDirty || start != _windowStart || end != _windowEnd)
         {
             var wanted = _projectProjection.Skip(start).Take(end - start).Select(CatalogProjectKey).ToHashSet(StringComparer.Ordinal);
@@ -95,7 +147,7 @@ internal sealed partial class ResourcesPageController
             else
             {
                 if (start > 0)
-                { ReloadResource(_catalogTopSpacer, ("height", Number(start * CatalogRowPitch - CatalogRowSpacing))); _resourceDynamic.Move(_catalogTopSpacer, list); }
+                { ReloadResource(_catalogTopSpacer, ("height", Number(start * EffectiveCatalogPitch - EffectiveCatalogSpacing))); _resourceDynamic.Move(_catalogTopSpacer, list); }
                 for (int index = start; index < end; index++)
                 {
                     var project = _projectProjection[index]; string key = CatalogProjectKey(project);
@@ -106,7 +158,7 @@ internal sealed partial class ResourcesPageController
                 }
                 int remaining = _projectProjection.Count - end;
                 if (remaining > 0)
-                { ReloadResource(_catalogBottomSpacer, ("height", Number(remaining * CatalogRowPitch - CatalogRowSpacing))); _resourceDynamic.Move(_catalogBottomSpacer, list); }
+                { ReloadResource(_catalogBottomSpacer, ("height", Number(remaining * EffectiveCatalogPitch - EffectiveCatalogSpacing))); _resourceDynamic.Move(_catalogBottomSpacer, list); }
             }
             _windowStart = start; _windowEnd = end; _windowDirty = false;
             _shell.Tree.MarkDirty(list, XsrUiDirtyKinds.Layout);
@@ -122,6 +174,8 @@ internal sealed partial class ResourcesPageController
         _catalogRowNames[name] = key;
         var row = AppendResource(_entities["ResourceRowParking"], "ResourceProject.d.nxml", new()
         {
+            ["height"] = Number(EffectiveCatalogHeight),
+            ["width"] = Number(EffectiveCatalogWidth),
             ["row"] = "ResourceProject." + name,
             ["body"] = "ResourceProject." + name + ".Body",
             ["title"] = "",
@@ -131,6 +185,7 @@ internal sealed partial class ResourcesPageController
             ["details"] = "ResourceDetails." + name,
             ["download"] = "ResourceQuickDownload." + name
         });
+        _shell.Renderer.ProtectVirtualGeometry(row);
         var view = new CatalogRowView(key, project, row, _entities["ResourceProjectIcon"], _entities["ResourceProjectTitle"],
             _entities["ResourceProjectDescription"], _entities["ResourceProjectMetadata"]);
         RegisterResourceText(view.Title, row, "title"); RegisterResourceText(view.Description, row, "description"); RegisterResourceText(view.Metadata, row, "metadata");
@@ -205,6 +260,6 @@ internal sealed partial class ResourcesPageController
             if (spacer.IsAssigned && _shell.Tree.IsAlive(spacer)) RemoveResource(spacer);
         _catalogTopSpacer = _catalogBottomSpacer = _catalogEmpty = default;
         _catalogRows.Clear(); _catalogRowNames.Clear(); _attachedRows.Clear(); _projectProjection.Clear();
-        _windowStart = _windowEnd = -1; _windowDirty = true;
+        _windowStart = _windowEnd = -1; _windowDirty = true; _catalogMetricPinnedKey = null;
     }
 }

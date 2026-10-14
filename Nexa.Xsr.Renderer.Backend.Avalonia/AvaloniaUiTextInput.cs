@@ -95,9 +95,9 @@ public sealed partial class AvaloniaUiSceneSurface
     private void BeginTextSelection(Point position, int clickCount)
     {
         if (!_controls.TryGetValue(_shell.Renderer.Focused, out AvaloniaUiSceneNodeControl? control)
-            || control.Node.TextInput is null || !control.Bounds.Contains(position)) return;
+            || control.Node.TextInput is null || !control.Node.Rect.Contains(new(position.X, position.Y))) return;
         _textSelecting = control.Node.Entity;
-        _textAnchor = control.TextPositionAt(position.X - control.Bounds.X);
+        _textAnchor = control.TextPositionAt(control.LocalTextPoint(new(position.X, position.Y)).X);
         if (clickCount >= 2) _shell.Renderer.EditText(XsrUiTextEdit.SelectAll);
         else _shell.Renderer.SetTextSelection(_textSelecting, _textAnchor, _textAnchor);
         CommitScene();
@@ -106,7 +106,7 @@ public sealed partial class AvaloniaUiSceneSurface
     private bool ExtendTextSelection(Point position)
     {
         if (!_textSelecting.IsAssigned || !_controls.TryGetValue(_textSelecting, out AvaloniaUiSceneNodeControl? control)) return false;
-        _shell.Renderer.SetTextSelection(_textSelecting, _textAnchor, control.TextPositionAt(position.X - control.Bounds.X));
+        _shell.Renderer.SetTextSelection(_textSelecting, _textAnchor, control.TextPositionAt(control.LocalTextPoint(new(position.X, position.Y)).X));
         CommitScene();
         return true;
     }
@@ -117,6 +117,9 @@ internal sealed partial class AvaloniaUiSceneNodeControl
     private AvaloniaUiTextInputActions? _textActions;
     private SceneInputMethodClient? _inputMethod;
     private double _textOffset;
+    private readonly record struct InputCaretKey(string Text, string? Family, double Size, double Weight, long Revision);
+    private InputCaretKey? _inputCaretKey;
+    private double[]? _inputCarets;
     private DispatcherTimer? _caretTimer;
     private bool _caretVisible = true;
     internal Rect TextCursorRectangle { get; private set; }
@@ -168,8 +171,23 @@ internal sealed partial class AvaloniaUiSceneNodeControl
 
     private FormattedText FormatInput(string text, IBrush? foreground = null) => new(
         text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,
-        CachedTypeface(FontWeight.Normal), _node.VisualStyle.FontSize > 0 ? _node.VisualStyle.FontSize : 14,
+        ThemeTypeface((FontWeight)(int)(_node.VisualStyle.FontWeight > 0 ? _node.VisualStyle.FontWeight : 400)), _node.VisualStyle.FontSize > 0 ? _node.VisualStyle.FontSize : 14,
         foreground ?? (IBrush?)Brush(_node.VisualStyle.Foreground) ?? Brushes.Black);
+
+    private double[] InputCaretPositions(string text)
+    {
+        double size = _node.VisualStyle.FontSize > 0 ? _node.VisualStyle.FontSize : 14;
+        double weight = _node.VisualStyle.FontWeight > 0 ? _node.VisualStyle.FontWeight : 400;
+        var key = new InputCaretKey(text, _node.FontFamily, size, weight, _themeResources?.TextLayout?.Revision ?? 0);
+        if (_inputCaretKey == key && _inputCarets is not null) return _inputCarets;
+        _inputCaretKey = key;
+        if (_themeResources?.TextLayout is { } provider) return _inputCarets = provider.Carets(text, _node.FontFamily, size, weight);
+        using var layout = new global::Avalonia.Media.TextFormatting.TextLayout(text, ThemeTypeface((FontWeight)(int)weight), size, Brushes.Black);
+        double[] carets = new double[text.Length + 1];
+        foreach (int boundary in StringInfo.ParseCombiningCharacters(text).Append(text.Length))
+            carets[boundary] = layout.HitTestTextPosition(boundary).X;
+        return _inputCarets = carets;
+    }
 
     internal int TextPositionAt(double x)
     {
@@ -177,9 +195,10 @@ internal sealed partial class AvaloniaUiSceneNodeControl
         double target = x - 12 + _textOffset;
         int best = 0;
         double distance = Math.Abs(target);
+        double[] carets = InputCaretPositions(text);
         foreach (int end in StringInfo.ParseCombiningCharacters(text).Skip(1).Append(text.Length))
         {
-            double next = Math.Abs(FormatInput(text[..end]).WidthIncludingTrailingWhitespace - target);
+            double next = Math.Abs(carets[end] - target);
             if (next < distance) { best = end; distance = next; }
         }
         return best;
@@ -190,7 +209,8 @@ internal sealed partial class AvaloniaUiSceneNodeControl
         string text = input.DisplayText;
         int caret = Math.Clamp(input.SelectionEnd, 0, text.Length);
         string presented = input.Preedit.Length == 0 ? text : text[..caret] + input.Preedit + text[caret..];
-        double cursor = FormatInput(presented[..(caret + input.Preedit.Length)]).WidthIncludingTrailingWhitespace;
+        double[] presentedCarets = InputCaretPositions(presented);
+        double cursor = presentedCarets[caret + input.Preedit.Length];
         double available = Math.Max(1, rect.Width - 24);
         _textOffset = Math.Clamp(_textOffset, Math.Max(0, cursor - available), Math.Max(0, cursor));
         double x = 12 - _textOffset;
@@ -204,10 +224,11 @@ internal sealed partial class AvaloniaUiSceneNodeControl
             int start = Math.Min(input.SelectionStart, input.SelectionEnd), end = Math.Max(input.SelectionStart, input.SelectionEnd);
             if (_node.IsFocused && start != end)
             {
-                double left = FormatInput(text[..start]).WidthIncludingTrailingWhitespace;
-                double right = FormatInput(text[..end]).WidthIncludingTrailingWhitespace;
+                double[] selectedCarets = InputCaretPositions(text);
+                double left = selectedCarets[start];
+                double right = selectedCarets[end];
                 context.DrawRectangle(Brush(_node.ColorScheme.AccentText with { Alpha = 55 }), null,
-                    new Rect(x + left, 7, right - left, Math.Max(0, rect.Height - 14)));
+                    new Rect(x + Math.Min(left, right), 7, Math.Abs(right - left), Math.Max(0, rect.Height - 14)));
             }
             context.DrawText(formatted, new Point(x, y));
             if (_node.IsFocused)
@@ -216,7 +237,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
                     context.DrawRectangle(Brush(_node.ColorScheme.AccentText), null, cursorRect);
                 if (input.Preedit.Length > 0)
                 {
-                    double from = FormatInput(text[..caret]).WidthIncludingTrailingWhitespace;
+                    double from = presentedCarets[caret];
                     context.DrawLine(new Pen(Brush(style.Foreground), 1), new Point(x + from, rect.Height - 7), new Point(x + cursor, rect.Height - 7));
                 }
             }

@@ -6,7 +6,12 @@ using Nexa.Core.Media;
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
 public enum AvaloniaUiMediaStatus { Stopped, Playing, Paused, Completed, DependencyMissing, Failed }
-public sealed record AvaloniaUiMediaState(AvaloniaUiMediaStatus Status, string? Detail = null);
+public sealed record AvaloniaUiMediaState(AvaloniaUiMediaStatus Status, string? Detail = null, long Generation = 0)
+{
+    public AvaloniaUiMediaState(AvaloniaUiMediaStatus status, string? detail) : this(status, detail, 0) { }
+    public void Deconstruct(out AvaloniaUiMediaStatus status, out string? detail) { status = Status; detail = Detail; }
+}
+public sealed record AvaloniaUiMediaFrame(long Generation, string Path, PngImage Image);
 
 /// <summary>Owns one bounded local decoder/player process; never launches URI or shell input.</summary>
 public sealed partial class AvaloniaUiLocalMediaPlayer : IAsyncDisposable
@@ -14,6 +19,8 @@ public sealed partial class AvaloniaUiLocalMediaPlayer : IAsyncDisposable
     private readonly SemaphoreSlim _gate = new(1);
     private readonly bool _video;
     private readonly Action<PngImage>? _frame;
+    private readonly Action<AvaloniaUiMediaFrame>? _stampedFrame;
+    private long _generation;
     private readonly CancellationTokenSource _lifetime = new();
     private CancellationTokenSource? _playing;
     private Process? _process;
@@ -25,13 +32,19 @@ public sealed partial class AvaloniaUiLocalMediaPlayer : IAsyncDisposable
     private AvaloniaUiMediaState _state = new(AvaloniaUiMediaStatus.Stopped);
     private bool _disposed;
 
-    public AvaloniaUiLocalMediaPlayer(bool video, Action<PngImage>? frame = null)
-    { _video = video; _frame = frame; }
+    public AvaloniaUiLocalMediaPlayer(bool video, Action<PngImage>? frame = null) : this(video, frame, null) { }
+
+    public AvaloniaUiLocalMediaPlayer(bool video, Action<PngImage>? frame, Action<AvaloniaUiMediaFrame>? stampedFrame)
+    { _video = video; _frame = frame; _stampedFrame = stampedFrame; }
     public AvaloniaUiMediaState State => Volatile.Read(ref _state);
     public event Action<AvaloniaUiMediaState>? Changed;
 
-    public async Task ConfigureAsync(string localPath, int volume, bool play, CancellationToken token = default)
+    public Task ConfigureAsync(string localPath, int volume, bool play, CancellationToken token = default)
+        => ConfigureGenerationAsync(0, localPath, volume, play, token);
+
+    public async Task ConfigureGenerationAsync(long generation, string localPath, int volume, bool play, CancellationToken token = default)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(generation);
         if (volume is < 0 or > 100) throw new ArgumentOutOfRangeException(nameof(volume));
         if (localPath.Length > 4096 || localPath.Length != 0 && !Path.IsPathFullyQualified(localPath))
             throw new ArgumentException("Media requires a local absolute path.", nameof(localPath));
@@ -39,12 +52,12 @@ public sealed partial class AvaloniaUiLocalMediaPlayer : IAsyncDisposable
         try
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            bool changed = _path != localPath || _volume != volume;
+            bool changed = _path != localPath || _volume != volume || _generation != generation;
             if (changed)
             {
                 await StopProcessAsync().ConfigureAwait(false);
                 if (_path != localPath) _position = 0;
-                _path = localPath; _volume = volume;
+                _path = localPath; _volume = volume; _generation = generation;
             }
             if (!play || localPath.Length == 0)
             {
@@ -65,9 +78,9 @@ public sealed partial class AvaloniaUiLocalMediaPlayer : IAsyncDisposable
                 RedirectStandardError = true
             };
             string[] arguments = _video
-                ? ["-nostdin", "-hide_banner", "-loglevel", "error", "-threads", "1", "-stream_loop", "-1", "-re", "-ss", _position.ToString("0.###", CultureInfo.InvariantCulture),
+                ? ["-nostdin", "-hide_banner", "-loglevel", "error", "-protocol_whitelist", "file,pipe", "-format_whitelist", "mov,matroska,webm,avi,wav,mp3,ogg,flac,aac", "-threads", "1", "-stream_loop", "-1", "-re", "-ss", _position.ToString("0.###", CultureInfo.InvariantCulture),
                     "-i", localPath, "-an", "-vf", "scale=960:540:force_original_aspect_ratio=decrease,fps=6", "-f", "image2pipe", "-vcodec", "png", "-threads", "1", "pipe:1"]
-                : ["-hide_banner", "-loglevel", "error", "-nodisp", "-vn", "-autoexit", "-volume", volume.ToString(CultureInfo.InvariantCulture),
+                : ["-hide_banner", "-loglevel", "error", "-protocol_whitelist", "file,pipe", "-format_whitelist", "mov,matroska,webm,avi,wav,mp3,ogg,flac,aac", "-nodisp", "-vn", "-autoexit", "-volume", volume.ToString(CultureInfo.InvariantCulture),
                     "-ss", _position.ToString("0.###", CultureInfo.InvariantCulture), "-i", localPath];
             foreach (string argument in arguments) start.ArgumentList.Add(argument);
             try
@@ -76,7 +89,7 @@ public sealed partial class AvaloniaUiLocalMediaPlayer : IAsyncDisposable
                 _playing = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
                 _started = Stopwatch.GetTimestamp();
                 Publish(AvaloniaUiMediaStatus.Playing);
-                _run = RunAsync(_process, _playing.Token);
+                _run = RunAsync(_process, generation, localPath, _playing.Token);
             }
             catch (System.ComponentModel.Win32Exception) { Publish(AvaloniaUiMediaStatus.DependencyMissing, executable + " is not installed."); }
             catch (IOException error) { Publish(AvaloniaUiMediaStatus.Failed, error.Message); }
@@ -84,7 +97,7 @@ public sealed partial class AvaloniaUiLocalMediaPlayer : IAsyncDisposable
         finally { _gate.Release(); }
     }
 
-    private async Task RunAsync(Process process, CancellationToken token)
+    private async Task RunAsync(Process process, long generation, string path, CancellationToken token)
     {
         Task drain = DrainErrorsAsync(process.StandardError.BaseStream, token);
         try
@@ -94,16 +107,20 @@ public sealed partial class AvaloniaUiLocalMediaPlayer : IAsyncDisposable
                 {
                     PngImage? image = await ReadFrameAsync(process.StandardOutput.BaseStream, token).ConfigureAwait(false);
                     if (image is null) break;
-                    _frame?.Invoke(image);
+                    if (!token.IsCancellationRequested)
+                    {
+                        _frame?.Invoke(image);
+                        _stampedFrame?.Invoke(new(generation, path, image));
+                    }
                 }
             await process.WaitForExitAsync(token).ConfigureAwait(false);
             await drain.ConfigureAwait(false);
             if (!token.IsCancellationRequested) Publish(process.ExitCode == 0 ? AvaloniaUiMediaStatus.Completed : AvaloniaUiMediaStatus.Failed,
-                process.ExitCode == 0 ? null : "Media engine returned " + process.ExitCode);
+                process.ExitCode == 0 ? null : "Media engine returned " + process.ExitCode, generation);
         }
         catch (Exception error) when (error is IOException or InvalidDataException or OperationCanceledException)
         {
-            if (!token.IsCancellationRequested) { Kill(process); Publish(AvaloniaUiMediaStatus.Failed, error.GetType().Name); }
+            if (!token.IsCancellationRequested) { Kill(process); Publish(AvaloniaUiMediaStatus.Failed, error.GetType().Name, generation); }
         }
         finally { try { await drain.ConfigureAwait(false); } catch (Exception error) when (error is OperationCanceledException or IOException) { } }
     }
@@ -146,8 +163,8 @@ public sealed partial class AvaloniaUiLocalMediaPlayer : IAsyncDisposable
         process.Dispose(); _process = null; _playing?.Dispose(); _playing = null;
     }
     private static void Kill(Process process) { try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { } }
-    private void Publish(AvaloniaUiMediaStatus status, string? detail = null)
-    { var state = new AvaloniaUiMediaState(status, detail); Volatile.Write(ref _state, state); Changed?.Invoke(state); }
+    private void Publish(AvaloniaUiMediaStatus status, string? detail = null, long? generation = null)
+    { var state = new AvaloniaUiMediaState(status, detail, generation ?? _generation); Volatile.Write(ref _state, state); Changed?.Invoke(state); }
     public async ValueTask DisposeAsync()
     {
         await _gate.WaitAsync().ConfigureAwait(false);

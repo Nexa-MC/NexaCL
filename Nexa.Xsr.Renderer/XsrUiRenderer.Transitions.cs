@@ -2,6 +2,16 @@ namespace Nexa.Xsr.Renderer;
 
 public sealed partial class XsrUiRenderer
 {
+    private bool _themeSnapshotsInvalidated;
+
+    private void RetireThemeOutgoingSnapshots()
+    {
+        _themeSnapshotsInvalidated = true;
+        _outgoingLayers.Clear();
+        foreach (XsrUiEntityId entity in _tree.LiveEntities)
+            if (_tree.GetComponent<XsrUiTransition>(entity) is { } transition) transition.Outgoing = [];
+    }
+
     private void PrepareTransition(XsrUiEntityId entity, XsrUiTransition transition, string? key,
         XsrUiRect bounds, XsrUiRect? parentClip)
     {
@@ -53,7 +63,7 @@ public sealed partial class XsrUiRenderer
 
     private XsrUiSceneNode[] CaptureOutgoing(XsrUiEntityId entity, XsrUiTransition transition)
     {
-        if (_scene is null) return [];
+        if (_scene is null || _themeSnapshotsInvalidated) return [];
         List<XsrUiSceneNode> captured = [];
         int root = -1;
         for (int index = 0; index < _scene.Count; index++)

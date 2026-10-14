@@ -7,6 +7,7 @@
   ],
   "Nexa.Core": [],
   "Nexa.Desktop": [
+    "Nexa.Services.Themes.Contracts",
     "Nexa.Xsr.Renderer.Nxml.Runtime",
     "Nexa.Services",
     "Nexa.Services.Composition",
@@ -170,6 +171,8 @@
   ],
   "Nexa.Services.Composition": [
     "Nexa.Services",
+    "Nexa.Services.Themes.Contracts",
+    "Nexa.Services.Themes",
     "Nexa.Xsr.Runtime"
   ],
   "Nexa.Services.Foundation.Contracts": [
@@ -482,6 +485,15 @@
     "Nexa.Services.Updates.Contracts",
     "Nexa.Xsr.Abstractions",
     "Nexa.Xsr.State"
+  ],
+  "Nexa.Services.Themes": [
+    "Nexa.Services.Themes.Contracts"
+  ],
+  "Nexa.Services.Themes.Contracts": [
+    "Nexa.Xsr.Abstractions"
+  ],
+  "Nexa.Services.Themes.Tests": [
+    "Nexa.Services.Themes"
   ],
   "Nexa.Services.Tests": [
     "Nexa.Xsr.Renderer.Nxml.Compiler",

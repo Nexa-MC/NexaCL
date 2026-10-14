@@ -20,6 +20,7 @@ public sealed class XsrUiTree
     private readonly Dictionary<int, List<XsrUiStateDependency>> _entityDependencies = [];
     private readonly SortedSet<int> _dirtyEntities = [];
     private int _nextIndex = 1;
+    internal long EntityLifetimeRevision { get; private set; }
 
     /// <summary>
     /// Raised when a renderable mutation marks the tree dirty. The event is notification-only:
@@ -32,6 +33,9 @@ public sealed class XsrUiTree
     /// Gets the number of live entities.
     /// </summary>
     public int Count => _entities.Count;
+
+    /// <summary>Owner-thread snapshot including detached retained pages; handles carry their current generation.</summary>
+    public IReadOnlyList<XsrUiEntityId> LiveEntities => _entities.Keys.Order().Select(IndexToHandle).ToArray();
 
     /// <summary>
     /// Creates one entity. The new entity has no parent and no components. Recycled indexes get
@@ -49,6 +53,7 @@ public sealed class XsrUiTree
             _generations[index] = 1;
         }
 
+        EntityLifetimeRevision++;
         _entities[index] = new XsrUiEntity(name);
         return new XsrUiEntityId(index, _generations[index]);
     }
@@ -528,6 +533,7 @@ public sealed class XsrUiTree
     {
         UnbindAllStates(IndexToHandle(index));
         _ = _entities.Remove(index);
+        EntityLifetimeRevision++;
         _generations[index]++;
         _ = _dirtyEntities.Remove(index);
         _freeIndexes.Push(index);

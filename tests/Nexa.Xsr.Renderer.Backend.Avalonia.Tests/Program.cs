@@ -22,6 +22,7 @@ internal static partial class Program
 {
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("theme recovery before native attachment returns the owned lease", ThemeRecoveryBeforeNativeAttachmentReturnsOwnedLease),
         ("shared press feedback is immediate bounded and available without motion", SharedPressFeedbackIsImmediateBoundedAndAvailableWithoutMotion),
         ("neon theme selection honors explicit and system modes", NeonThemeSelectionHonorsExplicitAndSystemModes),
         ("StartupMediaWarmupSettlesMissingLocalAsset", StartupMediaWarmupSettlesMissingLocalAsset),
@@ -52,6 +53,16 @@ internal static partial class Program
         ("RuntimeDiagnosticsObserveRealCommitsPaintAndAdmission", RuntimeDiagnosticsObserveRealCommitsPaintAndAdmission),
         ("LauncherRenderingPolicySelectsActualNativeOptionsAndPreservesRestartCapture", LauncherRenderingPolicySelectsActualNativeOptionsAndPreservesRestartCapture),
         ("LocalFileAssociationAdmitsRegularPathsAndCapturesIndependentArguments", LocalFileAssociationAdmitsRegularPathsAndCapturesIndependentArguments),
+        ("theme SVG rejects external content and draws admitted geometry", ThemeSvgRejectsExternalContentAndDrawsAdmittedGeometry),
+        ("theme paint consumes gradient texture shadow opacity and canonical transform", ThemePaintConsumesGradientTextureShadowOpacityAndCanonicalTransform),
+        ("theme font bytes shape measure and place input caret consistently", ThemeFontBytesShapeMeasureAndPlaceInputCaretConsistently),
+        ("theme native activation retains window tray and retires resources", ThemeNativeActivationRetainsWindowTrayAndRetiresResources),
+        ("theme range paint and automation use confirmed scene values", ThemeRangePaintAndAutomationUseConfirmedSceneValues),
+        ("theme resource retirement holds snapshot borrow until release", ThemeResourceRetirementHoldsSnapshotBorrowUntilRelease),
+        ("theme portable materials produce visible tint without blurring text", ThemePortableMaterialsProduceVisibleTintWithoutBlurringText),
+        ("theme decoded budget rejects highly compressible raster collections", ThemeDecodedBudgetRejectsHighlyCompressibleRasterCollections),
+        ("theme owner retirement and final native borrow release are concurrent safe", ThemeOwnerRetirementAndFinalNativeBorrowReleaseAreConcurrentSafe),
+        ("theme SVG tile submits a bounded repeating picture for large viewports", ThemeSvgTileSubmitsBoundedRepeatingPictureForLargeViewports),
     ];
 
     private static int Main(string[] args)

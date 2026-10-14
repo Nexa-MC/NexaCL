@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Portable Nexa Theme Pack NTP/1 contracts.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+    <RootNamespace>Nexa.Services</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Nexa.Xsr.Abstractions/Nexa.Xsr.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

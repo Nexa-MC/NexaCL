@@ -22,7 +22,12 @@ public static class NxmlCompiler
 
     private static NxmlIrNode CompileNode(NxmlElement element, HashSet<string> keys, NssStyleSheet styles)
     {
+        NxmlElement authored = element;
         element = styles.Apply(element);
+        string[] styleClasses = (authored.FindProperty("Class")?.Text ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (styleClasses.Length > 64 || styleClasses.Any(value => value.Length > 128 || !value.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-')))
+            throw Fail(element.Name, "Class", "requires at most 64 bounded style identifiers");
+        IReadOnlyList<NxmlStyleDeclaration> styleSource = styles.DescribeSource(authored);
         XsrUiVisualStyle? visual = null;
         string Literal(string name, string fallback) => element.FindProperty(name) is { } property
             ? property.Kind == NxmlValueKind.Literal ? property.Text
@@ -34,8 +39,22 @@ public static class NxmlCompiler
             throw Fail(element.Name, "Role", "is not a semantic role");
         if (recipe == NxmlRuntimeRecipe.TextInput && element.FindProperty("Content") is not null)
             throw Fail(element.Name, "Content", "cannot seed text-input drafts or secrets from a template");
+        bool hasRangeFact = element.Attributes.Any(attribute => attribute.Name is "Minimum" or "Maximum" or "Step" or "RangeValue");
+        if (hasRangeFact && recipe != NxmlRuntimeRecipe.RangeInput) throw Fail(element.Name, "RangeValue", "requires a range input");
+        double minimum = 0, maximum = 100, step = 1, rangeValue = 0;
+        if (recipe == NxmlRuntimeRecipe.RangeInput)
+        {
+            if (role != XsrUiSemanticRole.Slider) throw Fail(element.Name, "Role", "a range input requires the Slider role");
+            minimum = ParseDouble(element.Name, "Minimum", Literal("Minimum", "0"));
+            maximum = ParseDouble(element.Name, "Maximum", Literal("Maximum", "100"));
+            step = ParseDouble(element.Name, "Step", Literal("Step", "1"));
+            rangeValue = ParseDouble(element.Name, "RangeValue", Literal("RangeValue", minimum.ToString(CultureInfo.InvariantCulture)));
+            if (minimum >= maximum || step <= 0 || step > maximum - minimum || Math.Abs(minimum) > 1e12 || Math.Abs(maximum) > 1e12
+                || (maximum - minimum) / step > 1e9 || rangeValue < minimum || rangeValue > maximum)
+                throw Fail(element.Name, "RangeValue", "requires finite bounded ordered limits, positive step and a value within the range");
+        }
         bool allowsChildren = ParseBoolean(element.Name, "AcceptsChildren", Literal("AcceptsChildren", "true"));
-        if ((!allowsChildren || recipe is NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.Image or NxmlRuntimeRecipe.Progress or NxmlRuntimeRecipe.TextInput)
+        if ((!allowsChildren || recipe is NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.Image or NxmlRuntimeRecipe.Progress or NxmlRuntimeRecipe.TextInput or NxmlRuntimeRecipe.RangeInput)
             && element.Children.Count != 0)
             throw Fail(element.Name, null, "does not accept child elements");
         if (recipe == NxmlRuntimeRecipe.DynamicSlot && (element.Children.Count != 0 || element.FindProperty("Key") is null))
@@ -144,7 +163,7 @@ public static class NxmlCompiler
                 NssStyleSheet.SetVisual(visual ??= new(), attribute.Name, attribute.Value.Text);
                 continue;
             }
-            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength" or "PreserveTabs" or "MaxLines" or "TrimOverflow" or "OverlayMotion" or "LiveSetting" or "DismissCommand" or "ShowsVerticalIndicator" or "ShowsHorizontalIndicator" or "UseVerticalWheelForHorizontalScroll" or "StickToEnd" or "ScrollGesture" or "StableContent" or "ModalLayer" or "Anchor" or "AnchorGap" or "SegmentThumb" or "SegmentWidth" or "Checked" or "SelectionRequired" or "TransitionMovesSelf") continue;
+            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength" or "PreserveTabs" or "MaxLines" or "TrimOverflow" or "OverlayMotion" or "LiveSetting" or "DismissCommand" or "ShowsVerticalIndicator" or "ShowsHorizontalIndicator" or "UseVerticalWheelForHorizontalScroll" or "StickToEnd" or "ScrollGesture" or "StableContent" or "ModalLayer" or "Anchor" or "AnchorGap" or "SegmentThumb" or "SegmentWidth" or "Checked" or "SelectionRequired" or "TransitionMovesSelf" or "Minimum" or "Maximum" or "Step" or "RangeValue") continue;
             if (!model.TryGetProperty(attribute.Name, out NxmlControlPropertyModel property))
             {
                 throw Fail(element.Name, attribute.Name, "is not declared by this control model");
@@ -152,14 +171,14 @@ public static class NxmlCompiler
 
             bool supported = property.Target switch
             {
-                NxmlIrPropertyTarget.Command or NxmlIrPropertyTarget.Clickable or NxmlIrPropertyTarget.Focusable => recipe is NxmlRuntimeRecipe.CommandInput or NxmlRuntimeRecipe.Element or NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
+                NxmlIrPropertyTarget.Command or NxmlIrPropertyTarget.Clickable or NxmlIrPropertyTarget.Focusable => recipe is NxmlRuntimeRecipe.CommandInput or NxmlRuntimeRecipe.RangeInput or NxmlRuntimeRecipe.Element or NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
                 NxmlIrPropertyTarget.Content => recipe is NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.CommandInput,
                 NxmlIrPropertyTarget.ImageSource => recipe is NxmlRuntimeRecipe.Image or NxmlRuntimeRecipe.CommandInput,
                 NxmlIrPropertyTarget.Orientation or NxmlIrPropertyTarget.Spacing or NxmlIrPropertyTarget.StretchLastChild or NxmlIrPropertyTarget.Scrollable => recipe is NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
                 NxmlIrPropertyTarget.Value => recipe == NxmlRuntimeRecipe.Progress,
                 NxmlIrPropertyTarget.Placeholder or NxmlIrPropertyTarget.IsPassword => recipe == NxmlRuntimeRecipe.TextInput,
                 NxmlIrPropertyTarget.Selected => recipe == NxmlRuntimeRecipe.CommandInput,
-                NxmlIrPropertyTarget.Enabled => recipe is NxmlRuntimeRecipe.TextInput or NxmlRuntimeRecipe.CommandInput or NxmlRuntimeRecipe.Element or NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
+                NxmlIrPropertyTarget.Enabled => recipe is NxmlRuntimeRecipe.TextInput or NxmlRuntimeRecipe.CommandInput or NxmlRuntimeRecipe.RangeInput or NxmlRuntimeRecipe.Element or NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
                 _ => true,
             };
             if (!supported) throw Fail(element.Name, attribute.Name, "is not supported by this renderer primitive");
@@ -198,6 +217,12 @@ public static class NxmlCompiler
             [.. element.Children.Select(child => CompileNode(child, keys, styles))],
             bindings) with
         {
+            Minimum = minimum,
+            Maximum = maximum,
+            Step = step,
+            RangeValue = rangeValue,
+            StyleIdentity = new XsrUiStyleIdentity(model.Kind, builder.Key, Array.AsReadOnly(styleClasses.Distinct(StringComparer.Ordinal).ToArray()), role.ToString()),
+            StyleSource = styleSource,
             Visual = visual?.Snapshot(),
             SlotLayout = slotLayout,
             MaximumLength = maximumLength,
@@ -377,7 +402,7 @@ public static class NxmlCompiler
         private string? _label;
         private string? _key;
         private bool _focusable;
-        private bool _clickable = recipe == NxmlRuntimeRecipe.CommandInput;
+        private bool _clickable = recipe is NxmlRuntimeRecipe.CommandInput or NxmlRuntimeRecipe.RangeInput;
         private XsrSemanticId? _command;
         private string? _imageSource;
         private string? _placeholder;

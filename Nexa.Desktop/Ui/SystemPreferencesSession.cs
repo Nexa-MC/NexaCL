@@ -12,6 +12,7 @@ namespace Nexa.Desktop.Ui;
 internal sealed class SystemPreferencesSession : IAsyncDisposable
 {
     private readonly XsrQueryRouter _queries;
+    private readonly DesktopEffectiveAppearanceSource? _effectiveAppearance;
     private readonly XsrStateStore _state;
     private readonly XsrStateId _revision;
     private readonly AvaloniaUiPlatformActions _platform;
@@ -33,16 +34,18 @@ internal sealed class SystemPreferencesSession : IAsyncDisposable
     private string? _lastClipboard;
     private int _readingClipboard;
     private bool _disposed;
-    private bool _startupApplied;
+    private volatile bool _startupApplied;
+    private long _policyRequest;
 
     internal SystemPreferencesSession(XsrQueryRouter queries, XsrStateStore state,
         AvaloniaUiPlatformActions platform, DesktopFeedbackService feedback, Action<string> activateProtocol, Action<string> log,
-        Action<DesktopDestination>? startupNavigate = null, Action<bool>? setLaunchHints = null)
+        Action<DesktopDestination>? startupNavigate = null, Action<bool>? setLaunchHints = null, DesktopEffectiveAppearanceSource? effectiveAppearance = null)
     {
-        _queries = queries; _state = state; _platform = platform; _feedback = feedback;
+        _queries = queries; _effectiveAppearance = effectiveAppearance; _state = state; _platform = platform; _feedback = feedback;
         _activateProtocol = activateProtocol; _log = log;
         _startupNavigate = startupNavigate; _setLaunchHints = setLaunchHints;
         _revision = state.Resolve(SettingsPolicyContract.RevisionKey);
+        if (_effectiveAppearance is not null) _effectiveAppearance.Changed += OnEffectiveAppearance;
         _worker = RunAsync();
         _policyWorker = RunPolicyAsync();
         _state.Changed += OnState;
@@ -52,24 +55,26 @@ internal sealed class SystemPreferencesSession : IAsyncDisposable
         _policy.Writer.TryWrite(true);
     }
 
-    private void OnState(XsrStateChange change) { if (change.Id == _revision) _policy.Writer.TryWrite(true); }
-    private void ApplyPolicy(IReadOnlyDictionary<string, string?> values)
+    private void OnEffectiveAppearance() { Interlocked.Increment(ref _policyRequest); _policy.Writer.TryWrite(true); }
+    private void OnState(XsrStateChange change) { if (_effectiveAppearance is null && change.Id == _revision) { Interlocked.Increment(ref _policyRequest); _policy.Writer.TryWrite(true); } }
+    private bool IsPolicyCurrent(long generation, long request) => !_disposed && Interlocked.Read(ref _policyRequest) == request
+        && (_effectiveAppearance is null || _effectiveAppearance.IsCurrent(generation));
+    private void ApplyPolicy(IReadOnlyDictionary<string, string?> values, long generation, long request)
     {
-        if (_disposed) return;
+        if (!IsPolicyCurrent(generation, request)) return;
         bool Read(string key, bool fallback) => bool.TryParse(values.GetValueOrDefault(key), out bool value) ? value : fallback;
         _nativeNotifications = Read("general.native-notifications", true);
         _notificationActions = Read("general.notification-actions", true);
         _clipboard = Read("general.clipboard-detection", false);
-        int opacity = int.TryParse(values.GetValueOrDefault("appearance.window-opacity"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed) ? Math.Clamp(parsed, 40, 100) : 100;
+        int opacity = double.TryParse(values.GetValueOrDefault("appearance.window-opacity"), NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed) && double.IsFinite(parsed) ? (int)Math.Round(Math.Clamp(parsed, 40, 100)) : 100;
         bool blur = Read("appearance.window-blur", false);
         bool hints = Read("general.launch-hints", true);
         _platform.PostToWindow(() =>
-        { if (!_disposed) { _platform.SetWindowAppearance(opacity, blur); _setLaunchHints?.Invoke(hints); } });
+        { if (IsPolicyCurrent(generation, request)) { _platform.SetWindowAppearance(opacity, blur); _setLaunchHints?.Invoke(hints); } });
         if (!_startupApplied)
         {
-            _startupApplied = true;
             DesktopDestination destination = StartupDestination(values.GetValueOrDefault("general.startup-page"));
-            _platform.PostToWindow(() => { if (!_disposed) _startupNavigate?.Invoke(destination); });
+            _platform.PostToWindow(() => { if (IsPolicyCurrent(generation, request) && !_startupApplied) { _startupApplied = true; _startupNavigate?.Invoke(destination); } });
         }
     }
     internal static DesktopDestination StartupDestination(string? value) => value switch
@@ -147,10 +152,17 @@ internal sealed class SystemPreferencesSession : IAsyncDisposable
             await foreach (bool ignored in _policy.Reader.ReadAllAsync(_stop.Token).ConfigureAwait(false))
             {
                 // Latest committed policy is re-read after every native effect; notifications cannot fill this queue.
-                var result = await CommittedSettingsRead.QueryAsync(_queries, _stop.Token).ConfigureAwait(false);
+                long request = Interlocked.Read(ref _policyRequest);
+                var result = _effectiveAppearance is null
+                    ? await CommittedSettingsRead.QueryAsync(_queries, _stop.Token).ConfigureAwait(false)
+                    : await _effectiveAppearance.ReadAsync(_stop.Token).ConfigureAwait(false);
                 if (result is null) { _initialReady.TrySetException(new IOException("无法读取初始系统设置。")); continue; }
+                var snapshot = _effectiveAppearance?.Current;
+                if (snapshot is not null) result = snapshot.Settings;
+                long generation = snapshot?.Generation ?? 0;
+                if (!IsPolicyCurrent(generation, request)) continue;
                 var values = result.Values.ToDictionary(item => item.Key, item => item.Value.Value);
-                ApplyPolicy(values);
+                ApplyPolicy(values, generation, request);
                 bool Read(string key) => bool.TryParse(values.GetValueOrDefault(key), out bool value) && value;
                 bool autostart = Read("general.autostart"), association = Read("general.file-association");
                 bool jumpList = !bool.TryParse(values.GetValueOrDefault("general.jump-list"), out bool configuredJump) || configuredJump;
@@ -182,7 +194,8 @@ internal sealed class SystemPreferencesSession : IAsyncDisposable
     {
         if (_disposed) return;
         _disposed = true;
-        _state.Changed -= OnState; _platform.WindowActivated -= OnActivated; _feedback.Changed -= OnFeedback;
+        _state.Changed -= OnState;
+        if (_effectiveAppearance is not null) _effectiveAppearance.Changed -= OnEffectiveAppearance; _platform.WindowActivated -= OnActivated; _feedback.Changed -= OnFeedback;
         _work.Writer.TryComplete(); _policy.Writer.TryComplete(); await _stop.CancelAsync().ConfigureAwait(false);
         await Task.WhenAll(_worker, _policyWorker).ConfigureAwait(false); _stop.Dispose();
     }

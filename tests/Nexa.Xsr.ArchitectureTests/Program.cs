@@ -23,6 +23,7 @@ internal static partial class Program
             "Nexa.Xsr.Renderer.Nxml.Tests",
             "Nexa.Sidecar.Tests",
             "Nexa.Services.Tests",
+            "Nexa.Services.Themes.Tests",
             "Nexa.Desktop.Tests",
         ];
 
@@ -41,6 +42,8 @@ internal static partial class Program
             "Nexa.Xsr.Renderer.Nxml.Runtime",
             "Nexa.Services",
             "Nexa.Services.Composition",
+            "Nexa.Services.Themes.Contracts",
+            "Nexa.Services.Themes",
         ];
 
     public static int Main(string[] args)
@@ -62,6 +65,7 @@ internal static partial class Program
         ValidateNxmlControlCatalog(repositoryRoot, projectPaths, failures);
         ValidateFunctionPatchCompiler(repositoryRoot, projectPaths, failures);
         ValidateWave3Ci(repositoryRoot, failures);
+        ValidateThemeArchitecture(repositoryRoot, projectPaths, failures);
         ValidateAcyclicGraph(failures);
 
         if (failures.Count == 0)

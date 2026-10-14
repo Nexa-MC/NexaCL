@@ -1,4 +1,4 @@
-﻿using Nexa.Xsr;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 
 namespace Nexa.Xsr.Renderer.Nxml;
@@ -20,6 +20,7 @@ public enum NxmlRuntimeRecipe
     Progress = 8,
     HorizontalPager = 9,
     DynamicSlot = 10,
+    RangeInput = 11,
 }
 
 /// <summary>
@@ -31,11 +32,19 @@ public enum NxmlRuntimeRecipe
 public sealed record NxmlIrBinding(XsrSemanticId State, XsrUiStateProperty Property, XsrUiDirtyKinds DirtyKinds);
 
 /// <summary>
-/// One compiled UI node: typed presentation values ready for the runtime loader. IR nodes are
-/// immutable data; loading is the runtime's job (XSR-209).
+/// Records which host authoring layer declared a presentation value.
 /// </summary>
+public enum NxmlStyleOrigin { ComponentDefault, HostStyleSheet, ExplicitMarkup }
+
+/// <summary>Authored presentation provenance, independent of computed theme overlays.</summary>
+public sealed record NxmlStyleDeclaration(string Name, string Value, NxmlStyleOrigin Origin);
+
+/// <summary>One immutable compiled host node, independent of runtime computed theme presentation.</summary>
 public sealed record NxmlIrNode
 {
+    public XsrUiStyleIdentity? StyleIdentity { get; init; }
+    public IReadOnlyList<NxmlStyleDeclaration> StyleSource { get; init; } = [];
+
     /// <summary>Optional document-unique internal entity key; never an accessibility label.</summary>
     public XsrUiVisualStyleSnapshot? Visual { get; init; }
 
@@ -113,6 +122,10 @@ public sealed record NxmlIrNode
     /// </summary>
     public XsrSemanticId? Command { get; init; }
 
+    public double Minimum { get; init; }
+    public double Maximum { get; init; } = 100;
+    public double Step { get; init; } = 1;
+    public double RangeValue { get; init; }
     public string? ImageSource { get; init; }
     public string? Placeholder { get; init; }
     public bool IsPassword { get; init; }

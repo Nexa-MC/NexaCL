@@ -38,7 +38,8 @@
     <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceNetwork.1_selected" Content="false" />
     <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceNetwork.1_enabled" Content="true" />
     <Node Recipe="Text" Kind="ResourceProjection" Key="ResourceNetwork.1_width" Content="66" />
-    <Node Recipe="Text" Kind="ResourceProjection" Key="searchCaption" Content="搜索" />
+    <Node Recipe="Text" Kind="ResourceProjection" Key="listSpacing" Content="6" />
+  <Node Recipe="Text" Kind="ResourceProjection" Key="searchCaption" Content="搜索" />
     <Node Recipe="Text" Kind="ResourceProjection" Key="currentEnabled" Content="false" />
     <Node Recipe="Text" Kind="ResourceProjection" Key="extensionVisible" Content="false" />
     <Node Recipe="Text" Kind="ResourceProjection" Key="status" Content="Modrinth" />

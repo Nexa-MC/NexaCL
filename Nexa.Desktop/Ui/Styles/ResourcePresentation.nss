@@ -64,6 +64,6 @@
 .resource-extension-input-surface { Width: 220; Weight: 0; }
 .resource-extension-submit { Width: 68; }
 /* Finite viewport metrics and text-width estimates. */
-.resource-metric-virtual { Height: 80; Spacing: 6; Width: 48; Padding: 4; MaxHeight: 600; }
+.resource-metric-virtual { Height: 80; Spacing: 6; Width: 48; Padding: 4; MaxHeight: 600; MaxWidth: 100000; }
 .resource-metric-selector { Width: 13; Height: 7; Padding: 20; }
 .resource-metric-overlay { MaxHeight: 340; MinHeight: 80; Height: 120; Margin: 220,0,0,0; Padding: 16; Width: 34; Spacing: 40; }

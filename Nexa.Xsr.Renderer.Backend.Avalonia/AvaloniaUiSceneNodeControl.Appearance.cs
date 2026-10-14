@@ -40,6 +40,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
     private XsrUiColor ToggleFill(XsrUiVisualStyleSnapshot style)
     {
         XsrUiColor original = style.Border.Alpha > 0 ? style.Border : style.Foreground;
+        if (style.IsComputed) return original;
         XsrUiColorScheme scheme = _node.ColorScheme;
         var rgb = (original.Red, original.Green, original.Blue);
         if (rgb == (scheme.AccentText.Red, scheme.AccentText.Green, scheme.AccentText.Blue)

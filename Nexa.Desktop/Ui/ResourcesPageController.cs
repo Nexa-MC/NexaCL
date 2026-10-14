@@ -92,6 +92,7 @@ internal sealed partial class ResourcesPageController : IDisposable
         Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("ResourcesPage.nxml"), shell.Tree, store);
         IndexResources(Page);
         _workspace = AppendResource(_entities["ResourceWorkspaceSlot"], "ResourceWorkspace.d.nxml", DesktopResourcesText.Defaults());
+        InitializeCatalogVirtualMetrics();
         _filters = AppendResource(_entities["ResourceFilterSlot"], "ResourceFilters.d.nxml", new()
         {
             ["game"] = L(DesktopResourcesText.Raw("copy.8be216be7a84")),

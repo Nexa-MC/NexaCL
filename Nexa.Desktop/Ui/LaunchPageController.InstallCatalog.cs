@@ -66,7 +66,28 @@ internal sealed partial class LaunchPageController
     private static readonly XsrSemanticId CatalogRetry = XsrSemanticId.Parse("ui.install.catalog.retry");
     private readonly Dictionary<string, (XsrUiEntityId Before, XsrUiEntityId After)> _catalogSpacers = [];
     private static readonly double InstallRowHeight = LaunchInstallText.Metric("catalog").Height!.Value;
-    private static readonly double InstallRowPitch = InstallRowHeight + LaunchInstallText.Metric("catalog").Spacing;
+    private readonly Dictionary<string, XsrUiVirtualLayoutMetrics> _installVirtualMetrics = [];
+    private XsrUiVirtualLayoutMetrics ReadInstallVirtualMetrics(string pageKey, XsrUiScroll scroll)
+    {
+        var previous = _installVirtualMetrics.GetValueOrDefault(pageKey);
+        var metrics = LaunchInstallText.Metric("catalog");
+        double oldHeight = previous.ItemHeight > 0 ? previous.ItemHeight : InstallRowHeight;
+        double oldSpacing = previous.ItemHeight > 0 ? previous.Spacing : metrics.Spacing;
+        if (!_shell.Renderer.TryGetVirtualLayoutMetrics(_catalogHosts[pageKey], out var next))
+            return new(0, 0, metrics.MaxWidth!.Value, oldHeight, oldSpacing, 1, (int)metrics.MaxHeight!.Value);
+        _installVirtualMetrics[pageKey] = next;
+        if (oldHeight != next.ItemHeight || oldSpacing != next.Spacing || previous.ItemWidth != next.ItemWidth)
+        {
+            scroll.OffsetY = Math.Max(0, scroll.OffsetY) / (oldHeight + oldSpacing) * (next.ItemHeight + next.Spacing);
+            _catalogRevision = -1;
+        }
+        return next;
+    }
+    private static string InstallRowMargin(double spacing)
+    {
+        var margin = LaunchInstallText.Metric("catalog").Margin;
+        return string.Join(',', new[] { margin.Left, margin.Top, margin.Right, spacing }.Select(InstallNumber));
+    }
     private static readonly int InstallOverscan = (int)LaunchInstallText.Metric("catalog").Padding.Left;
     private static readonly int InstallExtraRows = (int)LaunchInstallText.Metric("catalog").Width!.Value;
     private static readonly double InstallCenterInset = LaunchInstallText.Metric("catalog").MinHeight!.Value;
@@ -91,6 +112,11 @@ internal sealed partial class LaunchPageController
         foreach (JavaInstallSubpage page in JavaInstallSubpages)
         {
             _catalogHosts[page.PageKey] = _javaInstallEntities[page.PageKey == "JavaMinecraftPage" ? "JavaMinecraftVersions" : page.PageKey + "Rows"];
+            var metric = LaunchInstallText.Metric("catalog");
+            _shell.Renderer.RegisterVirtualLayout(_catalogHosts[page.PageKey], new(metric.MaxWidth!.Value, InstallRowHeight,
+                metric.Spacing, RealizationLimit: (int)metric.MaxHeight!.Value, SupportsThemeMetrics: true));
+            _shell.Renderer.TryGetVirtualLayoutMetrics(_catalogHosts[page.PageKey], out var currentMetrics);
+            _installVirtualMetrics[page.PageKey] = currentMetrics;
             var status = AppendInstall(_javaInstallEntities[page.PageKey + "StatusSlot"], "LaunchInstallCatalogStatus.d.nxml", new()
             { ["key"] = page.PageKey + "Status", ["message"] = InstallCopy("catalog.loading"), ["label"] = InstallCopy("catalog.retry"), ["visible"] = "true" });
             _catalogStatus[page.PageKey] = status;
@@ -98,6 +124,7 @@ internal sealed partial class LaunchPageController
             var before = AppendInstall(parking, "LaunchInstallSpacer.d.nxml", new() { ["key"] = "CatalogBefore." + page.PageKey, ["height"] = "0" });
             var after = AppendInstall(parking, "LaunchInstallSpacer.d.nxml", new() { ["key"] = "CatalogAfter." + page.PageKey, ["height"] = "0" });
             _catalogSpacers[page.PageKey] = (before, after);
+            _shell.Renderer.ProtectVirtualGeometry(before); _shell.Renderer.ProtectVirtualGeometry(after);
         }
     }
     private void RequestInstallCatalog(bool force = false)
@@ -217,6 +244,8 @@ internal sealed partial class LaunchPageController
             snapshot = snapshot with { Versions = new[] { new InstallCatalogVersion(selectedBuild, LaunchInstallText.Raw("catalog.installed")) }.Concat(snapshot.Versions).ToArray() };
         if (!_catalogHosts.TryGetValue(_activeJavaInstallPage, out XsrUiEntityId host)) return;
         XsrUiScroll scroll = _shell.Tree.GetComponent<XsrUiScroll>(_javaInstallEntities[_activeJavaInstallPage])!;
+        var virtualMetrics = ReadInstallVirtualMetrics(_activeJavaInstallPage, scroll);
+        double rowHeight = virtualMetrics.ItemHeight, rowPitch = rowHeight + virtualMetrics.Spacing;
         string query = !_installGameChosen && snapshot.Loader is null ? input.ReadDraft().Trim() : "";
         if (query != _catalogSearch)
         {
@@ -244,12 +273,12 @@ internal sealed partial class LaunchPageController
             if (selectedIndex >= 0)
             {
                 _shell.Renderer.FinishScrollInertia(_javaInstallEntities[_activeJavaInstallPage]);
-                scroll.OffsetY = Math.Max(0, selectedIndex * InstallRowPitch - Math.Max(0, _shell.Renderer.Viewport.Height - InstallCenterInset) / 2);
+                scroll.OffsetY = Math.Max(0, selectedIndex * rowPitch - Math.Max(0, _shell.Renderer.Viewport.Height - InstallCenterInset) / 2);
                 _catalogRevision = -1;
             }
         }
-        int first = Math.Clamp((int)(Math.Max(0, scroll.OffsetY - InstallRowHeight) / InstallRowPitch) - InstallOverscan, 0, Math.Max(0, snapshot.Versions.Count - 1));
-        int count = Math.Min(snapshot.Versions.Count - first, (int)Math.Ceiling(_shell.Renderer.Viewport.Height / InstallRowPitch) + InstallExtraRows);
+        int first = Math.Clamp((int)(Math.Max(0, scroll.OffsetY - rowHeight) / rowPitch) - InstallOverscan, 0, Math.Max(0, snapshot.Versions.Count - 1));
+        int count = Math.Min(snapshot.Versions.Count - first, Math.Min(virtualMetrics.RealizationLimit, (int)Math.Ceiling(_shell.Renderer.Viewport.Height / rowPitch) + InstallExtraRows));
         if (snapshot.Revision == _catalogRevision && first == _catalogFirst && count == _catalogCount) return;
         _catalogRevision = snapshot.Revision; _catalogFirst = first; _catalogCount = count;
         // A fixed-height window bounds ECS/native controls independently of catalog length.
@@ -266,7 +295,7 @@ internal sealed partial class LaunchPageController
         var spacers = _catalogSpacers[_activeJavaInstallPage];
         var parking = _javaInstallEntities["JavaInstallRowParking"];
         List<XsrUiEntityId> order = [];
-        ReloadInstall(spacers.Before, ("height", InstallNumber(first * InstallRowPitch)));
+        ReloadInstall(spacers.Before, ("height", InstallNumber(first * rowPitch)));
         InstallDynamic.Move(spacers.Before, first > 0 ? host : parking);
         if (first > 0) order.Add(spacers.Before);
         var eligibility = QueryInstallEligibility(snapshot.Loader, window.Select(version => version.Id).ToArray());
@@ -291,6 +320,9 @@ internal sealed partial class LaunchPageController
             if (!retained.TryGetValue(version.Id, out var row))
                 row = AppendInstall(host, "LaunchInstallCatalogRow.d.nxml", new()
                 {
+                    ["height"] = InstallNumber(rowHeight),
+                    ["width"] = InstallNumber(virtualMetrics.ItemWidth),
+                    ["margin"] = InstallRowMargin(virtualMetrics.Spacing),
                     ["row"] = "CatalogRow:" + key,
                     ["check"] = "CatalogCheck:" + key,
                     ["name"] = "CatalogName:" + key,
@@ -303,14 +335,16 @@ internal sealed partial class LaunchPageController
                     ["rowStyle"] = rowStyle,
                     ["checkStyle"] = checkStyle,
                 });
-            else ReloadInstall(row, ("version", version.Id), ("detail", detail), ("label", label),
+            else ReloadInstall(row, ("height", InstallNumber(rowHeight)), ("width", InstallNumber(virtualMetrics.ItemWidth)),
+                ("margin", InstallRowMargin(virtualMetrics.Spacing)), ("version", version.Id), ("detail", detail), ("label", label),
                 ("selected", InstallFlag(selected)), ("enabled", InstallFlag(!immutable && (selected || conflict is null))),
                 ("rowStyle", rowStyle), ("checkStyle", checkStyle));
+            _shell.Renderer.ProtectVirtualGeometry(row);
             _catalogRows[row] = version;
             order.Add(row);
         }
         int remaining = snapshot.Versions.Count - first - count;
-        ReloadInstall(spacers.After, ("height", InstallNumber(remaining * InstallRowPitch)));
+        ReloadInstall(spacers.After, ("height", InstallNumber(remaining * rowPitch)));
         InstallDynamic.Move(spacers.After, remaining > 0 ? host : parking);
         if (remaining > 0) order.Add(spacers.After);
         InstallDynamic.Reorder(host, order);

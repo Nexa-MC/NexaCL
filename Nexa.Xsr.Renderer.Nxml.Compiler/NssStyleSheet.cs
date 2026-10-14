@@ -42,6 +42,7 @@ public sealed class NssStyleSheet
                     throw new NxmlCompileException($"Unsupported NSS declaration '{name}'.");
                 // Validate every visual value, even if its selector currently matches nothing.
                 if (IsVisual(name)) SetVisual(new(), name, value);
+                else ValidateLayout(name, value);
                 properties.Add(new(name, NxmlValue.Literal(value)));
                 if (properties.Count > 128) throw new NxmlCompileException("NSS declaration budget exceeded.");
             }
@@ -56,6 +57,26 @@ public sealed class NssStyleSheet
             position = close + 1;
         }
         return new([.. rules.OrderBy(rule => rule.Specificity)]);
+    }
+
+    internal IReadOnlyList<NxmlStyleDeclaration> DescribeSource(NxmlElement element)
+    {
+        List<NxmlStyleDeclaration> result = [];
+        foreach (NxmlProperty property in element.Attributes)
+            if (element.DefaultProperties?.Contains(property.Name) == true && (IsVisual(property.Name) || IsLayout(property.Name)))
+                result.Add(new(property.Name, property.Value.Text, NxmlStyleOrigin.ComponentDefault));
+        string type = element.FindProperty("Kind")?.Text ?? element.Name;
+        string? key = element.FindProperty("Key")?.Text;
+        string[] classes = (element.FindProperty("Class")?.Text ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        foreach (Rule rule in _rules)
+            if (rule.Selector == "*" || rule.Selector == type || rule.Selector == "#" + key
+                || rule.Selector.StartsWith('.') && classes.Contains(rule.Selector[1..], StringComparer.Ordinal))
+                foreach (NxmlProperty property in rule.Properties)
+                    result.Add(new(property.Name, property.Value.Text, NxmlStyleOrigin.HostStyleSheet));
+        foreach (NxmlProperty property in element.Attributes)
+            if (element.DefaultProperties?.Contains(property.Name) != true && (IsVisual(property.Name) || IsLayout(property.Name)))
+                result.Add(new(property.Name, property.Value.Text, NxmlStyleOrigin.ExplicitMarkup));
+        return Array.AsReadOnly(result.ToArray());
     }
 
     public NxmlElement Apply(NxmlElement element)
@@ -87,9 +108,32 @@ public sealed class NssStyleSheet
     internal static bool IsVisual(string name) => name is "Background" or "Foreground" or "Border" or "Hover"
         or "HoverExpand" or "NavigationLayout" or "WrapText" or "Surface" or "Opacity" or "CornerRadius"
         or "BorderWidth" or "BlurRadius" or "FontSize" or "FontWeight" or "TextAlignment";
-    private static bool IsLayout(string name) => name is "Width" or "Height" or "MinWidth" or "MaxWidth" or "MinHeight" or "MaxHeight"
+    internal static bool IsLayout(string name) => name is "Width" or "Height" or "MinWidth" or "MaxWidth" or "MinHeight" or "MaxHeight"
         or "Weight" or "HorizontalAlignment" or "VerticalAlignment" or "Margin" or "Padding" or "Spacing" or "Orientation"
         or "TransitionOffsetX" or "TransitionOffsetY";
+
+
+    internal static void ValidateLayout(string name, string value)
+    {
+        if (name is "HorizontalAlignment" or "VerticalAlignment")
+        {
+            if (!Enum.TryParse(value, out XsrUiAlignment parsed) || !Enum.IsDefined(parsed) || parsed.ToString() != value)
+                throw new NxmlCompileException($"Invalid NSS alignment '{value}'.");
+            return;
+        }
+        if (name == "Orientation")
+        {
+            if (value is not ("Horizontal" or "Vertical")) throw new NxmlCompileException($"Invalid NSS orientation '{value}'.");
+            return;
+        }
+        string[] parts = value.Split(',');
+        if (name is "Margin" or "Padding" ? parts.Length is not (1 or 4) : parts.Length != 1)
+            throw new NxmlCompileException($"Invalid NSS numeric shape for '{name}'.");
+        foreach (string part in parts)
+            if (!double.TryParse(part, NumberStyles.Float, CultureInfo.InvariantCulture, out double number) || !double.IsFinite(number)
+                || Math.Abs(number) > 100000 || number < 0 && name is not ("Margin" or "TransitionOffsetX" or "TransitionOffsetY"))
+                throw new NxmlCompileException($"Invalid NSS layout value '{value}' for '{name}'.");
+    }
 
     internal static void SetVisual(XsrUiVisualStyle visual, string name, string value)
     {

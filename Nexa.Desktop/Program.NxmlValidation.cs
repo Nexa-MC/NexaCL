@@ -528,8 +528,8 @@ internal static partial class Program
             if (!ReferenceEquals(transition, shell.Tree.GetComponent<XsrUiTransition>(Find(fragment, "SetupTitle")))
                 || shell.Tree.GetComponent<XsrUiText>(Find(fragment, "SetupPath"))?.Content != status.DataDirectory)
                 throw new InvalidOperationException("Setup projection replaced motion identity or reparsed a directory.");
-            var logo = owner.Append(Find(titleShell, "CustomLauncherLogoSlot"), DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml", new Dictionary<string, string> { ["visible"] = "false" }));
-            owner.Reload(logo, DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml", new Dictionary<string, string> { ["visible"] = "true" }));
+            var logo = owner.Append(Find(titleShell, "CustomLauncherLogoSlot"), DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml", new Dictionary<string, string> { ["visible"] = "false", ["source"] = "" }));
+            owner.Reload(logo, DesktopMarkup.Dynamic("CustomLauncherLogo.d.nxml", new Dictionary<string, string> { ["visible"] = "true", ["source"] = "" }));
             if (shell.Tree.GetComponent<XsrUiElement>(logo)?.IsVisible != true) throw new InvalidOperationException("Custom logo projection did not reload.");
             Console.WriteLine("Dynamic bootstrap validation passed: owned account/setup/logo fragments, retained secret draft and step motion, literal metadata.");
         }

@@ -39,12 +39,12 @@ public sealed partial class XsrUiRenderer
         for (int index = _scene.Count - 1; index >= 0; index--)
         {
             XsrUiSceneNode node = _scene[index];
-            if (!node.IsAccessible || !node.Rect.Contains(point)
-                || node.ClipRect is { } clip && !clip.Contains(point)) continue;
+            if (!node.IsAccessible || !SceneNodeContains(node, point) || !SceneNodeClipContains(node, point)) continue;
+            XsrUiPoint logicalPoint = node.Transform?.Unmap(point) ?? point;
             // Content is clipped to the viewport excluding its own gutters. The first painted
             // entity under this point therefore either owns the bar or occludes bars behind it.
-            XsrUiScrollbarSnapshot? hit = node.VerticalScrollbar is { } vertical && vertical.HitRect.Contains(point)
-                ? vertical : node.HorizontalScrollbar is { } horizontal && horizontal.HitRect.Contains(point) ? horizontal : null;
+            XsrUiScrollbarSnapshot? hit = node.VerticalScrollbar is { } vertical && vertical.HitRect.Contains(logicalPoint)
+                ? vertical : node.HorizontalScrollbar is { } horizontal && horizontal.HitRect.Contains(logicalPoint) ? horizontal : null;
             if (hit is null) return false;
             entity = node.Entity; scrollbar = hit.Value;
             return true;
@@ -58,6 +58,7 @@ public sealed partial class XsrUiRenderer
             || !TryGetSceneScrollbar(entity, scrollbar.Direction, out _)
             || _tree.GetComponent<XsrUiScroll>(entity) is not { } scroll
             || !(scrollbar.Direction == XsrUiOrientation.Vertical ? scroll.ShowsVerticalIndicator : scroll.ShowsHorizontalIndicator)) return false;
+        point = ScenePointFor(entity, point);
         CancelPointerGesture();
         StopScrollMotion(entity); StopSegmentScroll(entity);
         _gestureScroll = entity; _scrollGrab = point; _scrollbarDirection = scrollbar.Direction;
@@ -95,6 +96,7 @@ public sealed partial class XsrUiRenderer
             EndScrollGesture(cancelled: true); return true;
         }
         if (_scrollbarGesture == ScrollbarGesture.Track) return true;
+        point = ScenePointFor(_gestureScroll, point);
         bool vertical = _scrollbarDirection == XsrUiOrientation.Vertical;
         double delta = vertical ? point.Y - _scrollGrab.Y : point.X - _scrollGrab.X;
         _scrollGrab = point;
@@ -175,7 +177,7 @@ public sealed partial class XsrUiRenderer
                 && _tree.GetComponent<XsrUiScroll>(entity) is { MaximumOffsetY: > 0 } scroll && CanUseScroll(entity))
             {
                 StopScrollMotion(entity);
-                _gestureScroll = entity; _scrollGrab = point; _scrollGrabOffset = _scrollLastOffset = scroll.OffsetY;
+                _gestureScroll = entity; _scrollGrab = ScenePointFor(entity, point); _scrollGrabOffset = _scrollLastOffset = scroll.OffsetY;
                 _scrollLastTime = _gestureTime.GetTimestamp(); _scrollCommitted = false;
                 _scrollSamples.Clear(); _scrollSamples.Enqueue((_scrollLastTime, scroll.OffsetY));
                 motion.Dragging = true;
@@ -191,6 +193,7 @@ public sealed partial class XsrUiRenderer
         if (_scrollbarGesture != ScrollbarGesture.None) return MoveScrollbarGesture(point);
         if (!CanUseScroll(_gestureScroll) || _tree.GetComponent<XsrUiScroll>(_gestureScroll) is null
             || _tree.GetComponent<XsrUiScrollGesture>(_gestureScroll) is null) { AbandonScrollGesture(); return false; }
+        point = ScenePointFor(_gestureScroll, point);
         double delta = _scrollGrab.Y - point.Y;
         if (!_scrollCommitted)
         {

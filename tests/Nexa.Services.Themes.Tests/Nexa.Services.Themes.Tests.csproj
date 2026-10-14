@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Description>Executable NTP/1 admission, persistence, authority and lifetime contracts.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Nexa.Services.Themes/Nexa.Services.Themes.csproj" />
+  </ItemGroup>
+</Project>

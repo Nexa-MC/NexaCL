@@ -155,6 +155,7 @@ public enum XsrUiSemanticRole
     CheckBox = 16,
     RadioGroup = 17,
     RadioButton = 18,
+    Slider = 19,
 }
 
 /// <summary>Confirmed toggle state. Activation emits an intent; it never mutates this value.</summary>
@@ -431,7 +432,8 @@ public readonly record struct XsrUiVisualStyleSnapshot(
     bool NavigationLayout = false,
     bool WrapText = false)
 {
-    public bool IsDefined => Surface != XsrUiSurfaceKind.None || Opacity != 0;
+    public bool IsComputed { get; init; }
+    public bool IsDefined => IsComputed || Surface != XsrUiSurfaceKind.None || Opacity != 0;
 }
 
 /// <summary>
@@ -517,6 +519,8 @@ public enum XsrUiKey
     Escape = 7,
     Left = 8,
     Right = 9,
+    Home = 10,
+    End = 11,
 }
 
 /// <summary>A shared selector track. Its hidden child thumb is painted behind the selected segment.</summary>

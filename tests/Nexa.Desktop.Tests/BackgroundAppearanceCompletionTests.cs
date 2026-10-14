@@ -47,6 +47,12 @@ internal static partial class Program
         AssertEqual(video.Key, Recipe().Image.Key);
         AssertEqual(XsrUiImageFitMode.Stretch, Recipe().FitMode);
         AssertEqual(.6, Recipe().ImageOpacity);
+        presentation.BeginGeneration(1); presentation.SetVideo(video, ReadCommitted(), 1);
+        AssertEqual(video.Key, Recipe().Image.Key);
+        presentation.SetStatic(replacement, ReadCommitted()); presentation.BeginGeneration(2);
+        AssertEqual(replacement.Key, Recipe().Image.Key); // A new theme reveals its prepared static image in the same render transaction.
+        presentation.SetVideo(video, ReadCommitted(), 1);
+        AssertEqual(replacement.Key, Recipe().Image.Key); // Retired video frames cannot reattach after the source handoff.
         presentation.ClearVideo();
         AssertEqual(replacement.Key, Recipe().Image.Key); // Restore the latest static carrier and current policy.
         AssertEqual(.6, Recipe().ImageOpacity);
@@ -55,7 +61,8 @@ internal static partial class Program
         AssertEqual(originalColor, shell.Tree.GetComponent<XsrUiVisualStyle>(shell.Content)!.Background);
         presentation.ResetStatic();
         AssertTrue(shell.Tree.GetComponent<XsrUiRasterImage>(shell.Content) is null);
-        foreach (string invalid in new[] { "red", "#11223344", "#12 456", "#GGGGGG", " auto", "AUTO", "" })
+        AssertEqual(new XsrUiColor(0x11, 0x22, 0x33, 0x44), DesktopBackgroundAppearance.ParseColor("#11223344")!.Value);
+        foreach (string invalid in new[] { "red", "#12 456", "#GGGGGG", " auto", "AUTO", "" })
         {
             bool rejected = false;
             try { DesktopBackgroundAppearance.ParseColor(invalid); } catch (InvalidDataException) { rejected = true; }

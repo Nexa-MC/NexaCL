@@ -148,6 +148,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
     internal void ReleasePresentation()
     {
         StopCaret();
+        SetThemeResources(null); _textKey = null; _formattedText = null; _inputCaretKey = null; _inputCarets = null;
         AvaloniaUiMotion.CancelAll(this);
         _presentationReleased = true;
         _rasterLease?.Dispose(); _rasterLease = null; _rasterKey = null; _rasterWidth = 0;

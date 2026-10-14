@@ -14,9 +14,11 @@ public sealed partial class AvaloniaUiSceneSurface
             int insertion = Children.IndexOf(group) + (layer.BehindSelf ? 0 : 1);
             foreach (XsrUiSceneNode node in layer.Nodes)
             {
+                if (_revokedThemeGenerations.Contains(node.ThemeActivationGeneration)) continue;
                 if (index == _outgoingControls.Count)
                     _outgoingControls.Add(new(_ => { }, _ => { }, () => true));
                 AvaloniaUiSceneNodeControl control = _outgoingControls[index++];
+                control.SetThemeResources(ResourcesFor(node));
                 control.SetRasterPresentationEnabled(_rasterPresentationEnabled);
                 control.Apply(node, new XsrUiSize(Bounds.Width, Bounds.Height));
                 Children.Insert(insertion++, control);
@@ -33,7 +35,7 @@ public sealed partial class AvaloniaUiSceneSurface
     {
         foreach (AvaloniaUiSceneNodeControl control in _outgoingControls)
         {
-            XsrUiRect rect = control.Node.Rect;
+            XsrUiRect rect = control.Node.LayoutRect ?? control.Node.Rect;
             control.Arrange(new Rect(rect.X, rect.Y, rect.Width, rect.Height));
         }
     }

@@ -46,7 +46,7 @@ public sealed partial class XsrUiRenderer
         {
             _layoutVisits++;
         }
-        XsrUiElement? element = _tree.GetComponent<XsrUiElement>(entity);
+        XsrUiElement? element = EffectiveElement(entity);
         XsrUiThickness padding = element?.Padding ?? default;
         XsrUiThickness margin = element?.Margin ?? default;
 
@@ -74,7 +74,7 @@ public sealed partial class XsrUiRenderer
 
         if (_tree.GetComponent<XsrUiText>(entity) is { } text)
         {
-            XsrUiVisualStyle? textStyle = _tree.GetComponent<XsrUiVisualStyle>(entity);
+            XsrUiVisualStyle? textStyle = EffectiveVisual(entity);
             widthSensitive = textStyle?.WrapText == true;
             double wrapWidth = textStyle?.WrapText == true
                 ? element?.Width ?? Math.Max(0, contentWidth - padding.Horizontal)
@@ -83,15 +83,24 @@ public sealed partial class XsrUiRenderer
                 ResolveText(text),
                 textStyle?.FontSize ?? 0,
                 wrapWidth,
-                text.MaxLines);
+                text.MaxLines,
+                GetThemeStyle(entity)?.Style.FontFamily, textStyle?.FontWeight ?? 400, text.Runs);
             width = textSize.Width;
             height = textSize.Height;
         }
 
-        XsrUiStackPanel? stack = _tree.GetComponent<XsrUiStackPanel>(entity);
-        if (_tree.GetComponent<XsrUiPager>(entity) is not null)
+        XsrUiStackPanel? stack = EffectiveStack(entity);
+        if (GetThemeStyle(entity)?.Style.Grid is { } themeGrid)
         {
-            foreach (XsrUiEntityId child in _tree.Children(entity).Where(IsVisible))
+            XsrUiSize gridSize = MeasureThemeGrid(entity, themeGrid, new(
+                Math.Max(0, contentWidth - padding.Horizontal), Math.Max(0, contentHeight - padding.Vertical)));
+            width = gridSize.Width + padding.Horizontal + indicatorGutter;
+            height = gridSize.Height + padding.Vertical + horizontalIndicatorGutter;
+            widthSensitive = true;
+        }
+        else if (_tree.GetComponent<XsrUiPager>(entity) is not null)
+        {
+            foreach (XsrUiEntityId child in OrderedChildren(entity).Where(IsVisible))
             {
                 XsrUiSize size = Measure(child, new XsrUiSize(contentWidth, contentHeight));
                 widthSensitive |= _widthSensitiveMeasures.Contains(child.Index);
@@ -104,7 +113,7 @@ public sealed partial class XsrUiRenderer
             double main = 0;
             double cross = 0;
             int children = 0;
-            foreach (XsrUiEntityId child in _tree.Children(entity))
+            foreach (XsrUiEntityId child in OrderedChildren(entity))
             {
                 if (!ParticipatesInStackFlow(child))
                 {
@@ -116,7 +125,7 @@ public sealed partial class XsrUiRenderer
                     Math.Max(0, contentHeight - padding.Vertical));
                 XsrUiSize childDesired = Measure(child, childAvailable);
                 widthSensitive |= _widthSensitiveMeasures.Contains(child.Index);
-                XsrUiThickness childMargin = _tree.GetComponent<XsrUiElement>(child)?.Margin ?? default;
+                XsrUiThickness childMargin = EffectiveElement(child)?.Margin ?? default;
                 bool isMainWidth = stack.Direction == XsrUiOrientation.Horizontal;
                 double childMain = isMainWidth
                     ? childDesired.Width + childMargin.Horizontal
@@ -166,7 +175,7 @@ public sealed partial class XsrUiRenderer
 
     private void Arrange(XsrUiEntityId entity, XsrUiRect slot, XsrUiSize desired)
     {
-        XsrUiElement? element = _tree.GetComponent<XsrUiElement>(entity);
+        XsrUiElement? element = EffectiveElement(entity);
         XsrUiThickness margin = element?.Margin ?? default;
         XsrUiThickness padding = element?.Padding ?? default;
 
@@ -249,9 +258,17 @@ public sealed partial class XsrUiRenderer
 
         _paintRects[entity.Index] = new XsrUiRect(contentX, contentY, contentWidth, contentHeight);
 
+        if (GetThemeStyle(entity)?.Style.Grid is { } themeGrid)
+        {
+            ArrangeThemeGrid(entity, themeGrid, new(contentX, contentY,
+                Math.Max(0, contentWidth - VerticalIndicatorGutter(entity)),
+                Math.Max(0, contentHeight - HorizontalIndicatorGutter(entity))));
+            return;
+        }
+
         if (_tree.GetComponent<XsrUiPager>(entity) is { } pager)
         {
-            XsrUiEntityId[] pages = [.. _tree.Children(entity).Where(IsVisible)];
+            XsrUiEntityId[] pages = [.. OrderedChildren(entity).Where(IsVisible)];
             pager.PageCount = pages.Length;
             pager.PageIndex = Math.Clamp(pager.PageIndex, 0, Math.Max(0, pages.Length - 1));
             if (EffectiveReducedMotion && !pager.IsDragging) pager.Position = pager.PageIndex;
@@ -265,15 +282,15 @@ public sealed partial class XsrUiRenderer
             return;
         }
 
-        XsrUiStackPanel? stack = _tree.GetComponent<XsrUiStackPanel>(entity);
+        XsrUiStackPanel? stack = EffectiveStack(entity);
         if (stack is null)
         {
             // Without a stack component, children overlap the full content rect in attach order.
-            foreach (XsrUiEntityId child in _tree.Children(entity))
+            foreach (XsrUiEntityId child in OrderedChildren(entity))
             {
                 if (IsVisible(child))
                 {
-                    Layout(child, new XsrUiRect(contentX, contentY, contentWidth, contentHeight));
+                    LayoutThemedChild(child, new XsrUiRect(contentX, contentY, contentWidth, contentHeight));
                 }
             }
 
@@ -312,7 +329,7 @@ public sealed partial class XsrUiRenderer
 
         double crossOrigin = stack.Direction == XsrUiOrientation.Vertical ? contentX : contentY;
         double crossScroll = stack.Direction == XsrUiOrientation.Vertical ? scrollX : scrollY;
-        XsrUiEntityId[] visibleChildren = [.. _tree.Children(entity)
+        XsrUiEntityId[] visibleChildren = [.. OrderedChildren(entity)
             .Where(ParticipatesInStackFlow)];
         double availableMain = stack.Direction == XsrUiOrientation.Vertical ? contentHeight : contentWidth;
         Dictionary<int, double> weightedMainSizes = AllocateWeightedMainSizes(
@@ -329,7 +346,7 @@ public sealed partial class XsrUiRenderer
             XsrUiSize childDesired = _desiredSizes.TryGetValue(child.Index, out XsrUiSize size)
                 ? size
                 : Measure(child, new XsrUiSize(contentWidth, contentHeight));
-            XsrUiElement? childElement = _tree.GetComponent<XsrUiElement>(child);
+            XsrUiElement? childElement = EffectiveElement(child);
             XsrUiThickness childMargin = childElement?.Margin ?? default;
             double childMain = weightedMainSizes.TryGetValue(child.Index, out double weightedMain)
                 ? weightedMain
@@ -369,19 +386,19 @@ public sealed partial class XsrUiRenderer
 
         // Overlay children never participate in stack flow. They receive the parent's complete
         // content rectangle so their own alignment and margins anchor them inside the window.
-        foreach (XsrUiEntityId overlay in _tree.Children(entity).Where(child =>
-                     IsVisible(child) && _tree.GetComponent<XsrUiOverlayLayer>(child) is not null))
+        foreach (XsrUiEntityId overlay in OrderedChildren(entity).Where(child =>
+                     IsVisible(child) && (_tree.GetComponent<XsrUiOverlayLayer>(child) is not null || IsThemedOutOfFlow(child))))
         {
-            Layout(overlay, new XsrUiRect(contentX, contentY, contentWidth, contentHeight));
+            LayoutThemedChild(overlay, new XsrUiRect(contentX, contentY, contentWidth, contentHeight));
         }
     }
 
     private double VerticalIndicatorGutter(XsrUiEntityId entity) =>
-        _tree.GetComponent<XsrUiStackPanel>(entity) is not null
+        (EffectiveStack(entity) is not null || GetThemeStyle(entity)?.Style.Grid is not null)
         && _tree.GetComponent<XsrUiScroll>(entity) is { ShowsVerticalIndicator: true } ? 12 : 0;
 
     private double HorizontalIndicatorGutter(XsrUiEntityId entity) =>
-        _tree.GetComponent<XsrUiStackPanel>(entity) is not null
+        (EffectiveStack(entity) is not null || GetThemeStyle(entity)?.Style.Grid is not null)
         && _tree.GetComponent<XsrUiScroll>(entity) is { ShowsHorizontalIndicator: true } ? 12 : 0;
 
     private Dictionary<int, double> AllocateWeightedMainSizes(
@@ -394,7 +411,7 @@ public sealed partial class XsrUiRenderer
         double remaining = Math.Max(0, availableMain - Math.Max(0, children.Length - 1) * spacing);
         foreach (XsrUiEntityId child in children)
         {
-            XsrUiElement? element = _tree.GetComponent<XsrUiElement>(child);
+            XsrUiElement? element = EffectiveElement(child);
             double weight = Math.Max(0, element?.Weight ?? 0);
             XsrUiSize desired = _desiredSizes.TryGetValue(child.Index, out XsrUiSize cached)
                 ? cached

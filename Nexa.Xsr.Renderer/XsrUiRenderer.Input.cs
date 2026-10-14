@@ -27,13 +27,37 @@ public sealed partial class XsrUiRenderer
             bool passThrough = _tree.GetComponent<XsrUiOverlayLayer>(node.Entity) is { IsModal: false }
                 && node.Role == XsrUiSemanticRole.None && !node.IsClickable && !node.IsFocusable
                 && node.Text is null && node.ImageSource is null && node.VisualStyle.Background.Alpha == 0;
-            if (!passThrough && node.IsAccessible && node.Rect.Contains(point) && (node.ClipRect is null || node.ClipRect.Value.Contains(point)))
+            if (!passThrough && node.IsAccessible && SceneNodeContains(node, point) && SceneNodeClipContains(node, point))
             {
                 return node.Entity;
             }
         }
 
         return default;
+    }
+
+    private static bool SceneNodeContains(XsrUiSceneNode node, XsrUiPoint point) =>
+        node.Transform is { } transform && node.LayoutRect is { } layout
+            ? layout.Contains(transform.Unmap(point)) : node.Rect.Contains(point);
+
+    private static bool SceneNodeClipContains(XsrUiSceneNode node, XsrUiPoint point)
+    {
+        if (node.ClipRect is { } bounds && !bounds.Contains(point)) return false;
+        if (node.ClipGeometry is null) return true;
+        for (int index = 0; index < node.ClipGeometry.Count; index++)
+        {
+            XsrUiSceneClip clip = node.ClipGeometry[index];
+            if (!clip.Rect.Contains(clip.Transform?.Unmap(point) ?? point)) return false;
+        }
+        return true;
+    }
+
+    private XsrUiPoint ScenePointFor(XsrUiEntityId entity, XsrUiPoint point)
+    {
+        if (_scene is null) return point;
+        for (int index = 0; index < _scene.Count; index++)
+            if (_scene[index].Entity == entity) return _scene[index].Transform?.Unmap(point) ?? point;
+        return point;
     }
 
     /// <summary>
@@ -79,6 +103,8 @@ public sealed partial class XsrUiRenderer
             // Arming an ancestor pager here would steal focus again on pointer release.
             return Focus(entity, showIndicator: false);
         }
+        if (entity.IsAssigned && _tree.GetComponent<XsrUiRangeInput>(entity) is not null && IsEnabled(input))
+            return BeginRangeGesture(entity, point);
         if (BeginSegmentDrag(point)) return true;
         if (entity.IsAssigned && IsEnabled(input) && BeginGraphGesture(entity, point)) return true;
         bool scrollGesture = BeginScrollGesture(point);
@@ -110,6 +136,7 @@ public sealed partial class XsrUiRenderer
 
     public bool PointerReleased(XsrUiPoint point, XsrUiClickModifiers modifiers)
     {
+        if (EndRangeGesture(point)) return true;
         if (EndGraphGesture(point)) return true;
         if (EndSegmentDrag()) return true;
         if (EndScrollGesture(cancelled: false)) return true;
@@ -159,6 +186,7 @@ public sealed partial class XsrUiRenderer
     /// </summary>
     public bool PointerMoved(XsrUiPoint point)
     {
+        if (MoveRangeGesture(point)) return true;
         if (MoveGraphGesture(point)) return true;
         if (MoveSegmentDrag(point)) return true;
         if (MoveScrollGesture(point)) return true;
@@ -357,6 +385,7 @@ public sealed partial class XsrUiRenderer
     /// </summary>
     public bool HandleKey(XsrUiKey key)
     {
+        if (MoveRangeForKey(key)) return true;
         if (MoveSegmentForKey(key)) return true;
         return key switch
         {

@@ -1,0 +1,17 @@
+<nxml-dynamic>
+  <SettingsForm Key="Theme.Options" IsVisible="{data ready}">
+    <Text Content="主题参数" Class="settings-form-label" />
+    <StackPanel Class="settings-form-surface theme-surface">
+      <Text Content="{data name}" Localize="false" Class="theme-name" />
+      <Text Content="每个主题独立保存参数。选择文件会单独授予该主题读取权限；导入参数不会授予权限。" Class="theme-description" />
+      <Dynamic Key="Theme.OptionRows" Class="theme-rows" />
+      <Text Content="此主题没有可配置参数。" IsVisible="{data empty}" Class="theme-description" />
+      <StackPanel Class="theme-actions">
+        <Button Key="Theme.OptionsSave" Content="保存参数" Label="保存参数" Command="ui.settings.theme.action" Enabled="{data enabled}" Class="theme-action" />
+        <Button Key="Theme.OptionsReset" Content="恢复默认" Label="恢复默认" Command="ui.settings.theme.action" Enabled="{data enabled}" Class="theme-action" />
+        <Button Key="Theme.OptionsExport" Content="导出参数" Label="导出参数" Command="ui.settings.theme.action" Enabled="{data canExport}" Class="theme-action" />
+        <Button Key="Theme.OptionsImport" Content="导入参数" Label="导入参数" Command="ui.settings.theme.action" Enabled="{data canImport}" Class="theme-action" />
+      </StackPanel>
+    </StackPanel>
+  </SettingsForm>
+</nxml-dynamic>

@@ -50,7 +50,7 @@ public sealed record SettingsPolicyDefinition(string Key, SettingsValueKind Kind
             return "Expected an HTTP/SOCKS endpoint or PAC URL without embedded credentials or fragment.";
         if (Key is "network.proxy-user" or "network.proxy-password" && (raw.Length > 1024 || raw.Any(char.IsControl)))
             return "Proxy credentials must be at most 1024 characters without line breaks.";
-        if (Key is "appearance.logo-path" or "appearance.background-path" or "appearance.video-path" or "music.path"
+        if (Key is "appearance.logo-path" or "appearance.launcher-icon-path" or "appearance.background-path" or "appearance.video-path" or "music.path"
             && raw.Length > 0 && (raw.Length > 4096 || !Path.IsPathFullyQualified(raw) || raw.Any(char.IsControl)))
             return "Expected an absolute local media path without control characters.";
         if (Key == "appearance.background-color" && raw != "auto" &&
@@ -102,6 +102,9 @@ public static class SettingsPolicySchema
         new("appearance.lock-window", SettingsValueKind.Boolean, "false", false, false, "UiLockWindowSize", SettingsApplyTiming.Immediate),
         new("appearance.hardware-acceleration-disabled", SettingsValueKind.Boolean, "false", false, false, "SystemDisableHardwareAcceleration", SettingsApplyTiming.Restart),
         new("appearance.theme-mode", SettingsValueKind.Enum, "2", false, false, "UiDarkMode", SettingsApplyTiming.Immediate, Choices: "2|0|1"),
+        new("appearance.theme-pack-id", SettingsValueKind.Text, "builtin", false, false, null, SettingsApplyTiming.Immediate),
+        new("appearance.launcher-icon-mode", SettingsValueKind.Enum, "theme", false, false, null, SettingsApplyTiming.Immediate, Choices: "theme|default|custom"),
+        new("appearance.launcher-icon-path", SettingsValueKind.Text, "", false, false, null, SettingsApplyTiming.Immediate, Exportable: false),
         new("appearance.accent", SettingsValueKind.Enum, "blue", false, false, "UiAccentColor", SettingsApplyTiming.Immediate, Choices: "blue|purple|green|orange"),
         new("java.runtime", SettingsValueKind.Path, "", true, true, null, SettingsApplyTiming.NextLaunch, Exportable: false),
         new("java.auto-install", SettingsValueKind.Boolean, "false", true, false, null, SettingsApplyTiming.NextLaunch),

@@ -18,6 +18,8 @@ public enum XsrUiPointerCursor
 /// <summary>
 /// One width/height pair in renderer coordinates.
 /// </summary>
+public readonly record struct XsrUiSceneClip(XsrUiRect Rect, XsrUiSceneTransform? Transform = null);
+
 public readonly record struct XsrUiSize(double Width, double Height)
 {
 }
@@ -80,6 +82,15 @@ public readonly record struct XsrUiSceneNode(
     bool SuppressEntryAnimation = false,
     IReadOnlyList<XsrUiTextRun>? TextRuns = null)
 {
+    public XsrUiRangeSnapshot? Range { get; init; }
+    public string? FontFamily { get; init; }
+    public XsrUiShadow? Shadow { get; init; }
+    public XsrUiBackgroundImage? BackgroundImage { get; init; }
+    public XsrUiLinearGradient? BackgroundGradient { get; init; }
+    public XsrUiSceneTransform? Transform { get; init; }
+    public XsrUiRect? LayoutRect { get; init; }
+    public IReadOnlyList<XsrUiSceneClip>? ClipGeometry { get; init; }
+    public long ThemeActivationGeneration { get; init; }
     public bool HasRole => Role != XsrUiSemanticRole.None;
     public XsrUiGraphSnapshot? Graph { get; init; }
     public XsrUiContextMenuSnapshot? ContextMenu { get; init; }

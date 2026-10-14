@@ -1,0 +1,8 @@
+<nxml-dynamic>
+  <StackPanel Class="theme-actions">
+    <Button Key="{data decreaseKey}" Content="−" Label="减少参数值" Command="ui.settings.theme.action" Enabled="{data enabled}" Class="theme-step" />
+    <TextInput Key="{data inputKey}" Label="{data label}" Placeholder="{data description}" Localize="false" MaximumLength="32" Enabled="{data enabled}" Class="theme-input theme-range-input" />
+    <Button Key="{data increaseKey}" Content="+" Label="增加参数值" Command="ui.settings.theme.action" Enabled="{data enabled}" Class="theme-step" />
+    <Text Content="{data minimum} – {data maximum} · {data step}" Localize="false" IsVisible="{data bounded}" Class="theme-description" />
+  </StackPanel>
+</nxml-dynamic>

@@ -11,6 +11,9 @@ internal sealed partial class SettingsPageController
     private IReadOnlyList<IReadOnlyList<DesktopScreenshotGalleryLayout.Slot>>? _screenshotVisibleSlots;
     private double _screenshotLayoutWidth;
     private bool _screenshotLayoutTimeline;
+    private double _screenshotMinimumCardWidth, _screenshotGallerySpacing;
+    private double? _screenshotMinimumImageHeight;
+    private int? _screenshotForcedColumns;
 
     private static DateTime? ScreenshotTimestamp(long ticks) => ticks > 0 && ticks <= DateTime.MaxValue.Ticks ? new DateTime(ticks, DateTimeKind.Utc).ToLocalTime() : null;
 
@@ -21,18 +24,38 @@ internal sealed partial class SettingsPageController
     private void UpdateScreenshotWaterfall(InstanceContentSnapshot snapshot)
     {
         var viewport = _shell.Renderer.Viewport; var metric = ContentMetric("screenshot");
-        double width = Math.Max(1, viewport.Width - (_shell.Tree.GetComponent<XsrUiElement>(_shell.Root)?.Padding.Horizontal ?? 0)
-            - (_shell.Tree.GetComponent<XsrUiElement>(_shell.Navigation)?.Width ?? XsrUiShell.CollapsedRailWidth)
-            - (_shell.Tree.GetComponent<XsrUiElement>(_shell.Content)?.Padding.Horizontal ?? 0) - metric.Margin.Top);
+        _shell.Renderer.TryGetLayoutFacts(_shell.Root, out var rootFacts);
+        _shell.Renderer.TryGetLayoutFacts(_shell.Navigation, out var navigationFacts);
+        _shell.Renderer.TryGetLayoutFacts(_shell.Content, out var contentFacts);
+        double width = Math.Max(1, viewport.Width - rootFacts.Padding.Horizontal
+            - (navigationFacts.Width ?? XsrUiShell.CollapsedRailWidth) - contentFacts.Padding.Horizontal - metric.Margin.Top);
         double height = Math.Max(1, viewport.Height);
-        if (_screenshotLayout is null || !ReferenceEquals(_screenshotLayoutEntries, snapshot.Entries) || Math.Abs(width - _screenshotLayoutWidth) > .01 || _screenshotLayoutTimeline != _screenshotTimeline)
+        double minimumWidth = _contentVirtualMetrics.ItemWidth, gap = _contentVirtualMetrics.Spacing;
+        double? minimumImage = _contentVirtualMetrics.HasItemHeightOverride ? _contentVirtualMetrics.ItemHeight : null;
+        int? forcedColumns = _contentVirtualMetrics.HasColumnsOverride ? _contentVirtualMetrics.Columns : null;
+        if (_screenshotLayout is null || !ReferenceEquals(_screenshotLayoutEntries, snapshot.Entries) || Math.Abs(width - _screenshotLayoutWidth) > .01 || _screenshotLayoutTimeline != _screenshotTimeline
+            || _screenshotMinimumCardWidth != minimumWidth || _screenshotGallerySpacing != gap
+            || _screenshotMinimumImageHeight != minimumImage || _screenshotForcedColumns != forcedColumns)
         {
+            var scroll = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!;
+            bool retainAnchor = scroll.OffsetY >= metric.Margin.Right;
+            double previousOffset = Math.Max(0, scroll.OffsetY - metric.Margin.Right);
+            var anchor = _screenshotLayout?.Columns.SelectMany(column => column)
+                .Where(slot => slot.Item is not null && slot.Top + slot.Height > previousOffset)
+                .OrderBy(slot => Math.Abs(slot.Top - previousOffset)).FirstOrDefault();
+            double anchorFraction = anchor is null ? 0 : Math.Clamp((previousOffset - anchor.Top) / anchor.Height, 0, 1);
+            _screenshotMinimumCardWidth = minimumWidth; _screenshotGallerySpacing = gap;
+            _screenshotMinimumImageHeight = minimumImage; _screenshotForcedColumns = forcedColumns;
             _screenshotLayoutEntries = snapshot.Entries; _screenshotLayoutWidth = width; _screenshotLayoutTimeline = _screenshotTimeline;
-            _screenshotLayout = DesktopScreenshotGalleryLayout.Create(snapshot.Entries, width, _screenshotTimeline); _screenshotVisibleSlots = null;
+            _screenshotLayout = DesktopScreenshotGalleryLayout.Create(snapshot.Entries, width, _screenshotTimeline,
+                minimumWidth, gap, minimumImage, forcedColumns); _screenshotVisibleSlots = null;
+            if (retainAnchor && anchor?.Item is { } anchored && _screenshotLayout.Columns.SelectMany(column => column)
+                .FirstOrDefault(slot => slot.Item?.Name == anchored.Name) is { } replacement)
+                scroll.OffsetY = metric.Margin.Right + replacement.Top + anchorFraction * replacement.Height;
         }
         var layout = _screenshotLayout;
         double offset = Math.Clamp(_shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY - metric.Margin.Right, 0, Math.Max(0, layout.Height - height));
-        var visible = layout.SelectWindow(Math.Max(0, offset - metric.Margin.Bottom), offset + height + metric.Margin.Bottom, maxCards: 1023);
+        var visible = layout.SelectWindow(Math.Max(0, offset - metric.Margin.Bottom), offset + height + metric.Margin.Bottom, maxCards: Math.Min(1023, _contentVirtualMetrics.RealizationLimit - 1));
         var focused = _screenshotPreview.IsAssigned ? _screenshotPreviousFocus : _shell.Renderer.Focused;
         string? pinnedName = _screenshotCards.FirstOrDefault(pair => ContentContainsFocus(pair.Value.Root, focused)).Key;
         if (pinnedName is not null)
@@ -51,10 +74,11 @@ internal sealed partial class SettingsPageController
         if (!_shell.Tree.IsAlive(_screenshotWaterfall))
         {
             _screenshotCards.Clear(); _screenshotColumns.Clear();
-            _screenshotWaterfall = AppendContent(_contentList, "SettingsContentScreenshotWaterfall.d.nxml", new() { ["height"] = ContentNumber(layout.Height) });
+            _screenshotWaterfall = AppendContent(_contentList, "SettingsContentScreenshotWaterfall.d.nxml", new() { ["height"] = ContentNumber(layout.Height), ["spacing"] = ContentNumber(layout.Spacing) });
             if (!_shell.Tree.IsAlive(_contentEmpty)) _contentEmpty = AppendContent(_contentParking, "SettingsContentEmpty.d.nxml", new() { ["message"] = "" });
         }
-        ReloadContent(_screenshotWaterfall, ("height", ContentNumber(layout.Height)));
+        ReloadContent(_screenshotWaterfall, ("height", ContentNumber(layout.Height)), ("spacing", ContentNumber(layout.Spacing)));
+        _shell.Renderer.ProtectVirtualGeometry(_screenshotWaterfall);
         foreach (var entry in _screenshotCards.Values.Where(entry => _shell.Tree.IsAlive(entry.Root))) _dynamic.Move(entry.Root, _contentParking);
         foreach (var column in _screenshotColumns)
             foreach (var child in _shell.Tree.Children(column).ToArray()) RemoveContentView(child);
@@ -66,11 +90,11 @@ internal sealed partial class SettingsPageController
         var retained = new HashSet<string>(StringComparer.Ordinal);
         for (int index = 0; index < layout.ColumnCount; index++)
         {
-            var column = _screenshotColumns[index]; ReloadContent(column, ("width", ContentNumber(layout.CardWidth)), ("height", ContentNumber(layout.Height)));
+            var column = _screenshotColumns[index]; _shell.Renderer.ProtectVirtualGeometry(column); ReloadContent(column, ("width", ContentNumber(layout.CardWidth)), ("height", ContentNumber(layout.Height)));
             double cursor = 0;
             foreach (var slot in visible[index])
             {
-                if (slot.Top > cursor) AppendContent(column, "SettingsContentSpacer.d.nxml", new() { ["key"] = "ScreenshotWaterfallBefore." + index + "." + slot.EntryIndex, ["height"] = ContentNumber(slot.Top - cursor) });
+                if (slot.Top > cursor) AppendScreenshotSpacer(column, new() { ["key"] = "ScreenshotWaterfallBefore." + index + "." + slot.EntryIndex, ["height"] = ContentNumber(slot.Top - cursor) });
                 if (slot.IsHeading)
                     AppendContent(column, "SettingsContentScreenshotHeading.d.nxml", new() { ["heading"] = slot.HeadingDate is { } date ? date.ToString("yyyy/MM/dd", System.Globalization.CultureInfo.CurrentCulture) : ContentTerm("unknownDate"), ["height"] = ContentNumber(slot.Height) });
                 else
@@ -83,6 +107,7 @@ internal sealed partial class SettingsPageController
 
                     }
                     else ReloadContent(view.Root, data.Select(pair => (pair.Key, pair.Value)).ToArray());
+                    _shell.Renderer.ProtectVirtualGeometry(view.Root);
                     var presented = ScreenshotWithCachedThumbnail(item);
                     bool sameIdentity = view.Item.Size == item.Size && view.Item.ModifiedUtcTicks == item.ModifiedUtcTicks;
                     if (presented.Icon is not null || !sameIdentity || _shell.Tree.GetComponent<XsrUiImage>(view.Icon)?.Raster is null) BindContentImage(view.Icon, presented);
@@ -94,11 +119,17 @@ internal sealed partial class SettingsPageController
                 }
                 cursor = slot.Top + slot.Height;
             }
-            if (layout.Height > cursor) AppendContent(column, "SettingsContentSpacer.d.nxml", new() { ["key"] = "ScreenshotWaterfallAfter." + index, ["height"] = ContentNumber(layout.Height - cursor) });
+            if (layout.Height > cursor) AppendScreenshotSpacer(column, new() { ["key"] = "ScreenshotWaterfallAfter." + index, ["height"] = ContentNumber(layout.Height - cursor) });
         }
         foreach (var old in _screenshotCards.Where(pair => !retained.Contains(pair.Key)).ToArray()) { RemoveContentView(old.Value.Root); _screenshotCards.Remove(old.Key); }
         _shell.Tree.MarkDirty(_contentList, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
     }
+    private void AppendScreenshotSpacer(XsrUiEntityId parent, Dictionary<string, string> data)
+    {
+        var spacer = AppendContent(parent, "SettingsContentSpacer.d.nxml", data);
+        _shell.Renderer.ProtectVirtualGeometry(spacer);
+    }
+
     private Dictionary<string, string> ScreenshotCardProjection(InstanceContentEntry item, double imageHeight, double cardHeight, bool includeTimestamp) => new()
     {
         ["key"] = "ManagementScreenshot." + ContentFileKey(item.Name),

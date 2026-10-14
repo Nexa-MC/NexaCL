@@ -14,12 +14,12 @@ internal static partial class Program
         CustomAppearanceSession? appearance, DesktopMediaSession? media, DesktopPresentationSession presentation,
         SystemPreferencesSession? systemPreferences, Action<string> setStage, LogService log,
         DesktopIntegrationSession? integration = null, SidecarStartup.Lifetime? sidecars = null,
-        XsrStateStore? startupState = null)
+        XsrStateStore? startupState = null, DesktopThemeSession? themes = null)
     {
         try
         {
             await PrepareNormalStartupCoreAsync(startup, shell, platform, launch, settings, versionSettings,
-                resources, appearance, media, presentation, systemPreferences, setStage, log, integration, sidecars, startupState).ConfigureAwait(false);
+                resources, appearance, media, presentation, systemPreferences, setStage, log, integration, sidecars, startupState, themes).ConfigureAwait(false);
         }
         catch
         {
@@ -35,7 +35,7 @@ internal static partial class Program
         SettingsPageController settings, SettingsPageController versionSettings, ResourcesPageController resources,
         CustomAppearanceSession? appearance, DesktopMediaSession? media, DesktopPresentationSession presentation,
         SystemPreferencesSession? systemPreferences, Action<string> setStage, LogService log,
-        DesktopIntegrationSession? integration, SidecarStartup.Lifetime? sidecars, XsrStateStore? startupState)
+        DesktopIntegrationSession? integration, SidecarStartup.Lifetime? sidecars, XsrStateStore? startupState, DesktopThemeSession? themes)
     {
         CancellationToken cancellation = startup?.CancellationToken ?? default;
         DesktopStartupReadiness readiness = new(stage =>
@@ -50,11 +50,12 @@ internal static partial class Program
             token.ThrowIfCancellationRequested();
             shell.Render(new XsrUiSize(850, 500));
             if (startupState is not null)
-                startup?.SetAppearance(CommittedStartupAppearance(startupState, shell.Renderer));
+                startup?.SetAppearance(CommittedStartupAppearance(startupState, shell.Renderer) with { Theme = themes?.StartupSnapshot });
             return Task.CompletedTask;
         }, token);
 
         await readiness.RunAsync("startup_sidecar_discovery", token => (sidecars?.InitialReady ?? Task.CompletedTask).WaitAsync(token)).ConfigureAwait(false);
+        await readiness.RunAsync("startup_theme_admission", token => OnUi(() => themes?.PrepareStartupAsync(token) ?? Task.CompletedTask, token)).ConfigureAwait(false);
 
         // Consume the already admitted local scan and actual controller query tasks. Metadata
         // exists before queued deep links select Java/storage/about settings subsections.

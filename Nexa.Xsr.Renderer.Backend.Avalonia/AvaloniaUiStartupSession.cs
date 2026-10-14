@@ -45,7 +45,7 @@ public sealed partial class AvaloniaUiStartupSession : IAsyncDisposable
         AvaloniaUiStartupAppearance appearance, Func<string, string>? localize = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(appearance);
-        appearance.Validate();
+        appearance = appearance.Snapshot();
         var session = new AvaloniaUiStartupSession { _rendering = new(disableHardwareAcceleration), _appearance = appearance };
         if (localize is not null) session._localize = localize;
         if (Interlocked.CompareExchange(ref _active, session, null) is not null)
@@ -92,7 +92,7 @@ public sealed partial class AvaloniaUiStartupSession : IAsyncDisposable
     public void SetAppearance(AvaloniaUiStartupAppearance appearance)
     {
         ArgumentNullException.ThrowIfNull(appearance);
-        appearance.Validate();
+        appearance = appearance.Snapshot();
         if (Completion.IsCompleted) return;
         void Apply()
         {

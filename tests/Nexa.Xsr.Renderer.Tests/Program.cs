@@ -6,6 +6,18 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("future grid admission and runtime recovery preserve owned state", Sync(ThemeFutureGridFailureRecoversOnceWithoutLosingOwnedState)),
+        ("theme failures require explicit recovery and retry only once", Sync(ThemeStyleFailureWithoutRecoveryAndRepeatedFailureStillPropagate)),
+        ("theme clocks ignore hidden and parked matches and wake on reveal", Sync(ThemeAnimationClockRetiresHiddenAndParkedMatchesAndWakesOnReveal)),
+        ("theme preparing commits virtual metrics before host layout without reentry", Sync(ThemePreparingProjectsVirtualMetricsBeforeLayoutAndRejectsRecursiveRender)),
+        ("range input owns pointer and finite keyboard native requests", Sync(RangeInputCapturesPointerAndSharesFiniteKeyboardAndNativeRequests)),
+        ("range input retirement rejects captured writes and validates bounds", Sync(RangeInputRetirementAndSourceBoundsDoNotLeakCapturedWrites)),
+        ("theme paint switches preserve owned state and literal colors", Sync(ThemePaintSwitchPreservesOwnedStateAndLiteralColors)),
+        ("theme admission validates retained nodes before mutation", Sync(ThemeAdmissionIncludesRetainedNodesAndRejectsWithoutMutation)),
+        ("theme state responsive and source changes invalidate correctly", Sync(ThemeInteractionResponsiveAndSourceChangesInvalidateOnlyNeededStyle)),
+        ("theme grid fractions spans order and absolute share input geometry", Sync(ThemeGridFractionsSpansOrderAndAbsoluteGeometryAgreeWithInput)),
+        ("theme affine drawing and inverse hit geometry agree", Sync(ThemeTransformSharesDrawingInverseHitAndInheritedGeometry)),
+        ("theme font bridge and keyframes honor revision motion and idle", Sync(ThemeFontBridgeRevisionRemeasuresAndAnimationHonorsMotionAndIdles)),
         ("ScrollbarThumbDragAndTrackPageUseSceneGeometry", Sync(ScrollbarThumbDragAndTrackPageUseSceneGeometry)),
         ("ScrollbarDragSharesWheelOffsetAndAdaptsToResize", Sync(ScrollbarDragSharesWheelOffsetAndAdaptsToResize)),
         ("ScrollbarOwnershipRejectsLiveBarriersAndRetiredPages", Sync(ScrollbarOwnershipRejectsLiveBarriersAndRetiredPages)),

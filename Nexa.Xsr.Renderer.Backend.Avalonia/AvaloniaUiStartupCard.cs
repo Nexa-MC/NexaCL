@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Nexa.Xsr.Renderer;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
@@ -12,6 +13,10 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
 {
     private readonly AvaloniaUiBrandImages? _brand = AvaloniaUiBrandImages.TryLoadProduct();
     private readonly Bitmap? _fallback;
+    private AvaloniaUiBrandImages? _themeBrand;
+    private AvaloniaUiThemeStartupSnapshot? _themeSnapshot;
+    private AvaloniaUiThemeSplashMotion _splashMotion;
+    private bool _splashReduced;
     private readonly Image _mark;
     private readonly TextBlock _name, _edition, _version, _stage;
     private readonly Border _rail, _statusDot;
@@ -22,7 +27,7 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
     private string _stageSource = "启动中";
     private bool _dark, _failed, _disposed;
     internal Grid Header { get; }
-    internal WindowIcon? ProductIcon => _brand?.ResolveIcon(_dark);
+    internal WindowIcon? ProductIcon => (_themeBrand ?? _brand)?.ResolveIcon(_dark);
 
     internal AvaloniaUiStartupCard(Func<string, string> localize, Action? cancel = null,
         Action? retry = null, Stream? fallback = null)
@@ -117,10 +122,51 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
         Child = new StackPanel { Spacing = 14, Children = { Header, _rail, status, _buttons } };
     }
 
+    internal void ApplySplashMotion(AvaloniaUiThemeSplashMotion motion, bool reducedMotion)
+    {
+        if (_splashMotion == motion && _splashReduced == reducedMotion) return;
+        AvaloniaUiMotion.CancelAll(this);
+        _splashMotion = motion; _splashReduced = reducedMotion;
+        _mark.Opacity = 1; _mark.Clip = null;
+        if (reducedMotion || motion is AvaloniaUiThemeSplashMotion.Default or AvaloniaUiThemeSplashMotion.None or AvaloniaUiThemeSplashMotion.Fade) return;
+        if (motion == AvaloniaUiThemeSplashMotion.Breathe) Breathe(lower: true);
+        else if (motion == AvaloniaUiThemeSplashMotion.Draw)
+        {
+            var clip = new RectangleGeometry(new Rect(0, 0, 0, 76)); _mark.Clip = clip;
+            double progress = 0;
+            AvaloniaUiMotion.Animate(this, "theme-splash-draw", () => progress,
+                value => { progress = value; clip.Rect = new Rect(0, 0, 76 * value, 76); }, 1, 600,
+                completed: () => { if (!_disposed && _splashMotion == motion) _mark.Clip = null; },
+                reducedMotion: () => _splashReduced || _disposed);
+        }
+        void Breathe(bool lower)
+        {
+            if (_disposed || _splashReduced || _splashMotion != AvaloniaUiThemeSplashMotion.Breathe) return;
+            AvaloniaUiMotion.Animate(this, "theme-splash-breathe", () => _mark.Opacity, value => _mark.Opacity = value,
+                lower ? .88 : 1, 1800, completed: () => Breathe(!lower), reducedMotion: () => _splashReduced || _disposed);
+        }
+    }
+
+    internal void SetThemeSnapshot(AvaloniaUiThemeStartupSnapshot? snapshot)
+    {
+        if (_themeSnapshot == snapshot) return;
+        AvaloniaUiBrandImages? replacement = null;
+        if (snapshot is { BrandLightPng.IsEmpty: false })
+        {
+            using var light = new MemoryStream(snapshot.BrandLightPng.ToArray(), writable: false);
+            using var dark = new MemoryStream(snapshot.BrandDarkPng.ToArray(), writable: false);
+            replacement = AvaloniaUiBrandImages.Load(light, dark);
+        }
+        AvaloniaUiBrandImages? previous = _themeBrand;
+        _themeBrand = replacement; _themeSnapshot = snapshot;
+        _mark.Source = (_themeBrand ?? _brand)?.Resolve(_dark) ?? _fallback;
+        previous?.Dispose();
+    }
+
     internal void ApplyAppearance(bool dark, string version)
     {
         _dark = dark;
-        _mark.Source = _brand?.Resolve(dark) ?? _fallback;
+        _mark.Source = (_themeBrand ?? _brand)?.Resolve(dark) ?? _fallback;
         Color surface = dark ? Color.FromRgb(13, 26, 36) : Color.FromRgb(248, 252, 255);
         Color lower = dark ? Color.FromRgb(9, 20, 29) : Color.FromRgb(232, 243, 250);
         Color mint = dark ? Color.FromRgb(80, 229, 195) : Color.FromRgb(14, 126, 134);
@@ -141,8 +187,18 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
         _cancel.Foreground = _version.Foreground;
         _retry.Background = new SolidColorBrush(dark ? Color.FromRgb(20, 65, 70) : Color.FromRgb(210, 241, 244));
         _retry.Foreground = _name.Foreground;
+        if (_themeSnapshot?.Colors is { } colors)
+        {
+            Background = ThemeBrush(colors.Background);
+            _name.Foreground = ThemeBrush(colors.Foreground);
+            _edition.Foreground = ThemeBrush(colors.Accent);
+            _rail.Background = ThemeBrush(colors.Accent);
+            _version.Foreground = ThemeBrush(colors.Foreground with { Alpha = 180 });
+        }
         ApplyStatus();
     }
+
+    private static SolidColorBrush ThemeBrush(XsrUiColor color) => new SolidColorBrush(Color.FromArgb(color.Alpha, color.Red, color.Green, color.Blue));
 
     internal void SetStage(string stage, bool failed, bool canRetry)
     {
@@ -187,7 +243,9 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        AvaloniaUiMotion.CancelAll(this);
         _mark.Source = null;
+        _themeBrand?.Dispose();
         _brand?.Dispose();
         _fallback?.Dispose();
     }

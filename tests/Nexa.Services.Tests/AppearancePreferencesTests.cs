@@ -40,7 +40,9 @@ internal static partial class Program
         port.Fail = false;
         AssertTrue(policy.Set(new("appearance.accent", SettingsLayer.Global, new(SettingsOverrideMode.Inherit))).IsSuccess);
         AssertEqual("blue", Effective(policy, "appearance.accent").Value.Value);
-        foreach (string id in new[] { "global.appearance.d7137f424ce4", "global.appearance.dc9cc5ed3077" })
-            AssertEqual(SettingsCapabilityAvailability.Available, SettingsCatalog.Entries.Single(item => item.Id == id).Availability);
+        foreach (string key in new[] { "appearance.theme-mode", "appearance.theme-pack-id", "appearance.launcher-icon-mode" })
+            AssertEqual(SettingsCapabilityAvailability.Available, SettingsCatalog.Entries.Single(item => item.SettingKey == key).Availability);
+        AssertFalse(SettingsCatalog.Entries.Any(item => item.SettingKey == "appearance.accent"));
+        AssertEqual("blue|purple|green|orange", SettingsPolicySchema.ByKey["appearance.accent"].Choices);
     }
 }

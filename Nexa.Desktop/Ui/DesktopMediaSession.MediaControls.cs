@@ -17,28 +17,30 @@ internal sealed partial class DesktopMediaSession
             {
                 if (_disposed) return;
                 _nativeMedia = _platform.CreateNativeMediaControls(() => _audio.State,
-                    () => { lock (_gate) return !_disposed && Read("music.enabled", false) && Read("music.media-controls", true); },
+                    () => { lock (_gate) return IsGenerationCurrent(_audio.State.Generation) && Read("music.enabled", false) && Read("music.media-controls", true); },
                     command => OnSystemMediaControl(command, null), _log);
             });
             return;
         }
         _mpris = new(() => _audio.State, CaptureMediaVolume, OnSystemMediaControl, _log,
-            () => { lock (_gate) return !_disposed && Read("music.enabled", false) && Read("music.media-controls", true); });
+            () => { lock (_gate) return IsGenerationCurrent(_audio.State.Generation) && Read("music.enabled", false) && Read("music.media-controls", true); });
     }
     private double CaptureMediaVolume()
     {
-        lock (_gate) return _muted ? 0 : int.TryParse(_values.GetValueOrDefault("music.volume"), out int value) ? Math.Clamp(value, 0, 100) / 100.0 : .5;
+        lock (_gate) return _muted ? 0 : double.TryParse(_values.GetValueOrDefault("music.volume"), NumberStyles.Float, CultureInfo.InvariantCulture, out double value) && double.IsFinite(value) ? Math.Clamp(value, 0, 100) / 100.0 : .5;
     }
     private void OnSystemMediaControl(string command, double? value)
     {
+        long generation = _audio.State.Generation;
+        if (!IsGenerationCurrent(generation)) return;
         _platform.PostToWindow(() =>
         {
-            lock (_gate) { if (_disposed || !Read("music.media-controls", true)) return; }
+            lock (_gate) { if (!IsGenerationCurrent(generation) || !Read("music.media-controls", true)) return; }
             if (command == "raise") { _platform.RestoreWindow(); return; }
             lock (_gate) { if (!Read("music.enabled", false)) return; }
             if (command == "volume" && value is { } volume)
             {
-                _ = SaveMediaVolumeAsync(volume);
+                _ = SaveMediaVolumeAsync(volume, generation);
                 return;
             }
             if (command is "play" or "pause")
@@ -50,8 +52,16 @@ internal sealed partial class DesktopMediaSession
             _intents.Emit(XsrSemanticId.Parse("ui.media." + command), _shell.Root, XsrCorrelationId.Create());
         });
     }
-    private async Task SaveMediaVolumeAsync(double volume)
+    private async Task SaveMediaVolumeAsync(double volume, long generation)
     {
+        if (!IsGenerationCurrent(generation) || !double.IsFinite(volume)) return;
+        volume = Math.Clamp(volume, 0, 1);
+        if (_saveThemeVolumeAsync is { } save)
+        {
+            var saved = await save(volume, _stop.Token).ConfigureAwait(false);
+            if (!saved.IsSuccess && !_disposed) _log("系统音量未保存：" + saved.Error?.Message);
+            return;
+        }
         if (!_commands.TryResolve(SettingsPolicyContract.SetCommand, out var route)) return;
         var result = await _commands.Dispatch(route, new SettingsMutation("music.volume", SettingsLayer.Global,
             new(SettingsOverrideMode.Custom, ((int)Math.Round(volume * 100)).ToString(CultureInfo.InvariantCulture))),
