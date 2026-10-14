@@ -35,6 +35,12 @@ Windows device names, drive/stream separators or trailing spaces/dots. NSS does
 not import network URLs or additional source files outside the ordered manifest.
 Executable files and NXML replacement pages are not theme content.
 
+On macOS, the host may use the operating system aliases `/var`, `/tmp` and `/etc`
+only when each alias is a direct link to its exact `/private` counterpart. These
+closed aliases are canonicalized before source ownership, persistence, resource
+grants and path comparisons. All other links, including links beneath those
+directories, remain rejected; a different target at a known alias is rejected.
+
 ## Resource expressions and grants
 
 `asset(path)` identifies an admitted file within the candidate's package/source.

@@ -131,7 +131,7 @@ public sealed partial class ThemePackageService
         if (string.IsNullOrWhiteSpace(selected)) return false;
         try
         {
-            string path = Path.GetFullPath(selected); ThemePaths.NoLinks(path); bool directory = Directory.Exists(path);
+            string path = ThemePaths.Canonical(selected); ThemePaths.NoLinks(path); bool directory = Directory.Exists(path);
             if (directory ? !directoryAllowed : !File.Exists(path)) return false;
             if (!directory)
             {

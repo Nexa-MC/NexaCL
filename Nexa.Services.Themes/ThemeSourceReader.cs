@@ -13,6 +13,7 @@ internal static class ThemeSourceReader
 
     internal static async Task CopyAsync(string source, ThemeSourceKind kind, string destination, CancellationToken token)
     {
+        source = ThemePaths.Canonical(source); destination = ThemePaths.Canonical(destination);
         ThemePaths.NoLinks(source); Directory.CreateDirectory(destination); long total = 0; int count = 0;
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var pathIdentities = new Dictionary<string, (string Name, bool Directory)>(StringComparer.OrdinalIgnoreCase);
@@ -38,7 +39,7 @@ internal static class ThemeSourceReader
         {
             if (!Directory.Exists(source)) throw new DirectoryNotFoundException("Theme source directory does not exist.");
             // Walk each directory only after inspecting it; recursive framework enumeration can follow links before validation.
-            var directories = new Stack<string>(); directories.Push(Path.GetFullPath(source));
+            var directories = new Stack<string>(); directories.Push(source);
             while (directories.TryPop(out string? directory))
             {
                 ThemePaths.NoLinks(directory);
@@ -122,7 +123,7 @@ internal static class ThemeSourceReader
 
     internal static byte[] ReadBounded(string path, int limit)
     {
-        ThemePaths.NoLinks(path); using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        path = ThemePaths.Canonical(path); ThemePaths.NoLinks(path); using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         if (stream.Length > limit) throw new InvalidDataException("Theme file exceeds its budget.");
         byte[] bytes = new byte[checked((int)stream.Length)]; stream.ReadExactly(bytes);
         if (stream.ReadByte() >= 0) throw new InvalidDataException("Theme file changed during reading."); return bytes;

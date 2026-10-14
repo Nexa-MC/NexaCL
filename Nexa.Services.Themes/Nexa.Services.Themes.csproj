@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Nexa.Services.Themes.Contracts/Nexa.Services.Themes.Contracts.csproj" />
+    <InternalsVisibleTo Include="Nexa.Services.Themes.Tests" />
   </ItemGroup>
 </Project>

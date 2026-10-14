@@ -1,5 +1,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia.Tests;
@@ -11,6 +13,7 @@ internal static partial class Program
 
     private static async Task MediaFramesRejectUnboundedInputAndOwnedDecoderPausesAsync()
     {
+        VerifyWindowsMediaDelegateAbiAndNativeFailureClassification();
         byte[] oversized = new byte[16];
         new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }.CopyTo(oversized, 0);
         BinaryPrimitives.WriteUInt32BigEndian(oversized.AsSpan(8), uint.MaxValue);
@@ -68,6 +71,78 @@ internal static partial class Program
             AssertEqual(AvaloniaUiMediaStatus.Stopped, player.State.Status);
         }
         finally { Directory.Delete(directory, true); }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SmtcButtonArguments { internal nint Table; internal int Button; }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    private static unsafe int ReadSmtcButton(nint self, int* button)
+    { *button = ((SmtcButtonArguments*)self)->Button; return 0; }
+
+    private static unsafe void VerifyWindowsMediaDelegateAbiAndNativeFailureClassification()
+    {
+        string? invoked = null;
+        nint handler = AvaloniaUiWindowsMediaSession.CreateHandler(command => invoked = command);
+        nint arguments = Marshal.AllocHGlobal(sizeof(SmtcButtonArguments));
+        nint tableMemory = Marshal.AllocHGlobal(7 * sizeof(nint));
+        try
+        {
+            nint* table = *(nint**)handler;
+            var query = (delegate* unmanaged[Stdcall]<nint, Guid*, nint*, int>)table[0];
+            var release = (delegate* unmanaged[Stdcall]<nint, uint>)table[2];
+            var invoke = (delegate* unmanaged[Stdcall]<nint, nint, nint, int>)table[3];
+            // Directly query the shipped unmanaged delegate with the Windows SDK IID,
+            // rather than checking a copied production constant.
+            Guid sdkHandler = new("0557e996-7b23-5bae-aa81-ea0d671143a4");
+            nint requested = 0;
+            AssertEqual(0, query(handler, &sdkHandler, &requested));
+            AssertEqual(handler, requested); AssertEqual(1U, release(requested));
+            Guid incorrectHandler = new("78b4539f-77de-5251-858b-cf9ecfe0f952");
+            AssertEqual(unchecked((int)0x80004002), query(handler, &incorrectHandler, &requested));
+            AssertEqual((nint)0, requested);
+            foreach (Guid supported in new[] { new Guid("00000000-0000-0000-c000-000000000046"), new Guid("94ea2b94-e9cc-49e0-c0ff-ee64ca8f5b90") })
+            {
+                Guid id = supported;
+                AssertEqual(0, query(handler, &id, &requested));
+                AssertEqual(handler, requested); AssertEqual(1U, release(requested));
+            }
+            ((nint*)tableMemory)[6] = (nint)(delegate* unmanaged[Stdcall]<nint, int*, int>)&ReadSmtcButton;
+            foreach (var (button, expected) in new[] { (0, "play"), (1, "pause"), (2, "stop"), (6, "next") })
+            {
+                *(SmtcButtonArguments*)arguments = new() { Table = tableMemory, Button = button };
+                AssertEqual(0, invoke(handler, 0, arguments)); AssertEqual(expected, invoked);
+            }
+            AssertEqual(0U, release(handler)); handler = 0;
+        }
+        finally
+        {
+            if (handler != 0) _ = ((delegate* unmanaged[Stdcall]<nint, uint>)(*(nint**)handler)[2])(handler);
+            Marshal.FreeHGlobal(arguments); Marshal.FreeHGlobal(tableMemory);
+        }
+        AvaloniaUiWindowsMediaSession.Check(0); AvaloniaUiWindowsMediaSession.Check(1);
+        bool preserved = false;
+        try { AvaloniaUiWindowsMediaSession.Check(unchecked((int)0x80004002)); }
+        catch (AvaloniaUiWindowsMediaSession.NativeCallException error) { preserved = error.HResult == unchecked((int)0x80004002); }
+        AssertTrue(preserved);
+    }
+
+    private static async Task VerifyNativeWindowsMediaControlsReadinessAsync(nint window)
+    {
+        var reports = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        await using var session = new AvaloniaUiWindowsMediaSession(window, () => new(AvaloniaUiMediaStatus.Paused),
+            () => false, _ => { }, reports.Enqueue);
+        int result = await session.InitializationResult.WaitAsync(TimeSpan.FromSeconds(5));
+        // A CI desktop may lack the optional SMTC runtime. Interface rejection is an
+        // ABI regression, not an admissible dependency fallback.
+        AssertTrue(result != unchecked((int)0x80004002));
+        if (result < 0)
+        {
+            AssertTrue(reports.Any(report => report.Contains("InitializationFailed", StringComparison.Ordinal)
+                || report.Contains("DependencyMissing", StringComparison.Ordinal)));
+            Console.WriteLine($"SMTC native availability fallback: HRESULT 0x{result:X8}.");
+        }
+        else { AssertEqual(0, result); Console.WriteLine("PASS: actual Windows SMTC registers its typed delegate and initializes display metadata."); }
     }
 
     private static void MprisNativeBusPropertiesAndControlsUseRealAdapter()

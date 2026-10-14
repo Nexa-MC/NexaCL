@@ -11,14 +11,17 @@ public sealed partial class AvaloniaUiWindowsMediaSession : IAsyncDisposable
     private readonly Action<string> _control, _report;
     private readonly string _title;
     private readonly CancellationTokenSource _stop = new();
+    private readonly TaskCompletionSource<int> _initialization = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Task _run;
     private static readonly Guid InteropId = new("ddb0472d-c911-4a1f-86d9-dc3d71a95f5a");
     private static readonly Guid ControlsId = new("99fa3ff4-1742-42a6-902e-087d41f965ec");
-    private static readonly Guid HandlerId = new("78b4539f-77de-5251-858b-cf9ecfe0f952");
+    // Windows SDK windows.media.h: TypedEventHandler<SMTC, SMTCButtonPressedEventArgs>.
+    private static readonly Guid HandlerId = new("0557e996-7b23-5bae-aa81-ea0d671143a4");
     private static readonly Guid UnknownId = new("00000000-0000-0000-c000-000000000046");
     private static readonly Guid AgileId = new("94ea2b94-e9cc-49e0-c0ff-ee64ca8f5b90");
     private static readonly nint HandlerVTable = CreateHandlerVTable();
     private static readonly int[] SupportedControlSlots = [11, 13, 15, 17, 27];
+    internal Task<int> InitializationResult => _initialization.Task;
 
     public AvaloniaUiWindowsMediaSession(nint window, Func<AvaloniaUiMediaState> capture, Func<bool> enabled,
         Action<string> control, Action<string> report, string title = "NexaCL 背景音乐")
@@ -26,16 +29,19 @@ public sealed partial class AvaloniaUiWindowsMediaSession : IAsyncDisposable
         _capture = capture; _enabled = enabled; _control = control; _report = report;
         _title = title;
         _run = OperatingSystem.IsWindows() && window != 0 ? Task.Run(() => Run(window)) : Task.CompletedTask;
-        if (!OperatingSystem.IsWindows() || window == 0) report("SMTC: PlatformUnsupported or native window unavailable.");
+        if (!OperatingSystem.IsWindows() || window == 0)
+        { _initialization.TrySetResult(1); report("SMTC: PlatformUnsupported or native window unavailable."); }
     }
     private unsafe void Run(nint window)
     {
         nint factory = 0, controls = 0, handler = 0; long registration = 0;
         bool apartment = false, subscribed = false;
+        int initializationResult = unchecked((int)0x80004005);
         try
         {
             int initialization = RoInitialize(1);
-            if (initialization < 0) { _report("SMTC: DependencyMissing (WinRT apartment)."); return; }
+            if (initialization < 0)
+            { initializationResult = initialization; _report($"SMTC: InitializationFailed (WinRT apartment, HRESULT 0x{initialization:X8})."); return; }
             apartment = true;
             nint name = CreateString("Windows.Media.SystemMediaTransportControls");
             try { Check(GetActivationFactory(name, in InteropId, out factory)); }
@@ -46,6 +52,7 @@ public sealed partial class AvaloniaUiWindowsMediaSession : IAsyncDisposable
             Check(((delegate* unmanaged[Stdcall]<nint, nint, long*, int>)Slot(controls, 32))(controls, handler, &registration));
             subscribed = true;
             SetDisplay(controls, _title);
+            _initialization.TrySetResult(0);
             while (!_stop.IsCancellationRequested)
             {
                 byte enabled = _enabled() ? (byte)1 : (byte)0;
@@ -56,10 +63,16 @@ public sealed partial class AvaloniaUiWindowsMediaSession : IAsyncDisposable
                 _ = _stop.Token.WaitHandle.WaitOne(200);
             }
         }
-        catch (Exception error) when (error is COMException or DllNotFoundException or EntryPointNotFoundException)
-        { _report("SMTC: DependencyMissing (" + error.GetType().Name + ")."); }
+        catch (NativeCallException error)
+        {
+            initializationResult = error.HResult;
+            _report($"SMTC: InitializationFailed (native HRESULT 0x{error.HResult:X8}).");
+        }
+        catch (Exception error) when (error is DllNotFoundException or EntryPointNotFoundException)
+        { initializationResult = error.HResult; _report("SMTC: DependencyMissing (" + error.GetType().Name + ")."); }
         finally
         {
+            _initialization.TrySetResult(initializationResult);
             if (controls != 0)
             {
                 if (subscribed) _ = ((delegate* unmanaged[Stdcall]<nint, long, int>)Slot(controls, 33))(controls, registration);
@@ -86,11 +99,21 @@ public sealed partial class AvaloniaUiWindowsMediaSession : IAsyncDisposable
         finally { if (title != 0) Check(DeleteString(title)); if (music != 0) Release(music); if (updater != 0) Release(updater); }
     }
     private static nint CreateString(string text) { Check(NewString(text, (uint)text.Length, out nint result)); return result; }
-    private static void Check(int result) { if (result < 0) Marshal.ThrowExceptionForHR(result); }
+    // Marshal maps some native HRESULTs (including E_NOINTERFACE) to managed cast/
+    // argument exceptions. Preserve the actual native failure category and code instead.
+    internal static void Check(int result)
+    { if (result < 0) throw new NativeCallException(result); }
+    internal sealed class NativeCallException : Exception
+    {
+        public NativeCallException() { }
+        public NativeCallException(string message) : base(message) { }
+        public NativeCallException(string message, Exception innerException) : base(message, innerException) { }
+        public NativeCallException(int result) : base($"SMTC native call failed (HRESULT 0x{result:X8}).") => HResult = result;
+    }
     private static unsafe nint Slot(nint instance, int index) => (*(nint**)instance)[index];
     private static unsafe void Release(nint instance) => _ = ((delegate* unmanaged[Stdcall]<nint, uint>)Slot(instance, 2))(instance);
     [StructLayout(LayoutKind.Sequential)] private struct Handler { internal nint Table; internal int References; internal nint Target; }
-    private static unsafe nint CreateHandler(Action<string> action)
+    internal static unsafe nint CreateHandler(Action<string> action)
     {
         var target = GCHandle.Alloc(action);
         nint memory = Marshal.AllocHGlobal(sizeof(Handler));
@@ -135,7 +158,11 @@ public sealed partial class AvaloniaUiWindowsMediaSession : IAsyncDisposable
         }
         catch (Exception) { return unchecked((int)0x80004005); }
     }
-    public async ValueTask DisposeAsync() { await _stop.CancelAsync().ConfigureAwait(false); await _run.ConfigureAwait(false); _stop.Dispose(); }
+    public async ValueTask DisposeAsync()
+    {
+        try { await _stop.CancelAsync().ConfigureAwait(false); await _run.ConfigureAwait(false); }
+        finally { _stop.Dispose(); }
+    }
     [LibraryImport("combase.dll", EntryPoint = "RoInitialize")] private static partial int RoInitialize(uint apartment);
     [LibraryImport("combase.dll", EntryPoint = "RoUninitialize")] private static partial void RoUninitialize();
     [LibraryImport("combase.dll", EntryPoint = "WindowsCreateString", StringMarshalling = StringMarshalling.Utf16)] private static partial int NewString(string text, uint length, out nint result);

@@ -166,6 +166,13 @@ public sealed partial class XsrUiRenderer
         bool structural = SubtreeHasKind(_root, XsrUiDirtyKinds.Structure);
         bool responsive = _lastThemeViewport != _viewport;
         _lastThemeViewport = _viewport;
+        PrepareDirtyThemeStyles(structural, responsive);
+    }
+
+    // Keep captured traversal state outside the clean-frame entry method: C# allocates
+    // its display class on entry even when a guard returns before invoking the lambda.
+    private void PrepareDirtyThemeStyles(bool structural, bool responsive)
+    {
         _tree.Walk(_root, entity =>
         {
             if (structural || responsive || _tree.DirtyKinds(entity) != XsrUiDirtyKinds.None)

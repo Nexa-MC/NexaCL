@@ -10,6 +10,28 @@ namespace Nexa.Desktop;
 
 internal static partial class Program
 {
+    // Only trusted host-created fixture directories pass through this helper.
+    // Theme sources and picked resources retain the service's stricter policy.
+    internal static string CanonicalThemeValidationDirectory(string directory)
+    {
+        var current = new DirectoryInfo(Path.GetFullPath(directory));
+        if (!OperatingSystem.IsMacOS()) return current.FullName;
+        var segments = new Stack<string>();
+        while (current.Parent is { } parent)
+        {
+            segments.Push(current.Name);
+            current = parent;
+        }
+        while (segments.TryPop(out string? segment))
+        {
+            current = new DirectoryInfo(Path.Combine(current.FullName, segment));
+            if (current.LinkTarget is not null)
+                current = (DirectoryInfo)(current.ResolveLinkTarget(returnFinalTarget: true)
+                    ?? throw new IOException("Cannot resolve the trusted validation directory."));
+        }
+        return current.FullName;
+    }
+
     private static async Task ValidateThemesAsync(XsrUiShell shell, DesktopThemeSession themes,
         SettingsPageController settings, DesktopUiIntentSink intents, XsrStateStore state)
     {
@@ -24,7 +46,7 @@ internal static partial class Program
         string previousSection = settings.SelectedSection;
         string? previousIdentity = themes.Snapshot.Current.Selection?.SourceIdentity ?? themes.Snapshot.PresentedSourceIdentity;
         var originalSources = themes.Snapshot.Catalogue.Themes.Select(source => source.SourceIdentity).ToHashSet(StringComparer.Ordinal);
-        string directory = Path.Combine(Path.GetTempPath(), "nexa-ntp-publication-" + Guid.NewGuid().ToString("N"));
+        string directory = Path.Combine(CanonicalThemeValidationDirectory(Path.GetTempPath()), "nexa-ntp-publication-" + Guid.NewGuid().ToString("N"));
         string minimalDirectory = Path.Combine(directory, "Minimal"), advancedDirectory = Path.Combine(directory, "Advanced");
         string? watchedIdentity = null;
         XsrUiEntityId argument = default;

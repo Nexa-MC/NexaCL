@@ -46,9 +46,9 @@ public sealed partial class ThemePackageService
             var installs = root.GetProperty("installations"); ThemeManifestReader.Array(installs, 256);
             foreach (var item in installs.EnumerateArray())
             {
-                string identity = ThemeManifestReader.Text(item, "identity"), path = ThemeManifestReader.Text(item, "root"), revision = ThemeManifestReader.Text(item, "revision");
+                string identity = ThemeManifestReader.Text(item, "identity"), path = ThemePaths.Canonical(ThemeManifestReader.Text(item, "root")), revision = ThemeManifestReader.Text(item, "revision");
                 if (!ValidIdentity(identity) || !Enum.TryParse<ThemeSourceKind>(ThemeManifestReader.Text(item, "kind"), out var kind) || !Enum.IsDefined(kind)) throw new InvalidDataException("Invalid stored theme source.");
-                string? origin = item.GetProperty("origin").ValueKind == JsonValueKind.Null ? null : ThemeManifestReader.Text(item, "origin");
+                string? origin = item.GetProperty("origin").ValueKind == JsonValueKind.Null ? null : ThemePaths.Canonical(ThemeManifestReader.Text(item, "origin"));
                 if (kind == ThemeSourceKind.BuiltIn) { if (_builtin is null || !SamePath(path, _builtin)) continue; }
                 else if (!SamePath(path, Path.Combine(_root, "sources", identity, revision))) throw new InvalidDataException("Stored theme root escapes owned sources.");
                 if (revision.Length != 64 || !revision.All(char.IsAsciiHexDigit)) throw new InvalidDataException("Invalid source revision.");
@@ -68,7 +68,7 @@ public sealed partial class ThemePackageService
             foreach (var item in grants.EnumerateArray())
             {
                 string identity = ThemeManifestReader.Text(item, "identity"); if (!_installed.ContainsKey(identity)) continue;
-                string path = Path.GetFullPath(ThemeManifestReader.Text(item, "path"));
+                string path = ThemePaths.Canonical(ThemeManifestReader.Text(item, "path"));
                 if (!Enum.TryParse<ThemeResourceKind>(ThemeManifestReader.Text(item, "kind"), out var kind) || !Enum.IsDefined(kind)
                     || !Enum.TryParse<ThemeGrantScope>(ThemeManifestReader.Text(item, "scope"), out var scope) || !Enum.IsDefined(scope)) throw new InvalidDataException("Invalid stored grant.");
                 Guid id = item.GetProperty("id").GetGuid(); _grants.Add(id, new(id, identity, kind, scope, path, item.GetProperty("revision").GetInt64()));
@@ -99,12 +99,12 @@ public sealed partial class ThemePackageService
         if (File.Exists(JournalPath) || pending) { _recovered = true; _selection = _lastKnownGood; _revision++; WriteState(); TryRemoveJournal(); }
         foreach (string path in Directory.EnumerateDirectories(Path.Combine(_root, "sources"), ".candidate-*")) DeleteDirectory(path);
         foreach (string path in Directory.EnumerateDirectories(Path.Combine(_root, "leases"))) DeleteDirectory(path);
-        var admittedRoots = _installed.Values.Select(i => Path.GetFullPath(i.Root)).ToHashSet(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        var admittedRoots = _installed.Values.Select(i => ThemePaths.Canonical(i.Root)).ToHashSet(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         foreach (string identityRoot in Directory.EnumerateDirectories(Path.Combine(_root, "sources")))
         {
             if (Path.GetFileName(identityRoot).StartsWith('.')) continue;
             ThemePaths.NoLinks(identityRoot);
-            foreach (string revisionRoot in Directory.EnumerateDirectories(identityRoot)) if (!admittedRoots.Contains(Path.GetFullPath(revisionRoot))) DeleteDirectory(revisionRoot);
+            foreach (string revisionRoot in Directory.EnumerateDirectories(identityRoot)) if (!admittedRoots.Contains(ThemePaths.Canonical(revisionRoot))) DeleteDirectory(revisionRoot);
         }
     }
     private void WriteJournal(ThemeCandidate candidate) => AtomicWrite(JournalPath, writer =>

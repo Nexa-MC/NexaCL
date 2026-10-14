@@ -31,7 +31,7 @@ public sealed partial class ThemePackageService : IThemePackageService
     public ThemePackageService(string dataRoot, string? builtinThemeRoot, IEnumerable<string> hostCapabilities, Action<ThemeWatchSnapshot>? watchChanged = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataRoot); ArgumentNullException.ThrowIfNull(hostCapabilities);
-        _root = Path.Combine(Path.GetFullPath(dataRoot), "themes"); _builtin = builtinThemeRoot is null ? null : Path.GetFullPath(builtinThemeRoot);
+        _root = Path.Combine(ThemePaths.Canonical(dataRoot), "themes"); _builtin = builtinThemeRoot is null ? null : ThemePaths.Canonical(builtinThemeRoot);
         _capabilities = new(hostCapabilities, StringComparer.Ordinal); ThemePaths.NoLinks(_root); Directory.CreateDirectory(_root);
         WatchChanged = watchChanged;
         Directory.CreateDirectory(Path.Combine(_root, "sources")); Directory.CreateDirectory(Path.Combine(_root, "leases"));
@@ -78,14 +78,14 @@ public sealed partial class ThemePackageService : IThemePackageService
                         if (previous.Kind != ThemeSourceKind.BuiltIn && validation.Revision != previous.Revision) return Reject<ThemeCandidate>("An owned immutable theme snapshot changed; reload its original source or import a new package.");
                         return PublishCandidate(previous with { Manifest = validation.Manifest, Revision = validation.Revision }, validation.Styles, query);
                     }
-                    source = Path.GetFullPath(query.SourcePath);
+                    source = ThemePaths.Canonical(query.SourcePath);
                     if (previous.Origin is null || !SamePath(source, previous.Origin)) return Reject<ThemeCandidate>("A different source cannot inherit an installation's resource authority.");
                 }
                 else
                 {
                     if (_installed.Count >= 256) return Reject<ThemeCandidate>("Installed theme count exceeds its budget.");
                     previous = null; identity = query.SourceKind == ThemeSourceKind.BuiltIn ? "builtin" : "source-" + Guid.NewGuid().ToString("N");
-                    kind = query.SourceKind; source = Path.GetFullPath(query.SourcePath);
+                    kind = query.SourceKind; source = ThemePaths.Canonical(query.SourcePath);
                     if (kind == ThemeSourceKind.BuiltIn && (_builtin is null || !SamePath(source, _builtin))) return Reject<ThemeCandidate>("Only the host-owned root can be a built-in theme.");
                     if (kind == ThemeSourceKind.BuiltIn && _installed.TryGetValue("builtin", out var builtin))
                     {
@@ -265,7 +265,7 @@ public sealed partial class ThemePackageService : IThemePackageService
         lock (_gate) DeleteUnreferencedSource(path);
     }
     private void CheckLive() { ObjectDisposedException.ThrowIf(_disposed, this); }
-    private static bool SamePath(string left, string right) => string.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(left)), Path.TrimEndingDirectorySeparator(Path.GetFullPath(right)), OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+    private static bool SamePath(string left, string right) => string.Equals(Path.TrimEndingDirectorySeparator(ThemePaths.Canonical(left)), Path.TrimEndingDirectorySeparator(ThemePaths.Canonical(right)), OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
     private static bool Recoverable(Exception error) => error is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or System.Xml.XmlException or ArgumentException or InvalidOperationException or OverflowException or KeyNotFoundException;
     private static XsrResult Reject(string message) => XsrResult.Failure(new(XsrErrorKind.Rejected, XsrSemanticId.Parse("themes.rejected"), message));
     private static XsrResult<T> Reject<T>(string message) => XsrResult.Failure<T>(new(XsrErrorKind.Rejected, XsrSemanticId.Parse("themes.rejected"), message));

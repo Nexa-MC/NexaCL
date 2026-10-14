@@ -17,7 +17,7 @@ public sealed partial class ThemePackageService
             try
             {
                 if (!Enum.IsDefined(command.Kind) || !Enum.IsDefined(command.Scope) || command.SelectedPath.Length > 4096 || _grants.Count >= 1024) return ValueTask.FromResult(Reject("Invalid resource grant."));
-                string path = Path.GetFullPath(command.SelectedPath); ThemePaths.NoLinks(path);
+                string path = ThemePaths.Canonical(command.SelectedPath); ThemePaths.NoLinks(path);
                 if (command.Scope == ThemeGrantScope.File ? !File.Exists(path) : !Directory.Exists(path)) return ValueTask.FromResult(Reject("Selected resource path does not exist."));
                 if (command.Scope == ThemeGrantScope.File) ContentType(path, command.Kind);
                 if (_grants.Values.Any(g => g.SourceIdentity == command.SourceIdentity && g.Kind == command.Kind && g.Scope == command.Scope && SamePath(g.CanonicalPath, path))) return ValueTask.FromResult(XsrResult.Success());
@@ -94,7 +94,7 @@ public sealed partial class ThemePackageService
     {
         if (!Enum.IsDefined(kind)) throw new InvalidDataException("Invalid resource kind.");
         if (function == "asset") return (ThemePaths.Within(prepared.Installation.Root, argument), null);
-        string path = Path.GetFullPath(argument); ThemePaths.NoLinks(path);
+        string path = ThemePaths.Canonical(argument); ThemePaths.NoLinks(path);
         var grant = _grants.Values.FirstOrDefault(g => g.SourceIdentity == prepared.Candidate.SourceIdentity && g.Kind == kind &&
             (g.Scope == ThemeGrantScope.File && function == "file" && SamePath(path, g.CanonicalPath)
             || g.Scope == ThemeGrantScope.Directory && (SamePath(path, g.CanonicalPath) || path.StartsWith(Path.TrimEndingDirectorySeparator(g.CanonicalPath) + Path.DirectorySeparatorChar, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))));

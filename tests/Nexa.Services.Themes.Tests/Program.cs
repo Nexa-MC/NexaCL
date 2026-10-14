@@ -15,6 +15,7 @@ internal static class Program
         ("Required capability rejects while optional declares fallback", Capabilities),
         ("ZIP rejects traversal, duplicates and reserved paths", ArchivePaths),
         ("Folder sources reject links", FolderLinks),
+        ("System aliases preserve source ownership and reject other links", PathAliases),
         ("Ordered NSS enforces total budget", StyleBudget),
         ("Same theme ID cannot inherit source grants", AuthorityIsolation),
         ("External resource requires kind-bound selected grant", ResourceGrant),
@@ -46,9 +47,9 @@ internal static class Program
         }
         Console.WriteLine($"NTP/1 services: {Tests.Length - failed} passed, {failed} failed."); return failed == 0 ? 0 : 1;
     }
-    private sealed class Workspace : IDisposable
+    private sealed class Workspace(string? temporaryRoot = null) : IDisposable
     {
-        internal string Root { get; } = Path.Combine(Path.GetTempPath(), "nexa-ntp-tests-" + Guid.NewGuid().ToString("N"));
+        internal string Root { get; } = Path.Combine(temporaryRoot ?? Path.GetTempPath(), "nexa-ntp-tests-" + Guid.NewGuid().ToString("N"));
         internal string Data => Path.Combine(Root, "data");
         internal string Theme(string name = "theme", string? manifest = null)
         {
@@ -136,6 +137,50 @@ internal static class Program
         if (OperatingSystem.IsWindows()) return;
         using var workspace = new Workspace(); string path = workspace.Theme(); string external = Path.Combine(workspace.Root, "external"); File.WriteAllText(external, "secret");
         File.CreateSymbolicLink(Path.Combine(path, "linked.txt"), external); using var service = workspace.Service(); Require(!(await service.PrepareAsync(new(path, ThemeSourceKind.Directory))).IsSuccess);
+    }
+    private static async Task PathAliases()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            using var workspace = new Workspace(); string source = workspace.Theme(); using var service = workspace.Service();
+            var candidate = await Prepare(service, source); string image = Visual(workspace);
+            string linkedSource = Path.Combine(workspace.Root, "linked-source"), linkedImage = Path.Combine(workspace.Root, "linked.svg"), linkedData = Path.Combine(workspace.Root, "linked-data");
+            Directory.CreateSymbolicLink(linkedSource, source); File.CreateSymbolicLink(linkedImage, image); Directory.CreateSymbolicLink(linkedData, workspace.Data);
+            Require(!(await service.PrepareAsync(new(linkedSource, ThemeSourceKind.Directory))).IsSuccess, "An arbitrary source link must remain rejected.");
+            Require(!(await service.GrantAsync(new(candidate.SourceIdentity, ThemeResourceKind.Image, ThemeGrantScope.File, linkedImage))).IsSuccess, "An arbitrary resource link must remain rejected.");
+            Require((await service.GrantAsync(new(candidate.SourceIdentity, ThemeResourceKind.Image, ThemeGrantScope.File, image))).IsSuccess);
+            Require(!(await service.ReadResourceAsync(new(candidate.CandidateId, "file(" + linkedImage + ")", ThemeResourceKind.Image))).IsSuccess, "A link cannot inherit a grant for its target.");
+            bool rejected = false;
+            try { using var linkedService = new ThemePackageService(Path.Combine(linkedData, "nested"), null, []); }
+            catch (InvalidDataException) { rejected = true; }
+            Require(rejected, "An arbitrary data-root ancestor link must remain rejected.");
+        }
+        if (!OperatingSystem.IsMacOS()) return;
+        foreach (string alias in new[] { "/var", "/tmp", "/etc" })
+        {
+            Require(ThemePaths.Canonical(alias + "/nexa-path-test") == "/private" + alias + "/nexa-path-test");
+            Require(ThemePaths.Canonical(alias + "/./nexa-path-test") == "/private" + alias + "/nexa-path-test");
+            Require(ThemePaths.Canonical(alias + "-other/nexa-path-test") == alias + "-other/nexa-path-test", "Only a complete root component is an OS alias.");
+        }
+        Require(ThemePaths.Canonical("/private/tmp/nexa-path-test") == "/private/tmp/nexa-path-test");
+        using var aliased = new Workspace("/tmp"); string path = aliased.Theme(), builtin = aliased.Theme("builtin"), selected = Visual(aliased); string identity;
+        using (var service = aliased.Service(builtin))
+        {
+            var first = await Prepare(service, path); identity = first.SourceIdentity;
+            var equivalent = await service.PrepareAsync(new(ThemePaths.Canonical(path), ThemeSourceKind.Directory, identity)); Require(equivalent.IsSuccess, "OS aliases must retain the same source identity.");
+            var catalogue = (await service.CatalogueAsync(new())).Value;
+            Require(catalogue.Themes.Single(theme => theme.SourceIdentity == identity).DevelopmentDirectory == ThemePaths.Canonical(path));
+            Require(catalogue.Themes.Single(theme => theme.SourceIdentity == "builtin").InstalledDirectory == ThemePaths.Canonical(builtin));
+            Require((await service.GrantAsync(new(identity, ThemeResourceKind.Image, ThemeGrantScope.File, selected))).IsSuccess);
+            Require((await service.GrantAsync(new(identity, ThemeResourceKind.Image, ThemeGrantScope.File, ThemePaths.Canonical(selected)))).IsSuccess);
+            Require((await service.CurrentAsync(new())).Value.Grants.Single().CanonicalPath == ThemePaths.Canonical(selected), "Equivalent OS aliases must share one canonical grant.");
+            Require((await service.ReadResourceAsync(new(equivalent.Value.CandidateId, "file(" + selected + ")", ThemeResourceKind.Image))).IsSuccess);
+            Require((await service.ReadResourceAsync(new(equivalent.Value.CandidateId, "file(" + ThemePaths.Canonical(selected) + ")", ThemeResourceKind.Image))).IsSuccess);
+            await Commit(service, equivalent.Value);
+        }
+        using var restored = aliased.Service(builtin);
+        Require((await restored.CurrentAsync(new())).Value.Grants.Single().CanonicalPath == ThemePaths.Canonical(selected));
+        Require((await restored.PrepareAsync(new(ThemePaths.Canonical(path), ThemeSourceKind.Directory, identity))).IsSuccess, "Canonical source ownership must survive restart.");
     }
     private static async Task StyleBudget()
     {
@@ -310,7 +355,7 @@ internal static class Program
     {
         using var workspace = new Workspace(); string builtinRoot = workspace.Theme("builtin"); using var service = workspace.Service(builtinRoot);
         var direct = await service.PrepareAsync(new(builtinRoot, ThemeSourceKind.BuiltIn)); Require(direct.IsSuccess && direct.Value.SourceIdentity == "builtin"); await Commit(service, direct.Value);
-        Require((await service.CatalogueAsync(new())).Value.Themes.Single().InstalledDirectory == builtinRoot);
+        Require((await service.CatalogueAsync(new())).Value.Themes.Single().InstalledDirectory == ThemePaths.Canonical(builtinRoot));
         var external = await Prepare(service, workspace.Theme("external")); await Commit(service, external);
         string snapshot = (await service.CatalogueAsync(new())).Value.Themes.Single(theme => theme.SourceIdentity == external.SourceIdentity).InstalledDirectory!;
         File.WriteAllText(Path.Combine(snapshot, "styles", "main.nss"), ".card { Background:#ffffff; }");

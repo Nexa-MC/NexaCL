@@ -48,6 +48,7 @@ internal static partial class Program
         DesktopMediaSession? media = null;
         AvaloniaUiShellWindow? window = null;
         AvaloniaUiSceneSurface? surface = null;
+        Size acceptedWindowSize = default;
         Task<int>? lifetime = null;
         var actions = new AvaloniaUiPlatformActions();
         actions.SetDesktopPolicy(new(TrayEnabled: false));
@@ -58,6 +59,37 @@ internal static partial class Program
         var trace = new ConcurrentQueue<string>();
         var showTrace = new JsonArray();
         int captureCount = 0, pickerCount = 0, outcome = 1;
+        JsonObject NativeWindowFacts()
+        {
+            var candidate = window!;
+            var screen = candidate.Screens.ScreenFromWindow(candidate) ?? candidate.Screens.Primary;
+            var frame = candidate.FrameSize;
+            return new()
+            {
+                ["renderScaling"] = candidate.RenderScaling,
+                ["acceptedWidth"] = acceptedWindowSize.Width,
+                ["acceptedHeight"] = acceptedWindowSize.Height,
+                ["boundsWidth"] = candidate.Bounds.Width,
+                ["boundsHeight"] = candidate.Bounds.Height,
+                ["clientWidth"] = candidate.ClientSize.Width,
+                ["clientHeight"] = candidate.ClientSize.Height,
+                ["frameWidth"] = frame?.Width,
+                ["frameHeight"] = frame?.Height,
+                ["minimumWidth"] = candidate.MinWidth,
+                ["minimumHeight"] = candidate.MinHeight,
+                ["positionX"] = candidate.Position.X,
+                ["positionY"] = candidate.Position.Y,
+                ["surfaceWidth"] = surface?.Bounds.Width,
+                ["surfaceHeight"] = surface?.Bounds.Height,
+                ["workArea"] = screen is null ? null : new JsonObject
+                {
+                    ["x"] = screen.WorkingArea.X,
+                    ["y"] = screen.WorkingArea.Y,
+                    ["width"] = screen.WorkingArea.Width,
+                    ["height"] = screen.WorkingArea.Height
+                }
+            };
+        }
         try
         {
             await startup.InvokeAsync(() =>
@@ -74,12 +106,15 @@ internal static partial class Program
                 fixture.Shell.Renderer.ReducedMotion = true;
                 string themesRoot = Path.Combine(AppContext.BaseDirectory, "Themes");
                 AssertTrue(File.Exists(Path.Combine(themesRoot, "Advanced", "theme.json")));
-                externalImage = Path.Combine(fixture.TemporaryDirectory, "user-selected-background.svg");
+                string fixtureDirectory = Nexa.Desktop.Program.CanonicalThemeValidationDirectory(fixture.TemporaryDirectory);
+                externalImage = Path.Combine(fixtureDirectory, "user-selected-background.svg");
                 File.Copy(Path.Combine(themesRoot, "Advanced", "assets", "background.svg"), externalImage);
-                externalMedia = Path.Combine(fixture.TemporaryDirectory, "user-selected-playlist");
+                externalMedia = Path.Combine(fixtureDirectory, "user-selected-playlist");
                 Directory.CreateDirectory(externalMedia);
-                File.Copy(Path.Combine(themesRoot, "Advanced", "media", "sample.wav"), Path.Combine(externalMedia, "first.wav"));
-                File.Copy(Path.Combine(themesRoot, "Advanced", "media", "sample.wav"), Path.Combine(externalMedia, "second.wav"));
+                File.Copy(Path.Combine(themesRoot, "Advanced", "media", "sample.wav"),
+                    Path.Combine(externalMedia, "first.wav"));
+                File.Copy(Path.Combine(themesRoot, "Advanced", "media", "sample.wav"),
+                    Path.Combine(externalMedia, "second.wav"));
                 var queries = WorldFixtureQueries(fixture);
                 var commands = new XsrCommandRouterBuilder();
                 AssertTrue(fixture.Foundation.Commands.TryResolve(SettingsPolicyContract.SetCommand, out var setRoute));
@@ -128,8 +163,7 @@ internal static partial class Program
                     || desktop.MainWindow is not AvaloniaUiShellWindow candidate || !candidate.IsVisible) return false;
                 window = candidate;
                 surface = candidate.GetVisualDescendants().OfType<AvaloniaUiSceneSurface>().Single();
-                candidate.Width = 1040; candidate.Height = 740; candidate.Position = new(20, 20);
-                candidate.UpdateLayout(); surface.CommitScene();
+                SetPreviewWindowSize(1040);
                 return Has("AccountName") && Find("AccountName").Text == "Player" && !themes.Snapshot.Busy;
             });
 
@@ -295,9 +329,10 @@ internal static partial class Program
             await SetReducedMotionPreference(false);
             await startup.InvokeAsync(() =>
             {
-                window!.Width = 1040; window.UpdateLayout(); surface!.CommitScene();
-                ActivateThemePreviewWindow(window);
+                SetPreviewWindowSize(1040);
+                ActivateThemePreviewWindow(window!);
             }, timeout.Token);
+            await SettlePreviewWindowSize();
             await Eventually(() => window!.IsActive && actions.IsWindowActive && !f.Shell.Renderer.EffectiveReducedMotion
                 && f.Shell.Renderer.HasThemeAnimations);
             var animationValues = new List<double>();
@@ -365,14 +400,72 @@ internal static partial class Program
                 await startup.InvokeAsync(() => pending = f.Controller.WaitUntilIdle(), timeout.Token);
                 await Pump(pending!);
                 await SessionOperation(() => themes.RefreshAsync(timeout.Token));
+                await startup.InvokeAsync(() => SetPreviewWindowSize(1040), timeout.Token);
                 string[] previous = [];
                 long stableSince = Stopwatch.GetTimestamp();
                 await Eventually(() =>
                 {
                     string[] current = LaunchSignature();
-                    bool boundsReady = Math.Abs(window!.Bounds.Width - 1040) < 1 && Math.Abs(window.Bounds.Height - 740) < 1;
+                    bool boundsReady = NativeWindowSizeReady();
                     if (!boundsReady || themes.Snapshot.Busy || !previous.SequenceEqual(current, StringComparer.Ordinal))
                     { previous = current; stableSince = Stopwatch.GetTimestamp(); return false; }
+                    return Stopwatch.GetElapsedTime(stableSince) >= TimeSpan.FromMilliseconds(150);
+                });
+            }
+            void SetPreviewWindowSize(double requestedWidth)
+            {
+                var candidate = window!;
+                var screen = candidate.Screens.ScreenFromWindow(candidate) ?? candidate.Screens.Primary
+                    ?? throw new InvalidOperationException("Native theme preview has no available screen.");
+                double scale = candidate.RenderScaling;
+                AssertTrue(double.IsFinite(scale) && scale > 0);
+                var frame = candidate.FrameSize ?? candidate.ClientSize;
+                double nativeWidth = Math.Max(0, frame.Width - candidate.ClientSize.Width);
+                double nativeHeight = Math.Max(0, frame.Height - candidate.ClientSize.Height);
+                // Work areas use physical pixels, while native client requests use DIPs.
+                // Leave two physical pixels per edge so the native frame fits as well.
+                double availableWidth = Math.Floor((screen.WorkingArea.Width - 4) / scale - nativeWidth);
+                double availableHeight = Math.Floor((screen.WorkingArea.Height - 4) / scale - nativeHeight);
+                if (availableWidth < candidate.MinWidth || availableHeight < candidate.MinHeight)
+                    throw new InvalidOperationException("Native screen work area cannot fit the launcher's minimum client size: "
+                        + NativeWindowFacts().ToJsonString());
+                acceptedWindowSize = new(Math.Min(Math.Max(requestedWidth, candidate.MinWidth), availableWidth),
+                    Math.Min(Math.Max(740, candidate.MinHeight), availableHeight));
+                candidate.Width = acceptedWindowSize.Width;
+                candidate.Height = acceptedWindowSize.Height;
+                candidate.Position = new(screen.WorkingArea.X + Math.Max(0,
+                        (screen.WorkingArea.Width - (int)Math.Ceiling((acceptedWindowSize.Width + nativeWidth) * scale)) / 2),
+                    screen.WorkingArea.Y + Math.Max(0,
+                        (screen.WorkingArea.Height - (int)Math.Ceiling((acceptedWindowSize.Height + nativeHeight) * scale)) / 2));
+                candidate.UpdateLayout(); surface!.CommitScene();
+                Console.WriteLine("NTP_NATIVE_WINDOW_SIZE\trequested=" + requestedWidth.ToString(CultureInfo.InvariantCulture)
+                    + "\t" + NativeWindowFacts().ToJsonString());
+            }
+            bool NativeWindowSizeReady()
+            {
+                double tolerance = 1 / window!.RenderScaling + .01;
+                bool Near(double actual, double expected) => Math.Abs(actual - expected) <= tolerance;
+                var viewport = f.Shell.Renderer.Viewport;
+                return Near(window.Bounds.Width, acceptedWindowSize.Width) && Near(window.Bounds.Height, acceptedWindowSize.Height)
+                    && Near(window.ClientSize.Width, acceptedWindowSize.Width) && Near(window.ClientSize.Height, acceptedWindowSize.Height)
+                    && surface!.Bounds.Width > 0 && surface.Bounds.Height > 0
+                    && surface.Bounds.Width <= window.ClientSize.Width + tolerance && surface.Bounds.Height <= window.ClientSize.Height + tolerance
+                    && Near(viewport.Width, surface.Bounds.Width) && Near(viewport.Height, surface.Bounds.Height);
+            }
+            async Task SettlePreviewWindowSize()
+            {
+                Size previousClient = default;
+                XsrUiSize previousViewport = default;
+                long stableSince = Stopwatch.GetTimestamp();
+                await Eventually(() =>
+                {
+                    var currentClient = window!.ClientSize;
+                    var currentViewport = f.Shell.Renderer.Viewport;
+                    if (!NativeWindowSizeReady() || previousClient != currentClient || previousViewport != currentViewport)
+                    {
+                        previousClient = currentClient; previousViewport = currentViewport;
+                        stableSince = Stopwatch.GetTimestamp(); return false;
+                    }
                     return Stopwatch.GetElapsedTime(stableSince) >= TimeSpan.FromMilliseconds(150);
                 });
             }
@@ -531,12 +624,14 @@ internal static partial class Program
                 }, timeout.Token);
                 foreach (double width in NativeNxmlSettingsWidths)
                 {
-                    await startup.InvokeAsync(() =>
-                    { window!.Width = Math.Max(width, window.MinWidth); window.Height = 740; window.UpdateLayout(); surface!.CommitScene(); }, timeout.Token);
+                    await startup.InvokeAsync(() => SetPreviewWindowSize(width), timeout.Token);
+                    await SettlePreviewWindowSize();
                     await Task.Delay(80, timeout.Token);
                     await startup.InvokeAsync(() =>
                     {
                         surface!.CommitScene();
+                        AssertTrue(NativeWindowSizeReady());
+                        AssertEqual(width > 900, f.Shell.Renderer.Viewport.Width > 900);
                         AssertEqual(mode == "dark", f.Shell.Renderer.ColorScheme.IsDark);
                         if (retainedInput.IsAssigned)
                         {
@@ -568,7 +663,11 @@ internal static partial class Program
                 string name = "ntp-" + mode + "-" + stage + "-" + width.ToString(CultureInfo.InvariantCulture);
                 string pngPath = Path.Combine(outputDirectory, name + ".png");
                 bitmap.Save(pngPath, PngBitmapEncoderOptions.Default);
-                int titleInkPixels = TitleInkPixels(pngPath, Find("TitleMain").Rect, scale);
+                var titleRect = Find("TitleMain").Rect;
+                Point titleOrigin = surface!.TranslatePoint(new(titleRect.X, titleRect.Y), window)
+                    ?? throw new InvalidOperationException("Actual title surface is detached from its capture window.");
+                var titleCaptureRect = new XsrUiRect(titleOrigin.X, titleOrigin.Y, titleRect.Width, titleRect.Height);
+                int titleInkPixels = TitleInkPixels(pngPath, titleCaptureRect, scale);
                 if (stage == "advanced-launch" || stage.StartsWith("advanced-animation-frame-", StringComparison.Ordinal))
                 {
                     Console.WriteLine("NTP_NATIVE_TITLE_INK\t" + name + "\t" + titleInkPixels.ToString(CultureInfo.InvariantCulture));
@@ -582,6 +681,7 @@ internal static partial class Program
                     ["width"] = bitmap.PixelSize.Width,
                     ["height"] = bitmap.PixelSize.Height,
                     ["requestedWidth"] = width,
+                    ["nativeWindow"] = NativeWindowFacts(),
                     ["viewportWidth"] = f.Shell.Renderer.Viewport.Width,
                     ["viewportHeight"] = f.Shell.Renderer.Viewport.Height,
                     ["activationGeneration"] = f.Shell.Renderer.ThemeActivationGeneration,
@@ -589,6 +689,7 @@ internal static partial class Program
                     ["fontProviderRevision"] = f.Shell.Renderer.TextLayoutProvider?.Revision,
                     ["fontResource"] = Find("TitleMain").FontFamily,
                     ["titleScene"] = NodeFacts(f.Shell, Find("TitleMain")),
+                    ["titleCaptureRect"] = RectFacts(titleCaptureRect),
                     ["titleContrastingPixels"] = titleInkPixels,
                     ["windowActive"] = window.IsActive,
                     ["platformWindowActive"] = actions.IsWindowActive,
@@ -635,6 +736,7 @@ internal static partial class Program
                             ["showAttempts"] = showTrace,
                             ["width"] = bitmap.PixelSize.Width,
                             ["height"] = bitmap.PixelSize.Height,
+                            ["nativeWindow"] = NativeWindowFacts(),
                             ["viewportWidth"] = harness.Fixture.Shell.Renderer.Viewport.Width,
                             ["viewportHeight"] = harness.Fixture.Shell.Renderer.Viewport.Height,
                             ["scene"] = nodes

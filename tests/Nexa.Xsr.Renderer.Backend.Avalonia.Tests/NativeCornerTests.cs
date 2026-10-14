@@ -73,6 +73,7 @@ internal static partial class Program
     {
         try
         {
+            await VerifyNativeWindowsMediaControlsReadinessAsync(handle);
             await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 850, 500));
             VerifyCompositedViewport(window, 850, 500);
             AssertEqual(1, openings()); AssertEqual(1, reveals());

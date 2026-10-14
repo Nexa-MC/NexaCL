@@ -2,6 +2,23 @@ namespace Nexa.Services.Themes;
 
 internal static class ThemePaths
 {
+    internal static string Canonical(string path)
+    {
+        string full = Path.GetFullPath(path);
+        if (!OperatingSystem.IsMacOS()) return full;
+        foreach (string alias in new[] { "/var", "/tmp", "/etc" })
+        {
+            if (full != alias && !full.StartsWith(alias + "/", StringComparison.Ordinal)) continue;
+            string? target = new DirectoryInfo(alias).LinkTarget;
+            if (target is null) return full;
+            string expected = "/private" + alias;
+            if (!string.Equals(target, expected, StringComparison.Ordinal) && !string.Equals(target, expected[1..], StringComparison.Ordinal))
+                throw new InvalidDataException("Unexpected macOS system directory alias target.");
+            return expected + full[alias.Length..];
+        }
+        return full;
+    }
+
     internal static string Relative(string value)
     {
         if (value.Length is < 1 or > 1024 || value.Contains('\\') || value.Contains(':') || value.Any(char.IsControl) || value.StartsWith('/') || Path.IsPathRooted(value)) throw new InvalidDataException("Invalid package path.");
@@ -23,13 +40,13 @@ internal static class ThemePaths
     }
     internal static string Within(string root, string relative)
     {
-        Relative(relative); string path = Path.GetFullPath(Path.Combine(root, relative));
+        root = Canonical(root); Relative(relative); string path = Canonical(Path.Combine(root, relative));
         if (!path.StartsWith(Path.TrimEndingDirectorySeparator(root) + Path.DirectorySeparatorChar, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)) throw new InvalidDataException("Path escapes its root.");
         NoLinks(path); return path;
     }
     internal static void NoLinks(string path)
     {
-        string full = Path.GetFullPath(path); string? cursor = full;
+        string? cursor = Canonical(path);
         while (cursor is not null)
         {
             if ((File.Exists(cursor) || Directory.Exists(cursor)) && (File.GetAttributes(cursor) & FileAttributes.ReparsePoint) != 0) throw new InvalidDataException("Links are not allowed in theme sources or resource grants.");
