@@ -6,6 +6,7 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("intrinsic capsules bound width and scroll captions without activation", Sync(IntrinsicCapsulesBoundWidthAndScrollCaptionsWithoutInvokingCommands)),
         ("future grid admission and runtime recovery preserve owned state", Sync(ThemeFutureGridFailureRecoversOnceWithoutLosingOwnedState)),
         ("theme failures require explicit recovery and retry only once", Sync(ThemeStyleFailureWithoutRecoveryAndRepeatedFailureStillPropagate)),
         ("theme clocks ignore hidden and parked matches and wake on reveal", Sync(ThemeAnimationClockRetiresHiddenAndParkedMatchesAndWakesOnReveal)),

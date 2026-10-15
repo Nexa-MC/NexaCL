@@ -63,6 +63,7 @@ public sealed partial class InstallCatalogService : IDisposable
     private readonly InstallCatalogInformationCache? _informationCache;
     private readonly bool _ownsCache;
     private readonly Func<string> _sourcePolicyIdentity;
+    private readonly RegionalPolicy _regionalPolicy;
     private readonly Dictionary<InstallLoader, InstallCatalogSnapshot> _loaders = [];
     private readonly Dictionary<(string, InstallLoader?, string), Request> _pending = [];
     private InstallCatalogSnapshot _games = new(0, "", null, [], false);
@@ -96,12 +97,13 @@ public sealed partial class InstallCatalogService : IDisposable
         : this(store, source, null, null, null) { }
     public InstallCatalogService(XsrStateStore store, IInstallCatalogSource source,
         ISharedStateCache? cache, Func<string>? sourcePolicyIdentity = null,
-        InstallCatalogInformationCache? informationCache = null)
+        InstallCatalogInformationCache? informationCache = null, RegionalPolicy? regionalPolicy = null)
     {
         _store = store; _source = source; _state = store.Resolve(InstallCatalogStateContract.StateKey);
         _ownsCache = cache is null;
         _cache = cache ?? new SharedStateCache();
         _informationCache = informationCache;
+        _regionalPolicy = regionalPolicy ?? RegionalPolicy.Current;
         string isolatedSource = Guid.NewGuid().ToString("N");
         _sourcePolicyIdentity = sourcePolicyIdentity ?? (() => isolatedSource);
         Publish(_games);
@@ -128,6 +130,7 @@ public sealed partial class InstallCatalogService : IDisposable
             if (command.GameVersion.Length > 0)
                 foreach (InstallLoader loader in Enum.GetValues<InstallLoader>())
                 {
+                    if (loader == InstallLoader.OptiFine && !_regionalPolicy.IsMainlandChina) continue;
                     InstallLoader baseLoader = loader switch { InstallLoader.FabricApi or InstallLoader.OptiFabric => InstallLoader.Fabric, InstallLoader.Qsl => InstallLoader.Quilt, _ => loader };
                     if (InstallCompatibility.UnavailableReason(baseLoader, command.GameVersion) is null)
                         tasks.Add(ReadAsync(new(command.GameVersion, loader), WorkPriority.Background, token));
@@ -158,6 +161,11 @@ public sealed partial class InstallCatalogService : IDisposable
                 || game.Length > 0 && !MinecraftVersionPaths.IsSafeReference(game)))
             {
                 Publish(new(++_revision, game, requested, [], false, Unsupported: "安装目录请求无效。"));
+                return Task.FromResult(XsrResult.Success());
+            }
+            if (command.Loader == InstallLoader.OptiFine && !_regionalPolicy.IsMainlandChina)
+            {
+                Publish(new(++_revision, game, command.Loader, [], false, Unsupported: "此地区不提供 OptiFine 自动安装。"));
                 return Task.FromResult(XsrResult.Success());
             }
             if (!command.Refresh && _pending.TryGetValue(key, out Request? pending))

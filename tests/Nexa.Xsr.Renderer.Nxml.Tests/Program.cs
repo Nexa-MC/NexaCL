@@ -8,6 +8,7 @@ internal static partial class Program
 {
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("command capsules declare horizontal caption scrolling and retain offsets", CommandCapsulesDeclareOnlyHorizontalCaptionScrollAndRetainOffsets),
         ("theme cascade matches identity state parent and runtime conditions", ThemeRulesMatchCascadeConditionsAndParentState),
         ("theme compiler rejects protected and invalid unmatched declarations", ThemeCompilerRejectsUnmatchedProtectedAndInvalidDeclarations),
         ("theme tokens options and visibility enforce bounded typed expressions", ThemeTokensOptionsAndVisibilityAreBoundedAndTyped),

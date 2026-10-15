@@ -81,6 +81,8 @@ internal static partial class Program
         ("task center clear finished leaves active", TaskCenterClearFinishedLeavesActive),
         ("install catalog addon sources merge and isolate failures", InstallAddonSourcesMergeAndIsolateFailures),
         ("install catalog prefetch retains sibling results and cancellation", InstallPrefetchRetainsSiblingResultsAndCancellation),
+        ("install catalog region gate precedes cache and provider", InstallCatalogRegionGatePrecedesCacheAndProvider),
+        ("install catalog HTTP region gate sends no unavailable requests", InstallCatalogHttpRegionGateDoesNotSendUnavailableRequests),
         ("install catalog eligibility owns transitions and projection", InstallEligibilityOwnsTransitionsAndProjection),
         ("install catalog validates OptiFine and OptiFabric published dependencies", InstallBuildCompatibilityUsesPublishedMetadata),
         ("install catalog parses all provider formats and compatibility boundaries", InstallCatalogParsesProviderContracts),

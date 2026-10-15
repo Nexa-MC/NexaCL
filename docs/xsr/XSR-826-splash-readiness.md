@@ -56,6 +56,36 @@ existing query tasks and commit results into their real retained pages. The Aval
 startup session owns hidden native preparation, cancellation, retry and the visibility
 handoff. Services stay independent of Desktop and Avalonia.
 
+Native thread ownership follows the platform. Windows retains its dedicated STA native
+dispatcher, and Linux retains its dedicated native dispatcher. Cocoa must initialize and
+run on the process main thread, verified by `pthread_main_np`. A synchronous executable
+entry calls `AvaloniaUiStartupSession.RunApplicationOnMainThread(Func<Task<int>>)` before
+async GUI bootstrap. On macOS this entry runs bootstrap on a worker and waits for either
+its startup-session request or its terminal result; the entry thread then runs that
+session's actual native application loop. The async session still becomes ready only
+after the first splash render, and service composition never blocks the native loop.
+Command-line completion, cancellation or faults before a native request return without
+initializing Avalonia. Private process workers retain their existing direct entry path.
+
+Each main-thread entry admits one native application lifetime. Session startup on macOS
+without the synchronous main-thread entry is rejected before creating a dispatcher.
+Bootstrap completion or failure requests native shutdown, including cancellation before
+the platform is ready; this path does not post to an uninitialized dispatcher. The native
+loop's completion and the bootstrap task are both observed before releasing entry ownership.
+The entry seals native submission when bootstrap ends, so a late request is rejected and
+retired without waiting for a loop that was never started. Rejected duplicate sessions and
+native dispatch/thread-start failures clear their reservation and complete their terminal
+tasks before releasing their cancellation source.
+
+A composition root that already owns a startup session presents through
+`AvaloniaUiShellHost.Run(startup, shell, platformActions)`. It never infers first startup
+from the global active-session pointer: a canceled splash can already have retired that
+pointer. Presentation of the owned canceled session propagates cancellation, preserves
+single native lifetime ownership and disposes any opened icon stream. The existing
+standalone `Run(shell, ...)` overload remains available for callers without a startup session.
+Existing retry, topmost splash, hidden preparation and main-window handoff checks remain
+required on the real platform.
+
 Contract tests cover step order/deduplication, bounded optional initialization, cancellation,
 mandatory failure and retained settings metadata before navigation. Native checks cover
 retry, hidden activation, prepared scenes, settled missing media and lifetime ownership.

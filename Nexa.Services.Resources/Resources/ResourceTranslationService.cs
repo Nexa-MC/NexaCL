@@ -12,6 +12,8 @@ public sealed class ResourceTranslationService(ResourceProviderHttp http, Resour
     public Task<ResourceTranslation> ReadAsync(ResourceTranslationQuery query, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
+        // A translation retained in a mainland cache is not regional authorization.
+        if (!http.CountryPolicy.IsMainlandChina) return Task.FromResult(new ResourceTranslation(null));
         if (!Enum.IsDefined(query.Source.Provider) || query.Original.Length is 0 or > 2000 || query.Source.ProjectId.Length is 0 or > 64 || !query.Source.ProjectId.All(query.Source.Provider == ResourceProvider.Modrinth ? char.IsAsciiLetterOrDigit : char.IsAsciiDigit)) return Task.FromResult(new ResourceTranslation(null));
         string identity = ResourceOnlineInformationCache.Identity(http.CachePolicyIdentity, query.Source.Provider.ToString(), query.Source.ProjectId, query.Original);
         return _information.ReadAsync("translation", identity, ResourceOnlineInformationCache.MetadataFresh, ResourceOnlineInformationCache.MetadataRetain,
@@ -24,7 +26,7 @@ public sealed class ResourceTranslationService(ResourceProviderHttp http, Resour
         await _slots.WaitAsync(token).ConfigureAwait(false);
         try
         {
-            string route = query.Source.Provider == ResourceProvider.Modrinth ? "modrinth?project_id=" : "curseforge?mod_id=";
+            string route = query.Source.Provider == ResourceProvider.Modrinth ? "modrinth?project_id=" : "curseforge?modId=";
             using var doc = await http.GetAsync(Mirror + "/translate/" + route + query.Source.ProjectId, token).ConfigureAwait(false);
             string translated = Text(doc.RootElement, "translated");
             return new(Text(doc.RootElement, "original") == query.Original && translated.Length is > 0 and <= 2000 ? translated : null);

@@ -5,15 +5,21 @@ namespace Nexa.Services.Minecraft.Install;
 
 public sealed partial class ForgeInstallService
 {
-    internal static string OptiFineUrl(string game, string build)
+    internal static string OptiFineUrl(string game, string build, RegionalPolicy? regionalPolicy = null)
     {
-        if (!RegionalPolicy.Current.IsMainlandChina)
+        if (!(regionalPolicy ?? RegionalPolicy.Current).IsMainlandChina)
             throw new InvalidOperationException("此地区不使用 OptiFine 镜像，请从 optifine.net 下载后使用本地安装。");
+        string[] parts = OptiFineBuildParts(game, build);
+        return $"https://bmclapi2.bangbang93.com/optifine/{Uri.EscapeDataString(game)}/{Uri.EscapeDataString(string.Join('_', parts[..2]))}/{Uri.EscapeDataString(string.Join('_', parts[2..]))}";
+    }
+
+    private static string[] OptiFineBuildParts(string game, string build)
+    {
         string prefix = game + "_";
         if (!build.StartsWith(prefix, StringComparison.Ordinal)) throw new InvalidDataException("OptiFine 版本与 Minecraft 不匹配。");
         string[] parts = build[prefix.Length..].Split('_');
         if (parts.Length < 3) throw new InvalidDataException("OptiFine 版本标识无效。");
-        return $"https://bmclapi2.bangbang93.com/optifine/{Uri.EscapeDataString(game)}/{Uri.EscapeDataString(string.Join('_', parts[..2]))}/{Uri.EscapeDataString(string.Join('_', parts[2..]))}";
+        return parts;
     }
 
     private async Task<string?> CleanroomDigestAsync(string build, CancellationToken token)

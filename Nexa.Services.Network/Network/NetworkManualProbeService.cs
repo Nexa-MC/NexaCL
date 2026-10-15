@@ -3,9 +3,11 @@ using System.Diagnostics;
 namespace Nexa.Services.Network;
 
 /// <summary>Fixed anonymous endpoint observations, without arbitrary URL input or response bodies.</summary>
-public sealed class NetworkManualProbeService(Func<HttpClient> createClient)
+public sealed class NetworkManualProbeService(Func<HttpClient> createClient, bool mainlandChina)
 {
-    private static readonly string[] Hosts = ["piston-meta.mojang.com", "api.modrinth.com", "api.curseforge.com", "bmclapi2.bangbang93.com", "mod.mcimirror.top"];
+    public NetworkManualProbeService(Func<HttpClient> createClient) : this(createClient, false) { }
+    private static readonly string[] OfficialHosts = ["piston-meta.mojang.com", "api.modrinth.com", "api.curseforge.com"];
+    private static readonly string[] MainlandHosts = [.. OfficialHosts, "bmclapi2.bangbang93.com", "mod.mcimirror.top"];
     private static readonly HttpRequestOptionsKey<bool> DiagnosticProbe = new("Nexa.Network.DiagnosticProbe");
     private int _active;
 
@@ -43,7 +45,8 @@ public sealed class NetworkManualProbeService(Func<HttpClient> createClient)
                 }
                 finally { parallel.Release(); }
             }
-            NetworkEndpointObservation[] results = await Task.WhenAll(Hosts.Select(ProbeHostAsync)).ConfigureAwait(false);
+            var hosts = mainlandChina ? MainlandHosts : OfficialHosts;
+            NetworkEndpointObservation[] results = await Task.WhenAll(hosts.Select(ProbeHostAsync)).ConfigureAwait(false);
             return new(startedAt, DateTimeOffset.UtcNow, Array.AsReadOnly(results));
         }
         finally { Volatile.Write(ref _active, 0); }

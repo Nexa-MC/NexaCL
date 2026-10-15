@@ -124,6 +124,7 @@ public sealed partial class XsrUiRenderer
 
     private XsrUiScrollSnapshot ProjectScroll(XsrUiEntityId entity, XsrUiScroll scroll, XsrUiRect rect)
     {
+        if (IsScrollableCapsule(entity)) rect = CapsuleCaptionRect(rect);
         XsrUiSize content = _stackContentSizes.TryGetValue(entity.Index, out XsrUiSize value)
             ? value : new XsrUiSize(rect.Width, rect.Height);
         return new(scroll.OffsetX, scroll.OffsetY,
@@ -132,6 +133,10 @@ public sealed partial class XsrUiRenderer
             content.Width, content.Height, scroll.ShowsVerticalIndicator)
         { ShowsHorizontalIndicator = scroll.ShowsHorizontalIndicator };
     }
+
+    private XsrUiScrollbarSnapshot? ProjectScrollbar(XsrUiEntityId entity, XsrUiScrollSnapshot? scroll,
+        XsrUiRect rect, XsrUiOrientation direction) =>
+        scroll?.Scrollbar(IsScrollableCapsule(entity) ? CapsuleCaptionRect(rect) : rect, direction);
 
     private void RetireScrollGesture()
     {
@@ -143,7 +148,7 @@ public sealed partial class XsrUiRenderer
                     : !scroll.ShowsHorizontalIndicator || scroll.MaximumOffsetX <= 0))
             || (_scrollbarGesture != ScrollbarGesture.None
                 && (!_paintRects.TryGetValue(_gestureScroll.Index, out XsrUiRect rect)
-                    || ProjectScroll(_gestureScroll, scroll, rect).Scrollbar(rect, _scrollbarDirection) is not { Travel: > 0 })))
+                    || ProjectScrollbar(_gestureScroll, ProjectScroll(_gestureScroll, scroll, rect), rect, _scrollbarDirection) is not { Travel: > 0 })))
             EndScrollGesture(cancelled: true);
     }
 

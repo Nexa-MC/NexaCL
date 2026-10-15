@@ -40,6 +40,7 @@ internal static partial class Program
         double unrelatedProgress = 0;
         await startup.InvokeAsync(() =>
         {
+            if (OperatingSystem.IsMacOS()) AssertTrue(AvaloniaUiStartupSession.IsOnProcessMainThread);
             AssertEqual(ThemeVariant.Dark, window.ActualThemeVariant);
             ThemeVariant? originalTheme = Application.Current!.RequestedThemeVariant;
             try
@@ -91,7 +92,7 @@ internal static partial class Program
         }, token);
     }
 
-    private static int RunNativeStartupCancelSmoke() => RunNativeStartupCancelSmokeAsync().GetAwaiter().GetResult();
+    private static int RunNativeStartupCancelSmoke() => AvaloniaUiStartupSession.RunApplicationOnMainThread(RunNativeStartupCancelSmokeAsync);
 
     private static async Task<int> RunNativeStartupCancelSmokeAsync()
     {
@@ -161,6 +162,12 @@ internal static partial class Program
         AssertTrue(AvaloniaUiStartupSession.Active is null && !startup.ShellReadyElapsed.HasValue);
         AssertEqual(0, desktop.Windows.Count);
         AssertTrue(AvaloniaUiMotion.CaptureDiagnostics() is { ActiveTracks: 0, TimerRunning: false });
+        bool cancelledPresentation = false;
+        try { await Task.Run(() => AvaloniaUiShellHost.Run(startup, shell, actions)); }
+        catch (OperationCanceledException) { cancelledPresentation = true; }
+        AssertTrue(cancelledPresentation);
+        AssertTrue(AvaloniaUiStartupSession.Active is null);
+        AssertEqual(0, desktop.Windows.Count);
         Console.WriteLine("PASS: native startup suppresses optional motion initially and Escape discards the warmed hidden shell and its raster leases without presenting a main window.");
         return 0;
     }

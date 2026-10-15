@@ -13,6 +13,7 @@ internal sealed partial class SettingsPageController
             ["product"] = Program.ProductDisplayTitle(_shell.Version),
             ["links"] = Flag(OpenAboutLink is not null),
             ["diagnostics"] = Flag(ExportDiagnostics is not null),
+            ["mainland"] = Flag(_region.IsMainlandChina),
         }));
         var nodes = CatalogNodes(root);
         if (OpenAboutLink is { } open)

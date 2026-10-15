@@ -324,6 +324,11 @@ OverlayMotion (None/Notification/DialogScrim/Dialog), LiveSetting
 (Off/Polite/Assertive) and DismissCommand use finite renderer primitives and validated
 semantic IDs. Element/stack nodes may compose command input without changing their
 layout recipe. ShowsVerticalIndicator, StickToEnd and ScrollGesture require Scroll.
+Command capsules may declare Scroll only when their authored HoverExpand is true;
+only ShowsHorizontalIndicator and UseVerticalWheelForHorizontalScroll apply there.
+The complete caption remains on the same command/accessibility owner. Horizontal
+offset and its thumb are renderer presentation state, retained across compatible
+reloads; theme packs cannot declare Scroll or change its input contract.
 These are host presentation facts, not services or a plugin execution interface.
 Reload may update the live-region urgency but preserves input, motion and scroll
 contracts/state; incompatible projections fail atomically before mutation.

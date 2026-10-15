@@ -20,3 +20,9 @@ This unit does not introduce recurring schedules, retry or backoff policies, ser
 ## Verification
 
 `Nexa.Xsr.Runtime.Tests` covers scheduled completion with correlation, pre-due cancellation observation, fault classification with a private detail leaked nowhere, scheduler dispose, the full legal lifecycle chain, illegal-transition rejection, terminal failure, serialized competing transitions, stable lifecycle error codes, bounded trace behavior with drop counting, correlation-addressable lookup, and one end-to-end flow where a dispatched command, its follow-up event, and a state publication all land in one session trace with the command's correlation preserved. `Nexa.Xsr.Diagnostics` is AOT-compatible and exercised by the NativeAOT, trim, and architecture gates.
+
+The fault-isolation regression checks observations by their explicit work correlation, without
+assuming independent timer callbacks complete in due-time order. It checks both a synchronous
+throw and an asynchronous throw held behind a completion gate; the asynchronous case explicitly
+lets another work item complete first, then verifies the fault and a successful work item scheduled
+after that fault. Classification, fault-type redaction and exact observation counts remain strict.

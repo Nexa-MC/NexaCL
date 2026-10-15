@@ -56,7 +56,7 @@ public sealed partial class XsrUiRenderer
         // Without this constraint an explicitly narrow card is first measured at the viewport
         // width, so wrapped text grows only during child arrange and the card keeps a stale
         // one-line intrinsic height.
-        if (PresentedWidth(entity, element) is { } presentedWidth)
+        if (PresentedWidth(entity, element, available.Width) is { } presentedWidth)
         {
             contentWidth = Math.Min(contentWidth, presentedWidth + padding.Horizontal);
         }
@@ -75,8 +75,9 @@ public sealed partial class XsrUiRenderer
         if (_tree.GetComponent<XsrUiText>(entity) is { } text)
         {
             XsrUiVisualStyle? textStyle = EffectiveVisual(entity);
-            widthSensitive = textStyle?.WrapText == true;
-            double wrapWidth = textStyle?.WrapText == true
+            bool capsule = IsScrollableCapsule(entity);
+            widthSensitive = textStyle?.WrapText == true || capsule;
+            double wrapWidth = textStyle?.WrapText == true && !capsule
                 ? element?.Width ?? Math.Max(0, contentWidth - padding.Horizontal)
                 : double.PositiveInfinity;
             XsrUiSize textSize = MeasureText(
@@ -147,7 +148,7 @@ public sealed partial class XsrUiRenderer
         }
 
         // Explicit sizes constrain the content box; padding adds on top of them.
-        if (PresentedWidth(entity, element) is { } explicitWidth)
+        if (PresentedWidth(entity, element, available.Width) is { } explicitWidth)
         {
             width = explicitWidth + padding.Horizontal;
         }
@@ -184,7 +185,7 @@ public sealed partial class XsrUiRenderer
         double slotW = Math.Max(0, slot.Width - margin.Horizontal);
         double slotH = Math.Max(0, slot.Height - margin.Vertical);
 
-        double contentDesiredW = PresentedWidth(entity, element) ?? Math.Max(0, desired.Width - padding.Horizontal);
+        double contentDesiredW = PresentedWidth(entity, element, slot.Width) ?? Math.Max(0, desired.Width - padding.Horizontal);
         double contentDesiredH = element?.Height ?? Math.Max(0, desired.Height - padding.Vertical);
         double borderDesiredW = ConstrainDimension(
             contentDesiredW + padding.Horizontal,
@@ -257,6 +258,7 @@ public sealed partial class XsrUiRenderer
         }
 
         _paintRects[entity.Index] = new XsrUiRect(contentX, contentY, contentWidth, contentHeight);
+        ArrangeCapsuleScroll(entity, _paintRects[entity.Index]);
 
         if (GetThemeStyle(entity)?.Style.Grid is { } themeGrid)
         {

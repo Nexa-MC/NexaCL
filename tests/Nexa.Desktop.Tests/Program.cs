@@ -105,6 +105,9 @@ internal static partial class Program
 
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("RegionalSettingsHideMainlandFacilitiesAndRestoreSavedPreferences", RegionalSettingsHideMainlandFacilitiesAndRestoreSavedPreferences),
+        ("RegionalResourcesHideMirrorChoicesAndRejectSyntheticIntents", RegionalResourcesHideMirrorChoicesAndRejectSyntheticIntents),
+        ("RegionalAutomaticOptiFineTabsStayHiddenAndRejectIntents", RegionalAutomaticOptiFineTabsStayHiddenAndRejectIntents),
         ("ThemeOptionsRetainLiteralDraftCaretAndFocusAcrossProjection", ThemeOptionsRetainLiteralDraftCaretAndFocusAcrossProjection),
         ("StartupThemeCacheRestoresMatchedBrandAndRespectsSafeMode", StartupThemeCacheRestoresMatchedBrandAndRespectsSafeMode),
         ("StartupThemeCacheRejectsMalformedBudgetsAndPngWithoutWrites", StartupThemeCacheRejectsMalformedBudgetsAndPngWithoutWrites),
@@ -169,6 +172,7 @@ internal static partial class Program
         ("ResourceContinuousListBoundsRowsProjectsAndViewportMedia", ResourceContinuousListBoundsRowsProjectsAndViewportMedia),
         ("ResourceContinuousListRenewsEachRetainedPageWithoutReplacingOthers", ResourceContinuousListRenewsEachRetainedPageWithoutReplacingOthers),
         ("ResourceContinuousListRenewsOverlappingPagesWithoutLosingSourceFacts", ResourceContinuousListRenewsOverlappingPagesWithoutLosingSourceFacts),
+        ("ResourceCardsReflowAcrossWidthsAndKeepVisibleAnchorFocusAndAppendIdentity", ResourceCardsReflowAcrossWidthsAndKeepVisibleAnchorFocusAndAppendIdentity),
         ("InstanceIdentityDraftSurvivesScopedFactRebuildsAndRetiresOnNavigation", InstanceIdentityDraftSurvivesScopedFactRebuildsAndRetiresOnNavigation),
         ("DialogLiteralBodiesPreserveCatalogMatchesAndRefreshTranslationPolicy", DialogLiteralBodiesPreserveCatalogMatchesAndRefreshTranslationPolicy),
         ("ContentIntegrityDetailsShowActualFactsAndRetireScopedReads", ContentIntegrityDetailsShowActualFactsAndRetireScopedReads),

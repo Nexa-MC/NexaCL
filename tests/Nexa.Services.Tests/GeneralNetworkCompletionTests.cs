@@ -32,7 +32,7 @@ internal static partial class Program
                 return new(HttpStatusCode.NotFound) { Content = new ProbeUnreadBody() };
             }
             finally { Interlocked.Decrement(ref active); }
-        })));
+        })), mainlandChina: true);
         Task<NetworkManualProbeSnapshot> running = service.ProbeAsync();
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
         bool secondRejected = false;
@@ -65,6 +65,34 @@ internal static partial class Program
         AssertFalse(NetworkProviderAdmission.IsAllowed(new() { ModrinthProviderEnabled = false }, new("https://mod.mcimirror.top/modrinth/v2/search")));
         AssertFalse(NetworkProviderAdmission.IsAllowed(new() { CurseForgeProviderEnabled = false }, new("https://mod.mcimirror.top/curseforge/v1/mods")));
         AssertTrue(NetworkProviderAdmission.IsAllowed(new() { MirrorProviderEnabled = false }, new("https://api.minecraftservices.com/minecraft/profile")));
+
+        foreach (string country in new[] { "CN", "US", "HK", "MO", "TW", "" })
+        {
+            ConcurrentBag<string> regionalRequests = [];
+            var regional = new NetworkManualProbeService(() => new HttpClient(new AsyncProbeHandler((request, _) =>
+            {
+                AssertEqual(HttpMethod.Head, request.Method);
+                regionalRequests.Add(request.RequestUri!.Host);
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));
+            })), new RegionalPolicy(country).IsMainlandChina);
+            var observed = await regional.ProbeAsync();
+            string[] expected = country == "CN"
+                ? ["piston-meta.mojang.com", "api.modrinth.com", "api.curseforge.com", "bmclapi2.bangbang93.com", "mod.mcimirror.top"]
+                : ["piston-meta.mojang.com", "api.modrinth.com", "api.curseforge.com"];
+            AssertEqual(expected.Length, regionalRequests.Count);
+            AssertEqual(string.Join(',', expected.Order(StringComparer.Ordinal)), string.Join(',', regionalRequests.Order(StringComparer.Ordinal)));
+            AssertEqual(string.Join(',', expected), string.Join(',', observed.Endpoints.Select(endpoint => endpoint.Host)));
+        }
+        // The preserved constructor never opts a caller into mainland requests implicitly.
+        int defaultRequests = 0;
+        var internationalDefault = new NetworkManualProbeService(() => new HttpClient(new AsyncProbeHandler((request, _) =>
+        {
+            AssertFalse(request.RequestUri!.Host is "bmclapi2.bangbang93.com" or "mod.mcimirror.top");
+            Interlocked.Increment(ref defaultRequests);
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));
+        })));
+        AssertEqual(3, (await internationalDefault.ProbeAsync()).Endpoints.Count);
+        AssertEqual(3, defaultRequests);
     }
 
     private static async ValueTask ResourceDependenciesRespectOptOutWithoutOmittingRequiredGraph()

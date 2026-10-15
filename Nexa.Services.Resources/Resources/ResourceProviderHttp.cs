@@ -6,6 +6,7 @@ public sealed class ResourceProviderHttp(HttpClient http, string? curseForgeKey 
 {
     public RegionalPolicy CountryPolicy { get; init; } = RegionalPolicy.Current;
     public Func<string>? SourcePriority { get; init; }
+    internal TimeSpan RequestTimeout { get; init; } = TimeSpan.FromSeconds(30);
     // This identity contains capability and endpoint policy, never the API key itself.
     internal string CachePolicyIdentity => ResourceOnlineInformationCache.Identity(CountryPolicy.CountryCode,
         SourcePriority?.Invoke() ?? "follow-request", string.IsNullOrEmpty(_key) ? "no-official-key" : "official-key-available",
@@ -18,6 +19,8 @@ public sealed class ResourceProviderHttp(HttpClient http, string? curseForgeKey 
     public Task<JsonDocument> PostAsync(ResourceProvider provider, string path, bool mirrorFirst, string json, CancellationToken token) => SendAsync(provider, path, mirrorFirst, json, token);
     private async Task<JsonDocument> SendAsync(ResourceProvider provider, string path, bool mirrorFirst, string? json, CancellationToken token)
     {
+        if (!Enum.IsDefined(provider)) throw new ArgumentException("资源站无效。", nameof(provider));
+        token.ThrowIfCancellationRequested();
         string priority = SourcePriority?.Invoke() ?? "follow-request";
         bool requestedMirrorFirst = mirrorFirst;
         mirrorFirst = ResourceSourcePriority.Apply(priority, mirrorFirst);
@@ -26,6 +29,7 @@ public sealed class ResourceProviderHttp(HttpClient http, string? curseForgeKey 
         string[] candidates = provider == ResourceProvider.CurseForge && string.IsNullOrEmpty(_key) ? [mirror] : mirrorFirst ? [mirror, official] : [official, mirror];
         if (!CountryPolicy.IsMainlandChina)
         {
+            mirrorFirst = false;
             if (provider == ResourceProvider.CurseForge && string.IsNullOrEmpty(_key))
                 throw new IOException("此地区使用 CurseForge 官方接口，需要配置 CurseForge API Key。");
             candidates = [official];
@@ -48,7 +52,7 @@ public sealed class ResourceProviderHttp(HttpClient http, string? curseForgeKey 
     }
     internal async Task<JsonDocument> GetAsync(string url, CancellationToken token, string? key = null, string? json = null)
     {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token); timeout.CancelAfter(TimeSpan.FromSeconds(10));
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token); timeout.CancelAfter(RequestTimeout);
         using var request = new HttpRequestMessage(json is null ? HttpMethod.Get : HttpMethod.Post, url);
         request.Headers.UserAgent.ParseAdd("NexaCL/2.0 (https://github.com/PCL-N-Edition/PCL-N)");
         if (json is not null) request.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");

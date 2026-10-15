@@ -23,6 +23,7 @@ internal sealed partial class ResourcesPageController : IDisposable
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrQueryRouter _queries;
     private readonly XsrStateStore _store;
+    private readonly Nexa.Services.RegionalPolicy _region;
     private readonly Action<Uri> _open;
     private readonly DesktopFunctionPatches _functionPatches;
     private readonly DesktopSidecarSignals? _sidecarSignals;
@@ -82,16 +83,20 @@ internal sealed partial class ResourcesPageController : IDisposable
 
     internal ResourcesPageController(XsrUiShell shell, DesktopUiIntentSink intents, XsrQueryRouter queries,
         XsrStateStore store, Action<Uri> open, DesktopFunctionPatches? functionPatches = null,
-        DesktopSidecarSignals? sidecarSignals = null, DesktopSidecarUiPatches? sidecarUi = null)
+        DesktopSidecarSignals? sidecarSignals = null, DesktopSidecarUiPatches? sidecarUi = null,
+        Nexa.Services.RegionalPolicy? regionalPolicy = null)
     {
         _shell = shell; _intents = intents; _queries = queries; _store = store; _open = open;
+        _region = regionalPolicy ?? Nexa.Services.RegionalPolicy.Current;
         _functionPatches = functionPatches ?? new();
         _sidecarSignals = sidecarSignals;
         _sidecarUi = sidecarUi;
         _resourceDynamic = new(shell.Tree, store);
         Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("ResourcesPage.nxml"), shell.Tree, store);
         IndexResources(Page);
-        _workspace = AppendResource(_entities["ResourceWorkspaceSlot"], "ResourceWorkspace.d.nxml", DesktopResourcesText.Defaults());
+        var workspaceData = DesktopResourcesText.Defaults();
+        workspaceData["mirrorEnabled"] = Flag(_region.IsMainlandChina);
+        _workspace = AppendResource(_entities["ResourceWorkspaceSlot"], "ResourceWorkspace.d.nxml", workspaceData);
         InitializeCatalogVirtualMetrics();
         _filters = AppendResource(_entities["ResourceFilterSlot"], "ResourceFilters.d.nxml", new()
         {

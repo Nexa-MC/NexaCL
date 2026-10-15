@@ -387,12 +387,18 @@ internal sealed partial class AvaloniaUiSceneNodeControl
                 ThemeTypeface(FontWeightFor(style)),
                 fontSize,
                 labelBrush);
-            double labelX = iconX - CapsuleCaptionIconGap - labelText.Width;
+            bool scrollingCaption = _node.Scroll is not null;
+            double captionStart = pillX + (scrollingCaption ? 16 : 8);
+            double labelX = scrollingCaption ? captionStart - _node.Scroll!.Value.OffsetX
+                : iconX - CapsuleCaptionIconGap - labelText.Width;
             double labelY = Math.Max(0, (rect.Height - labelText.Height) / 2);
-            using (context.PushClip(new Rect(pillX + 8, rect.Y,
-                Math.Max(0, iconX - CapsuleCaptionIconGap - (pillX + 8)), rect.Height)))
+            using (context.PushClip(new Rect(captionStart, rect.Y,
+                Math.Max(0, iconX - CapsuleCaptionIconGap - captionStart), rect.Height)))
                 context.DrawText(labelText, new Point(labelX, labelY));
         }
+
+        if (progress > 0.01 && _node.HorizontalScrollbar is { } horizontal)
+            DrawScrollbar(context, LocalScrollbar(horizontal), _node.ColorScheme);
 
         if (_node.IsFocusVisible)
             context.DrawRectangle(null, new Pen(Brush(_node.ColorScheme.AccentText)!, 2),

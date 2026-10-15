@@ -19,6 +19,7 @@ public sealed partial class AvaloniaUiStartupSession : IAsyncDisposable
     private IClassicDesktopStyleApplicationLifetime? _desktop;
     private StartupWindow? _window;
     private bool _presented;
+    private bool _nativeShutdownRequested;
     private readonly Queue<string> _pendingProtocols = new(16);
     private Func<string, string> _localize = static text => text;
     private AvaloniaUiRenderingConfiguration _rendering = new(false);
@@ -45,17 +46,46 @@ public sealed partial class AvaloniaUiStartupSession : IAsyncDisposable
         AvaloniaUiStartupAppearance appearance, Func<string, string>? localize = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(appearance);
+        cancellationToken.ThrowIfCancellationRequested();
+        MainThreadApplication? mainThread = null;
+        if (OperatingSystem.IsMacOS())
+        {
+            mainThread = Volatile.Read(ref _mainThreadApplication)
+                ?? throw new InvalidOperationException("macOS startup requires RunApplicationOnMainThread from the executable entry.");
+            if (!mainThread.IsAccepting)
+                throw new InvalidOperationException("A main-thread entry admits one native application lifetime.");
+        }
         appearance = appearance.Snapshot();
         var session = new AvaloniaUiStartupSession { _rendering = new(disableHardwareAcceleration), _appearance = appearance };
         if (localize is not null) session._localize = localize;
         if (Interlocked.CompareExchange(ref _active, session, null) is not null)
+        {
+            session._cancellation.Dispose();
             throw new InvalidOperationException("A native startup session is already running.");
-        var thread = new Thread(() => session.Run(args ?? [])) { Name = "Nexa native dispatcher" };
-        if (OperatingSystem.IsWindows()) thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
+        }
+        try
+        {
+            if (mainThread is not null) mainThread.Submit(session, args ?? []);
+            else
+            {
+                var thread = new Thread(() => session.Run(args ?? [])) { Name = "Nexa native dispatcher" };
+                if (OperatingSystem.IsWindows()) thread.SetApartmentState(ApartmentState.STA);
+                thread.Start();
+            }
+        }
+        catch (Exception error) { session.FailBeforeNativeStart(error); throw; }
         try { await session._ready.Task.WaitAsync(cancellationToken).ConfigureAwait(false); }
         catch { await session.DisposeAsync().ConfigureAwait(false); throw; }
         return session;
+    }
+
+    private void FailBeforeNativeStart(Exception error)
+    {
+        Interlocked.CompareExchange(ref _active, null, this);
+        _ready.TrySetException(error); _completion.TrySetException(error);
+        // The rejected session is never returned; both terminal tasks must be observed.
+        _ = _ready.Task.Exception; _ = _completion.Task.Exception;
+        _cancellation.Dispose();
     }
 
     private void Run(string[] args)
@@ -73,7 +103,8 @@ public sealed partial class AvaloniaUiStartupSession : IAsyncDisposable
         }
         finally
         {
-            _cancellation.Cancel();
+            try { _cancellation.Cancel(); }
+            catch (Exception error) { failure = failure is null ? error : new AggregateException(failure, error); }
             Interlocked.CompareExchange(ref _active, null, this);
         }
         // Publish completion after cancellation callbacks and native ownership cleanup; a
@@ -154,13 +185,32 @@ public sealed partial class AvaloniaUiStartupSession : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (!Completion.IsCompleted)
+        try
         {
-            _cancellation.Cancel();
-            Dispatcher.UIThread.Post(() => { DiscardPreparedShell(); _desktop?.Shutdown(0); });
+            try { if (!Completion.IsCompleted) RequestShutdown(); }
+            finally { await Completion.ConfigureAwait(false); }
         }
-        try { await Completion.ConfigureAwait(false); }
         finally { _cancellation.Dispose(); }
+    }
+
+    private void RequestShutdown()
+    {
+        if (Completion.IsCompleted) return;
+        try { _cancellation.Cancel(); }
+        finally
+        {
+            // A cancellation before AppBuilder initializes must not create a dispatcher
+            // on the bootstrap worker. OnFrameworkInitializationCompleted observes it.
+            if (Volatile.Read(ref _desktop) is not null) Dispatcher.UIThread.Post(ShutdownOnNativeThread);
+        }
+    }
+
+    private void ShutdownOnNativeThread()
+    {
+        if (_nativeShutdownRequested || Completion.IsCompleted) return;
+        if (_window is { } startupWindow) { startupWindow.Close(); return; }
+        _nativeShutdownRequested = true;
+        DiscardPreparedShell(); _desktop?.Shutdown(0);
     }
 
     private sealed class StartupApplication : Application
@@ -172,8 +222,15 @@ public sealed partial class AvaloniaUiStartupSession : IAsyncDisposable
             var session = Active ?? throw new InvalidOperationException("Missing native startup session.");
             if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
                 throw new InvalidOperationException("A desktop lifetime is required.");
-            session._desktop = desktop;
+            Volatile.Write(ref session._desktop, desktop);
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            if (session.CancellationToken.IsCancellationRequested)
+            {
+                session._ready.TrySetCanceled(session.CancellationToken);
+                Dispatcher.UIThread.Post(session.ShutdownOnNativeThread);
+                base.OnFrameworkInitializationCompleted();
+                return;
+            }
             var window = new StartupWindow(() =>
             {
                 session.FirstRenderElapsed ??= Stopwatch.GetElapsedTime(session._started);
@@ -192,7 +249,11 @@ public sealed partial class AvaloniaUiStartupSession : IAsyncDisposable
             window.Closed += (_, _) =>
             {
                 if (ReferenceEquals(session._window, window)) session._window = null;
-                if (!session._presented) { session._cancellation.Cancel(); session.DiscardPreparedShell(); desktop.Shutdown(0); }
+                if (!session._presented)
+                {
+                    session._cancellation.Cancel();
+                    session.ShutdownOnNativeThread();
+                }
             };
             window.Show();
             base.OnFrameworkInitializationCompleted();

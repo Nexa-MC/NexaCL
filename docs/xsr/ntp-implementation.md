@@ -76,7 +76,7 @@ suppressed. The zero-warning solution build is a separate check.
 ## Actual native previews
 
 Both actual Linux Avalonia window runs passed with normal native teardown:
-`ntp1-native-preview-light6.log` and `ntp1-native-preview-dark6.log`. They produced
+`features-ntp-light-tests.log` and `features-ntp-dark-tests.log`. They produced
 48 PNGs and 48 adjacent JSON receipts: nine stages at 1040 and 810 DIP in each
 mode, plus six animation frames at 1040 DIP per mode. The nine stages are BuiltIn
 launch/settings, Minimal launch, Advanced launch/options/grants, retained game
@@ -104,11 +104,11 @@ certify compositor screenshots or Windows/macOS native chrome.
 
 The complete workspace gallery is
 `/workspace/.pcln-cloud/ntp1-previews/index.html`; its adjacent
-`ntp-previews.zip` contains 103 allowlisted files (8,481,686 bytes), including
+`ntp-previews.zip` contains 103 allowlisted files (8,482,020 bytes), including
 all 48 PNG/JSON pairs, two single-play motion GIFs, capture manifests, evidence
 summary and SHA-256 digests. Failed captures are excluded and the ZIP CRC check
 passed. ZIP SHA-256:
-`7b3ed1316b42642d742cda1b12773d88cdf0ec90430ee15c1f3fe38ba62118e0`.
+`962da82ba41189d93f526425dcdfe189a49095fa125c47447e33b39a5bfd60b5`.
 Each GIF uses six distinct actual frames; its 960 ms playback uses the nominal
 160 ms sampling interval, because actual sample timestamps were not recorded.
 
@@ -180,3 +180,42 @@ had five existing failures: a macOS scheduler assertion expecting `Faulted` but
 receiving `Completed`, and Windows Java 8/17/21/25 compatibility-fixture compilation with a
 Unicode output path. Its build/architecture job passed. The new NTP publication
 results must be assessed independently; the prior full workflow was not green.
+
+## Native lifetime and complete-workflow follow-up
+
+The follow-up at `fedde603` passed the Windows and Ubuntu NTP publication jobs,
+including both native preview modes. Its Windows native-window/SMTC job and all
+eight LauncherBuild jobs also passed. The macOS NTP job reached actual preview
+startup and exposed Cocoa initialization on a worker thread; publishing alone had
+not exercised that lifetime.
+
+The executable now enters a synchronous main-thread bridge on macOS. Asynchronous
+bootstrap submits the owned startup session to that bridge, and the real native
+event loop stays on the process main thread. Explicit session presentation also
+prevents canceled startup from falling through to a second native application.
+CLI-only completion, faults and cancellation do not initialize Avalonia. The
+boundary and cancellation ownership are recorded in `XSR-826-splash-readiness.md`.
+
+The unrelated Windows Java compatibility fixture now compiles using ASCII relative
+arguments inside its actual Unicode working directory. Its launch protocol still
+exercises Unicode paths, child arguments, exit propagation and process-tree cleanup.
+The scheduler regression correlates each completion by its explicit request ID
+rather than assuming ordering between independent timers; asynchronous failure
+also verifies that later work remains executable. Neither fix skips a matrix entry
+or weakens a runtime contract.
+
+The archive-admission contract additionally installs a real valid ZIP, verifies its
+NSS and SVG lease bytes, deletes the original author sources and reopens the
+durable package/last-known-good selection. The managed, NativeAOT and full-trim
+theme-service suites each passed all 27 cases with this positive round trip.
+
+The combined follow-up with adaptive task captions, virtual resource cards and
+regional admission passed a zero-warning/error solution build, all 331 Desktop
+cases, 738 service cases, 118 renderer cases, 77 NXML cases, 42 native-backend
+cases and the 72-project architecture gate. Scheduler contracts also passed all
+170 cases in both managed and NativeAOT execution. The clean 521-entity renderer
+benchmark retained zero allocation. Live Modrinth and CurseForge mirror searches,
+details, exact-version file metadata, icons and translation responses succeeded;
+the native resource-wheel probe passed append, retained identity/offset, explicit
+same-page retry and clean native shutdown. These are local Linux results; the
+main-thread Cocoa path and four actual Windows JDK variants require their CI jobs.

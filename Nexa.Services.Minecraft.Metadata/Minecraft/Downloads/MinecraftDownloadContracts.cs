@@ -100,18 +100,22 @@ public static class MinecraftDownloadSourcePlanner
         OrderSources(officialUrls, mirrorUrls, preferOfficialSource, RegionalPolicy.Current);
 
     public static string[] OrderSources(IReadOnlyList<string> officialUrls, IReadOnlyList<string> mirrorUrls, bool preferOfficialSource,
-        RegionalPolicy policy) => !policy.IsMainlandChina ? officialUrls.Distinct(StringComparer.Ordinal).ToArray()
+        RegionalPolicy policy) => !policy.IsMainlandChina ? officialUrls.Select(source => RegionalDownloadSources.ForRegion(source, policy)).Distinct(StringComparer.Ordinal).ToArray()
             : preferOfficialSource ? Merge(officialUrls, mirrorUrls) : Merge(mirrorUrls, officialUrls);
 
-    public static string[] GetAssetSources(string original, bool preferOfficialSource)
+    public static string[] GetAssetSources(string original, bool preferOfficialSource, RegionalPolicy? regionalPolicy = null)
     {
-        string official = original.Replace("http://resources.download.minecraft.net", "https://resources.download.minecraft.net", StringComparison.Ordinal);
-        return OrderSources([official], [ReplaceAssetMirror(official)], preferOfficialSource);
+        RegionalPolicy policy = regionalPolicy ?? RegionalPolicy.Current;
+        string official = RegionalDownloadSources.ForRegion(original, policy);
+        return OrderSources([official], [ReplaceAssetMirror(official)], preferOfficialSource, policy);
     }
 
     public static string[] GetLibrarySources(string original, bool preferOfficialSource)
+        => GetLibrarySourcesCore(original, preferOfficialSource, RegionalPolicy.Current);
+
+    private static string[] GetLibrarySourcesCore(string original, bool preferOfficialSource, RegionalPolicy policy)
     {
-        if (!RegionalPolicy.Current.IsMainlandChina) return [original];
+        if (!policy.IsMainlandChina) return [RegionalDownloadSources.ForRegion(original, policy)];
         const string litePath = "/com/mumfrey/liteloader/";
         int liteOffset = original.IndexOf(litePath, StringComparison.Ordinal);
         if (liteOffset >= 0)
@@ -122,21 +126,27 @@ public static class MinecraftDownloadSourcePlanner
                 .Distinct(StringComparer.Ordinal).ToArray();
         }
         string[] mirrors = [ReplaceLibraryMirror(original, "https://bmclapi2.bangbang93.com/maven"), ReplaceLibraryMirror(original, "https://bmclapi2.bangbang93.com/libraries"), original];
-        return ContainsThirdParty(original) ? mirrors[..2] : OrderSources([original], mirrors, preferOfficialSource);
+        return ContainsThirdParty(original) ? mirrors[..2] : OrderSources([original], mirrors, preferOfficialSource, policy);
     }
 
     public static string[] GetLauncherOrMetaSources(string original, bool preferOfficialSource)
+        => GetLauncherOrMetaSourcesCore(original, preferOfficialSource, RegionalPolicy.Current);
+
+    private static string[] GetLauncherOrMetaSourcesCore(string original, bool preferOfficialSource, RegionalPolicy policy)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(original);
+        if (!policy.IsMainlandChina) return [RegionalDownloadSources.ForRegion(original, policy)];
         string mirror = original.Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com", StringComparison.Ordinal).Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com", StringComparison.Ordinal).Replace("https://launcher.mojang.com", "https://bmclapi2.bangbang93.com", StringComparison.Ordinal).Replace("https://launchermeta.mojang.com", "https://bmclapi2.bangbang93.com", StringComparison.Ordinal).Replace("https://zkitefly.github.io/unlisted-versions-of-minecraft", "https://alist.8mi.tech/d/mirror/unlisted-versions-of-minecraft/Auto", StringComparison.Ordinal);
-        return OrderSources([original], [mirror], preferOfficialSource);
+        return OrderSources([original], [mirror], preferOfficialSource, policy);
     }
 
-    public static string[] GetLibrarySources(string original, bool preferOfficialSource, string? expectedSha1) =>
-        HasDigest(expectedSha1) ? GetLibrarySources(original, preferOfficialSource) : OriginalHttpsSource(original);
+    public static string[] GetLibrarySources(string original, bool preferOfficialSource, string? expectedSha1, RegionalPolicy? regionalPolicy = null) =>
+        HasDigest(expectedSha1) ? GetLibrarySourcesCore(original, preferOfficialSource, regionalPolicy ?? RegionalPolicy.Current)
+            : OriginalHttpsSource(original, regionalPolicy ?? RegionalPolicy.Current);
 
-    public static string[] GetLauncherOrMetaSources(string original, bool preferOfficialSource, string? expectedSha1) =>
-        HasDigest(expectedSha1) ? GetLauncherOrMetaSources(original, preferOfficialSource) : OriginalHttpsSource(original);
+    public static string[] GetLauncherOrMetaSources(string original, bool preferOfficialSource, string? expectedSha1, RegionalPolicy? regionalPolicy = null) =>
+        HasDigest(expectedSha1) ? GetLauncherOrMetaSourcesCore(original, preferOfficialSource, regionalPolicy ?? RegionalPolicy.Current)
+            : OriginalHttpsSource(original, regionalPolicy ?? RegionalPolicy.Current);
 
     private static bool HasDigest(string? sha1)
     {
@@ -145,8 +155,9 @@ public static class MinecraftDownloadSourcePlanner
         return true;
     }
 
-    private static string[] OriginalHttpsSource(string original)
+    private static string[] OriginalHttpsSource(string original, RegionalPolicy policy)
     {
+        original = RegionalDownloadSources.ForRegion(original, policy);
         if (!Uri.TryCreate(original, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || uri.UserInfo.Length != 0)
             throw new InvalidDataException("缺少摘要的下载必须使用原始 HTTPS 来源。");
         return [original];

@@ -23,6 +23,7 @@ internal sealed partial class LaunchPageController
 
     private void SelectInstallLoader(string loader, string key)
     {
+        if (loader == "OptiFine" && !_region.IsMainlandChina) return;
         _selectedInstallLoader = loader;
         if (loader == LaunchInstallText.Raw("loader.vanilla")) _selectedInstallBuilds.Clear();
         _selectedInstallAddons.Clear();
@@ -260,6 +261,7 @@ internal sealed partial class LaunchPageController
 
     private bool ShouldShowJavaInstallSubpage(JavaInstallSubpage subpage)
     {
+        if (subpage.PageKey == "JavaOptiFinePage" && !_region.IsMainlandChina) return false;
         if (subpage.PageKey == "JavaMinecraftPage") return true;
         if (!_installGameChosen) return false;
         InstallLoader? loader = subpage.PageKey switch

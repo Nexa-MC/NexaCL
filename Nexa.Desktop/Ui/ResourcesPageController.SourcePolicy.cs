@@ -15,7 +15,7 @@ internal sealed partial class ResourcesPageController
 
     private void SelectSourceFromPage(int index)
     {
-        if (_sourcePolicyForced) return;
+        if (_sourcePolicyForced || !_region.IsMainlandChina) return;
         _filter = _filter with { MirrorFirst = index == 0 }; Search();
     }
 
@@ -36,9 +36,9 @@ internal sealed partial class ResourcesPageController
         string priority = read.Result.Value!.Priority;
         bool changed = _sourcePolicyPriority is not null && _sourcePolicyPriority != priority;
         _sourcePolicyPriority = priority;
-        _sourcePolicyForced = priority is "official-first" or "mirrors-first";
+        _sourcePolicyForced = !_region.IsMainlandChina || priority is "official-first" or "mirrors-first";
         // A global override changes transport policy and presentation, while retaining the page's request preference.
-        int selected = (_sourcePolicyForced ? priority == "mirrors-first" : _filter.MirrorFirst) ? 0 : 1;
+        int selected = (_region.IsMainlandChina && (_sourcePolicyForced ? priority == "mirrors-first" : _filter.MirrorFirst)) ? 0 : 1;
         for (int index = 0; index < SourcePolicyOptions.Length; index++)
         {
             var option = _entities[SourcePolicyOptions[index]];

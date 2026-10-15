@@ -22,11 +22,16 @@
 .resource-copy { Orientation: Vertical; Spacing: 2; Weight: 1; }
 .resource-card { Orientation: Vertical; Spacing: 2; Background: #ffffff; CornerRadius: 10; }
 .resource-card-body { Orientation: Horizontal; Margin: 12,8,12,8; Spacing: 12; }
-.resource-project { Orientation: Vertical; Height: 80; Background: #ffffff; CornerRadius: 10; }
-.resource-project-body { Weight: 1; }
-.resource-project-icon { Width: 48; Height: 48; VerticalAlignment: Center; Background: #f1f5fa; Foreground: #717c8c; CornerRadius: 12; }
+.resource-project { Orientation: Vertical; Height: 148; Background: #ffffff; CornerRadius: 10; }
+.resource-grid-row { Orientation: Horizontal; }
+.resource-project-body { Orientation: Vertical; Margin: 12,10,12,10; Spacing: 6; Weight: 1; }
+.resource-project-heading { Orientation: Horizontal; Height: 42; Spacing: 10; }
+.resource-project-actions { Orientation: Horizontal; Height: 30; Spacing: 6; }
+.resource-project-action-fill { Weight: 1; }
+.resource-project-action { Height: 30; }
+.resource-project-icon { Width: 42; Height: 42; VerticalAlignment: Center; Background: #f1f5fa; Foreground: #717c8c; CornerRadius: 10; }
 .resource-project-title { Height: 22; FontSize: 15; FontWeight: 600; }
-.resource-project-description { Height: 20; FontSize: 12; Foreground: #717c8c; }
+.resource-project-description { Height: 42; FontSize: 12; Foreground: #717c8c; WrapText: true; }
 .resource-project-metadata { Height: 18; FontSize: 11; Foreground: #717c8c; }
 .resource-icon-button { Width: 76; HoverExpand: true; }
 .resource-message { Height: 54; FontSize: 14; Foreground: #717c8c; }
@@ -64,6 +69,6 @@
 .resource-extension-input-surface { Width: 220; Weight: 0; }
 .resource-extension-submit { Width: 68; }
 /* Finite viewport metrics and text-width estimates. */
-.resource-metric-virtual { Height: 80; Spacing: 6; Width: 48; Padding: 4; MaxHeight: 600; MaxWidth: 100000; }
+.resource-metric-virtual { Height: 148; Spacing: 10; Width: 48; MinWidth: 280; Padding: 4; MaxHeight: 600; MaxWidth: 100000; }
 .resource-metric-selector { Width: 13; Height: 7; Padding: 20; }
 .resource-metric-overlay { MaxHeight: 340; MinHeight: 80; Height: 120; Margin: 220,0,0,0; Padding: 16; Width: 34; Spacing: 40; }

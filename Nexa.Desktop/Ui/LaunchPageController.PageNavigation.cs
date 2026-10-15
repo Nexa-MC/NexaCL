@@ -66,6 +66,7 @@ internal sealed partial class LaunchPageController
     /// </summary>
     private void ShowJavaInstallSubpage(string pageKey)
     {
+        if (pageKey == "JavaOptiFinePage" && !_region.IsMainlandChina) return;
         if (!_javaInstallEntities.TryGetValue("JavaInstallPager", out XsrUiEntityId pager)
             || !_javaInstallEntities.TryGetValue(pageKey, out XsrUiEntityId page)
             || !IsInstallEntityVisible(page))

@@ -19,7 +19,7 @@
         </StackPanel>
       </StackPanel>
     </SettingsForm>
-    <SettingsForm Key="NetworkMirrorResolution">
+    <SettingsForm Key="NetworkMirrorResolution" IsVisible="{data mirrors}">
       <Text Content="来源解析" Class="settings-form-label" />
       <StackPanel Class="settings-form-surface">
         <StackPanel Class="settings-form-body">

@@ -13,4 +13,18 @@ Validation: Desktop input/navigation regressions, Service process/Java contracts
 
 Shell bubbles share a bottom-up vertical dock. Hidden and closing bubbles reserve no slot; overlay motion supplies interruptible entry, exit and reflow with reduced-motion support. Version rows reserve a check column before the icon, and actions use the existing expanding-capsule primitive.
 
+Shell task, launch and process bubbles use intrinsic single-line caption measurement,
+not fixed expanded widths. Their 48 DIP collapsed circle keeps its right dock anchor;
+expanded width is bounded by the 420 DIP authored maximum and the available window
+width. Overflowing captions retain their complete accessible label and can move in
+both directions through the ordinary wheel, horizontal trackpad, horizontal thumb
+or Left/Right while the bubble has keyboard focus. Enter/Space still invoke the
+original action. The task progress track stretches inside the caption area.
+
+This reuses the renderer's capsule and scroll state. NXML `Button Scroll="true"`
+is admitted only with `HoverExpand="true"`; it scrolls the caption, never its child
+business content. Vertical scrolling, stick-to-end and content drag gestures remain
+stack-only contracts. Desktop presenters continue to supply text, visibility and
+commands, while intrinsic measurement, scroll bounds and input stay in the renderer.
+
 Overlay sibling reordering preserves native attachment and in-flight animation. Capsule cursor feedback uses the same stable hover target as expansion; busy launch progress retains the enabled primary-action color.

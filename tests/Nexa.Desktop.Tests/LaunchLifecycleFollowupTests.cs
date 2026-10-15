@@ -121,9 +121,14 @@ internal static partial class Program
         AssertTrue(power.Text!.Contains("playable", StringComparison.Ordinal));
         AssertTrue(logs.Text!.Contains("日志", StringComparison.Ordinal));
         AssertTrue(style.HoverExpand);
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiElement>(power.Entity)!.Width is null);
+        AssertEqual(420d, fixture.Shell.Tree.GetComponent<XsrUiElement>(power.Entity)!.MaxWidth);
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiScroll>(power.Entity)!.ShowsHorizontalIndicator);
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiScroll>(logs.Entity)!.UseVerticalWheelForHorizontalScroll);
         using var task = fixture.Foundation.Host.Tasks.Begin(new Nexa.Services.Tasks.TaskCenterStart("dock-test", "下载", ["文件"]));
         scene = fixture.Shell.Render(new(850, 500));
         var root = FindByKey(fixture.Shell, scene, "task-bubble");
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiScroll>(root.Entity)!.UseVerticalWheelForHorizontalScroll);
         AssertEqual(root.Rect.X, FindByKey(fixture.Shell, scene, "process-stop-" + id).Rect.X);
         AssertEqual(root.Rect.Y - 58, FindByKey(fixture.Shell, scene, "process-stop-" + id).Rect.Y);
         bubble.SetPageVisible(true);

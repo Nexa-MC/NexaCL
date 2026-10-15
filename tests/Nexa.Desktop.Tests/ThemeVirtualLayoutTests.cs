@@ -31,7 +31,12 @@ internal static partial class Program
             var scrolling = f.Fixture.Shell.Tree.GetComponent<XsrUiScroll>(list)!; scrolling.OffsetY = 260;
             f.Fixture.Shell.Tree.MarkDirty(list, XsrUiDirtyKinds.Layout); f.RenderFrames(1);
             renderer.ClearTheme(2); f.RenderFrames(1);
-            AssertClose(260d / 110 * 86, scrolling.OffsetY); AssertTrue(f.Rows.Length <= metrics.RealizationLimit);
+            AssertTrue(renderer.TryGetVirtualLayoutMetrics(list, out var restoredMetrics));
+            int columns = f.Scene.Nodes.Where(node => f.Rows.Contains(node.Entity)).GroupBy(node => node.Rect.Y).First().Count();
+            double originalLine = 260d / 110;
+            AssertClose((Math.Floor(Math.Floor(originalLine) / columns) + originalLine % 1)
+                * (restoredMetrics.ItemHeight + restoredMetrics.Spacing), scrolling.OffsetY);
+            AssertTrue(f.Rows.Length <= metrics.RealizationLimit);
             AssertEqual(1, f.Reads.Count); AssertEqual("unsubmitted", editor.ReadDraft());
             double viewportHeight = f.Scene.Nodes.Single(node => node.Entity == list).Rect.Height;
             double? sourceHeight = f.Fixture.Shell.Tree.GetComponent<XsrUiElement>(list)!.Height;

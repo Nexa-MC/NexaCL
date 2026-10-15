@@ -171,7 +171,9 @@ public sealed class FoundationHost : IDisposable
     public HttpClient CreateHttpClient(bool allowAutoRedirect = true) =>
         new(new DiagnosticHttpHandler(Logging, NetworkHttp.CreateHandler(allowAutoRedirect)));
 
-    private NetworkPreferences CaptureNetworkPreferences()
+    private NetworkPreferences CaptureNetworkPreferences() => CaptureNetworkPreferences(RegionalPolicy.Current);
+
+    internal NetworkPreferences CaptureNetworkPreferences(RegionalPolicy countryPolicy)
     {
         var snapshot = SettingsPolicy.Read(new());
         Dictionary<string, string?> values = snapshot.IsSuccess ? snapshot.Value!.Values.ToDictionary(item => item.Key, item => item.Value.Value, StringComparer.Ordinal) : [];
@@ -187,7 +189,7 @@ public sealed class FoundationHost : IDisposable
             OfficialProviderEnabled = Text("network.provider-official", "true") == "true",
             ModrinthProviderEnabled = Text("network.provider-modrinth", "true") == "true",
             CurseForgeProviderEnabled = Text("network.provider-curseforge", "true") == "true",
-            MirrorProviderEnabled = Text("network.provider-mirror", "true") == "true",
+            MirrorProviderEnabled = countryPolicy.IsMainlandChina && Text("network.provider-mirror", "true") == "true",
             TraceEnabled = Text("network.trace", "false") == "true",
             AutoDiagnose = Text("network.auto-diagnose", "false") == "true"
         };

@@ -13,12 +13,14 @@ Page navigation uses a short coordinated fade with content visible from its firs
 | Launch and account forms | Shared outer gutter, stable account identity, coordinated account fade |
 | Version selection / directory picker | Aligned toolbar and list, existing immediate select and post-navigation double click preserved |
 | Install chooser / Java install / version edit / Bedrock / Java choice | Compact single outer gutter, selectors stay directly draggable; async catalog status stays in each loader page |
-| Resources / favorites / details | Compact aligned toolbar and result list; existing media and dependency state retained |
+| Resources / favorites / details | Compact aligned toolbar and responsive multi-column resource cards; existing media and dependency state retained |
 | Global and instance settings, content details, snapshots, platform diagnostics, servers/export | Single page gutter, tighter section spacing, shared controls and existing operation status |
 | Task center / process log | Compact header and list, fixed actions, no delayed row entrance |
 | Wardrobe / skin library | Keep full-height preview rail and horizontal collections; shared feedback |
 | First run | Keep centered welcome, fixed subsequent forms, explicit next/back state |
 | Dialogs / notifications / bubbles | Keep bounded, interruptible overlay motion and keyboard focus |
+
+Resource discovery projects a row-major card grid from the list's available width. The host owns finite card/row/spacer geometry through the existing Waterfall virtual contract, including optional theme item width/height/spacing/column metrics. Width and metric changes retain the first visible source-qualified project and its fractional row offset; a focused retained card remains realized. Appending provider pages preserves the current offset and existing card entities, submitted search and unsubmitted drafts. The visible card budget remains bounded independently of retained provider pages. Card structure and appearance remain external NXML/NSS; the controller only projects identities, dimensions and actions.
 
 ## Validation boundary
 

@@ -6,12 +6,36 @@ $ErrorActionPreference = 'Stop'
 $hostPath = (Resolve-Path -LiteralPath $HostExecutable).Path
 $suffix = if ($IsWindows) { '.exe' } else { '' }
 $javaPath = (Resolve-Path -LiteralPath (Join-Path $JavaHome "bin/java$suffix")).Path
-$javacPath = Join-Path $JavaHome "bin/javac$suffix"
+$javacPath = (Resolve-Path -LiteralPath (Join-Path $JavaHome "bin/javac$suffix")).Path
 $scratch = Join-Path ([IO.Path]::GetTempPath()) ("nexa-mod-compat-" + [Guid]::NewGuid().ToString('N') + ' 中文 with space')
 [IO.Directory]::CreateDirectory($scratch) | Out-Null
 try {
-    & $javacPath -encoding UTF-8 -d $scratch (Join-Path $PSScriptRoot 'fixtures/JvmHostModCompatibility.java')
-    if ($LASTEXITCODE -ne 0) { throw 'Compatibility fixture javac failed' }
+    # Windows javac may decode command-line paths using the system code page.
+    # Keep the real Unicode directory, but pass only relative ASCII compiler args.
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'fixtures/JvmHostModCompatibility.java') -Destination $scratch
+    $compileStart = [Diagnostics.ProcessStartInfo]::new($javacPath)
+    $compileStart.WorkingDirectory = $scratch
+    $compileStart.UseShellExecute = $false
+    $compileStart.CreateNoWindow = $true
+    $compileStart.RedirectStandardOutput = $true
+    $compileStart.RedirectStandardError = $true
+    foreach ($argument in @('-encoding', 'UTF-8', '-d', '.', 'JvmHostModCompatibility.java')) { $compileStart.ArgumentList.Add($argument) }
+    $compiler = [Diagnostics.Process]::Start($compileStart)
+    try {
+        $compileOutput = $compiler.StandardOutput.ReadToEndAsync()
+        $compileErrors = $compiler.StandardError.ReadToEndAsync()
+        if (!$compiler.WaitForExit(30000)) { throw 'Compatibility fixture javac timed out' }
+        $compileOutput = $compileOutput.GetAwaiter().GetResult()
+        $compileErrors = $compileErrors.GetAwaiter().GetResult()
+        if ($compiler.ExitCode -ne 0) { throw "Compatibility fixture javac failed: $compileOutput $compileErrors" }
+        foreach ($class in @('JvmHostModCompatibility.class', 'JvmHostModCompatibility$Child.class')) {
+            if (!(Test-Path -LiteralPath (Join-Path $scratch $class))) { throw 'Compatibility fixture class missing from Unicode directory' }
+        }
+    }
+    finally {
+        if (!$compiler.HasExited) { $compiler.Kill($true); $compiler.WaitForExit() }
+        $compiler.Dispose()
+    }
     function Write-ModField($writer, [string]$value) {
         $bytes = [Text.Encoding]::UTF8.GetBytes($value)
         $writer.Write([int]$bytes.Length)

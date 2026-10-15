@@ -106,8 +106,15 @@ public static class NxmlCompiler
         bool verticalWheelRouting = ParseBoolean(element.Name, "UseVerticalWheelForHorizontalScroll", Literal("UseVerticalWheelForHorizontalScroll", "false"));
         bool stickToEnd = ParseBoolean(element.Name, "StickToEnd", Literal("StickToEnd", "false"));
         bool scrollGesture = ParseBoolean(element.Name, "ScrollGesture", Literal("ScrollGesture", "false"));
+        bool capsuleScroll = recipe == NxmlRuntimeRecipe.CommandInput
+            && ParseBoolean(element.Name, "HoverExpand", Literal("HoverExpand", "false"))
+            && ParseBoolean(element.Name, "Scroll", Literal("Scroll", "false"));
+        if (recipe == NxmlRuntimeRecipe.CommandInput && element.FindProperty("Scroll") is not null && !capsuleScroll)
+            throw Fail(element.Name, "Scroll", "requires an expanding command capsule");
+        if (capsuleScroll && (showsIndicator || stickToEnd || scrollGesture))
+            throw Fail(element.Name, "Scroll", "command capsules support horizontal caption scrolling only");
         if (element.Attributes.Any(attribute => attribute.Name is "ShowsVerticalIndicator" or "ShowsHorizontalIndicator" or "UseVerticalWheelForHorizontalScroll" or "StickToEnd" or "ScrollGesture")
-            && (recipe is not (NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot)
+            && (!capsuleScroll && recipe is not (NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot)
                 || recipe == NxmlRuntimeRecipe.DynamicSlot && slotLayout != NxmlRuntimeRecipe.StackLayout
                 || !ParseBoolean(element.Name, "Scroll", Literal("Scroll", "false"))))
             throw Fail(element.Name, "Scroll", "is required by scroll presentation facts");
@@ -174,7 +181,8 @@ public static class NxmlCompiler
                 NxmlIrPropertyTarget.Command or NxmlIrPropertyTarget.Clickable or NxmlIrPropertyTarget.Focusable => recipe is NxmlRuntimeRecipe.CommandInput or NxmlRuntimeRecipe.RangeInput or NxmlRuntimeRecipe.Element or NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
                 NxmlIrPropertyTarget.Content => recipe is NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.CommandInput,
                 NxmlIrPropertyTarget.ImageSource => recipe is NxmlRuntimeRecipe.Image or NxmlRuntimeRecipe.CommandInput,
-                NxmlIrPropertyTarget.Orientation or NxmlIrPropertyTarget.Spacing or NxmlIrPropertyTarget.StretchLastChild or NxmlIrPropertyTarget.Scrollable => recipe is NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
+                NxmlIrPropertyTarget.Orientation or NxmlIrPropertyTarget.Spacing or NxmlIrPropertyTarget.StretchLastChild => recipe is NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot,
+                NxmlIrPropertyTarget.Scrollable => recipe is NxmlRuntimeRecipe.StackLayout or NxmlRuntimeRecipe.DynamicSlot || capsuleScroll,
                 NxmlIrPropertyTarget.Value => recipe == NxmlRuntimeRecipe.Progress,
                 NxmlIrPropertyTarget.Placeholder or NxmlIrPropertyTarget.IsPassword => recipe == NxmlRuntimeRecipe.TextInput,
                 NxmlIrPropertyTarget.Selected => recipe == NxmlRuntimeRecipe.CommandInput,

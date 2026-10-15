@@ -10,8 +10,11 @@ Main 必须让显式 CLI、URI、文件及已经收到的另一个实例激活�
 真实注册 adapter 的 Attempt/Pending/Success、时间与失败信息，不接受旧 `nexa://`。
 
 `NetworkManualProbeQuery` 没有目标参数。Host 创建共享策略池上的非重定向 HttpClient，
-`NetworkManualProbeService` 只向固定五个 HTTPS authority 发 HEAD，两个并发，每项 3 秒、
-整轮 10 秒、单轮互斥、所有子任务被等待。请求带 diagnostic 标记以避免递归自动 probe，
+`NetworkManualProbeService` 只向已获地区准入的固定 HTTPS authority 发 HEAD：中国大陆为
+Mojang、Modrinth、CurseForge 和 BMCLAPI、MCIM 共五项，其他及未知地区仅前三项，
+不请求或返回两项大陆镜像。Composition 注入共享 RegionalPolicy 的 IsMainlandChina，
+服务沿既有 NetworkHttpClientPool 的 bool 注入边界，原单参数构造默认采用国际范围。
+两个并发，每项 3 秒、整轮 10 秒、单轮互斥、所有子任务被等待。请求带 diagnostic 标记以避免递归自动 probe，
 不发送鉴权/正文/路径/查询，也不将 HTTP 401/403/404 当作接口健康。UI 显示观察时间，
 导航与销毁取消；过期结果只属于那次观察，不表示当前状态。最近 Endpoint 表由有界
 trace 的最后主机记录产生，并明确说明不是健康状态。

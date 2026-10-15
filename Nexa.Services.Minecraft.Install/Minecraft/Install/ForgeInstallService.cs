@@ -14,19 +14,19 @@ namespace Nexa.Services.Minecraft.Install;
 public sealed partial class ForgeInstallService(DownloadService downloads, HttpClient http,
     Func<string, IDownloadConnection>? connectionFactory = null,
     Func<MinecraftLoaderInstallRequest, CancellationToken, Task<string>>? resolveJava = null,
-    Func<ProcessStartInfo, CancellationToken, Task>? runProcess = null) : IMinecraftLoaderInstaller
+    Func<ProcessStartInfo, CancellationToken, Task>? runProcess = null,
+    RegionalPolicy? regionalPolicy = null) : IMinecraftLoaderInstaller
 {
+    private readonly RegionalPolicy _regionalPolicy = regionalPolicy ?? RegionalPolicy.Current;
     public SettingsPolicyService? SettingsPolicy { get; init; }
     public static string InstallerUrl(InstallLoader loader, string game, string build)
+        => InstallerUrl(loader, game, build, RegionalPolicy.Current);
+    private static string InstallerUrl(InstallLoader loader, string game, string build, RegionalPolicy policy)
     {
-        if (loader is not (InstallLoader.Forge or InstallLoader.NeoForge or InstallLoader.Cleanroom or InstallLoader.OptiFine)) throw new ArgumentException("Unsupported installer.");
-        if (string.IsNullOrEmpty(game) || string.IsNullOrEmpty(build)
-            || !(game + build).All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-' or '_'))
-            throw new InvalidDataException("加载器版本标识无效。");
-        if (loader == InstallLoader.Cleanroom && game != "1.12.2") throw new InvalidDataException("Cleanroom 仅支持 Minecraft 1.12.2。");
+        ValidateInstallerIdentity(loader, game, build);
         if (loader == InstallLoader.Cleanroom)
             return $"https://github.com/CleanroomMC/Cleanroom/releases/download/{build}/cleanroom-{build}-installer.jar";
-        if (loader == InstallLoader.OptiFine) return OptiFineUrl(game, build);
+        if (loader == InstallLoader.OptiFine) return OptiFineUrl(game, build, policy);
         bool forge = loader == InstallLoader.Forge;
         string artifact = forge || game == "1.20.1" ? "forge" : "neoforge";
         string version = forge ? game.Replace('-', '_') + "-" + build : game == "1.20.1" ? game + "-" + build : build;
@@ -34,10 +34,21 @@ public sealed partial class ForgeInstallService(DownloadService downloads, HttpC
             + $"{artifact}/{version}/{artifact}-{version}-installer.jar";
     }
 
+    private static void ValidateInstallerIdentity(InstallLoader loader, string game, string build)
+    {
+        if (loader is not (InstallLoader.Forge or InstallLoader.NeoForge or InstallLoader.Cleanroom or InstallLoader.OptiFine)) throw new ArgumentException("Unsupported installer.");
+        if (string.IsNullOrEmpty(game) || string.IsNullOrEmpty(build)
+            || !(game + build).All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-' or '_'))
+            throw new InvalidDataException("加载器版本标识无效。");
+        if (loader == InstallLoader.Cleanroom && game != "1.12.2") throw new InvalidDataException("Cleanroom 仅支持 Minecraft 1.12.2。");
+        if (loader == InstallLoader.OptiFine) _ = OptiFineBuildParts(game, build);
+    }
+
     public async Task<JsonObject> InstallAsync(MinecraftLoaderInstallRequest request, IProgress<string>? progress, CancellationToken token)
     {
         MinecraftDownloadPolicy downloadPolicy = MinecraftDownloadPolicy.Read(SettingsPolicy);
-        string url = InstallerUrl(request.Loader, request.Game, request.Build);
+        ValidateInstallerIdentity(request.Loader, request.Game, request.Build);
+        string url = request.LocalInstaller is null ? InstallerUrl(request.Loader, request.Game, request.Build, _regionalPolicy) : "";
         string root = Path.GetFullPath(request.Root);
         string stage = Path.Combine(root, ".nexa-install", Guid.NewGuid().ToString("N"));
         _ = Contained(root, Path.GetRelativePath(root, Path.Combine(stage, "installer.jar")));

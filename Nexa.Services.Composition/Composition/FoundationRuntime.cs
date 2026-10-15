@@ -226,7 +226,8 @@ public static class FoundationRuntimeComposer
         queries.Register<Nexa.Services.Network.NetworkTraceQuery, IReadOnlyList<Nexa.Services.Network.NetworkRequestTrace>>(
             Nexa.Services.Network.NetworkDiagnosticsContract.Trace,
             (_, _) => ValueTask.FromResult(Nexa.Xsr.XsrResult.Success(host.NetworkHttp.TraceSnapshot())));
-        var networkProbe = new Nexa.Services.Network.NetworkManualProbeService(() => host.CreateHttpClient(false));
+        var networkProbe = new Nexa.Services.Network.NetworkManualProbeService(() => host.CreateHttpClient(false),
+            Nexa.Services.RegionalPolicy.Current.IsMainlandChina);
         queries.Register<Nexa.Services.Network.NetworkManualProbeQuery, Nexa.Services.Network.NetworkManualProbeSnapshot>(
             Nexa.Services.Network.NetworkDiagnosticsContract.Probe,
             async (_, token) => Nexa.Xsr.XsrResult.Success(await networkProbe.ProbeAsync(token).ConfigureAwait(false)));

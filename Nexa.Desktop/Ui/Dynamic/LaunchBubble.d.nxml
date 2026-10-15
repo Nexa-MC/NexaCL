@@ -1,3 +1,3 @@
 ﻿<nxml-dynamic>
-  <Button Key="launch-bubble" Class="desktop-bubble task-bubble capsule" IsVisible="false" Command="ui.launch.restore" Icon="lucide/play" Content="返回正在启动" Label="返回正在启动" />
+  <Button Scroll="true" ShowsHorizontalIndicator="true" UseVerticalWheelForHorizontalScroll="true" Key="launch-bubble" Class="desktop-bubble task-bubble capsule" IsVisible="false" Command="ui.launch.restore" Icon="lucide/play" Content="返回正在启动" Label="返回正在启动" />
 </nxml-dynamic>

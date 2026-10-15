@@ -57,6 +57,14 @@ precedence. The renderer clamps against measured horizontal bounds and bubbles
 an unconsumed boundary scroll to its ancestor; ordinary vertical containers keep
 their existing axis. This is ephemeral input policy, not account state.
 
+Hover-expanding command capsules may opt into horizontal caption scrolling. An
+omitted Width means intrinsic single-line caption width plus icon/edge clearance;
+MaxWidth and the available viewport limit the expanded target before interpolation.
+The caption scroll snapshot excludes the trailing icon, shares wheel/trackpad,
+thumb and keyboard bounds, and leaves the complete semantic label available to
+accessibility. Explicit capsule Width remains supported. Child overlays do not
+contribute to or move with the caption scroll.
+
 ## Plugin UI
 
 Plugin PXML compiles to a stable Plugin UI IR. The Host registers and locally instantiates that IR. Opening a registered plugin page performs zero Sidecar IPC; bindings read the Host state mirror and commands resolve to runtime IDs.

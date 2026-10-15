@@ -5,6 +5,34 @@ Country policy is independent of UI language and formatting culture. The deploym
 enables mainland optimizations. Unknown regions use international rules. This is a deployment
 setting, not a geographic attestation; IP geolocation is not introduced.
 
+Regional admission and presentation use that same captured country policy. Outside `CN`
+(including unknown, `HK`, `MO` and `TW`), mainland-only download-source preferences and mirror-provider switches,
+resource mirror selection, mirror-resolution diagnostics and mainland-service acknowledgements
+are omitted from the product UI, and their intent adapters reject unavailable choices.
+Stored source preferences remain intact so a later CN session can restore them. The display
+language and `general.region` formatting preference cannot enable these capabilities.
+
+Game download admission also checks persisted source URLs: an old profile's mirror URL does
+not become an official source merely because it is the original manifest value. Outside CN,
+the source planner and final batch policy restore only exact, known product mirror mappings
+to their official HTTPS origin (the LiteLoader/Forge/Fabric/NeoForge Maven namespaces,
+content-addressed Mojang objects and assets, known version metadata, and the unlisted-version
+archive). Known mirror URLs whose origin cannot be recovered are rejected before transfer.
+The shared pure mapping lives in Common so Settings and Minecraft.Metadata enforce the same
+decision without adding a service dependency. Manifests, expected hashes and sizes are not
+rewritten; CN routing and unrelated global providers retain their existing behavior.
+
+The existing mainland-only facilities are BMCLAPI/MCIM routing and MCIM translations,
+the doh.pub DNS fallback, and automatic OptiFine mirror installation. OptiFine's automatic
+catalogue tab is omitted outside CN; catalogue reads and prefetch stop before consulting
+cached catalogue rows, provider adapters or HTTP. Local installation from a user-provided
+official installer remains available. General loader/resource filtering, LittleSkin, third-party/offline
+account providers and ordinary network diagnostics remain global. Manual network probes include
+BMCLAPI/MCIM only in CN; other regions request and display the three official endpoints only.
+International account additions
+continue to use the verified-ownership admission below; their providers are not disabled by
+country. Mainland purchase reminders are emitted only for admitted CN account operations.
+
 International profile creation/import requires a Microsoft Minecraft Java entitlement
 verified by the authentication service in the current Host session. An imported Microsoft
 profile or a manually supplied token is not evidence. The roster mutation boundary enforces

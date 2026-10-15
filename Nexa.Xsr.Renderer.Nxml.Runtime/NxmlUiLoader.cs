@@ -106,6 +106,9 @@ public sealed partial class NxmlUiLoader
         XsrUiTree tree,
         XsrStateStore state)
     {
+        if (node.Recipe == NxmlRuntimeRecipe.CommandInput && node.Scrollable
+            && (node.Visual?.HoverExpand != true || node.ShowsVerticalIndicator || node.StickToEnd || node.ScrollGesture))
+            throw new NxmlLoadException("Command capsules support authored horizontal caption scrolling only.");
         if (node.StyleIdentity is { } identity) tree.SetComponent(entity, identity);
         tree.SetComponent(entity, new NxmlAuthoredStyleSource(node.StyleSource));
         NxmlIrBinding? visibilityBinding = node.Bindings.FirstOrDefault(
@@ -229,6 +232,9 @@ public sealed partial class NxmlUiLoader
                 }
 
                 tree.SetComponent(entity, commandInput);
+                if (node.Scrollable)
+                    tree.SetComponent(entity, new XsrUiScroll
+                    { ShowsHorizontalIndicator = node.ShowsHorizontalIndicator, UseVerticalWheelForHorizontalScroll = node.UseVerticalWheelForHorizontalScroll });
 
                 if (node.Command is not null)
                 {

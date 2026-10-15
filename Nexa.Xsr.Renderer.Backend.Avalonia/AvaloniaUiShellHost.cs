@@ -41,8 +41,17 @@ public static class AvaloniaUiShellHost
         bool disableHardwareAcceleration = false)
     {
         if (AvaloniaUiStartupSession.Active is { } startup)
-            return startup.Present(shell, platformActions, TryOpenProductAsset("Nexa.Desktop.Assets.icon.png"));
+            return Run(startup, shell, platformActions);
         return Build(shell, platformActions, disableHardwareAcceleration).StartWithClassicDesktopLifetime(args ?? []);
+    }
+
+    /// <summary>Presents through an explicitly owned startup lifetime, including its cancellation boundary.</summary>
+    public static int Run(AvaloniaUiStartupSession startup, XsrUiShell shell, AvaloniaUiPlatformActions? platformActions = null)
+    {
+        ArgumentNullException.ThrowIfNull(startup);
+        ArgumentNullException.ThrowIfNull(shell);
+        using Stream? icon = TryOpenProductAsset("Nexa.Desktop.Assets.icon.png");
+        return startup.Present(shell, platformActions, icon);
     }
 
     internal static void BindActivation(Application application, AvaloniaUiPlatformActions? actions)

@@ -32,7 +32,7 @@
       <Dynamic Key="ResourceList" Spacing="{data listSpacing}" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="false" StableContent="true" Class="layout-ResourcesPage-ResourceList" />
       <StackPanel Key="ResourcePagination" Class="layout-ResourcesPage-ResourcePagination">
         <Text Key="ResourceStatus" Content="{data status}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-status" Label="{data status}" />
-        <StackPanel Key="ResourceNetwork" SegmentThumb="ResourceNetworkThumb" Scroll="true" ScrollGesture="true" Class="resource-base resource-track" Width="{data ResourceNetwork_width}">
+        <StackPanel Key="ResourceNetwork" IsVisible="{data mirrorEnabled}" SegmentThumb="ResourceNetworkThumb" Scroll="true" ScrollGesture="true" Class="resource-base resource-track" Width="{data ResourceNetwork_width}">
           <ContentHost Key="ResourceNetworkThumb" IsVisible="false" TransitionKey="ResourceNetworkThumb" Class="resource-thumb" />
           <Button Key="ResourceNetwork.0" Content="镜像优先" Command="ui.resources.action" Selected="{data ResourceNetwork.0_selected}" Enabled="{data ResourceNetwork.0_enabled}" Width="{data ResourceNetwork.0_width}" Class="resource-base resource-option resource-option-small" Label="镜像优先" />
           <Button Key="ResourceNetwork.1" Content="官方优先" Command="ui.resources.action" Selected="{data ResourceNetwork.1_selected}" Enabled="{data ResourceNetwork.1_enabled}" Width="{data ResourceNetwork.1_width}" Class="resource-base resource-option resource-option-small" Label="官方优先" />

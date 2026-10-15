@@ -387,6 +387,7 @@ public sealed partial class XsrUiRenderer
     {
         if (MoveRangeForKey(key)) return true;
         if (MoveSegmentForKey(key)) return true;
+        if (MoveCapsuleCaptionForKey(key)) return true;
         return key switch
         {
             XsrUiKey.Tab => FocusNext(),

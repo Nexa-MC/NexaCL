@@ -62,26 +62,68 @@ internal static partial class Program
     {
         RecordingSchedulerObserver observer = new();
         using XsrScheduler scheduler = new(observer: observer);
-        TaskCompletionSource secondRan = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        XsrCorrelationId faultCorrelation = XsrCorrelationId.Create();
+        XsrCorrelationId completedCorrelation = XsrCorrelationId.Create();
 
         _ = scheduler.Schedule(
-            TimeSpan.FromMilliseconds(20),
-            _ => throw new InvalidOperationException("private work detail"));
+            TimeSpan.Zero,
+            _ => throw new InvalidOperationException("private work detail"),
+            faultCorrelation);
         _ = scheduler.Schedule(
-            TimeSpan.FromMilliseconds(40),
-            _ =>
-            {
-                secondRan.TrySetResult();
-                return ValueTask.CompletedTask;
-            });
+            TimeSpan.Zero,
+            _ => ValueTask.CompletedTask,
+            completedCorrelation);
 
-        XsrScheduledObservation faulted = await observer.TakeAsync().ConfigureAwait(false);
-        await secondRan.Task.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
-        XsrScheduledObservation completed = await observer.TakeAsync().ConfigureAwait(false);
+        // Independent timer callbacks have no completion-order guarantee. Each observation
+        // must be classified against its own work rather than against its channel position.
+        XsrScheduledObservation first = await observer.TakeAsync().ConfigureAwait(false);
+        XsrScheduledObservation second = await observer.TakeAsync().ConfigureAwait(false);
+        XsrScheduledObservation faulted = first.CorrelationId == faultCorrelation ? first : second;
+        XsrScheduledObservation completed = first.CorrelationId == completedCorrelation ? first : second;
 
+        AssertEqual(faultCorrelation, faulted.CorrelationId);
         AssertEqual(XsrScheduledOutcome.Faulted, faulted.Outcome);
         AssertEqual(typeof(InvalidOperationException).FullName, faulted.FaultType);
+        AssertEqual(completedCorrelation, completed.CorrelationId);
         AssertEqual(XsrScheduledOutcome.Completed, completed.Outcome);
+        AssertEqual<string?>(null, completed.FaultType);
+        AssertEqual(2, observer.Count);
+
+        TaskCompletionSource asyncFaultStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseFault = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        XsrCorrelationId asyncFaultCorrelation = XsrCorrelationId.Create();
+        XsrCorrelationId aheadCorrelation = XsrCorrelationId.Create();
+        _ = scheduler.Schedule(
+            TimeSpan.Zero,
+            async _ =>
+            {
+                await Task.Yield();
+                asyncFaultStarted.TrySetResult();
+                await releaseFault.Task.ConfigureAwait(false);
+                throw new InvalidOperationException("private async work detail");
+            },
+            asyncFaultCorrelation);
+
+        await asyncFaultStarted.Task.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+        _ = scheduler.Schedule(TimeSpan.Zero, _ => ValueTask.CompletedTask, aheadCorrelation);
+        XsrScheduledObservation ahead = await observer.TakeAsync().ConfigureAwait(false);
+        releaseFault.TrySetResult();
+        AssertEqual(aheadCorrelation, ahead.CorrelationId);
+        AssertEqual(XsrScheduledOutcome.Completed, ahead.Outcome);
+        AssertEqual<string?>(null, ahead.FaultType);
+
+        XsrScheduledObservation asyncFaulted = await observer.TakeAsync().ConfigureAwait(false);
+        AssertEqual(asyncFaultCorrelation, asyncFaulted.CorrelationId);
+        AssertEqual(XsrScheduledOutcome.Faulted, asyncFaulted.Outcome);
+        AssertEqual(typeof(InvalidOperationException).FullName, asyncFaulted.FaultType);
+
+        XsrCorrelationId afterFaultCorrelation = XsrCorrelationId.Create();
+        _ = scheduler.Schedule(TimeSpan.Zero, _ => ValueTask.CompletedTask, afterFaultCorrelation);
+        XsrScheduledObservation afterFault = await observer.TakeAsync().ConfigureAwait(false);
+        AssertEqual(afterFaultCorrelation, afterFault.CorrelationId);
+        AssertEqual(XsrScheduledOutcome.Completed, afterFault.Outcome);
+        AssertEqual<string?>(null, afterFault.FaultType);
+        AssertEqual(5, observer.Count);
     }
 
     private static void SchedulerDisposeCancelsPendingWork()

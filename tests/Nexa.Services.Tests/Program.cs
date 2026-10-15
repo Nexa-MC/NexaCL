@@ -31,6 +31,7 @@ internal static partial class Program
         if (args is ["--jvm-host"]) return await ReceiveJvmHostFixture();
         if (args is ["--jvm-child-use-probe", var runtimeRoot, var component]) return RunLauncherJavaUseProbe(runtimeRoot, component);
         if (args.Contains("--live-install-catalog")) { await LiveInstallCatalogSmoke(); return 0; }
+        if (args.Contains("--live-resource-catalog")) { await LiveResourceCatalogSmoke(); return 0; }
         int passed = 0;
         foreach ((string name, Func<ValueTask> body) in TestCases)
         {

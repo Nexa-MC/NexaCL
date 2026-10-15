@@ -25,6 +25,7 @@ internal sealed partial class SettingsPageController : IDisposable
     private readonly XsrQueryRouter _queries;
     private readonly XsrCommandRouter _commands;
     private readonly XsrStateStore _store;
+    private readonly Nexa.Services.RegionalPolicy _region;
     private readonly DesktopFeedbackService _feedback;
     private readonly ConcurrentQueue<DesktopUiIntent> _pending = new();
     private readonly Dictionary<XsrUiEntityId, string> _navigation = [];
@@ -48,9 +49,11 @@ internal sealed partial class SettingsPageController : IDisposable
     private static readonly XsrUiColor Ink = DesktopMarkup.Visual("palette-SettingsPageController-Ink").Foreground, Muted = DesktopMarkup.Visual("palette-SettingsPageController-Muted").Foreground, Blue = DesktopMarkup.Visual("palette-SettingsPageController-Blue").Foreground, White = DesktopMarkup.Visual("palette-SettingsPageController-White").Foreground, Line = DesktopMarkup.Visual("palette-SettingsPageController-Line").Foreground;
 
     public SettingsPageController(XsrUiShell shell, DesktopUiIntentSink intents, XsrQueryRouter queries, XsrCommandRouter commands,
-        XsrStateStore store, DesktopFeedbackService feedback, Func<string?>? instanceDirectory = null)
+        XsrStateStore store, DesktopFeedbackService feedback, Func<string?>? instanceDirectory = null,
+        Nexa.Services.RegionalPolicy? regionalPolicy = null)
     {
         _shell = shell; _intents = intents; _queries = queries; _commands = commands; _store = store; _feedback = feedback;
+        _region = regionalPolicy ?? Nexa.Services.RegionalPolicy.Current;
         _dynamic = new(shell.Tree, store);
         _instanceDirectory = instanceDirectory;
         if (instanceDirectory is not null) _selected = "overview";
@@ -344,6 +347,7 @@ internal sealed partial class SettingsPageController : IDisposable
             && (_instanceDirectory is null || item.Definition?.InstanceOverride == true) && !item.IsRuntimeDetail && (_developer || !item.DeveloperOnly)).ToArray();
         var available = entries.Where(item => item.Kind == SettingsCatalogEntryKind.Setting
             && (item.Definition is not null || item.Availability != SettingsCapabilityAvailability.Available)
+            && (_region.IsMainlandChina || item.SettingKey is not ("network.game-source" or "network.resource-source" or "network.provider-mirror"))
             && item.SettingKey is not ("network.proxy-mode" or "network.proxy-address" or "network.proxy-user" or "network.proxy-password"
                 or "appearance.theme-pack-id" or "appearance.launcher-icon-mode" or "appearance.launcher-icon-path")).ToArray();
         if (available.Length == 0 && _selected != "advanced" && !transfer)
@@ -450,6 +454,7 @@ internal sealed partial class SettingsPageController : IDisposable
 
     private void Save(Editor editor, string? selectedValue = null)
     {
+        if (!_region.IsMainlandChina && editor.Entry.SettingKey is ("network.game-source" or "network.resource-source" or "network.provider-mirror")) return;
         if (!_commands.TryResolve(SettingsPolicyContract.SetCommand, out var route) || _values is null) return;
         if (_hookEditors.TryGetValue(editor.Button, out var hook))
         {

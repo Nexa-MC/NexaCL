@@ -204,9 +204,22 @@ internal static partial class Program
         AssertTrue(fallback.NextEnabled);
         fallback.Click("ResourceNext");
         fallback.Pump(() => fallback.Reads.Count == 3);
-        double secondHeight = fallback.Snapshot.ContentHeight;
+        fallback.ScrollToBottom();
+        fallback.Pump(() => fallback.Scene.Nodes.Any(node => node.Text == "TotalB19"));
+        var finalBatchAnchor = fallback.Row("TotalB19");
+        double finalBatchOffset = fallback.Snapshot.OffsetY;
+        int columns = fallback.Scene.Nodes.Where(node => fallback.Rows.Contains(node.Entity))
+            .GroupBy(node => Math.Round(node.Rect.Y, 3)).Max(line => line.Count());
+        AssertTrue(fallback.Fixture.Shell.Renderer.TryGetVirtualLayoutMetrics(fallback.Page.Find("ResourceList"), out var metrics));
         fallback.Reads[2].Reply.SetResult(XsrResult.Success(new ResourceSearchResult([ContinuousProject("TotalLast", "Total last")], 41, 2)));
-        fallback.Pump(() => fallback.Snapshot.ContentHeight > secondHeight);
+        // A final item can fill an existing partial grid row without growing its extent.
+        fallback.Pump(() => !fallback.NextEnabled);
+        int finalRows = (41 + columns - 1) / columns;
+        AssertClose(finalRows * metrics.ItemHeight + (finalRows - 1) * metrics.Spacing, fallback.Snapshot.ContentHeight);
+        AssertEqual(finalBatchAnchor, fallback.Row("TotalB19"));
+        AssertClose(finalBatchOffset, fallback.Snapshot.OffsetY);
+        if (fallback.Snapshot.MaximumOffsetY - fallback.Snapshot.OffsetY > .01) fallback.ScrollToBottom();
+        fallback.Pump(() => fallback.Scene.Nodes.Any(node => node.Text == "Total last"));
         AssertFalse(fallback.NextEnabled);
         fallback.RenderFrames(6);
         AssertEqual(3, fallback.Reads.Count);
@@ -222,8 +235,7 @@ internal static partial class Program
             f.Pump(() => f.Reads.Count > current);
             f.Complete(page, ContinuousProjects("Page" + page + ".", 20), hasMore: page < 55);
             f.RenderFrames(3);
-            AssertTrue(f.Fixture.Shell.Tree.Children(f.Page.Find("ResourceList"))
-                .Count(entity => f.Fixture.Shell.Tree.Name(entity).StartsWith("ResourceProject.", StringComparison.Ordinal)) <= 48);
+            AssertTrue(f.Rows.Length <= 48);
         }
         AssertEqual(56, f.Reads.Count);
         AssertFalse(f.NextEnabled);
@@ -353,6 +365,75 @@ internal static partial class Program
             ? "https://www.curseforge.com/minecraft/mc-mods/" : "https://modrinth.com/project/") + id)
         { Sources = [new(provider, id)] };
 
+    private static void ResourceCardsReflowAcrossWidthsAndKeepVisibleAnchorFocusAndAppendIdentity()
+    {
+        using var f = new ContinuousResourceHarness();
+        f.Size = new(1400, 700);
+        f.Complete(0, ContinuousProjects("Grid", 80), hasMore: true);
+        f.Pump(() => f.Rows.Length > 0); f.RenderFrames(2);
+        var shell = f.Fixture.Shell; var list = f.Page.Find("ResourceList");
+        AssertTrue(shell.Renderer.TryGetVirtualLayoutMetrics(list, out var metrics));
+        AssertEqual(XsrUiVirtualLayoutKind.Waterfall, metrics.Kind);
+        XsrUiSceneNode[] Cards() => f.Scene.Nodes.Where(node => f.Rows.Contains(node.Entity)).ToArray();
+        int Columns() => Cards().GroupBy(node => Math.Round(node.Rect.Y, 3)).Max(line => line.Count());
+        void AssertGeometry(int columns)
+        {
+            var cards = Cards(); var bounds = FindByKey(shell, f.Scene, "ResourceList").Rect;
+            foreach (var card in cards)
+            {
+                AssertTrue(card.Rect.X >= bounds.X - .01 && card.Rect.X + card.Rect.Width <= bounds.X + bounds.Width + .01);
+                AssertClose(metrics.ItemHeight, card.Rect.Height);
+            }
+            foreach (var line in cards.GroupBy(node => Math.Round(node.Rect.Y, 3)))
+            {
+                var ordered = line.OrderBy(node => node.Rect.X).ToArray();
+                AssertTrue(ordered.Length <= columns);
+                for (int index = 1; index < ordered.Length; index++)
+                    AssertClose(ordered[index - 1].Rect.X + ordered[index - 1].Rect.Width + metrics.Spacing, ordered[index].Rect.X);
+            }
+            int rows = (80 + columns - 1) / columns;
+            AssertClose(rows * metrics.ItemHeight + (rows - 1) * metrics.Spacing, f.Snapshot.ContentHeight);
+            AssertTrue(f.Rows.Length <= metrics.RealizationLimit);
+        }
+        int wideColumns = Columns(); AssertTrue(wideColumns >= 3); AssertGeometry(wideColumns);
+        var scroll = shell.Tree.GetComponent<XsrUiScroll>(list)!;
+        scroll.OffsetY = 4.25 * (metrics.ItemHeight + metrics.Spacing);
+        shell.Tree.MarkDirty(list, XsrUiDirtyKinds.Layout); f.RenderFrames(2);
+        int anchorIndex = 4 * wideColumns; string anchorId = "Grid" + anchorIndex;
+        var anchor = f.Row(anchorId); var details = f.Page.Find("ResourceDetails." + anchorId);
+        AssertTrue(shell.Renderer.Focus(details, showIndicator: false));
+        var search = f.Page.Find("ResourceSearch"); shell.Renderer.SetTextInputValue(search, "unsubmitted grid draft");
+        f.Size = new(690, 700); f.RenderFrames(3);
+        int narrowColumns = Columns(); AssertEqual(1, narrowColumns); AssertGeometry(narrowColumns);
+        AssertEqual(anchor, f.Row(anchorId)); AssertEqual(details, shell.Renderer.Focused);
+        AssertClose((anchorIndex + .25) * (metrics.ItemHeight + metrics.Spacing), f.Snapshot.OffsetY);
+        AssertEqual(1, f.Reads.Count);
+        f.Size = new(1400, 700); f.RenderFrames(3);
+        AssertEqual(wideColumns, Columns()); AssertGeometry(wideColumns);
+        AssertEqual(anchor, f.Row(anchorId)); AssertEqual(details, shell.Renderer.Focused);
+        AssertClose(4.25 * (metrics.ItemHeight + metrics.Spacing), f.Snapshot.OffsetY);
+        AssertEqual("unsubmitted grid draft", shell.Tree.GetComponent<XsrUiTextInput>(search)!.ReadDraft());
+        shell.Renderer.ApplyTheme(new VirtualMetricsTheme(71, "ResourceList", new() { VirtualItemColumns = 2 }), 71);
+        f.RenderFrames(1); AssertEqual(2, Columns()); AssertGeometry(2);
+        AssertEqual(anchor, f.Row(anchorId)); AssertEqual(details, shell.Renderer.Focused);
+        AssertTrue(shell.Renderer.TryGetVirtualLayoutMetrics(list, out var themedMetrics));
+        AssertEqual(71L, themedMetrics.ActivationGeneration); AssertTrue(themedMetrics.HasColumnsOverride);
+        shell.Renderer.ClearTheme(72); f.RenderFrames(1);
+        AssertEqual(wideColumns, Columns()); AssertGeometry(wideColumns);
+        AssertEqual(anchor, f.Row(anchorId)); AssertEqual(details, shell.Renderer.Focused);
+        f.ScrollToBottom(); f.Pump(() => f.Reads.Count == 2);
+        var retained = f.Row("Grid79"); double offset = f.Snapshot.OffsetY;
+        f.Complete(1, ContinuousProjects("Appended", 20), hasMore: false);
+        f.Pump(() => !f.NextEnabled); f.RenderFrames(2);
+        AssertEqual(retained, f.Row("Grid79")); AssertClose(offset, f.Snapshot.OffsetY);
+        AssertEqual(2, f.Reads.Count); AssertTrue(f.Rows.Length <= metrics.RealizationLimit);
+        f.ScrollToTop(); f.RenderFrames(2);
+        var first = f.Row("Grid0"); var second = f.Row("Grid1");
+        var firstRect = f.Scene.Nodes.Single(node => node.Entity == first).Rect;
+        var secondRect = f.Scene.Nodes.Single(node => node.Entity == second).Rect;
+        AssertClose(firstRect.Y, secondRect.Y); AssertTrue(secondRect.X > firstRect.X);
+    }
+
     private static ResourceProject[] ContinuousProjects(string prefix, int count) =>
         Enumerable.Range(0, count).Select(index => ContinuousProject(prefix + index, prefix + index)).ToArray();
 
@@ -371,8 +452,8 @@ internal static partial class Program
         internal List<ResourceDetailQuery> Details { get; } = [];
         internal ResourcesPageController Page { get; }
         internal XsrUiScene Scene { get; private set; }
-        internal XsrUiEntityId[] Rows => Fixture.Shell.Tree.Children(Page.Find("ResourceList"))
-            .Where(entity => Fixture.Shell.Tree.Name(entity).StartsWith("ResourceProject.", StringComparison.Ordinal)).ToArray();
+        internal XsrUiEntityId[] Rows => ResourceCards(Fixture.Shell, Page.Find("ResourceList"));
+        internal XsrUiSize Size { get; set; } = new(1100, 700);
         internal bool NextEnabled => Fixture.Shell.Tree.GetComponent<XsrUiInput>(Page.Find("ResourceNext"))!.Enabled;
         internal XsrUiScrollSnapshot Snapshot
         {
@@ -410,9 +491,9 @@ internal static partial class Program
             Reads[index].Reply.SetResult(XsrResult.Success(new ResourceSearchResult(projects, 10000, Reads[index].Query.Page)
             { HasMore = hasMore, IsStale = stale, Notice = stale ? "缓存资料" : null }));
         internal void Pump(Func<bool> done) => AssertTrue(SpinWait.SpinUntil(() =>
-        { Scene = Fixture.Shell.Render(new(1100, 700)); return done(); }, TimeSpan.FromSeconds(5)));
+        { Scene = Fixture.Shell.Render(Size); return done(); }, TimeSpan.FromSeconds(5)));
         internal void RenderFrames(int count)
-        { for (int index = 0; index < count; index++) Scene = Fixture.Shell.Render(new(1100, 700)); }
+        { for (int index = 0; index < count; index++) Scene = Fixture.Shell.Render(Size); }
         internal void Click(string key) => Emit(Fixture.Intents, "ui.resources.action", Page.Find(key));
         internal XsrUiEntityId Row(string id) => Rows.Single(entity => Fixture.Shell.Tree.Name(entity) == "ResourceProject." + id);
         internal void ScrollToBottom() => Scroll(1000000);
@@ -424,5 +505,18 @@ internal static partial class Program
             RenderFrames(2);
         }
         public void Dispose() { Page.Dispose(); Fixture.Dispose(); }
+    }
+    private static XsrUiEntityId[] ResourceCards(XsrUiShell shell, XsrUiEntityId list)
+    {
+        List<XsrUiEntityId> cards = [];
+        shell.Tree.Walk(list, entity =>
+        {
+            string name = shell.Tree.Name(entity);
+            if (name.StartsWith("ResourceProject.", StringComparison.Ordinal)
+                && shell.Tree.Name(shell.Tree.Parent(entity)).StartsWith("ResourceGridRow.", StringComparison.Ordinal))
+                cards.Add(entity);
+            return true;
+        });
+        return cards.ToArray();
     }
 }

@@ -22,7 +22,7 @@
       <Text Content="鸣谢" Class="settings-about-title" />
       <Text Content="感谢所有代码、翻译、测试和文档贡献者，以及 .NET、Avalonia、SkiaSharp、Bouncy Castle 等开源项目。感谢 Mojang 提供的游戏接口，以及 Modrinth、CurseForge、Fabric、Forge、NeoForge、Quilt 和 LittleSkin 的生态服务。" Class="settings-about-copy" />
     </StackPanel>
-    <StackPanel Key="AboutMainland" Class="settings-about-section">
+    <StackPanel Key="AboutMainland" IsVisible="{data mainland}" Class="settings-about-section">
       <Text Content="中国大陆下载服务" Class="settings-about-title" />
       <Text Content="感谢 BMCLAPI（bangbang93）、MCIM 与相关镜像维护者。中国大陆优化仅在中国大陆地区策略启用时使用。" Class="settings-about-copy" />
     </StackPanel>

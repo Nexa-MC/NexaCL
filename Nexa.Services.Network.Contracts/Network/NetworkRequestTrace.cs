@@ -29,7 +29,8 @@ public static class NetworkProviderAdmission
             if (uri.AbsolutePath.StartsWith("/modrinth/", StringComparison.Ordinal)
                 || uri.AbsolutePath.StartsWith("/data/", StringComparison.Ordinal)) return preferences.ModrinthProviderEnabled;
             if (uri.AbsolutePath.StartsWith("/curseforge/", StringComparison.Ordinal)
-                || uri.AbsolutePath.StartsWith("/files/", StringComparison.Ordinal)) return preferences.CurseForgeProviderEnabled;
+                || uri.AbsolutePath.StartsWith("/files/", StringComparison.Ordinal)
+                || uri.AbsolutePath.StartsWith("/avatars/", StringComparison.Ordinal)) return preferences.CurseForgeProviderEnabled;
         }
         return Classify(uri) switch
         {

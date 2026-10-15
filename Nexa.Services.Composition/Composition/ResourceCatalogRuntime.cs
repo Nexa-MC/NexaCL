@@ -22,8 +22,9 @@ public static class ResourceCatalogRuntimeComposer
     {
         HttpClient? http = source is null ? host?.CreateHttpClient(allowAutoRedirect: false)
             ?? Nexa.Services.Downloads.PooledHttpClient.Create(allowAutoRedirect: false) : null;
-        if (http is not null) http.Timeout = TimeSpan.FromSeconds(25);
-        string SourcePriority() => host?.SettingsPolicy.Read(new()).Value?.Values.FirstOrDefault(item => item.Key == "network.resource-source")?.Value.Value ?? "follow-request";
+        if (http is not null) http.Timeout = TimeSpan.FromSeconds(45);
+        string SourcePriority() => !RegionalPolicy.Current.IsMainlandChina ? "official-first"
+            : host?.SettingsPolicy.Read(new()).Value?.Values.FirstOrDefault(item => item.Key == "network.resource-source")?.Value.Value ?? "follow-request";
         bool AutoDependencies() => host?.SettingsPolicy.Read(new()).Value?.Values.FirstOrDefault(item => item.Key == "network.auto-install-dependencies")?.Value.Value != "false";
         var transport = http is null ? null : new ResourceProviderHttp(http) { SourcePriority = SourcePriority };
         var information = new ResourceOnlineInformationCache(host?.SharedStateCache,
@@ -31,7 +32,7 @@ public static class ResourceCatalogRuntimeComposer
         source ??= new MergedResourceCatalog(new ResourceCatalogService(http!, transport), new CurseForgeResourceCatalog(transport!),
             information, () => transport!.CachePolicyIdentity);
         var translations = transport is null ? null : new ResourceTranslationService(transport, information);
-        ResourceIconService? icons = http is null ? null : new(http, host?.SharedStateCache) { WorkScheduler = host?.Work };
+        ResourceIconService? icons = http is null ? null : new(http, host?.SharedStateCache) { WorkScheduler = host?.Work, SourcePriority = SourcePriority };
         XsrQueryRouterBuilder queries = new();
         queries.Register<ResourceNetworkPolicyQuery, ResourceNetworkPolicySnapshot>(ResourceCatalogContract.NetworkPolicy,
             (_, _) => ValueTask.FromResult(XsrResult.Success(new ResourceNetworkPolicySnapshot(SourcePriority(), AutoDependencies(), transport?.LastResolution))));

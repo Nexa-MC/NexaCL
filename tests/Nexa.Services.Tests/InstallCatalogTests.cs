@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Net;
+using Nexa.Services.Caching;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Xsr.State;
 
@@ -6,6 +8,101 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask InstallCatalogRegionGatePrecedesCacheAndProvider()
+    {
+        foreach (string country in new[] { "CN", "US", "", "HK", "MO", "TW" })
+        {
+            RegionalPolicy policy = new(country);
+            const string sourceIdentity = "region-catalog-fixture";
+            using SharedStateCache cache = new();
+            cache.Store<IReadOnlyList<InstallCatalogVersion>>(new("minecraft.install-catalog", "1.20.1|OptiFine", sourceIdentity),
+                [new("cached-optifine", "")], InstallCatalogInformationCache.Policy);
+            XsrStateStoreBuilder builder = new(); InstallCatalogStateContract.DeclareState(builder);
+            XsrStateStore store = builder.Build();
+            RegionalCatalogFixtureSource source = new();
+            using InstallCatalogService service = new(store, source, cache, () => sourceIdentity, regionalPolicy: policy);
+            await service.ReadAsync(new("1.20.1", InstallLoader.OptiFine), default);
+            InstallCatalogState State() => (InstallCatalogState)store.ReadAppliedValue(store.Resolve(InstallCatalogStateContract.StateKey))!;
+            InstallCatalogSnapshot snapshot = State().Catalogs.Single(item => item.Loader == InstallLoader.OptiFine);
+            AssertEqual(0, source.Loaders.Count);
+            if (policy.IsMainlandChina)
+            {
+                AssertEqual("cached-optifine", snapshot.Versions.Single().Id);
+                AssertTrue(snapshot.CacheHit == true);
+            }
+            else
+            {
+                AssertEqual(0, snapshot.Versions.Count);
+                AssertTrue(snapshot.Unsupported is not null && !snapshot.Loading && snapshot.CacheHit != true);
+            }
+            await service.ReadAsync(new("1.20.1", InstallLoader.OptiFine, Refresh: true), default);
+            AssertEqual(policy.IsMainlandChina ? 1 : 0, source.Loaders.Count(loader => loader == InstallLoader.OptiFine));
+            await service.PrefetchAsync(new("1.20.1"), default);
+            AssertTrue(source.Loaders.Contains(InstallLoader.Fabric));
+            AssertEqual(policy.IsMainlandChina ? 1 : 0, source.Loaders.Count(loader => loader == InstallLoader.OptiFine));
+            InstallEligibilityResult eligibility = service.Evaluate(new("1.20.1", [], Catalog: InstallLoader.OptiFine, ToggleVersion: "fixture-version"));
+            AssertEqual(policy.IsMainlandChina, eligibility.Loaders.Single(item => item.Loader == InstallLoader.OptiFine).Visible);
+            AssertEqual(policy.IsMainlandChina, eligibility.Rejection is null);
+            // An already-installed, user-supplied installer remains a valid global selection.
+            InstallBuildSelection[] installed = [new(InstallLoader.OptiFine, "local-installer")];
+            InstallEligibilityResult retained = service.Evaluate(new("1.20.1", installed, InstallLoader.OptiFine, InstalledSelection: installed));
+            AssertTrue(retained.CommitError is null);
+            AssertEqual(1, retained.Selection.Count);
+        }
+    }
+
+    private static async ValueTask InstallCatalogHttpRegionGateDoesNotSendUnavailableRequests()
+    {
+        foreach (string country in new[] { "CN", "US", "", "HK", "MO", "TW" })
+        {
+            RegionalPolicy policy = new(country);
+            using RegionalCatalogFixtureHandler handler = new();
+            using HttpClient http = new(handler);
+            HttpInstallCatalogSource source = new(http, regionalPolicy: policy);
+            var optiFine = await source.GetLoadersAsync(InstallLoader.OptiFine, "1.20.1", default);
+            AssertEqual(policy.IsMainlandChina ? 1 : 0, optiFine.Count);
+            AssertEqual(policy.IsMainlandChina ? 1 : 0, handler.Requests.Count);
+            AssertEqual("0.16.0", (await source.GetLoadersAsync(InstallLoader.Fabric, "1.20.1", default)).Single().Id);
+            var addon = await source.GetLoadersAsync(InstallLoader.FabricApi, "1.20.1", default);
+            AssertEqual(1, addon.Count);
+            AssertEqual(policy.IsMainlandChina, handler.Requests.Any(uri => uri.Host == "mod.mcimirror.top"));
+            AssertTrue(handler.Requests.Any(uri => uri.Host == "api.modrinth.com"));
+            AssertTrue(handler.Requests.All(uri => uri.Host != "api.curseforge.com"));
+        }
+    }
+
+    private sealed class RegionalCatalogFixtureSource : IInstallCatalogSource
+    {
+        public ConcurrentQueue<InstallLoader> Loaders { get; } = new();
+        public Task<IReadOnlyList<InstallCatalogVersion>> GetGamesAsync(CancellationToken token)
+            => Task.FromResult<IReadOnlyList<InstallCatalogVersion>>([new("1.20.1", "")]);
+        public Task<IReadOnlyList<InstallCatalogVersion>> GetLoadersAsync(InstallLoader loader, string game, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            Loaders.Enqueue(loader);
+            return Task.FromResult<IReadOnlyList<InstallCatalogVersion>>([new("fixture-version", "")]);
+        }
+    }
+
+    private sealed class RegionalCatalogFixtureHandler : HttpMessageHandler
+    {
+        public ConcurrentQueue<Uri> Requests { get; } = new();
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        {
+            Uri uri = request.RequestUri!;
+            Requests.Enqueue(uri);
+            string body = uri.Host switch
+            {
+                "optifine.net" => "OptiFine_1.20.1_HD_U_I6.jar",
+                "meta.fabricmc.net" => """[{"loader":{"version":"0.16.0","stable":true}}]""",
+                "api.modrinth.com" => """[{"version_number":"0.92.0","version_type":"release","files":[{"filename":"fixture.jar","url":"https://cdn.modrinth.com/fixture.jar","hashes":{"sha1":"abc"}}]}]""",
+                "mod.mcimirror.top" => """{"data":[{"id":123,"fileName":"fixture.jar","downloadUrl":"https://edge.forgecdn.net/fixture.jar","releaseType":1,"hashes":[{"algo":1,"value":"abc"}],"gameVersions":["1.20.1"]}]}""",
+                _ => throw new InvalidOperationException("Unexpected catalog request: " + uri.Host)
+            };
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) });
+        }
+    }
+
     private static async ValueTask InstallEligibilityOwnsTransitionsAndProjection()
     {
         XsrStateStoreBuilder builder = new(); InstallCatalogStateContract.DeclareState(builder);

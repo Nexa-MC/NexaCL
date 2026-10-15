@@ -332,6 +332,7 @@ internal static partial class Program
             await Task.Delay(16).ConfigureAwait(true);
         AssertEqual(36d, Node(surface.Scene!, capsule).Rect.Width);
         Console.WriteLine("PASS: capsule clock commits actual layout width and reduced-motion reversal");
+        VerifyCapsuleCaptionScrollChangesActualInkAndKeepsIconFixed();
     }
 
     private static async Task VerifySegmentScrollClock(XsrUiShell shell, AvaloniaUiSceneSurface surface)

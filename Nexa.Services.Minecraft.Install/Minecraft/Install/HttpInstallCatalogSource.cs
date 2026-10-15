@@ -7,8 +7,11 @@ using System.Xml.Linq;
 namespace Nexa.Services.Minecraft.Install;
 
 /// <summary>Read-only metadata transport. It never downloads or executes an installer.</summary>
-public sealed partial class HttpInstallCatalogSource(HttpClient http, string? curseForgeApiKey = null) : IInstallCatalogSource
+public sealed partial class HttpInstallCatalogSource(HttpClient http, string? curseForgeApiKey = null,
+    RegionalPolicy? regionalPolicy = null) : IInstallCatalogSource
 {
+    private readonly RegionalPolicy _regionalPolicy = regionalPolicy ?? RegionalPolicy.Current;
+
     public async Task<IReadOnlyList<InstallCatalogVersion>> GetGamesAsync(CancellationToken token)
     {
         using JsonDocument json = JsonDocument.Parse(await ReadAsync("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json", token).ConfigureAwait(false));
@@ -17,6 +20,7 @@ public sealed partial class HttpInstallCatalogSource(HttpClient http, string? cu
     }
     public async Task<IReadOnlyList<InstallCatalogVersion>> GetLoadersAsync(InstallLoader loader, string game, CancellationToken token)
     {
+        if (loader == InstallLoader.OptiFine && !_regionalPolicy.IsMainlandChina) return [];
         if (InstallCompatibility.UnavailableReason(loader, game) is not null) return [];
         if (loader == InstallLoader.OptiFabric) return await ReadOptiFabricAsync(game, token).ConfigureAwait(false);
         if (loader is InstallLoader.FabricApi or InstallLoader.Qsl)

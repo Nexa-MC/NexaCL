@@ -30,6 +30,10 @@ public final class JvmHostModCompatibility {
         String mode = args[0], host = args[1], java = args[2], scratch = args[3], credential = args[4];
         if (!"JvmHostModCompatibility".equals(System.getProperty("sun.java.command")))
             throw new AssertionError("JNI main class metadata missing or includes game arguments");
+        if (!scratch.contains("中文 with space")
+            || !new File(".").getCanonicalFile().equals(new File(scratch).getCanonicalFile())
+            || !new File(System.getProperty("java.class.path")).getCanonicalFile().equals(new File(scratch).getParentFile().getCanonicalFile()))
+            throw new AssertionError("JNI Unicode working directory and classpath identity");
         String runtime = System.getenv("NEXACL_JVM_CHILD_JAVA");
         if (runtime == null || !new File(runtime).getCanonicalFile().equals(new File(java).getCanonicalFile())
             || runtime.contains(credential)) throw new AssertionError("selected child Java environment");
@@ -64,6 +68,10 @@ public final class JvmHostModCompatibility {
                 || !args[4].equals("spaced argument") || !args[5].equals("$literal;no-shell"))
                 throw new AssertionError("child argv roundtrip: " + Arrays.toString(args));
             if (!"value with space".equals(System.getProperty("fixture.child"))) throw new AssertionError("child VM option");
+            if (!args[6].contains("中文 with space")
+                || !new File(".").getCanonicalFile().equals(new File(args[6]).getCanonicalFile())
+                || !new File(System.getProperty("java.class.path")).getCanonicalFile().equals(new File(args[6]).getParentFile().getCanonicalFile()))
+                throw new AssertionError("child Unicode working directory and classpath identity");
             if (!System.getProperty("sun.java.command", "").startsWith("JvmHostModCompatibility$Child "))
                 throw new AssertionError("real Java launcher main metadata");
             String java = args[7];

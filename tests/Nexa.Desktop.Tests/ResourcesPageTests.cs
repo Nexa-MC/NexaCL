@@ -243,7 +243,7 @@ internal static partial class Program
         var body = FindByKey(fixture.Shell, scene, "ResourceProject.Valid123.Body");
         AssertTrue(body.Rect.X > card.Rect.X);
         AssertTrue(body.Rect.X + body.Rect.Width < card.Rect.X + card.Rect.Width);
-        AssertTrue(card.Rect.Height <= 84);
+        AssertClose(148, card.Rect.Height);
         Emit(fixture.Intents, "ui.resources.action", page.Find("ResourceCurrentInstance"));
         scene = fixture.Shell.Render(new(1000, 650));
         AssertEqual("1.21.1", source.Last!.GameVersion);

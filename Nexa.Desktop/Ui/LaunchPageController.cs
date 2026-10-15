@@ -156,6 +156,7 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
     private int _hintIndex = Random.Shared.Next(LaunchWidgetHints.BuiltIn.Count);
     private readonly object _hintGate = new();
     private readonly TimeProvider _timeProvider;
+    private readonly Nexa.Services.RegionalPolicy _region;
     private ITimer? _hintTimer;
     private bool _hintTimerRunning;
     private readonly object _refreshGate = new();
@@ -177,7 +178,8 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
         TimeProvider? timeProvider = null,
         IVersionDirectoryEffects? directoryEffects = null,
         XsrCommandRouter? installCatalogCommands = null, XsrQueryRouter? installCatalogQueries = null,
-        XsrCommandRouter? installRunCommands = null, XsrQueryRouter? recoveryQueries = null)
+        XsrCommandRouter? installRunCommands = null, XsrQueryRouter? recoveryQueries = null,
+        Nexa.Services.RegionalPolicy? regionalPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(shell);
         ArgumentNullException.ThrowIfNull(intents);
@@ -191,6 +193,7 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
         _foundationCommands = foundationCommands;
         _accountCommands = accountCommands;
         _timeProvider = timeProvider ?? TimeProvider.System;
+        _region = regionalPolicy ?? Nexa.Services.RegionalPolicy.Current;
         _installCatalogCommands = installCatalogCommands;
         _installCatalogQueries = installCatalogQueries;
         _installRunCommands = installRunCommands;

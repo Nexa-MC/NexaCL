@@ -7,6 +7,7 @@ namespace Nexa.Services.Resources;
 public sealed class ResourceDownloadService(IResourceCatalogSource catalog, DownloadService downloads, TaskCenterService tasks, HttpClient http)
 {
     public Func<string>? SourcePriority { get; init; }
+    public RegionalPolicy CountryPolicy { get; init; } = RegionalPolicy.Current;
     public async Task DownloadAsync(ResourceDownloadCommand command, CancellationToken token)
     {
         using var task = tasks.Begin(new("resource." + Guid.NewGuid().ToString("N"), "下载资源", ["读取版本", "下载", "校验"]));
@@ -41,7 +42,7 @@ public sealed class ResourceDownloadService(IResourceCatalogSource catalog, Down
                 file = detail.Versions.FirstOrDefault(v => v.Id == command.VersionId && v.Provider == command.Provider && v.ProjectId == command.ProjectId)?.File;
             }
             if (file is null) throw new IOException("作者未开放此文件的直接下载，请前往项目主页下载。");
-            Validate(file);
+            Validate(file, CountryPolicy);
             string directory = Path.GetFullPath(command.DestinationDirectory);
             CheckDirectory(directory);
             string destination = Path.Combine(directory, file.Name);
@@ -51,8 +52,8 @@ public sealed class ResourceDownloadService(IResourceCatalogSource catalog, Down
             {
                 DestinationPath = stage,
                 AllowResume = false,
-                Sources = Sources(file.Url, ResourceSourcePriority.Apply(SourcePriority?.Invoke(), command.MirrorFirst)),
-                ConnectionFactory = url => new Connection(http, url, file.Size, Hash(file.Sha512, 128) ? file.Sha512! : file.Sha1!)
+                Sources = Sources(file.Url, ResourceSourcePriority.Apply(SourcePriority?.Invoke(), command.MirrorFirst), CountryPolicy),
+                ConnectionFactory = url => new Connection(http, url, file.Size, Hash(file.Sha512, 128) ? file.Sha512! : file.Sha1!, CountryPolicy)
             }, progress => report("下载", file.Name, (double)progress.DownloadedBytes / file.Size, 0, 1, progress.BytesPerSecond), token).ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
             if (!result.Success) throw new IOException("资源下载失败，请重试。");
@@ -85,24 +86,24 @@ public sealed class ResourceDownloadService(IResourceCatalogSource catalog, Down
             if (!directory.Exists || (directory.Attributes & FileAttributes.ReparsePoint) != 0) throw new IOException("请选择实际存在的下载目录，不支持链接目录。");
     }
     private static bool Hash(string? text, int length) => text?.Length == length && text.All(char.IsAsciiHexDigit);
-    private static void Validate(ResourceFile file)
+    private static void Validate(ResourceFile file, RegionalPolicy country)
     {
-        if (file.Size is <= 0 or > 2L * 1024 * 1024 * 1024 || !Allowed(file.Url) || file.Name.Length is 0 or > 240
+        if (file.Size is <= 0 or > 2L * 1024 * 1024 * 1024 || !Allowed(file.Url, country) || file.Name.Length is 0 or > 240
             || file.Name.Any(c => c < 32 || "<>:\"/\\|?*".Contains(c)) || file.Name.EndsWith('.') || file.Name.EndsWith(' ')
             || !new[] { ".jar", ".zip", ".mrpack" }.Contains(Path.GetExtension(file.Name), StringComparer.OrdinalIgnoreCase)
             || (!Hash(file.Sha1, 40) && !Hash(file.Sha512, 128))) throw new InvalidDataException("资源文件元数据无效，无法安全下载。");
     }
-    private static bool Allowed(string url) => Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == "https" && uri.IsDefaultPort && uri.UserInfo.Length == 0 && uri.Fragment.Length == 0
+    private static bool Allowed(string url, RegionalPolicy country) => Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == "https" && uri.IsDefaultPort && uri.UserInfo.Length == 0 && uri.Fragment.Length == 0
         && (uri.Host is "cdn.modrinth.com" or "edge.forgecdn.net" or "mediafilez.forgecdn.net" or "media.forgecdn.net"
-            || RegionalPolicy.Current.IsMainlandChina && uri.Host is "mod.mcimirror.top" or "mcim-files.pysio.online");
-    private static string[] Sources(string url, bool mirrorFirst)
+            || country.IsMainlandChina && uri.Host is "mod.mcimirror.top" or "mcim-files.pysio.online");
+    private static string[] Sources(string url, bool mirrorFirst, RegionalPolicy country)
     {
-        if (!RegionalPolicy.Current.IsMainlandChina) return [url];
+        if (!country.IsMainlandChina) return [url];
         var uri = new Uri(url);
         string mirror = ResourceProviderHttp.Mirror + uri.PathAndQuery;
         return mirrorFirst ? [mirror, url] : [url, mirror];
     }
-    private sealed class Connection(HttpClient client, string url, long expected, string expectedHash) : IDownloadConnection
+    private sealed class Connection(HttpClient client, string url, long expected, string expectedHash, RegionalPolicy country) : IDownloadConnection
     {
         private HttpResponseMessage? _response;
         private Stream? _stream;
@@ -114,7 +115,7 @@ public sealed class ResourceDownloadService(IResourceCatalogSource catalog, Down
             string current = url;
             for (int i = 0; i < 5; i++)
             {
-                if (!Allowed(current)) throw new InvalidDataException("下载地址不受支持。");
+                if (!Allowed(current, country)) throw new InvalidDataException("下载地址不受支持。");
                 using var request = new HttpRequestMessage(HttpMethod.Get, current);
                 _response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 if ((int)_response.StatusCode is >= 300 and < 400 && _response.Headers.Location is { } next)

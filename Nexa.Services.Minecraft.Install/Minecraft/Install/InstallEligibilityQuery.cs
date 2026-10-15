@@ -28,6 +28,7 @@ public sealed partial class InstallCatalogService
                     if (toggled == InstallLoader.Quilt) selection.Remove(InstallLoader.Qsl);
                     primary = selection.Keys.Where(kind => !InstallCompatibility.IsAddon(kind)).Cast<InstallLoader?>().FirstOrDefault();
                 }
+                else if (toggled == InstallLoader.OptiFine && !_regionalPolicy.IsMainlandChina) rejection = "此地区不提供 OptiFine 自动安装。";
                 else if (Find(toggled, version) is not { } candidate) rejection = "该版本尚未加载，请重试。";
                 else if (InstallCompatibility.UnavailableReason(toggled, query.GameVersion) is { } unavailable) rejection = unavailable;
                 else if (InstallCompatibility.BuildConflict(toggled, candidate, selection) is { } conflict) rejection = conflict;
@@ -49,7 +50,8 @@ public sealed partial class InstallCatalogService
                 if (visible && _game == query.GameVersion && _loaders.TryGetValue(loader, out var loaded)
                     && !loaded.Loading && loaded.Error is null && loaded.Revision > 0)
                     visible = loaded.Versions.Any(candidate => InstallCompatibility.BuildConflict(loader, candidate, selection) is null);
-                return new InstallLoaderEligibility(loader, InstallCompatibility.IsAddon(loader) || loader == InstallLoader.OptiFine && primary is not null && primary != loader, visible || selection.ContainsKey(loader));
+                bool regionAvailable = loader != InstallLoader.OptiFine || _regionalPolicy.IsMainlandChina;
+                return new InstallLoaderEligibility(loader, InstallCompatibility.IsAddon(loader) || loader == InstallLoader.OptiFine && primary is not null && primary != loader, regionAvailable && (visible || selection.ContainsKey(loader)));
             }).ToArray();
             Dictionary<string, InstallBuildEligibility> builds = new(StringComparer.Ordinal);
             if (query.Catalog is { } active)

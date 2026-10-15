@@ -136,6 +136,16 @@ identity, stdout/stderr, Unicode/empty/spaced argv, child exit, normal parent ex
 and process-tree stop. CI already runs the native host on Windows/Linux Java
 8/17/21/25 and macOS x64/arm64 Java 21.
 
+The compatibility fixture compiles from its Unicode-and-space temporary directory
+using only relative ASCII compiler arguments. Windows `javac` launchers may decode
+native command-line paths using the machine code page before Java starts, so an
+absolute Unicode `-d` argument can become `??` independently of the JNI host. The
+compiler process receives its working directory through the native process API;
+the resulting classes, bootstrap classpath, game working directory, and child
+arguments retain their original Unicode paths. Parent and child assertions verify
+those directory identities. This avoids a compiler setup limitation without
+removing the host's Unicode-path and exact-argument compatibility checks.
+
 These source and fixture checks do not establish a live CA GUI or a complete
 Fabric/Forge/NeoForge/Cleanroom/LWJGL compatibility matrix. A real game crash,
 CA GUI/upload, platform window behavior, and detached relauncher session adoption

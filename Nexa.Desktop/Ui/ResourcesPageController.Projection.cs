@@ -77,7 +77,7 @@ internal sealed partial class ResourcesPageController
             if (_shell.Tree.GetComponent<XsrUiSelection>(option)!.IsSelected) _shell.Tree.GetComponent<XsrUiSegmentedTrack>(track)!.Selected = option;
             _actions[option] = () =>
             {
-                if (name == "ResourceNetwork" && _sourcePolicyForced) return;
+                if (name == "ResourceNetwork" && (_sourcePolicyForced || !_region.IsMainlandChina)) return;
                 SelectResourceTrack(name, index); selected(index);
             };
         }

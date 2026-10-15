@@ -7,9 +7,12 @@ internal sealed record MinecraftDownloadPolicy(int Concurrency = 8, bool Retry =
 {
     internal string[] SelectSources(string original, IEnumerable<string> sources, RegionalPolicy? region = null)
     {
-        string canonical = original.Replace("http://resources.download.minecraft.net", "https://resources.download.minecraft.net", StringComparison.Ordinal);
+        RegionalPolicy policy = region ?? RegionalPolicy.Current;
+        string canonical = RegionalDownloadSources.ForRegion(original, policy);
         string[] allowed = sources.Distinct(StringComparer.Ordinal).ToArray();
-        if (Source == "official-only" || !(region ?? RegionalPolicy.Current).IsMainlandChina)
+        if (!policy.IsMainlandChina)
+            return allowed.Where(source => source == original || source == canonical).Select(_ => canonical).Distinct(StringComparer.Ordinal).ToArray();
+        if (Source == "official-only")
             return allowed.Where(source => source == canonical).ToArray();
         return allowed.OrderBy(source => Source == "mirrors-first" ? source == canonical ? 1 : 0 : source == canonical ? 0 : 1).ToArray();
     }

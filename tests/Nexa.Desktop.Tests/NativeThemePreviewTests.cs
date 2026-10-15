@@ -29,7 +29,7 @@ internal static partial class Program
     // Native theme IO, services, session, controllers and decoders are real. Only
     // game/account/instance data and explicit picker selections are isolated fixtures.
     private static int RunNativeThemePreview(string mode, string outputDirectory) =>
-        RunNativeThemePreviewAsync(mode, Path.GetFullPath(outputDirectory)).GetAwaiter().GetResult();
+        AvaloniaUiStartupSession.RunApplicationOnMainThread(() => RunNativeThemePreviewAsync(mode, Path.GetFullPath(outputDirectory)));
 
     private static async Task<int> RunNativeThemePreviewAsync(string mode, string outputDirectory)
     {
@@ -156,7 +156,7 @@ internal static partial class Program
             await Pump(presentation!.InitialReady);
             await startup.PrepareShellAsync(f.Shell, actions, timeout.Token);
             await startup.WarmUpShellAsync(f.Shell, timeout.Token);
-            lifetime = Task.Run(() => AvaloniaUiShellHost.Run(f.Shell, platformActions: actions));
+            lifetime = Task.Run(() => AvaloniaUiShellHost.Run(startup, f.Shell, actions));
             await Eventually(() =>
             {
                 if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop

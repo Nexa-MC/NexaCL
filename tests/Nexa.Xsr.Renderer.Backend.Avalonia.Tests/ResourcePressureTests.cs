@@ -41,7 +41,7 @@ internal static partial class Program
 
     private static int RunNativeStartupSmoke()
     {
-        return RunNativeStartupSmokeAsync().GetAwaiter().GetResult();
+        return AvaloniaUiStartupSession.RunApplicationOnMainThread(RunNativeStartupSmokeAsync);
     }
 
     private static async Task<int> RunNativeStartupSmokeAsync()
@@ -115,7 +115,7 @@ internal static partial class Program
             preparedControls = preparedWindow.Surface.Children.ToArray();
             AssertTrue(startupWindow.Topmost && startupWindow.IsVisible);
         }, timeout.Token);
-        Task<int> present = Task.Run(() => AvaloniaUiShellHost.Run(shell, platformActions: actions));
+        Task<int> present = Task.Run(() => AvaloniaUiShellHost.Run(startup, shell, actions));
         while (!startup.ShellReadyElapsed.HasValue) await Task.Delay(10, timeout.Token);
         AssertEqual(OperatingSystem.IsWindows() || OperatingSystem.IsLinux(), startup.HardwareAccelerationDisabled);
         await Dispatcher.UIThread.InvokeAsync(() =>

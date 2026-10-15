@@ -14,33 +14,52 @@ internal sealed partial class ResourcesPageController
     private readonly Dictionary<string, string> _catalogRowNames = new(StringComparer.Ordinal);
     private readonly List<CatalogRowView> _attachedRows = [];
     private readonly List<ResourceProject> _projectProjection = [];
+    private readonly List<XsrUiEntityId> _catalogGridRows = [];
     private XsrUiEntityId _catalogTopSpacer, _catalogBottomSpacer, _catalogEmpty;
     private int _windowStart = -1, _windowEnd = -1;
     private bool _windowDirty;
     private XsrUiVirtualLayoutMetrics _catalogVirtualMetrics;
     private string? _catalogMetricPinnedKey;
     private double _catalogMetricPinOffset;
+    private int _catalogColumns = 1;
+    private double _catalogCardWidth;
     private double EffectiveCatalogHeight => _catalogVirtualMetrics.ItemHeight > 0 ? _catalogVirtualMetrics.ItemHeight : CatalogRowHeight;
     private double EffectiveCatalogSpacing => _catalogVirtualMetrics.ItemHeight > 0 ? _catalogVirtualMetrics.Spacing : CatalogRowSpacing;
     private double EffectiveCatalogPitch => EffectiveCatalogHeight + EffectiveCatalogSpacing;
-    private double EffectiveCatalogWidth => _catalogVirtualMetrics.ItemWidth > 0 ? _catalogVirtualMetrics.ItemWidth : DesktopResourcesText.Metric("virtual").MaxWidth!.Value;
+    private double EffectiveCatalogWidth => _catalogCardWidth > 0 ? _catalogCardWidth : DesktopResourcesText.Metric("virtual").MinWidth!.Value;
 
     private void InitializeCatalogVirtualMetrics()
     {
-        _shell.Renderer.RegisterVirtualLayout(_entities["ResourceList"], new(DesktopResourcesText.Metric("virtual").MaxWidth!.Value,
-            CatalogRowHeight, CatalogRowSpacing, RealizationLimit: CatalogAttachedRows, SupportsThemeMetrics: true));
+        _shell.Renderer.RegisterVirtualLayout(_entities["ResourceList"], new(DesktopResourcesText.Metric("virtual").MinWidth!.Value,
+            CatalogRowHeight, CatalogRowSpacing, RealizationLimit: CatalogAttachedRows, SupportsThemeMetrics: true,
+            Kind: XsrUiVirtualLayoutKind.Waterfall));
     }
 
     private bool UpdateCatalogVirtualMetrics(XsrUiEntityId list)
     {
         if (!_shell.Renderer.TryGetVirtualLayoutMetrics(list, out var next)) return false;
         double oldPitch = EffectiveCatalogPitch;
-        bool changed = next.ItemHeight != EffectiveCatalogHeight || next.Spacing != EffectiveCatalogSpacing || next.ItemWidth != EffectiveCatalogWidth;
+        double width = Math.Max(1, _shell.Renderer.Viewport.Width - XsrUiShell.CollapsedRailWidth);
+        double viewportHeight = DesktopResourcesText.Metric("virtual").MaxHeight!.Value;
+        if (_shell.Renderer.TryGetScrollSnapshot(list, out var snapshot))
+        { width = Math.Max(1, snapshot.ViewportWidth); viewportHeight = Math.Max(1, snapshot.ViewportHeight); }
+        int limit = next.RealizationLimit;
+        int visibleLines = Math.Max(1, (int)Math.Ceiling(viewportHeight / (next.ItemHeight + next.Spacing)) + 1);
+        int maximumColumns = Math.Clamp(limit / visibleLines, 1, 12);
+        int columns = next.HasColumnsOverride ? Math.Clamp(next.Columns, 1, maximumColumns)
+            : Math.Clamp((int)Math.Floor((width + next.Spacing) / (next.ItemWidth + next.Spacing)), 1, maximumColumns);
+        double cardWidth = Math.Max(1, (width - next.Spacing * (columns - 1)) / columns);
+        if (next.HasItemWidthOverride) cardWidth = Math.Min(cardWidth, next.ItemWidth);
+        bool changed = next.ItemHeight != EffectiveCatalogHeight || next.Spacing != EffectiveCatalogSpacing
+            || columns != _catalogColumns || Math.Abs(cardWidth - EffectiveCatalogWidth) > .01;
+        int previousColumns = _catalogColumns;
         _catalogVirtualMetrics = next;
+        _catalogColumns = columns; _catalogCardWidth = cardWidth;
         if (!changed) return false;
         var scroll = _shell.Tree.GetComponent<XsrUiScroll>(list)!;
-        double index = Math.Max(0, scroll.OffsetY) / oldPitch;
-        scroll.OffsetY = index * EffectiveCatalogPitch;
+        double previousLine = Math.Max(0, scroll.OffsetY) / oldPitch;
+        int anchorIndex = (int)Math.Floor(previousLine) * previousColumns;
+        scroll.OffsetY = (Math.Floor((double)anchorIndex / columns) + previousLine % 1) * EffectiveCatalogPitch;
         WorkspaceResource(("listSpacing", Number(EffectiveCatalogSpacing)));
         foreach (var row in _catalogRows.Values)
             ReloadResource(row.Row, ("height", Number(EffectiveCatalogHeight)), ("width", Number(EffectiveCatalogWidth)));
@@ -105,9 +124,15 @@ internal sealed partial class ResourcesPageController
         double offset = _shell.Tree.GetComponent<XsrUiScroll>(list)!.OffsetY;
         double viewport = DesktopResourcesText.Metric("virtual").MaxHeight!.Value;
         if (_shell.Renderer.TryGetScrollSnapshot(list, out var snapshot)) viewport = Math.Max(1, snapshot.ViewportHeight);
-        int start = Math.Clamp((int)Math.Floor(Math.Max(0, offset) / EffectiveCatalogPitch) - CatalogOverscan, 0, _projectProjection.Count);
-        int count = Math.Min(_catalogVirtualMetrics.RealizationLimit > 0 ? _catalogVirtualMetrics.RealizationLimit : CatalogAttachedRows, (int)Math.Ceiling(viewport / EffectiveCatalogPitch) + CatalogOverscan * 2);
-        int end = Math.Min(_projectProjection.Count, start + count);
+        int totalLines = (_projectProjection.Count + _catalogColumns - 1) / _catalogColumns;
+        int maximumLines = Math.Max(1, _catalogVirtualMetrics.RealizationLimit / _catalogColumns);
+        int visibleLines = Math.Max(1, (int)Math.Ceiling(viewport / EffectiveCatalogPitch) + 1);
+        int overscan = Math.Min((CatalogOverscan + _catalogColumns - 1) / _catalogColumns,
+            Math.Max(0, (maximumLines - visibleLines) / 2));
+        int firstLine = Math.Clamp((int)Math.Floor(Math.Max(0, offset) / EffectiveCatalogPitch) - overscan, 0, totalLines);
+        int lineCount = Math.Min(maximumLines, visibleLines + overscan * 2);
+        int start = Math.Min(_projectProjection.Count, firstLine * _catalogColumns);
+        int end = Math.Min(_projectProjection.Count, (firstLine + lineCount) * _catalogColumns);
         if (metricsChanged || _catalogMetricPinnedKey is not null)
         {
             bool retainedPin = false;
@@ -119,9 +144,10 @@ internal sealed partial class ResourcesPageController
                 {
                     int index = _projectProjection.FindIndex(project => CatalogProjectKey(project) == pinned.Key);
                     if ((metricsChanged || _catalogMetricPinnedKey == pinned.Key && Math.Abs(offset - _catalogMetricPinOffset) < .01)
-                        && index >= start && index < start + _catalogVirtualMetrics.RealizationLimit)
+                        && index >= start && index < start + maximumLines * _catalogColumns)
                     {
-                        end = Math.Max(end, index + 1); _catalogMetricPinnedKey = pinned.Key; _catalogMetricPinOffset = offset; retainedPin = true;
+                        end = Math.Min(_projectProjection.Count, Math.Max(end, (index / _catalogColumns + 1) * _catalogColumns));
+                        _catalogMetricPinnedKey = pinned.Key; _catalogMetricPinOffset = offset; retainedPin = true;
                     }
                     break;
                 }
@@ -138,6 +164,7 @@ internal sealed partial class ResourcesPageController
                 _resourceDynamic.Move(old.Row, _entities["ResourceRowParking"]);
             }
             _attachedRows.Clear();
+            foreach (var gridRow in _catalogGridRows) _resourceDynamic.Move(gridRow, _entities["ResourceRowParking"]);
             foreach (var fragment in new[] { _catalogTopSpacer, _catalogBottomSpacer, _catalogEmpty }) _resourceDynamic.Move(fragment, _entities["ResourceRowParking"]);
             if (_projectProjection.Count == 0)
             {
@@ -147,16 +174,28 @@ internal sealed partial class ResourcesPageController
             else
             {
                 if (start > 0)
-                { ReloadResource(_catalogTopSpacer, ("height", Number(start * EffectiveCatalogPitch - EffectiveCatalogSpacing))); _resourceDynamic.Move(_catalogTopSpacer, list); }
+                { ReloadResource(_catalogTopSpacer, ("height", Number(firstLine * EffectiveCatalogPitch - EffectiveCatalogSpacing))); _resourceDynamic.Move(_catalogTopSpacer, list); }
+                int gridIndex = 0;
                 for (int index = start; index < end; index++)
                 {
+                    if ((index - start) % _catalogColumns == 0)
+                    {
+                        if (gridIndex == _catalogGridRows.Count)
+                        {
+                            var gridRow = AppendResource(_entities["ResourceRowParking"], "ResourceGridRow.d.nxml", new()
+                            { ["key"] = "ResourceGridRow." + gridIndex.ToString(CultureInfo.InvariantCulture), ["height"] = Number(EffectiveCatalogHeight), ["spacing"] = Number(EffectiveCatalogSpacing) });
+                            _shell.Renderer.ProtectVirtualGeometry(gridRow); _catalogGridRows.Add(gridRow);
+                        }
+                        ReloadResource(_catalogGridRows[gridIndex], ("height", Number(EffectiveCatalogHeight)), ("spacing", Number(EffectiveCatalogSpacing)));
+                        _resourceDynamic.Move(_catalogGridRows[gridIndex++], list);
+                    }
                     var project = _projectProjection[index]; string key = CatalogProjectKey(project);
                     if (!_catalogRows.TryGetValue(key, out var row))
                     { row = CreateCatalogRow(key, project); _catalogRows.Add(key, row); }
                     UpdateCatalogRow(row, project);
-                    row.Attached = true; _resourceDynamic.Move(row.Row, list); _attachedRows.Add(row);
+                    row.Attached = true; _resourceDynamic.Move(row.Row, _catalogGridRows[gridIndex - 1]); _attachedRows.Add(row);
                 }
-                int remaining = _projectProjection.Count - end;
+                int remaining = totalLines - (end + _catalogColumns - 1) / _catalogColumns;
                 if (remaining > 0)
                 { ReloadResource(_catalogBottomSpacer, ("height", Number(remaining * EffectiveCatalogPitch - EffectiveCatalogSpacing))); _resourceDynamic.Move(_catalogBottomSpacer, list); }
             }
@@ -258,6 +297,9 @@ internal sealed partial class ResourcesPageController
         foreach (var row in _catalogRows.Values.ToArray()) RemoveCatalogRow(row);
         foreach (var spacer in new[] { _catalogTopSpacer, _catalogBottomSpacer, _catalogEmpty })
             if (spacer.IsAssigned && _shell.Tree.IsAlive(spacer)) RemoveResource(spacer);
+        foreach (var gridRow in _catalogGridRows)
+            if (_shell.Tree.IsAlive(gridRow)) RemoveResource(gridRow);
+        _catalogGridRows.Clear();
         _catalogTopSpacer = _catalogBottomSpacer = _catalogEmpty = default;
         _catalogRows.Clear(); _catalogRowNames.Clear(); _attachedRows.Clear(); _projectProjection.Clear();
         _windowStart = _windowEnd = -1; _windowDirty = true; _catalogMetricPinnedKey = null;

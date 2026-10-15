@@ -32,7 +32,8 @@ internal sealed partial class SettingsPageController
     {
         if (_instanceDirectory is not null || _selected != "network") return;
         _networkProbeActions.Clear(); _networkDiagnosticViews.Clear(); _networkProbeButton = default;
-        _networkDiagnosticsWorkspace = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsNetworkDiagnostics.d.nxml"));
+        _networkDiagnosticsWorkspace = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsNetworkDiagnostics.d.nxml",
+            new Dictionary<string, string> { ["mirrors"] = Flag(_region.IsMainlandChina) }));
         RefreshNetworkDiagnostics();
     }
 
@@ -55,17 +56,20 @@ internal sealed partial class SettingsPageController
             .Select(observed => NetworkEndpointFragment(observed.Host, observed.Timestamp, observed.StatusCode, observed.ElapsedMilliseconds, observed.ErrorKind)).ToArray();
         RefreshNetworkRows("NetworkObservedEndpoints.Rows", observations.Length == 0 ? [DesktopMarkup.Dynamic("SettingsNetworkEndpointsEmpty.d.nxml")] : observations);
         ReadResourceResolution();
-        string source = _values?.Values.FirstOrDefault(item => item.Key == "network.resource-source")?.Value.Value ?? "follow-request";
-        RefreshNetworkRows("NetworkMirrorResolution.Policy", [DesktopMarkup.Dynamic(source switch
-        { "official-first" => "SettingsNetworkOfficialFirst.d.nxml", "mirrors-first" => "SettingsNetworkMirrorsFirst.d.nxml", _ => "SettingsNetworkFollowRequest.d.nxml" })]);
-        var resolution = _resourceResolutionSnapshot?.LastResolution;
-        RefreshNetworkRows("NetworkMirrorResolution.Rows", [resolution is null ? DesktopMarkup.Dynamic("SettingsNetworkResolutionEmpty.d.nxml")
-            : DesktopMarkup.Dynamic("SettingsCustomNetworkResolution.d.nxml", new Dictionary<string, string>
-            {
-                ["provider"] = resolution.Provider.ToString(), ["timestamp"] = NetworkTimestamp(resolution.ObservedAt),
-                ["candidates"] = string.Join(CustomRaw("network.candidateSeparator"), resolution.CandidateHosts),
-                ["selected"] = resolution.SelectedHost ?? CustomCopy("network.unknown"),
-            }, _shell.Renderer.LocalizeText)]);
+        if (_region.IsMainlandChina)
+        {
+            string source = _values?.Values.FirstOrDefault(item => item.Key == "network.resource-source")?.Value.Value ?? "follow-request";
+            RefreshNetworkRows("NetworkMirrorResolution.Policy", [DesktopMarkup.Dynamic(source switch
+            { "official-first" => "SettingsNetworkOfficialFirst.d.nxml", "mirrors-first" => "SettingsNetworkMirrorsFirst.d.nxml", _ => "SettingsNetworkFollowRequest.d.nxml" })]);
+            var resolution = _resourceResolutionSnapshot?.LastResolution;
+            RefreshNetworkRows("NetworkMirrorResolution.Rows", [resolution is null ? DesktopMarkup.Dynamic("SettingsNetworkResolutionEmpty.d.nxml")
+                : DesktopMarkup.Dynamic("SettingsCustomNetworkResolution.d.nxml", new Dictionary<string, string>
+                {
+                    ["provider"] = resolution.Provider.ToString(), ["timestamp"] = NetworkTimestamp(resolution.ObservedAt),
+                    ["candidates"] = string.Join(CustomRaw("network.candidateSeparator"), resolution.CandidateHosts),
+                    ["selected"] = resolution.SelectedHost ?? CustomCopy("network.unknown"),
+                }, _shell.Renderer.LocalizeText)]);
+        }
         var transfers = _networkDownloadRows.Select(transfer => DesktopMarkup.Dynamic("SettingsCustomNetworkDownload.d.nxml", new Dictionary<string, string>
         {
             ["timestamp"] = NetworkTimestamp(_networkDownloadObservedAt),
@@ -151,7 +155,7 @@ internal sealed partial class SettingsPageController
     }
     private void ReadResourceResolution()
     {
-        if (_resourceResolutionReading is not null || _resourceResolutionRevision == (_values?.Revision ?? 0)
+        if (!_region.IsMainlandChina || _resourceResolutionReading is not null || _resourceResolutionRevision == (_values?.Revision ?? 0)
             || _resourceQueries is null || !_resourceQueries.TryResolve(ResourceCatalogContract.NetworkPolicy, out var route)) return;
         _resourceResolutionRevision = _values?.Revision ?? 0;
         _resourceResolutionReadingRevision = _resourceResolutionRevision;

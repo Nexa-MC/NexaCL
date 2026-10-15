@@ -117,7 +117,7 @@ internal static partial class Program
                 h.Complete(3, hasMore: false);
             }, timeout.Token);
             await Eventually(() => !h.Fixture.Shell.Tree.GetComponent<XsrUiInput>(h.Page.Find("ResourceNext"))!.Enabled
-                && Snapshot().ContentHeight > 4000);
+                && Snapshot().ContentHeight > Snapshot().ViewportHeight * 2);
             await CaptureStage("retry-success");
             await startup.InvokeAsync(() =>
             {
@@ -239,8 +239,7 @@ internal static partial class Program
         internal List<ContinuousResourceRead> Reads { get; } = [];
         internal ResourcesPageController Page { get; }
         private readonly Dictionary<string, ResourceProject> _projects = new(StringComparer.Ordinal);
-        internal XsrUiEntityId[] Rows => Fixture.Shell.Tree.Children(Page.Find("ResourceList"))
-            .Where(entity => Fixture.Shell.Tree.Name(entity).StartsWith("ResourceProject.", StringComparison.Ordinal)).ToArray();
+        internal XsrUiEntityId[] Rows => ResourceCards(Fixture.Shell, Page.Find("ResourceList"));
 
         internal NativeResourcePreviewHarness()
         {

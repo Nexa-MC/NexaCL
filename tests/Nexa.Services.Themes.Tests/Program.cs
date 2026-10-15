@@ -13,7 +13,7 @@ internal static class Program
         ("Incomplete candidate recovers committed theme", Recovery),
         ("Manifest rejects behavioral declarations and duplicates", InvalidManifest),
         ("Required capability rejects while optional declares fallback", Capabilities),
-        ("ZIP rejects traversal, duplicates and reserved paths", ArchivePaths),
+        ("ZIP commits, restarts with resources and rejects invalid paths", ArchivePaths),
         ("Folder sources reject links", FolderLinks),
         ("System aliases preserve source ownership and reject other links", PathAliases),
         ("Ordered NSS enforces total budget", StyleBudget),
@@ -119,18 +119,46 @@ internal static class Program
     }
     private static async Task ArchivePaths()
     {
-        using var workspace = new Workspace(); Directory.CreateDirectory(workspace.Root); using var service = workspace.Service();
+        using var workspace = new Workspace(); Directory.CreateDirectory(workspace.Root);
         string validRoot = workspace.Theme("valid-archive");
+        byte[] svg = Encoding.UTF8.GetBytes("<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0 L1 1\"/></svg>");
+        File.WriteAllBytes(Path.Combine(validRoot, "icon.svg"), svg);
         string validZip = Path.Combine(workspace.Root, "valid.ntp"); ZipFile.CreateFromDirectory(validRoot, validZip);
-        Require((await service.PrepareAsync(new(validZip, ThemeSourceKind.Package))).IsSuccess, "Valid control ZIP must be admitted.");
-        foreach (string[] names in new[] { new[] { "../outside" }, new[] { "Styles/main.nss", "styles/main.nss" }, new[] { "styles/a.nss", "STYLES/b.nss" }, new[] { "CON.txt" }, new[] { "a\\b" }, new[] { "images/a.svg", "images" }, new[] { "image\u00e9.svg", "imagee\u0301.svg" }, new[] { "PLUGIN.DLL" } })
+        ThemeSelection committed;
+        using (var service = workspace.Service())
         {
-            string zip = Path.Combine(workspace.Root, Guid.NewGuid().ToString("N") + ".ntp");
-            ZipFile.CreateFromDirectory(validRoot, zip);
-            using (var archive = ZipFile.Open(zip, ZipArchiveMode.Update)) foreach (string name in names) { using var writer = new StreamWriter(archive.CreateEntry(name).Open()); writer.Write("x"); }
-            Require(!(await service.PrepareAsync(new(zip, ThemeSourceKind.Package))).IsSuccess);
+            var candidate = await Prepare(service, validZip, ThemeSourceKind.Package);
+            Require(candidate.SourceKind == ThemeSourceKind.Package && candidate.Styles.Single().Text == ".card { Background:#123456; }");
+            await VerifyAsset(service, candidate); await Commit(service, candidate);
+            var state = (await service.CurrentAsync(new())).Value;
+            Require(state.Selection?.SourceIdentity == candidate.SourceIdentity && state.LastKnownGood == state.Selection);
+            committed = state.Selection!;
+            foreach (string[] names in new[] { new[] { "../outside" }, new[] { "Styles/main.nss", "styles/main.nss" }, new[] { "styles/a.nss", "STYLES/b.nss" }, new[] { "CON.txt" }, new[] { "a\\b" }, new[] { "images/a.svg", "images" }, new[] { "image\u00e9.svg", "imagee\u0301.svg" }, new[] { "PLUGIN.DLL" } })
+            {
+                string zip = Path.Combine(workspace.Root, Guid.NewGuid().ToString("N") + ".ntp");
+                ZipFile.CreateFromDirectory(validRoot, zip);
+                using (var archive = ZipFile.Open(zip, ZipArchiveMode.Update)) foreach (string name in names) { using var writer = new StreamWriter(archive.CreateEntry(name).Open()); writer.Write("x"); }
+                Require(!(await service.PrepareAsync(new(zip, ThemeSourceKind.Package))).IsSuccess);
+            }
+            Require((await service.CurrentAsync(new())).Value.Selection == committed, "Rejected ZIPs must preserve the committed package.");
         }
         Require(!File.Exists(Path.Combine(workspace.Root, "outside")));
+        File.Delete(validZip); Directory.Delete(validRoot, recursive: true);
+        using var restored = workspace.Service(); var current = (await restored.CurrentAsync(new())).Value;
+        Require(current.Selection == committed && current.LastKnownGood == committed);
+        Require((await restored.CatalogueAsync(new())).Value.Themes.Single().SourceKind == ThemeSourceKind.Package);
+        var preparedReload = await restored.PrepareAsync(new("", ThemeSourceKind.Package, committed.SourceIdentity));
+        Require(preparedReload.IsSuccess, preparedReload.Error?.Message ?? "Committed ZIP did not reload without its original inputs.");
+        var reloaded = preparedReload.Value;
+        Require(reloaded.SourceRevision == committed.SourceRevision && reloaded.Styles.Single().Text == ".card { Background:#123456; }");
+        await VerifyAsset(restored, reloaded);
+
+        async Task VerifyAsset(ThemePackageService service, ThemeCandidate candidate)
+        {
+            var result = await service.ReadResourceAsync(new(candidate.CandidateId, "asset(icon.svg)", ThemeResourceKind.Icon));
+            Require(result.IsSuccess, result.Error?.Message ?? "Bundled ZIP resource did not prepare.");
+            Require(result.Value.Bytes.SequenceEqual(svg) && result.Value.PreparedPath is { } prepared && File.ReadAllBytes(prepared).SequenceEqual(svg), "Bundled ZIP resource bytes changed.");
+        }
     }
     private static async Task FolderLinks()
     {

@@ -342,11 +342,20 @@ public sealed partial class XsrUiRenderer
         _tree.MarkDirty(entity, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
     }
 
-    private double? PresentedWidth(XsrUiEntityId entity, XsrUiElement? element)
+    private double? PresentedWidth(XsrUiEntityId entity, XsrUiElement? element, double availableWidth)
     {
-        if (element?.Width is not { } expanded || element.Height is not { } collapsed
+        if (element?.Height is not { } collapsed
             || _tree.GetComponent<XsrUiVisualStyle>(entity)?.HoverExpand != true
             || _tree.GetComponent<XsrUiInput>(entity) is not { } input) return element?.Width;
+        double expanded;
+        if (element.Width is { } authoredWidth) expanded = authoredWidth;
+        else
+        {
+            if (!IsScrollableCapsule(entity)) return null;
+            expanded = CapsuleTextSize(entity).Width + CapsuleCaptionInset(collapsed);
+            expanded = ConstrainDimension(Math.Max(collapsed, expanded), element.MinWidth, element.MaxWidth, 0);
+            expanded = Math.Min(expanded, Math.Max(0, availableWidth - element.Margin.Horizontal - element.Padding.Horizontal));
+        }
         if (EffectiveReducedMotion) input.CapsuleExpansionProgress = IsEnabled(input) && (input.IsHovered || input.IsFocusVisible) ? 1 : 0;
         return Math.Min(collapsed, expanded) + Math.Max(0, expanded - collapsed) * input.CapsuleExpansionProgress;
     }

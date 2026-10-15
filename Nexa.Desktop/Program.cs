@@ -81,13 +81,18 @@ internal static partial class Program
     // The Win32 clipboard (Avalonia's OLE implementation) requires an STA thread with COM
     // initialized; without this, every SetTextAsync fails with CO_E_NOTINITIALIZED.
     [STAThread]
-    private static async Task<int> Main(string[] args)
+    private static int Main(string[] args)
     {
         if (args is [Nexa.Services.Minecraft.Process.MinecraftLaunchHookWorker.WorkerArgument])
-            return await Nexa.Services.Minecraft.Process.MinecraftLaunchHookWorker.RunWorkerAsync().ConfigureAwait(false);
+            return Nexa.Services.Minecraft.Process.MinecraftLaunchHookWorker.RunWorkerAsync().GetAwaiter().GetResult();
         if (RedirectUpdatedLauncher(args)) return 0;
         if (args is [Nexa.Services.Processes.OwnedInstallerProcess.WorkerArgument])
-            return await Nexa.Services.Processes.OwnedInstallerProcess.RunWorkerAsync().ConfigureAwait(false);
+            return Nexa.Services.Processes.OwnedInstallerProcess.RunWorkerAsync().GetAwaiter().GetResult();
+        return AvaloniaUiStartupSession.RunApplicationOnMainThread(() => MainAsync(args));
+    }
+
+    private static async Task<int> MainAsync(string[] args)
+    {
         DesktopCommandLineRequest commandLine = DesktopCommandLine.Parse(args);
         if (!commandLine.IsSuccess) { Console.Error.WriteLine(commandLine.Error); return 2; }
         if (commandLine.ListCommands)
@@ -696,7 +701,9 @@ internal static partial class Program
                 desktopIntegration, sidecarLifetime, host.StateStore, themes).ConfigureAwait(false);
             setStage("gui_lifetime");
             host.Logging.Info("Launcher", "Entering Avalonia GUI lifetime.");
-            exitCode = AvaloniaUiShellHost.Run(shell, args, platformActions, disableHardwareAcceleration);
+            exitCode = startup is not null
+                ? AvaloniaUiShellHost.Run(startup, shell, platformActions)
+                : AvaloniaUiShellHost.Run(shell, args, platformActions, disableHardwareAcceleration);
         }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
         {
@@ -780,7 +787,9 @@ internal static partial class Program
         }
         PrepareFirstRunStartupAsync(startup, shell, platform, setStage).GetAwaiter().GetResult();
         setStage("first_run_lifetime");
-        int result = AvaloniaUiShellHost.Run(shell, args, platform, disableHardwareAcceleration);
+        int result = startup is not null
+            ? AvaloniaUiShellHost.Run(startup, shell, platform)
+            : AvaloniaUiShellHost.Run(shell, args, platform, disableHardwareAcceleration);
         if (controller.Completed)
         {
             // Avalonia has one application lifetime per process. Reopen after saving the
