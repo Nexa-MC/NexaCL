@@ -85,6 +85,10 @@ internal static partial class JvmChildLaunch
         {
             UseShellExecute = false,
             CreateNoWindow = true,
+            // A no-console Windows child needs STARTF_USESTDHANDLES, which .NET
+            // sets only when a stream is redirected. Preserve stdin's inherited handle.
+            RedirectStandardOutput = OperatingSystem.IsWindows(),
+            RedirectStandardError = OperatingSystem.IsWindows(),
             WorkingDirectory = Environment.CurrentDirectory,
         };
         foreach (string argument in arguments) start.ArgumentList.Add(argument);
@@ -119,7 +123,12 @@ internal static partial class JvmChildLaunch
             try
             {
                 lease?.Bind(child);
+                using Stream output = Console.OpenStandardOutput();
+                using Stream errors = Console.OpenStandardError();
+                Task outputDrain = child.StandardOutput.BaseStream.CopyToAsync(output, 16 * 1024);
+                Task errorDrain = child.StandardError.BaseStream.CopyToAsync(errors, 16 * 1024);
                 child.WaitForExit();
+                Task.WhenAll(outputDrain, errorDrain).GetAwaiter().GetResult();
                 lease?.ConfirmNoLiveChild();
                 return child.ExitCode;
             }

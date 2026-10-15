@@ -102,6 +102,9 @@ internal static partial class Program
             AssertTrue(command is not null);
             AssertEqual(java, command!.FileName);
             AssertFalse(command.UseShellExecute);
+            AssertEqual(OperatingSystem.IsWindows(), command.RedirectStandardOutput);
+            AssertEqual(OperatingSystem.IsWindows(), command.RedirectStandardError);
+            AssertFalse(command.RedirectStandardInput);
             AssertTrue(command.ArgumentList.SequenceEqual(arguments));
             AssertFalse(command.Environment.ContainsKey(JvmChildLaunch.JavaEnvironmentVariable));
             AssertTrue(JvmChildLaunch.CreateStartInfo(java, ["--class-path=app.jar", "fixture.Child", "--jvm-host"]) is not null);

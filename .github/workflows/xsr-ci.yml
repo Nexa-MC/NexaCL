@@ -125,10 +125,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsecret-tools gnome-keyring dbus-x11 clang zlib1g-dev
       - name: Prepare disposable macOS keychain
         if: runner.os == 'macOS'
+        timeout-minutes: 2
         run: |
+          set -x
           security create-keychain -p '' "$RUNNER_TEMP/nexa-test.keychain-db"
-          security default-keychain -s "$RUNNER_TEMP/nexa-test.keychain-db"
           security unlock-keychain -p '' "$RUNNER_TEMP/nexa-test.keychain-db"
+          security set-keychain-settings -t 21600 "$RUNNER_TEMP/nexa-test.keychain-db"
+          security default-keychain -s "$RUNNER_TEMP/nexa-test.keychain-db"
       - name: Publish NativeAOT account tests
         run: dotnet publish tests/Nexa.Services.Tests -c Release -p:PublishAot=true -o native-account-tests
       - name: Exercise native input discovery without hooks
@@ -162,14 +165,17 @@ jobs:
         if: runner.os == 'macOS'
         timeout-minutes: 2
         run: |
+          set -x
+          security unlock-keychain -p '' "$RUNNER_TEMP/nexa-test.keychain-db"
           security list-keychains -d user -s "$RUNNER_TEMP/nexa-test.keychain-db"
           security default-keychain -s "$RUNNER_TEMP/nexa-test.keychain-db"
           security set-keychain-settings -t 21600 "$RUNNER_TEMP/nexa-test.keychain-db"
-          security unlock-keychain -p '' "$RUNNER_TEMP/nexa-test.keychain-db"
           ./native-account-tests/Nexa.Services.Tests "native profile protection"
       - name: Remove disposable macOS keychain
         if: always() && runner.os == 'macOS'
+        timeout-minutes: 1
         run: |
+          set -x
           if [ -f "$RUNNER_TEMP/nexa-test.keychain-db" ]; then
             security delete-keychain "$RUNNER_TEMP/nexa-test.keychain-db"
           fi

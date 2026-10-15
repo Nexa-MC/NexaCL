@@ -41,6 +41,14 @@ keychain and search list, explicitly sets its lock interval and unlocks it again
 immediately before the fixture. That step has a two-minute deadline, and an
 always-run cleanup removes only the CI-owned disposable keychain.
 
+The next run (`38700898617`, job `116308541974`) reached that two-minute deadline.
+Its orphan cleanup found a `security` process, with no remaining test process;
+disposable-keychain deletion completed immediately. This narrows the observed
+block to the CLI preparation, without identifying a specific command. Preparation
+now unlocks before changing keychain settings, configures the lock interval before
+the long AOT publication, and traces each CI-owned command. Preparation and cleanup
+also have individual deadlines. The native fixture remains a required real test.
+
 Linux requires `/usr/bin/secret-tool` and an unlocked Secret Service. Native backend failure
 is reported as unavailable rather than replaced by a filesystem key. This does not defend
 against malware already controlling the user's session or erase historical external backups.

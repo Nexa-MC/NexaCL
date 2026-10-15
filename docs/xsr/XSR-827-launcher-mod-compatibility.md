@@ -134,6 +134,12 @@ The selected Java runtime determines the Windows encoding. OpenJDK 8 obtains `su
 
 A real external Windows `java.exe` has its own encoding limit. Its launcher converts the process command line through the Windows ANSI code page before Java receives it ([Java 8](https://github.com/openjdk/jdk8u/blob/master/jdk/src/share/bin/main.c), [Java 17](https://github.com/openjdk/jdk17u/blob/master/src/java.base/share/native/launcher/main.c)). The bridge preserves the exact UTF-16 process argv it supplies, but cannot make that separate executable accept characters outside its native encoding. Integration fixtures therefore keep real non-ASCII-and-space paths and exact non-ASCII child arguments representable by that runtime. They separately require arbitrary Chinese/emoji game arguments at the JNI boundary and arbitrary Unicode in the process-start contract. They also require unrepresentable VM options to fail without revealing the option or private credential. These checks must not be described as arbitrary-Unicode support in the external Java launcher.
 
+## Windows child standard handles
+
+The Java-to-bridge process start supplies explicit inherited standard handles. A no-console Windows bridge must also supply them when it starts the real Java executable. The .NET process implementation sets `STARTF_USESTDHANDLES` only when at least one stream is redirected ([implementation](https://github.com/dotnet/runtime/blob/v10.0.0/src/libraries/System.Diagnostics.Process/src/System/Diagnostics/Process.Windows.cs)); `CreateNoWindow` alone does not reproduce Java's inherited-handle setup ([Java implementation](https://github.com/openjdk/jdk/blob/jdk-25-ga/src/java.base/windows/native/libjava/ProcessImpl_md.c)).
+
+The Windows bridge redirects child stdout and stderr and forwards both concurrently as raw byte streams through fixed-size buffers to its own inherited standard handles. It starts both drains before waiting for child exit, then completes the drains before returning the original child exit code. Stdin remains inherited: enabling the output redirects causes .NET to pass its existing native stdin handle explicitly too. No output text is decoded, accumulated or rewritten. Unix keeps the existing `execv` handoff. Runtime leases, natural parent exit and tree cancellation retain their original ownership.
+
 ## Validation and limits
 
 Contract tests cover shared/isolated directory identity and absolute inherited
