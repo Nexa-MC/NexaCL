@@ -29,8 +29,23 @@ Notification admission and one-shot consumption are serialized inside that queue
 performing IO or invoking user callbacks. Overflow immediately disables that activation and
 fails the session asynchronously; it never blocks the caller or silently loses notifications.
 Catch consumes only when its notification was admitted. Runtime limits are 256 bindings total,
-32 per point and 128 per session. Inactive points allocate nothing. Deactivation, disposal,
-peer failure and shutdown retire all bindings, cancel writes and discard queued notifications.
+32 per point and 128 per session. Inactive points allocate nothing. Deactivation retires all
+bindings and discards queued notifications immediately, then waits within its existing lifecycle
+deadline for the current frame to finish before sending DEACTIVATE. Stopping queue admission
+does not cancel a partially transmitted frame: the peer may already have received that frame
+while the sender is still flushing. Shutdown and explicit unregistration use the same ordered
+deactivation; peer-requested unregistration also drains its current frame before UNREGISTERED.
+Every drain wait also observes session termination, including a shutdown already waiting on a
+detached signal lease. Disposal, peer failure, or an expired deactivation deadline still cancel
+an unfinished write and close the connection; a potentially partial frame is never reused.
+
+Lifecycle regressions hold a signal's flush after the peer has received its bytes, verify that
+deactivation withdraws local catch and discards queued signals while waiting, then verify
+ordered DEACTIVATE and a fresh activation identity. A separate blocked-flush cancellation case
+verifies bounded failure and actual write cancellation. A shutdown drain interrupted by Dispose
+must also cancel that write within five seconds while its test-only shutdown deadline is thirty
+seconds, proving that session termination triggers cancellation before that deadline. These cases
+run in managed and NativeAOT runtime checks.
 
 Initial product adapters expose resource search button intent and resource search completion.
 Only the search button can be caught. Automatic searches and resource download/install intent

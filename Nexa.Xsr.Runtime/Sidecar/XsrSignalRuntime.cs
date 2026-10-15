@@ -139,9 +139,12 @@ public sealed class XsrSignalRuntime
         private readonly Channel<SidecarHookSignal> _queue = Channel.CreateBounded<SidecarHookSignal>(new BoundedChannelOptions(128)
         { SingleReader = true, FullMode = BoundedChannelFullMode.Wait, AllowSynchronousContinuations = false });
         private readonly CancellationTokenSource _ended = new();
+        private readonly CancellationTokenSource _writesEnded = new();
+        private readonly TaskCompletionSource _pumpCompleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private bool _retired, _overflow;
         private ulong _sequence;
         internal Guid ActivationId { get; } = Guid.NewGuid();
+        internal Task Completion => _pumpCompleted.Task;
         internal bool Publish(Binding binding, string value)
         {
             lock (_gate)
@@ -167,17 +170,18 @@ public sealed class XsrSignalRuntime
                             if (_retired) return;
                             if (_overflow) throw new SidecarProtocolException("Signal notification queue overflow.");
                         }
-                        await send(signal, _ended.Token).ConfigureAwait(false);
+                        await send(signal, _writesEnded.Token).ConfigureAwait(false);
                     }
                 }
                 lock (_gate) { if (_overflow && !_retired) throw new SidecarProtocolException("Signal notification queue overflow."); }
             }
-            catch (OperationCanceledException) when (_ended.IsCancellationRequested) { }
+            catch (OperationCanceledException) when (_ended.IsCancellationRequested || _writesEnded.IsCancellationRequested) { }
             catch (Exception error) when (error is IOException or InvalidOperationException or SidecarProtocolException)
             { failed(); }
+            finally { _pumpCompleted.TrySetResult(); }
         }
 
-        public void Dispose()
+        internal void Retire()
         {
             lock (_gate)
             {
@@ -187,6 +191,12 @@ public sealed class XsrSignalRuntime
             }
             _ended.Cancel();
             owner.Retire(this);
+        }
+
+        public void Dispose()
+        {
+            Retire();
+            _writesEnded.Cancel();
         }
     }
 }

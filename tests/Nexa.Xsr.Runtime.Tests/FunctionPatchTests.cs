@@ -282,11 +282,12 @@ internal static partial class Program
     private static async ValueTask<(SidecarHostSession Session, SidecarConnection Plugin)> PatchSession(
         XsrFunctionPatchRuntime runtime, SidecarRegistrationItem[] items, bool grant = true,
         XsrFunctionPatchAdmission? admission = null, Func<Stream, Stream>? wrap = null,
-        XsrSignalAdmission? signals = null, XsrUiPatchAdmission? uiPatches = null, XsrUiModuleAdmission? uiModules = null, SidecarFeatures features = SidecarFeatures.None)
+        XsrSignalAdmission? signals = null, XsrUiPatchAdmission? uiPatches = null, XsrUiModuleAdmission? uiModules = null,
+        SidecarFeatures features = SidecarFeatures.None, SidecarSessionLimits? limits = null)
     {
         var (hostStream, pluginStream) = SidecarLoopbackStream.CreatePair();
         SidecarConnection plugin = new(pluginStream);
-        SidecarHostSession session = new(new SidecarConnection(wrap?.Invoke(hostStream) ?? hostStream), "PatchFixture")
+        SidecarHostSession session = new(new SidecarConnection(wrap?.Invoke(hostStream) ?? hostStream), "PatchFixture", limits: limits)
         { FunctionPatchAdmission = admission ?? new XsrFunctionPatchAdmission(runtime, grant ? [CaptionPoint] : []), SignalAdmission = signals, UiPatchAdmission = uiPatches, UiModuleAdmission = uiModules };
         try
         {

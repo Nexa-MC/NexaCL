@@ -92,13 +92,22 @@ public sealed partial class SidecarHostSession
     private async ValueTask DeactivateCoreAsync(CancellationToken cancellationToken)
     {
         OnDeactivated();
-        RetireActivationLeases();
+        await RetireActivationLeasesAsync(cancellationToken).ConfigureAwait(false);
         await SendTrackedAsync(new SidecarFrame(SidecarProtocol.Version, SidecarMessageType.Deactivate,
             SidecarFrameTraits.None, SidecarCorrelationId.Create(), Array.Empty<byte>()), cancellationToken).ConfigureAwait(false);
         Transition(SidecarSessionState.Ready);
     }
 
-    private void RetireActivationLeases()
+    private async ValueTask RetireActivationLeasesAsync(CancellationToken cancellationToken)
+    {
+        var signalLease = RetireActivationLeases(cancelSignalWrites: false);
+        if (signalLease is null) return;
+        using var ended = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _sessionEnded.Token);
+        try { await signalLease.Completion.WaitAsync(ended.Token).ConfigureAwait(false); }
+        finally { signalLease.Dispose(); }
+    }
+
+    private XsrSignalRuntime.SignalLease? RetireActivationLeases(bool cancelSignalWrites = true)
     {
         IDisposable? functionLease;
         XsrSignalRuntime.SignalLease? signalLease;
@@ -116,9 +125,11 @@ public sealed partial class SidecarHostSession
             _uiModuleLease = null;
         }
         functionLease?.Dispose();
-        signalLease?.Dispose();
+        if (cancelSignalWrites) signalLease?.Dispose();
+        else signalLease?.Retire();
         captionLease?.Dispose();
         moduleLease?.Dispose();
+        return signalLease;
     }
 
     private async ValueTask SendUnregistrationAsync(byte[] payload, CancellationToken cancellationToken)
@@ -164,11 +175,11 @@ public sealed partial class SidecarHostSession
         string reason = SidecarControlMessages.DecodeUnregister(frame.Payload.Span);
         CloseAdmission();
         OnDeactivated();
-        RetireActivationLeases();
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _sessionEnded.Token);
         deadline.CancelAfter(_limits.ShutdownTimeout);
         try
         {
+            await RetireActivationLeasesAsync(deadline.Token).ConfigureAwait(false);
             await SendTrackedAsync(new SidecarFrame(SidecarProtocol.Version, SidecarMessageType.Unregistered,
                 SidecarFrameTraits.Final, frame.CorrelationId, SidecarControlMessages.EncodeUnregister(reason)),
                 deadline.Token).ConfigureAwait(false);
