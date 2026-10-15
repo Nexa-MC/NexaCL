@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 using Nexa.Services.Minecraft.Process;
 
 namespace Nexa.Jvm.Host;
@@ -37,8 +38,9 @@ internal static unsafe class NativeJvmHost
                 BadImageFormatException => "Java runtime architecture is incompatible with the JVM host.",
                 UnauthorizedAccessException => "Access is denied when preparing the JVM host.",
                 DirectoryNotFoundException => "Game working directory is missing.",
-                InvalidDataException or EndOfStreamException => "Invalid or incomplete JVM host bootstrap request.",
+                InvalidDataException or EndOfStreamException or DecoderFallbackException => "Invalid or incomplete JVM host bootstrap request.",
                 OperationCanceledException => "JVM host bootstrap timed out.",
+                EncoderFallbackException => "JVM options cannot be represented in the selected Java runtime's native encoding.",
                 _ => "JVM host initialization failed.",
             };
             Console.Error.WriteLine($"Nexa JVM Host Error: {reason} ({exception.GetType().Name})");
@@ -98,7 +100,9 @@ internal static unsafe class NativeJvmHost
         nint vm = 0, env = 0;
         try
         {
-            for (int i = 0; i < options.Count; i++) nativeOptions[i].Value = Marshal.StringToCoTaskMemUTF8(options[i]);
+            uint optionCodePage = OperatingSystem.IsWindows() && options.Any(static option => option.Any(static character => character > 127))
+                ? JvmOptionEncoding.GetWindowsCodePage(home) : 0;
+            for (int i = 0; i < options.Count; i++) nativeOptions[i].Value = JvmOptionEncoding.Allocate(options[i], optionCodePage);
             fixed (VmOption* pointer = nativeOptions)
             {
                 VmArguments arguments = new() { Version = 0x00010008, Count = nativeOptions.Length, Options = pointer };

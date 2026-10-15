@@ -26,23 +26,25 @@ public final class JvmHostModCompatibility {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 5) throw new AssertionError("private fixture argument boundary");
-        String mode = args[0], host = args[1], java = args[2], scratch = args[3], credential = args[4];
+        if (args.length != 7 || !args[5].equals("中文😀")) throw new AssertionError("private fixture argument boundary");
+        String mode = args[0], host = args[1], java = args[2], scratch = args[3], credential = args[4], unicode = args[6];
+        if (!unicode.equals(System.getProperty("fixture.vm.unicode"))) throw new AssertionError("native VM option encoding");
         if (!"JvmHostModCompatibility".equals(System.getProperty("sun.java.command")))
             throw new AssertionError("JNI main class metadata missing or includes game arguments");
-        if (!scratch.contains("中文 with space")
+        if (!scratch.contains(unicode + " with space")
             || !new File(".").getCanonicalFile().equals(new File(scratch).getCanonicalFile())
             || !new File(System.getProperty("java.class.path")).getCanonicalFile().equals(new File(scratch).getParentFile().getCanonicalFile()))
             throw new AssertionError("JNI Unicode working directory and classpath identity");
         String runtime = System.getenv("NEXACL_JVM_CHILD_JAVA");
         if (runtime == null || !new File(runtime).getCanonicalFile().equals(new File(java).getCanonicalFile())
             || runtime.contains(credential)) throw new AssertionError("selected child Java environment");
+        String childUnicode = System.getProperty("os.name", "").startsWith("Windows") ? unicode : "中文😀";
         String command = currentCommand(host);
         if (!new File(command).getCanonicalFile().equals(new File(host).getCanonicalFile()))
             throw new AssertionError("native JVM process executable identity");
         ProcessBuilder builder = new ProcessBuilder(command, "-XX:+UseSerialGC", "-Xmx64m", "-Dfixture.child=value with space",
             "-cp", System.getProperty("java.class.path"), "JvmHostModCompatibility$Child",
-            mode, "", "中文😀", "literal \"quotes\"", "spaced argument", "$literal;no-shell", scratch, java);
+            mode, "", childUnicode, "literal \"quotes\"", "spaced argument", "$literal;no-shell", scratch, java, unicodeCodePoints(childUnicode), unicodeCodePoints(unicode));
         if (mode.endsWith("orphan")) {
             builder.redirectOutput(new File(scratch, "orphan-stdout.txt"));
             builder.redirectError(new File(scratch, "orphan-stderr.txt"));
@@ -62,13 +64,28 @@ public final class JvmHostModCompatibility {
         System.out.println("NEXA_CA_PARENT_RETURNED");
     }
 
+    static String unicodeCodePoints(String value) {
+        StringBuilder result = new StringBuilder();
+        for (int index = 0; index < value.length(); index++) {
+            if (index != 0) result.append(',');
+            result.append(Integer.toHexString(value.charAt(index)));
+        }
+        return result.toString();
+    }
+
+    static String fromCodePoints(String value) {
+        StringBuilder result = new StringBuilder();
+        for (String point : value.split(",")) result.append((char)Integer.parseInt(point, 16));
+        return result.toString();
+    }
+
     public static final class Child {
         public static void main(String[] args) throws Exception {
-            if (args.length != 8 || !args[1].isEmpty() || !args[2].equals("中文😀") || !args[3].equals("literal \"quotes\"")
+            if (args.length != 10 || !args[1].isEmpty() || !args[2].equals(fromCodePoints(args[8])) || !args[3].equals("literal \"quotes\"")
                 || !args[4].equals("spaced argument") || !args[5].equals("$literal;no-shell"))
                 throw new AssertionError("child argv roundtrip: " + Arrays.toString(args));
             if (!"value with space".equals(System.getProperty("fixture.child"))) throw new AssertionError("child VM option");
-            if (!args[6].contains("中文 with space")
+            if (!args[6].contains(fromCodePoints(args[9]) + " with space")
                 || !new File(".").getCanonicalFile().equals(new File(args[6]).getCanonicalFile())
                 || !new File(System.getProperty("java.class.path")).getCanonicalFile().equals(new File(args[6]).getParentFile().getCanonicalFile()))
                 throw new AssertionError("child Unicode working directory and classpath identity");

@@ -126,6 +126,14 @@ manifest `${launcher_name}` / `${launcher_version}` properties and VM arguments
 remain unchanged. WorkingDirectory equals resolved GameDirectory; instance,
 client JAR, classpath and native paths remain absolute and separately identified.
 
+## Windows native option encoding
+
+JNI `JavaVMOption.optionString` uses the [default platform encoding](https://docs.oracle.com/en/java/javase/21/docs/specs/jni/invocation.html#jni_createjavavm), rather than an unconditional UTF-8 byte sequence. The host encodes Windows VM options with strict conversion, rejects substitution and best-fit conversion, and reports a fixed diagnostic without including option values. Unix options retain UTF-8. Game arguments still enter JNI through UTF-16 `NewString`; this native-option limit does not weaken that boundary.
+
+The selected Java runtime determines the Windows encoding. OpenJDK 8 obtains `sun.jnu.encoding` from `GetLocaleInfo(systemDefaultLCID, LOCALE_IDEFAULTANSICODEPAGE)` ([source](https://github.com/openjdk/jdk8u/blob/master/jdk/src/windows/native/java/lang/java_props_md.c)); current OpenJDK 17/21/25 use `GetACP()` ([source](https://github.com/openjdk/jdk17u/blob/master/src/java.base/windows/native/libjava/java_props_md.c)). If these differ, the host reads the selected runtime's bounded `release`/`JAVA_VERSION` metadata and selects the documented path for Java 8, Java 17 before/after 17.0.5, and Java 21/25. [JDK-8272352 was backported in 17.0.5](https://github.com/openjdk/jdk17u/commit/011b96c37e694aca5ee82277d0634b843320d8f6); 17 GA and Java 18 GA still use LCID. Unknown divergent runtime behavior is refused for non-ASCII options rather than guessed; ASCII options remain valid. Java 8's unsupported `Cp65001` locale result is refused; its explicit codepage-zero UTF-8 case remains supported. Setting `-Dsun.jnu.encoding` after Java 8's native converter has initialized cannot repair the initial option decoding ([initialization order](https://github.com/openjdk/jdk8u/blob/master/jdk/src/share/native/java/lang/System.c)). No application manifest, private class-loader hook, runtime modification or alternate classpath copy is introduced.
+
+A real external Windows `java.exe` has its own encoding limit. Its launcher converts the process command line through the Windows ANSI code page before Java receives it ([Java 8](https://github.com/openjdk/jdk8u/blob/master/jdk/src/share/bin/main.c), [Java 17](https://github.com/openjdk/jdk17u/blob/master/src/java.base/share/native/launcher/main.c)). The bridge preserves the exact UTF-16 process argv it supplies, but cannot make that separate executable accept characters outside its native encoding. Integration fixtures therefore keep real non-ASCII-and-space paths and exact non-ASCII child arguments representable by that runtime. They separately require arbitrary Chinese/emoji game arguments at the JNI boundary and arbitrary Unicode in the process-start contract. They also require unrepresentable VM options to fail without revealing the option or private credential. These checks must not be described as arbitrary-Unicode support in the external Java launcher.
+
 ## Validation and limits
 
 Contract tests cover shared/isolated directory identity and absolute inherited
@@ -137,7 +145,7 @@ and process-tree stop. CI already runs the native host on Windows/Linux Java
 8/17/21/25 and macOS x64/arm64 Java 21.
 
 The compatibility fixture compiles from its Unicode-and-space temporary directory
-using only relative ASCII compiler arguments. Windows `javac` launchers may decode
+using only relative ASCII compiler arguments. On Windows, the non-ASCII directory and external Java child argument are selected by strict roundtrip through both native encodings; the Unix directory retains Chinese and child arguments include Chinese and emoji. The JNI parent separately checks fixed Chinese/emoji arguments on every platform. Windows `javac` launchers may decode
 native command-line paths using the machine code page before Java starts, so an
 absolute Unicode `-d` argument can become `??` independently of the JNI host. The
 compiler process receives its working directory through the native process API;

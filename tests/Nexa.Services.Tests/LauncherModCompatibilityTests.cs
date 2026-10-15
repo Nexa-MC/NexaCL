@@ -1,5 +1,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json.Nodes;
 using Nexa.Jvm.Host;
 using Nexa.Services.Minecraft.Java;
@@ -86,6 +88,7 @@ internal static partial class Program
 
     private static void LauncherJavaChildBridgeIsBoundedAndPreservesExactArgv()
     {
+        AssertJvmNativeOptionEncoding();
         string root = CreateTempDirectory();
         try
         {
@@ -125,6 +128,34 @@ internal static partial class Program
             }) AssertTrue(JvmChildLaunch.CreateStartInfo(java, invalid) is null);
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private static void AssertJvmNativeOptionEncoding()
+    {
+        AssertEqual(1252u, JvmOptionEncoding.SelectWindowsCodePage(65001, 1252, 8));
+        AssertEqual(1252u, JvmOptionEncoding.SelectWindowsCodePage(65001, 1252, 17, 4));
+        AssertEqual(65001u, JvmOptionEncoding.SelectWindowsCodePage(65001, 1252, 17, 5));
+        AssertEqual(65001u, JvmOptionEncoding.SelectWindowsCodePage(65001, 1252, 21));
+        AssertEqual(65001u, JvmOptionEncoding.SelectWindowsCodePage(65001, 1252, 25));
+        AssertEqual(65001u, JvmOptionEncoding.SelectWindowsCodePage(1252, 0, 8));
+        foreach ((uint process, uint locale, int major) in new[] { (65001u, 1252u, 18), (65001u, 65001u, 8), (65001u, 1252u, 0) })
+        {
+            try { JvmOptionEncoding.SelectWindowsCodePage(process, locale, major); throw new InvalidOperationException("Unknown native encoding was guessed."); }
+            catch (EncoderFallbackException exception) { AssertEqual("Unsupported JVM native option encoding.", exception.Message); }
+        }
+        const string unicode = "-Dfixture=中文😀";
+        nint utf8 = JvmOptionEncoding.Allocate(unicode, 65001);
+        try { AssertEqual(unicode, Marshal.PtrToStringUTF8(utf8)!); }
+        finally { Marshal.FreeCoTaskMem(utf8); }
+        if (!OperatingSystem.IsWindows()) return;
+        nint ansi = JvmOptionEncoding.Allocate("-Dfixture=é", 1252);
+        try { AssertEqual((byte)0xe9, Marshal.ReadByte(ansi, 10)); }
+        finally { Marshal.FreeCoTaskMem(ansi); }
+        foreach (string value in new[] { unicode, "-Dprivate=fixture-secret-∞" })
+        {
+            try { nint unexpected = JvmOptionEncoding.Allocate(value, 1252); Marshal.FreeCoTaskMem(unexpected); throw new InvalidOperationException("Lossy native JVM option was accepted."); }
+            catch (EncoderFallbackException exception) { AssertFalse(exception.Message.Contains(value, StringComparison.Ordinal)); }
+        }
     }
 
     private static async ValueTask LauncherAuxiliaryJavaLeaseOutlivesManagedGameAndGuardsRemoval()

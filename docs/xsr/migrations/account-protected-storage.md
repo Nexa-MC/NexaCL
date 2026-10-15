@@ -23,6 +23,24 @@ envelope's key ID before reopening it on Linux/macOS. Both protectors are dispos
 cached key material is cleared. Windows initialization remains a no-op before current-user
 DPAPI operations. The cross-platform CI matrix exercises this same lifecycle.
 
+The 2026-10-15 macOS CI run reached the native protection fixture after a 5 minute
+37 second NativeAOT publication and then remained in that fixture for over seven
+minutes, whereas the preceding run completed it in under one second. This does
+not establish that the keychain was locked: the available live CI state has no
+native stack or Security.framework error. It exposes an unbounded headless wait
+path because the two legacy Keychain calls can request OS interaction and their
+`Task.Run` cancellation token cannot interrupt a call already in progress.
+
+The isolated, explicitly enabled system-keyring fixture therefore disables
+Keychain user interaction only within its own process, saving and restoring the
+prior setting in `finally`. It still performs real native key creation, reopen,
+authenticated decryption and tamper rejection. An interaction requirement fails
+the test immediately rather than waiting for an inaccessible prompt; production
+protector behavior is unchanged. The macOS CI step reselects its disposable
+keychain and search list, explicitly sets its lock interval and unlocks it again
+immediately before the fixture. That step has a two-minute deadline, and an
+always-run cleanup removes only the CI-owned disposable keychain.
+
 Linux requires `/usr/bin/secret-tool` and an unlocked Secret Service. Native backend failure
 is reported as unavailable rather than replaced by a filesystem key. This does not defend
 against malware already controlling the user's session or erase historical external backups.

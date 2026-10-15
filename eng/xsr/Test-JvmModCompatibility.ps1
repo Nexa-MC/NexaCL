@@ -7,7 +7,48 @@ $hostPath = (Resolve-Path -LiteralPath $HostExecutable).Path
 $suffix = if ($IsWindows) { '.exe' } else { '' }
 $javaPath = (Resolve-Path -LiteralPath (Join-Path $JavaHome "bin/java$suffix")).Path
 $javacPath = (Resolve-Path -LiteralPath (Join-Path $JavaHome "bin/javac$suffix")).Path
-$scratch = Join-Path ([IO.Path]::GetTempPath()) ("nexa-mod-compat-" + [Guid]::NewGuid().ToString('N') + ' 中文 with space')
+$unicodeToken = '中文'
+$unsupportedVmText = $null
+if ($IsWindows) {
+    Add-Type -TypeDefinition @'
+using System.Runtime.InteropServices;
+using System.Text;
+public static class NexaJvmFixtureNativeEncoding {
+    [DllImport("kernel32.dll")] public static extern uint GetACP();
+    [DllImport("kernel32.dll")] public static extern uint GetSystemDefaultLCID();
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, ExactSpelling=true)]
+    public static extern int GetLocaleInfoW(uint locale, uint type, StringBuilder data, int length);
+}
+'@
+    [Text.Encoding]::RegisterProvider([Text.CodePagesEncodingProvider]::Instance)
+    $localeText = [Text.StringBuilder]::new(16)
+    if ([NexaJvmFixtureNativeEncoding]::GetLocaleInfoW([NexaJvmFixtureNativeEncoding]::GetSystemDefaultLCID(), 0x1004, $localeText, 16) -le 1) { throw 'Cannot read native JVM fixture encoding' }
+    $localeCodePage = [int]$localeText.ToString()
+    if ($localeCodePage -eq 0) { $localeCodePage = 65001 }
+    $processCodePage = [int][NexaJvmFixtureNativeEncoding]::GetACP()
+    $nativeEncodings = @($localeCodePage, $processCodePage) | Select-Object -Unique | ForEach-Object {
+        [Text.Encoding]::GetEncoding($_, [Text.EncoderExceptionFallback]::new(), [Text.DecoderExceptionFallback]::new())
+    }
+    $unicodeToken = $null
+    foreach ($candidate in @('中文', 'é', '日本語', 'Ж', '한국어', 'مرحبا', 'ไทย', 'א')) {
+        $exact = $true
+        foreach ($encoding in $nativeEncodings) {
+            try { if ($encoding.GetString($encoding.GetBytes($candidate)) -cne $candidate) { $exact = $false } }
+            catch [Text.EncoderFallbackException] { $exact = $false }
+        }
+        if ($exact) { $unicodeToken = $candidate; break }
+    }
+    if (!$unicodeToken) { throw 'No exact non-ASCII fixture text for native runtime encoding' }
+    $releaseVersion = (Get-Content -LiteralPath (Join-Path $JavaHome 'release') | Where-Object { $_.StartsWith('JAVA_VERSION=') } | Select-Object -First 1).Substring(13).Trim('"')
+    $legacyEncoding = $releaseVersion.StartsWith('1.8.') -or ($releaseVersion -match '^17\.0\.([0-4])(?:\D|$)') -or $releaseVersion -eq '17'
+    $vmEncoding = [Text.Encoding]::GetEncoding($(if ($legacyEncoding) { $localeCodePage } else { $processCodePage }),
+        [Text.EncoderExceptionFallback]::new(), [Text.DecoderExceptionFallback]::new())
+    foreach ($candidate in @('private-vm-option-fixture-😀', 'private-vm-option-fixture-中文', 'private-vm-option-fixture-é')) {
+        try { $null = $vmEncoding.GetBytes($candidate) }
+        catch [Text.EncoderFallbackException] { $unsupportedVmText = $candidate; break }
+    }
+}
+$scratch = Join-Path ([IO.Path]::GetTempPath()) ("nexa-mod-compat-" + [Guid]::NewGuid().ToString('N') + ' ' + $unicodeToken + ' with space')
 [IO.Directory]::CreateDirectory($scratch) | Out-Null
 try {
     # Windows javac may decode command-line paths using the system code page.
@@ -41,7 +82,9 @@ try {
         $writer.Write([int]$bytes.Length)
         $writer.Write($bytes)
     }
-    foreach ($mode in @('normal', 'exit', 'wait', 'orphan')) {
+    $modes = @('malformed-option', 'normal', 'exit', 'wait', 'orphan')
+    if ($unsupportedVmText) { $modes = @('unsupported-option') + $modes }
+    foreach ($mode in $modes) {
         $modeDirectory = Join-Path $scratch $mode
         [IO.Directory]::CreateDirectory($modeDirectory) | Out-Null
         $payload = [IO.MemoryStream]::new()
@@ -51,10 +94,19 @@ try {
         Write-ModField $writer $javaPath
         Write-ModField $writer $modeDirectory
         Write-ModField $writer 'JvmHostModCompatibility'
-        $jvm = @('-Xmx64m', '-Xcheck:jni', '-cp', $scratch)
+        $jvm = @('-Xmx64m', '-Xcheck:jni', ('-Dfixture.vm.unicode=' + $unicodeToken), '-cp', $scratch)
+        if ($mode -eq 'unsupported-option') { $jvm += '-Dfixture.private=' + $unsupportedVmText }
         $writer.Write([int]$jvm.Length)
-        foreach ($value in $jvm) { Write-ModField $writer $value }
-        $game = @($mode, $hostPath, $javaPath, $modeDirectory, 'private-mod-compat-token-fixture')
+        foreach ($value in $jvm) {
+            if ($mode -eq 'malformed-option' -and $value.StartsWith('-Dfixture.vm.unicode=')) {
+                # UTF-8 encoding of an isolated UTF-16 surrogate is invalid in the private protocol.
+                $invalid = [byte[]]@(0xed, 0xa0, 0x80)
+                $writer.Write([int]$invalid.Length)
+                $writer.Write($invalid)
+            }
+            else { Write-ModField $writer $value }
+        }
+        $game = @($mode, $hostPath, $javaPath, $modeDirectory, 'private-mod-compat-token-fixture', '中文😀', $unicodeToken)
         $writer.Write([int]$game.Length)
         foreach ($value in $game) { Write-ModField $writer $value }
         $bytes = $payload.ToArray()
@@ -89,6 +141,17 @@ try {
             $output = $stdout.GetAwaiter().GetResult()
             $errorOutput = $stderr.GetAwaiter().GetResult()
             if ($output -match 'private-mod-compat-token-fixture' -or $errorOutput -match 'private-mod-compat-token-fixture') { throw 'Private game token leaked' }
+            if ($mode -eq 'malformed-option') {
+                if ($parent.ExitCode -ne 1 -or $errorOutput -notmatch 'Invalid or incomplete JVM host bootstrap request\.' -or $errorOutput -match 'VM created') { throw 'Malformed surrogate option was not rejected by the private bootstrap boundary' }
+                Write-Output 'PASS: JNI private bootstrap rejects malformed UTF-8 surrogate without disclosure'
+                continue
+            }
+            if ($mode -eq 'unsupported-option') {
+                if ($parent.ExitCode -ne 1 -or $errorOutput -notmatch "JVM options cannot be represented in the selected Java runtime's native encoding\." -or $errorOutput -match 'VM created') { throw 'Unsupported VM option did not fail before VM creation with its fixed diagnostic' }
+                if ($output.Contains($unsupportedVmText) -or $errorOutput.Contains($unsupportedVmText) -or $errorOutput.Contains('fixture.private')) { throw 'Unsupported VM option leaked its value' }
+                Write-Output 'PASS: JNI native VM option rejects unrepresentable text without disclosure'
+                continue
+            }
             $expectedCode = if ($mode -eq 'exit') { 7 } else { 0 }
             if ($mode -ne 'wait' -and $parent.ExitCode -ne $expectedCode) { throw "CA-like $mode exit=$($parent.ExitCode): $errorOutput" }
             if ($mode -eq 'normal' -and ($output -notmatch 'NEXA_CA_CHILD_STDOUT' -or $errorOutput -notmatch 'NEXA_CA_CHILD_STDERR' -or $output -notmatch 'NEXA_CA_PARENT_RETURNED')) { throw "CA-like output missing: $output $errorOutput" }

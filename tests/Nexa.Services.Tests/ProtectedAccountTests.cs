@@ -89,6 +89,7 @@ internal static partial class Program
             Console.WriteLine("SKIP: native keyring test requires an isolated unlocked system keyring.");
             return;
         }
+        using var interaction = NativeKeychainInteractionScope.CreateForIsolatedTest();
         using var protector = new PlatformProfileDataProtector();
         await protector.InitializeAsync([]).ConfigureAwait(false);
         byte[] plain = "SENSITIVE_NATIVE_TEST"u8.ToArray();
