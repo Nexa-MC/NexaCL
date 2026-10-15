@@ -146,6 +146,16 @@ The Java-to-bridge process start supplies explicit inherited standard handles. A
 
 The Windows bridge redirects child stdout and stderr and forwards both concurrently as raw byte streams through fixed-size buffers to its own inherited standard handles. It starts both drains before waiting for child exit, then completes the drains before returning the original child exit code. Stdin remains inherited: enabling the output redirects causes .NET to pass its existing native stdin handle explicitly too. No output text is decoded, accumulated or rewritten. Unix keeps the existing `execv` handoff. Runtime leases, natural parent exit and tree cancellation retain their original ownership.
 
+## Windows auxiliary process ownership
+
+The Windows auxiliary bridge joins a private Job with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` before it creates real Java. The Job handle is not inheritable, and children enter the Job atomically through normal Windows process creation. Killing the auxiliary bridge therefore closes its Job and terminates Java and descendants without depending on a process-tree snapshot. The existing .NET tree operation [requires strictly increasing parent/child creation times](https://github.com/dotnet/runtime/blob/v10.0.0/src/libraries/System.Diagnostics.Process/src/System/Diagnostics/Process.Win32.cs), which cannot be assumed for a rapid native bridge-to-Java handoff. Existing CI logs established a failed tree-stop assertion without pinned process identities or creation timestamps; they did not identify which race occurred.
+
+Natural game exit leaves its auxiliary bridge alive. After real Java finishes and both output streams drain, the bridge explicitly clears kill-on-close before closing its own Job, preserving the real Java exit code and natural detached-child behavior. A bridge failure emits the fixed diagnostic before terminating its owned Job. Failed Job setup does not start Java. This follows the existing Windows hook-worker Job ownership pattern without adding a project reference to Platform or changing the managed game's session identity.
+
+The fixture publishes PID and survival markers by writing a same-directory temporary file and atomically moving it into place. `Files.write` alone creates a visible empty file before its content is complete; casting that empty PID to an integer can produce zero, making an unrelated system process look like a surviving Java child. Readers require a complete positive PID.
+
+The native fixture pins the actual Java and auxiliary bridge process identities before cancellation or orphan completion. Its orphan-survival check runs after the original game exits and uses an explicit observer-ready handshake before the auxiliary Java may finish. Cleanup waits for the real Java process and the bridge that owns the redirected output files; a survival-marker write or a PID lookup alone is not proof that those file handles are closed. Cancellation still requires the original tree stop to terminate the pinned child identities within the existing deadline. Failure cleanup cannot turn a failed cancellation assertion into a pass.
+
 ## Validation and limits
 
 Contract tests cover shared/isolated directory identity and absolute inherited

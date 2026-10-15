@@ -119,9 +119,10 @@ internal static partial class JvmChildLaunch
                     lease?.ConfirmNoLiveChild();
                 }
             }
-            using Process child = Process.Start(start) ?? throw new InvalidOperationException("Cannot start JVM child.");
+            using JvmChildWindowsJob job = new();
             try
             {
+                using Process child = Process.Start(start) ?? throw new InvalidOperationException("Cannot start JVM child.");
                 lease?.Bind(child);
                 using Stream output = Console.OpenStandardOutput();
                 using Stream errors = Console.OpenStandardError();
@@ -130,13 +131,14 @@ internal static partial class JvmChildLaunch
                 child.WaitForExit();
                 Task.WhenAll(outputDrain, errorDrain).GetAwaiter().GetResult();
                 lease?.ConfirmNoLiveChild();
+                job.Complete();
                 return child.ExitCode;
             }
-            finally
+            catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
             {
-                if (!child.HasExited) child.Kill(entireProcessTree: true);
-                child.WaitForExit();
-                lease?.ConfirmNoLiveChild();
+                Console.Error.WriteLine("Nexa JVM Host: Java child launch failed.");
+                job.Terminate();
+                return 1;
             }
         }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)

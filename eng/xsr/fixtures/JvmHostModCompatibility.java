@@ -3,6 +3,8 @@ import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -82,6 +84,12 @@ public final class JvmHostModCompatibility {
         return result.toString();
     }
 
+    static void writeMarker(Path destination, String value) throws Exception {
+        Path temporary = destination.resolveSibling(destination.getFileName().toString() + ".tmp");
+        Files.write(temporary, value.getBytes(StandardCharsets.UTF_8));
+        Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE);
+    }
+
     public static final class Child {
         public static void main(String[] args) throws Exception {
             if (args.length != 10 || !args[1].isEmpty() || !args[2].equals(fromCodePoints(args[8])) || !args[3].equals("literal \"quotes\"")
@@ -98,7 +106,7 @@ public final class JvmHostModCompatibility {
             if (!new File(currentCommand(java)).getCanonicalFile().equals(new File(java).getCanonicalFile()))
                 throw new AssertionError("child is not a real Java executable");
             if (System.getenv("NEXACL_JVM_CHILD_JAVA") != null) throw new AssertionError("bridge marker leaked into real Java");
-            Files.write(Paths.get(args[6], "child-pid.txt"), Long.toString(pid()).getBytes(StandardCharsets.UTF_8));
+            writeMarker(Paths.get(args[6], "child-pid.txt"), Long.toString(pid()));
             System.out.println("NEXA_CA_CHILD_STDOUT"); System.err.println("NEXA_CA_CHILD_STDERR");
             if ("exit".equals(args[0])) System.exit(13);
             if ("wait".equals(args[0])) {
@@ -106,8 +114,15 @@ public final class JvmHostModCompatibility {
                 Thread.sleep(60000);
             }
             if (args[0].endsWith("orphan")) {
+                if ("orphan".equals(args[0])) {
+                    Path attached = Paths.get(args[6], "owner-attached.txt");
+                    long deadline = System.nanoTime() + 10_000_000_000L;
+                    while (!Files.exists(attached) && System.nanoTime() < deadline) Thread.sleep(10);
+                    if (!Files.exists(attached) || !"NEXA_CA_OWNER_ATTACHED".equals(new String(Files.readAllBytes(attached), StandardCharsets.UTF_8)))
+                        throw new AssertionError("orphan process observer did not attach");
+                }
                 Thread.sleep("managed-orphan".equals(args[0]) ? 5000 : 1000);
-                Files.write(Paths.get(args[6], "child-survived.txt"), "NEXA_CA_CHILD_SURVIVED".getBytes(StandardCharsets.UTF_8));
+                writeMarker(Paths.get(args[6], "child-survived.txt"), "NEXA_CA_CHILD_SURVIVED");
             }
         }
     }

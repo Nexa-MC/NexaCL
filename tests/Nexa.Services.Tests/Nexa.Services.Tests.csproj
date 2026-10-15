@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="../../Nexa.Jvm.Host/JvmChildLaunch.cs" Link="Fixtures/JvmChildLaunch.cs" />
+    <Compile Include="../../Nexa.Jvm.Host/JvmChildWindowsJob.cs" Link="Fixtures/JvmChildWindowsJob.cs" />
     <Compile Include="../../Nexa.Jvm.Host/JvmChildRuntimeLease.cs" Link="Fixtures/JvmChildRuntimeLease.cs" />
     <Compile Include="../../Nexa.Jvm.Host/JvmOptionEncoding.cs" Link="Fixtures/JvmOptionEncoding.cs" />
   </ItemGroup>
