@@ -95,6 +95,7 @@ try {
         Write-ModField $writer $modeDirectory
         Write-ModField $writer 'JvmHostModCompatibility'
         $jvm = @('-Xmx64m', '-Xcheck:jni', ('-Dfixture.vm.unicode=' + $unicodeToken), '-cp', $scratch)
+        if ($IsWindows) { $jvm += '-Djdk.lang.Process.allowAmbiguousCommands=false' }
         if ($mode -eq 'unsupported-option') { $jvm += '-Dfixture.private=' + $unsupportedVmText }
         $writer.Write([int]$jvm.Length)
         foreach ($value in $jvm) {

@@ -39,6 +39,9 @@ public final class JvmHostModCompatibility {
         if (runtime == null || !new File(runtime).getCanonicalFile().equals(new File(java).getCanonicalFile())
             || runtime.contains(credential)) throw new AssertionError("selected child Java environment");
         String childUnicode = System.getProperty("os.name", "").startsWith("Windows") ? unicode : "中文😀";
+        if (System.getProperty("os.name", "").startsWith("Windows")
+            && !"false".equals(System.getProperty("jdk.lang.Process.allowAmbiguousCommands")))
+            throw new AssertionError("explicit Windows Java process quoting mode");
         String command = currentCommand(host);
         if (!new File(command).getCanonicalFile().equals(new File(host).getCanonicalFile()))
             throw new AssertionError("native JVM process executable identity");
