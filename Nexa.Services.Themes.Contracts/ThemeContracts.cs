@@ -4,6 +4,7 @@ namespace Nexa.Services.Themes;
 
 public enum ThemeSourceKind { BuiltIn, Package, Directory }
 public enum ThemeOptionKind { Boolean, Number, Text, Color, Range, Select, File, Files, Directory }
+public enum ThemeOptionControl { Automatic, Switch, CheckBox, Slider, Segmented, Input }
 public enum ThemeResourceKind { Image, Icon, Font, Audio, Video }
 public enum ThemeGrantScope { File, Directory }
 
@@ -12,7 +13,10 @@ public sealed record ThemeOptionChoice(string Value, IReadOnlyDictionary<string,
 public sealed record ThemeOptionDefinition(string Id, ThemeOptionKind Kind, ThemeOptionValue Default,
     IReadOnlyDictionary<string, string> Label, IReadOnlyDictionary<string, string> Description,
     string? Group, string? VisibleWhen, double? Minimum, double? Maximum, double? Step,
-    IReadOnlyList<ThemeOptionChoice> Choices, ThemeResourceKind? ResourceKind = null);
+    IReadOnlyList<ThemeOptionChoice> Choices, ThemeResourceKind? ResourceKind = null)
+{
+    public ThemeOptionControl Control { get; init; }
+}
 public sealed record ThemeCapability(string Name, string? Fallback = null);
 public sealed record ThemeAppearanceResource(string Expression, ThemeResourceKind Kind, bool Required = false, string? Fallback = null);
 public sealed record ThemeAppearance(IReadOnlyDictionary<string, ThemeAppearanceResource> Resources,

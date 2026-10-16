@@ -85,7 +85,7 @@ public sealed partial class AvaloniaUiStartupSession
 
         private void OnHeaderPointerPressed(object? sender, PointerPressedEventArgs args)
         {
-            if (!args.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+            if (!AvaloniaUiPointerPolicy.IsPrimaryPress(args, this)) return;
             BeginMoveDrag(args);
             args.Handled = true;
         }

@@ -223,7 +223,7 @@ internal static partial class Program
             await Activate(OptionKey(advanced, "title-size") + ".Increase");
             await Activate(OptionKey(advanced, "radius") + ".Decrease");
             await Draft(OptionKey(advanced, "accent") + ".Input", "#73b8ff");
-            await Activate(OptionKey(advanced, "music.enabled") + ".True");
+            await Activate(OptionKey(advanced, "music.enabled") + ".Toggle");
             await Eventually(() => Exists(OptionKey(advanced, "music.path") + ".Pick"));
             await Activate(OptionKey(advanced, "background-fit") + ".Choice." + ThemePreviewIdentity("contain"));
             await Activate(OptionKey(advanced, "background-path") + ".Pick");
@@ -249,6 +249,10 @@ internal static partial class Program
             }, timeout.Token);
             description = await Draft(descriptionKey, "Unsaved native <draft> {state private}");
             await CapturePair("advanced-options", description);
+            await Show(OptionKey(advanced, "ornament") + ".Toggle");
+            await CapturePair("advanced-controls-style");
+            await Show(OptionKey(advanced, "music.autoplay") + ".Toggle");
+            await CapturePair("advanced-controls-media");
             await Show("Theme.Grants");
             await CapturePair("advanced-grants");
 

@@ -17,7 +17,7 @@
         <Text Key="LibraryCount" Content="{data count}" Localize="false" MaxLines="1" TrimOverflow="true" Class="layout-VersionSelectionPage-LibraryCount version-base version-detail" />
         <TextInput Key="LibrarySearch" Label="搜索版本" Placeholder="搜索版本" MaximumLength="2048" Class="layout-VersionSelectionPage-LibrarySearch version-base version-input" />
       </StackPanel>
-      <Dynamic Key="LibraryVersionRows" Scroll="true" ShowsVerticalIndicator="true" StableContent="true" Class="layout-VersionSelectionPage-LibraryVersionRows version-base" />
+      <Dynamic Key="LibraryVersionRows" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true" StableContent="true" Class="layout-VersionSelectionPage-LibraryVersionRows version-base" />
       <Text Key="LibraryEmpty" Content="{data status}" Localize="false" IsVisible="{data empty}" Class="layout-VersionSelectionPage-LibraryEmpty version-base version-empty" />
     </StackPanel>
   </StackPanel>

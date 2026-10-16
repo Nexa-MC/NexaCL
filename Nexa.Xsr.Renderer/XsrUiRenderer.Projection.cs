@@ -140,7 +140,7 @@ public sealed partial class XsrUiRenderer
             text?.TrimOverflow ?? false,
             scrollSnapshot,
             components.Get<XsrUiSegmentReveal>() is { } reveal ? new(reveal.Expanded, reveal.Progress) : null,
-            components.Get<XsrUiScrollGesture>() is { } motion ? new(motion.Revision, motion.Dragging, motion.Velocity) : null,
+            components.Get<XsrUiScrollGesture>() is { } motion ? new(motion.Revision, motion.Dragging, motion.Velocity) { Direction = motion.Direction } : null,
             IsStableContent(entity), ProjectTextRuns(text?.Runs))
         {
             ColorScheme = _colorScheme,

@@ -24,7 +24,7 @@
             </StackPanel>
             <StackPanel Key="AccountPicker" IsVisible="{state launch.account.roster-visible}" Class="layout-LaunchPage-AccountPicker">
               <Text Key="AccountHint" Localize="false" Content="{state launch.account.hint}" IsVisible="{state launch.account.hint-visible}" Class="layout-LaunchPage-AccountHint" />
-              <Dynamic Scroll="true" Key="AccountRows" Class="layout-LaunchPage-AccountRows" />
+              <Dynamic Scroll="true" ScrollGesture="true" Key="AccountRows" Class="layout-LaunchPage-AccountRows" />
               <Button Key="AccountImport" Label="导入旧档案" Content="导入旧档案" Command="ui.account.import" Class="layout-LaunchPage-AccountImport" />
             </StackPanel>
           </StackPanel>

@@ -1,5 +1,5 @@
 <nxml-component>
-  <StackPanel Key="AccountForm" Scroll="true" IsVisible="{state account.form.open}" Class="layout-AccountForm-AccountForm account-base">
+  <StackPanel Key="AccountForm" Scroll="true" ScrollGesture="true" IsVisible="{state account.form.open}" Class="layout-AccountForm-AccountForm account-base">
     <StackPanel Key="ProviderChoices" IsVisible="{state account.form.providers}" Class="layout-AccountForm-ProviderChoices account-base">
       <Button Key="ProviderMicrosoft" Label="Microsoft 账户" Content="Microsoft 账户" Command="ui.account.microsoft" Class="layout-AccountForm-ProviderMicrosoft account-base account-button" MaxLines="1" TrimOverflow="true" />
       <Button Key="ProviderLittleSkin" Label="LittleSkin 账户" Content="LittleSkin 账户" Command="ui.account.littleskin" Class="layout-AccountForm-ProviderLittleSkin account-base account-button" MaxLines="1" TrimOverflow="true" />

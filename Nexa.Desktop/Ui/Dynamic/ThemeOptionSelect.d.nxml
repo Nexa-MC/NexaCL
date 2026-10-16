@@ -1,3 +1,6 @@
 <nxml-dynamic>
-  <Dynamic Key="{data choicesKey}" Class="theme-choices" />
+  <ContentHost Class="theme-selector-surface">
+    <ContentHost Key="{data thumbKey}" TransitionKey="selection" IsVisible="false" Class="theme-selector-thumb" />
+    <SettingsChoiceSlot Key="{data choicesKey}" Label="{data label}" Localize="false" SegmentThumb="{data thumbKey}" Scroll="true" ScrollGesture="true" Class="theme-choices" />
+  </ContentHost>
 </nxml-dynamic>

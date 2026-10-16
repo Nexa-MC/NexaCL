@@ -1,0 +1,6 @@
+<nxml-dynamic>
+  <StackPanel Class="theme-range">
+    <Text Content="{data choiceLabel}" Label="{data label}" Localize="false" WrapText="true" Class="theme-option-value" />
+    <Slider Key="{data sliderKey}" Label="{data label}" Localize="false" Command="ui.settings.theme.action" Minimum="{data minimum}" Maximum="{data maximum}" Step="1" RangeValue="{data rangeValue}" Enabled="{data enabled}" Class="theme-slider" />
+  </StackPanel>
+</nxml-dynamic>

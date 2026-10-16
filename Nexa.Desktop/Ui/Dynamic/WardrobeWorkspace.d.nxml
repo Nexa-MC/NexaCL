@@ -34,7 +34,7 @@
       </StackPanel>
       <Text Key="WardrobeSkinSubtitle" Content="此前更换过的皮肤和其他档案的皮肤" Class="layout-WardrobePage-WardrobeSkinSubtitle wardrobe-base" Height="{data WardrobeSkinSubtitle_height}" />
       <StackPanel Key="WardrobeSkinTrack" Class="layout-WardrobePage-WardrobeSkinTrack wardrobe-base" Height="{data WardrobeSkinTrack_height}" Weight="{data WardrobeSkinTrack_weight}">
-        <Dynamic Key="WardrobeSkins" Scroll="true" Class="layout-WardrobePage-WardrobeSkins wardrobe-base" IsVisible="{data WardrobeSkins_visible}" ShowsHorizontalIndicator="true" UseVerticalWheelForHorizontalScroll="true" />
+        <Dynamic Key="WardrobeSkins" Scroll="true" ScrollGesture="true" Class="layout-WardrobePage-WardrobeSkins wardrobe-base" IsVisible="{data WardrobeSkins_visible}" ShowsHorizontalIndicator="true" UseVerticalWheelForHorizontalScroll="true" />
         <Text Key="WardrobeSkinsEmpty" Content="{data WardrobeSkinsEmpty_text}" IsVisible="{data WardrobeSkinsEmpty_visible}" Class="layout-WardrobePage-WardrobeSkinsEmpty wardrobe-base" Localize="false" />
       </StackPanel>
       <StackPanel Key="WardrobeCapeHeader" Class="layout-WardrobePage-WardrobeCapeHeader wardrobe-base" Margin="{data WardrobeCapeHeader_margin}">
@@ -48,7 +48,7 @@
       </StackPanel>
       <Text Key="WardrobeCapeSubtitle" Content="{data WardrobeCapeSubtitle_text}" Class="layout-WardrobePage-WardrobeCapeSubtitle wardrobe-base" Localize="false" Height="{data WardrobeCapeSubtitle_height}" />
       <StackPanel Key="WardrobeCapeTrack" Class="layout-WardrobePage-WardrobeCapeTrack wardrobe-base" Height="{data WardrobeCapeTrack_height}" Weight="{data WardrobeCapeTrack_weight}">
-        <Dynamic Key="WardrobeCapes" Scroll="true" Class="layout-WardrobePage-WardrobeCapes wardrobe-base" IsVisible="{data WardrobeCapes_visible}" ShowsHorizontalIndicator="true" UseVerticalWheelForHorizontalScroll="true" />
+        <Dynamic Key="WardrobeCapes" Scroll="true" ScrollGesture="true" Class="layout-WardrobePage-WardrobeCapes wardrobe-base" IsVisible="{data WardrobeCapes_visible}" ShowsHorizontalIndicator="true" UseVerticalWheelForHorizontalScroll="true" />
         <Text Key="WardrobeCapeStatus" Content="{data WardrobeCapeStatus_text}" IsVisible="{data WardrobeCapeStatus_visible}" Class="layout-WardrobePage-WardrobeCapeStatus wardrobe-base" Localize="false" />
       </StackPanel>
     </StackPanel>

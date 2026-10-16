@@ -23,7 +23,15 @@
 .theme-slider { Height: 30; Background: #cbd4e0; Foreground: #0b5bcb; CornerRadius: 2; Surface: None; }
 .theme-step { Width: 34; Height: 34; FontSize: 16; Foreground: #0b5bcb; Background: #f2f5f9; CornerRadius: 8; TextAlignment: Center; Surface: Solid; Hover: #cfe1fe; }
 .theme-color-swatch { Width: 34; Height: 34; CornerRadius: 8; Border: #cbd4e0; BorderWidth: 1; Surface: Solid; }
-.theme-choices { Orientation: Horizontal; Spacing: 8; }
+.theme-selector-surface { Height: 40; }
+.theme-binary-selector { Width: 126; }
+.theme-choices { Orientation: Horizontal; Spacing: 0; Padding: 3; Height: 40; Background: #f1f5fa; Foreground: #2b3340; CornerRadius: 9; Surface: Solid; }
+.theme-selector-thumb { Background: #ffffff; Foreground: #2b3340; CornerRadius: 7; Surface: Solid; }
+.theme-choice { Height: 34; FontSize: 12; FontWeight: 500; Foreground: #0b5bcb; CornerRadius: 7; TextAlignment: Center; Hover: #cfe1fe; Surface: Solid; VerticalAlignment: Center; }
+.theme-binary-choice { Width: 60; }
+.theme-switch { Width: 56; Height: 34; Foreground: #0b5bcb; Surface: None; }
+.theme-checkbox { Width: 34; Height: 34; Foreground: #0b5bcb; Surface: None; }
+.theme-option-value { MinHeight: 22; FontSize: 13; Foreground: #2b3340; }
 .theme-picker { Width: 108; }
 .theme-path { MinHeight: 18; FontSize: 11; Foreground: #717c8c; }
 .theme-file-path { MinHeight: 28; Weight: 1; FontSize: 12; Foreground: #2b3340; WrapText: true; }

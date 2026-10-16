@@ -102,13 +102,18 @@ internal static partial class ThemeManifestReader
 
     private static ThemeOptionDefinition Option(JsonElement item)
     {
-        Fields(item, "id", "kind", "default", "label", "description", "group", "visibleWhen", "min", "max", "step", "choices", "resourceKind");
+        Fields(item, "id", "kind", "default", "label", "description", "group", "visibleWhen", "min", "max", "step", "choices", "resourceKind", "control");
         string id = Text(item, "id"); if (!Identifier().IsMatch(id)) throw new InvalidDataException("Invalid option ID.");
         if (!Enum.TryParse<ThemeOptionKind>(Text(item, "kind"), true, out var kind) || !Enum.IsDefined(kind)) throw new InvalidDataException("Unknown option kind.");
+        ThemeOptionControl control = ThemeOptionControl.Automatic;
+        if (item.TryGetProperty("control", out var controlNode)
+            && (!Enum.TryParse(String(controlNode), true, out control) || !Enum.IsDefined(control)
+                || !String(controlNode).Equals(Enum.GetName(control), StringComparison.OrdinalIgnoreCase))) throw new InvalidDataException("Unknown option control.");
         double? min = Number(item, "min"), max = Number(item, "max"), step = Number(item, "step");
         if (min.HasValue && max.HasValue && min > max || step is <= 0) throw new InvalidDataException("Invalid option numeric limits.");
-        if (kind == ThemeOptionKind.Range)
+        if (kind == ThemeOptionKind.Range || kind == ThemeOptionKind.Number && control == ThemeOptionControl.Slider)
         {
+            if (kind == ThemeOptionKind.Number && (min is null || max is null)) throw new InvalidDataException("A numeric slider requires explicit finite bounds.");
             min ??= 0; max ??= 100; double span = max.Value - min.Value; step ??= Math.Min(1, span / 100);
             if (min >= max || Math.Abs(min.Value) > 1e12 || Math.Abs(max.Value) > 1e12 || step <= 0 || step > span || span / step > 1e9) throw new InvalidDataException("Range option cannot be projected by the finite slider contract.");
         }
@@ -118,13 +123,24 @@ internal static partial class ThemeManifestReader
             Array(nodes, 256); foreach (var choice in nodes.EnumerateArray()) { Fields(choice, "value", "label"); choices.Add(new(Text(choice, "value"), Localized(choice.GetProperty("label")))); }
         }
         if (choices.Select(c => c.Value).Distinct(StringComparer.Ordinal).Count() != choices.Count || kind == ThemeOptionKind.Select && choices.Count == 0) throw new InvalidDataException("Invalid option choices.");
+        bool validControl = control switch
+        {
+            ThemeOptionControl.Automatic => true,
+            ThemeOptionControl.Switch or ThemeOptionControl.CheckBox => kind == ThemeOptionKind.Boolean,
+            ThemeOptionControl.Slider => kind is ThemeOptionKind.Number or ThemeOptionKind.Range || kind == ThemeOptionKind.Select && choices.Count >= 2,
+            ThemeOptionControl.Segmented => kind is ThemeOptionKind.Boolean or ThemeOptionKind.Select,
+            ThemeOptionControl.Input => kind is ThemeOptionKind.Number or ThemeOptionKind.Range or ThemeOptionKind.Text or ThemeOptionKind.Color,
+            _ => false,
+        };
+        if (!validControl) throw new InvalidDataException("Option control does not match its value kind.");
         ThemeResourceKind? resourceKind = null;
         if (item.TryGetProperty("resourceKind", out var resource))
         { if (!Enum.TryParse<ThemeResourceKind>(String(resource), true, out var parsed) || !Enum.IsDefined(parsed)) throw new InvalidDataException("Invalid option resource kind."); resourceKind = parsed; }
         if (kind is ThemeOptionKind.File or ThemeOptionKind.Files or ThemeOptionKind.Directory && resourceKind is null) throw new InvalidDataException("File options require a resource kind.");
         var value = ReadValue(kind, item.GetProperty("default"));
         var result = new ThemeOptionDefinition(id, kind, value, Localized(item.GetProperty("label")), item.TryGetProperty("description", out var description) ? Localized(description) : new Dictionary<string, string>(),
-            Optional(item, "group"), Optional(item, "visibleWhen"), min, max, step, choices.AsReadOnly(), resourceKind);
+            Optional(item, "group"), Optional(item, "visibleWhen"), min, max, step, choices.AsReadOnly(), resourceKind)
+        { Control = control };
         ValidateValue(result, value); return result;
     }
 

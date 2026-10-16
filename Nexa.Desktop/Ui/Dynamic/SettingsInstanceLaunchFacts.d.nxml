@@ -3,7 +3,7 @@
 <StackPanel Class="instance-diagnostics-toolbar"><Text Content="高级启动事实（只读）" Class="instance-diagnostics-title instance-diagnostics-spacer" /><Button Key="AdvancedLaunch.Read" Content="读取启动事实" Command="ui.settings.management.action" Enabled="{data readEnabled}" Class="settings-catalog-action instance-diagnostics-mode" /></StackPanel>
 <Text Content="读取执行器已捕获的脱敏计划和本地文档；不会刷新账户、下载依赖或启动游戏。" Class="instance-diagnostics-hint" />
 <Text Content="{data status}" Localize="false" IsVisible="{data showStatus}" Class="instance-diagnostics-hint" />
-<StackPanel Key="AdvancedLaunchTabs" Class="instance-launch-tabs" Scroll="true" IsVisible="{data hasFacts}">
+<StackPanel Key="AdvancedLaunchTabs" Class="instance-launch-tabs" Scroll="true" ScrollGesture="true" IsVisible="{data hasFacts}">
 <Button Key="AdvancedLaunch.Tab.plan" Selected="{data planSelected}" Content="计划与命令" Command="ui.settings.management.action" Class="{data planStyle}" />
 <Button Key="AdvancedLaunch.Tab.classpath" Selected="{data classpathSelected}" Content="Classpath" Command="ui.settings.management.action" Class="{data classpathStyle}" />
 <Button Key="AdvancedLaunch.Tab.natives" Selected="{data nativesSelected}" Content="Natives" Command="ui.settings.management.action" Class="{data nativesStyle}" />

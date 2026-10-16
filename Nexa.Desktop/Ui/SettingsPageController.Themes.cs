@@ -81,6 +81,7 @@ internal sealed partial class SettingsPageController
         if (_themeOperation is { IsCompleted: true } operation)
         {
             _themeOperation = null;
+            _themeOptionReloading = false;
             if (_themeStop?.IsCancellationRequested == false)
             {
                 _themeError = operation.IsCompletedSuccessfully ? operation.Result.Error?.Message
@@ -109,6 +110,7 @@ internal sealed partial class SettingsPageController
         {
             CaptureThemeDrafts(); ProjectThemeSettings();
         }
+        UpdateThemeOptionReload();
     }
 
     private Dictionary<string, string> ThemeSettingsData() => new()
@@ -271,6 +273,7 @@ internal sealed partial class SettingsPageController
     private void RetireThemeScope()
     {
         CaptureThemeDrafts();
+        RetireThemeOptionReload();
         _themeScope++;
         _themeStop?.Cancel(); _themeStop?.Dispose(); _themeStop = null;
         if (_themeOperation is { } retired) ObserveTransfer(retired);

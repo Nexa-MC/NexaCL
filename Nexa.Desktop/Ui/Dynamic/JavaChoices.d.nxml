@@ -1,5 +1,5 @@
 <nxml-dynamic>
-    <StackPanel Scroll="true" Class="java-choice-text layout-JavaChoicePage-2">
+    <StackPanel Scroll="true" ScrollGesture="true" Class="java-choice-text layout-JavaChoicePage-2">
       <Text Content="选择使用的 Java 版本" Class="java-choice-text layout-JavaChoicePage-3" />
       <Text Content="优先使用本机已安装的版本，缺失时自动下载。" Class="java-choice-text layout-JavaChoicePage-4" />
       <Button Key="JavaChoice8" IsVisible="{data visible8}" Content="Java 8" Label="Java 8" Command="ui.java.major.8" Class="java-choice-text java-choice-button layout-JavaChoicePage-JavaChoice8" />

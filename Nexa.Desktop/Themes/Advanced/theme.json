@@ -50,7 +50,8 @@
       "label": {
         "en-US": "Accent"
       },
-      "group": "style"
+      "group": "style",
+      "control": "Input"
     },
     {
       "id": "title-size",
@@ -62,7 +63,8 @@
       "min": 20,
       "max": 32,
       "step": 1,
-      "group": "style"
+      "group": "style",
+      "control": "Slider"
     },
     {
       "id": "ornament",
@@ -71,7 +73,8 @@
       "label": {
         "en-US": "Animate title ornament"
       },
-      "group": "style"
+      "group": "style",
+      "control": "Switch"
     },
     {
       "id": "description",
@@ -80,7 +83,8 @@
       "label": {
         "en-US": "Description"
       },
-      "group": "style"
+      "group": "style",
+      "control": "Input"
     },
     {
       "id": "radius",
@@ -92,7 +96,8 @@
       "min": 0,
       "max": 32,
       "step": 1,
-      "group": "style"
+      "group": "style",
+      "control": "Slider"
     },
     {
       "id": "background-fit",
@@ -121,7 +126,8 @@
           }
         }
       ],
-      "group": "background"
+      "group": "background",
+      "control": "Segmented"
     },
     {
       "id": "background-opacity",
@@ -133,7 +139,8 @@
       "min": 0,
       "max": 100,
       "step": 1,
-      "group": "background"
+      "group": "background",
+      "control": "Slider"
     },
     {
       "id": "background-path",
@@ -196,7 +203,8 @@
         "en-US": "Autoplay music"
       },
       "group": "media",
-      "visibleWhen": "option(music.enabled)"
+      "visibleWhen": "option(music.enabled)",
+      "control": "CheckBox"
     },
     {
       "id": "video.enabled",
@@ -206,6 +214,41 @@
         "en-US": "Play sample video"
       },
       "group": "media"
+    },
+    {
+      "id": "video.fit",
+      "kind": "Select",
+      "control": "Slider",
+      "default": "contain",
+      "label": {
+        "en-US": "Video fit",
+        "zh-CN": "视频缩放"
+      },
+      "choices": [
+        {
+          "value": "cover",
+          "label": {
+            "en-US": "Cover",
+            "zh-CN": "填充"
+          }
+        },
+        {
+          "value": "contain",
+          "label": {
+            "en-US": "Contain",
+            "zh-CN": "适应"
+          }
+        },
+        {
+          "value": "stretch",
+          "label": {
+            "en-US": "Stretch",
+            "zh-CN": "拉伸"
+          }
+        }
+      ],
+      "group": "media",
+      "visibleWhen": "option(video.enabled)"
     }
   ],
   "appearance": {
@@ -268,7 +311,8 @@
       "music.enabled": "option(music.enabled)",
       "music.volume": "option(music.volume)",
       "music.autoplay": "option(music.autoplay)",
-      "video.enabled": "option(video.enabled)"
+      "video.enabled": "option(video.enabled)",
+      "video.fit": "option(video.fit)"
     }
   }
 }

@@ -111,6 +111,26 @@ The fixed appearance entries are theme mode, theme pack and launcher icon. Remai
 options are declared by the current theme and projected through finite host NXML
 controls. Per-theme values have schema/version and stable IDs. Old appearance/music
 values and unknown fields remain; migration is idempotent. No theme migration code.
+Option `kind` remains the persisted value type. An optional finite `control` hint
+selects host-authored editors without admitting theme-authored NXML: `Automatic`
+(the default), `Switch`, `CheckBox`, `Slider`, `Segmented` or `Input`. Automatic
+Boolean options use an animated switch, Range options use a numeric slider with
+an editable value, Select options use the scrolling segmented selector, and other
+kinds retain their existing editors. Switch/CheckBox accept only Boolean;
+Segmented accepts Boolean or Select; Input accepts Number, Range, Text or Color.
+Slider accepts Range, Number with explicit finite increasing min/max bounds, or
+Select with at least two choices. Numeric sliders require a positive finite step
+within the span, bounds within +/-1e12 and no more than 1e9 increments. A Select
+slider maps a snapped integer index to the original choice value and displays its
+localized label; it never persists an index. Unknown or incompatible hints reject
+manifest admission. Existing manifests and all nine value kinds remain compatible;
+a single-choice Select remains valid with its automatic segmented editor.
+Numeric slider presentation ends at the highest legal step within the declared
+maximum. For min 0, max 10 and step 3, the right edge and End key select 9; the
+manifest maximum remains 10 and the service continues rejecting off-step 10.
+Switches, checkboxes, sliders and segmented choices retain host keyboard, focus,
+accessibility, disabled and reduced-motion behavior. Long segmented labels scroll
+within the available editor width rather than expanding the page horizontally.
 Global settings reset remains scoped to available fixed catalog settings, including
 the protected host motion controls. It preserves retained legacy appearance/music
 values; per-theme values use the independent typed theme-options reset route.

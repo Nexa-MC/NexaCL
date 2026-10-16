@@ -553,14 +553,18 @@ public sealed class XsrUiSegmentReveal(double width)
 }
 public readonly record struct XsrUiSegmentRevealSnapshot(bool Expanded, double Progress);
 
-/// <summary>Opt-in vertical list direct manipulation, independent of catalog semantics.</summary>
+/// <summary>Opt-in direct manipulation on an overflowing axis, independent of catalog semantics.</summary>
 public sealed class XsrUiScrollGesture
 {
     internal bool Dragging { get; set; }
     internal double Velocity { get; set; }
     internal long Revision { get; set; }
+    internal XsrUiOrientation Direction { get; set; } = XsrUiOrientation.Vertical;
 }
-public readonly record struct XsrUiScrollMotionSnapshot(long Revision, bool Dragging, double Velocity);
+public readonly record struct XsrUiScrollMotionSnapshot(long Revision, bool Dragging, double Velocity)
+{
+    public XsrUiOrientation Direction { get; init; } = XsrUiOrientation.Vertical;
+}
 
 /// <summary>Retained list content appears immediately, including rows entering a viewport.</summary>
 public sealed class XsrUiStableContent;

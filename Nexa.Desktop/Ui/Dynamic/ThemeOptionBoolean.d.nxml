@@ -1,6 +1,9 @@
 <nxml-dynamic>
-  <StackPanel Class="theme-actions">
-    <SettingsChoice Key="{data trueKey}" Content="开启" Label="开启" Command="ui.settings.theme.action" Selected="{data true}" Enabled="{data enabled}" Class="theme-action-small" />
-    <SettingsChoice Key="{data falseKey}" Content="关闭" Label="关闭" Command="ui.settings.theme.action" Selected="{data false}" Enabled="{data enabled}" Class="theme-action-small" />
-  </StackPanel>
+  <ContentHost Class="theme-selector-surface theme-binary-selector">
+    <ContentHost Key="{data thumbKey}" TransitionKey="selection" IsVisible="false" Class="theme-selector-thumb" />
+    <SettingsChoiceTrack Key="{data choicesKey}" Label="{data label}" Localize="false" SegmentThumb="{data thumbKey}" Scroll="true" ScrollGesture="true" Class="theme-choices">
+      <SettingsChoice Key="{data trueKey}" Content="开启" Label="开启" Command="ui.settings.theme.action" Selected="{data true}" Enabled="{data enabled}" Class="theme-choice theme-binary-choice" />
+      <SettingsChoice Key="{data falseKey}" Content="关闭" Label="关闭" Command="ui.settings.theme.action" Selected="{data false}" Enabled="{data enabled}" Class="theme-choice theme-binary-choice" />
+    </SettingsChoiceTrack>
+  </ContentHost>
 </nxml-dynamic>

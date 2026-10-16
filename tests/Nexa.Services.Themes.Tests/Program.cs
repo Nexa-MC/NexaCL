@@ -4,7 +4,7 @@ using Nexa.Services.Themes;
 
 namespace Nexa.Services.Themes.Tests;
 
-internal static class Program
+internal static partial class Program
 {
     private static readonly (string Name, Func<Task> Run)[] Tests =
     [
@@ -35,6 +35,8 @@ internal static class Program
         ("Owned snapshot tampering rejects while host built-in root is reused", SnapshotIntegrity),
         ("First preview has owned catalogue, options and recoverable grants without replacing last good", FirstPreview),
         ("Same-source preview cancellation resolves committed revision explicitly", CommittedSourcePreview),
+        ("Option controls preserve typed values and legacy manifests", OptionControlsPreserveTypedValuesAndLegacyManifests),
+        ("Option controls reject incompatible and unbounded editors", OptionControlsRejectIncompatibleAndUnboundedEditors),
     ];
 
     private static async Task<int> Main()

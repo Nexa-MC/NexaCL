@@ -6,6 +6,12 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("HorizontalContentDragKeepsClicksAndPublishesAxisInertia", Sync(HorizontalContentDragKeepsClicksAndPublishesAxisInertia)),
+        ("DirectScrollLocksAxisUntilReleaseAndRetiresLostOverflow", Sync(DirectScrollLocksAxisUntilReleaseAndRetiresLostOverflow)),
+        ("NestedDirectScrollingChoosesAncestorOnTheDominantAxis", Sync(NestedDirectScrollingChoosesAncestorOnTheDominantAxis)),
+        ("HorizontalContentScrollAndContainingPagerHaveExclusiveOwnership", Sync(HorizontalContentScrollAndContainingPagerHaveExclusiveOwnership)),
+        ("TransformedDirectScrollUsesLocalAxisThresholdAndInertia", Sync(TransformedDirectScrollUsesLocalAxisThresholdAndInertia)),
+        ("NestedTransformedScrollCandidatesUseTheirOwnLocalAxes", Sync(NestedTransformedScrollCandidatesUseTheirOwnLocalAxes)),
         ("intrinsic capsules bound width and scroll captions without activation", Sync(IntrinsicCapsulesBoundWidthAndScrollCaptionsWithoutInvokingCommands)),
         ("future grid admission and runtime recovery preserve owned state", Sync(ThemeFutureGridFailureRecoversOnceWithoutLosingOwnedState)),
         ("theme failures require explicit recovery and retry only once", Sync(ThemeStyleFailureWithoutRecoveryAndRepeatedFailureStillPropagate)),

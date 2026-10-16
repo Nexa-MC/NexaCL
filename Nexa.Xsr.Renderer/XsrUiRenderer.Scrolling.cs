@@ -11,6 +11,7 @@ public sealed partial class XsrUiRenderer
     private ScrollbarGesture _scrollbarGesture;
     private XsrUiOrientation _scrollbarDirection;
     private readonly Queue<(long Time, double Offset)> _scrollSamples = new();
+    private readonly List<(XsrUiEntityId Entity, XsrUiPoint Grab, double OffsetX, double OffsetY)> _scrollCandidates = [];
 
     private enum ScrollbarGesture { None, Thumb, Track }
 
@@ -64,7 +65,11 @@ public sealed partial class XsrUiRenderer
         _gestureScroll = entity; _scrollGrab = point; _scrollbarDirection = scrollbar.Direction;
         _scrollCommitted = true;
         _scrollbarGesture = scrollbar.HitsThumb(point) ? ScrollbarGesture.Thumb : ScrollbarGesture.Track;
-        if (_tree.GetComponent<XsrUiScrollGesture>(entity) is { } motion) motion.Dragging = true;
+        if (_tree.GetComponent<XsrUiScrollGesture>(entity) is { } motion)
+        {
+            motion.Dragging = true;
+            motion.Direction = scrollbar.Direction;
+        }
         if (_scrollbarGesture == ScrollbarGesture.Track)
         {
             bool vertical = _scrollbarDirection == XsrUiOrientation.Vertical;
@@ -142,6 +147,9 @@ public sealed partial class XsrUiRenderer
     {
         if (!_gestureScroll.IsAssigned) return;
         if (!CanUseScroll(_gestureScroll) || _tree.GetComponent<XsrUiScroll>(_gestureScroll) is not { } scroll
+            || (_scrollbarGesture == ScrollbarGesture.None
+                && (_tree.GetComponent<XsrUiScrollGesture>(_gestureScroll) is not { } motion
+                    || _scrollCommitted && (motion.Direction == XsrUiOrientation.Horizontal ? scroll.MaximumOffsetX : scroll.MaximumOffsetY) <= 0))
             || (_scrollbarGesture != ScrollbarGesture.None
                 && (_scrollbarDirection == XsrUiOrientation.Vertical
                     ? !scroll.ShowsVerticalIndicator || scroll.MaximumOffsetY <= 0
@@ -152,13 +160,17 @@ public sealed partial class XsrUiRenderer
             EndScrollGesture(cancelled: true);
     }
 
-    public double GetScrollPresentationOffset(XsrUiEntityId entity) => _tree.GetComponent<XsrUiScroll>(entity)?.OffsetY ?? 0;
+    public double GetScrollPresentationOffset(XsrUiEntityId entity) =>
+        _tree.GetComponent<XsrUiScroll>(entity) is { } scroll
+            ? _tree.GetComponent<XsrUiScrollGesture>(entity)?.Direction == XsrUiOrientation.Horizontal ? scroll.OffsetX : scroll.OffsetY
+            : 0;
     public void SetScrollPresentationOffset(XsrUiEntityId entity, double offset)
     {
-        if (!double.IsFinite(offset) || !_tree.IsAlive(entity) || !IsInVisibleTree(entity)
-            || _tree.GetComponent<XsrUiScrollGesture>(entity) is not { Dragging: false, Velocity: not 0 }
+        if (!double.IsFinite(offset) || !CanUseScroll(entity)
+            || _tree.GetComponent<XsrUiScrollGesture>(entity) is not { Dragging: false, Velocity: not 0 } motion
             || _tree.GetComponent<XsrUiScroll>(entity) is not { } scroll || EffectiveReducedMotion) return;
-        scroll.OffsetY = Math.Clamp(offset, 0, scroll.MaximumOffsetY);
+        if (motion.Direction == XsrUiOrientation.Horizontal) scroll.OffsetX = Math.Clamp(offset, 0, scroll.MaximumOffsetX);
+        else scroll.OffsetY = Math.Clamp(offset, 0, scroll.MaximumOffsetY);
         _tree.MarkDirty(entity, XsrUiDirtyKinds.Layout);
     }
     /// <summary>Ends released motion when its clock finishes or the viewport leaves the scene.</summary>
@@ -175,20 +187,63 @@ public sealed partial class XsrUiRenderer
     }
     private bool BeginScrollGesture(XsrUiPoint point)
     {
+        _scrollCandidates.Clear();
         XsrUiEntityId entity = HitTest(point);
         while (entity.IsAssigned && _tree.IsAlive(entity))
         {
-            if (_tree.GetComponent<XsrUiScrollGesture>(entity) is { } motion
-                && _tree.GetComponent<XsrUiScroll>(entity) is { MaximumOffsetY: > 0 } scroll && CanUseScroll(entity))
+            if (_tree.GetComponent<XsrUiScrollGesture>(entity) is not null
+                && _tree.GetComponent<XsrUiScroll>(entity) is { } scroll
+                && (scroll.MaximumOffsetX > 0 || scroll.MaximumOffsetY > 0) && CanUseScroll(entity))
             {
                 StopScrollMotion(entity);
-                _gestureScroll = entity; _scrollGrab = ScenePointFor(entity, point); _scrollGrabOffset = _scrollLastOffset = scroll.OffsetY;
-                _scrollLastTime = _gestureTime.GetTimestamp(); _scrollCommitted = false;
-                _scrollSamples.Clear(); _scrollSamples.Enqueue((_scrollLastTime, scroll.OffsetY));
-                motion.Dragging = true;
-                return true;
+                _scrollCandidates.Add((entity, ScenePointFor(entity, point), scroll.OffsetX, scroll.OffsetY));
             }
             entity = _tree.Parent(entity);
+        }
+        if (_scrollCandidates.Count == 0) return false;
+        _gestureScroll = _scrollCandidates[0].Entity;
+        _scrollLastTime = _gestureTime.GetTimestamp();
+        _scrollCommitted = false;
+        _tree.GetComponent<XsrUiScrollGesture>(_gestureScroll)!.Dragging = true;
+        return true;
+    }
+    private bool CommitScrollDirection(XsrUiPoint point)
+    {
+        foreach (var candidate in _scrollCandidates)
+        {
+            if (!CanUseScroll(candidate.Entity)
+                || _tree.GetComponent<XsrUiScrollGesture>(candidate.Entity) is not { } motion
+                || _tree.GetComponent<XsrUiScroll>(candidate.Entity) is not { } scroll) continue;
+            XsrUiPoint local = ScenePointFor(candidate.Entity, point);
+            double x = Math.Abs(local.X - candidate.Grab.X), y = Math.Abs(local.Y - candidate.Grab.Y);
+            if (Math.Max(x, y) < 8 || x == y) continue;
+            XsrUiOrientation direction = x > y ? XsrUiOrientation.Horizontal : XsrUiOrientation.Vertical;
+            if ((direction == XsrUiOrientation.Horizontal ? scroll.MaximumOffsetX : scroll.MaximumOffsetY) <= 0) continue;
+            if (_gestureScroll != candidate.Entity && _tree.GetComponent<XsrUiScrollGesture>(_gestureScroll) is { } previous)
+            {
+                previous.Dragging = false;
+                previous.Revision++;
+                _tree.MarkDirty(_gestureScroll, XsrUiDirtyKinds.Paint);
+            }
+            _gestureScroll = candidate.Entity;
+            _scrollGrab = candidate.Grab;
+            _scrollGrabOffset = _scrollLastOffset = direction == XsrUiOrientation.Horizontal ? candidate.OffsetX : candidate.OffsetY;
+            _scrollSamples.Clear();
+            _scrollSamples.Enqueue((_scrollLastTime, _scrollGrabOffset));
+            motion.Direction = direction;
+            motion.Dragging = true;
+            motion.Revision++;
+            StopSegmentScroll(_gestureScroll);
+            _scrollCommitted = true;
+            ClearPointerPress();
+            // The nearest scrolling content owns its axis before a containing pager.
+            if (_gesturePager.IsAssigned && _tree.GetComponent<XsrUiPager>(_gesturePager) is { } pager)
+            {
+                pager.IsDragging = false; pager.ReleaseVelocity = 0;
+                SetPagerTarget(_gesturePager, pager, pager.PageIndex);
+            }
+            _gesturePager = default; _pagerDragCommitted = false;
+            return true;
         }
         return false;
     }
@@ -198,41 +253,33 @@ public sealed partial class XsrUiRenderer
         if (_scrollbarGesture != ScrollbarGesture.None) return MoveScrollbarGesture(point);
         if (!CanUseScroll(_gestureScroll) || _tree.GetComponent<XsrUiScroll>(_gestureScroll) is null
             || _tree.GetComponent<XsrUiScrollGesture>(_gestureScroll) is null) { AbandonScrollGesture(); return false; }
+        if (!_scrollCommitted && !CommitScrollDirection(point)) return false;
         point = ScenePointFor(_gestureScroll, point);
-        double delta = _scrollGrab.Y - point.Y;
-        if (!_scrollCommitted)
-        {
-            if (Math.Abs(delta) < 8 || Math.Abs(delta) <= Math.Abs(point.X - _scrollGrab.X)) return false;
-            _scrollCommitted = true;
-            ClearPointerPress();
-            // A vertical list gesture wins over its horizontal pager ancestor.
-            if (_gesturePager.IsAssigned && _tree.GetComponent<XsrUiPager>(_gesturePager) is { } pager)
-            {
-                pager.IsDragging = false; pager.ReleaseVelocity = 0;
-                SetPagerTarget(_gesturePager, pager, pager.PageIndex);
-            }
-            _gesturePager = default; _pagerDragCommitted = false;
-        }
         XsrUiScroll scroll = _tree.GetComponent<XsrUiScroll>(_gestureScroll)!;
         XsrUiScrollGesture motion = _tree.GetComponent<XsrUiScrollGesture>(_gestureScroll)!;
-        scroll.OffsetY = Math.Clamp(_scrollGrabOffset + delta, 0, scroll.MaximumOffsetY);
+        bool horizontal = motion.Direction == XsrUiOrientation.Horizontal;
+        double delta = horizontal ? _scrollGrab.X - point.X : _scrollGrab.Y - point.Y;
+        double offset = Math.Clamp(_scrollGrabOffset + delta, 0, horizontal ? scroll.MaximumOffsetX : scroll.MaximumOffsetY);
+        if (horizontal) scroll.OffsetX = offset;
+        else scroll.OffsetY = offset;
         long now = _gestureTime.GetTimestamp();
-        if ((scroll.OffsetY - _scrollLastOffset) * motion.Velocity < 0)
+        if ((offset - _scrollLastOffset) * motion.Velocity < 0)
         {
             _scrollSamples.Clear(); _scrollSamples.Enqueue((_scrollLastTime, _scrollLastOffset));
         }
         while (_scrollSamples.Count > 1 && _gestureTime.GetElapsedTime(_scrollSamples.Peek().Time, now).TotalMilliseconds > 80) _scrollSamples.Dequeue();
         var first = _scrollSamples.Peek();
         double seconds = _gestureTime.GetElapsedTime(first.Time, now).TotalSeconds;
-        if (seconds > .001) motion.Velocity = Math.Clamp((scroll.OffsetY - first.Offset) / seconds, -5000, 5000);
-        _scrollSamples.Enqueue((now, scroll.OffsetY));
-        _scrollLastTime = now; _scrollLastOffset = scroll.OffsetY;
+        if (seconds > .001) motion.Velocity = Math.Clamp((offset - first.Offset) / seconds, -5000, 5000);
+        _scrollSamples.Enqueue((now, offset));
+        _scrollLastTime = now; _scrollLastOffset = offset;
         _tree.MarkDirty(_gestureScroll, XsrUiDirtyKinds.Layout);
         return true;
     }
     private bool EndScrollGesture(bool cancelled)
     {
         XsrUiEntityId entity = _gestureScroll; _gestureScroll = default;
+        _scrollCandidates.Clear();
         bool scrollbar = _scrollbarGesture != ScrollbarGesture.None; _scrollbarGesture = ScrollbarGesture.None;
         bool committed = _scrollCommitted; _scrollCommitted = false;
         if (!entity.IsAssigned) return false;

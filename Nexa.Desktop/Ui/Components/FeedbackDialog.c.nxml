@@ -5,7 +5,7 @@
         <Node Kind="Image" Recipe="Image" Key="DialogIcon" Source="lucide/info" Class="layout-Dialog-DialogIcon feedback-dialog-icon" />
         <Node Kind="Text" Recipe="Text" Key="DialogTitle" Content="{data title}" Localize="false" Class="layout-Dialog-DialogTitle feedback-dialog-title" />
       </StackPanel>
-      <StackPanel Key="DialogMessageViewport" Scroll="true" ShowsVerticalIndicator="true" Class="layout-Dialog-DialogMessageViewport">
+      <StackPanel Key="DialogMessageViewport" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true" Class="layout-Dialog-DialogMessageViewport">
         <Node Kind="Text" Recipe="Text" Key="DialogMessage" Content="{data message}" Localize="false" Class="layout-Dialog-DialogMessage feedback-dialog-message" />
       </StackPanel>
       <StackPanel Key="DialogActions" HorizontalAlignment="{data action-alignment}" Class="layout-Dialog-DialogActions">

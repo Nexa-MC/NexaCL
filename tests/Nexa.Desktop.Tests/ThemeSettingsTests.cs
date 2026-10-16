@@ -65,7 +65,7 @@ internal static partial class Program
         var firstField = page.Input("draft");
         page.Renderer.SetTextInputValue(firstField, "first theme unsaved"); page.Renderer.Focus(firstField);
         var retiredSave = page.Find("Theme.OptionsSave");
-        var retiredChoice = page.ActionForOption("enabled", ".True");
+        var retiredChoice = page.ActionForOption("enabled", ".Toggle");
         page.Session.Select("theme-b"); page.Render();
         AssertFalse(page.Tree.IsAlive(firstField));
         var secondField = page.Input("draft");
@@ -73,7 +73,7 @@ internal static partial class Program
         AssertFalse(page.Tree.IsAlive(retiredChoice));
         Emit(page.Fixture.Intents, "ui.settings.theme.action", retiredChoice); page.Render();
         AssertEqual(0, page.Session.SaveCalls);
-        AssertFalse(page.Tree.GetComponent<XsrUiSelection>(page.ActionForOption("enabled", ".True"))!.IsSelected);
+        AssertFalse(page.Tree.GetComponent<XsrUiToggle>(page.ActionForOption("enabled", ".Toggle"))!.IsChecked);
         // The retained global save button receives the current source only after projection.
         AssertEqual(retiredSave, page.Find("Theme.OptionsSave"));
         page.Session.Select("theme-a"); page.Render();
@@ -127,7 +127,7 @@ internal static partial class Program
         var increase = page.ActionForOption("range", ".Increase");
         Emit(page.Fixture.Intents, "ui.settings.theme.action", increase); page.Render();
         AssertEqual("4", editor.ReadDraft());
-        Emit(page.Fixture.Intents, "ui.settings.theme.action", page.ActionForOption("enabled", ".True")); page.Render();
+        Emit(page.Fixture.Intents, "ui.settings.theme.action", page.ActionForOption("enabled", ".Toggle")); page.Render();
         Emit(page.Fixture.Intents, "ui.settings.theme.action", increase); page.Render();
         AssertEqual("6", editor.ReadDraft()); AssertEqual(rangeField, page.Input("range"));
         page.Renderer.SetTextInputValue(rangeField, "-"); page.Renderer.Focus(rangeField); page.Render();
@@ -163,6 +163,10 @@ internal static partial class Program
         AssertTrue(page.Renderer.PointerPressed(pointer)); page.Render();
         AssertTrue(page.Renderer.PointerReleased(pointer)); page.Render();
         AssertEqual("8", page.Tree.GetComponent<XsrUiTextInput>(field)!.ReadDraft());
+        page.Pump(() => page.Session.SaveCalls == 1
+            && page.Session.Snapshot.Current.Options.Single().Values["range"].Value == "8");
+        AssertEqual(new ThemeOptionValue(ThemeOptionKind.Range, "8"), page.Session.LastSave!.Values["range"]);
+        AssertEqual(1L, page.Session.LastSave.ExpectedRevision);
         AssertTrue(page.Renderer.HandleKey(XsrUiKey.Home)); page.Render();
         AssertEqual("0", page.Tree.GetComponent<XsrUiTextInput>(field)!.ReadDraft());
         AssertTrue(page.Renderer.HandleKey(XsrUiKey.End)); page.Render();
@@ -172,8 +176,10 @@ internal static partial class Program
         AssertEqual(slider, page.ActionForOption("range", ".Slider"));
         AssertTrue(ReferenceEquals(state, page.Tree.GetComponent<XsrUiRangeInput>(slider)));
         Emit(page.Fixture.Intents, "ui.settings.theme.action", page.Find("Theme.OptionsSave"));
-        page.Pump(() => page.Session.SaveCalls == 1);
+        page.Pump(() => page.Session.SaveCalls == 2);
         AssertEqual("8", page.Session.LastSave!.Values["range"].Value);
+        AssertEqual(2L, page.Session.LastSave.ExpectedRevision);
+        AssertEqual("8", page.Session.Snapshot.Current.Options.Single().Values["range"].Value);
     }
 
     private static ThemeOptionDefinition ThemeTestOption(string id, ThemeOptionKind kind, string value, ThemeResourceKind? resource = null) =>
@@ -192,6 +198,7 @@ internal static partial class Program
             Session = new(options, twoThemes);
             Settings = new(Fixture.Shell, Fixture.Intents, Fixture.Foundation.Queries, Fixture.Foundation.Commands, Fixture.Store, Fixture.Feedback)
             { ThemeSession = Session };
+            Settings.WaitForThemeOptionReload = token => Task.Delay(Timeout.InfiniteTimeSpan, token);
             Renderer.ReducedMotion = true; Fixture.Shell.Stage.Navigation.Replace(Settings.Page); Render();
             Pump(() => Find("SettingsNav.appearance", false).IsAssigned);
             Emit(Fixture.Intents, "ui.settings.section", Find("SettingsNav.appearance"));
@@ -242,6 +249,9 @@ internal static partial class Program
         private readonly IReadOnlyList<ThemeOptionDefinition> _options;
         public DesktopThemeSettingsSnapshot Snapshot { get; private set; }
         internal int RefreshCalls, SaveCalls, ResetCalls, RevokeCalls, EndPreviewCalls;
+        internal bool FailSave;
+        internal Func<CancellationToken, Task>? BeforeSave;
+        internal Func<CancellationToken, Task>? AfterSave;
         internal ThemeOptionsSaveCommand? LastSave;
         internal Guid? LastRevoked;
         internal List<ThemeResourceGrant> Grants { get; } = [];
@@ -266,13 +276,29 @@ internal static partial class Program
         public Task<XsrResult> SaveOptionsAsync(ThemeOptionsSaveCommand command, CancellationToken token)
         {
             token.ThrowIfCancellationRequested(); SaveCalls++; LastSave = command;
-            ReplaceOptions(command.SourceIdentity, command.Values); return Task.FromResult(XsrResult.Success());
+            if (FailSave) return Task.FromResult(XsrResult.Failure(new(XsrErrorKind.Rejected,
+                XsrSemanticId.Parse("themes.fixture_rejected"), "fixture theme preparation rejected")));
+            return CompleteSaveAsync();
+            async Task<XsrResult> CompleteSaveAsync()
+            {
+                if (BeforeSave is { } wait) await wait(token).ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
+                ReplaceOptions(command.SourceIdentity, command.Values);
+                if (AfterSave is { } after) await after(token).ConfigureAwait(false);
+                return XsrResult.Success();
+            }
         }
         public Task<XsrResult> ResetOptionsAsync(ThemeOptionsResetCommand command, CancellationToken token)
         { ResetCalls++; ReplaceOptions(command.SourceIdentity, _options.ToDictionary(option => option.Id, option => option.Default)); return Task.FromResult(XsrResult.Success()); }
         private void ReplaceOptions(string source, IReadOnlyDictionary<string, ThemeOptionValue> values)
         {
-            var states = Snapshot.Current.Options.Select(state => state.SourceIdentity == source ? state with { Revision = state.Revision + 1, Values = values } : state).ToArray();
+            var states = Snapshot.Current.Options.Select(state =>
+            {
+                if (state.SourceIdentity != source) return state;
+                var merged = state.Values.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+                foreach (var pair in values) merged[pair.Key] = pair.Value;
+                return state with { Revision = state.Revision + 1, Values = merged };
+            }).ToArray();
             Snapshot = Snapshot with { Current = Snapshot.Current with { Revision = Snapshot.Current.Revision + 1, Options = states } }; Touch();
         }
         public Task<XsrResult<ThemeOptionsExport>> ExportOptionsAsync(ThemeOptionsExportQuery query, CancellationToken token) => Task.FromResult(XsrResult.Success(new ThemeOptionsExport("{}")));

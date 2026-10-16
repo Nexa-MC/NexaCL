@@ -100,6 +100,7 @@ public sealed partial class AvaloniaUiShellWindow : Window
         };
 
         _surface = new AvaloniaUiSceneSurface(shell);
+        WindowDecorationProperties.SetElementRole(_surface, WindowDecorationsElementRole.User);
         _surface.TitleBarDragRequested += OnTitleBarDragRequested;
         _surface.SceneCommitted += OnSceneCommitted;
         _windowActions = new AvaloniaNativeWindowActions(_surface, () => _shell.Renderer.EffectiveReducedMotion,
@@ -116,7 +117,7 @@ public sealed partial class AvaloniaUiShellWindow : Window
         // projection of PXML/UI.Next entities; these controls are native window affordances.
         Grid chrome = new();
         chrome.Children.Add(_surface);
-        if (OperatingSystem.IsMacOS()) chrome.Children.Add(new NativeTitleBarHitRegion(_surface));
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()) chrome.Children.Add(new NativeTitleBarHitRegion(_surface));
         if (!OperatingSystem.IsMacOS()) chrome.Children.Add(_windowActions);
         _chromeSurface.Child = chrome;
 
@@ -157,6 +158,16 @@ public sealed partial class AvaloniaUiShellWindow : Window
             WindowDecorationProperties.SetElementRole(this, WindowDecorationsElementRole.TitleBar);
         }
         public bool HitTest(Point point) => _surface.IsNativeTitleBarPoint(new(point.X, point.Y));
+
+        protected override void OnPointerPressed(PointerPressedEventArgs args)
+        {
+            base.OnPointerPressed(args);
+            // Native platforms consume their non-client caption. Keep the same
+            // client route for headless/fallback implementations.
+            if (args.Handled || !AvaloniaUiPointerPolicy.IsPrimaryPress(args, this)) return;
+            _surface.RequestNativeTitleBarDrag(args);
+            args.Handled = true;
+        }
     }
 
     private sealed class EmptyWindowDecorationsTemplate : IWindowDrawnDecorationsTemplate
@@ -421,7 +432,7 @@ public sealed partial class AvaloniaUiShellWindow : Window
         if (sender is Border { Tag: WindowEdge edge }
             && CanResize
             && WindowState == WindowState.Normal
-            && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            && AvaloniaUiPointerPolicy.IsPrimaryPress(e, this))
         {
             BeginResizeDrag(edge, e);
             e.Handled = true;
@@ -569,6 +580,7 @@ public sealed partial class AvaloniaUiShellWindow : Window
 
     private void OnTitleBarDragRequested(object? sender, PointerPressedEventArgs e)
     {
+        if (!AvaloniaUiPointerPolicy.IsPrimaryPress(e, this)) return;
         if (OperatingSystem.IsMacOS())
         {
             if (e.ClickCount == 1) BeginMoveDrag(e);

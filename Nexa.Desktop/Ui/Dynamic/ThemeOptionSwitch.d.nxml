@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Node Key="{data toggleKey}" Recipe="CommandInput" Kind="ThemeOptionSwitch" Role="Switch" Label="{data label}" Localize="false" Checked="{data true}" Clickable="true" Focusable="true" Enabled="{data enabled}" Command="ui.settings.theme.action" Class="theme-switch" />
+</nxml-dynamic>

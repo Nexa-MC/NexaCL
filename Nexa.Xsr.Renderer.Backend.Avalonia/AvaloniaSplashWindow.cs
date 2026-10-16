@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Styling;
 
@@ -28,6 +29,7 @@ public sealed class AvaloniaSplashWindow : Window
         Background = Brushes.Transparent;
         TransparencyLevelHint = [WindowTransparencyLevel.Transparent, WindowTransparencyLevel.None];
         _card = new AvaloniaUiStartupCard(static text => text, fallback: iconStream);
+        _card.Header.PointerPressed += OnHeaderPointerPressed;
         Content = _card;
         PropertyChanged += OnThemeChanged;
         UpdateBrand();
@@ -44,6 +46,13 @@ public sealed class AvaloniaSplashWindow : Window
     private void OnThemeChanged(object? sender, AvaloniaPropertyChangedEventArgs args)
     { if (args.Property == ActualThemeVariantProperty) UpdateBrand(); }
 
+    private void OnHeaderPointerPressed(object? sender, PointerPressedEventArgs args)
+    {
+        if (!AvaloniaUiPointerPolicy.IsPrimaryPress(args, this)) return;
+        BeginMoveDrag(args);
+        args.Handled = true;
+    }
+
     private void UpdateBrand()
     {
         bool dark = AvaloniaUiBrandImages.ResolveDark(_appearance.ThemeMode, ActualThemeVariant);
@@ -55,6 +64,7 @@ public sealed class AvaloniaSplashWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         PropertyChanged -= OnThemeChanged;
+        _card.Header.PointerPressed -= OnHeaderPointerPressed;
         _card.Dispose();
         base.OnClosed(e);
     }

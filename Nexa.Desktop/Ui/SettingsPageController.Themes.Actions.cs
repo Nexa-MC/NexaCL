@@ -13,15 +13,17 @@ internal sealed partial class SettingsPageController
     private void HandleThemeIntent(DesktopUiIntent intent)
     {
         if (intent.Command != ThemeAction || !ThemeSettingsVisible || !_shell.Tree.IsAlive(intent.Source)
-            || !_themeActions.TryGetValue(intent.Source, out var action) || ThemeSettingsBusy || _themeSession is null) return;
+            || !_themeActions.TryGetValue(intent.Source, out var action) || _themeSession is null) return;
+        bool optionDraft = action.Operation is ThemeUiOperation.OptionChoice or ThemeUiOperation.OptionIncrease or ThemeUiOperation.OptionDecrease
+            or ThemeUiOperation.OptionRange or ThemeUiOperation.OptionRemoveFile;
+        if (optionDraft ? ThemeOptionEditorsBusy : ThemeSettingsBusy) return;
         var input = _shell.Tree.GetComponent<Nexa.Xsr.Renderer.XsrUiInput>(intent.Source);
         if (input?.Enabled == false || !ThemeActionAccessible(intent.Source)) return;
         var session = _themeSession;
         string? source = action.Source;
         if (source is not null && !session.Snapshot.Catalogue.Themes.Any(item => item.SourceIdentity == source)
             && action.Operation != ThemeUiOperation.Revoke) return;
-        if (action.Operation is ThemeUiOperation.OptionChoice or ThemeUiOperation.OptionIncrease or ThemeUiOperation.OptionDecrease
-            or ThemeUiOperation.OptionRange or ThemeUiOperation.OptionRemoveFile) { ChangeThemeOption(action, intent.Source); return; }
+        if (optionDraft) { ChangeThemeOption(action, intent.Source); return; }
         if (action.Operation == ThemeUiOperation.OptionPick) { PickThemeOption(action); return; }
         CaptureThemeDrafts();
         switch (action.Operation)
@@ -136,6 +138,7 @@ internal sealed partial class SettingsPageController
             _themeDrafts[(source, editor.Definition.Id)] = editor.Definition.Kind == ThemeOptionKind.Files
                 ? new(editor.Definition.Kind, "", selected.Distinct(StringComparer.Ordinal).ToArray())
                 : new(editor.Definition.Kind, selected[0]);
+            ScheduleThemeOptionReload(source);
         });
     }
 

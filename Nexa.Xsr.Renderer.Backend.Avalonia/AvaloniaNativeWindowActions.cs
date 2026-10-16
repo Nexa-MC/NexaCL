@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Chrome;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -32,6 +33,7 @@ internal sealed class AvaloniaNativeWindowActions : StackPanel, IDisposable
         Func<string, string>? localize = null)
     {
         _surface = surface ?? throw new ArgumentNullException(nameof(surface));
+        WindowDecorationProperties.SetElementRole(this, WindowDecorationsElementRole.User);
         _reducedMotion = reducedMotion ?? throw new ArgumentNullException(nameof(reducedMotion));
         _localize = localize ?? (static text => text);
         Orientation = Orientation.Horizontal;

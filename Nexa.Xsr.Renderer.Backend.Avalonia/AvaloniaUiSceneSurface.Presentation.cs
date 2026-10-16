@@ -124,7 +124,8 @@ public sealed partial class AvaloniaUiSceneSurface
         const double decay = 5;
         double duration = Math.Clamp(Math.Log(Math.Abs(motion.Velocity) / 5) / decay, .08, 1.4);
         double fraction = 1 - Math.Exp(-decay * duration);
-        double target = scroll.OffsetY + motion.Velocity / decay * fraction;
+        double offset = motion.Direction == XsrUiOrientation.Horizontal ? scroll.OffsetX : scroll.OffsetY;
+        double target = offset + motion.Velocity / decay * fraction;
         AvaloniaUiMotion.Animate(this, ("scroll-inertia", node.Entity),
             () => _shell.Renderer.GetScrollPresentationOffset(node.Entity),
             value => _shell.Renderer.SetScrollPresentationOffset(node.Entity, value),
@@ -373,11 +374,37 @@ public sealed partial class AvaloniaUiSceneSurface
         CommitScene();
     }
 
-    internal bool IsNativeTitleBarPoint(XsrUiPoint point) => IsTitleBarPoint(point)
-        && !_scene!.Nodes.Any(node => node.Rect.Contains(point) && node.Role is XsrUiSemanticRole.Button or XsrUiSemanticRole.TextInput);
+    internal bool IsNativeTitleBarPoint(XsrUiPoint point)
+    {
+        if (_scene is null) return false;
+        XsrUiEntityId hit = _shell.Renderer.HitTest(point);
+        int index = -1;
+        for (int i = _scene.Count - 1; i >= 0; i--)
+            if (_scene[i].Entity == hit) { index = i; break; }
+        if (index < 0) return false;
 
-    private bool IsTitleBarPoint(XsrUiPoint point) => _scene is not null
-        && _scene.Nodes.Any(node => node.Role == XsrUiSemanticRole.TitleBar && node.Rect.Contains(point));
+        // Scene order is depth-first. Follow only the hit node's ancestors, so an
+        // overlay cannot expose a caption underneath it and transformed/clipped
+        // title children share the renderer's authoritative hit decision.
+        int depth = int.MaxValue;
+        for (; index >= 0; index--)
+        {
+            XsrUiSceneNode node = _scene[index];
+            if (node.Depth >= depth) continue;
+            depth = node.Depth;
+            if (!node.IsAccessible || node.IsClickable || node.IsFocusable) return false;
+            if (node.Role == XsrUiSemanticRole.TitleBar) return true;
+        }
+        return false;
+    }
+
+    private bool IsTitleBarPoint(XsrUiPoint point) => IsNativeTitleBarPoint(point);
+
+    internal void RequestNativeTitleBarDrag(PointerPressedEventArgs args)
+    {
+        if (AvaloniaUiPointerPolicy.IsPrimaryPress(args, this))
+            TitleBarDragRequested?.Invoke(this, args);
+    }
 
     private bool TryGetNode(XsrUiScene scene, XsrUiEntityId entity, out XsrUiSceneNode result) =>
         _sceneNodes.TryGetValue(entity, out result);

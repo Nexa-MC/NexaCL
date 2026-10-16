@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <CheckBox Key="{data toggleKey}" Label="{data label}" Localize="false" Checked="{data true}" Enabled="{data enabled}" Command="ui.settings.theme.action" Class="theme-checkbox" />
+</nxml-dynamic>

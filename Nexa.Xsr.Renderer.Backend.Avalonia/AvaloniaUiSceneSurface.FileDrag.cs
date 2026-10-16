@@ -77,6 +77,7 @@ public sealed partial class AvaloniaUiSceneSurface
         finally
         {
             _fileDragActive = false;
+            ReleasePointerOwnership();
             if (!_disposed) { _shell.Renderer.CompleteFileDrag(entity, transfer); CommitScene(); }
         }
     }

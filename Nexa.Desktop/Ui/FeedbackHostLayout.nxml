@@ -1,1 +1,1 @@
-﻿<Dynamic Key="FeedbackHostLayout" Scroll="true" StickToEnd="true" Class="feedback-notification-host" />
+﻿<Dynamic Key="FeedbackHostLayout" Scroll="true" ScrollGesture="true" StickToEnd="true" Class="feedback-notification-host" />

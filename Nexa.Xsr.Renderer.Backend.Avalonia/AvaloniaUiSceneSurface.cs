@@ -203,6 +203,7 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
             _disposed = true;
         }
 
+        ReleasePointerOwnership();
         _themeAnimationTimer?.Stop();
         RetireThemeResize();
         AvaloniaUiMotion.CancelAll(this);

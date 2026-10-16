@@ -76,6 +76,7 @@ internal static partial class Program
             await VerifyNativeWindowsMediaControlsReadinessAsync(handle);
             await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 850, 500));
             VerifyCompositedViewport(window, 850, 500);
+            await VerifyNativeWindowPointerHitTestingAsync(shell, window);
             AssertEqual(1, openings()); AssertEqual(1, reveals());
             window.Width += 100; window.Height += 50;
             await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 950, 550));
@@ -98,6 +99,7 @@ internal static partial class Program
             VerifyNativeCornerRestoration(window, handle, WindowState.Normal, reveals);
             VerifyCompositedViewport(window, 950, 550);
             AssertEqual(4, openings());
+            await VerifyNativeWindowPointerHitTestingAsync(shell, window);
 
             window.WindowState = WindowState.Maximized;
             await WaitForNativeCornerLayoutAsync(() => NativeCornerMaximizedViewportMatches(window));
@@ -111,11 +113,13 @@ internal static partial class Program
             VerifyNativeCornerMaximizedViewport(window);
             AssertEqual(maximizedViewport, window.Surface.Bounds.Size);
             AssertEqual(5, openings());
+            await VerifyNativeWindowPointerHitTestingAsync(shell, window);
 
             window.WindowState = WindowState.Normal;
             await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 950, 550));
             VerifyCompositedViewport(window, 950, 550);
             await VerifyAnimatedNativeTrayAsync(shell, window, actions, handle, reveals);
+            await VerifyNativeWindowPointerHitTestingAsync(shell, window);
             window.WindowState = WindowState.Minimized;
             await WaitForNativeCornerLayoutAsync(() => window.WindowState == WindowState.Minimized);
             window.WindowState = WindowState.Normal;
