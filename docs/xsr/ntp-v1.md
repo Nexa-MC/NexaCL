@@ -125,8 +125,9 @@ slider maps a snapped integer index to the original choice value and displays it
 localized label; it never persists an index. Unknown or incompatible hints reject
 manifest admission. Existing manifests and all nine value kinds remain compatible;
 a single-choice Select remains valid with its automatic segmented editor.
-Numeric slider presentation ends at the highest legal step within the declared
-maximum. For min 0, max 10 and step 3, the right edge and End key select 9; the
+Numeric slider presentation and numeric increment buttons stop at the highest
+legal step within the declared maximum. For min 0, max 10 and step 3, the slider's
+right edge/End key and either numeric editor's increment button select 9; the
 manifest maximum remains 10 and the service continues rejecting off-step 10.
 Switches, checkboxes, sliders and segmented choices retain host keyboard, focus,
 accessibility, disabled and reduced-motion behavior. Long segmented labels scroll

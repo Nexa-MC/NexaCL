@@ -308,6 +308,7 @@ internal sealed partial class SettingsPageController
             double index = (current - minimum) / step;
             double next = minimum + (action.Operation == ThemeUiOperation.OptionIncrease ? Math.Floor(index + 1e-9) + 1 : Math.Ceiling(index - 1e-9) - 1) * step;
             double maximum = editor.Definition.Kind == ThemeOptionKind.Range || editor.Definition.Control == ThemeOptionControl.Slider
+                || editor.Definition.Kind == ThemeOptionKind.Number && editor.Definition.Step is not null && editor.Definition.Maximum is not null
                 ? ThemeSliderMaximum(editor.Definition) : editor.Definition.Maximum ?? 1e12;
             next = Math.Clamp(next, editor.Definition.Minimum ?? -1e12, maximum);
             value = new(editor.Definition.Kind, ThemeNumber(next));

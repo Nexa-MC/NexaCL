@@ -114,6 +114,8 @@ internal static partial class Program
         var numberDefinition = ThemeTestOption("number", ThemeOptionKind.Number, "3") with { Control = ThemeOptionControl.Slider, Minimum = 0, Maximum = 10, Step = 3 };
         using var page = new ThemeSettingsFixture([
             rangeDefinition, numberDefinition,
+            ThemeTestOption("automatic-number", ThemeOptionKind.Number, "9") with { Minimum = 0, Maximum = 10, Step = 3 },
+            ThemeTestOption("input-number", ThemeOptionKind.Number, "9") with { Control = ThemeOptionControl.Input, Minimum = 0, Maximum = 10, Step = 3 },
             ThemeTestOption("choice", ThemeOptionKind.Select, "first") with { Control = ThemeOptionControl.Slider, Choices = choices },
         ]);
         int releasedSliders = 0;
@@ -143,6 +145,20 @@ internal static partial class Program
             Emit(page.Fixture.Intents, "ui.settings.theme.action", page.ActionForOption(label, ".Increase")); page.Render();
             AssertEqual("9", page.Tree.GetComponent<XsrUiTextInput>(page.Input(label))!.ReadDraft());
         }
+        foreach (string label in new[] { "automatic-number", "input-number" })
+        {
+            var field = page.Input(label);
+            var increase = page.ActionForOption(label, ".Increase");
+            var decrease = page.ActionForOption(label, ".Decrease");
+            AssertEqual("9", page.Tree.GetComponent<XsrUiTextInput>(field)!.ReadDraft());
+            Emit(page.Fixture.Intents, "ui.settings.theme.action", increase); page.Render();
+            AssertEqual("9", page.Tree.GetComponent<XsrUiTextInput>(field)!.ReadDraft());
+            Emit(page.Fixture.Intents, "ui.settings.theme.action", decrease); page.Render();
+            AssertEqual("6", page.Tree.GetComponent<XsrUiTextInput>(field)!.ReadDraft());
+            Emit(page.Fixture.Intents, "ui.settings.theme.action", increase); page.Render();
+            AssertEqual("9", page.Tree.GetComponent<XsrUiTextInput>(field)!.ReadDraft());
+            AssertEqual(field, page.Input(label));
+        }
         var choiceSlider = page.ActionForOption("choice", ".Slider");
         var choiceScene = page.Fixture.Shell.Render(new(1000, 700));
         _ = ShowSettingsFixtureControl(page.Fixture, page.Settings, ref choiceScene, page.Tree.Name(choiceSlider), new(1000, 700));
@@ -153,11 +169,16 @@ internal static partial class Program
         page.Pump(() => page.Session.SaveCalls == 3);
         AssertEqual(new ThemeOptionValue(ThemeOptionKind.Range, "9"), page.Session.LastSave!.Values["range"]);
         AssertEqual(new ThemeOptionValue(ThemeOptionKind.Number, "9"), page.Session.LastSave.Values["number"]);
+        AssertEqual(new ThemeOptionValue(ThemeOptionKind.Number, "9"), page.Session.LastSave.Values["automatic-number"]);
+        AssertEqual(new ThemeOptionValue(ThemeOptionKind.Number, "9"), page.Session.LastSave.Values["input-number"]);
         AssertEqual(new ThemeOptionValue(ThemeOptionKind.Select, "last"), page.Session.LastSave.Values["choice"]);
+        AssertEqual(5, page.Session.LastSave.Values.Count);
         AssertEqual(3L, page.Session.LastSave.ExpectedRevision);
         var saved = page.Session.Snapshot.Current.Options.Single().Values;
         AssertEqual(new ThemeOptionValue(ThemeOptionKind.Range, "9"), saved["range"]);
         AssertEqual(new ThemeOptionValue(ThemeOptionKind.Number, "9"), saved["number"]);
+        AssertEqual(new ThemeOptionValue(ThemeOptionKind.Number, "9"), saved["automatic-number"]);
+        AssertEqual(new ThemeOptionValue(ThemeOptionKind.Number, "9"), saved["input-number"]);
         AssertEqual(new ThemeOptionValue(ThemeOptionKind.Select, "last"), saved["choice"]);
         AssertEqual(10d, rangeDefinition.Maximum!.Value); AssertEqual(10d, numberDefinition.Maximum!.Value);
     }
