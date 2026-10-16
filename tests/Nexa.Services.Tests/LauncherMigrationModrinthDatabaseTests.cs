@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using Nexa.Services.Composition;
 using Nexa.Services.Setup;
 
 namespace Nexa.Services.Tests;
@@ -25,7 +26,7 @@ internal static partial class Program
                 + "INSERT INTO instance_content_sets VALUES('applied','owned','1.20.1','forge','1.20.1-47.2.0');");
             string[] sources = Directory.GetFiles(settingsRoot).Order(StringComparer.Ordinal).ToArray();
             AssertTrue(sources.Contains(database + "-wal"));
-            string[] hashes = sources.Select(static path => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)))).ToArray();
+            string[] hashes = sources.Select(MigrationSqliteSourceHash).ToArray();
             DateTime[] times = sources.Select(File.GetLastWriteTimeUtc).ToArray();
             var instance = (await LauncherMigrationFormats.DiscoverAsync(LauncherMigrationSourceKind.Auto, settingsRoot, default)).Single();
             AssertEqual("Modrinth 中文实例", instance.Name); AssertEqual(profile, instance.GameDirectory);
@@ -33,14 +34,45 @@ internal static partial class Program
             AssertTrue(instance.UnsupportedReason is null); AssertEqual(2, instance.ManifestPaths.Count);
             AssertTrue(instance.ManifestPaths.Contains(database)); AssertTrue(instance.ManifestPaths.Contains(database + "-wal"));
             AssertFalse(instance.ToString().Contains("never-import-this-account-token", StringComparison.Ordinal));
+            string destination = Path.Combine(root, "imported");
+            await File.WriteAllTextAsync(Path.Combine(profile, "options.txt"), "music:0.5");
+            int installations = 0;
+            using var service = LauncherMigrationRuntime.CreateService(async (request, token) =>
+            {
+                installations++;
+                AssertEqual("1.20.1", request.GameVersion); AssertEqual("Forge", request.Loader); AssertEqual("47.2.0", request.LoaderBuild);
+                await MigrationWriteAsync(request.DestinationRoot, "versions/" + request.InstanceId + "/" + request.InstanceId + ".json",
+                    "{\"id\":\"" + request.InstanceId + "\",\"mainClass\":\"net.minecraft.client.main.Main\"}", token);
+            });
+            var preview = await service.PreviewAsync(new(LauncherMigrationSourceKind.Modrinth, settingsRoot, destination));
+            AssertTrue(preview.Instances.Single().CanImport, preview.Instances.Single().UnsupportedReason ?? "Modrinth database preview");
+            var receipt = await service.ApplyAsync(new(preview, [preview.Instances.Single().Id]));
+            AssertEqual(1, installations);
+            var imported = receipt.Instances.Single();
+            AssertEqual("music:0.5", await File.ReadAllTextAsync(Path.Combine(imported.MinecraftRootDirectory, "versions", imported.InstanceId, "options.txt")));
+            AssertFalse(Directory.EnumerateFiles(destination, "app.db*", SearchOption.AllDirectories).Any());
+            await service.UndoAsync(receipt);
             AssertTrue(sources.SequenceEqual(Directory.GetFiles(settingsRoot).Order(StringComparer.Ordinal)));
             for (int i = 0; i < sources.Length; i++)
             {
-                AssertEqual(hashes[i], Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(sources[i]))));
+                AssertEqual(hashes[i], MigrationSqliteSourceHash(sources[i]));
                 AssertEqual(times[i], File.GetLastWriteTimeUtc(sources[i]));
             }
+            writer.Execute("UPDATE instances SET name='Changed after preview' WHERE id='owned';");
+            var changed = await service.PreviewAsync(preview.Query);
+            AssertEqual("Changed after preview", changed.Instances.Single().Name);
+            AssertFalse(changed.Revision == preview.Revision);
+            await MigrationFailsAsync(() => service.ApplyAsync(new(preview, [preview.Instances.Single().Id])));
+            AssertEqual(1, installations); AssertFalse(Directory.Exists(destination));
+            AssertEqual("music:0.5", await File.ReadAllTextAsync(Path.Combine(profile, "options.txt")));
         }
         finally { Directory.Delete(root, true); }
+    }
+
+    private static string MigrationSqliteSourceHash(string path)
+    {
+        using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        return Convert.ToHexString(SHA256.HashData(input));
     }
 
     private static async ValueTask LauncherMigrationModrinthReadsOldProfilesAndRefusesInvalidDatabase()

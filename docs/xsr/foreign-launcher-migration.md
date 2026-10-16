@@ -109,6 +109,14 @@ cancellation. Missing SQLite, an unknown schema, a corrupt or changing database,
 unsupported loader data or an incomplete instance yields an explicit source or
 instance diagnostic without disabling the other launcher formats.
 
+On Windows, snapshot copying and revision hashing open only adapter-marked
+`app.db` and `app.db-wal` metadata with read/write/delete sharing so an idle
+Modrinth database connection can remain open. The bounded reader checks source
+length and hashes again; changing metadata still invalidates the preview.
+Ordinary manifests and copied game files retain their stricter read sharing.
+The real WAL fixture keeps its SQLite writer open while checking preview/apply
+and verifies source database, WAL and SHM bytes and timestamps remain unchanged.
+
 The schema and path contract is from Modrinth's `packages/app-lib/migrations/`
 `20240711194701_init.sql`, `20260611120000_instances-content-foundation.sql`,
 `20260619120000_finish-instance-profile-migration.sql` and

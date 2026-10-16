@@ -53,7 +53,9 @@ public sealed partial class LauncherMigrationService
             AddRevision(revision, candidate.LoaderBuild ?? "");
             foreach (string manifest in candidate.ManifestPaths.Order(StringComparer.Ordinal))
             {
-                var inspected = await LauncherMigrationFiles.InspectFileAsync(manifest, Path.GetFileName(manifest), token).ConfigureAwait(false);
+                var inspected = candidate.SharedDatabaseManifests
+                    ? await LauncherMigrationModrinthDatabase.InspectManifestAsync(manifest, token).ConfigureAwait(false)
+                    : await LauncherMigrationFiles.InspectFileAsync(manifest, Path.GetFileName(manifest), token).ConfigureAwait(false);
                 AddRevision(revision, manifest); AddRevision(revision, inspected.Sha256);
             }
             if (unsupported is null)

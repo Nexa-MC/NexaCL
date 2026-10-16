@@ -5,7 +5,10 @@ namespace Nexa.Services.Setup;
 
 internal sealed record LauncherMigrationSourceInstance(string Identity, string Name, string GameDirectory,
     string? NativeRoot, string? NativeVersion, string GameVersion, string? Loader, string? LoaderBuild,
-    string? UnsupportedReason, IReadOnlyList<string> ManifestPaths, IReadOnlyList<string> Warnings);
+    string? UnsupportedReason, IReadOnlyList<string> ManifestPaths, IReadOnlyList<string> Warnings)
+{
+    internal bool SharedDatabaseManifests { get; init; }
+}
 
 /// <summary>Reads documented launcher manifests without executing launcher commands or importing credentials.</summary>
 internal static class LauncherMigrationFormats

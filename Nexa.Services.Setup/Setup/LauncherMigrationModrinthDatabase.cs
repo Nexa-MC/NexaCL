@@ -31,7 +31,7 @@ internal static class LauncherMigrationModrinthDatabase
             foreach (string source in manifests)
                 hashes.Add(await CopySnapshotAsync(source, Path.Combine(temporary, Path.GetFileName(source)), token).ConfigureAwait(false));
             for (int i = 0; i < manifests.Length; i++)
-                if (!hashes[i].Equals(await SourceHashAsync(manifests[i], token).ConfigureAwait(false), StringComparison.Ordinal))
+                if (!hashes[i].Equals((await SourceHashAsync(manifests[i], token).ConfigureAwait(false)).Sha256, StringComparison.Ordinal))
                     throw new IOException("Modrinth 数据库在读取期间变化，请退出原启动器后重试。");
             if (File.Exists(wal) != (manifests.Length == 2))
                 throw new IOException("Modrinth 数据库在读取期间变化，请退出原启动器后重试。");
@@ -86,7 +86,8 @@ internal static class LauncherMigrationModrinthDatabase
                 else if (!string.Equals(row[5], "installed", StringComparison.OrdinalIgnoreCase)) reason = "Modrinth 实例尚未安装完成，请先在原启动器中完成安装。";
                 else if (!Directory.Exists(directory)) reason = "Modrinth 实例游戏目录不存在，请检查自定义数据目录。";
                 instances.Add(new(directory, name, directory, null, null, row[2] ?? "", loader,
-                    build, reason, manifests, OmittedSettings));
+                    build, reason, manifests, OmittedSettings)
+                { SharedDatabaseManifests = true });
             }
             connection.Query("COMMIT", 0, 0);
             return instances.AsReadOnly();
@@ -96,7 +97,7 @@ internal static class LauncherMigrationModrinthDatabase
         {
             string reason = error is DatabaseException db ? db.Message : error is IOException && error.Message.StartsWith("Modrinth", StringComparison.Ordinal)
                 ? error.Message : "无法只读解析 Modrinth 数据库；请退出原启动器并检查数据库、实例目录和访问权限。";
-            return [new(root, "Modrinth App", root, null, null, "", null, null, reason, manifests, OmittedSettings)];
+            return [new(root, "Modrinth App", root, null, null, "", null, null, reason, manifests, OmittedSettings) { SharedDatabaseManifests = true }];
         }
         finally
         {
@@ -106,6 +107,18 @@ internal static class LauncherMigrationModrinthDatabase
                 if (Directory.Exists(temporary)) Directory.Delete(temporary, recursive: true);
             }
         }
+    }
+
+    /// <summary>Fingerprints only SQLite metadata while allowing the original launcher to retain its database handles.</summary>
+    internal static async Task<LauncherMigrationFile> InspectManifestAsync(string source, CancellationToken token)
+    {
+        source = LauncherMigrationFiles.Absolute(source);
+        string name = Path.GetFileName(source);
+        if (name is not ("app.db" or "app.db-wal")) throw new IOException("Modrinth 数据库元数据文件无效。");
+        var first = await SourceHashAsync(source, token).ConfigureAwait(false);
+        var second = await SourceHashAsync(source, token).ConfigureAwait(false);
+        if (first != second) throw new IOException("Modrinth 数据库在读取期间变化，请退出原启动器后重试。");
+        return new(source, name, first.Bytes, first.Sha256);
     }
 
     private static async Task<string> CopySnapshotAsync(string source, string target, CancellationToken token)
@@ -131,7 +144,7 @@ internal static class LauncherMigrationModrinthDatabase
         return Convert.ToHexString(hash.GetHashAndReset());
     }
 
-    private static async Task<string> SourceHashAsync(string source, CancellationToken token)
+    private static async Task<(long Bytes, string Sha256)> SourceHashAsync(string source, CancellationToken token)
     {
         LauncherMigrationFiles.CheckLinks(source);
         await using var stream = OpenSource(source);
@@ -148,7 +161,7 @@ internal static class LauncherMigrationModrinthDatabase
         }
         LauncherMigrationFiles.CheckLinks(source);
         if (total != length || stream.Length != length) throw new IOException("Modrinth 数据库在读取期间变化，请退出原启动器后重试。");
-        return Convert.ToHexString(hash.GetHashAndReset());
+        return (length, Convert.ToHexString(hash.GetHashAndReset()));
     }
 
     private static FileStream OpenSource(string source)
