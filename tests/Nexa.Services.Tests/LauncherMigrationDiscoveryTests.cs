@@ -90,6 +90,17 @@ internal static partial class Program
             AssertTrue(items.All(item => item.UnsupportedReason is null));
             foreach (string name in new[] { "Prism Mixed", "AT Mixed", "XMCL Mixed", "Curse Mixed", "GD Mixed", "FTB Mixed", "native" })
                 AssertTrue(items.Any(item => item.Name == name), "Auto omitted " + name);
+            // Detect the actual volume behavior: macOS can use either kind of volume.
+            // A real second container must survive; an alias must not duplicate rows.
+            string uppercase = Path.Combine(root, "Instances");
+            if (!Directory.Exists(uppercase))
+            {
+                await MigrationWriteAsync(uppercase, "xmcl/instance.json", """{"name":"Uppercase XMCL","runtime":{"minecraft":"1.20.1"}}""");
+                items = await LauncherMigrationFormats.DiscoverAsync(LauncherMigrationSourceKind.Auto, root, default);
+                AssertEqual(8, items.Count);
+                AssertEqual(Path.Combine(uppercase, "xmcl"), items.Single(item => item.Name == "Uppercase XMCL").GameDirectory);
+                AssertEqual(Path.Combine(root, "instances", "xmcl"), items.Single(item => item.Name == "XMCL Mixed").GameDirectory);
+            }
         }
         finally { Directory.Delete(root, true); }
     }

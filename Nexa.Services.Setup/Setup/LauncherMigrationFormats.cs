@@ -427,12 +427,29 @@ internal static partial class LauncherMigrationFormats
     {
         if (Exists(source, marker)) { yield return source; yield break; }
         HashSet<string> seen = new(Nexa.Core.PathIdentity.Comparer);
-        foreach (string container in containers.Select(name => Path.Combine(source, name)).Prepend(source))
+        foreach (string container in containers.Select(name => ExistingContainer(source, name)).OfType<string>().Prepend(source).Distinct(Nexa.Core.PathIdentity.Comparer))
         {
             CheckPath(container); if (!Directory.Exists(container)) continue;
             foreach (string directory in CheckedDirectories(container))
                 if (Exists(directory, marker) && seen.Add(directory)) yield return directory;
         }
+    }
+
+    private static string? ExistingContainer(string source, string relative)
+    {
+        string current = source;
+        foreach (string part in relative.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries))
+        {
+            string requested = Path.Combine(current, part);
+            CheckPath(requested);
+            if (!Directory.Exists(requested)) return null;
+            string[] directories = CheckedDirectories(current).ToArray();
+            string? actual = directories.FirstOrDefault(path => Path.GetFileName(path).Equals(part, StringComparison.Ordinal))
+                ?? directories.FirstOrDefault(path => Path.GetFileName(path).Equals(part, StringComparison.OrdinalIgnoreCase));
+            if (actual is null) return null;
+            current = actual;
+        }
+        return current;
     }
 
     private static IEnumerable<string> CheckedDirectories(string root)

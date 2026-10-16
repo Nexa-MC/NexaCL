@@ -12,6 +12,10 @@ convert proprietary client patchers. Family enum values already published
 retain their numeric identities; new families are appended. Automatic
 recognition examines supported families in
 the selected directory rather than silently choosing only the first family.
+Known container paths are resolved to the filesystem's stored directory casing
+before deduplication, without following links. Thus `instances` and `Instances`
+are one source on a case-insensitive volume, while two real directories on a
+case-sensitive volume remain independent sources.
 Adapters use actual installed manifests and exact Minecraft/loader versions;
 unknown components and unfinished instances remain visible with a reason.
 
