@@ -600,8 +600,24 @@ internal static partial class Program
             }
             async Task Activate(string key)
             {
-                await Show(key);
-                await startup.InvokeAsync(() => { AssertTrue(f.Shell.Renderer.Activate(Find(key).Entity)); surface!.CommitScene(); }, timeout.Token);
+                while (true)
+                {
+                    await Show(key);
+                    bool activated = false;
+                    await startup.InvokeAsync(() =>
+                    {
+                        // Automatic option application can temporarily disable lifecycle
+                        // actions while Show scrolls. Check readiness and activate within
+                        // one UI turn instead of clicking a legitimately disabled button.
+                        var current = OwnedOptional(key);
+                        if (!current.IsAssigned || themes.Snapshot.Busy
+                            || f.Shell.Tree.GetComponent<XsrUiInput>(current)?.Enabled == false) return;
+                        AssertTrue(f.Shell.Renderer.Activate(current));
+                        surface!.CommitScene(); activated = true;
+                    }, timeout.Token);
+                    if (activated) break;
+                    await Task.Delay(10, timeout.Token);
+                }
                 await Eventually(() =>
                 {
                     var current = OwnedOptional(key);
