@@ -396,16 +396,19 @@ public sealed partial class AvaloniaUiShellWindow : Window
     {
         // Invisible edge and corner grips hand the press to the native resize loop, which keeps
         // Aero Snap and system resize behaviour intact.
+        // Windows' physical top-frame hit takes priority over client roles. Extend corner
+        // strips below it so diagonal sizing is reachable without covering caption buttons.
+        const double cornerHeight = 24;
         (HorizontalAlignment Horizontal, VerticalAlignment Vertical, double Width, double Height, Thickness Margin, StandardCursorType Cursor, WindowEdge Edge)[] grips =
         [
             (HorizontalAlignment.Stretch, VerticalAlignment.Top, double.NaN, 8, new Thickness(8, 0, 8, 0), StandardCursorType.SizeNorthSouth, WindowEdge.North),
             (HorizontalAlignment.Stretch, VerticalAlignment.Bottom, double.NaN, 8, new Thickness(8, 0, 8, 0), StandardCursorType.SizeNorthSouth, WindowEdge.South),
-            (HorizontalAlignment.Left, VerticalAlignment.Stretch, 8, double.NaN, new Thickness(0, 8, 0, 8), StandardCursorType.SizeWestEast, WindowEdge.West),
-            (HorizontalAlignment.Right, VerticalAlignment.Stretch, 8, double.NaN, new Thickness(0, 8, 0, 8), StandardCursorType.SizeWestEast, WindowEdge.East),
-            (HorizontalAlignment.Left, VerticalAlignment.Top, 8, 8, new Thickness(0), StandardCursorType.TopLeftCorner, WindowEdge.NorthWest),
-            (HorizontalAlignment.Right, VerticalAlignment.Top, 8, 8, new Thickness(0), StandardCursorType.TopRightCorner, WindowEdge.NorthEast),
-            (HorizontalAlignment.Left, VerticalAlignment.Bottom, 8, 8, new Thickness(0), StandardCursorType.BottomLeftCorner, WindowEdge.SouthWest),
-            (HorizontalAlignment.Right, VerticalAlignment.Bottom, 8, 8, new Thickness(0), StandardCursorType.BottomRightCorner, WindowEdge.SouthEast),
+            (HorizontalAlignment.Left, VerticalAlignment.Stretch, 8, double.NaN, new Thickness(0, cornerHeight, 0, cornerHeight), StandardCursorType.SizeWestEast, WindowEdge.West),
+            (HorizontalAlignment.Right, VerticalAlignment.Stretch, 8, double.NaN, new Thickness(0, cornerHeight, 0, cornerHeight), StandardCursorType.SizeWestEast, WindowEdge.East),
+            (HorizontalAlignment.Left, VerticalAlignment.Top, 8, cornerHeight, new Thickness(0), StandardCursorType.TopLeftCorner, WindowEdge.NorthWest),
+            (HorizontalAlignment.Right, VerticalAlignment.Top, 8, cornerHeight, new Thickness(0), StandardCursorType.TopRightCorner, WindowEdge.NorthEast),
+            (HorizontalAlignment.Left, VerticalAlignment.Bottom, 8, cornerHeight, new Thickness(0), StandardCursorType.BottomLeftCorner, WindowEdge.SouthWest),
+            (HorizontalAlignment.Right, VerticalAlignment.Bottom, 8, cornerHeight, new Thickness(0), StandardCursorType.BottomRightCorner, WindowEdge.SouthEast),
         ];
 
         foreach ((HorizontalAlignment horizontal, VerticalAlignment vertical, double width, double height,

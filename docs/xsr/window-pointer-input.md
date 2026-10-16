@@ -11,9 +11,12 @@ movement and snapping. The client pointer route remains a fallback. Both startup
 window forms share primary-contact header dragging. Secondary contacts must never
 enter a native move/resize operation.
 
-The eight 8-DIP edge/corner grips explicitly project the corresponding native
-resize role; they must not depend on coinciding with a platform's physical frame
-thickness. Only a resizable Normal window exposes these hit regions. Maximized,
+The 8-DIP edge grips and 8-by-24-DIP corner strips explicitly project the
+corresponding native resize role. Corner strips extend below Windows' physical
+top-frame band, whose native hit result takes precedence over client roles;
+keeping them 8 DIPs wide avoids covering caption buttons in opaque windows.
+They must not depend on coinciding with a platform's physical frame thickness.
+Only a resizable Normal window exposes these hit regions. Maximized,
 fullscreen, minimized and non-resizable states retire both the role and client
 hit interception, allowing underlying caption/content input to remain reachable.
 
