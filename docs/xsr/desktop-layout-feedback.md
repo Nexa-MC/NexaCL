@@ -22,6 +22,12 @@ Page navigation uses a short coordinated fade with content visible from its firs
 
 Resource discovery projects a row-major card grid from the list's available width. The host owns finite card/row/spacer geometry through the existing Waterfall virtual contract, including optional theme item width/height/spacing/column metrics. Width and metric changes retain the first visible source-qualified project and its fractional row offset; a focused retained card remains realized. Appending provider pages preserves the current offset and existing card entities, submitted search and unsubmitted drafts. The visible card budget remains bounded independently of retained provider pages. Card structure and appearance remain external NXML/NSS; the controller only projects identities, dimensions and actions.
 
+Host-authored NTP management cards use the same surface/body split as other settings
+cards. The outer surface owns its background and rounded corners; a separate inner
+body owns spacing and padding. This keeps the renderer's content-box paint contract
+from shrinking the card background to the padded content and leaving text and
+actions against its painted edge. Theme catalogue entries follow the same rule.
+
 ## Validation boundary
 
 Renderer/backend interaction regressions exercise pressed, disabled and reduced-motion states. Desktop regressions check route and layout behavior; native screenshots cover representative light/dark settings and wardrobe/setup layouts. Fixture screenshots are not live-provider verification. No service, IPC or persisted-state contract changes.

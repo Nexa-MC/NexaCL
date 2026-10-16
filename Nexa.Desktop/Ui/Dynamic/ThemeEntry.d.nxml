@@ -1,16 +1,18 @@
 <nxml-dynamic>
   <StackPanel Key="{data key}" Class="theme-entry">
-    <StackPanel Class="theme-entry-header">
-      <Text Content="{data name}" Label="{data name}" Localize="false" Class="theme-name" />
-      <Text Content="{data version}" Localize="false" Class="theme-version" />
-      <Text Content="使用中" IsVisible="{data selected}" Class="theme-selected" />
-    </StackPanel>
-    <StackPanel Class="theme-actions">
-      <Button Key="{data useKey}" Content="使用" Label="使用" Command="ui.settings.theme.action" Enabled="{data enabled}" Selected="{data selected}" Class="theme-action-small" />
-      <Button Key="{data previewKey}" Content="预览" Label="预览" Command="ui.settings.theme.action" Enabled="{data enabled}" Class="theme-action-small" />
-      <Button Key="{data folderKey}" Content="打开目录" Label="打开目录" Command="ui.settings.theme.action" Enabled="{data enabled}" IsVisible="{data external}" Class="theme-action" />
-      <CheckBox Key="{data watchKey}" Content="监听修改" Label="监听修改" Command="ui.settings.theme.action" Checked="{data watching}" Enabled="{data enabled}" IsVisible="{data directory}" Class="theme-watch" />
-      <Button Key="{data removeKey}" Content="移除" Label="移除" Command="ui.settings.theme.action" Enabled="{data removable}" IsVisible="{data external}" Class="theme-action-small" />
+    <StackPanel Class="theme-entry-body">
+      <StackPanel Class="theme-entry-header">
+        <Text Content="{data name}" Label="{data name}" Localize="false" Class="theme-name" />
+        <Text Content="{data version}" Localize="false" Class="theme-version" />
+        <Text Content="使用中" IsVisible="{data selected}" Class="theme-selected" />
+      </StackPanel>
+      <StackPanel Class="theme-actions">
+        <Button Key="{data useKey}" Content="使用" Label="使用" Command="ui.settings.theme.action" Enabled="{data enabled}" Selected="{data selected}" Class="theme-action-small" />
+        <Button Key="{data previewKey}" Content="预览" Label="预览" Command="ui.settings.theme.action" Enabled="{data enabled}" Class="theme-action-small" />
+        <Button Key="{data folderKey}" Content="打开目录" Label="打开目录" Command="ui.settings.theme.action" Enabled="{data enabled}" IsVisible="{data external}" Class="theme-action" />
+        <CheckBox Key="{data watchKey}" Content="监听修改" Label="监听修改" Command="ui.settings.theme.action" Checked="{data watching}" Enabled="{data enabled}" IsVisible="{data directory}" Class="theme-watch" />
+        <Button Key="{data removeKey}" Content="移除" Label="移除" Command="ui.settings.theme.action" Enabled="{data removable}" IsVisible="{data external}" Class="theme-action-small" />
+      </StackPanel>
     </StackPanel>
   </StackPanel>
 </nxml-dynamic>

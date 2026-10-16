@@ -7,6 +7,13 @@ internal static class SettingsCatalogConsumerMap
     // Reviewed concrete consumers: docs/xsr/XSR-820-completion-closure.md and domain consumer audits.
     private static readonly HashSet<string> DedicatedConsumerIds = new(StringComparer.Ordinal)
     {
+        // Previewed foreign-launcher instance migration in the storage workspace.
+        "global.storage.0b8d3a443c57",
+        "global.storage.b189310f58a5",
+        "global.storage.055353100619",
+        "global.storage.dbd600988484",
+        "global.storage.f2a3a0583f18",
+        "global.storage.88a48475677a",
         // XSR-836: service-projected read-only configured directory facts.
         "global.storage.f0e1f8e49c73",
         "global.storage.515eb03d238d",

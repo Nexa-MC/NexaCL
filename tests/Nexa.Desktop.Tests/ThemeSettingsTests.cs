@@ -11,6 +11,36 @@ internal static partial class Program
     private static void ThemeOptionsRetainLiteralDraftCaretAndFocusAcrossProjection()
     {
         using var page = new ThemeSettingsFixture([ThemeTestOption("draft", ThemeOptionKind.Text, "saved")]);
+        var originalScheme = page.Renderer.ColorScheme;
+        foreach (bool dark in new[] { false, true })
+        {
+            page.Renderer.ColorScheme = originalScheme with { IsDark = dark };
+            foreach (double width in new[] { 760d, 1040d })
+            {
+                var scene = page.Fixture.Shell.Render(new(width, 2400));
+                foreach (string key in new[] { "Theme.Settings", "Theme.Options", "Theme.LauncherIcon", "Theme.Grants" })
+                {
+                    AssertInset(page.Find(key + ".Surface"), page.Find(key + ".Body"));
+                }
+                var entries = page.Tree.Children(page.Find("Theme.Rows"));
+                AssertTrue(entries.Count > 0);
+                foreach (var entry in entries)
+                {
+                    AssertInset(entry, page.Tree.Children(entry).Single());
+                }
+
+                void AssertInset(XsrUiEntityId surface, XsrUiEntityId body)
+                {
+                    var outer = scene.Nodes.Single(node => node.Entity == surface).Rect;
+                    var inner = scene.Nodes.Single(node => node.Entity == body).Rect;
+                    AssertTrue(inner.X > outer.X && inner.Y > outer.Y);
+                    AssertTrue(inner.X + inner.Width < outer.X + outer.Width);
+                    AssertTrue(inner.Y + inner.Height < outer.Y + outer.Height);
+                }
+            }
+        }
+        page.Renderer.ColorScheme = originalScheme;
+        page.Render();
         var field = page.Input("draft");
         var input = page.Tree.GetComponent<XsrUiTextInput>(field)!;
         const string literal = "<Button Command=\"untrusted\" /> {data title} 中文";

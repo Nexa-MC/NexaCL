@@ -134,6 +134,12 @@ jobs:
           security default-keychain -s "$RUNNER_TEMP/nexa-test.keychain-db"
       - name: Publish NativeAOT account tests
         run: dotnet publish tests/Nexa.Services.Tests -c Release -p:PublishAot=true -o native-account-tests
+      - name: Verify native launcher migration and SQLite source snapshots
+        shell: pwsh
+        run: |
+          $binary = if ($IsWindows) { './native-account-tests/Nexa.Services.Tests.exe' } else { './native-account-tests/Nexa.Services.Tests' }
+          & $binary "LauncherMigration"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Exercise native input discovery without hooks
         shell: pwsh
         run: |
@@ -252,6 +258,16 @@ jobs:
             }
             $probeExitCode = $LASTEXITCODE
             Get-Content $log
+            if ($probeExitCode -ne 0) { exit $probeExitCode }
+            $migrationOutput = Join-Path $output 'launcher-migration'
+            $migrationLog = Join-Path $env:RUNNER_TEMP "ntp-native-preview-migration-$mode.log"
+            if ($IsLinux) {
+              & xvfb-run -a dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-launcher-migration-preview $mode $migrationOutput *> $migrationLog
+            } else {
+              & dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-launcher-migration-preview $mode $migrationOutput *> $migrationLog
+            }
+            $probeExitCode = $LASTEXITCODE
+            Get-Content $migrationLog
             if ($probeExitCode -ne 0) { exit $probeExitCode }
           }
       - name: Retain platform theme publication evidence

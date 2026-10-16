@@ -349,12 +349,15 @@ internal static partial class Program
         host.Logging.Info("Launcher", "Foundation composition completed; registering runtime routes.");
         setStage("compose_runtimes");
         uiIntents.IntentEmitted += (_, e) => operationLog.WriteIntent(e.Intent.Command, e.Intent.CorrelationId);
-        bool StorageIdle() => !host.Tasks.ReadEntries().Any(entry => !entry.IsTerminal)
+        bool StorageIdleExcept(string? taskPrefix) => !host.Tasks.ReadEntries().Any(entry => !entry.IsTerminal
+                    && (taskPrefix is null || !entry.TaskId.StartsWith(taskPrefix, StringComparison.Ordinal)))
                 && !host.StateStore.ReadCollection<Nexa.Services.Minecraft.Process.MinecraftProcessSnapshot>(
                     host.StateStore.Resolve(Nexa.Services.Minecraft.Process.MinecraftProcessStateComposition.SessionsKey)).Items
                     .Any(process => process.State is Nexa.Services.Minecraft.Process.MinecraftProcessState.Created or Nexa.Services.Minecraft.Process.MinecraftProcessState.Running)
                 && host.StateStore.ReadAppliedValue(host.StateStore.Resolve(Nexa.Services.Minecraft.Launch.MinecraftLaunchProgressState.SnapshotKey))
                     is not Nexa.Services.Minecraft.Launch.MinecraftLaunchProgressSnapshot { Active: true, IsLaunched: false };
+        bool StorageIdle() => StorageIdleExcept(null);
+        bool LauncherMigrationIdle() => StorageIdleExcept(LauncherMigrationRuntime.TaskPrefix);
         using var storagePreferences = new StoragePreferencesService(folders, LauncherStorageLocation.LocatorPath, locationLocked, StorageIdle, host.Tasks);
         var contentBackups = new ContentBackupService(Path.Combine(folders.Root, "content-backups"), StorageIdle)
         {
@@ -368,6 +371,11 @@ internal static partial class Program
             },
         };
         var legacyMigration = new LegacyMigrationService(StorageIdle);
+        Nexa.Services.Minecraft.Install.MinecraftInstallService? migrationInstaller = null;
+        MinecraftLibraryService? migrationLibrary = null;
+        using var launcherMigration = LauncherMigrationRuntime.CreateService((request, token) => LauncherMigrationRuntime.InstallAsync(
+            migrationInstaller ?? throw new InvalidOperationException("游戏安装服务尚未就绪。"), request, token), LauncherMigrationIdle);
+        IAsyncDisposable? launcherMigrationLifetime = null;
         await using var diagnosticHistory = new DurableDiagnosticHistorySink(Path.Combine(folders.Root, "diagnostic-history"));
         host.Logging.AddSink(diagnosticHistory);
         await using var backupMaintenance = new ContentBackupMaintenanceSession(contentBackups, host.Logging);
@@ -392,6 +400,11 @@ internal static partial class Program
                 ThemesRuntime.Register(queries, commands, themeService);
                 MinecraftLaunchDiagnosticsRuntime.Register(queries, launchDiagnostics);
                 ContentWorkspaceRuntime.Register(commands, queries, contentBackups, legacyMigration, diagnosticHistory, diagnosticAi);
+                launcherMigrationLifetime = LauncherMigrationRuntime.Register(commands, queries, launcherMigration, host.Tasks, receipt =>
+                    migrationLibrary is not null && host.StateStore.Read<MinecraftLibrarySnapshot>(
+                        host.StateStore.Resolve(MinecraftLibraryService.StateKey)).Value!.Directories.Any(directory =>
+                            !receipt.Instances.Any(instance => Nexa.Core.PathIdentity.Comparer.Equals(
+                                instance.MinecraftRootDirectory, directory.Path))));
                 WorldSnapshotRuntime.Register(commands, queries, host.StateStore, contentBackups, OperatingSystem.IsMacOS() ? AvaloniaUiWorldEditLease.Acquire : null);
             },
             captureWorld: async (path, token) =>
@@ -400,6 +413,7 @@ internal static partial class Program
                 new HashSet<string>(StringComparer.Ordinal) { "session.lock", ".nexa-world-readonly" }, token).ConfigureAwait(false);
             },
             acquireWorldSessionLock: OperatingSystem.IsMacOS() ? AvaloniaUiWorldEditLease.Acquire : null);
+        await using var launcherMigrationScope = launcherMigrationLifetime;
         // Public provider client IDs are embedded at publish time. Passing them here arms both
         // onboarding device flows and the launch identity resolver's refresh capability.
         using AccountOnboardingRuntime accounts = AccountOnboardingRuntimeComposer.ComposeWithAppearance(
@@ -491,8 +505,10 @@ internal static partial class Program
             _ => InputUsageKind.Unknown,
         });
         using MinecraftLibraryRuntime library = MinecraftLibraryRuntimeComposer.Compose(host, minecraftRootDirectory, minecraft.Instances, dispatchObservation);
+        migrationLibrary = library.Service;
         using InstallCatalogRuntime installCatalog = InstallCatalogRuntimeComposer.Compose(host, observer: dispatchObservation);
         using MinecraftInstallRuntime installRun = MinecraftInstallRuntimeComposer.Compose(host, observer: dispatchObservation);
+        migrationInstaller = installRun.Service;
         var folderImports = MinecraftFolderImportRuntimeComposer.Compose(host, library.Service, installRun.Service, dispatchObservation);
         using MinecraftDropController dropController = new(platformActions, folderImports, library.Commands, host.StateStore, feedback);
         // A committed install grows the version library immediately: rescan the active root.
@@ -562,6 +578,12 @@ internal static partial class Program
         }, token => platformActions.PickWorkspaceJsonAsync(token),
             () => string.Join("\n", host.Logging.GetSnapshot().Select(entry => entry.Message)));
         settingsPage.ConfigureDiagnosticAi(true);
+        settingsPage.ConfigureLauncherMigration(async token =>
+        {
+            token.ThrowIfCancellationRequested();
+            var path = await platformActions.PickStorageDirectoryAsync().ConfigureAwait(false);
+            token.ThrowIfCancellationRequested(); return path;
+        }, library.Commands);
         settingsPage.TelemetryRequired = buildInfo.DiagnosticsRequired;
         await using var networking = new LauncherNetworkRuntime(host, settingsFolder, buildInfo);
         HttpClient updateHttp = networking.Http;
@@ -724,6 +746,7 @@ internal static partial class Program
             taskCenterPage.Dispose();
             dropController.Dispose();
             installRecovery.Dispose();
+            if (launcherMigrationLifetime is not null) await launcherMigrationLifetime.DisposeAsync().ConfigureAwait(false);
             await sidecarLifetime.DisposeAsync().ConfigureAwait(false);
             await Task.WhenAll(launchPage.DisposeAsync().AsTask(), installRecovery.DisposeAsync().AsTask()).ConfigureAwait(false);
             await host.Accounts.DisposeAsync().ConfigureAwait(false);

@@ -1,14 +1,16 @@
 <nxml-dynamic>
   <SettingsForm Key="Theme.LauncherIcon">
     <Text Content="启动器图标" Class="settings-form-label" />
-    <StackPanel Class="settings-form-surface theme-surface">
-      <StackPanel Class="theme-actions">
-        <Button Key="Theme.IconDefault" Content="跟随主题" Label="跟随主题" Command="ui.settings.theme.action" Selected="{data theme}" Enabled="{data enabled}" Class="theme-action" />
-        <Button Key="Theme.IconHostDefault" Content="内置图标" Label="内置图标" Command="ui.settings.theme.action" Selected="{data default}" Enabled="{data enabled}" Class="theme-action" />
-        <Button Key="Theme.IconPick" Content="选择图标" Label="选择图标" Command="ui.settings.theme.action" Enabled="{data canPick}" Class="theme-action" />
+    <StackPanel Key="Theme.LauncherIcon.Surface" Class="settings-form-surface">
+      <StackPanel Key="Theme.LauncherIcon.Body" Class="theme-surface">
+        <StackPanel Class="theme-actions">
+          <Button Key="Theme.IconDefault" Content="跟随主题" Label="跟随主题" Command="ui.settings.theme.action" Selected="{data theme}" Enabled="{data enabled}" Class="theme-action" />
+          <Button Key="Theme.IconHostDefault" Content="内置图标" Label="内置图标" Command="ui.settings.theme.action" Selected="{data default}" Enabled="{data enabled}" Class="theme-action" />
+          <Button Key="Theme.IconPick" Content="选择图标" Label="选择图标" Command="ui.settings.theme.action" Enabled="{data canPick}" Class="theme-action" />
+        </StackPanel>
+        <Text Content="{data value}" Label="{data value}" Localize="false" WrapText="true" Class="theme-path" />
+        <Text Content="窗口和托盘使用此图标；安装程序图标保持不变。" Class="theme-description" />
       </StackPanel>
-      <Text Content="{data value}" Label="{data value}" Localize="false" WrapText="true" Class="theme-path" />
-      <Text Content="窗口和托盘使用此图标；安装程序图标保持不变。" Class="theme-description" />
     </StackPanel>
   </SettingsForm>
 </nxml-dynamic>

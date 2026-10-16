@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data text}" Localize="false" IsVisible="{data visible}" Class="settings-launcher-migration-note" /></nxml-dynamic>

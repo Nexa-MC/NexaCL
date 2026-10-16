@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="将以下实例复制到新的迁入目录：&#10;{data instances}&#10;&#10;{data destination}&#10;&#10;原目录会保留，现有目录不会被覆盖。需要转换的实例可能联网下载版本与加载器，完成后加入版本库。继续迁移？" /></nxml-dynamic>

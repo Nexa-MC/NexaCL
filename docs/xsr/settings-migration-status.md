@@ -9,8 +9,8 @@ catalog has 542 positions. The value schema declares 96 definitions, with 95 mut
 contracts and 79 exportable contracts. `java.compatibility` is retained only for
 compatibility reads; writes reject because checks are mandatory. Its catalog position
 now displays that mandatory policy instead of exposing an ineffective editor.
-The raw catalog contains 402 Available, 12 PlatformUnsupported and 128 NotImplemented
-positions. The latter comprise 78 structural Group/Choice positions and 50 functional
+The raw catalog contains 408 Available, 12 PlatformUnsupported and 122 NotImplemented
+positions. The latter comprise 78 structural Group/Choice positions and 44 functional
 roadmap positions without delivered contracts. Platform conditions can further restrict
 available consumers. These counts describe IA positions, not 542 implemented capabilities.
 
@@ -47,7 +47,13 @@ extensions. The domain contracts in XSR-800–819 and XSR-822 describe each cons
 limits; XSR-820 records integrated validation. The entry map and value contracts now reflect
 these consumers rather than the original reserved labels.
 
-Undefined foreign-launcher migration formats, World Guardian policies, clone/CoW providers,
+Foreign-launcher instance migration now has [documented formats and working consumers](foreign-launcher-migration.md):
+previewed per-instance selection, fresh destination roots, real game/loader preparation,
+source preservation, durable recovery/registration and verified undo. Unknown custom
+components remain explicit unsupported entries; account credentials and foreign launch
+commands are not imported. The legacy Nexa settings/account converter remains separate.
+
+World Guardian policies, clone/CoW providers,
 independent lockfiles and future rendering/automatic repair contracts remain roadmap work.
 External plugin engines, publisher signing, physical clients and long-soak acceptance remain
 separate evidence. No unused editor or unrelated observation is counted as their implementation.

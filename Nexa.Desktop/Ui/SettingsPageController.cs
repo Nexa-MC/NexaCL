@@ -75,7 +75,7 @@ internal sealed partial class SettingsPageController : IDisposable
     private void OnIntent(object? sender, DesktopUiIntentEventArgs args)
     {
         if (_shell.Stage.Navigation.Current != Page) return;
-        if (args.Intent.Command == ThemeAction || IsContentSelectionIntent(args.Intent.Command) || IsRuntimeTraceIntent(args.Intent.Command) || IsRuntimeDiagnosticsIntent(args.Intent.Command) || args.Intent.Command == IdentityAction || args.Intent.Command == NetworkProbeStart || args.Intent.Command == NetworkTraceRefresh || args.Intent.Command == ContentWorkspaceAction || args.Intent.Command == LaunchProfileAction || IsDeveloperDiagnosticsIntent(args.Intent.Command) || IsHookIntent(args.Intent.Command) || IsProxyIntent(args.Intent.Command) || IsStoragePreferencesIntent(args.Intent.Command) || IsJavaInventoryIntent(args.Intent.Command) || IsSettingsTransferIntent(args.Intent.Command) || IsUpdateIntent(args.Intent.Command) || args.Intent.Command == ScreenshotPreviewAction || args.Intent.Command == ManagementAction || args.Intent.Command == Inherit || args.Intent.Command == Select || args.Intent.Command == Edit || args.Intent.Command == Choice || args.Intent.Command == ArgumentAdd || args.Intent.Command == ArgumentRemove || args.Intent.Command == RefreshPlatform) _pending.Enqueue(args.Intent);
+        if (args.Intent.Command == ThemeAction || IsContentSelectionIntent(args.Intent.Command) || IsRuntimeTraceIntent(args.Intent.Command) || IsRuntimeDiagnosticsIntent(args.Intent.Command) || args.Intent.Command == IdentityAction || args.Intent.Command == NetworkProbeStart || args.Intent.Command == NetworkTraceRefresh || args.Intent.Command == ContentWorkspaceAction || args.Intent.Command == LauncherMigrationAction || args.Intent.Command == LaunchProfileAction || IsDeveloperDiagnosticsIntent(args.Intent.Command) || IsHookIntent(args.Intent.Command) || IsProxyIntent(args.Intent.Command) || IsStoragePreferencesIntent(args.Intent.Command) || IsJavaInventoryIntent(args.Intent.Command) || IsSettingsTransferIntent(args.Intent.Command) || IsUpdateIntent(args.Intent.Command) || args.Intent.Command == ScreenshotPreviewAction || args.Intent.Command == ManagementAction || args.Intent.Command == Inherit || args.Intent.Command == Select || args.Intent.Command == Edit || args.Intent.Command == Choice || args.Intent.Command == ArgumentAdd || args.Intent.Command == ArgumentRemove || args.Intent.Command == RefreshPlatform) _pending.Enqueue(args.Intent);
         else if (args.Intent.Command == RemediationExecuted) OnPlatformRemediation(sender, args);
     }
     private void OnFrame(object? sender, EventArgs args)
@@ -88,7 +88,7 @@ internal sealed partial class SettingsPageController : IDisposable
             {
                 RetireThemeScope();
                 CancelContentIntegrity();
-                CancelIdentityRead(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelDiagnosticExport(); CancelStoragePreferences(); CancelContentWorkspace();
+                CancelIdentityRead(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelDiagnosticExport(); CancelStoragePreferences(); CancelContentWorkspace(); CancelLauncherMigration();
                 ReleaseContentGraph();
                 RetireHardwareAdvice(); RetireDeveloperDiagnostics(); RetireRuntimeDiagnostics(); RetireRuntimeTrace(); CancelNetworkProbe(); CancelAdvancedWorkspace();
             }
@@ -187,6 +187,7 @@ internal sealed partial class SettingsPageController : IDisposable
             if (intent.Command == NetworkProbeStart) { StartNetworkProbe(intent); continue; }
             if (intent.Command == NetworkTraceRefresh) { ReadNetworkDiagnostics(); continue; }
             if (intent.Command == ContentWorkspaceAction) { HandleContentWorkspace(intent); continue; }
+            if (intent.Command == LauncherMigrationAction) { HandleLauncherMigration(intent); continue; }
             if (IsStoragePreferencesIntent(intent.Command)) { HandleStoragePreferences(intent.Command, intent.Source); continue; }
             if (IsJavaInventoryIntent(intent.Command)) { HandleJavaInventory(intent.Command, intent.Source); continue; }
             if (IsSettingsTransferIntent(intent.Command)) { HandleSettingsTransfer(intent.Command, intent.Source); continue; }
@@ -250,7 +251,7 @@ internal sealed partial class SettingsPageController : IDisposable
 
     private void UpdateIndependentFacts()
     {
-        UpdateReleaseCheck(); UpdateStoragePreferences(); UpdateContentWorkspace();
+        UpdateReleaseCheck(); UpdateStoragePreferences(); UpdateContentWorkspace(); UpdateLauncherMigration();
         UpdateNetworkDiagnostics(); UpdateGeneralRuntimeStates(); UpdateRuntimeTrace(); UpdateAdvancedWorkspace();
     }
 
@@ -263,7 +264,7 @@ internal sealed partial class SettingsPageController : IDisposable
         CloseScreenshotPreview(restoreFocus: false); CancelScreenshotThumbnails();
         CancelContentIntegrity();
         RetireHardwareAdvice(); RetireDeveloperDiagnostics(); RetireRuntimeDiagnostics(); RetireRuntimeTrace(); CancelNetworkProbe(); CancelAdvancedWorkspace();
-        CancelIdentityRead(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelStoragePreferences(); CancelContentWorkspace();
+        CancelIdentityRead(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelStoragePreferences(); CancelContentWorkspace(); CancelLauncherMigration();
         CancelOfflineReadiness(); CancelWorldSnapshots(); CancelInstanceDiagnostics(); CancelAdvancedLaunchDiagnostics(); CancelFileWorkspace();
         _scrollPositions[_selected] = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY;
         if (_selected == "contentgraph")
@@ -371,7 +372,7 @@ internal sealed partial class SettingsPageController : IDisposable
         }
         if (_instanceDirectory is null && _selected == "network") { BuildProxyPreferences(); BuildNetworkDiagnostics(); }
         if (_instanceDirectory is null && _selected == "privacy") { BuildDiskLogActions(); BuildPrivacyDiagnosticExport(); BuildContentTrustStates(); }
-        if (_instanceDirectory is null && _selected == "storage") BuildContentWorkspace();
+        if (_instanceDirectory is null && _selected == "storage") { BuildContentWorkspace(); BuildLauncherMigration(); }
         if (transfer) BuildSettingsTransfer();
         BuildJavaInventory();
 
@@ -555,6 +556,6 @@ internal sealed partial class SettingsPageController : IDisposable
         RetireThemeScope();
         CancelContentIntegrity();
         RetireHardwareAdvice(); RetireDeveloperDiagnostics(); RetireRuntimeDiagnostics(); RetireRuntimeTrace(); CancelNetworkProbe(); CancelAdvancedWorkspace();
-        _disposed = true; CancelIdentityRead(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelDiagnosticExport(); CancelStoragePreferences(); CancelContentWorkspace(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); _updateStop.Cancel(); _updateCheckStop?.Dispose(); _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame;
+        _disposed = true; CancelIdentityRead(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelDiagnosticExport(); CancelStoragePreferences(); CancelContentWorkspace(); CancelLauncherMigration(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); _updateStop.Cancel(); _updateCheckStop?.Dispose(); _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame;
     }
 }

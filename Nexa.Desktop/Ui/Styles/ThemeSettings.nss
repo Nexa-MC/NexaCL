@@ -2,7 +2,8 @@
 .theme-surface { Orientation: Vertical; Spacing: 12; Padding: 16; }
 .theme-rows { Orientation: Vertical; Spacing: 10; }
 .theme-actions { Orientation: Horizontal; Spacing: 8; MinHeight: 34; VerticalAlignment: Center; }
-.theme-entry { Orientation: Vertical; Spacing: 8; Padding: 12; Background: #f5f6f8; CornerRadius: 9; Surface: Solid; }
+.theme-entry { Orientation: Vertical; Background: #f5f6f8; CornerRadius: 9; Surface: Solid; }
+.theme-entry-body { Orientation: Vertical; Spacing: 8; Padding: 12; }
 .theme-entry-header { Orientation: Horizontal; Spacing: 12; VerticalAlignment: Center; }
 .theme-name { MinHeight: 22; FontSize: 15; FontWeight: 600; Foreground: #2b3340; Weight: 1; }
 .theme-version { MinHeight: 22; FontSize: 11; Foreground: #717c8c; }

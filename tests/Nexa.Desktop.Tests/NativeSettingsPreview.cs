@@ -107,7 +107,9 @@ internal static partial class Program
             }, timeout.Token);
             await Task.Delay(1200, timeout.Token); // Display hold for the external X11 recording.
 
-            // Real pointer-scroll admission and live viewport, rather than a replacement layout.
+            await SelectCategory("advanced");
+            // Current motion policy lives in advanced settings. Exercise real pointer-scroll
+            // admission and the live viewport rather than obsolete appearance-page labels.
             for (int step = 0; step < 128; step++)
             {
                 bool ready = false, atEnd = false;
@@ -117,7 +119,7 @@ internal static partial class Program
                     var body = CurrentBody();
                     bool Visible(string label) => surface!.Scene!.Nodes.Any(node => node.Text == label
                         && node.Rect.Y >= body.Rect.Y && node.Rect.Y + node.Rect.Height <= body.Rect.Y + body.Rect.Height);
-                    ready = Visible("UI 动画帧率") && Visible("减少动态效果");
+                    ready = Visible("启用动画") && Visible("减少动态效果");
                     atEnd = body.Scroll is { } scroll && scroll.OffsetY >= scroll.MaximumOffsetY;
                     if (!ready && !atEnd)
                     {
@@ -140,6 +142,7 @@ internal static partial class Program
                 surface!.CommitScene(); Capture("bottom");
             }, timeout.Token);
             await Task.Delay(1200, timeout.Token);
+            await SelectCategory("appearance");
             await startup.InvokeAsync(() =>
             {
                 var body = CurrentBody();

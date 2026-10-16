@@ -1,0 +1,35 @@
+<StackPanel>
+<Text Key="initial" Content="先选择来源和目标，再预览可迁移实例；确认前不会复制文件。" />
+<Text Key="working" Content="正在处理…可取消当前操作；若副本已经完成，可稍后恢复迁移记录。" />
+<Text Key="cancelled" Content="已取消当前操作。若副本已经完成，请选择迁入目录恢复迁移记录。" />
+<Text Key="sourceEmpty" Content="请选择原启动器的数据目录" />
+<Text Key="destinationEmpty" Content="请选择目标父目录，将自动创建新的子目录" />
+<Text Key="empty" Content="未找到可识别的实例。请检查来源类型与目录后重试。" />
+<Text Key="previewReady" Content="预览完成。勾选需要迁移的实例，检查无法转换的项目与提示后继续。" />
+<Text Key="complete" Content="迁移完成，实例已加入版本库，可返回启动页选择。" />
+<Text Key="registrationFailed" Content="迁入副本已完成，但版本库登记未完成。请点击“重试登记”；不会重新复制文件。" />
+<Text Key="recovered" Content="已恢复迁移记录，可将副本重新登记到版本库，或检查并撤销此次迁移。" />
+<Text Key="lastRoot" Content="请先在版本列表登记另一个游戏目录，再撤销此次迁移；版本库至少需要保留一个目录。" />
+<Text Key="cleanupFailed" Content="迁入副本已撤销，但部分版本库登记尚未移除。请点击“完成撤销登记”重试；不会再次删除文件。" />
+<Text Key="undone" Content="已撤销此次迁移；原启动器的数据已保留。" />
+<Text Key="importable" Content="可迁移" />
+<Text Key="unsupported" Content="暂不支持转换，请保留原实例。" />
+<Text Key="vanilla" Content="原版" />
+<Text Key="confirmTitle" Content="确认迁移操作" />
+<Text Key="apply" Content="开始迁移" />
+<Text Key="undo" Content="检查并撤销" />
+<Text Key="back" Content="返回" />
+<Text Key="unavailable" Content="迁移服务暂不可用，请重试。" />
+<Text Key="failed" Content="迁移未完成，原目录已保留，请重试。" />
+<Text Key="libraryUnavailable" Content="版本库登记服务暂不可用。迁入副本已保留，可稍后重试登记。" />
+<Text Key="libraryFailed" Content="版本库登记未完成。迁入副本已保留，可稍后重试登记。" />
+<Text Key="source.Auto" Content="自动识别" />
+<Text Key="source.Nexa" Content="Nexa / PCL" />
+<Text Key="source.Prism" Content="Prism / MultiMC" />
+<Text Key="source.Modrinth" Content="Modrinth App" />
+<Text Key="source.CurseForge" Content="CurseForge" />
+<Text Key="source.Hmcl" Content="HMCL" />
+<Text Key="source.Xmcl" Content="XMCL" />
+<Text Key="source.AtLauncher" Content="ATLauncher" />
+<Text Key="source.Minecraft" Content="标准 Minecraft 目录" />
+</StackPanel>

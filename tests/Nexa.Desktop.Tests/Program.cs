@@ -39,6 +39,11 @@ internal static partial class Program
             Environment.ExitCode = RunNativeThemePreview(themeMode, themeDirectory);
             return;
         }
+        if (args is ["--native-launcher-migration-preview", var migrationPreviewTheme, var migrationPreviewDirectory])
+        {
+            Environment.ExitCode = RunNativeLauncherMigrationPreview(migrationPreviewTheme, migrationPreviewDirectory);
+            return;
+        }
         if (args is ["--native-nxml-settings-preview", var nxmlPreviewTheme, var nxmlPreviewDirectory])
         {
             Environment.ExitCode = RunNativeNxmlSettingsPreview(nxmlPreviewTheme, nxmlPreviewDirectory);
@@ -109,6 +114,14 @@ internal static partial class Program
         ("RegionalResourcesHideMirrorChoicesAndRejectSyntheticIntents", RegionalResourcesHideMirrorChoicesAndRejectSyntheticIntents),
         ("RegionalAutomaticOptiFineTabsStayHiddenAndRejectIntents", RegionalAutomaticOptiFineTabsStayHiddenAndRejectIntents),
         ("ThemeOptionsRetainLiteralDraftCaretAndFocusAcrossProjection", ThemeOptionsRetainLiteralDraftCaretAndFocusAcrossProjection),
+        ("LauncherMigrationPagePreviewsSelectsConfirmsAndRegisters", LauncherMigrationPagePreviewsSelectsConfirmsAndRegisters),
+        ("LauncherMigrationPageRestoresReceiptAndRetriesOnlyRegistration", LauncherMigrationPageRestoresReceiptAndRetriesOnlyRegistration),
+        ("LauncherMigrationPageCancelsStalePreviewAndRecoversFromFailure", LauncherMigrationPageCancelsStalePreviewAndRecoversFromFailure),
+        ("LauncherMigrationPageUndoRefusalPreservesRegisteredCopies", LauncherMigrationPageUndoRefusalPreservesRegisteredCopies),
+        ("LauncherMigrationPageRefusesUndoOfLastRegisteredDirectories", LauncherMigrationPageRefusesUndoOfLastRegisteredDirectories),
+        ("LauncherMigrationPageCompletesCommittedUndoAfterNavigationCancellation", LauncherMigrationPageCompletesCommittedUndoAfterNavigationCancellation),
+        ("LauncherMigrationPageRetriesUndoRegistrationWithoutDeletingAgain", LauncherMigrationPageRetriesUndoRegistrationWithoutDeletingAgain),
+        ("LauncherMigrationPageRegistersLongDisplayNames", LauncherMigrationPageRegistersLongDisplayNames),
         ("StartupThemeCacheRestoresMatchedBrandAndRespectsSafeMode", StartupThemeCacheRestoresMatchedBrandAndRespectsSafeMode),
         ("StartupThemeCacheRejectsMalformedBudgetsAndPngWithoutWrites", StartupThemeCacheRejectsMalformedBudgetsAndPngWithoutWrites),
         ("StartupThemeCacheInvalidWritePreservesLastKnownGoodFile", StartupThemeCacheInvalidWritePreservesLastKnownGoodFile),
