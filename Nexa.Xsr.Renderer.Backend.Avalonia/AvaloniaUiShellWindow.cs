@@ -135,6 +135,7 @@ public sealed partial class AvaloniaUiShellWindow : Window
         _root.Children.Add(_maskedContent);
 
         Content = _root;
+        UpdateResizeGrips();
         _root.SizeChanged += (_, _) => UpdateChromeForState(WindowState is WindowState.Maximized or WindowState.FullScreen);
         ScalingChanged += (_, _) => UpdateChromeForState(WindowState is WindowState.Maximized or WindowState.FullScreen);
         PropertyChanged += OnWindowPropertyChanged;
@@ -439,9 +440,32 @@ public sealed partial class AvaloniaUiShellWindow : Window
         }
     }
 
+    private void UpdateResizeGrips()
+    {
+        bool enabled = CanResize && WindowState == WindowState.Normal;
+        foreach (Control child in _maskedContent.Children)
+        {
+            if (child is not Border { Tag: WindowEdge edge } grip) continue;
+            grip.IsHitTestVisible = enabled;
+            WindowDecorationProperties.SetElementRole(grip, enabled ? edge switch
+            {
+                WindowEdge.North => WindowDecorationsElementRole.ResizeN,
+                WindowEdge.South => WindowDecorationsElementRole.ResizeS,
+                WindowEdge.West => WindowDecorationsElementRole.ResizeW,
+                WindowEdge.East => WindowDecorationsElementRole.ResizeE,
+                WindowEdge.NorthWest => WindowDecorationsElementRole.ResizeNW,
+                WindowEdge.NorthEast => WindowDecorationsElementRole.ResizeNE,
+                WindowEdge.SouthWest => WindowDecorationsElementRole.ResizeSW,
+                WindowEdge.SouthEast => WindowDecorationsElementRole.ResizeSE,
+                _ => WindowDecorationsElementRole.None,
+            } : WindowDecorationsElementRole.None);
+        }
+    }
+
     private void OnWindowPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
         if (e.Property == CanResizeProperty) _windowActions.SetResizeEnabled(CanResize);
+        if (e.Property == CanResizeProperty || e.Property == WindowStateProperty) UpdateResizeGrips();
         if (e.Property == WindowStateProperty || e.Property == IsVisibleProperty)
             _surface.SetRasterPresentationEnabled(IsVisible && WindowState != WindowState.Minimized);
         if (e.Property == IsActiveProperty || e.Property == WindowStateProperty || e.Property == IsVisibleProperty)

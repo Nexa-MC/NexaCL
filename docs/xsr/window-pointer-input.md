@@ -11,6 +11,12 @@ movement and snapping. The client pointer route remains a fallback. Both startup
 window forms share primary-contact header dragging. Secondary contacts must never
 enter a native move/resize operation.
 
+The eight 8-DIP edge/corner grips explicitly project the corresponding native
+resize role; they must not depend on coinciding with a platform's physical frame
+thickness. Only a resizable Normal window exposes these hit regions. Maximized,
+fullscreen, minimized and non-resizable states retire both the role and client
+hit interception, allowing underlying caption/content input to remain reachable.
+
 The scene accepts one pointer gesture at a time. Only the admitted pointer may
 move, release or cancel it; another finger cannot replace that pointer or activate
 its pressed control. Losing capture, closing the window or disposing the scene
