@@ -13,11 +13,14 @@ internal sealed partial class SettingsPageController
     private readonly ConcurrentQueue<(long Generation, bool Accepted, string Kind, string[] Selected)> _launcherMigrationDecisions = new();
     private readonly HashSet<string> _launcherMigrationSelected = new(StringComparer.Ordinal);
     private readonly Dictionary<string, XsrUiEntityId> _launcherMigrationRows = new(StringComparer.Ordinal);
+    private readonly Dictionary<int, XsrUiEntityId> _launcherMigrationSourceRows = [];
+    private static readonly LauncherMigrationSourceKind[] LauncherMigrationKinds = Enum.GetValues<LauncherMigrationSourceKind>();
     private Func<CancellationToken, Task<string?>>? _chooseLauncherMigrationDirectory;
     private XsrCommandRouter? _launcherMigrationLibrary;
     private LauncherMigrationSourceKind _launcherMigrationKind;
     private string? _launcherMigrationSource, _launcherMigrationDestination, _launcherMigrationMessage;
     private LauncherMigrationPreview? _launcherMigrationPreview;
+    private LauncherMigrationDiscoveryResult? _launcherMigrationDiscovery;
     private LauncherMigrationReceipt? _launcherMigrationReceipt, _launcherMigrationCleanupReceipt;
     private readonly ConcurrentQueue<(LauncherMigrationReceipt Receipt, bool Complete)> _launcherMigrationCleanupCompletions = new();
     private Task<LauncherMigrationResult>? _launcherMigrationTask;
@@ -29,14 +32,15 @@ internal sealed partial class SettingsPageController
     private XsrUiEntityId _launcherMigrationPanel, _launcherMigrationStatus, _launcherMigrationWarnings;
     private bool LauncherMigrationBusy => _launcherMigrationTask is not null || _launcherMigrationDialog != Guid.Empty || Volatile.Read(ref _launcherMigrationCleanupActive) != 0;
     private sealed record LauncherMigrationResult(string Kind, string? Path = null,
-        LauncherMigrationPreview? Preview = null, LauncherMigrationReceipt? Receipt = null, bool Registered = false);
+        LauncherMigrationPreview? Preview = null, LauncherMigrationReceipt? Receipt = null, bool Registered = false,
+        LauncherMigrationDiscoveryResult? Discovery = null);
 
     internal void ConfigureLauncherMigration(Func<CancellationToken, Task<string?>> chooseDirectory, XsrCommandRouter libraryCommands)
     { _chooseLauncherMigrationDirectory = chooseDirectory; _launcherMigrationLibrary = libraryCommands; }
 
     private void BuildLauncherMigration()
     {
-        _launcherMigrationActions.Clear(); _launcherMigrationRows.Clear();
+        _launcherMigrationActions.Clear(); _launcherMigrationRows.Clear(); _launcherMigrationSourceRows.Clear();
         _launcherMigrationPanel = _launcherMigrationStatus = _launcherMigrationWarnings = default;
         if (_instanceDirectory is not null || _selected != "storage" || _chooseLauncherMigrationDirectory is null) return;
         _launcherMigrationPanel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsLauncherMigration.d.nxml", LauncherMigrationProjection()));
@@ -56,7 +60,16 @@ internal sealed partial class SettingsPageController
         if (LauncherMigrationBusy || _launcherMigrationCleanupReceipt is not null && action.Kind != "cleanup") return;
         if (action.Kind == "kind")
         {
-            _launcherMigrationKind = (LauncherMigrationSourceKind)(((int)_launcherMigrationKind + 1) % ((int)LauncherMigrationSourceKind.Minecraft + 1));
+            _launcherMigrationKind = LauncherMigrationKinds[(Array.IndexOf(LauncherMigrationKinds, _launcherMigrationKind) + 1) % LauncherMigrationKinds.Length];
+            _launcherMigrationDiscovery = null;
+            ClearLauncherMigrationPreview(); RefreshLauncherMigrationPresentation(); return;
+        }
+        if (action.Kind == "detected")
+        {
+            if (!int.TryParse(action.Instance, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int index)
+                || _launcherMigrationDiscovery is not { } discovery || index < 0 || index >= discovery.Sources.Count) return;
+            var source = discovery.Sources[index];
+            _launcherMigrationKind = source.SourceKind; _launcherMigrationSource = source.Directory;
             ClearLauncherMigrationPreview(); RefreshLauncherMigrationPresentation(); return;
         }
         if (action.Kind == "select")
@@ -119,6 +132,11 @@ internal sealed partial class SettingsPageController
                 var result = task.Result;
                 if (result.Kind == "source" && result.Path is not null) { _launcherMigrationSource = result.Path; ClearLauncherMigrationPreview(); }
                 if (result.Kind == "destination" && result.Path is not null) { _launcherMigrationDestination = result.Path; ClearLauncherMigrationPreview(); }
+                if (result.Discovery is { } discovery)
+                {
+                    _launcherMigrationDiscovery = discovery;
+                    _launcherMigrationMessage = MigrationCopy(discovery.Sources.Count == 0 ? "discoveryEmpty" : "discoveryReady");
+                }
                 if (result.Preview is { } preview)
                 {
                     _launcherMigrationPreview = preview; _launcherMigrationReceipt = null; _launcherMigrationSelected.Clear();

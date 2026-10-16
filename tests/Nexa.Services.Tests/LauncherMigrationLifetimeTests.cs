@@ -46,6 +46,8 @@ internal static partial class Program
                 AssertTrue(!shutdown.IsCompleted, "Shutdown must wait for the entered handler's cleanup.");
                 AssertTrue(queries.TryResolve(LauncherMigrationContract.Preview, out var route));
                 AssertFalse((await queries.QueryAsync<LauncherMigrationQuery, LauncherMigrationPreview>(route, preview.Query)).IsSuccess);
+                AssertTrue(queries.TryResolve(LauncherMigrationContract.Discover, out var discover));
+                AssertFalse((await queries.QueryAsync<LauncherMigrationDiscoveryQuery, LauncherMigrationDiscoveryResult>(discover, new())).IsSuccess);
                 AssertFalse((await commands.Dispatch(apply, command).Completion).IsSuccess);
                 release.TrySetResult();
                 await shutdown.WaitAsync(TimeSpan.FromSeconds(10));

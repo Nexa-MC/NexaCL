@@ -26,6 +26,8 @@ internal sealed partial class SettingsPageController
         ["sourceKind"] = MigrationCopy("source." + _launcherMigrationKind),
         ["source"] = _launcherMigrationSource ?? MigrationCopy("sourceEmpty"),
         ["destination"] = _launcherMigrationDestination ?? MigrationCopy("destinationEmpty"),
+        ["discoverEnabled"] = Flag(!LauncherMigrationBusy && _launcherMigrationCleanupReceipt is null
+            && _queries.TryResolve(LauncherMigrationContract.Discover, out _)),
         ["previewEnabled"] = Flag(!LauncherMigrationBusy && _launcherMigrationCleanupReceipt is null && _launcherMigrationSource is not null && _launcherMigrationDestination is not null
             && _queries.TryResolve(LauncherMigrationContract.Preview, out _)),
         ["applyEnabled"] = Flag(!LauncherMigrationBusy && _launcherMigrationCleanupReceipt is null && _launcherMigrationPreview is not null && _launcherMigrationSelected.Count > 0
@@ -45,8 +47,9 @@ internal sealed partial class SettingsPageController
         _dynamic.Reload(_launcherMigrationPanel, DesktopMarkup.Dynamic("SettingsLauncherMigration.d.nxml", LauncherMigrationProjection()));
         _launcherMigrationActions.Clear();
         var nodes = CatalogNodes(_launcherMigrationPanel);
-        foreach (string kind in new[] { "kind", "source", "destination", "preview", "apply", "recover", "register", "undo", "cancel", "cleanup" })
+        foreach (string kind in new[] { "kind", "discover", "source", "destination", "preview", "apply", "recover", "register", "undo", "cancel", "cleanup" })
             _launcherMigrationActions[nodes["LauncherMigration." + kind]] = (kind, null);
+        RefreshLauncherMigrationSources(nodes["LauncherMigration.Sources"]);
         var instances = _launcherMigrationPreview?.Instances ?? [];
         var live = instances.Select(instance => instance.Id).ToHashSet(StringComparer.Ordinal);
         foreach (string identity in _launcherMigrationRows.Keys.Where(identity => !live.Contains(identity)).ToArray())
@@ -80,8 +83,33 @@ internal sealed partial class SettingsPageController
                 ("total", instances.Count.ToString(System.Globalization.CultureInfo.CurrentCulture)),
                 ("size", (instances.Where(instance => _launcherMigrationSelected.Contains(instance.Id)).Sum(instance => instance.Bytes) / (1024d * 1024d)).ToString("0.##", System.Globalization.CultureInfo.CurrentCulture)));
         _launcherMigrationStatus = ReloadMigrationText(_launcherMigrationStatus, nodes["LauncherMigration.Status"], status);
-        string warnings = string.Join('\n', _launcherMigrationPreview?.Warnings ?? []);
+        string warnings = string.Join('\n', (_launcherMigrationDiscovery?.Warnings ?? []).Concat(_launcherMigrationPreview?.Warnings ?? []).Distinct(StringComparer.Ordinal));
         _launcherMigrationWarnings = ReloadMigrationText(_launcherMigrationWarnings, nodes["LauncherMigration.Warnings"], warnings);
+    }
+
+    private void RefreshLauncherMigrationSources(XsrUiEntityId slot)
+    {
+        var sources = _launcherMigrationDiscovery?.Sources ?? [];
+        foreach (int index in _launcherMigrationSourceRows.Keys.Where(index => index >= sources.Count).ToArray())
+        { _dynamic.Remove(_launcherMigrationSourceRows[index]); _launcherMigrationSourceRows.Remove(index); }
+        for (int index = 0; index < sources.Count; index++)
+        {
+            var source = sources[index];
+            string identity = index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var fragment = DesktopMarkup.Dynamic("SettingsLauncherMigrationSource.d.nxml", new Dictionary<string, string>
+            {
+                ["key"] = "LauncherMigration.DetectedSource." + identity,
+                ["choose"] = "LauncherMigration.Detected." + identity,
+                ["name"] = source.Name,
+                ["directory"] = source.Directory,
+                ["selected"] = Flag(source.SourceKind == _launcherMigrationKind && Nexa.Core.PathIdentity.Comparer.Equals(source.Directory, _launcherMigrationSource)),
+                ["enabled"] = Flag(!LauncherMigrationBusy && _launcherMigrationCleanupReceipt is null),
+            });
+            if (_launcherMigrationSourceRows.TryGetValue(index, out var row)) _dynamic.Reload(row, fragment);
+            else _launcherMigrationSourceRows[index] = row = _dynamic.Append(slot, fragment);
+            _launcherMigrationActions[CatalogNodes(row)["LauncherMigration.Detected." + identity]] = ("detected", identity);
+        }
+        _dynamic.Reorder(slot, Enumerable.Range(0, sources.Count).Select(index => _launcherMigrationSourceRows[index]).ToArray());
     }
 
     private XsrUiEntityId ReloadMigrationText(XsrUiEntityId entity, XsrUiEntityId slot, string text)

@@ -1,0 +1,8 @@
+<nxml-dynamic>
+<StackPanel Key="{data key}" Class="settings-launcher-migration-instance">
+  <StackPanel Class="settings-launcher-migration-instance-body">
+    <CheckBox Key="{data choose}" Content="{data name}" Label="{data name}" Localize="false" Checked="{data selected}" Enabled="{data enabled}" Command="ui.settings.launcher-migration.action" Class="settings-launcher-migration-choice" />
+    <Text Content="{data directory}" Localize="false" Class="settings-launcher-migration-note" />
+  </StackPanel>
+</StackPanel>
+</nxml-dynamic>

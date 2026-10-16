@@ -48,6 +48,12 @@ internal static partial class Program
                 appearance = new(f.Shell, f.Store, actions);
                 f.Controller.SettingsPage = harness.Settings.Page;
                 Emit(f.Intents, "ui.navigation.settings");
+                harness.DiscoveryHandler = (_, _) => new(XsrResult.Success(new LauncherMigrationDiscoveryResult(
+                    [new(LauncherMigrationSourceKind.Prism, "Prism / MultiMC / PolyMC", Path.Combine(harness.Source, "prism")),
+                     new(LauncherMigrationSourceKind.GdLauncher, "GDLauncher", harness.Source),
+                     new(LauncherMigrationSourceKind.Ftb, "FTB App", Path.Combine(harness.Source, "ftb")),
+                     new(LauncherMigrationSourceKind.Technic, "Technic Launcher", Path.Combine(harness.Source, "technic"))],
+                    ["受控常用位置检测结果；便携或自定义安装可手动选择。在线账户需要重新登录。"])));
                 harness.PreviewHandler = (query, _) => new(XsrResult.Success(new LauncherMigrationPreview(query, "controlled-preview-revision",
                     [new("one", "生存世界 · Fabric", harness.Source, "1.21.1", "Fabric", "0.16.10", 346030080, 842, true, null, []),
                      new("two", "朋友的模组整合包", harness.Source, "1.20.1", "Forge", "47.2.0", 721420288, 1736, true, null, ["转换时将下载游戏与加载器；保留原启动器文件。"]),
@@ -67,23 +73,27 @@ internal static partial class Program
                 return surface.Scene is { Count: > 0 } && f.Shell.Renderer.ColorScheme.IsDark == (theme == "dark");
             });
             await CapturePair("initial", "LauncherMigrationWorkspace");
-            await startup.InvokeAsync(() => { h.Picks.Enqueue(h.Source); Activate("LauncherMigration.source"); }, timeout.Token);
+            await startup.InvokeAsync(() => Activate("LauncherMigration.discover"), timeout.Token);
+            await Eventually(() => h.Find("LauncherMigration.Detected.3", false).IsAssigned && h.Enabled("discover"));
+            await CapturePair("detected", "LauncherMigration.DetectedSource.0");
+            await startup.InvokeAsync(() => Activate("LauncherMigration.Detected.1"), timeout.Token);
             await Eventually(() => h.Text(h.Find("LauncherMigration.Source")) == h.Source);
+            await CapturePair("detected-selected", "LauncherMigration.DetectedSource.0");
             await startup.InvokeAsync(() => { h.Picks.Enqueue(f.TemporaryDirectory); Activate("LauncherMigration.destination"); }, timeout.Token);
             await Eventually(() => h.Enabled("preview"));
             await startup.InvokeAsync(() => Activate("LauncherMigration.preview"), timeout.Token);
             await Eventually(() => h.Find("LauncherMigration.Select.unsupported", false).IsAssigned);
-            await CapturePair("preview", "LauncherMigrationWorkspace");
+            await CapturePair("preview", "LauncherMigration.Status");
             await CapturePair("preview-instances", "LauncherMigration.Instance.one");
             await startup.InvokeAsync(() => { Activate("LauncherMigration.Select.two"); Activate("LauncherMigration.apply"); }, timeout.Token);
             await Eventually(() => f.Feedback.Snapshot().Dialog is not null && Has("DialogCard"));
             await CapturePair("confirmation", "LauncherMigration.Instance.one");
             await startup.InvokeAsync(() => Activate("DialogAccept", "ui.feedback.dialog.accept"), timeout.Token);
             await Eventually(() => h.Receipt is not null && h.Enabled("register") && !Has("DialogCard"));
-            await CapturePair("completed", "LauncherMigrationWorkspace");
+            await CapturePair("completed", "LauncherMigration.Status");
             await startup.InvokeAsync(() => { h.Picks.Enqueue(h.Receipt!.DestinationDirectory); Activate("LauncherMigration.recover"); }, timeout.Token);
             await Eventually(() => h.ReceiptReads >= 2 && h.Enabled("register"));
-            await CapturePair("recovered", "LauncherMigrationWorkspace");
+            await CapturePair("recovered", "LauncherMigration.Status");
             outcome = 0;
 
             bool Has(string key) => surface!.Scene!.Nodes.Any(node => f.Shell.Tree.Name(node.Entity) == key);
@@ -252,9 +262,12 @@ internal static partial class Program
                     ["selectedCount"] = h.Applied?.SelectedInstanceIds.Count,
                     ["applyCalls"] = h.ApplyCalls,
                     ["receiptReads"] = h.ReceiptReads,
+                    ["discoveryCalls"] = h.DiscoveryCalls,
+                    ["selectedSourceKind"] = h.Text(h.Find("LauncherMigration.SourceKind")),
+                    ["selectedSourceDirectory"] = h.Text(h.Find("LauncherMigration.Source")),
                     ["renderer"] = "actual software Avalonia native window RenderTargetBitmap; not OS compositor capture",
                     ["runtime"] = "shipped SettingsPageController, NXML/NSS, feedback presenter, renderer, native backend and real Minecraft library commands/state",
-                    ["fixtures"] = "controlled typed foreign-instance preview/apply/receipt routes, explicit directory picker selections, temporary data directories and instance discovery; no real third-party accounts, downloads or game launch",
+                    ["fixtures"] = "controlled typed foreign-launcher discovery/preview/apply/receipt routes, explicit detected-source and directory picker selections, temporary data directories and instance discovery; no real third-party accounts, downloads or game launch",
                     ["scene"] = nodes
                 };
                 File.WriteAllText(Path.Combine(outputDirectory, stem + ".json"), document.ToJsonString());

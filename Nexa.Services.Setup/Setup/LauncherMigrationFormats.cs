@@ -11,7 +11,7 @@ internal sealed record LauncherMigrationSourceInstance(string Identity, string N
 }
 
 /// <summary>Reads documented launcher manifests without executing launcher commands or importing credentials.</summary>
-internal static class LauncherMigrationFormats
+internal static partial class LauncherMigrationFormats
 {
     private const int MaxInstances = 256;
     private const int MaxManifestBytes = 4 * 1024 * 1024;
@@ -23,7 +23,9 @@ internal static class LauncherMigrationFormats
         source = Path.TrimEndingDirectorySeparator(Path.GetFullPath(source));
         CheckPath(source);
         if (!Directory.Exists(source)) throw new IOException("迁移来源目录不存在。");
-        if (kind == LauncherMigrationSourceKind.Auto) kind = DetectKind(source);
+        if (!Enum.IsDefined(kind)) throw new InvalidDataException("未知的启动器类型。");
+        token.ThrowIfCancellationRequested();
+        if (kind == LauncherMigrationSourceKind.Auto) return await DiscoverAllAsync(source, token).ConfigureAwait(false);
         if (kind == LauncherMigrationSourceKind.Prism && (Path.GetFileName(source) is "minecraft" or ".minecraft")
             && Path.GetDirectoryName(source) is { } parent && Exists(parent, "instance.cfg")) source = parent;
         List<LauncherMigrationSourceInstance> result = [];
@@ -51,26 +53,54 @@ internal static class LauncherMigrationFormats
                     foreach (var instance in await LauncherMigrationModrinthDatabase.ReadAsync(source, token).ConfigureAwait(false)) Add(result, instance);
                 break;
             case LauncherMigrationSourceKind.Hmcl:
-                await DiscoverHmclAsync(source, result, token).ConfigureAwait(false);
+                await DiscoverNativeProfilesAsync(kind, source, result, token).ConfigureAwait(false);
+                break;
+            case LauncherMigrationSourceKind.GdLauncher:
+                await DiscoverGdLauncherAsync(source, result, token).ConfigureAwait(false);
+                break;
+            case LauncherMigrationSourceKind.Ftb:
+                await DiscoverFtbAsync(source, result, token).ConfigureAwait(false);
+                break;
+            case LauncherMigrationSourceKind.Technic:
+                await DiscoverTechnicAsync(source, result, token).ConfigureAwait(false);
                 break;
             default:
-                await DiscoverNativeAsync(source, result, [], token).ConfigureAwait(false);
+                await DiscoverNativeProfilesAsync(kind, source, result, token).ConfigureAwait(false);
                 break;
         }
         return Array.AsReadOnly(result.ToArray());
     }
 
-    private static LauncherMigrationSourceKind DetectKind(string source)
+    private static async Task<IReadOnlyList<LauncherMigrationSourceInstance>> DiscoverAllAsync(string source, CancellationToken token)
     {
-        if (Exists(source, "instance.cfg") || HasImmediateManifest(source, "instance.cfg") || HasChildManifest(source, "instances", "instance.cfg")
-            || (Path.GetFileName(source) is "minecraft" or ".minecraft" && Path.GetDirectoryName(source) is { } parent && Exists(parent, "instance.cfg"))) return LauncherMigrationSourceKind.Prism;
-        if (Exists(source, "minecraftinstance.json") || HasImmediateManifest(source, "minecraftinstance.json") || HasChildManifest(source, "Instances", "minecraftinstance.json") || HasChildManifest(source, "instances", "minecraftinstance.json")) return LauncherMigrationSourceKind.CurseForge;
-        if (Exists(source, "profile.json") || Exists(source, "app.db") || HasImmediateManifest(source, "profile.json") || HasChildManifest(source, "profiles", "profile.json")) return LauncherMigrationSourceKind.Modrinth;
-        if (Exists(source, "hmcl.json") || Exists(source, ".hmcl.json") || Exists(source, "config/game-directories.json")) return LauncherMigrationSourceKind.Hmcl;
-        if (Exists(source, "instances.json")) return LauncherMigrationSourceKind.Xmcl;
-        if (Exists(source, "instance.json")) return LauncherMigrationSourceKind.Xmcl;
-        if (HasImmediateManifest(source, "instance.json") || HasChildManifest(source, "instances", "instance.json")) return LauncherMigrationSourceKind.Xmcl;
-        return LauncherMigrationSourceKind.Minecraft;
+        List<LauncherMigrationSourceInstance> result = [];
+        foreach (var family in new[] { LauncherMigrationSourceKind.Prism, LauncherMigrationSourceKind.CurseForge,
+            LauncherMigrationSourceKind.Modrinth })
+            foreach (var item in await DiscoverAsync(family, source, token).ConfigureAwait(false)) Add(result, item);
+        // instance.json is shared by several unrelated formats. Classify its actual
+        // schema before routing so a mixed directory never hides another family.
+        foreach (string candidate in CandidateInstances(source, "instance.json", "instances", "Instances", "data/instances"))
+        {
+            token.ThrowIfCancellationRequested();
+            string path = Path.Combine(candidate, "instance.json");
+            try
+            {
+                using var document = await ReadJsonAsync(path, token).ConfigureAwait(false);
+                var root = document.RootElement;
+                if (TryObject(root, "launcher", out _)) Add(result, await ReadAtLauncherAsync(candidate, token).ConfigureAwait(false));
+                else if (TryObject(root, "runtime", out _)) Add(result, await ReadXmclAsync(candidate, token).ConfigureAwait(false));
+                else if (!IsGdLauncherManifest(root) && !IsFtbManifest(root))
+                    Add(result, Unsupported(candidate, Text(root, "name") ?? Path.GetFileName(candidate), "无法识别 instance.json 的启动器格式，请明确选择来源类型。", path));
+            }
+            catch (JsonException) { Add(result, Unsupported(candidate, Path.GetFileName(candidate), "实例清单不是有效 JSON。", path)); }
+        }
+        await DiscoverGdLauncherAsync(source, result, token).ConfigureAwait(false);
+        await DiscoverFtbAsync(source, result, token).ConfigureAwait(false);
+        await DiscoverTechnicAsync(source, result, token).ConfigureAwait(false);
+        if (Exists(source, "instances.json"))
+            await DiscoverXmclAsync(source, result, token).ConfigureAwait(false);
+        await DiscoverNativeProfilesAsync(LauncherMigrationSourceKind.Auto, source, result, token).ConfigureAwait(false);
+        return Array.AsReadOnly(result.ToArray());
     }
 
     private static async Task<LauncherMigrationSourceInstance> ReadPrismAsync(string directory, CancellationToken token)
@@ -252,7 +282,6 @@ internal static class LauncherMigrationFormats
 
     private static async Task DiscoverHmclAsync(string source, List<LauncherMigrationSourceInstance> result, CancellationToken token)
     {
-        await DiscoverNativeAsync(source, result, [], token).ConfigureAwait(false);
         foreach (string relative in new[] { "hmcl.json", ".hmcl.json", "config/game-directories.json", "config/user-game-directories.json" })
         {
             if (!Exists(source, relative)) continue;
@@ -272,6 +301,7 @@ internal static class LauncherMigrationFormats
                 if (Directory.Exists(resolved)) await DiscoverNativeAsync(resolved, result, [path], token).ConfigureAwait(false);
             }
         }
+        await DiscoverNativeAsync(source, result, [], token).ConfigureAwait(false);
     }
 
     private static async Task DiscoverNativeAsync(string source, List<LauncherMigrationSourceInstance> result,
@@ -284,14 +314,25 @@ internal static class LauncherMigrationFormats
             {
                 token.ThrowIfCancellationRequested();
                 if (!SafeReference(Path.GetFileName(version)) || !Exists(version, Path.GetFileName(version) + ".json")) continue;
-                Add(result, await ReadNativeVersionAsync(root, version, manifests, token).ConfigureAwait(false));
+                Add(result, await ReadNativeConfiguredVersionAsync(root, version, manifests, token).ConfigureAwait(false));
             }
         }
         string? parent = Path.GetDirectoryName(source);
         if (Exists(source, Path.GetFileName(source) + ".json"))
         {
             string? nativeRoot = parent is not null && Path.GetFileName(parent) == "versions" ? Path.GetDirectoryName(parent) : null;
-            Add(result, await ReadNativeVersionAsync(nativeRoot, source, manifests, token).ConfigureAwait(false));
+            if (nativeRoot is null)
+            {
+                // A launcher directory named "hmcl" also contains hmcl.json.
+                // Outside versions/, require an actual matching native identity.
+                try
+                {
+                    using var document = await ReadJsonAsync(Path.Combine(source, Path.GetFileName(source) + ".json"), token).ConfigureAwait(false);
+                    if (Text(document.RootElement, "id") != Path.GetFileName(source)) return;
+                }
+                catch (JsonException) { return; }
+            }
+            Add(result, await ReadNativeConfiguredVersionAsync(nativeRoot, source, manifests, token).ConfigureAwait(false));
         }
     }
 
@@ -393,12 +434,6 @@ internal static class LauncherMigrationFormats
                 if (Exists(directory, marker) && seen.Add(directory)) yield return directory;
         }
     }
-
-    private static bool HasImmediateManifest(string source, string marker) =>
-        CheckedDirectories(source).Any(path => Exists(path, marker));
-
-    private static bool HasChildManifest(string source, string container, string marker) =>
-        DirectoryExists(source, container) && CheckedDirectories(Path.Combine(source, container)).Any(path => Exists(path, marker));
 
     private static IEnumerable<string> CheckedDirectories(string root)
     {

@@ -1,6 +1,10 @@
 namespace Nexa.Services.Setup;
 
-public enum LauncherMigrationSourceKind { Auto, Nexa, Prism, Modrinth, CurseForge, Hmcl, Xmcl, AtLauncher, Minecraft }
+public enum LauncherMigrationSourceKind { Auto, Nexa, Prism, Modrinth, CurseForge, Hmcl, Xmcl, AtLauncher, Minecraft, GdLauncher, Ftb, Technic }
+
+public sealed record LauncherMigrationDiscoveryQuery(LauncherMigrationSourceKind SourceKind = LauncherMigrationSourceKind.Auto);
+public sealed record LauncherMigrationSource(LauncherMigrationSourceKind SourceKind, string Name, string Directory);
+public sealed record LauncherMigrationDiscoveryResult(IReadOnlyList<LauncherMigrationSource> Sources, IReadOnlyList<string> Warnings);
 
 public sealed record LauncherMigrationQuery(LauncherMigrationSourceKind SourceKind, string SourceDirectory, string DestinationDirectory);
 public sealed record LauncherMigrationInstance(string Id, string Name, string SourceDirectory, string GameVersion,
@@ -27,6 +31,7 @@ public interface ILauncherMigrationReceiptAuthority
 
 public static class LauncherMigrationContract
 {
+    public static readonly Nexa.Xsr.XsrSemanticId Discover = Nexa.Xsr.XsrSemanticId.Parse("setup.migration.launcher.discover");
     public static readonly Nexa.Xsr.XsrSemanticId Preview = Nexa.Xsr.XsrSemanticId.Parse("setup.migration.launcher.preview");
     public static readonly Nexa.Xsr.XsrSemanticId Apply = Nexa.Xsr.XsrSemanticId.Parse("setup.migration.launcher.apply");
     public static readonly Nexa.Xsr.XsrSemanticId ReadReceipt = Nexa.Xsr.XsrSemanticId.Parse("setup.migration.launcher.receipt");

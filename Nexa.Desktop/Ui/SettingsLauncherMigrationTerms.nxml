@@ -5,6 +5,8 @@
 <Text Key="sourceEmpty" Content="请选择原启动器的数据目录" />
 <Text Key="destinationEmpty" Content="请选择目标父目录，将自动创建新的子目录" />
 <Text Key="empty" Content="未找到可识别的实例。请检查来源类型与目录后重试。" />
+<Text Key="discoveryEmpty" Content="常用位置未找到来源。便携或自定义安装请手动选择原启动器的数据目录。" />
+<Text Key="discoveryReady" Content="已检测到常用数据位置。请选择一个来源，再选择目标并预览实例。" />
 <Text Key="previewReady" Content="预览完成。勾选需要迁移的实例，检查无法转换的项目与提示后继续。" />
 <Text Key="complete" Content="迁移完成，实例已加入版本库，可返回启动页选择。" />
 <Text Key="registrationFailed" Content="迁入副本已完成，但版本库登记未完成。请点击“重试登记”；不会重新复制文件。" />
@@ -24,12 +26,15 @@
 <Text Key="libraryUnavailable" Content="版本库登记服务暂不可用。迁入副本已保留，可稍后重试登记。" />
 <Text Key="libraryFailed" Content="版本库登记未完成。迁入副本已保留，可稍后重试登记。" />
 <Text Key="source.Auto" Content="自动识别" />
-<Text Key="source.Nexa" Content="Nexa / PCL" />
-<Text Key="source.Prism" Content="Prism / MultiMC" />
+<Text Key="source.Nexa" Content="Nexa / PCL II / PCL CE" />
+<Text Key="source.Prism" Content="Prism / MultiMC / PolyMC" />
 <Text Key="source.Modrinth" Content="Modrinth App" />
 <Text Key="source.CurseForge" Content="CurseForge" />
 <Text Key="source.Hmcl" Content="HMCL" />
 <Text Key="source.Xmcl" Content="XMCL" />
 <Text Key="source.AtLauncher" Content="ATLauncher" />
-<Text Key="source.Minecraft" Content="标准 Minecraft 目录" />
+<Text Key="source.Minecraft" Content="官方 / SKlauncher / TLauncher 等标准 Minecraft Java 目录" />
+<Text Key="source.GdLauncher" Content="GDLauncher" />
+<Text Key="source.Ftb" Content="FTB App" />
+<Text Key="source.Technic" Content="Technic Launcher" />
 </StackPanel>

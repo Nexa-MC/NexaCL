@@ -1,5 +1,63 @@
 # Foreign launcher instance migration
 
+## Mainstream launcher coverage
+
+The migration workspace supports the native Minecraft family (the official
+launcher, Nexa/PCL II/PCL CE, HMCL, XMCL and other launchers retaining native
+version manifests), the Prism/MultiMC/PolyMC family, Modrinth App, CurseForge,
+ATLauncher, GDLauncher Carbon and legacy GDLauncher, FTB App and Technic.
+SKlauncher, TLauncher and other launchers can use the native-directory adapter
+when they retain standard Java version manifests; this does not promise to
+convert proprietary client patchers. Family enum values already published
+retain their numeric identities; new families are appended. Automatic
+recognition examines supported families in
+the selected directory rather than silently choosing only the first family.
+Adapters use actual installed manifests and exact Minecraft/loader versions;
+unknown components and unfinished instances remain visible with a reason.
+
+Native profile metadata is an input to discovery when it chooses a custom game
+directory or declares isolation. Multiple official profiles pointing at the
+same version but different game directories remain independent instances.
+PCL and HMCL isolation metadata takes precedence over directory heuristics.
+All metadata affecting those choices participates in the source revision.
+When PCL's conditional global isolation requires a launcher-specific display
+classification that is not recorded in the instance, preview asks the user to
+set explicit instance isolation in PCL before retrying. It never chooses a
+different saves directory based on an assumed classification.
+
+An additive discovery query lists existing sources at a bounded set of standard
+per-user launcher locations. It never scans drives recursively, imports data,
+executes a launcher or reads account credentials. Each candidate exposes its
+launcher family and exact directory; choosing one updates the ordinary manual
+source form and requires the existing preview and confirmation before import.
+Portable installations and custom locations remain available through the
+directory picker. Discovery shares Setup's owned route lifetime, cancellation
+and read-only filesystem checks; leaving the page discards late results.
+
+GDLauncher Carbon reads `instance.json` and its `instance` game subdirectory;
+legacy GDLauncher reads `config.json` and the instance directory. FTB App reads
+installed `instance.json` metadata and its installed pack/version information.
+Technic reads installed pack metadata and the corresponding game directory.
+These formats are converted through the existing installer port, followed by
+the common game-data allowlist. No foreign executable, launch command, account
+database or Java installation is imported. A private or unknown launcher format
+does not become supported merely because its brand appears in a location name.
+
+Technic's `bin/version` records the pack build, not the Minecraft version.
+The adapter reads `bin/version.json`, a standard installer archive's
+`version.json`, or a vanilla client's embedded version metadata instead.
+Legacy JAR injection and unknown launch entry points remain visible as
+unsupported; they are never silently imported as vanilla Minecraft.
+
+Upstream schema references used by these adapters:
+
+- [GDLauncher Carbon instance manifest](https://github.com/gorilla-devs/GDLauncher-Carbon/tree/35533d7cd963be8955af4fe30f681a84ad527049)
+  and [legacy GDLauncher](https://github.com/gorilla-devs/GDLauncher/tree/7e5346be21bb67b2b3ebac7103ef3e76e02a558c).
+- [FTB App](https://github.com/FTBTeam/FTB-App/tree/3f2f2d5acd5926c965b83c5efcdeff12a98e0b19).
+- [Technic Launcher](https://github.com/TechnicPack/LauncherV3/tree/345e3e0c0a48e6ec01c0ece84bd02d6418baff51).
+- [PCL II game-directory selection](https://github.com/Hex-Dragon/PCL2/blob/main/Plain%20Craft%20Launcher%202/Modules/Minecraft/ModMinecraft.vb)
+  and [HMCL stable game repository](https://github.com/HMCL-dev/HMCL/blob/release-3.6.15/HMCL/src/main/java/org/jackhuang/hmcl/game/HMCLGameRepository.java).
+
 ## Boundary and workflow
 
 `Nexa.Services.Setup` owns read-only discovery, a bounded content preview, staging,
@@ -127,6 +185,13 @@ The schema and path contract is from Modrinth's `packages/app-lib/migrations/`
 Contract tests cover native inheritance and game-data preservation, converted
 profile installation through a fake installation port, content revision changes,
 conflicts, source preservation, cancellation and undo refusal after user edits.
+The mainstream fixtures also exercise GDLauncher Carbon/legacy, FTB custom roots
+and loader overrides, Technic installed runtime manifests, mixed-family source
+directories, official profiles sharing a version but keeping separate worlds,
+and both generations of PCL/HMCL isolation settings. Each newly converted family
+has a complete preview, stale-source refusal, apply, receipt recovery and undo
+case. Desktop covers source detection/selection, every source-kind choice and
+late discovery results after navigation or cancellation.
 Architecture and AOT/trim checks remain part of the repository closure gate.
 This imports local instances; it does not import passwords or promise that old
 mods are compatible with a different Java/Minecraft runtime.
@@ -195,3 +260,8 @@ insets between painted card surfaces and their visible contents. The main card
 requires 16 DIPs and instance cards require 12 DIPs. Native work-area
 limits are recorded rather than presenting a requested size as an observed one.
 This evidence does not claim authentication or live third-party account data.
+
+The discovery extension adds detected-source and selected-source captures at
+both widths, bringing migration captures to 16 PNG/JSON pairs per light/dark
+mode. Detection previews use controlled local source candidates and verify
+that selection alone does not copy or register an instance.

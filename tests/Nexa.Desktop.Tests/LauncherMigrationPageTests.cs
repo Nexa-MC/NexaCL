@@ -181,16 +181,23 @@ internal static partial class Program
         internal LauncherMigrationPreview? LastPreview;
         internal LauncherMigrationApplyCommand? Applied;
         internal LauncherMigrationReceipt? Receipt;
-        internal int PreviewCalls, ApplyCalls, ReceiptReads, UndoCalls;
+        internal LauncherMigrationDiscoveryQuery? LastDiscovery;
+        internal int PreviewCalls, ApplyCalls, ReceiptReads, UndoCalls, DiscoveryCalls;
         internal bool RefuseUndo, FailNextForget;
         internal string? FirstDisplayName;
         internal Func<LauncherMigrationUndoCommand, CancellationToken, ValueTask<XsrResult>>? UndoHandler;
         internal Func<LauncherMigrationQuery, CancellationToken, ValueTask<XsrResult<LauncherMigrationPreview>>>? PreviewHandler;
+        internal Func<LauncherMigrationDiscoveryQuery, CancellationToken, ValueTask<XsrResult<LauncherMigrationDiscoveryResult>>>? DiscoveryHandler;
 
         internal LauncherMigrationUiFixture(bool failFirstRegistration = false)
         {
             Source = Path.Combine(Fixture.TemporaryDirectory, "foreign-source"); Directory.CreateDirectory(Source);
             var queries = WorldFixtureQueries(Fixture);
+            queries.Register<LauncherMigrationDiscoveryQuery, LauncherMigrationDiscoveryResult>(LauncherMigrationContract.Discover, (query, token) =>
+            {
+                DiscoveryCalls++; LastDiscovery = query;
+                return DiscoveryHandler?.Invoke(query, token) ?? new(XsrResult.Success(new LauncherMigrationDiscoveryResult([], [])));
+            });
             queries.Register<LauncherMigrationQuery, LauncherMigrationPreview>(LauncherMigrationContract.Preview, (query, token) =>
             {
                 PreviewCalls++; LastPreview = MakePreview(query);

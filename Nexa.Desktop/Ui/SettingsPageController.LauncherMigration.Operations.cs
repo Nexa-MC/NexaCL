@@ -10,6 +10,9 @@ internal sealed partial class SettingsPageController
         LauncherMigrationPreview? preview, LauncherMigrationReceipt? receipt, LauncherMigrationSourceKind sourceKind,
         string? source, string? destination, CancellationToken token)
     {
+        if (kind == "discover")
+            return new(kind, Discovery: await LauncherMigrationQueryAsync<LauncherMigrationDiscoveryQuery, LauncherMigrationDiscoveryResult>(
+                LauncherMigrationContract.Discover, new(sourceKind), token).ConfigureAwait(false));
         if (kind is "source" or "destination" or "recover")
         {
             string? path = await _chooseLauncherMigrationDirectory!(token).ConfigureAwait(false);

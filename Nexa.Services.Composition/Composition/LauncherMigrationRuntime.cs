@@ -30,6 +30,8 @@ public static class LauncherMigrationRuntime
         LauncherMigrationService service, TaskCenterService tasks, Func<LauncherMigrationReceipt, bool>? canUndo = null)
     {
         var lifetime = new RouteLifetime();
+        queries.Register<LauncherMigrationDiscoveryQuery, LauncherMigrationDiscoveryResult>(LauncherMigrationContract.Discover,
+            (query, token) => QueryOwnedAsync(lifetime, cancellation => service.DiscoverSourcesAsync(query, cancellation), token));
         queries.Register<LauncherMigrationQuery, LauncherMigrationPreview>(LauncherMigrationContract.Preview,
             (query, token) => QueryOwnedAsync(lifetime, cancellation => service.PreviewAsync(query, cancellation), token));
         queries.Register<LauncherMigrationUndoQuery, LauncherMigrationReceipt>(LauncherMigrationContract.ReadReceipt,
