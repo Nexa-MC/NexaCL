@@ -3,6 +3,8 @@ on:
   push:
     branches: [refactor/xsr]
     tags: ['[0-9]*', 'v[0-9]*']
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       release_notes:

@@ -111,11 +111,26 @@ The preparation artifact also records whether the Release was absent. Only that 
 manual-input path may create a new Release; a previously existing Release removed during
 the build is never silently recreated, and a draft is never implicitly made public.
 
-The normal tag-push path works by writing the description in GitHub Release before its build
-starts. The optional dispatch input is not a replacement for that path: at the time of this
-change, default branch `dev` has no `launcher-build.yml`, so its Actions-page manual input
-cannot be assumed available. Enabling that entry point is a separate change. Dispatching a
-branch still creates CI artifacts, not a tagged release.
+Write the description in GitHub Release before its build starts. Launcher Build listens
+to both version-tag pushes and `release.published`; the latter includes prereleases and
+publication from a draft. GitHub skip directives such as `[skip ci]` suppress push workflows,
+including a tag pointing at a documentation commit, but do not suppress the published event.
+Release events retain the tag ref and commit, so the existing metadata and publication paths
+build the tagged version and attach assets to that Release. Same-tag builds use the existing
+non-canceling concurrency group; uploading assets does not publish the Release again.
+
+The optional dispatch input does not replace an existing Release body. Default branch `dev`
+has no `launcher-build.yml`, so its Actions-page manual input cannot be assumed available.
+Once registered by a previous run, the workflow can nevertheless be dispatched against an
+existing tag through the GitHub API or CLI, without copying it into `dev` or moving the tag:
+
+```sh
+gh workflow run launcher-build.yml --repo Nexa-MC/PCL-N --ref v2.0.0.alpha.7
+```
+
+This is also the recovery path for older tags whose workflow predates `release.published`.
+Dispatching a branch still creates CI artifacts, not a tagged release. Recovery preserves the
+Release title, non-empty manual notes and publication state; only verified assets are attached.
 
 The human-written-notes changes above apply only to refs containing the new workflow/scripts.
 Re-running an older tag uses its older implementation. Those notes changes do not move existing
