@@ -620,6 +620,7 @@ internal static partial class Program
         versionSettings.JoinManagementServer = launchPage.JoinServer;
         versionSettings.ConfigureOnlineContent(resourcesRuntime.Queries, platformActions.OpenHttpsUri, resourcesRuntime.Commands);
         versionSettings.ConfigureExport(platformActions.PickDownloadDirectoryAsync);
+        versionSettings.ConfigureModpackUpdates(folderImports.Queries, folderImports.Commands, () => platformActions.PickModpackFileAsync());
         versionSettings.SelectDataPackFileAsync = () => platformActions.PickDataPackFileAsync();
         versionSettings.CopyScreenshotAsync = platformActions.CopyScreenshotAsync;
         versionSettings.ShareScreenshotAsync = platformActions.ShareScreenshotAsync;

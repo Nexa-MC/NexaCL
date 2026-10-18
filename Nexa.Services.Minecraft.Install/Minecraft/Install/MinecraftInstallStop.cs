@@ -36,12 +36,12 @@ public sealed partial class MinecraftInstallService
         public bool Completed { get; set; }
     }
 
-    private InstallExecution RegisterExecution(MinecraftInstallCommand command)
+    private InstallExecution RegisterExecution(MinecraftInstallCommand command, bool registerRecoveryRoot = true)
     {
         lock (_executionGate)
         {
             if (_stopping) throw new OperationCanceledException("正在停止安装任务。");
-            _recoveryRoots.Add(Path.TrimEndingDirectorySeparator(Path.GetFullPath(command.RootDirectory)));
+            if (registerRecoveryRoot) _recoveryRoots.Add(Path.TrimEndingDirectorySeparator(Path.GetFullPath(command.RootDirectory)));
             var execution = new InstallExecution();
             _executions.Add(execution);
             return execution;

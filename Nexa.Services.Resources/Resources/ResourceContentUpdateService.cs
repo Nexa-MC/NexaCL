@@ -49,17 +49,18 @@ public sealed class ResourceContentUpdateService(ResourceContentOnlineService co
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken);
         try
         {
-            await UpdateBatchCoreAsync(command, task, linked.Token).ConfigureAwait(false);
-            task.Complete("更新完成");
+            string? notice = await UpdateBatchCoreAsync(command, task, linked.Token).ConfigureAwait(false);
+            task.Complete("更新完成。" + notice);
         }
         catch (OperationCanceledException) { task.Canceled(); throw; }
         catch (Exception e) when (e is not OutOfMemoryException and not AccessViolationException) { task.Fail(e.Message); throw; }
     }
 
-    private async Task UpdateBatchCoreAsync(ResourceContentUpdateBatchCommand command, Nexa.Services.Tasks.ITaskCenterTask task, CancellationToken token)
+    private async Task<string?> UpdateBatchCoreAsync(ResourceContentUpdateBatchCommand command, Nexa.Services.Tasks.ITaskCenterTask task, CancellationToken token)
     {
         var snapshot = await InstanceManagementService.ReadAsync(new(command.Updates[0].File.InstanceDirectory), token).ConfigureAwait(false);
         List<string> stages = []; List<InstanceContentReplacement> replacements = [];
+        string? dependencyNotice = null;
         try
         {
             foreach (var update in command.Updates)
@@ -84,7 +85,12 @@ public sealed class ResourceContentUpdateService(ResourceContentOnlineService co
             }
             task.Report("应用更新", "", command.Updates.Count / (command.Updates.Count + 1d), command.Updates.Count, command.Updates.Count, 0);
             await InstanceContentUpdateTransaction.ApplyAsync(replacements, store,
-                validate: ct => ValidateUpdatedModsAsync(replacements, snapshot, ct), token: token).ConfigureAwait(false);
+                validate: async ct =>
+                {
+                    dependencyNotice = await ValidateUpdatedModsAsync(replacements, snapshot, ct).ConfigureAwait(false);
+                    if (dependencyNotice is not null) task.Report("校验", dependencyNotice, .99, command.Updates.Count, command.Updates.Count, 0);
+                }, token: token).ConfigureAwait(false);
+            return dependencyNotice;
         }
         finally
         {
@@ -110,12 +116,12 @@ public sealed class ResourceContentUpdateService(ResourceContentOnlineService co
         if (!Convert.ToHexString(actual).Equals(digest, StringComparison.OrdinalIgnoreCase)) throw new IOException("下载期间目标版本文件发生变化，请重新读取在线信息。");
     }
 
-    private static async Task ValidateUpdatedModsAsync(IReadOnlyList<InstanceContentReplacement> replacements, InstanceManagementSnapshot snapshot, CancellationToken token)
+    private static async Task<string?> ValidateUpdatedModsAsync(IReadOnlyList<InstanceContentReplacement> replacements, InstanceManagementSnapshot snapshot, CancellationToken token)
     {
         var mods = replacements.Where(item => item.Original.PageId == "mods").ToArray();
-        if (mods.Length == 0) return;
+        if (mods.Length == 0) return null;
         foreach (var item in mods) _ = await Nexa.Services.Minecraft.Install.MinecraftLocalJarService.InspectAsync(item.StagedPath, token).ConfigureAwait(false);
-        if (mods.All(item => item.Original.Name.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase))) return;
+        if (mods.All(item => item.Original.Name.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase))) return null;
         string validation = Path.Combine(snapshot.GameDirectory, ".nexa-resource-" + Guid.NewGuid().ToString("N")), directory = Path.Combine(validation, "mods");
         Directory.CreateDirectory(directory); long total = 0; int count = 0;
         try
@@ -136,8 +142,15 @@ public sealed class ResourceContentUpdateService(ResourceContentOnlineService co
                 await input.CopyToAsync(output, token).ConfigureAwait(false);
                 if (input.Length != file.Length || output.Length != file.Length) throw new IOException("模组核验期间文件变化。");
             }
-            var inventory = await Nexa.Services.Minecraft.Process.LaunchModInventoryReader.ReadAsync(validation, token).ConfigureAwait(false);
-            ResourceDependencyVerifier.Verify(inventory with { Mods = inventory.Mods.Where(item => item.Enabled).ToArray() }, new([], 0, true));
+            var changedNames = mods.Select(item => item.NewName + (item.Original.Name.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase) ? ".disabled" : ""))
+                .ToHashSet(Nexa.Core.PathIdentity.Comparer);
+            var retainedNames = Directory.EnumerateFiles(directory).Select(Path.GetFileName).OfType<string>()
+                .Where(name => !changedNames.Contains(name)).ToHashSet(Nexa.Core.PathIdentity.Comparer);
+            var changed = await Nexa.Services.Minecraft.Process.LaunchModInventoryReader.ReadSubsetAsync(directory, changedNames, token).ConfigureAwait(false);
+            var retained = await Nexa.Services.Minecraft.Process.LaunchModInventoryReader.ReadSubsetAsync(directory, retainedNames, token).ConfigureAwait(false);
+            var before = await Nexa.Services.Minecraft.Process.LaunchModInventoryReader.ReadAsync(snapshot.GameDirectory, token).ConfigureAwait(false);
+            return ResourceDependencyVerifier.VerifyUpdate(changed with { Mods = changed.Mods.Where(item => item.Enabled).ToArray() },
+                retained with { Mods = retained.Mods.Where(item => item.Enabled).ToArray() }, before);
         }
         finally
         {

@@ -18,6 +18,7 @@ public sealed class ResourceModInstallService(IResourceCatalogSource catalog, Re
     {
         string? staging = null;
         int imported = 0;
+        string? dependencyNotice = null;
         using var task = tasks.Begin(new("resource-install." + Guid.NewGuid().ToString("N"), "安装模组与依赖", ["解析依赖", "下载", "安装"]));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken);
         token = linked.Token;
@@ -46,7 +47,7 @@ public sealed class ResourceModInstallService(IResourceCatalogSource catalog, Re
                 for (int i = 0; i < artifacts.Count; i++) File.Copy(artifacts[i].Path, Path.Combine(validation, "mods", i.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".jar"));
                 var added = await Nexa.Services.Minecraft.Process.LaunchModInventoryReader.ReadAsync(validation, token).ConfigureAwait(false);
                 var existing = await Nexa.Services.Minecraft.Process.LaunchModInventoryReader.ReadAsync(context.GameDirectory, token).ConfigureAwait(false);
-                ResourceDependencyVerifier.Verify(added, existing);
+                dependencyNotice = ResourceDependencyVerifier.VerifyForInstall(added, existing);
             }
             finally
             {
@@ -60,7 +61,7 @@ public sealed class ResourceModInstallService(IResourceCatalogSource catalog, Re
                 if (!result.IsSuccess) throw new IOException(result.Error?.Message ?? "无法添加模组。");
                 imported++;
             }
-            task.Complete($"已安装 {imported} 个模组（含必需依赖）。");
+            task.Complete($"已安装 {imported} 个模组（含必需依赖）。" + dependencyNotice);
         }
         catch (OperationCanceledException) { task.Canceled(); throw; }
         catch (Exception e) when (e is not OutOfMemoryException and not AccessViolationException)

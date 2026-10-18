@@ -19,6 +19,7 @@ internal sealed partial class SettingsPageController
     internal void ConfigureExport(Func<Task<string?>> picker) => _pickExportDirectory = picker;
     private void CancelExport()
     {
+        CancelModpackUpdate();
         _exportStop?.Cancel(); _exportStop?.Dispose(); _exportStop = null; ObserveRetiredInstanceToolRead(_exportRead); ObserveRetiredInstanceToolRead(_exportDirectoryRead); _exportRead = null; _exportPreview = null;
         _exportInstance = null; _exportError = null; _exportLoaded = false; _exportDirectoryRead = null;
         _exportName = _exportVersion = _exportPath = default;
@@ -29,6 +30,7 @@ internal sealed partial class SettingsPageController
     {
         if (_selected != "modpack") { if (_exportInstance is not null) CancelExport(); return; }
         if (_exportInstance != _instance) { CancelExport(); _exportInstance = _instance; }
+        UpdateModpackUpdate();
         if (_selected != "modpack" || _instance is null || !_managementLoaded) return;
         CaptureExportDrafts();
         if (_exportDirectoryRead is { IsCompleted: true } picking)
@@ -63,6 +65,7 @@ internal sealed partial class SettingsPageController
     private void BuildModpackExport(InstanceManagementSnapshot snapshot)
     {
         if (!_shell.Tree.IsAlive(_sections)) return;
+        BuildModpackUpdate(snapshot);
         if (_exportNameDraft.Length == 0) _exportNameDraft = Path.GetFileName(snapshot.InstanceDirectory);
         bool initialize = !_shell.Tree.IsAlive(_exportRoot) || _shell.Tree.Parent(_exportRoot) != _sections;
         var preview = _exportPreview;

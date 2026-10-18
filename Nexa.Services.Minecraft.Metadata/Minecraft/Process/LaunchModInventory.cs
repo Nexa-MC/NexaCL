@@ -15,6 +15,12 @@ public static partial class LaunchModInventoryReader
         => ReadDirectoryAsync(Path.Combine(gameDirectory, "mods"), token);
 
     public static async Task<LaunchModInventory> ReadDirectoryAsync(string directory, CancellationToken token = default)
+        => await ReadDirectoryCoreAsync(directory, null, token).ConfigureAwait(false);
+
+    internal static Task<LaunchModInventory> ReadSubsetAsync(string directory, IReadOnlySet<string> names, CancellationToken token)
+        => ReadDirectoryCoreAsync(directory, names, token);
+
+    private static async Task<LaunchModInventory> ReadDirectoryCoreAsync(string directory, IReadOnlySet<string>? includedNames, CancellationToken token)
     {
         List<LaunchModIdentity> mods = []; int unknown = 0, files = 0, archives = 0; bool complete = true;
         var budget = new ArchiveReadBudget(16 * 1024 * 1024);
@@ -32,7 +38,9 @@ public static partial class LaunchModInventoryReader
             input.Position = 0;
             using var zip = new ZipArchive(input, ZipArchiveMode.Read, leaveOpen: true);
             string? format = Formats.FirstOrDefault(name => zip.GetEntry(name) is not null);
-            if (format is null) { unknown++; return; }
+            // Loader-declared nested archives can be ordinary Java libraries, especially
+            // Forge/NeoForge JarJar dependencies. They are not unidentified top-level mods.
+            if (format is null) { if (depth == 0) unknown++; return; }
             if (zip.Entries.Count(entry => entry.FullName == format) != 1) { complete = false; return; }
             var entry = zip.GetEntry(format)!;
             await using var content = entry.Open(); using var buffer = new MemoryStream();
@@ -107,6 +115,7 @@ public static partial class LaunchModInventoryReader
             foreach (string path in Directory.EnumerateFiles(directory))
             {
                 token.ThrowIfCancellationRequested();
+                if (includedNames is not null && !includedNames.Contains(Path.GetFileName(path))) continue;
                 bool enabled = path.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
                 if (!enabled && !path.EndsWith(".jar.disabled", StringComparison.OrdinalIgnoreCase)) continue;
                 if (++files > 2048 || mods.Count >= 4096) { complete = false; break; }

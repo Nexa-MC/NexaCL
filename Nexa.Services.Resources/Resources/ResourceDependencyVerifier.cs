@@ -6,6 +6,14 @@ public static class ResourceDependencyVerifier
     public static void Verify(LaunchModInventory added, LaunchModInventory existing)
     {
         if (!added.Complete || added.UnknownFiles > 0 || added.Mods.Any(m => !m.DependenciesComplete)) throw new InvalidDataException("下载文件的实际依赖表无法完整读取，未安装任何模组。");
+        _ = VerifyForInstall(added, existing);
+    }
+
+    /// <summary>File integrity is checked by the caller. Incomplete loader metadata is advisory.</summary>
+    public static string? VerifyForInstall(LaunchModInventory added, LaunchModInventory existing)
+    {
+        bool incomplete = !added.Complete || added.UnknownFiles > 0 || added.Mods.Any(m => !m.DependenciesComplete)
+            || !existing.Complete || existing.UnknownFiles > 0;
         var existingIds = existing.Mods.Where(mod => mod.Enabled && !mod.NestedCandidate).Select(mod => mod.Id).ToHashSet(StringComparer.Ordinal);
         if (added.Mods.Any(mod => !mod.NestedCandidate && existingIds.Contains(mod.Id))
             || added.Mods.Where(mod => !mod.NestedCandidate).GroupBy(mod => mod.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
@@ -23,7 +31,29 @@ public static class ResourceDependencyVerifier
                 if (!enabled.TryGetValue(dependency.Key, out var candidates) || !candidates.Any(version => Satisfies(version, dependency.Value)))
                     missing.Add($"{mod.Id} 需要 {dependency.Key} {dependency.Value}");
             }
-        if (missing.Count > 0) throw new InvalidDataException("实际依赖核验未通过，未安装任何模组：\n" + string.Join('\n', missing.Distinct().Take(20)));
+        if (missing.Count > 0 && existing.Complete && existing.UnknownFiles == 0)
+            throw new InvalidDataException("实际依赖核验未通过，未安装任何模组：\n" + string.Join('\n', missing.Distinct().Take(20)));
+        return incomplete ? "部分模组的依赖元数据无法完整读取；文件校验已完成，请在启动游戏时确认兼容性。" : null;
+    }
+
+    public static string? VerifyUpdate(LaunchModInventory changed, LaunchModInventory retained, LaunchModInventory before)
+    {
+        string? notice = VerifyForInstall(changed, retained);
+        var after = retained.Mods.Concat(changed.Mods).Where(mod => mod.Enabled)
+            .SelectMany(mod => mod.ProvidedIds.Prepend(KeyValuePair.Create(mod.Id, mod.Version)))
+            .GroupBy(pair => pair.Key, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.Select(pair => pair.Value).ToArray(), StringComparer.Ordinal);
+        var original = before.Mods.Where(mod => mod.Enabled)
+            .SelectMany(mod => mod.ProvidedIds.Prepend(KeyValuePair.Create(mod.Id, mod.Version)))
+            .GroupBy(pair => pair.Key, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.Select(pair => pair.Value).ToArray(), StringComparer.Ordinal);
+        foreach (var mod in retained.Mods.Where(mod => mod.Enabled))
+            foreach (var dependency in mod.Dependencies)
+                if (dependency.Key is not ("minecraft" or "java" or "fabricloader" or "quilt_loader" or "forge" or "neoforge" or "cleanroom")
+                    && original.TryGetValue(dependency.Key, out var oldVersions) && oldVersions.Any(version => Satisfies(version, dependency.Value))
+                    && (!after.TryGetValue(dependency.Key, out var versions) || !versions.Any(version => Satisfies(version, dependency.Value))))
+                    throw new InvalidDataException($"更新会破坏已安装模组的依赖：{mod.Id} 需要 {dependency.Key} {dependency.Value}");
+        return notice;
     }
     public static bool Satisfies(string actual, string range)
     {

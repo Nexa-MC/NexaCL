@@ -8,7 +8,7 @@ public enum AvaloniaUiThemePickerKind { Package, Image, Icon, Font, Audio, Video
 public sealed partial class AvaloniaUiPlatformActions
 {
     public Task<string?> PickThemeOptionsFileAsync(CancellationToken token = default) =>
-        PickLocalContentAsync("导入主题参数", "JSON", "*.json", token);
+        PickLocalContentAsync("导入主题参数", "JSON", ["*.json"], token);
 
     public async Task<string?> PickThemeDirectoryAsync(CancellationToken token = default)
     {

@@ -69,4 +69,11 @@
 <Text Key="action.ServerUp" Content="Management.上移" Localize="false" />
 <Text Key="action.ServerDown" Content="Management.下移" Localize="false" />
 <Text Key="action.ServerRemove" Content="Management.移除" Localize="false" />
+<Text Key="modpack.update.complete" Content="整合包更新完成。" />
+<Text Key="modpack.update.failed" Content="整合包更新未完成。" />
+<Text Key="modpack.update.changed" Content="输入已变化，请重新预览。" />
+<Text Key="modpack.update.canceled" Content="预览已取消。" />
+<Text Key="modpack.update.conflicts" Content="存在已修改或同名的模组，请确认替换选项后重新预览。" />
+<Text Key="modpack.update.reading" Content="正在读取整合包并核对现有文件…" />
+<Text Key="modpack.update.queued" Content="整合包更新已加入任务中心。" />
 </StackPanel>

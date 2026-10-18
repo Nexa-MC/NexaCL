@@ -23,6 +23,18 @@ public static class MinecraftFolderImportRuntimeComposer
             return result;
         });
         XsrQueryRouterBuilder queries = new();
+        queries.Register<MinecraftModpackUpdateQuery, MinecraftModpackUpdatePreview>(MinecraftModpackUpdateContract.Preview, async (query, token) =>
+        {
+            try { return XsrResult.Success(await installer.PreviewModpackUpdateAsync(query, token).ConfigureAwait(false)); }
+            catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or JsonException or InvalidOperationException or FormatException or OverflowException)
+            { return XsrResult.Failure<MinecraftModpackUpdatePreview>(MinecraftErrors.InvalidRequest(error.Message)); }
+        });
+        commands.Register<MinecraftModpackUpdateCommand>(MinecraftModpackUpdateContract.Apply, async (command, token) =>
+        {
+            var result = await installer.UpdateModpackAsync(command, token).ConfigureAwait(false);
+            if (result.IsSuccess) await library.RefreshAsync(CancellationToken.None).ConfigureAwait(false);
+            return result.IsSuccess ? XsrResult.Success() : XsrResult.Failure(result.Error!);
+        });
         commands.Register<MinecraftModpackCommand>(MinecraftModpackContract.Install, async (command, token) =>
         {
             var result = await installer.InstallModpackAsync(command, token).ConfigureAwait(false);

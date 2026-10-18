@@ -149,7 +149,8 @@ public sealed partial class MinecraftInstallService : IDisposable
         catch (Exception exception) when (exception is not OutOfMemoryException and not AccessViolationException)
         {
             task.Fail(exception.Message);
-            return XsrResult.Failure<MinecraftInstallResult>(XsrRuntimeErrors.HandlerFaulted());
+            return XsrResult.Failure<MinecraftInstallResult>(exception is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException
+                ? MinecraftErrors.InvalidRequest(exception.Message) : XsrRuntimeErrors.HandlerFaulted());
         }
         finally { FinishExecution(execution); }
     }

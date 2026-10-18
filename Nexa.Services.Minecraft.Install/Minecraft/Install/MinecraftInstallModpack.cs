@@ -14,10 +14,12 @@ public sealed partial class MinecraftInstallService
     public Task<XsrResult<MinecraftInstallResult>> InstallModpackAsync(MinecraftModpackCommand command, CancellationToken token = default) =>
         Task.Run(() => InstallModpackCoreAsync(command, token), token);
 
-    private async Task<XsrResult<MinecraftInstallResult>> InstallModpackCoreAsync(MinecraftModpackCommand command, CancellationToken token, ModpackInstallJournal? saved = null)
+    private async Task<XsrResult<MinecraftInstallResult>> InstallModpackCoreAsync(MinecraftModpackCommand command, CancellationToken token, ModpackInstallJournal? saved = null,
+        bool preparingUpdate = false, Nexa.Services.Tasks.ITaskCenterTask? parentTask = null)
     {
-        var execution = RegisterExecution(new(command.RootDirectory, command.Pack.Game, InstanceName: command.Pack.InstanceId));
-        using var task = _tasks.Begin(new("modpack:" + Guid.NewGuid().ToString("N"), "安装 " + command.Pack.Name, StagePlan));
+        var execution = RegisterExecution(new(command.RootDirectory, command.Pack.Game, InstanceName: command.Pack.InstanceId), registerRecoveryRoot: !preparingUpdate);
+        using var ownedTask = parentTask is null ? _tasks.Begin(new("modpack:" + Guid.NewGuid().ToString("N"), "安装 " + command.Pack.Name, StagePlan)) : null;
+        var task = parentTask ?? ownedTask!;
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken, execution.Token);
         token = linked.Token;
         ModpackInstallJournal? journal = saved;
@@ -39,7 +41,7 @@ public sealed partial class MinecraftInstallService
             {
                 ReadyExecution(execution, journal.Stage);
                 await journal.PublishAsync(token).ConfigureAwait(false);
-                task.Complete("整合包已安装"); Installed?.Invoke(root);
+                if (!preparingUpdate) { task.Complete("整合包已安装"); Installed?.Invoke(root); }
                 return XsrResult.Success(new MinecraftInstallResult(command.Pack.InstanceId, journal.Destination));
             }
             string archivePath = journal.Archive;
@@ -138,6 +140,8 @@ public sealed partial class MinecraftInstallService
                     }
             await new MinecraftInstanceMetadataStore().SaveAsync(installed.InstanceDirectory, new()
             { InstanceIsolation = true, Description = pack.Name, ModpackVersion = pack.Version }, token).ConfigureAwait(false);
+            await ModpackManagedManifestStore.WriteAsync(installed.InstanceDirectory,
+                await ModpackManagedManifestStore.CaptureAsync(installed.InstanceDirectory, pack, token).ConfigureAwait(false), token).ConfigureAwait(false);
             // Shared cache additions are safe to keep on failure; the new instance commits last.
             foreach (string file in Directory.EnumerateFiles(buildRoot, "*", SearchOption.AllDirectories))
             {
@@ -166,18 +170,20 @@ public sealed partial class MinecraftInstallService
             }
             await journal.PrepareAsync(token).ConfigureAwait(false);
             await journal.PublishAsync(token).ConfigureAwait(false);
-            task.Complete("整合包已安装");
-            Installed?.Invoke(root);
+            if (!preparingUpdate) { task.Complete("整合包已安装"); Installed?.Invoke(root); }
             return XsrResult.Success(new MinecraftInstallResult(pack.InstanceId, destination));
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
-            if (task.CancellationToken.IsCancellationRequested && journal is not null) { await journal.CancelAsync().ConfigureAwait(false); task.Canceled(); }
-            else task.Paused();
+            if (parentTask is null)
+            {
+                if (task.CancellationToken.IsCancellationRequested && journal is not null) { await journal.CancelAsync().ConfigureAwait(false); task.Canceled(); }
+                else task.Paused();
+            }
             return XsrResult.Failure<MinecraftInstallResult>(XsrRuntimeErrors.Cancelled());
         }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { task.Fail(error.Message); return XsrResult.Failure<MinecraftInstallResult>(MinecraftErrors.InvalidRequest(error.Message)); }
+        { if (parentTask is null) task.Fail(error.Message); return XsrResult.Failure<MinecraftInstallResult>(MinecraftErrors.InvalidRequest(error.Message)); }
         finally
         {
             lease?.Dispose();

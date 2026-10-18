@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data name} {data version} · Minecraft {data game}&#10;新增 {data added}，替换 {data updated}，移除 {data removed}，保留本地修改 {data preserved}。&#10;" Localize="false" /></nxml-dynamic>

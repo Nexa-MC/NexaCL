@@ -15,15 +15,18 @@ internal sealed class InstallPublicationJournal
     private readonly IReadOnlyList<InstallPublicationFile> _files;
     private readonly string _hash;
     private readonly int _trustVersion;
+    private readonly bool _modpackUpdate;
+    internal bool IsModpackUpdate => _modpackUpdate;
     private const int RecordLimit = 16 * 1024 * 1024;
     internal string InstanceId => _instance;
     internal async Task<string> ReadPhaseAsync(CancellationToken token) => (await ReadProgressAsync(token).ConfigureAwait(false)).Phase;
 
     private InstallPublicationJournal(string root, string stage, string instance, IReadOnlyList<InstallPublicationFile> files, string hash, int trustVersion)
-    { _root = root; _stage = stage; _journal = Path.Combine(stage, ".publication"); _instance = instance; _files = files; _hash = hash; _trustVersion = trustVersion; }
+    { _root = root; _stage = stage; _journal = Path.Combine(stage, ".publication"); _instance = instance; _files = files; _hash = hash; _trustVersion = trustVersion; _modpackUpdate = trustVersion == 3; }
 
     internal static async Task<InstallPublicationJournal> PrepareAsync(string root, string stage, string instance,
-        IReadOnlyList<string> generated, IReadOnlyDictionary<string, string> removals, CancellationToken token)
+        IReadOnlyList<string> generated, IReadOnlyDictionary<string, string> removals, CancellationToken token, bool modpackUpdate = false,
+        IReadOnlyDictionary<string, string?>? expectedOriginals = null)
     {
         ValidateIdentity(root, stage, instance);
         string journal = Path.Combine(stage, ".publication");
@@ -35,21 +38,25 @@ internal sealed class InstallPublicationJournal
         Dictionary<string, InstallPublicationFile> files = new(Nexa.Core.PathIdentity.Comparer);
         foreach (var removed in removals)
         {
-            string target = Target(root, instance, removed.Key);
-            if (!IsMod(removed.Key, instance)) throw new InvalidDataException("安装不能删除非组件文件。");
+            string target = Target(root, instance, removed.Key, modpackUpdate);
+            if (!IsMod(removed.Key, instance) && !(modpackUpdate && IsPackContent(removed.Key, instance))) throw new InvalidDataException("安装不能删除非组件文件。");
             var before = await ObserveAsync(target, budget, token).ConfigureAwait(false);
+            if (expectedOriginals?.TryGetValue(removed.Key, out string? expected) == true && before?.Sha256 != expected)
+                throw new IOException("更新文件在预览后发生变化，请重新预览。");
             if (before is null || before.Sha256 != removed.Value) continue;
             files.Add(removed.Key, new(removed.Key, before, null));
         }
         foreach (string relative in generated)
         {
             if (files.Count >= 100000) throw new InvalidDataException("安装发布文件过多。");
-            string source = Nexa.Core.PathIdentity.Contained(stage, relative), target = Target(root, instance, relative);
+            string source = Nexa.Core.PathIdentity.Contained(stage, relative), target = Target(root, instance, relative, modpackUpdate);
             var after = await ObserveAsync(source, budget, token).ConfigureAwait(false) ?? throw new FileNotFoundException("安装产物丢失。", source);
             var before = files.TryGetValue(relative, out var existing) ? existing.Before
                 : await ObserveAsync(target, budget, token).ConfigureAwait(false);
+            if (expectedOriginals?.TryGetValue(relative, out string? expected) == true && before?.Sha256 != expected)
+                throw new IOException("更新文件在预览后发生变化，请重新预览。");
             if (before == after) { files.Remove(relative); continue; }
-            if (IsInstanceMetadata(relative, instance) && before is not null)
+            if (!modpackUpdate && IsInstanceMetadata(relative, instance) && before is not null)
                 throw new IOException("已有实例配置，不能由新安装覆盖。");
             if (IsMod(relative, instance) && before is not null && !files.ContainsKey(relative))
                 throw new IOException("已有同名 Mod 未受此安装管理或已被修改：" + Path.GetFileName(relative));
@@ -59,12 +66,12 @@ internal sealed class InstallPublicationJournal
         var ordered = files.Values.OrderBy(file => file.RelativePath == manifest ? 1 : 0).ThenBy(file => file.RelativePath, StringComparer.Ordinal).ToArray();
         foreach (var file in ordered)
         {
-            if (file.Before is { } before) await SaveObjectAsync(Target(root, instance, file.RelativePath), journal, before, token).ConfigureAwait(false);
+            if (file.Before is { } before) await SaveObjectAsync(Target(root, instance, file.RelativePath, modpackUpdate), journal, before, token).ConfigureAwait(false);
             if (file.After is { } after) await SaveObjectAsync(Nexa.Core.PathIdentity.Contained(stage, file.RelativePath), journal, after, token).ConfigureAwait(false);
         }
         var document = new JsonObject
         {
-            ["version"] = 2,
+            ["version"] = modpackUpdate ? 3 : 2,
             ["root"] = root,
             ["stage"] = stage,
             ["instance"] = instance,
@@ -73,7 +80,7 @@ internal sealed class InstallPublicationJournal
         byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(document, RecoveryJsonContext.Default.JsonObject);
         if (bytes.Length > RecordLimit) throw new InvalidDataException("安装发布记录过大。");
         await WriteAsync(journal, "plan.json", bytes, token).ConfigureAwait(false);
-        var result = new InstallPublicationJournal(root, stage, instance, ordered, Convert.ToHexString(SHA256.HashData(bytes)), 2);
+        var result = new InstallPublicationJournal(root, stage, instance, ordered, Convert.ToHexString(SHA256.HashData(bytes)), modpackUpdate ? 3 : 2);
         await result.ProgressAsync("prepared", 0, token).ConfigureAwait(false);
         return result;
     }
@@ -85,7 +92,7 @@ internal sealed class InstallPublicationJournal
         string instance = document["instance"]!.GetValue<string>();
         ValidateIdentity(root, stage, instance);
         int trustVersion = document["version"]!.GetValue<int>();
-        if (trustVersion is not (1 or 2) || document["root"]!.GetValue<string>() != root || document["stage"]!.GetValue<string>() != stage)
+        if (trustVersion is not (1 or 2 or 3) || document["root"]!.GetValue<string>() != root || document["stage"]!.GetValue<string>() != stage)
             throw new InvalidDataException("安装发布记录不属于当前目录。");
         var nodes = document["files"]!.AsArray();
         if (nodes.Count > 100000) throw new InvalidDataException("安装发布文件过多。");
@@ -93,9 +100,9 @@ internal sealed class InstallPublicationJournal
         long total = 0;
         foreach (var node in nodes)
         {
-            string path = node!["path"]!.GetValue<string>(); _ = Target(root, instance, path);
+            string path = node!["path"]!.GetValue<string>(); _ = Target(root, instance, path, trustVersion == 3);
             var before = Decode(node["before"]); var after = Decode(node["after"]);
-            if (!paths.Add(path) || before == after || after is null && !IsMod(path, instance)) throw new InvalidDataException("安装发布条目无效。");
+            if (!paths.Add(path) || before == after || after is null && !IsMod(path, instance) && !(trustVersion == 3 && IsPackContent(path, instance))) throw new InvalidDataException("安装发布条目无效。");
             total += (before?.Length ?? 0) + (after?.Length ?? 0);
             if (total > RecoveryBlobStore.MaxTransactionBytes) throw new InvalidDataException("安装发布超过大小限制。");
             files.Add(new(path, before, after));
@@ -111,14 +118,14 @@ internal sealed class InstallPublicationJournal
         // Validate it before touching another file, including a previously committed transaction.
         int completed = phase == "committed" ? _files.Count : Math.Max(0, attempted - 1);
         for (int i = 0; i < completed; i++)
-            if (await ObserveAsync(Target(_root, _instance, _files[i].RelativePath), new(RecoveryBlobStore.MaxFileBytes), token).ConfigureAwait(false) != _files[i].After)
+            if (await ObserveAsync(Target(_root, _instance, _files[i].RelativePath, _modpackUpdate), new(RecoveryBlobStore.MaxFileBytes), token).ConfigureAwait(false) != _files[i].After)
                 throw new IOException("已发布文件在中断后发生变化，已保留恢复记录。");
         if (phase == "committed") return;
         if (phase is not ("prepared" or "applying")) throw new IOException("该安装正在回滚，不能继续发布。");
         // attempted includes the operation whose intent was flushed before an interrupted write.
         for (int i = Math.Max(0, attempted - 1); i < _files.Count; i++)
         {
-            var file = _files[i]; string target = Target(_root, _instance, file.RelativePath);
+            var file = _files[i]; string target = Target(_root, _instance, file.RelativePath, _modpackUpdate);
             var current = await ObserveAsync(target, new(RecoveryBlobStore.MaxFileBytes), token).ConfigureAwait(false);
             if (current != file.Before && current != file.After) throw new IOException("安装目标在中断后被修改，已保留恢复记录。");
             await ProgressAsync("applying", i + 1, token).ConfigureAwait(false);
@@ -136,7 +143,7 @@ internal sealed class InstallPublicationJournal
         await ProgressAsync("rolling-back", attempted, token).ConfigureAwait(false);
         for (int i = attempted - 1; i >= 0; i--)
         {
-            var file = _files[i]; string target = Target(_root, _instance, file.RelativePath);
+            var file = _files[i]; string target = Target(_root, _instance, file.RelativePath, _modpackUpdate);
             var current = await ObserveAsync(target, new(RecoveryBlobStore.MaxFileBytes), token).ConfigureAwait(false);
             if (current != file.Before)
             {
@@ -186,11 +193,23 @@ internal sealed class InstallPublicationJournal
     }
     private static bool IsMod(string path, string instance) => path.StartsWith("mods/", StringComparison.Ordinal) || path.StartsWith($"versions/{instance}/mods/", StringComparison.Ordinal);
     private static bool IsInstanceMetadata(string path, string instance) => path == $"versions/{instance}/{MinecraftInstanceMetadataStore.MetadataDirectoryName}/{MinecraftInstanceMetadataStore.MetadataFileName}";
-    private static string Target(string root, string instance, string relative)
+    private static bool IsPackContent(string relative, string instance)
+    {
+        string prefix = $"versions/{instance}/";
+        if (!relative.StartsWith(prefix, StringComparison.Ordinal)) return false;
+        string path = relative[prefix.Length..];
+        string first = path.Split('/')[0];
+        // User worlds and launcher journals never belong to a pack's mutable file plan.
+        return path.Length > 0 && !new[] { "Nexa", "PCL", "saves", "screenshots", "backups", "logs", "crash-reports", "options.txt", "servers.dat", "servers.dat_old" }.Contains(first, StringComparer.OrdinalIgnoreCase)
+            && !first.StartsWith(".nexa", StringComparison.OrdinalIgnoreCase)
+            || path == "Nexa/ModpackManaged.json";
+    }
+    private static string Target(string root, string instance, string relative, bool modpackUpdate = false)
     {
         if (relative.Contains('\\') || relative.Split('/').Any(part => part is "" or "." or "..")
             || !(relative.StartsWith("libraries/", StringComparison.Ordinal) || relative.StartsWith("assets/", StringComparison.Ordinal)
                 || relative.StartsWith("runtime/", StringComparison.Ordinal) || IsMod(relative, instance) || IsInstanceMetadata(relative, instance)
+                || modpackUpdate && IsPackContent(relative, instance)
                 || relative.Split('/') is ["versions", var id, var file] && MinecraftVersionPaths.IsSafeReference(id)
                     && (file == id + ".json" || file == id + ".jar"))) throw new InvalidDataException("安装发布路径超出范围。");
         string path = Nexa.Core.PathIdentity.Contained(root, relative); RecoveryBlobStore.CheckLinks(path); return path;
