@@ -16,6 +16,7 @@ public sealed class AccountOnboardingService : IDisposable
     private readonly LegacyProfileImport _imports;
     private readonly LogService? _log;
     private readonly XsrStateStore _store;
+    private readonly TimeProvider _clock;
     private readonly object _gate = new();
     private Operation? _active;
     private long _generation;
@@ -26,7 +27,13 @@ public sealed class AccountOnboardingService : IDisposable
     public AccountOnboardingService(AccountService accounts, IMicrosoftMinecraftAuthService microsoft,
         ILittleSkinOAuthService littleSkin, YggdrasilAuthService yggdrasil, AccountOnboardingOptions options,
         LegacyProfileImport? imports = null, LogService? log = null)
+        : this(TimeProvider.System, accounts, microsoft, littleSkin, yggdrasil, options, imports, log) { }
+
+    internal AccountOnboardingService(TimeProvider clock, AccountService accounts, IMicrosoftMinecraftAuthService microsoft,
+        ILittleSkinOAuthService littleSkin, YggdrasilAuthService yggdrasil, AccountOnboardingOptions options,
+        LegacyProfileImport? imports = null, LogService? log = null)
     {
+        _clock = clock;
         _accounts = accounts;
         _store = accounts.StateStore;
         _microsoft = microsoft;
@@ -131,13 +138,15 @@ public sealed class AccountOnboardingService : IDisposable
         {
             operation.Trace?.Stage("authenticate", $"provider={command.Provider}");
             if (command.Provider != AccountLoginProvider.Microsoft)
-                await EnsureOwnershipAsync(operation).ConfigureAwait(false);
+                await PrepareAsync(operation, "正在验证 Minecraft 正版资格…",
+                    token => EnsureOwnershipAsync(operation, token)).ConfigureAwait(false);
             LaunchProfile profile = command.Provider switch
             {
                 AccountLoginProvider.Offline => CreateOffline(command.Username),
                 AccountLoginProvider.Microsoft => await LoginMicrosoft(operation).ConfigureAwait(false),
                 AccountLoginProvider.LittleSkin => await LoginLittleSkin(operation).ConfigureAwait(false),
-                AccountLoginProvider.ThirdParty => await LoginThirdParty(command, operation.Cancellation.Token).ConfigureAwait(false),
+                AccountLoginProvider.ThirdParty => await PrepareAsync(operation, "正在连接第三方认证服务器…",
+                    token => LoginThirdParty(command, token)).ConfigureAwait(false),
                 _ => throw new OnboardingFailure("不支持的账户类型。", "accounts.unsupported_provider"),
             };
             lock (_gate)
@@ -166,7 +175,8 @@ public sealed class AccountOnboardingService : IDisposable
             operation.Trace?.Stage("read_legacy_profiles");
             IReadOnlyList<LaunchProfile> profiles = await LegacyProfileImport.ReadAsync(path, operation.Cancellation.Token).ConfigureAwait(false);
             if (profiles.Any(profile => profile.Kind != LaunchProfileKind.Microsoft))
-                await EnsureOwnershipAsync(operation).ConfigureAwait(false);
+                await PrepareAsync(operation, "正在验证 Minecraft 正版资格…",
+                    token => EnsureOwnershipAsync(operation, token)).ConfigureAwait(false);
             lock (_gate)
             {
                 if (!IsCurrent(operation)) return;
@@ -197,7 +207,8 @@ public sealed class AccountOnboardingService : IDisposable
         operation.Trace?.Stage("microsoft_device_code");
         if (string.IsNullOrWhiteSpace(_options.MicrosoftClientId))
             throw new OnboardingFailure("未配置 Microsoft 应用 ID：请设置 NEXA_MS_CLIENT_ID 后重新启动。", "accounts.microsoft_client_id_missing");
-        MicrosoftDeviceCodeInfo code = await _microsoft.RequestDeviceCodeAsync(_options.MicrosoftClientId, operation.Cancellation.Token).ConfigureAwait(false);
+        MicrosoftDeviceCodeInfo code = await PrepareAsync(operation, "正在获取 Microsoft 授权码…",
+            token => _microsoft.RequestDeviceCodeAsync(_options.MicrosoftClientId, token)).ConfigureAwait(false);
         ShowDeviceCode(operation, AccountLoginProvider.Microsoft, code.UserCode, code.VerificationUriComplete ?? code.VerificationUri);
         operation.Trace?.Stage("microsoft_authorization_and_minecraft_session");
         MicrosoftMinecraftLoginResult result = await _microsoft.CompleteDeviceLoginAsync(_options.MicrosoftClientId, code,
@@ -207,7 +218,7 @@ public sealed class AccountOnboardingService : IDisposable
         return AccountLoginProfiles.FromMicrosoft(result);
     }
 
-    private async Task EnsureOwnershipAsync(Operation operation)
+    private async Task EnsureOwnershipAsync(Operation operation, CancellationToken cancellationToken)
     {
         if (!_accounts.RegionPolicy.RequireMinecraftOwnership || _accounts.HasVerifiedMinecraftOwnership) return;
         foreach (LaunchProfileView view in _accounts.GetViews().Where(view => view.Kind == LaunchProfileKind.Microsoft))
@@ -218,14 +229,19 @@ public sealed class AccountOnboardingService : IDisposable
             try
             {
                 MicrosoftMinecraftLoginResult refreshed = await _microsoft.RefreshAsync(_options.MicrosoftClientId,
-                    profile.RefreshToken, operation.Cancellation.Token).ConfigureAwait(false);
-                operation.Cancellation.Token.ThrowIfCancellationRequested();
+                    profile.RefreshToken, cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
                 if (!refreshed.OwnsMinecraft || string.IsNullOrWhiteSpace(refreshed.AccessToken)
                     || !string.Equals(refreshed.Uuid, profile.Uuid, StringComparison.OrdinalIgnoreCase)) continue;
-                XsrResult<long> saved = _accounts.ReplaceRefreshedProfile(view.Index, AccountLoginProfiles.FromMicrosoft(refreshed), profile, generation);
-                if (!saved.IsSuccess) continue;
-                _accounts.RecordVerifiedOwnership(refreshed.Uuid);
-                return;
+                lock (_gate)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!IsCurrent(operation)) throw new OperationCanceledException(operation.Cancellation.Token);
+                    XsrResult<long> saved = _accounts.ReplaceRefreshedProfile(view.Index, AccountLoginProfiles.FromMicrosoft(refreshed), profile, generation);
+                    if (!saved.IsSuccess) continue;
+                    _accounts.RecordVerifiedOwnership(refreshed.Uuid);
+                    return;
+                }
             }
             catch (Exception failure) when (failure is HttpRequestException or InvalidOperationException) { }
         }
@@ -238,7 +254,8 @@ public sealed class AccountOnboardingService : IDisposable
         operation.Trace?.Stage("littleskin_device_code");
         LittleSkinOAuthConfiguration configuration = _options.LittleSkin
             ?? throw new OnboardingFailure("LittleSkin 应用配置缺失或无效：请检查 NEXA_LITTLESKIN_CLIENT_ID 后重新启动。", "accounts.littleskin_configuration_missing");
-        LittleSkinDeviceCodeInfo code = await _littleSkin.RequestDeviceCodeAsync(configuration, operation.Cancellation.Token).ConfigureAwait(false);
+        LittleSkinDeviceCodeInfo code = await PrepareAsync(operation, "正在获取 LittleSkin 授权码…",
+            token => _littleSkin.RequestDeviceCodeAsync(configuration, token)).ConfigureAwait(false);
         ShowDeviceCode(operation, AccountLoginProvider.LittleSkin, code.UserCode,
             string.IsNullOrWhiteSpace(code.VerificationUriComplete) ? code.VerificationUri : code.VerificationUriComplete);
         operation.Trace?.Stage("littleskin_authorization");
@@ -306,18 +323,40 @@ public sealed class AccountOnboardingService : IDisposable
             if (IsCurrent(operation) && double.IsFinite(value)) Publish(_snapshot with { Progress = Math.Clamp(value, 0, .94) });
     }
 
+    private Task<object?> PrepareAsync(Operation operation, string message, Func<CancellationToken, Task> action) =>
+        PrepareAsync<object?>(operation, message, async token => { await action(token).ConfigureAwait(false); return null; });
+
+    private async Task<T> PrepareAsync<T>(Operation operation, string message, Func<CancellationToken, Task<T>> action)
+    {
+        lock (_gate)
+        {
+            if (!IsCurrent(operation)) throw new OperationCanceledException(operation.Cancellation.Token);
+            Publish(new(operation.Generation, AccountLoginPhase.Starting, message));
+        }
+        // HttpClient.Timeout can end at the response headers for streaming providers. Bound the
+        // entire preparation, and stop awaiting even a capability that ignores cancellation.
+        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30), _clock);
+        using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(operation.Cancellation.Token, timeout.Token);
+        try { return await action(linked.Token).WaitAsync(linked.Token).ConfigureAwait(false); }
+        catch (OperationCanceledException) when (!operation.Cancellation.IsCancellationRequested)
+        {
+            throw new OnboardingFailure("连接认证服务超时，请检查网络或代理设置后重试。", "accounts.preparation_timeout");
+        }
+    }
+
     private void FinishFailure(Operation operation, Exception failure)
     {
         lock (_gate)
         {
             if (_disposed || _active != operation) return;
-            bool cancelled = operation.Cancellation.IsCancellationRequested || failure is OperationCanceledException;
+            bool cancelled = operation.Cancellation.IsCancellationRequested;
             if (cancelled) operation.Trace?.Cancel();
             else if (failure is OnboardingFailure known) operation.Trace?.Reject(known.Code);
             else operation.Trace?.Fail(failure);
             string message = cancelled ? "已取消" : failure switch
             {
                 OnboardingFailure safe => safe.Message,
+                OperationCanceledException => "连接认证服务超时，请检查网络或代理设置后重试。",
                 TimeoutException => "授权已过期，请重新开始。",
                 HttpRequestException => "无法连接认证服务，请检查网络后重试。",
                 IOException or System.Text.Json.JsonException => "无法读取档案文件，请确认文件格式和访问权限。",

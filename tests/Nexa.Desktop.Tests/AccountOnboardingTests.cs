@@ -200,6 +200,49 @@ internal static partial class Program
         AssertEqual(0, fixture.Service.GetViews().Count);
     }
 
+    private static void AccountPreparationTimeoutsAreFailuresAndLeaveRetryAvailable()
+    {
+        foreach (string provider in new[] { "ProviderMicrosoft", "ProviderLittleSkin", "ProviderThirdParty" })
+        {
+            using HttpClient http = new(new AccountTimeoutHttp());
+            using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), accountHttp: http,
+                accountOptions: new("fixture", LittleSkinConfigForPreparation()));
+            AccountClick(fixture, "AccountAdd");
+            AccountClick(fixture, provider);
+            if (provider == "ProviderThirdParty")
+            {
+                AccountFill(fixture, "AuthServer", "https://auth.example");
+                AccountFill(fixture, "AuthUsername", "fixture");
+                AccountFill(fixture, "AuthPassword", "PRIVATE-PASSWORD");
+                AccountClick(fixture, "FormSubmit");
+            }
+            fixture.Onboarding.Service.WhenIdle.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+            AssertEqual(AccountLoginPhase.Failed, AccountSnapshot(fixture).Phase);
+            XsrUiScene scene = fixture.Shell.Render(AccountTestSize);
+            AssertTrue(FindByKey(fixture.Shell, scene, "FormStatus").Text!.Contains("超时", StringComparison.Ordinal));
+            AssertTrue(HasKey(fixture.Shell, scene, "FormSubmit"));
+            AssertFalse(HasKey(fixture.Shell, scene, "FormCancel"));
+            AssertSceneHides(fixture, "PRIVATE-PASSWORD", "PRIVATE-TRANSPORT");
+            AccountClick(fixture, "AccountBack");
+            AccountClick(fixture, "ProviderOffline");
+            AccountFill(fixture, "OfflineName", "Recovered");
+            AccountClick(fixture, "FormSubmit");
+            fixture.Onboarding.Service.WhenIdle.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+            AssertEqual(AccountLoginPhase.Completed, AccountSnapshot(fixture).Phase);
+            AssertEqual("Recovered", FindByKey(fixture.Shell, fixture.Shell.Render(AccountTestSize), "AccountName").Text);
+        }
+    }
+
+    private static LittleSkinOAuthConfiguration LittleSkinConfigForPreparation() =>
+        new("fixture", "", new Uri(LittleSkinOAuthService.DeviceFlowRedirectUri));
+
+    private sealed class AccountTimeoutHttp : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromException<HttpResponseMessage>(new TaskCanceledException("PRIVATE-TRANSPORT", new TimeoutException()));
+    }
+
+
     private static void AccountClick(LaunchPageFixture fixture, string key)
     {
         XsrUiScene scene = fixture.Shell.Render(AccountTestSize);

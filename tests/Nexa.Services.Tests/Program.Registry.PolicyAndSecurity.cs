@@ -109,6 +109,10 @@ internal static partial class Program
         ("profile imports validate deduplicate and persist before publication", Sync(ProfileImportIsValidatedDeduplicatedAndDurable)),
         ("legacy import never repairs or writes source data", LegacyImportNeverRepairsOrWritesSource),
         ("account authorization addresses stay on provider origins", Sync(AccountAuthorizationUrlsStayOnProviderOrigins)),
+        ("account preparation bounds stalled response bodies", AccountPreparationBoundsStalledResponseBodies),
+        ("account preparation cancellation and replacement do not await transport", AccountPreparationCancellationAndReplacementDoNotWaitForTransport),
+        ("account preparation bounds offline ownership refresh", AccountPreparationBoundsOfflineOwnershipRefresh),
+        ("account preparation budget ends before user authorization", AccountPreparationBudgetEndsBeforeUserAuthorization),
         // XSR-501: settings capability contract.
         ("schema defaults are visible and available", Sync(SchemaDefaultsAreVisibleAndAvailable)),
         ("set then get round trips every type", SetThenGetRoundTripsEveryType),

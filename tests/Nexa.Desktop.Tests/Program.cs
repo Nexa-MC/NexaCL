@@ -406,6 +406,7 @@ internal static partial class Program
         ("third-party onboarding masks passwords and uses the chosen server", ThirdPartyOnboardingMasksPasswordsAndUsesConfiguredServer),
         ("LittleSkin onboarding selects characters with separate token kinds", LittleSkinOnboardingChoosesCharacterAndKeepsTokenKindsSeparate),
         ("account failures and stale file pickers stay in the current view", AccountFailuresAndLateFilePickerStayInCurrentView),
+        ("account preparation timeouts fail and leave retry available for every provider", AccountPreparationTimeoutsAreFailuresAndLeaveRetryAvailable),
         ("launch page replicates the legacy card layout with bound facts", LaunchPageReplicatesLegacyLayout),
         ("launch page uses compact gutters across wide, default, and minimum windows", LaunchPageUsesCompactGutters),
         ("navigation intents route between launch and placeholder pages", NavigationIntentsRouteBetweenPages),

@@ -21,6 +21,13 @@ composition, not a second authentication implementation.
   Worker completions publish state only; no worker reads or changes the UI.Next tree.
   Cancellation/replacement uses an operation generation so a superseded login cannot persist
   an account or overwrite a newer result. Persistence precedes success/selection publication.
+- Login preparation has a 30-second budget per network stage, including ownership refresh,
+  device-code retrieval and third-party authentication. The budget covers response bodies as
+  well as connection/headers and does not limit the user's device-authorization window.
+  Public progress identifies the stage being awaited. Network timeout is a retryable failure;
+  only an explicit operation cancellation is shown as cancelled. Cancelling/replacing a
+  preparation stops waiting even if an auth capability ignores its cancellation token, and
+  late results cannot publish a challenge or save an account.
 - Microsoft and LittleSkin use the existing device authorization flow. Each newly published
   authorization challenge is presented exactly once: Desktop asks the narrow native host port
   to open the provider's validated HTTPS verification URL and copy the public user code. The
@@ -85,3 +92,23 @@ CoreCLR suites, architecture/format gates and NativeAOT/trimmed Desktop shell sm
   were changed for that workaround.
 - Real OAuth requires configured provider app IDs and user authorization. Tests use fixture
   HTTP/auth ports; they do not claim a live account login, Narrator speech or manual OS IME test.
+
+## 2026-10-18 preparation lifecycle regression
+
+- Device-code retrieval, third-party authentication and the ownership refresh preceding
+  non-Microsoft login share a bounded preparation adapter. It publishes the current stage,
+  cancels the full request after 30 seconds and stops awaiting uncooperative capabilities.
+  The deadline is disposed before device polling, so browser authorization keeps its own
+  provider-defined validity window. Generation checks continue to reject superseded results.
+- Reproduced the former timeout classification through the actual Desktop forms: a transport
+  timeout produced `Cancelled` rather than `Failed`. It now displays a safe timeout message
+  with retry available, while explicit cancellation remains `Cancelled`.
+- Regression fixtures cover stalled bodies for all three online providers, cancellation and
+  replacement before headers, late ownership-refresh results, offline recovery, and a user
+  spending longer than the preparation budget in browser authorization. No real credentials
+  or live authorization are used.
+- Release build: zero warnings/errors. CoreCLR: 775 Services tests, 356 Desktop tests, and
+  architecture checks for all 72 projects passed; managed shell/setup startup probes passed.
+- Linux NativeAOT: all four preparation regression groups passed, and Desktop shell/setup
+  probes passed. Linked-trim Desktop shell/setup probes also passed. Publish retains only the
+  pre-existing third-party Jint IL2098 warning; no account-source trim/AOT warning was added.
