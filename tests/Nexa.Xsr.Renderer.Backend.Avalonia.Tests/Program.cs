@@ -68,6 +68,7 @@ internal static partial class Program
 
     private static int Main(string[] args)
     {
+        if (args is ["--native-macos-render-probe", var mode, var directory]) return RunMacOSRenderProbe(mode, directory);
         if (args.Contains("--native-startup-smoke")) return RunNativeStartupSmoke();
         if (args.Contains("--native-startup-cancel-smoke")) return RunNativeStartupCancelSmoke();
         if (args.Contains("--native-corner-smoke")) return RunNativeCornerSmoke();

@@ -1,0 +1,51 @@
+name: macOS one-off startup and offscreen rendering
+on:
+  push:
+    branches: [refactor/xsr]
+    paths: ['.github/workflows/macos-render-once.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  render:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: macos-15, rid: osx-arm64}
+          - {os: macos-15-intel, rid: osx-x64}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    env:
+      PROBE_OUTPUT: ${{ github.workspace }}/.macos-render-evidence
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          global-json-file: global.json
+      - name: Build native rendering probe
+        run: dotnet build tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release -m:1 -nodeReuse:false
+      - name: Capture native light and dark offscreen rendering
+        shell: bash
+        run: |
+          mkdir -p "$PROBE_OUTPUT"
+          result=0
+          for mode in light dark; do
+            dotnet tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll \
+              --native-macos-render-probe "$mode" "$PROBE_OUTPUT" > "$PROBE_OUTPUT/render-$mode.log" 2>&1 || result=1
+            cat "$PROBE_OUTPUT/render-$mode.log"
+          done
+          exit "$result"
+      - name: Exercise published NativeAOT normal startup
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 eng/diagnostics/macos_startup_probe.py --rid '${{ matrix.rid }}' --output "$PROBE_OUTPUT"
+      - name: Retain offscreen images and startup evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: macos-render-${{ matrix.rid }}
+          path: ${{ env.PROBE_OUTPUT }}
+          if-no-files-found: error
+          retention-days: 14
