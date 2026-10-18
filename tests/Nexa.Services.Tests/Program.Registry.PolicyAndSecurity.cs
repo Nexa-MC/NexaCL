@@ -41,6 +41,7 @@ internal static partial class Program
         ("mrpack installs client files and overrides atomically", MrpackInstallsClientFilesAndOverridesAtomically),
         ("modpack updates preserve user files and reject stale invalid inputs", ModpackUpdatesPreserveUserFilesAndRejectStaleOrInvalidInputs),
         ("modpack update publication resumes and rolls back atomically", ModpackUpdatePublicationResumesAndRollsBackAtomically),
+        ("online modpacks identify cache preview and publish verified updates", OnlineModpackUpdatesIdentifyDownloadPreviewAndPublish),
         ("modpack failures never publish instance", ModpackFailuresNeverPublishInstance),
         ("archive actual byte limits and stored length mismatch", ArchiveActualByteLimits),
         ("modpack cancellation and conflicts preserve existing data", ModpackCancellationAndConflictsPreserveExistingData),

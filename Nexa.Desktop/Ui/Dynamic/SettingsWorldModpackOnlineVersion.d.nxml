@@ -1,0 +1,7 @@
+<nxml-dynamic>
+  <StackPanel Class="world-stack">
+    <Text Content="{data name}" Localize="false" Class="world-field-label" />
+    <Text Content="{data details}" Localize="false" Class="world-hint" />
+    <Button Key="{data action}" Content="下载并预览更新" Command="ui.settings.management.action" Class="settings-catalog-action world-button-health" Enabled="{data enabled}" />
+  </StackPanel>
+</nxml-dynamic>

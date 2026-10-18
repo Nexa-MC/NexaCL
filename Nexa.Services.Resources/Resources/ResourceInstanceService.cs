@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Nexa.Services.Minecraft;
@@ -188,45 +187,16 @@ public sealed class ResourceInstanceService(ResourceProviderHttp http, ResourceO
     }
     private static bool ModrinthId(string value) => value.Length is > 0 and <= 64 && value.All(char.IsAsciiLetterOrDigit);
     private static bool CurseForgeId(string value) => value.Length is > 0 and < 20 && value.All(char.IsAsciiDigit);
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350", Justification = "CurseForge file identity verification uses its published SHA1 in addition to the Murmur2 fingerprint; not a credential or signature.")]
     private static async Task<Fingerprint?> FingerprintAsync(FileInfo file, CancellationToken token)
     {
         long size = file.Length, modified = file.LastWriteTimeUtc.Ticks;
         await using var input = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, true);
-        using var sha512 = IncrementalHash.CreateHash(HashAlgorithmName.SHA512);
-        using var sha1 = IncrementalHash.CreateHash(HashAlgorithmName.SHA1);
-        byte[] buffer = new byte[65536]; long actual = 0; uint normalized = 0;
-        int read;
-        while ((read = await input.ReadAsync(buffer, token).ConfigureAwait(false)) > 0)
-        {
-            actual += read; if (actual > size) throw new IOException("模组文件已变化。");
-            sha512.AppendData(buffer, 0, read); sha1.AppendData(buffer, 0, read);
-            for (int i = 0; i < read; i++) if (!Whitespace(buffer[i])) normalized++;
-        }
-        if (actual != size) return null;
-        input.Position = 0;
-        actual = 0;
-        uint hash = 1 ^ normalized, word = 0; int count = 0;
-        unchecked
-        {
-            while ((read = await input.ReadAsync(buffer, token).ConfigureAwait(false)) > 0)
-            {
-                actual += read; if (actual > size) throw new IOException("资源文件已变化。");
-                for (int i = 0; i < read; i++)
-                {
-                    byte b = buffer[i]; if (Whitespace(b)) continue;
-                    word |= (uint)b << (count * 8);
-                    if (++count == 4) { word *= 0x5bd1e995; word ^= word >> 24; word *= 0x5bd1e995; hash = hash * 0x5bd1e995 ^ word; word = 0; count = 0; }
-                }
-            }
-            if (count > 0) { hash ^= word; hash *= 0x5bd1e995; }
-            hash ^= hash >> 13; hash *= 0x5bd1e995; hash ^= hash >> 15;
-        }
+        var identity = await Nexa.Services.Files.ContentFingerprintReader.ReadAsync(input, 2L * 1024 * 1024 * 1024, token).ConfigureAwait(false);
         file.Refresh();
-        return actual == size && file.Exists && file.Length == size && file.LastWriteTimeUtc.Ticks == modified ? new(file.Name, size, modified, Convert.ToHexString(sha512.GetHashAndReset()).ToLowerInvariant(), Convert.ToHexString(sha1.GetHashAndReset()), hash, Enabled(file.Name)) : null;
+        return file.Exists && file.Length == size && file.LastWriteTimeUtc.Ticks == modified
+            ? new(file.Name, size, modified, identity.Sha512, identity.Sha1, identity.CurseForge, Enabled(file.Name)) : null;
     }
     private static bool Enabled(string name) => !name.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase) && !name.EndsWith(".disabled.jar", StringComparison.OrdinalIgnoreCase);
-    private static bool Whitespace(byte b) => b is 9 or 10 or 13 or 32;
     private static void CheckLinks(string path)
     {
         for (string? current = path; current is not null; current = Path.GetDirectoryName(current))

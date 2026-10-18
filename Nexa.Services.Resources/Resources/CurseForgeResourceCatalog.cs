@@ -77,7 +77,13 @@ public sealed class CurseForgeResourceCatalog(ResourceProviderHttp transport) : 
         string website = item.TryGetProperty("links", out var links) ? Text(links, "websiteUrl") : "";
         if (!Uri.TryCreate(website, UriKind.Absolute, out var uri) || uri.Scheme != "https" || uri.Host != "www.curseforge.com" || !uri.IsDefaultPort || uri.UserInfo.Length > 0) website = "https://www.curseforge.com/projects/" + id;
         return new(id, Text(item, "name"), Text(item, "summary"), item.TryGetProperty("authors", out var authors) ? string.Join(", ", authors.EnumerateArray().Take(8).Select(a => Text(a, "name"))) : "", Number(item, "downloadCount"), website.TrimEnd('/'))
-        { IsLibrary = item.TryGetProperty("categories", out var categories) && categories.EnumerateArray().Any(c => Number(c, "id") == 421 || Text(c, "slug") == "library-api"), Slug = Text(item, "slug"), Sources = [new(ResourceProvider.CurseForge, id)], IconUrl = ResourceIconService.IsAllowed(icon) ? icon : null };
+        {
+            Kind = Number(item, "classId") switch { 4471 => ResourceKind.Modpack, 12 => ResourceKind.ResourcePack, 6552 => ResourceKind.Shader, _ => ResourceKind.Mod },
+            IsLibrary = item.TryGetProperty("categories", out var categories) && categories.EnumerateArray().Any(c => Number(c, "id") == 421 || Text(c, "slug") == "library-api"),
+            Slug = Text(item, "slug"),
+            Sources = [new(ResourceProvider.CurseForge, id)],
+            IconUrl = ResourceIconService.IsAllowed(icon) ? icon : null
+        };
     }
     public async Task<ResourceChangelog> ReadChangelogAsync(ResourceChangelogQuery query, CancellationToken token)
     {

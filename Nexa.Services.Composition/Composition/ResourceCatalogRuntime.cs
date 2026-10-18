@@ -1,4 +1,5 @@
 using Nexa.Services.Foundation;
+using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Resources;
 using Nexa.Xsr;
@@ -88,6 +89,30 @@ public static class ResourceCatalogRuntimeComposer
             });
             if (installer is not null)
             {
+                var packs = new ResourceModpackOnlineService(installer, instances, source, downloader, information,
+                    Path.Combine(host.CacheDirectory ?? Path.Combine(Path.GetTempPath(), "NexaCL"), "modpack-archives"));
+                queries.Register<ResourceModpackOnlineQuery, ResourceModpackOnline>(ResourceModpackContract.Online, async (query, token) =>
+                {
+                    try { return XsrResult.Success(await packs.ReadAsync(query, token).ConfigureAwait(false)); }
+                    catch (Exception error) when (!token.IsCancellationRequested && (ResourceOnlineInformationCache.Recoverable(error) || error is ArgumentException))
+                    { return XsrResult.Failure<ResourceModpackOnline>(MinecraftErrors.InvalidRequest(error.Message)); }
+                });
+                queries.Register<ResourceModpackPreviewQuery, ResourceModpackPreview>(ResourceModpackContract.Preview, async (query, token) =>
+                {
+                    try { return XsrResult.Success(await packs.PreviewAsync(query, token).ConfigureAwait(false)); }
+                    catch (Exception error) when (!token.IsCancellationRequested && (ResourceOnlineInformationCache.Recoverable(error) || error is ArgumentException))
+                    { return XsrResult.Failure<ResourceModpackPreview>(MinecraftErrors.InvalidRequest(error.Message)); }
+                });
+                commands.Register<ResourceModpackUpdateCommand>(ResourceModpackContract.Update, async (command, token) =>
+                {
+                    try
+                    {
+                        var result = await packs.UpdateAsync(command, token).ConfigureAwait(false);
+                        return result.IsSuccess ? XsrResult.Success() : XsrResult.Failure(result.Error!);
+                    }
+                    catch (Exception error) when (!token.IsCancellationRequested && (ResourceOnlineInformationCache.Recoverable(error) || error is ArgumentException))
+                    { return XsrResult.Failure(MinecraftErrors.InvalidRequest(error.Message)); }
+                });
                 var mods = new ResourceModInstallService(source, instances, downloader, new MinecraftLocalJarService(host.Tasks, host.StateStore, installer), host.Tasks)
                 { AutoInstallDependencies = AutoDependencies };
                 commands.Register<ResourceModInstallCommand>(ResourceCatalogContract.InstallMod, async (command, token) =>

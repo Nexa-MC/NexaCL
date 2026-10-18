@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data name} · {data source}&#10;已安装：{data version}&#10;{data description}" Localize="false" /></nxml-dynamic>

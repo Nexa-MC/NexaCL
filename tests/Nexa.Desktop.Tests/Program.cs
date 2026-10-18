@@ -374,6 +374,7 @@ internal static partial class Program
         ("Instance content graph bounds relations and retires stale instances", ContentGraphPageBoundsRelationsAndRetiresOldInstances),
         ("Modpack export preserves fields and dispatches selected scope", ModpackExportPagePreservesFieldsAndDispatchesSelectedScope),
         ("Modpack update page previews retains draft and applies exact selection", ModpackUpdatePagePreviewsRetainsDraftAndAppliesExactSelection),
+        ("Online modpack page retains drafts rejects stale previews and applies online", OnlineModpackPageRetainsDraftRejectsStalePreviewAndUsesOnlineUpdate),
         ("Server pages edit through sealed commands and join transiently", ServerPageEditsThroughSealedCommandsAndJoinsTransiently),
         ("Online content lists retain search focus and reject retired instances", OnlineContentListRetainsFocusAndRejectsRetiredInstances),
         ("Installed content lists associate icons versions and pack updates", InstalledContentListsAssociateIconsVersionsAndPackUpdates),

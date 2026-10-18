@@ -124,7 +124,13 @@ public sealed class ResourceCatalogService(HttpClient http, ResourceProviderHttp
 
     private static ResourceProject Project(JsonElement item, string id) => new(id, Text(item, "title"),
         Text(item, "description"), Text(item, "author"), Number(item, "downloads"), "https://modrinth.com/project/" + id)
-    { IsLibrary = Strings(item, "categories").Any(c => c is "library" or "library-api"), Slug = Text(item, "slug"), Sources = [new(ResourceProvider.Modrinth, id)], IconUrl = ResourceIconService.IsAllowed(Text(item, "icon_url")) ? Text(item, "icon_url") : null };
+    {
+        Kind = Text(item, "project_type") switch { "modpack" => ResourceKind.Modpack, "resourcepack" => ResourceKind.ResourcePack, "shader" => ResourceKind.Shader, _ => ResourceKind.Mod },
+        IsLibrary = Strings(item, "categories").Any(c => c is "library" or "library-api"),
+        Slug = Text(item, "slug"),
+        Sources = [new(ResourceProvider.Modrinth, id)],
+        IconUrl = ResourceIconService.IsAllowed(Text(item, "icon_url")) ? Text(item, "icon_url") : null
+    };
     private static ResourceVersion Version(JsonElement item, string project) => new(Text(item, "id"), Text(item, "name"), Text(item, "version_number"),
         Text(item, "version_type") switch { "release" => "正式版", "beta" => "Beta", "alpha" => "Alpha", _ => "未标注" }, Strings(item, "game_versions"), Strings(item, "loaders"),
         Text(item, "date_published"), $"https://modrinth.com/project/{project}/version/{Text(item, "id")}")

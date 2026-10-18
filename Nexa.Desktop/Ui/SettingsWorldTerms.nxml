@@ -76,4 +76,9 @@
 <Text Key="modpack.update.conflicts" Content="存在已修改或同名的模组，请确认替换选项后重新预览。" />
 <Text Key="modpack.update.reading" Content="正在读取整合包并核对现有文件…" />
 <Text Key="modpack.update.queued" Content="整合包更新已加入任务中心。" />
+<Text Key="modpack.online.reading" Content="正在识别整合包来源并读取在线版本…" />
+<Text Key="modpack.online.unavailable" Content="暂时无法读取整合包在线信息。" />
+<Text Key="modpack.online.stale" Content="正在显示缓存资料，请刷新后再进行在线更新。" />
+<Text Key="modpack.online.latest" Content="未发现可直接下载的更新版本。" />
+<Text Key="modpack.online.preparing" Content="正在下载新版整合包并准备变更预览…" />
 </StackPanel>

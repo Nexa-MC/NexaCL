@@ -1,11 +1,13 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Nexa.Services.Files;
 using Nexa.Services.Minecraft.Management;
 
 namespace Nexa.Services.Minecraft.Install;
 
-internal sealed record ModpackManagedManifest(int Schema, string Name, string Version, string ArchiveSha256, ModpackPublishedFile[] Files);
+internal sealed record ModpackManagedManifest(int Schema, string Name, string Version, string ArchiveSha256, ModpackPublishedFile[] Files)
+{ public ContentFingerprint? ArchiveIdentity { get; init; } }
 
 internal static class ModpackManagedManifestStore
 {
@@ -49,7 +51,16 @@ internal static class ModpackManagedManifestStore
                 throw new InvalidDataException("整合包文件清单超过限制。");
             files.Add(new(relative, input.Length, Convert.ToHexString(await SHA256.HashDataAsync(input, token).ConfigureAwait(false))));
         }
-        return new(1, pack.Name, pack.Version, pack.Sha256, files.ToArray());
+        return new(1, pack.Name, pack.Version, pack.Sha256, files.ToArray())
+        { ArchiveIdentity = await ReadArchiveIdentityAsync(pack.Path, pack.Sha256, token).ConfigureAwait(false) };
+    }
+    internal static async Task<ContentFingerprint> ReadArchiveIdentityAsync(string path, string expected, CancellationToken token)
+    {
+        RecoveryBlobStore.CheckLinks(path);
+        await using var input = File.OpenRead(path);
+        var identity = await ContentFingerprintReader.ReadAsync(input, MinecraftModpackArchive.MaxArchive, token).ConfigureAwait(false);
+        if (!identity.Sha256.Equals(expected, StringComparison.OrdinalIgnoreCase)) throw new IOException("原整合包已变化，请重新选择。");
+        return identity;
     }
     internal static async Task WriteAsync(string instance, ModpackManagedManifest manifest, CancellationToken token)
     {
@@ -69,6 +80,11 @@ internal static class ModpackManagedManifestStore
         var value = await JsonSerializer.DeserializeAsync(input, ModpackManagedJson.Default.ModpackManagedManifest, token).ConfigureAwait(false);
         if (value is not { Schema: 1, Files: not null, ArchiveSha256.Length: 64 } || value.Files.Length > 100000
             || !value.ArchiveSha256.All(char.IsAsciiHexDigit)) throw new InvalidDataException("整合包文件清单无效。");
+        if (value.ArchiveIdentity is { } identity && (identity.Length is < 0 or > MinecraftModpackArchive.MaxArchive
+            || !identity.Sha256.Equals(value.ArchiveSha256, StringComparison.OrdinalIgnoreCase)
+            || identity.Sha512 is not { Length: 128 } || !identity.Sha512.All(char.IsAsciiHexDigit)
+            || identity.Sha1 is not { Length: 40 } || !identity.Sha1.All(char.IsAsciiHexDigit)))
+            throw new InvalidDataException("整合包来源校验信息无效。");
         HashSet<string> paths = new(Nexa.Core.PathIdentity.Comparer);
         long total = 0;
         foreach (var file in value.Files)

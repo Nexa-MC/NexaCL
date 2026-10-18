@@ -46,12 +46,47 @@ Modified configurations remain local; modified mod binaries require explicit
 replacement consent and are retained in the transaction backup. A canceled
 preparation is reported as canceled and leaves the original instance untouched.
 
+Online pack information belongs to Resources. It identifies the installed archive
+with the existing Modrinth SHA512 and CurseForge fingerprint/SHA1 adapters, reads
+project/version metadata through the shared persistent resource cache, and offers
+newer downloadable pack versions by publication time. Pack versions may change
+Minecraft or loader versions; the existing installation preview exposes that change.
+Incomplete or stale online results remain visible but cannot authorize an update.
+
+Fresh managed manifests retain the original archive's SHA256, SHA512, SHA1, size
+and CurseForge fingerprint. A shared bounded streaming fingerprint reader serves
+both content identification and pack installation. Older installations can recover
+that identity from the original-archive path in their authenticated installation
+journal, or from a user-selected original archive. Completed installation staging
+archives remain prunable; if the original was deleted the user must supply it.
+No project is associated by display name alone.
+
+Resources.Contracts may reference Minecraft.Install.Contracts for the online
+preview's existing local transaction contract. The reverse dependency is forbidden.
+Resources downloads a selected, freshly resolved provider version into its owned
+archive cache, validates its published bytes, and delegates preview/application to
+Minecraft.Install. Application revalidates the exact provider version, archive hash
+and installed archive identity; local file conflicts, preservation and recovery keep
+the existing semantics. Preview downloads do not modify the installed instance.
+
+The online panel in **Version settings → Modpack** loads source/project information,
+the installed provider version and newer downloadable versions. Choose **Download
+and preview update**, review the existing file-change/conflict summary, then use
+**Apply update**. Source and version information survives restarts through the shared
+metadata cache; verified archive bytes are reused rather than downloaded again.
+Offline information remains readable, while online preview/application require
+fresh provider confirmation. A missing legacy source archive can be supplied with
+the existing original-modpack picker. Installed sources are not guessed from titles.
+
 Validation on Linux x64 (2026-10-18):
 
 - Full solution Release build: zero warnings and errors.
-- Full Services harness: 770 passed; full Desktop harness: 354 passed.
+- Full Services harness: 771 passed; full Desktop harness: 355 passed.
 - Architecture harness: 72 projects passed.
-- Final focused Services regressions: 5 passed in both managed and NativeAOT,
-  including 10 complete update scenarios and interrupted publication resume/undo.
+- Final focused Services regressions: 6 passed in NativeAOT and the full managed
+  harness, including 24 online update scenarios, 10 local update scenarios,
+  malformed/partial resource identities and interrupted publication resume/undo.
+- Official Modrinth project/version endpoints were probed with Fabulously Optimized:
+  477 versions, primary MRPack SHA512 present, response within the 8 MiB catalog cap.
 - Desktop shell/setup validation passed in managed, NativeAOT and trimmed builds.
   Native publication retains the pre-existing third-party Jint IL2098 warning.

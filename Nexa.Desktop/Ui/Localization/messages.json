@@ -10726,5 +10726,16 @@
   {"source":"无法选择整合包：{data error}","en":"Could not select modpack: {data error}","zh-Hant":"無法選擇整合包：{data error}"},
   {"source":"保留：{data path}","en":"Preserve: {data path}","zh-Hant":"保留：{data path}"},
   {"source":"{data name} {data version} · Minecraft {data game}\n新增 {data added}，替换 {data updated}，移除 {data removed}，保留本地修改 {data preserved}。\n","en":"{data name} {data version} · Minecraft {data game}\nAdd {data added}, replace {data updated}, remove {data removed}, preserve {data preserved} locally modified files.\n","zh-Hant":"{data name} {data version} · Minecraft {data game}\n新增 {data added}，取代 {data updated}，移除 {data removed}，保留本機修改 {data preserved}。\n"},
-  {"source":"选择整合包","en":"Choose modpack","zh-Hant":"選擇整合包"}
+  {"source":"选择整合包","en":"Choose modpack","zh-Hant":"選擇整合包"},
+  {"source": "在线整合包", "en": "Online modpack", "zh-Hant": "線上整合包"},
+  {"source": "刷新在线信息", "en": "Refresh online information", "zh-Hant": "重新整理線上資訊"},
+  {"source": "打开整合包主页", "en": "Open modpack page", "zh-Hant": "開啟整合包首頁"},
+  {"source": "下载并预览更新", "en": "Download and preview update", "zh-Hant": "下載並預覽更新"},
+  {"source": "正在识别整合包来源并读取在线版本…", "en": "Identifying the modpack source and reading online versions…", "zh-Hant": "正在識別整合包來源並讀取線上版本…"},
+  {"source": "暂时无法读取整合包在线信息。", "en": "Online modpack information is temporarily unavailable.", "zh-Hant": "暫時無法讀取整合包線上資訊。"},
+  {"source": "正在显示缓存资料，请刷新后再进行在线更新。", "en": "Showing cached information. Refresh before updating online.", "zh-Hant": "正在顯示快取資料，請重新整理後再進行線上更新。"},
+  {"source": "未发现可直接下载的更新版本。", "en": "No newer versions are available for direct download.", "zh-Hant": "未發現可直接下載的更新版本。"},
+  {"source": "正在下载新版整合包并准备变更预览…", "en": "Downloading the new modpack and preparing the change preview…", "zh-Hant": "正在下載新版整合包並準備變更預覽…"},
+  {"source": "{data name} · {data source}\n已安装：{data version}\n{data description}", "en": "{data name} · {data source}\nInstalled: {data version}\n{data description}", "zh-Hant": "{data name} · {data source}\n已安裝：{data version}\n{data description}"},
+  {"source": "{data version} · Minecraft {data games} · {data channel}", "en": "{data version} · Minecraft {data games} · {data channel}", "zh-Hant": "{data version} · Minecraft {data games} · {data channel}"}
 ]

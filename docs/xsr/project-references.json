@@ -408,6 +408,7 @@
     "Nexa.Contracts",
     "Nexa.Core",
     "Nexa.Domain",
+    "Nexa.Services.Minecraft.Install.Contracts",
     "Nexa.Xsr.Abstractions",
     "Nexa.Xsr.State"
   ],

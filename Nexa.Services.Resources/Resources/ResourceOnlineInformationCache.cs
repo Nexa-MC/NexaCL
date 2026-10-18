@@ -175,7 +175,7 @@ public sealed class ResourceOnlineInformationCache(ISharedStateCache? cache = nu
             if (index >= MaximumRecords || total > MaximumDiskBytes) files[index].Delete();
         }
     }
-    private static void CheckLinks(string path)
+    internal static void CheckLinks(string path)
     {
         for (string? current = Path.GetFullPath(path); current is not null; current = Path.GetDirectoryName(current))
         {
@@ -225,6 +225,8 @@ internal sealed record FingerprintMetadata(ResourceInstanceService.Fingerprint? 
 internal sealed record ResourceVersionMetadata(ResourceVersion? Version);
 internal sealed record ResourceIdentityMetadata(ResourceInstalledFile[] Files, bool Complete, bool IsStale = false);
 internal sealed record ResourceIdentityBatchMetadata(Dictionary<string, ResourceIdentityMetadata> Matches);
+internal sealed record ResourceModpackIdentityMetadata(Nexa.Services.Minecraft.Install.ModpackOnlineIdentity? Identity);
+internal sealed record ResourceModpackArchiveMetadata(string Path);
 
 [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata, MaxDepth = 32)]
 [JsonSerializable(typeof(ResourceMetadataEnvelope<ResourceSearchResult>))]
@@ -234,4 +236,6 @@ internal sealed record ResourceIdentityBatchMetadata(Dictionary<string, Resource
 [JsonSerializable(typeof(ResourceMetadataEnvelope<FingerprintMetadata>))]
 [JsonSerializable(typeof(ResourceMetadataEnvelope<ResourceIdentityMetadata>))]
 [JsonSerializable(typeof(ResourceMetadataEnvelope<ResourceIdentityBatchMetadata>))]
+[JsonSerializable(typeof(ResourceMetadataEnvelope<ResourceModpackIdentityMetadata>))]
+[JsonSerializable(typeof(ResourceMetadataEnvelope<ResourceModpackArchiveMetadata>))]
 internal sealed partial class ResourceMetadataJsonContext : JsonSerializerContext;

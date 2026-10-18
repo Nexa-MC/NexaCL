@@ -1,6 +1,15 @@
 <nxml-dynamic>
   <StackPanel Key="ModpackUpdateWorkspace" Class="world-card">
     <StackPanel Class="world-card-body">
+      <StackPanel IsVisible="{data online}" Class="world-stack">
+        <Text Content="在线整合包" Class="world-title" />
+        <Text Content="{data onlineInfo}" Localize="false" Class="world-hint" />
+        <StackPanel Orientation="{data actionDirection}" Class="world-stack">
+          <Button Key="ModpackUpdate.OnlineRefresh" Content="刷新在线信息" Command="ui.settings.management.action" Class="settings-catalog-action world-button-health" Enabled="{data onlineRefresh}" />
+          <Button Key="ModpackUpdate.OnlineProject" Content="打开整合包主页" Command="ui.settings.management.action" Class="settings-catalog-action world-button-health" IsVisible="{data onlineProject}" />
+        </StackPanel>
+        <Dynamic Key="ModpackUpdate.OnlineVersions" Class="world-stack" />
+      </StackPanel>
       <Text Content="更新整合包" Class="world-title" />
       <Text Content="选择新版 MRPack、CurseForge 或 Nexa 整合包。更新保留存档、截图、游戏选项和额外文件；修改过的配置会继续保留。" Class="world-hint" />
       <StackPanel Class="world-field">
