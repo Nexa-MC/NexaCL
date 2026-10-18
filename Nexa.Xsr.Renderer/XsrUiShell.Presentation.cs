@@ -27,6 +27,11 @@ public sealed partial class XsrUiShell
         // layouts in both the compiled-template and programmatic construction paths.
         if (Tree.GetComponent<XsrUiElement>(Root) is null) Tree.SetComponent(Root, new XsrUiElement());
         if (Tree.GetComponent<XsrUiElement>(TitleBar) is null) Tree.SetComponent(TitleBar, new XsrUiElement());
+        XsrUiEntityId[] titleChildren = [.. Tree.Children(TitleBar)];
+        _titleBarSafeArea = Tree.Create("title-bar-native-safe-area");
+        Tree.SetComponent(_titleBarSafeArea, new XsrUiElement { Width = 0 });
+        Tree.Attach(_titleBarSafeArea, TitleBar);
+        foreach (var child in titleChildren) Tree.Attach(child, TitleBar);
         _navigationToggle = CreateNavigationToggle();
         ApplyNavigationItemMargins();
         ApplyPalette();

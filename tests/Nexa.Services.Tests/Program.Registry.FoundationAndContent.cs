@@ -191,6 +191,7 @@ internal static partial class Program
         ("bound managed Java lease survives owner release until process exit", ManagedJavaBoundLeaseSurvivesOwnerReleaseUntilProcessExit),
         ("managed Java lease rejects unknown and malformed records", ManagedJavaLeaseRejectsUnknownAndMalformedRecords),
         ("managed Java lease reclaims only proven exited process identities", ManagedJavaLeaseReclaimsOnlyProvenExitedProcessIdentities),
+        ("API client certificate imports file and embedded private keys", Sync(ApiClientCertificateImportsFileAndEmbeddedPrivateKeys)),
         ("network transport captures preferences and retains active responses", NetworkTransportCapturesCommittedPreferencesAndRetainsActiveResponses),
         ("foundation network preferences reach actual requests and managed Java roots", FoundationNetworkPreferencesReachActualRequestsAndManagedJavaRoots),
         ("bandwidth policy preserves legacy slider and exact values", Sync(BandwidthPolicyPreservesLegacySliderAndExactNewValues)),

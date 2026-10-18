@@ -3,11 +3,16 @@ import argparse
 import json
 import os
 from pathlib import Path
+import plistlib
 import shutil
 import signal
 import subprocess
 import tarfile
 import time
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "release"))
+from package import copy_runtime_payload
 
 
 WINDOWS_SWIFT = r'''
@@ -33,6 +38,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--rid", choices=("osx-x64", "osx-arm64"), required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--payload", type=Path, help="Fresh NativeAOT publish to replay inside the released macOS bundle")
     args = parser.parse_args()
     root = args.output.resolve()
     root.mkdir(parents=True, exist_ok=True)
@@ -54,7 +60,21 @@ def main():
     with tarfile.open(downloaded / name) as archive:
         archive.extractall(unpacked, filter="data")
     binary = next(unpacked.rglob("Contents/MacOS/Nexa.Desktop"))
-    run(["codesign", "--verify", "--deep", "--strict", binary.parents[2]], root / "codesign.log")
+    if args.payload:
+        shutil.rmtree(binary.parent)
+        copy_runtime_payload(args.payload.resolve(), binary.parent)
+        info = binary.parents[1] / "Info.plist"
+        document = plistlib.loads(info.read_bytes())
+        document["NexaProductVersion"] = "2.0.0.ci." + os.environ["GITHUB_SHA"][:6]
+        info.write_bytes(plistlib.dumps(document))
+        if run(["codesign", "--force", "--deep", "--sign", "-", binary.parents[2]], root / "codesign-sign.log"):
+            raise SystemExit("Fresh application bundle signing failed")
+    if run(["codesign", "--verify", "--deep", "--strict", binary.parents[2]], root / "codesign.log"):
+        raise SystemExit("Application bundle verification failed")
+    (root / "startup-build.json").write_text(json.dumps(dict(
+        source="current NativeAOT publish" if args.payload else "published Alpha 7",
+        commit=os.environ.get("GITHUB_SHA") if args.payload else None,
+        bundleTemplate="v2.0.0.alpha.7", rid=args.rid), indent=2))
     outcomes = []
     for scenario in ("first-run", "configured", "safe-mode"):
         data = root / ("data-" + scenario)
@@ -84,7 +104,18 @@ def main():
                         time.sleep(1)
                         succeeded = process.poll() is None
                         break
+                    if any(window.get("kCGWindowBounds", {}).get("Width") == 400
+                           and window.get("kCGWindowBounds", {}).get("Height", 0) >= 340 for window in windows):
+                        # The production startup window grows to 346 DIPs for an error.
+                        # It waits for user retry, so waiting longer cannot establish readiness.
+                        break
                     time.sleep(.5)
+                if observed and observed[-1]["windows"]:
+                    selected = max(observed[-1]["windows"], key=lambda item: item.get("kCGWindowBounds", {}).get("Width", 0))
+                    window_id = selected.get("kCGWindowNumber")
+                    if window_id:
+                        run(["screencapture", "-x", "-l", str(window_id), root / f"native-{scenario}.png"],
+                            root / f"native-{scenario}-capture.log", timeout=10)
                 if process.poll() is None:
                     run(["sample", process.pid, "1", "-file", root / f"sample-{scenario}.txt"],
                         root / f"sample-{scenario}.log", timeout=15)
@@ -109,12 +140,13 @@ def main():
             if report.is_file():
                 shutil.copy2(report, root / report.name)
     (root / "startup-results.json").write_text(json.dumps(outcomes, indent=2))
-    print(json.dumps(outcomes, indent=2))
+    print(json.dumps([{key: value for key, value in item.items() if key != "observations"}
+                      for item in outcomes], indent=2))
     # Do not duplicate the downloaded payload in the evidence artifact.
     shutil.rmtree(downloaded)
     shutil.rmtree(unpacked)
     if not all(item["visibleMainWindow"] for item in outcomes):
-        raise SystemExit("Published normal-startup probe found a failure; see startup-results.json")
+        raise SystemExit("Normal-startup probe found a failure; see startup-results.json")
 
 
 if __name__ == "__main__":

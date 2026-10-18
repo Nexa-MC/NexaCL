@@ -14,13 +14,22 @@ internal static partial class Program
         shell.PublishWindowMetrics(86, false, 8);
         AssertEqual(8d, shell.Tree.GetComponent<XsrUiElement>(shell.Root)!.Padding.Left);
         AssertEqual(86d, store.Read<double>(store.Resolve(XsrUiShellWindowState.TrafficLightPadding)).Value);
-        AssertEqual(86d, shell.Tree.GetComponent<XsrUiElement>(shell.TitleBar)!.Padding.Left);
+        var scene = shell.Render(new(850, 500));
+        AssertEqual(new XsrUiRect(8, 8, 834, XsrUiShell.TitleBarHeight), Node(scene, shell.TitleBar).Rect);
+        var title = scene.Nodes.First(node => node.Text == shell.Title);
+        AssertTrue(title.Rect.X >= 8 + 86);
         shell.PublishWindowMetrics(86, true, 8);
         AssertEqual(0d, shell.Tree.GetComponent<XsrUiElement>(shell.Root)!.Padding.Left);
-        AssertEqual(0d, shell.Tree.GetComponent<XsrUiElement>(shell.TitleBar)!.Padding.Left);
+        scene = shell.Render(new(1040, 680));
+        AssertEqual(new XsrUiRect(0, 0, 1040, XsrUiShell.TitleBarHeight), Node(scene, shell.TitleBar).Rect);
+        AssertTrue(scene.Nodes.First(node => node.Text == shell.Title).Rect.X < title.Rect.X);
         AssertTrue(store.Read<bool>(store.Resolve(XsrUiShellWindowState.Fullscreen)).Value);
         shell.PublishWindowMetrics(0, false);
         AssertFalse(store.Read<bool>(store.Resolve(XsrUiShellWindowState.Fullscreen)).Value);
+        shell.PublishWindowMetrics(86, false);
+        scene = shell.Render(new(850, 500));
+        AssertEqual(new XsrUiRect(0, 0, 850, XsrUiShell.TitleBarHeight), Node(scene, shell.TitleBar).Rect);
+        AssertTrue(scene.Nodes.First(node => node.Text == shell.Title).Rect.X >= 86);
     }
 
     private static void ExperimentalShellPreservesSemanticChrome()

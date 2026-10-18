@@ -262,6 +262,7 @@ public sealed partial class XsrUiShell
     private readonly Dictionary<XsrUiEntityId, XsrSemanticId> _navigationIds = [];
     private readonly IXsrUiIntentSink? _externalIntentSink;
     private XsrUiEntityId _navigationToggle;
+    private XsrUiEntityId _titleBarSafeArea;
 
     private readonly XsrStateStore _windowStateStore;
     private double _trafficLightPadding, _windowContentInset;
@@ -292,9 +293,10 @@ public sealed partial class XsrUiShell
         }
         if (_trafficLightPadding == padding) return;
         _trafficLightPadding = padding;
-        var layout = Tree.GetComponent<XsrUiElement>(TitleBar)!;
-        layout.Padding = new(padding, layout.Padding.Top, layout.Padding.Right, layout.Padding.Bottom);
-        Tree.MarkDirty(TitleBar, XsrUiDirtyKinds.Layout);
+        // Padding changes the painted content rectangle in XSR. Reserve native controls'
+        // space with a layout child so the title surface still paints behind them.
+        Tree.GetComponent<XsrUiElement>(_titleBarSafeArea)!.Width = padding;
+        Tree.MarkDirty(_titleBarSafeArea, XsrUiDirtyKinds.Layout);
     }
 
     public event EventHandler<XsrUiShellNavigationChangedEventArgs>? NavigationChanged;

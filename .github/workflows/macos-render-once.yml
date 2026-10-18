@@ -1,9 +1,5 @@
 name: macOS one-off startup and offscreen rendering
-on:
-  push:
-    branches: [refactor/xsr]
-    paths: ['.github/workflows/macos-render-once.yml']
-  workflow_dispatch:
+on: workflow_dispatch
 permissions:
   contents: read
 jobs:
@@ -15,7 +11,7 @@ jobs:
           - {os: macos-15, rid: osx-arm64}
           - {os: macos-15-intel, rid: osx-x64}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       PROBE_OUTPUT: ${{ github.workspace }}/macos-render-evidence
     steps:
@@ -36,11 +32,29 @@ jobs:
             cat "$PROBE_OUTPUT/render-$mode.log"
           done
           exit "$result"
-      - name: Exercise published NativeAOT normal startup
-        if: always()
+      - name: Verify platform certificate import
+        run: dotnet run --project tests/Nexa.Services.Tests -c Release -- 'API client certificate'
+      - name: Restore client identity for the normal startup path
+        env:
+          API_CLIENT_PFX: ${{ secrets.PCLN_API_CLIENT_PFX_BASE64 }}
+        run: |
+          python3 - <<'PY'
+          import base64, os, pathlib
+          encoded = os.environ.get('API_CLIENT_PFX', '')
+          if not encoded:
+              raise SystemExit('The normal-startup regression requires the release client identity')
+          pathlib.Path('Nexa.Desktop/Assets/api-client.pfx').write_bytes(base64.b64decode(encoded, validate=True))
+          PY
+      - name: Publish current NativeAOT launcher
+        shell: bash
+        run: |
+          dotnet publish Nexa.Desktop/Nexa.Desktop.csproj -c Release -r '${{ matrix.rid }}' \
+            --self-contained true -m:1 -nodeReuse:false -p:PublishAot=true -p:StripSymbols=true \
+            -p:XsrVersionChannel=ci -p:XsrCommitShort="${GITHUB_SHA:0:6}" --output "$RUNNER_TEMP/launcher"
+      - name: Exercise current NativeAOT normal startup
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 eng/diagnostics/macos_startup_probe.py --rid '${{ matrix.rid }}' --output "$PROBE_OUTPUT"
+        run: python3 eng/diagnostics/macos_startup_probe.py --rid '${{ matrix.rid }}' --output "$PROBE_OUTPUT" --payload "$RUNNER_TEMP/launcher"
       - name: Retain offscreen images and startup evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

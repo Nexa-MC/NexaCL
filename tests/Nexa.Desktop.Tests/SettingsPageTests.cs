@@ -70,11 +70,14 @@ internal static partial class Program
         AssertEqual(8d, shell.Tree.GetComponent<XsrUiElement>(shell.Root)!.Padding.Left);
         AssertEqual(8d, scene.Nodes.Single(node => node.Entity == shell.TitleBar).Rect.X);
         shell.PublishWindowMetrics(84, false, 0);
-        AssertEqual(84d, shell.Tree.GetComponent<XsrUiElement>(shell.TitleBar)!.Padding.Left);
+        scene = shell.Render(new(850, 500));
+        AssertEqual(new XsrUiRect(0, 0, 850, XsrUiShell.TitleBarHeight), scene.Nodes.Single(node => node.Entity == shell.TitleBar).Rect);
+        AssertTrue(FindByKey(shell, scene, "TitleNavigation").Rect.X >= 84);
         shell.PublishWindowMetrics(84, true, 8);
         AssertEqual(0d, shell.Tree.GetComponent<XsrUiElement>(shell.Root)!.Padding.Left);
-        AssertEqual(0d, shell.Tree.GetComponent<XsrUiElement>(shell.TitleBar)!.Padding.Left);
-        shell.Render(new(1200, 800));
+        scene = shell.Render(new(1200, 800));
+        AssertEqual(new XsrUiRect(0, 0, 1200, XsrUiShell.TitleBarHeight), scene.Nodes.Single(node => node.Entity == shell.TitleBar).Rect);
+        AssertTrue(FindByKey(shell, scene, "TitleNavigation").Rect.X < 84);
         shell.PublishWindowMetrics(0, false, 8);
         shell.Render(new(850, 500));
     }

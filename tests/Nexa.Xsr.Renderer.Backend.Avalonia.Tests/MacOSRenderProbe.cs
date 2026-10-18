@@ -6,6 +6,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media.Imaging;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
+using SkiaSharp;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia.Tests;
 
@@ -64,6 +65,15 @@ internal static partial class Program
                         bitmap.Save(name + ".png", PngBitmapEncoderOptions.Default);
                         var origin = window.Surface.TranslatePoint(default, window) ?? default;
                         var title = window.Surface.Scene!.Nodes.First(node => node.Role == XsrUiSemanticRole.TitleBar);
+                        AssertEqual(0d, title.Rect.X);
+                        AssertEqual(window.Surface.Bounds.Width, title.Rect.Width);
+                        double safeArea = AvaloniaMacWindow.ConfigureAndMeasure(window);
+                        AssertTrue(safeArea > 0);
+                        AssertTrue(window.Surface.Scene.Nodes.First(node => node.Text == shell!.Title).Rect.X >= safeArea);
+                        using var pixels = AssertNotNull(SKBitmap.Decode(name + ".png"));
+                        var background = title.VisualStyle.Background;
+                        var trafficLightPixel = pixels.GetPixel((int)(36 * scale), (int)(16 * scale));
+                        AssertEqual(new SKColor(background.Red, background.Green, background.Blue, background.Alpha), trafficLightPixel);
                         JsonObject facts = new()
                         {
                             ["mode"] = mode,
@@ -84,7 +94,8 @@ internal static partial class Program
                             ["titleWidth"] = title.Rect.Width,
                             ["titleHeight"] = title.Rect.Height,
                             ["titleColor"] = title.VisualStyle.Background.ToString(),
-                            ["trafficLightPadding"] = AvaloniaMacWindow.ConfigureAndMeasure(window),
+                            ["trafficLightPadding"] = safeArea,
+                            ["trafficLightBackgroundPixel"] = trafficLightPixel.ToString(),
                             ["native"] = MacProbeNativeFacts(window),
                             ["renderer"] = "RenderTargetBitmap of actual Cocoa window; excludes OS compositor buttons"
                         };

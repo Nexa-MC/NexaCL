@@ -43,8 +43,10 @@ public sealed class CloudflareApiClient : IDisposable
         X509Certificate2 certificate;
         // Windows Schannel cannot use ephemeral PFX private keys (SEC_E_NO_CREDENTIALS).
         // UserKeySet without PersistKeySet lets certificate disposal clean up imported keys.
+        // macOS rejects EphemeralKeySet; DefaultKeySet uses a .NET-owned temporary keychain.
         X509KeyStorageFlags keyStorage = OperatingSystem.IsWindows()
-            ? X509KeyStorageFlags.UserKeySet : X509KeyStorageFlags.EphemeralKeySet;
+            ? X509KeyStorageFlags.UserKeySet
+            : OperatingSystem.IsMacOS() ? X509KeyStorageFlags.DefaultKeySet : X509KeyStorageFlags.EphemeralKeySet;
         if (!string.IsNullOrWhiteSpace(path))
             certificate = X509CertificateLoader.LoadPkcs12FromFile(path, password, keyStorage);
         else
