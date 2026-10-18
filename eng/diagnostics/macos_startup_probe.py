@@ -98,6 +98,11 @@ def main():
                     except subprocess.TimeoutExpired:
                         os.killpg(process.pid, signal.SIGKILL)
                         process.wait(timeout=10)
+        print(f"Normal startup {scenario}: visible main window={succeeded}")
+        print((root / f"startup-{scenario}.log").read_text(errors="replace")[-16000:])
+        launcher_log = data / "logs/launcher.log"
+        if launcher_log.exists():
+            print(launcher_log.read_text(errors="replace")[-16000:])
     reports = Path.home() / "Library/Logs/DiagnosticReports"
     if reports.exists():
         for report in reports.glob("*Nexa*"):
