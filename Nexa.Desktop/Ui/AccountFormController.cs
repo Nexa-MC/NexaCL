@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Text;
 using Nexa.Services.Accounts;
 using Nexa.Services.Logging;
@@ -203,9 +203,11 @@ internal sealed class AccountFormController : IDisposable
             RestoreFocus();
             open = false;
         }
+        bool preparing = snapshot.Phase is AccountLoginPhase.Starting or AccountLoginPhase.Saving;
+        Publish("loading", open && preparing);
         string mode = ReadText("mode");
         foreach (string name in new[] { "providers", "offline", "third-party", "import", "device" })
-            Publish(name, open && mode == name);
+            Publish(name, open && mode == name && !snapshot.IsBusy);
         Publish("title", mode switch
         {
             "offline" => Copy("account.title.offline"),
@@ -216,7 +218,7 @@ internal sealed class AccountFormController : IDisposable
             _ => Copy("account.title.providers"),
         });
         Publish("status", mode == "providers" || snapshot.Generation <= _seenCompletion ? string.Empty : snapshot.Message);
-        Publish("status-visible", !string.IsNullOrWhiteSpace(ReadText("status")));
+        Publish("status-visible", !preparing && !string.IsNullOrWhiteSpace(ReadText("status")));
         Publish("user-code", snapshot.UserCode);
         Publish("busy", open && snapshot.IsBusy);
         Publish("code", open && snapshot.Phase == AccountLoginPhase.AwaitingAuthorization);

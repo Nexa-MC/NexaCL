@@ -8,6 +8,8 @@ internal static partial class Program
 {
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("progress rings retain square geometry and reload facts", ProgressRingsRetainSquareGeometryAndReloadFacts),
+        ("inverse visibility is boolean only and retains content", InverseVisibilityIsBooleanOnlyAndRetainsContent),
         ("command capsules declare horizontal caption scrolling and retain offsets", CommandCapsulesDeclareOnlyHorizontalCaptionScrollAndRetainOffsets),
         ("theme cascade matches identity state parent and runtime conditions", ThemeRulesMatchCascadeConditionsAndParentState),
         ("theme compiler rejects protected and invalid unmatched declarations", ThemeCompilerRejectsUnmatchedProtectedAndInvalidDeclarations),

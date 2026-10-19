@@ -455,7 +455,7 @@ internal static partial class Program
         ("staged task page renders clean between changes", StagedTaskPageRendersCleanBetweenChanges),
         ("bubbles share a vertical dock and closing bubbles release slots", BubblesShareVerticalDockAndReleaseHiddenSlots),
         ("task bubble follows the center summary and yields to the page", TaskBubbleFollowsSummaryAndYieldsToPage),
-        ("task bubble shows a compact track with aggregated progress", TaskBubbleUsesCompactProgressTrack),
+        ("task bubble shows a compact ring with aggregated progress", TaskBubbleUsesCompactProgressRing),
         ("task center page reconciles cards and routes cancel dismiss and clear", TaskCenterPageReconcilesCardsAndRoutesActions),
         ("task center page yields the bubble and reclaims it on back", TaskCenterPageYieldsBubbleAndReclaimsOnBack),
         ("operational feedback uses the shared lower-left notification surface", OperationalFeedbackUsesLowerLeftNotification),

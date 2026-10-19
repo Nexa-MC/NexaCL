@@ -78,5 +78,6 @@
     <Text Key="settings.diagnostics.exportFailed" Content="诊断包未导出，请检查保存目录是否可写。" />
     <Text Key="settings.trace.captureFailed" Content="无法捕获 XSR Trace，请重试。" />
     <Text Key="settings.advanced.paletteBlocked" Content="请先完成当前对话框，再打开命令面板。" />
+    <Text Key="loading.settings" Content="正在读取设置…" />
   </StackPanel>
 </nxml-page>

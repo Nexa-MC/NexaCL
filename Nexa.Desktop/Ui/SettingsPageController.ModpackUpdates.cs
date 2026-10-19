@@ -113,6 +113,7 @@ internal sealed partial class SettingsPageController
         bool enabled = _managementWrite is null && _modpackPreviewRead is null && _modpackPicking is null && _modpackOnlinePreviewRead is null;
         var nodes = WorldView(_sections, ref _modpackUpdateRoot, "ModpackUpdate", new()
         {
+            ["loading"] = Flag(_modpackPreviewRead is not null || _modpackOnlinePreviewRead is not null || _modpackOnlineRead is not null),
             ["picker"] = Flag(_pickModpack is not null),
             ["enabled"] = Flag(enabled),
             ["canApply"] = Flag(enabled && _modpackPreview is { Conflicts.Count: 0 }),

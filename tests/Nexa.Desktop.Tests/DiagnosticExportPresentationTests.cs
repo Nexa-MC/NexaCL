@@ -58,7 +58,10 @@ internal static partial class Program
         AssertEqual(1, requests); AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiInput>(export)!.Enabled);
         AssertTrue(HasKey(fixture.Shell, scene, "Management.取消诊断包导出"));
         Switch("about");
-        var about = FindByKey(fixture.Shell, scene, "Management.导出诊断包").Entity;
+        var ring = scene.Nodes.First(node => node.ProgressRing is not null).Entity;
+        var actions = fixture.Shell.Tree.Parent(fixture.Shell.Tree.Parent(ring));
+        var about = fixture.Shell.Tree.Children(actions).Single(entity => fixture.Shell.Tree.Name(entity) == "Management.导出诊断包");
+        AssertTrue(scene.Nodes.Any(node => node.ProgressRing is { Indeterminate: true }));
         AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiInput>(about)!.Enabled);
         Emit(fixture.Intents, "ui.settings.management.action", about); Render(); AssertEqual(1, requests);
         viewportHeight = 650;
@@ -70,7 +73,7 @@ internal static partial class Program
         double offset = fixture.Shell.Tree.GetComponent<XsrUiScroll>(FindByKey(fixture.Shell, scene, "SettingsSections").Entity)!.OffsetY;
         AssertTrue(offset > 0);
         Emit(fixture.Intents, "ui.settings.management.action", cancel); Render();
-        AssertTrue(token.IsCancellationRequested); AssertEqual("正在取消…", FindByKey(fixture.Shell, scene, "Management.导出诊断包").Text);
+        AssertTrue(token.IsCancellationRequested); AssertTrue(scene.Nodes.Any(node => node.Text == "正在取消…"));
         AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiInput>(cancel)!.Enabled);
         done.SetResult(true); // A callback that ignores cancellation must not announce success.
         AssertTrue(SpinWait.SpinUntil(() => { Render(); return fixture.Shell.Tree.GetComponent<XsrUiInput>(about)!.Enabled; }, 5000));

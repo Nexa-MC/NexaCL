@@ -1,4 +1,4 @@
-﻿using Nexa.Services.Minecraft;
+using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
@@ -79,7 +79,7 @@ internal sealed partial class VersionSelectionController : IDisposable
         Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("VersionSelectionPage.nxml"), shell.Tree, store);
         var slots = Nodes(Page);
         _workspace = Append(slots["VersionSelectionWorkspace"], "VersionSelectionWorkspace.d.nxml", new()
-        { ["path"] = "", ["name"] = "", ["named"] = "false", ["count"] = "", ["status"] = "", ["empty"] = "false" });
+        { ["loading"] = "false", ["path"] = "", ["name"] = "", ["named"] = "false", ["count"] = "", ["status"] = "", ["empty"] = "false" });
         _dropdown = Append(slots["VersionDirectoryWorkspace"], "VersionDirectoryDropdown.d.nxml", PopupData());
         foreach (var pair in Nodes(Page)) _entities[pair.Key] = pair.Value;
         shell.Tree.SetComponent(_entities["LibraryVersionRows"], new XsrUiFocusNavigation(NavigateVersionFocus));
@@ -283,6 +283,7 @@ internal sealed partial class VersionSelectionController : IDisposable
             ["named"] = Flag(current.HasName),
             ["count"] = count,
             ["status"] = status,
+            ["loading"] = Flag(snapshot.IsLoading),
             ["empty"] = Flag(shown.Count == 0)
         });
         Publish("directory.name", name); Publish("directory.path", current.Path); Publish("directory.named", current.HasName);

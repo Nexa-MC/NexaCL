@@ -16,7 +16,7 @@ public sealed partial class XsrUiRenderer
         double clamped = Math.Clamp(value, 0, 1);
         if (progress.Presented == clamped) return;
         progress.Presented = clamped;
-        _tree.MarkDirty(entity, XsrUiDirtyKinds.Layout);
+        _tree.MarkDirty(entity, progress.Ring ? XsrUiDirtyKinds.Paint : XsrUiDirtyKinds.Layout);
     }
 
     /// <summary>Reads the state-bound fill target for the backend's catch-up animation.</summary>

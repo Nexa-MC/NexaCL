@@ -118,6 +118,11 @@ public static class NxmlCompiler
                 || recipe == NxmlRuntimeRecipe.DynamicSlot && slotLayout != NxmlRuntimeRecipe.StackLayout
                 || !ParseBoolean(element.Name, "Scroll", Literal("Scroll", "false"))))
             throw Fail(element.Name, "Scroll", "is required by scroll presentation facts");
+        bool ring = ParseBoolean(element.Name, "Ring", Literal("Ring", "false"));
+        bool indeterminate = ParseBoolean(element.Name, "Indeterminate", Literal("Indeterminate", "false"));
+        if (element.Attributes.Any(attribute => attribute.Name is "Ring" or "Indeterminate") && recipe != NxmlRuntimeRecipe.Progress)
+            throw Fail(element.Name, "Ring", "requires a progress primitive");
+        if (indeterminate && !ring) throw Fail(element.Name, "Indeterminate", "requires ring presentation");
         bool stableContent = ParseBoolean(element.Name, "StableContent", Literal("StableContent", "false"));
         bool? modalLayer = element.FindProperty("ModalLayer") is null ? null : ParseBoolean(element.Name, "ModalLayer", Literal("ModalLayer", "false"));
         if (element.FindProperty("ModalLayer") is not null
@@ -170,7 +175,7 @@ public static class NxmlCompiler
                 NssStyleSheet.SetVisual(visual ??= new(), attribute.Name, attribute.Value.Text);
                 continue;
             }
-            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength" or "PreserveTabs" or "MaxLines" or "TrimOverflow" or "OverlayMotion" or "LiveSetting" or "DismissCommand" or "ShowsVerticalIndicator" or "ShowsHorizontalIndicator" or "UseVerticalWheelForHorizontalScroll" or "StickToEnd" or "ScrollGesture" or "StableContent" or "ModalLayer" or "Anchor" or "AnchorGap" or "SegmentThumb" or "SegmentWidth" or "Checked" or "SelectionRequired" or "TransitionMovesSelf" or "Minimum" or "Maximum" or "Step" or "RangeValue") continue;
+            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength" or "PreserveTabs" or "MaxLines" or "TrimOverflow" or "OverlayMotion" or "LiveSetting" or "DismissCommand" or "ShowsVerticalIndicator" or "ShowsHorizontalIndicator" or "UseVerticalWheelForHorizontalScroll" or "StickToEnd" or "ScrollGesture" or "StableContent" or "ModalLayer" or "Anchor" or "AnchorGap" or "SegmentThumb" or "SegmentWidth" or "Checked" or "SelectionRequired" or "TransitionMovesSelf" or "Minimum" or "Maximum" or "Step" or "RangeValue" or "Ring" or "Indeterminate") continue;
             if (!model.TryGetProperty(attribute.Name, out NxmlControlPropertyModel property))
             {
                 throw Fail(element.Name, attribute.Name, "is not declared by this control model");
@@ -225,6 +230,8 @@ public static class NxmlCompiler
             [.. element.Children.Select(child => CompileNode(child, keys, styles))],
             bindings) with
         {
+            Ring = ring,
+            Indeterminate = indeterminate,
             Minimum = minimum,
             Maximum = maximum,
             Step = step,

@@ -1,3 +1,5 @@
 <nxml-dynamic>
-<Text Content="正在捕获 Trace…" Class="settings-diagnostics-summary" />
+  <LoadingView>
+    <Text Content="正在捕获 Trace…" Class="loading-hint" LiveSetting="Polite" />
+  </LoadingView>
 </nxml-dynamic>

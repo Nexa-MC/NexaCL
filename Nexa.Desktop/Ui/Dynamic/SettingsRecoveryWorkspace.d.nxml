@@ -1,47 +1,65 @@
 <nxml-dynamic>
-  <StackPanel Key="RecoveryWorkspace" Class="settings-recovery-workspace">
+  <StackPanel Key="RecoveryWorkspace" Class="settings-recovery-workspace" Weight="0">
     <SettingsForm Key="RecoveryPolicy">
       <Text Content="快照保留" Class="settings-form-label" />
-      <StackPanel Class="settings-form-surface"><Dynamic Key="RecoveryPolicy.Body" Class="settings-form-body" /></StackPanel>
+      <StackPanel Class="settings-form-surface">
+        <Dynamic Key="RecoveryPolicy.Body" Class="settings-form-body" />
+      </StackPanel>
       <Text Content="开发模式会自动保留历史快照；关闭开发模式后使用此设置。" IsVisible="{data development}" Class="settings-recovery-hint settings-recovery-policy-hint" />
       <Text Content="默认只保留最新成功快照。关闭历史保留后，下次成功采集时清理旧快照。" IsVisible="{data normal}" Class="settings-recovery-hint settings-recovery-policy-hint" />
     </SettingsForm>
-    <Text Content="正在统计存储与读取快照…" IsVisible="{data loading}" Class="settings-recovery-status" />
     <StackPanel Key="RecoveryStorage" IsVisible="{data loaded}" Class="settings-recovery-workspace">
       <Text Content="{data error}" Label="{data error}" Localize="false" IsVisible="{data hasError}" Class="settings-recovery-status" />
       <SettingsForm Key="RecoveryUsage">
         <Text Content="磁盘占用" Class="settings-form-label" />
-        <StackPanel Class="settings-form-surface"><StackPanel Class="settings-form-body">
-          <StackPanel Class="settings-recovery-fact"><Text Content="版本文件" Class="settings-recovery-fact-label" /><Text Key="RecoveryUsage.VersionBytes" Content="{data versionSize}" Label="{data versionSize}" Localize="false" Class="settings-recovery-fact-value" /></StackPanel>
-          <StackPanel Class="settings-recovery-fact"><Text Content="快照存储" Class="settings-recovery-fact-label" /><Text Key="RecoveryUsage.SnapshotBytes" Content="{data snapshotSize}" Label="{data snapshotSize}" Localize="false" Class="settings-recovery-fact-value" /></StackPanel>
-        </StackPanel></StackPanel>
+        <StackPanel Class="settings-form-surface">
+          <StackPanel Class="settings-form-body">
+            <StackPanel Class="settings-recovery-fact">
+              <Text Content="版本文件" Class="settings-recovery-fact-label" />
+              <Text Key="RecoveryUsage.VersionBytes" Content="{data versionSize}" Label="{data versionSize}" Localize="false" Class="settings-recovery-fact-value" />
+            </StackPanel>
+            <StackPanel Class="settings-recovery-fact">
+              <Text Content="快照存储" Class="settings-recovery-fact-label" />
+              <Text Key="RecoveryUsage.SnapshotBytes" Content="{data snapshotSize}" Label="{data snapshotSize}" Localize="false" Class="settings-recovery-fact-value" />
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
       </SettingsForm>
       <Text Content="按文件大小统计；版本文件不含快照及版本目录外的共享文件。快照含压缩对象、清单和暂存。" Class="settings-recovery-hint settings-recovery-storage-hint" />
       <Text Content="资源包和光影包仅自动备份单个不超过 64 MiB、合计不超过 256 MiB 的文件。大型包请另外备份。" Class="settings-recovery-hint settings-recovery-storage-hint" />
       <SettingsForm Key="RecoveryHistory">
         <Text Content="成功快照" Class="settings-form-label" />
-        <StackPanel Class="settings-form-surface"><StackPanel Class="settings-form-body">
-          <Text Content="尚无成功运行的快照。" IsVisible="{data historyEmpty}" Class="settings-recovery-status" />
-          <Text Content="暂时无法列出快照。" IsVisible="{data historyUnavailable}" Class="settings-recovery-status" />
-          <Dynamic Key="RecoveryHistory.Rows" />
-        </StackPanel></StackPanel>
+        <StackPanel Class="settings-form-surface">
+          <StackPanel Class="settings-form-body">
+            <Text Content="尚无成功运行的快照。" IsVisible="{data historyEmpty}" Class="settings-recovery-status" />
+            <Text Content="暂时无法列出快照。" IsVisible="{data historyUnavailable}" Class="settings-recovery-status" />
+            <Dynamic Key="RecoveryHistory.Rows" />
+          </StackPanel>
+        </StackPanel>
       </SettingsForm>
       <Button Key="RecoveryHistory.Next" Content="{data historyNext}" Label="{data historyNext}" Localize="false" IsVisible="{data historyPages}" Command="ui.settings.management.action" Class="settings-recovery-button settings-recovery-next" />
       <SettingsForm Key="RecoveryChanges">
         <Text Content="与最新快照比较" Class="settings-form-label" />
-        <StackPanel Class="settings-form-surface"><StackPanel Class="settings-form-body">
-          <Text Content="正在比较更改…" IsVisible="{data comparisonLoading}" Class="settings-recovery-status" />
-          <Text Content="{data unavailable}" Label="{data unavailable}" Localize="false" IsVisible="{data comparisonUnavailable}" Class="settings-recovery-status" />
-          <Text Content="恢复范围内没有更改。" IsVisible="{data comparisonEmpty}" Class="settings-recovery-count" />
-          <StackPanel IsVisible="{data hasChanges}" Class="settings-recovery-changes">
-            <Text Content="{data changeCount}" Localize="false" Class="settings-recovery-count" />
-            <Button Key="RecoveryChanges.RestoreAll" Content="回滚全部更改" Command="ui.settings.management.action" Enabled="{data canRestore}" Class="settings-recovery-button settings-recovery-restore-all" />
-            <Dynamic Key="RecoveryChanges.Categories" />
-            <Dynamic Key="RecoveryChanges.Rows" />
+        <StackPanel Class="settings-form-surface">
+          <StackPanel Class="settings-form-body">
+            <LoadingView IsVisible="{data comparisonLoading}">
+              <Text Content="正在比较更改…" Class="loading-hint" LiveSetting="Polite" />
+            </LoadingView>
+            <Text Content="{data unavailable}" Label="{data unavailable}" Localize="false" IsVisible="{data comparisonUnavailable}" Class="settings-recovery-status" />
+            <Text Content="恢复范围内没有更改。" IsVisible="{data comparisonEmpty}" Class="settings-recovery-count" />
+            <StackPanel IsVisible="{data hasChanges}" Class="settings-recovery-changes">
+              <Text Content="{data changeCount}" Localize="false" Class="settings-recovery-count" />
+              <Button Key="RecoveryChanges.RestoreAll" Content="回滚全部更改" Command="ui.settings.management.action" Enabled="{data canRestore}" Class="settings-recovery-button settings-recovery-restore-all" />
+              <Dynamic Key="RecoveryChanges.Categories" />
+              <Dynamic Key="RecoveryChanges.Rows" />
+            </StackPanel>
+            <Button Key="RecoveryChanges.Next" Content="{data changeNext}" Label="{data changeNext}" Localize="false" IsVisible="{data changePages}" Command="ui.settings.management.action" Class="settings-recovery-button settings-recovery-next" />
           </StackPanel>
-          <Button Key="RecoveryChanges.Next" Content="{data changeNext}" Label="{data changeNext}" Localize="false" IsVisible="{data changePages}" Command="ui.settings.management.action" Class="settings-recovery-button settings-recovery-next" />
-        </StackPanel></StackPanel>
+        </StackPanel>
       </SettingsForm>
     </StackPanel>
+    <LoadingView IsVisible="{data loading}">
+      <Text Content="正在统计存储与读取快照…" Class="loading-hint" LiveSetting="Polite" />
+    </LoadingView>
   </StackPanel>
 </nxml-dynamic>

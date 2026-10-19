@@ -1,5 +1,6 @@
-﻿<nxml-dynamic>
-    <StackPanel Class="layout-ProcessLogPage-2 process-log-text">
+<nxml-dynamic>
+  <ContentHost Weight="1">
+    <StackPanel Class="layout-ProcessLogPage-2 process-log-text" IsVisible="{data !loading}">
       <StackPanel Class="layout-ProcessLogPage-3 process-log-text">
         <Button Key="ProcessLogPreviousSession" Enabled="{data ProcessLogPreviousSession.enabled}" Content="上次运行" Label="上次运行" Command="ui.process.log.previous-session" Class="layout-ProcessLogPage-ProcessLogPreviousSession process-log-control process-log-text" />
         <Text Key="ProcessLogSession" Localize="false" Content="{data ProcessLogSession}" Class="layout-ProcessLogPage-ProcessLogSession process-log-text" />
@@ -24,4 +25,8 @@
         <Button Key="ProcessLogCopyPage" Enabled="{data ProcessLogCopyPage.enabled}" Content="复制本页" Label="复制本页日志" Command="ui.process.log.copy-page" Class="layout-ProcessLogPage-ProcessLogCopyPage process-log-control process-log-text" />
       </StackPanel>
     </StackPanel>
+    <LoadingView IsVisible="{data loading}">
+      <Text Content="正在读取日志…" Class="loading-hint" LiveSetting="Polite" />
+    </LoadingView>
+  </ContentHost>
 </nxml-dynamic>

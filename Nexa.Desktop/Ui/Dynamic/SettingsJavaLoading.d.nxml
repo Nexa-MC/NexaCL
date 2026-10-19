@@ -1,3 +1,5 @@
-﻿<nxml-dynamic>
-  <Text Content="正在扫描 Java…" Class="settings-java-state" />
+<nxml-dynamic>
+  <LoadingView>
+    <Text Content="正在扫描 Java…" Class="loading-hint" LiveSetting="Polite" />
+  </LoadingView>
 </nxml-dynamic>

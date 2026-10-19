@@ -251,7 +251,9 @@ public sealed partial class XsrUiRenderer
             // its parent arranged it into. Leading anchors the fraction to the left edge (the
             // standard bar); Bottom rises from the bottom edge so round containers fill up.
             double fill = Math.Max(0, Math.Min(1, progress.Presented));
-            _paintRects[entity.Index] = progress.Anchor == XsrUiProgressFillAnchor.Bottom
+            _paintRects[entity.Index] = progress.Ring
+                ? new XsrUiRect(borderX, borderY, borderW, borderH)
+                : progress.Anchor == XsrUiProgressFillAnchor.Bottom
                 ? new XsrUiRect(slotX, slotY + (slotH * (1 - fill)), slotW, slotH * fill)
                 : new XsrUiRect(slotX, slotY, slotW * fill, slotH);
             return;

@@ -27,7 +27,9 @@
       </StackPanel>
       <Text Key="WardrobeLibraryOperationStatus" Content="{data WardrobeLibraryOperationStatus_text}" IsVisible="{data WardrobeLibraryOperationStatus_visible}" Class="layout-WardrobeLibraryPage-WardrobeLibraryOperationStatus wardrobe-library-base" Localize="false" />
       <StackPanel Key="WardrobeLibraryBody" Scroll="true" Class="layout-WardrobeLibraryPage-WardrobeLibraryBody wardrobe-library-base" ScrollGesture="true">
-        <Text Key="WardrobeLibraryLoading" Content="正在读取皮肤站 API…" Class="layout-WardrobeLibraryPage-WardrobeLibraryLoading wardrobe-library-base" IsVisible="{data WardrobeLibraryLoading_visible}" />
+        <LoadingView Key="WardrobeLibraryLoadingRegion" IsVisible="{data WardrobeLibraryLoading_visible}">
+          <Text Content="正在读取皮肤站 API…" Class="loading-hint" LiveSetting="Polite" Key="WardrobeLibraryLoading" />
+        </LoadingView>
         <StackPanel Key="WardrobeLibraryEmpty" IsVisible="{data WardrobeLibraryEmpty_visible}" Class="layout-WardrobeLibraryPage-WardrobeLibraryEmpty wardrobe-library-base">
           <Text Key="WardrobeLibraryEmptyTitle" Content="{data WardrobeLibraryEmptyTitle_text}" Class="layout-WardrobeLibraryPage-WardrobeLibraryEmptyTitle wardrobe-library-base" Localize="false" />
           <Text Key="WardrobeLibraryEmptyMessage" Content="{data WardrobeLibraryEmptyMessage_text}" Class="layout-WardrobeLibraryPage-WardrobeLibraryEmptyMessage wardrobe-library-base" Localize="false" />

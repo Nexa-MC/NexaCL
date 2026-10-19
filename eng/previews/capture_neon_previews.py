@@ -393,7 +393,7 @@ def launch_theme(args, probe, theme, value):
                 # mapping every 5ms. GIF capture does not wait for the animation to end.
                 candidates = probe.windows_for_pid(primary.pid, include_hidden=True)
                 for window, attributes in candidates:
-                    if attributes.width == 400 and attributes.height == 280:
+                    if attributes.width == 400 and 200 <= attributes.height <= 500:
                         splash = window
                         if attributes.map_state == 2 and splash_start is None:
                             splash_start = now
@@ -424,13 +424,13 @@ def launch_theme(args, probe, theme, value):
                             splash_samples.append((timestamp, frame))
                             next_splash = timestamp + 1 / args.fps
                         if capture_loading:
-                            if len(splash_loading_samples) < 48:
+                            if len(splash_loading_samples) < args.fps * 3:
                                 splash_loading_samples.append((timestamp, frame))
                             screenshot = frame.crop(splash_rectangle)
                             if rendered(screenshot):
                                 screenshot.save(directory / 'splash.png')
                                 report['assets']['splash'] = 'splash.png'
-                            next_loading = timestamp + .5
+                            next_loading = timestamp + 1 / args.fps
                         if capture_main:
                             entrance_samples.append((timestamp, frame))
                             next_main = timestamp + 1 / args.fps
@@ -498,6 +498,10 @@ def launch_theme(args, probe, theme, value):
             report['animations']['splash']['kind'] = splash_kind
             report['animations']['splash']['initial_header_distinct_frames'] = header_changes
             report['assets']['splashAnimation'] = splash_name + '.gif'
+            if splash_name != 'splash-loading':
+                loading_frames = crop_frames(splash_loading_samples, splash_rectangle)
+                report['animations']['loadingRing'] = write_animation(args, directory, 'splash-loading', loading_frames)
+            report['assets']['splashLoadingAnimation'] = 'splash-loading.gif'
 
             entrance_frames = crop_frames(entrance_samples, main_rectangle)
             report['animations']['entrance'] = write_animation(args, directory, 'entrance', entrance_frames, 420)

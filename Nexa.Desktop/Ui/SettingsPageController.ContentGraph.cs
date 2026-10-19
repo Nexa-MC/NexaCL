@@ -29,7 +29,7 @@ internal sealed partial class SettingsPageController
     {
         if (snapshot.ContentGraph is not { } graph)
         {
-            var loading = AppendContent(_sections, "SettingsContentLoading.d.nxml", new() { ["enabled"] = ContentFlag(_managementWrite is null), ["message"] = ContentTerm("graphLoading") });
+            var loading = AppendContent(_sections, "SettingsContentLoading.d.nxml", new() { ["loading"] = "true", ["enabled"] = ContentFlag(_managementWrite is null), ["message"] = ContentTerm("graphLoading") });
             BindContentAction(ContentNodes(loading), ContentKey("refresh"), RefreshManagement); return;
         }
         if (!ReferenceEquals(_graphIdentity, graph))

@@ -1,3 +1,1 @@
-<nxml-dynamic>
-  <Button Key="{data key}" Label="{data label}" Content="{data message}" Localize="false" Command="ui.install.catalog.retry" IsVisible="{data visible}" Class="launch-install-catalog-status" />
-</nxml-dynamic>
+<nxml-dynamic><StackPanel Weight="1" IsVisible="{data visible}" Spacing="16" HorizontalAlignment="Center" VerticalAlignment="Center"><ProgressRing IsVisible="{data loading}" /><Button Key="{data key}" Label="{data label}" Content="{data message}" Localize="false" Enabled="{data enabled}" Command="ui.install.catalog.retry" Class="launch-install-catalog-status" /></StackPanel></nxml-dynamic>

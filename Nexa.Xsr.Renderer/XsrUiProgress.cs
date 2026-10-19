@@ -26,6 +26,10 @@ public sealed class XsrUiProgress
 
     public XsrUiProgressFillAnchor Anchor { get; set; }
 
+    public bool Ring { get; set; }
+
+    public bool Indeterminate { get; set; }
+
     public double Target { get; internal set; }
 
     public double Presented { get; internal set; }
@@ -39,3 +43,6 @@ public sealed class XsrUiProgress
     /// </summary>
     public void SetTarget(double value) => Target = Math.Clamp(value, 0d, 1d);
 }
+
+/// <summary>Immutable ring facts; the backend owns the indeterminate phase.</summary>
+public readonly record struct XsrUiProgressRingSnapshot(bool Indeterminate, double Value);

@@ -61,6 +61,7 @@ internal sealed partial class LaunchPageController
             bool active = subpage.PageKey == "JavaMinecraftPage";
             data[subpage.PageKey + "_visible"] = InstallFlag(active);
             data[subpage.PageKey + "_statusVisible"] = "true";
+            data[subpage.PageKey + "_loading"] = "true";
             data[subpage.TabKey + "_selected"] = InstallFlag(active);
             data[subpage.TabKey + "_style"] = LaunchInstallText.Raw(active ? "style.tab-active" : "style.tab");
             data[subpage.TabKey + "_label"] = InstallFormat(active ? "TabCurrent" : "TabView", ("name", InstallCopy("tab." + subpage.TabKey)));
@@ -93,11 +94,12 @@ internal sealed partial class LaunchPageController
             ("addon", InstallCopy(key == "JavaFabricApiSelect" ? "addon.fabric-api" : "addon.qsl")))));
     }
 
-    private void ProjectInstallStatus(string pageKey, string message)
+    private void ProjectInstallStatus(string pageKey, string message, bool loading = false)
     {
         ReloadInstall(_catalogStatus[pageKey], ("message", message), ("label", InstallCopy("catalog.retry")),
-            ("visible", InstallFlag(message.Length > 0)));
-        ReloadInstall(_installWorkspace, (pageKey + "_statusVisible", InstallFlag(message.Length > 0)));
+            ("visible", InstallFlag(message.Length > 0)), ("loading", InstallFlag(loading)), ("enabled", InstallFlag(!loading)));
+        ReloadInstall(_installWorkspace, (pageKey + "_statusVisible", InstallFlag(message.Length > 0)),
+            (pageKey + "_loading", InstallFlag(loading)));
     }
 
     private string _installLocaleStamp = "";

@@ -184,7 +184,7 @@ public sealed partial class AvaloniaUiSceneSurface
 
     private void DriveProgressGeometry(XsrUiSceneNode node)
     {
-        if (node.Progress is not { } presented) return;
+        if (node.Progress is not { } presented || node.ProgressRing is { Indeterminate: true }) return;
         double target = _shell.Renderer.GetProgressTarget(node.Entity);
         if (_progressTargets.TryGetValue(node.Entity, out double previous) && previous == target) return;
         _progressTargets[node.Entity] = target;

@@ -151,6 +151,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
         SetThemeResources(null); _textKey = null; _formattedText = null; _inputCaretKey = null; _inputCarets = null;
         AvaloniaUiMotion.CancelAll(this);
         _presentationReleased = true;
+        _progressRingAnimation?.Stop();
         _rasterLease?.Dispose(); _rasterLease = null; _rasterKey = null; _rasterWidth = 0;
         ReleaseLayerRasters(); _rasterRecipe = null;
         _rasterPrimaryFailed = false; _rasterCapacityBlocked = false;
@@ -160,6 +161,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
     {
         if (_rasterPresentationEnabled == enabled) return;
         _rasterPresentationEnabled = enabled;
+        UpdateProgressRing();
         _rasterLease?.Dispose(); _rasterLease = null; _rasterKey = null; _rasterWidth = 0;
         ReleaseLayerRasters(); _rasterRecipe = null;
         _rasterPrimaryFailed = false; _rasterCapacityBlocked = false;

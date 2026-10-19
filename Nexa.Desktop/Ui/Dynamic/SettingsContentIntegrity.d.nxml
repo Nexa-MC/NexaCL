@@ -1,3 +1,38 @@
 <nxml-dynamic>
-<StackPanel Key="ContentIntegrity" Class="settings-content-integrity"><Text Content="内容完整性" Class="settings-content-integrity-title" /><Text Content="{data message}" Localize="false" IsVisible="{data pending}" Class="settings-content-integrity-message" /><StackPanel IsVisible="{data ready}" Class="settings-content-integrity"><StackPanel Key="ContentIntegrity.Sha256" Class="settings-content-integrity-fact"><Text Content="SHA-256" Class="settings-content-integrity-label" /><Text Key="ContentIntegrity.Sha256.Value" Content="{data Sha256}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-integrity-value" /></StackPanel><StackPanel Key="ContentIntegrity.Captured" Class="settings-content-integrity-fact"><Text Content="摘要捕获时间" Class="settings-content-integrity-label" /><Text Key="ContentIntegrity.Captured.Value" Content="{data Captured}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-integrity-value" /></StackPanel><StackPanel Key="ContentIntegrity.Modified" Class="settings-content-integrity-fact"><Text Content="修改状态" Class="settings-content-integrity-label" /><Text Key="ContentIntegrity.Modified.Value" Content="{data Modified}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-integrity-value" /></StackPanel><StackPanel Key="ContentIntegrity.Baseline" Class="settings-content-integrity-fact" IsVisible="{data hasBaseline}"><Text Content="更新基准 SHA-256" Class="settings-content-integrity-label" /><Text Key="ContentIntegrity.Baseline.Value" Content="{data Baseline}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-integrity-value" /></StackPanel><StackPanel Key="ContentIntegrity.Transaction" Class="settings-content-integrity-fact" IsVisible="{data hasTransaction}"><Text Content="基准事务" Class="settings-content-integrity-label" /><Text Key="ContentIntegrity.Transaction.Value" Content="{data Transaction}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-integrity-value" /></StackPanel><StackPanel Key="ContentIntegrity.Source" Class="settings-content-integrity-fact"><Text Content="关联来源" Class="settings-content-integrity-label" /><Text Key="ContentIntegrity.Source.Value" Content="{data Source}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-integrity-value" /></StackPanel><Text Content="未知来源保留；更新仍需已识别来源和兼容版本，发布前校验文件与依赖。" Class="settings-content-integrity-note" /><Text Content="修改状态只比较已保存的受管理更新摘要；首次读取不会建立可信基准。" Class="settings-content-integrity-note" /><Button Key="ContentIntegrity.Refresh" Content="重新读取完整性" Label="重新读取完整性" Command="ui.settings.management.action" Enabled="{data enabled}" Width="136" Class="settings-content-button" /></StackPanel></StackPanel>
+  <StackPanel Key="ContentIntegrity" Class="settings-content-integrity">
+    <LoadingView IsVisible="{data loading}">
+      <Text Content="{data message}" Class="loading-hint" LiveSetting="Polite" Localize="false" />
+    </LoadingView>
+    <Text Content="内容完整性" Class="settings-content-integrity-title" />
+    <Text Content="{data message}" Localize="false" IsVisible="{data failed}" Class="settings-content-integrity-message" />
+    <StackPanel IsVisible="{data ready}" Class="settings-content-integrity">
+      <StackPanel Key="ContentIntegrity.Sha256" Class="settings-content-integrity-fact">
+        <Text Content="SHA-256" Class="settings-content-integrity-label" />
+        <Text Key="ContentIntegrity.Sha256.Value" Content="{data Sha256}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-integrity-value" />
+      </StackPanel>
+      <StackPanel Key="ContentIntegrity.Captured" Class="settings-content-integrity-fact">
+        <Text Content="摘要捕获时间" Class="settings-content-integrity-label" />
+        <Text Key="ContentIntegrity.Captured.Value" Content="{data Captured}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-integrity-value" />
+      </StackPanel>
+      <StackPanel Key="ContentIntegrity.Modified" Class="settings-content-integrity-fact">
+        <Text Content="修改状态" Class="settings-content-integrity-label" />
+        <Text Key="ContentIntegrity.Modified.Value" Content="{data Modified}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-integrity-value" />
+      </StackPanel>
+      <StackPanel Key="ContentIntegrity.Baseline" Class="settings-content-integrity-fact" IsVisible="{data hasBaseline}">
+        <Text Content="更新基准 SHA-256" Class="settings-content-integrity-label" />
+        <Text Key="ContentIntegrity.Baseline.Value" Content="{data Baseline}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-integrity-value" />
+      </StackPanel>
+      <StackPanel Key="ContentIntegrity.Transaction" Class="settings-content-integrity-fact" IsVisible="{data hasTransaction}">
+        <Text Content="基准事务" Class="settings-content-integrity-label" />
+        <Text Key="ContentIntegrity.Transaction.Value" Content="{data Transaction}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-integrity-value" />
+      </StackPanel>
+      <StackPanel Key="ContentIntegrity.Source" Class="settings-content-integrity-fact">
+        <Text Content="关联来源" Class="settings-content-integrity-label" />
+        <Text Key="ContentIntegrity.Source.Value" Content="{data Source}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-integrity-value" />
+      </StackPanel>
+      <Text Content="未知来源保留；更新仍需已识别来源和兼容版本，发布前校验文件与依赖。" Class="settings-content-integrity-note" />
+      <Text Content="修改状态只比较已保存的受管理更新摘要；首次读取不会建立可信基准。" Class="settings-content-integrity-note" />
+      <Button Key="ContentIntegrity.Refresh" Content="重新读取完整性" Label="重新读取完整性" Command="ui.settings.management.action" Enabled="{data enabled}" Width="136" Class="settings-content-button" />
+    </StackPanel>
+  </StackPanel>
 </nxml-dynamic>

@@ -1,4 +1,4 @@
-﻿namespace Nexa.Xsr.Renderer.Nxml;
+namespace Nexa.Xsr.Renderer.Nxml;
 
 /// <summary>External dynamic markup with literal data, never interpolated XML or executable code.</summary>
 public sealed class NxmlDynamicTemplate
@@ -50,8 +50,15 @@ public sealed class NxmlDynamicTemplate
             if (attribute.Value.Kind != NxmlValueKind.DataBinding) { attributes.Add(attribute); continue; }
             if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Layout")
                 throw new NxmlCompileException("Dynamic data cannot change primitive metadata.");
-            if (!data.TryGetValue(attribute.Value.Text, out string? value))
+            bool inverted = attribute.Name == "IsVisible" && attribute.Value.Text.StartsWith('!');
+            string parameter = inverted ? attribute.Value.Text[1..] : attribute.Value.Text;
+            if (!data.TryGetValue(parameter, out string? value))
                 throw new NxmlCompileException($"Missing dynamic parameter '{attribute.Value.Text}'.");
+            if (inverted)
+            {
+                if (!bool.TryParse(value, out bool visible)) throw new NxmlCompileException("Inverse visibility requires boolean data.");
+                value = visible ? "false" : "true";
+            }
             remaining -= value.Length;
             if (remaining < 0) throw new NxmlCompileException("Expanded dynamic data exceeds its budget.");
             attributes.Add(new(attribute.Name, NxmlValue.Literal(value)));

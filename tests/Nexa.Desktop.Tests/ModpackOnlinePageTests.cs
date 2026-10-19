@@ -69,7 +69,7 @@ internal static partial class Program
         Click(Action()); Pump(() => requested is not null);
         fixture.Shell.Renderer.SetTextInputValue(archive, "edited while preparing"); fixture.Shell.Render(new(1000, 1800));
         pending.SetResult(XsrResult.Success(MakePreview(requested!)));
-        Pump(() => !FindByKey(fixture.Shell, scene, "ModpackUpdate.Apply").IsEnabled && FindByKey(fixture.Shell, scene, Action()).IsEnabled);
+        Pump(() => HasKey(fixture.Shell, scene, "ModpackUpdate.Apply") && !FindByKey(fixture.Shell, scene, "ModpackUpdate.Apply").IsEnabled && FindByKey(fixture.Shell, scene, Action()).IsEnabled);
         AssertEqual("edited while preparing", fixture.Shell.Tree.GetComponent<XsrUiTextInput>(archive)!.ReadDraft());
         Click(Action()); Pump(() => FindByKey(fixture.Shell, scene, "ModpackUpdate.Apply").IsEnabled);
         AssertEqual(2, previewReads); AssertEqual(new string('B', 64), requested!.InstalledArchiveSha256);

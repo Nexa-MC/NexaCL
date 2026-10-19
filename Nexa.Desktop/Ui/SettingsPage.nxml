@@ -1,14 +1,5 @@
 <nxml-page>
   <Page Key="SettingsPage" Label="设置">
-    <StackPanel Key="SettingsLayout" Class="layout-SettingsPage-SettingsLayout">
-      <StackPanel Key="SettingsToolbar" Class="layout-SettingsPage-SettingsToolbar">
-        <ContentHost Key="SettingsNavigationSurface" Class="settings-navigation-surface">
-        <ContentHost Key="SettingsThumb" TransitionKey="settings-navigation" IsVisible="false" Class="settings-navigation-thumb" />
-        <SettingsChoiceSlot SegmentThumb="SettingsThumb" ScrollGesture="true" Key="SettingsNavigation" Label="设置分类" Scroll="true" Class="layout-SettingsPage-SettingsNavigation" />
-        </ContentHost>
-      </StackPanel>
-      <Dynamic Layout="HorizontalPager" Key="SettingsPager" Label="设置子页面，可拖动或使用左右方向键切换" Class="layout-SettingsPage-SettingsPager" />
-      <Dynamic Key="SettingsSaveStatusSlot" Class="layout-SettingsPage-SettingsSaveStatus" />
-    </StackPanel>
+    <Dynamic Key="SettingsWorkspaceSlot" Layout="Overlay" Weight="1" />
   </Page>
 </nxml-page>

@@ -1,0 +1,1 @@
+<nxml-dynamic><LoadingView Key="{data key}"><Text Content="{data message}" Localize="false" Class="loading-hint" LiveSetting="Polite" /></LoadingView></nxml-dynamic>

@@ -1,6 +1,9 @@
 <nxml-dynamic>
   <StackPanel Key="WardrobeRoot" Class="layout-WardrobePage-WardrobeRoot wardrobe-base">
-    <ContentHost Key="WardrobeRailSurface" Class="layout-WardrobePage-WardrobeRailSurface wardrobe-base" Width="{data WardrobeRailSurface_width}">
+    <LoadingView Key="WardrobeLoading" IsVisible="{data pageLoading}">
+      <Text Content="正在读取外观…" Class="loading-hint" LiveSetting="Polite" />
+    </LoadingView>
+    <ContentHost Key="WardrobeRailSurface" Class="layout-WardrobePage-WardrobeRailSurface wardrobe-base" Width="{data WardrobeRailSurface_width}" IsVisible="{data !pageLoading}">
       <StackPanel Key="WardrobeProfileRail" Scroll="true" Class="layout-WardrobePage-WardrobeProfileRail wardrobe-base" Width="{data WardrobeProfileRail_width}" Padding="{data WardrobeProfileRail_padding}" ScrollGesture="true">
         <Text Key="WardrobeCurrentTitle" Content="当前外观" Class="layout-WardrobePage-WardrobeCurrentTitle wardrobe-base" />
         <Text Key="WardrobeCurrentSubtitle" Content="完整预览当前档案正在使用的皮肤与披风。" Class="layout-WardrobePage-WardrobeCurrentSubtitle wardrobe-base" />
@@ -18,7 +21,7 @@
         <Button Key="WardrobeCancel" Label="取消更衣橱操作" Content="取消操作" Command="ui.wardrobe.cancel" IsVisible="{data WardrobeCancel_visible}" Class="layout-WardrobePage-WardrobeCancel wardrobe-base wardrobe-button" Enabled="{data WardrobeCancel_enabled}" />
       </StackPanel>
     </ContentHost>
-    <StackPanel Key="WardrobeContent" Scroll="true" Class="layout-WardrobePage-WardrobeContent wardrobe-base" Padding="{data WardrobeContent_padding}" Spacing="{data WardrobeContent_spacing}" ScrollGesture="true">
+    <StackPanel Key="WardrobeContent" Scroll="true" Class="layout-WardrobePage-WardrobeContent wardrobe-base" Padding="{data WardrobeContent_padding}" Spacing="{data WardrobeContent_spacing}" ScrollGesture="true" IsVisible="{data !pageLoading}">
       <StackPanel Key="WardrobeMainHeader" IsVisible="false" Class="layout-WardrobePage-WardrobeMainHeader wardrobe-base" Height="{data WardrobeMainHeader_height}">
         <Text Key="WardrobePageTitle" Content="更衣橱" Class="layout-WardrobePage-WardrobePageTitle wardrobe-base" />
       </StackPanel>

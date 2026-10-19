@@ -140,6 +140,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
         _rasterViewport = viewport;
         XsrUiSceneNode previous = _node;
         _node = node;
+        UpdateProgressRing();
         ApplyThemeGeometry(node);
         ApplyToggle(previous, node);
         Opacity = node.PresentationOpacity * (node.VisualStyle.IsDefined ? node.VisualStyle.Opacity : 1);

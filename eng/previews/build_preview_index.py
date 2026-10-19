@@ -19,7 +19,9 @@ import zipfile
 THEMES = ('light', 'dark')
 CATEGORIES = {'splash': 'Splash', 'main': '主窗口', 'resources': '资源列表与详情', 'settings': '设置 · 外观'}
 RESOURCE_PHASES = (
+    ('initial-loading', '首次加载', '内容区域为空，圆环居中，提示位于圆环下方。'),
     ('list-initial', '初始资源列表', '受控目录数据，展示实际资源列表界面。'),
+    ('list-narrow', '窄窗口资源列表', '按窗口宽度调整多列卡片，保留相同资源。'),
     ('append-loading', '滚动后追加中', '保留已加载的记录，在列表尾部追加下一批。'),
     ('appended', '追加完成', '新记录进入同一连续列表。'),
     ('next-loading', '继续加载下一批', '真实列表尾部的加载状态。'),
@@ -97,15 +99,17 @@ def gif_info(data):
 def specs():
     output = []
 
-    def add(path, category, theme, title, caption, poster=None):
+    def add(path, category, theme, title, caption, poster=None, optional=False):
         output.append({'path': path, 'category': category, 'theme': theme,
-                       'title': title, 'caption': caption, 'poster': poster})
+                       'title': title, 'caption': caption, 'poster': poster, 'optional': optional})
 
     for theme in THEMES:
         native = f'native/{theme}/'
         add(native + 'splash.png', 'splash', theme, '加载卡片', '真实原生 Splash，使用相应主题的用户提供 N 图标。')
         add(native + 'splash-entrance.gif', 'splash', theme, 'Splash 入场 · 180ms',
-            '实际 X11 帧采样；一次淡入后停留，保留采样到的短暂前后静止区间。', native + 'splash.png')
+            '实际 X11 帧采样；一次淡入后停留，保留采样到的短暂前后静止区间。', native + 'splash.png', optional=True)
+        add(native + 'splash-loading.gif', 'splash', theme, '加载圆环 · 实际过程',
+            '置顶加载期间的实际圆环与提示，按采样时间播放。', native + 'splash.png')
         add(native + 'shell.png', 'main', theme, '主窗口', '实际启动页；使用隔离数据目录，未导入账户和游戏版本。')
         add(native + 'entrance.gif', 'main', theme, '主窗口入场 · 420ms',
             '实际原生窗口中的青绿 N 轨迹和场景入场，按真实采样时间播放。', native + 'shell.png')
@@ -204,7 +208,7 @@ def main():
     for item in specs():
         path = local_file(directory, item['path'])
         if not path.is_file():
-            missing.append(item['path'])
+            if not item.get('optional', False): missing.append(item['path'])
             continue
         content = path.read_bytes()
         gif = path.suffix == '.gif'

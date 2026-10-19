@@ -132,7 +132,7 @@ internal static partial class Program
         AssertFalse(HasKey(fixture.Shell, fixture.Shell.Render(new XsrUiSize(1280, 800)), "task-bubble"));
     }
 
-    private static void TaskBubbleUsesCompactProgressTrack()
+    private static void TaskBubbleUsesCompactProgressRing()
     {
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
         fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();
@@ -155,8 +155,10 @@ internal static partial class Program
         fixture.Shell.Renderer.SetProgressPresentation(bubble.FillEntity, 0.5);
         var presented = fixture.Shell.Render(new XsrUiSize(1280, 800)).Nodes.Single(node => node.Entity == bubble.FillEntity);
         var expanded = FindByKey(fixture.Shell, fixture.Shell.Render(new(1280, 800)), "task-bubble");
-        AssertEqual((expanded.Rect.Width - 64) / 2, presented.Rect.Width);
-        AssertEqual(3d, presented.Rect.Height);
+        AssertTrue(presented.ProgressRing is { Indeterminate: true });
+        AssertEqual(12d, presented.Rect.Width);
+        AssertEqual(12d, presented.Rect.Height);
+        AssertTrue(presented.Rect.Y >= expanded.Rect.Y + 34);
         // The expanded caption and the bottom icon share one continuous input owner.
         var top = new XsrUiPoint(expanded.Rect.X + 24, expanded.Rect.Y + 12);
         fixture.Shell.Renderer.PointerMoved(top);

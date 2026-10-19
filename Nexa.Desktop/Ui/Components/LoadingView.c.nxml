@@ -1,0 +1,5 @@
+<nxml-component>
+  <StackPanel Class="loading-view" Weight="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" MaxWidth="560" Padding="24">
+    <ProgressRing />
+  </StackPanel>
+</nxml-component>

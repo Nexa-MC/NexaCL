@@ -1,4 +1,4 @@
-﻿/* TaskCard layout. */
+/* TaskCard layout. */
 .layout-TaskCard-TaskCard { Orientation: Vertical; }
 .layout-TaskCard-TaskCardContent { Orientation: Vertical; Spacing: 10; Padding: 22,18,22,18; }
 .layout-TaskCard-TaskCardHeader { Orientation: Horizontal; }
@@ -27,7 +27,7 @@
 .layout-TaskCard-TaskCardSpeed { Foreground: #707c8a; FontSize: 12; }
 .layout-TaskCard-TaskCardError { Foreground: #c44036; FontSize: 12; WrapText: true; }
 .layout-TaskCard-TaskCardDetails { Foreground: #707c8a; CornerRadius: 6; Hover: #1370f316; FontSize: 12; }
-.layout-TaskCard-TaskCardTrack { Background: #ecf0f6; CornerRadius: 2; Surface: Solid; }
+.layout-TaskCard-TaskCardTrack { Background: #00000000; }
 .layout-TaskCard-TaskCardAction { Foreground: #707c8a; CornerRadius: 15; Hover: #1370f316; }
 .task-step { Height: 22; FontSize: 12; }
 .task-running { Foreground: #1370f3; }

@@ -1,3 +1,5 @@
 <nxml-dynamic>
-  <Text Content="正在检测平台功能…" Class="platform-status" />
+  <LoadingView>
+    <Text Content="正在检测平台功能…" Class="loading-hint" LiveSetting="Polite" />
+  </LoadingView>
 </nxml-dynamic>

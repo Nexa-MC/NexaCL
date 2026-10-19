@@ -1,4 +1,4 @@
-﻿using Nexa.Xsr;
+using Nexa.Xsr;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -26,7 +26,10 @@ internal sealed record DesktopDialog(
     string? AlternateLabel = null,
     Action? Alternate = null,
     bool LocalizeMessage = true,
-    bool LocalizeTitle = true);
+    bool LocalizeTitle = true)
+{
+    public bool IsLoading { get; init; }
+}
 
 /// <summary>Thread-safe point-in-time feedback state consumed at the render boundary.</summary>
 internal sealed record DesktopFeedbackSnapshot(
@@ -224,14 +227,14 @@ internal sealed class DesktopFeedbackService : IDisposable
         => TryShowMessageDialog(key, title, message, acceptLabel, out _, localizeMessage, localizeTitle);
 
     public bool TryShowMessageDialog(string key, string title, string message, string acceptLabel,
-        out Guid dialogId, bool localizeMessage = true, bool localizeTitle = true)
+        out Guid dialogId, bool localizeMessage = true, bool localizeTitle = true, bool isLoading = false)
     {
         dialogId = default;
         lock (_gate)
         {
             if (_disposed || _dialog is not null) return false;
             dialogId = Guid.NewGuid();
-            _dialog = new DesktopDialog(dialogId, key, title, message, acceptLabel, null, static _ => { }, LocalizeMessage: localizeMessage, LocalizeTitle: localizeTitle);
+            _dialog = new DesktopDialog(dialogId, key, title, message, acceptLabel, null, static _ => { }, LocalizeMessage: localizeMessage, LocalizeTitle: localizeTitle) { IsLoading = isLoading };
         }
         RaiseChanged();
         return true;
@@ -246,6 +249,7 @@ internal sealed class DesktopFeedbackService : IDisposable
             if (_disposed || _dialog?.Id != dialogId) return false;
             _dialog = _dialog with
             {
+                IsLoading = false,
                 Message = message,
                 AlternateLabel = alternateLabel,
                 Alternate = alternate,

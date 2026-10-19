@@ -7,7 +7,7 @@ import pathlib
 import subprocess
 import time
 
-STAGES = ('list-initial', 'append-loading', 'appended', 'next-loading', 'failed',
+STAGES = ('initial-loading', 'list-initial', 'list-narrow', 'append-loading', 'appended', 'next-loading', 'failed',
           'retry-loading', 'retry-success', 'detail', 'back')
 SCREENSHOT_STAGES = ('gallery', 'scrolled', 'enlarged', 'crop', 'back',
                      'tray-before', 'tray-hidden', 'tray-restored')
@@ -30,7 +30,7 @@ def main():
     out = pathlib.Path(args.output).resolve()
     out.mkdir(parents=True, exist_ok=True)
     stages = STAGES if args.kind == 'resource' else SCREENSHOT_STAGES
-    frame_rate = '30' if args.kind == 'screenshot' else '10'
+    frame_rate = '30'
     marker = out / f'{args.kind}-preview.marker.tsv'
     marker.unlink(missing_ok=True)
     for stage in stages:

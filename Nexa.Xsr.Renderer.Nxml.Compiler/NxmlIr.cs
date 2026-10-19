@@ -143,6 +143,10 @@ public sealed record NxmlIrNode
     /// <summary>The static progress value; the state binding feeds the live target.</summary>
     public double Value { get; init; }
 
+    public bool Ring { get; init; }
+
+    public bool Indeterminate { get; init; }
+
     public IReadOnlyList<NxmlIrBinding> Bindings { get; init; } = [];
 }
 

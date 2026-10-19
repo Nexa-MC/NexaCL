@@ -217,10 +217,15 @@ internal sealed partial class AvaloniaUiSceneNodeControl
         }
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    { base.OnAttachedToVisualTree(e); _progressRingAttached = true; UpdateProgressRing(); }
+
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        _progressRingAttached = false;
         StopCaret();
+        _progressRingAnimation?.Stop();
         AvaloniaUiMotion.CancelAll(this);
     }
 

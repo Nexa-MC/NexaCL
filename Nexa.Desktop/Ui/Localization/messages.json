@@ -1,4 +1,12 @@
 [
+  {"source":"任务进度","en":"Task progress","zh-Hant":"任務進度"},
+  {"source":"正在处理启动器迁移…","en":"Migrating launcher data…","zh-Hant":"正在處理啟動器遷移…"},
+  {"source":"正在获取资源列表…","en":"Loading resources…","zh-Hant":"正在取得資源清單…"},
+  {"source":"正在读取外观…","en":"Loading appearance…","zh-Hant":"正在讀取外觀…"},
+  {"source":"正在读取文件工作区…","en":"Loading the file workspace…","zh-Hant":"正在讀取檔案工作區…"},
+  {"source":"正在读取版本列表…","en":"Loading instances…","zh-Hant":"正在讀取版本清單…"},
+  {"source":"正在读取设置…","en":"Loading settings…","zh-Hant":"正在讀取設定…"},
+  {"source":"正在加载","en":"Loading","zh-Hant":"正在載入"},
   {"source":"正在显示缓存资料，后台正在刷新…","en":"Showing cached information. Refreshing in the background…","zh-Hant":"正在顯示快取資料，背景正在重新整理…"},
   {"source":" · 部分在线信息暂时不可用，可稍后重试。","en":" · Some online information is temporarily unavailable. Try again later.","zh-Hant":" · 部分線上資訊暫時無法使用，請稍後重試。"},
   {"source":"{data source}  ·  {data downloads} 次下载  ·  {data license}","en":"{data source}  ·  {data downloads} downloads  ·  {data license}","zh-Hant":"{data source}  ·  {data downloads} 次下載  ·  {data license}"},

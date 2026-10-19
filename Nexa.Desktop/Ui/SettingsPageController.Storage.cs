@@ -38,6 +38,7 @@ internal sealed partial class SettingsPageController
         bool locked = _storageStatus?.LocationLocked == true, pending = _storageStatus?.MigrationPending == true;
         return new()
         {
+            ["loadingWeight"] = LoadingWeight(_storageStatus is null),
             ["loading"] = Flag(_storageStatus is null),
             ["loaded"] = Flag(_storageStatus is not null),
             ["path"] = _storageStatus?.DataDirectory ?? "",

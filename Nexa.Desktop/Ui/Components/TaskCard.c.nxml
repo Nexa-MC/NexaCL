@@ -1,18 +1,18 @@
-﻿<nxml-component>
+<nxml-component>
   <StackPanel Key="{data key}" Class="layout-TaskCard-TaskCard">
     <StackPanel Key="TaskCardContent" Class="layout-TaskCard-TaskCardContent">
       <StackPanel Key="TaskCardHeader" Class="layout-TaskCard-TaskCardHeader">
-        <Image Key="TaskCardIcon" Source="{data icon}" Class="{data icon-style}" />
+        <Image Key="TaskCardIcon" Source="{data icon}" IsVisible="{data !active}" Class="{data icon-style}" />
         <Text Key="TaskCardTitle" Localize="false" Content="{data title}" Class="layout-TaskCard-TaskCardTitle" />
         <Button Key="TaskCardAction" Icon="lucide/x" Label="{data action-label}" Command="{data action}" IsVisible="{data show-action}" Class="layout-TaskCard-TaskCardAction" />
       </StackPanel>
+      <ContentHost Key="TaskCardTrack" IsVisible="{data active}" Class="layout-TaskCard-TaskCardTrack" Height="32" HorizontalAlignment="Center" Width="32">
+        <ProgressRing Key="TaskCardFill" Label="任务进度" Value="{data progress}" Class="{data fill-style}" Indeterminate="true" Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center" />
+      </ContentHost>
       <StackPanel Key="TaskCardStatus" Class="layout-TaskCard-TaskCardStatus">
         <Text Key="TaskCardStage" Localize="false" Content="{data stage}" Class="layout-TaskCard-TaskCardStage" />
         <Text Key="TaskCardPercent" Localize="false" Content="{data percent}" Class="{data percent-style}" />
       </StackPanel>
-      <ContentHost Key="TaskCardTrack" IsVisible="{data active}" Class="layout-TaskCard-TaskCardTrack">
-        <Progress Key="TaskCardFill" Label="任务进度条" Value="{data progress}" Class="{data fill-style}" />
-      </ContentHost>
       <StackPanel Key="TaskCardMeta" IsVisible="{data show-meta}" Class="layout-TaskCard-TaskCardMeta">
         <Text Key="TaskCardFiles" Localize="false" Content="{data files}" Class="layout-TaskCard-TaskCardFiles" />
         <Text Key="TaskCardSpeed" Localize="false" Content="{data speed}" Class="layout-TaskCard-TaskCardSpeed" />

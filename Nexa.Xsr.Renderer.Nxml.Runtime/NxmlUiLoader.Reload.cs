@@ -44,6 +44,8 @@ public sealed partial class NxmlUiLoader
             MaxLines = after.MaxLines,
             TrimOverflow = after.TrimOverflow,
             Value = after.Value,
+            Ring = after.Ring,
+            Indeterminate = after.Indeterminate,
             Visual = after.Visual,
             LiveSetting = after.LiveSetting,
             ShowsVerticalIndicator = after.ShowsVerticalIndicator,
@@ -137,8 +139,12 @@ public sealed partial class NxmlUiLoader
         }
         if (before.Enabled != after.Enabled && tree.GetComponent<XsrUiInput>(entity) is { } input)
         { input.Enabled = after.Enabled; dirty |= XsrUiDirtyKinds.Paint; }
-        if (before.Value != after.Value && tree.GetComponent<XsrUiProgress>(entity) is { } progress)
-        { progress.SetTarget(after.Value); dirty |= XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint; }
+        if ((before.Value != after.Value || before.Ring != after.Ring || before.Indeterminate != after.Indeterminate)
+            && tree.GetComponent<XsrUiProgress>(entity) is { } progress)
+        {
+            progress.Ring = after.Ring; progress.Indeterminate = after.Indeterminate;
+            progress.SetTarget(after.Value); dirty |= XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint;
+        }
         if (before.Localize != after.Localize)
         {
             if (tree.GetComponent<XsrUiText>(entity) is { } literalText) literalText.Localize = after.Localize;

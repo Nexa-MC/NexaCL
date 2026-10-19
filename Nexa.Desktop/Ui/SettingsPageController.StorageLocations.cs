@@ -1,4 +1,4 @@
-﻿using Nexa.Services.Minecraft;
+using Nexa.Services.Minecraft;
 using Nexa.Services.Setup;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
@@ -31,7 +31,7 @@ internal sealed partial class SettingsPageController
             : _queries.TryResolve(StorageLocationsContract.Query, out _) ? "SettingsStorageLoading.d.nxml" : "SettingsStorageUnregistered.d.nxml";
         var fragment = DesktopMarkup.Dynamic(template);
         bool hadPaths = _storageDirectoryBodyTemplate == "SettingsStoragePaths.d.nxml", hasPaths = _storageLocations is not null;
-        if (_shell.Tree.IsAlive(_storageDirectoryBodyView) && hadPaths == hasPaths) _dynamic.Reload(_storageDirectoryBodyView, fragment);
+        if (_shell.Tree.IsAlive(_storageDirectoryBodyView) && hadPaths == hasPaths && (hasPaths || _storageDirectoryBodyTemplate == template)) _dynamic.Reload(_storageDirectoryBodyView, fragment);
         else
         {
             _storageDirectoryBodyView = _dynamic.Replace(body, fragment); _storageDirectoryPathViews.Clear();

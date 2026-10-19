@@ -256,6 +256,7 @@ internal static partial class Program
                 throw new InvalidOperationException("Trace format reparsed literal metadata.");
             var launchData = new Dictionary<string, string>
             {
+                ["loading"] = "false",
                 ["readEnabled"] = "true",
                 ["status"] = literal,
                 ["showStatus"] = "true",
@@ -397,6 +398,8 @@ internal static partial class Program
             ["otherClass"] = "settings-catalog-action instance-tools-area",
             ["hasError"] = "false",
             ["error"] = "",
+            ["loading"] = "false",
+            ["loadingWeight"] = "0",
             ["loadingList"] = "false",
             ["loadingFile"] = "false",
             ["showList"] = "false",
@@ -466,7 +469,7 @@ internal static partial class Program
         Index(page);
         string literal = "literal <version> {data text}";
         var workspace = owner.Append(nodes["VersionSelectionWorkspace"], DesktopMarkup.Dynamic("VersionSelectionWorkspace.d.nxml",
-            new Dictionary<string, string> { ["path"] = literal, ["name"] = literal, ["named"] = "true", ["count"] = "2", ["status"] = "", ["empty"] = "false" })); Index(workspace);
+            new Dictionary<string, string> { ["loading"] = "false", ["path"] = literal, ["name"] = literal, ["named"] = "true", ["count"] = "2", ["status"] = "", ["empty"] = "false" })); Index(workspace);
         var popupData = new Dictionary<string, string> { ["visible"] = "false", ["height"] = "160", ["indicator"] = "false", ["renameVisible"] = "true", ["addVisible"] = "false" };
         var popup = owner.Append(nodes["VersionDirectoryWorkspace"], DesktopMarkup.Dynamic("VersionDirectoryDropdown.d.nxml", popupData)); Index(popup);
         var rowData = new Dictionary<string, string>

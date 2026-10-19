@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Resources;
 using Nexa.Xsr;
@@ -95,6 +95,8 @@ internal sealed partial class ResourcesPageController : IDisposable
         Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("ResourcesPage.nxml"), shell.Tree, store);
         IndexResources(Page);
         var workspaceData = DesktopResourcesText.Defaults();
+        workspaceData["initialLoading"] = "false";
+        workspaceData["appendLoading"] = "false";
         workspaceData["mirrorEnabled"] = Flag(_region.IsMainlandChina);
         _workspace = AppendResource(_entities["ResourceWorkspaceSlot"], "ResourceWorkspace.d.nxml", workspaceData);
         InitializeCatalogVirtualMetrics();
@@ -284,7 +286,7 @@ internal sealed partial class ResourcesPageController : IDisposable
     {
         Cancel(); _detailId = id; _detail = null;
         Clear(_detailBody, _detailActions);
-        AppendResource(_detailBody, "ResourceMessage.d.nxml", new() { ["key"] = "ResourceDetailLoading", ["message"] = L(DesktopResourcesText.Raw("copy.7e74cabf57c0")) });
+        AppendResource(_detailBody, "ResourceLoading.d.nxml", new() { ["key"] = "ResourceDetailLoading", ["message"] = L(DesktopResourcesText.Raw("copy.7e74cabf57c0")) });
         string loader = _filter.Kind == ResourceKind.DataPack ? "datapack" : _filter.Kind == ResourceKind.ResourcePack ? "" : _filter.Loader;
         if (_queries.TryResolve(ResourceCatalogContract.Detail, out var route))
         {

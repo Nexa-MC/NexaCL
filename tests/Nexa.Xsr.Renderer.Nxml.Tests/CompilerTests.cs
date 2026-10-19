@@ -7,7 +7,7 @@ internal static partial class Program
     private static void ExternalControlCatalogIsCompleteAndDeterministic()
     {
         AssertSequence(
-            ["Button", "CheckBox", "ContentHost", "Dialog", "Dynamic", "HorizontalPager", "Image", "Navigation", "NavigationItem", "Notification", "Page", "Progress", "Shell", "Slider", "StackPanel", "Text", "TextInput", "TitleBar", "VerticalPager"],
+            ["Button", "CheckBox", "ContentHost", "Dialog", "Dynamic", "HorizontalPager", "Image", "Navigation", "NavigationItem", "Notification", "Page", "Progress", "ProgressRing", "Shell", "Slider", "StackPanel", "Text", "TextInput", "TitleBar", "VerticalPager"],
             NxmlControlCatalog.Names.ToArray());
 
         if (NxmlControlCatalog.Names is IList<string> names)

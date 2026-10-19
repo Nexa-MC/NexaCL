@@ -72,3 +72,7 @@ dimensions, bytes and SHA-256. Re-run the builder after the final captures are
 frozen; it overwrites only generated index/catalog/ZIP outputs. By default all
 expected assets must exist. `--allow-missing` is available for an explicitly
 partial review during collection.
+
+Resource previews include an empty initial loading region, a narrow layout, append/retry loading, and retained rows. GIFs record actual native frames at 30 fps, including the shared progress ring.
+
+Splash loading is sampled at the requested frame rate for up to three seconds, separately from the short entrance. The gallery includes this real ring motion even when native mapping missed the optional 180 ms fade.

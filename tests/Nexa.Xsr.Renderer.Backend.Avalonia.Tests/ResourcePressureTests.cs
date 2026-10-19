@@ -48,7 +48,7 @@ internal static partial class Program
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         await using var startup = await AvaloniaUiStartupSession.StartWithAppearanceAsync([], disableHardwareAcceleration: true,
-            new AvaloniaUiStartupAppearance(XsrUiThemeMode.Dark),
+            new AvaloniaUiStartupAppearance(XsrUiThemeMode.Dark, ReducedMotion: true),
             localize: static text => text == "取消并退出" ? "Cancel and exit" : text, cancellationToken: timeout.Token);
         AssertEqual(OperatingSystem.IsWindows() || OperatingSystem.IsLinux(), startup.HardwareAccelerationDisabled);
         if (OperatingSystem.IsWindows())

@@ -1,1 +1,11 @@
-<nxml-dynamic><StackPanel Key="InstanceIdentity.Loading" Class="settings-custom-column"><Text Content="正在读取实例信息…" IsVisible="{data loading}" Class="settings-custom-caption" /><Text Content="无法读取实例信息；现有文件已保留。" IsVisible="{data failed}" Class="settings-custom-caption" /><Button Key="InstanceIdentityRetry" Content="重新读取" Label="重新读取" Command="ui.settings.instance-identity.action" Enabled="{data enabled}" IsVisible="{data failed}" Class="settings-catalog-action settings-custom-action" /></StackPanel></nxml-dynamic>
+<nxml-dynamic>
+  <StackPanel Key="InstanceIdentity.Loading" Class="settings-custom-column" Weight="{data loadingWeight}" MinHeight="124">
+    <StackPanel IsVisible="{data !loading}" Weight="1" Spacing="12">
+      <Text Content="无法读取实例信息；现有文件已保留。" IsVisible="{data failed}" Class="settings-custom-caption" />
+      <Button Key="InstanceIdentityRetry" Content="重新读取" Label="重新读取" Command="ui.settings.instance-identity.action" Enabled="{data enabled}" IsVisible="{data failed}" Class="settings-catalog-action settings-custom-action" />
+    </StackPanel>
+    <LoadingView IsVisible="{data loading}">
+      <Text Content="正在读取实例信息…" Class="loading-hint" LiveSetting="Polite" />
+    </LoadingView>
+  </StackPanel>
+</nxml-dynamic>

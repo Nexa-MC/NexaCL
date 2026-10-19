@@ -1,4 +1,4 @@
-﻿using Nexa.Services.Minecraft;
+using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
@@ -206,6 +206,7 @@ internal sealed class ProcessLogPageController : IDisposable
 
     private void SwitchSession(int direction)
     {
+        _view["loading"] = Flag(_reading is not null);
         var sessions = Sessions();
         int index = sessions.ToList().FindIndex(item => item.SessionId == _session);
         int next = index + direction;
@@ -235,6 +236,7 @@ internal sealed class ProcessLogPageController : IDisposable
 
     private void Project()
     {
+        _view["loading"] = Flag(_reading is not null);
         var sessions = Sessions();
         int index = sessions.ToList().FindIndex(item => item.SessionId == _session);
         var session = index >= 0 ? sessions[index] : null;
@@ -310,6 +312,7 @@ internal sealed class ProcessLogPageController : IDisposable
         {
             ["ProcessLogSession"] = LogTerm("log.title"),
             ["ProcessLogPageNumber"] = LogFormat("LogPage", new() { ["page"] = "1", ["pages"] = "1" }),
+            ["loading"] = "true",
             ["ProcessLogStatus"] = LogTerm("log.reading"),
             ["ProcessLogEmpty"] = "",
             ["ProcessLogEmpty.visible"] = "false",

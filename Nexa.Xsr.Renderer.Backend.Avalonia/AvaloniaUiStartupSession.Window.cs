@@ -22,7 +22,7 @@ public sealed partial class AvaloniaUiStartupSession
             _appearance = appearance;
             Title = "NexaCL";
             Width = 400;
-            Height = 280;
+            Height = AvaloniaUiStartupCard.LoadingHeight;
             CanResize = false;
             ShowInTaskbar = false;
             ShowActivated = false;
@@ -77,7 +77,7 @@ public sealed partial class AvaloniaUiStartupSession
         {
             if (_closed) return;
             _card.SetStage(stage, failed, canRetry);
-            Height = failed ? 346 : 280;
+            Height = failed ? AvaloniaUiStartupCard.FailureHeight : AvaloniaUiStartupCard.LoadingHeight;
         }
 
         internal void Relocalize(Func<string, string> localize)

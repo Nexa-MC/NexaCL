@@ -94,6 +94,7 @@ internal sealed partial class SettingsPageController
 
     private Dictionary<string, string> IdentityProjection() => new()
     {
+        ["loadingWeight"] = LoadingWeight(_identity is null && !_identityFailed),
         ["loading"] = Flag(_identity is null && !_identityFailed),
         ["failed"] = Flag(_identity is null && _identityFailed),
         ["ready"] = Flag(_identity is not null),

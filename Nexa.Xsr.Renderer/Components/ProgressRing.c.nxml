@@ -1,0 +1,3 @@
+<nxml-component>
+  <Node Kind="ProgressRing" Recipe="Progress" Role="ProgressBar" AcceptsChildren="false" Ring="true" Indeterminate="true" Width="40" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center" Label="正在加载" Value="0" />
+</nxml-component>

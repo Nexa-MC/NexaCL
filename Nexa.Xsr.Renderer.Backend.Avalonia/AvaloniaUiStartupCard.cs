@@ -8,9 +8,13 @@ using Nexa.Xsr.Renderer;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
-/// <summary>A quiet, bounded native startup decoration. It owns no progress or worker clock.</summary>
+/// <summary>Bounded native startup decoration using the shared presentation clock.</summary>
 internal sealed class AvaloniaUiStartupCard : Border, IDisposable
 {
+    internal const double LoadingHeight = 352;
+    internal const double FailureHeight = 392;
+    internal const double PassiveHeight = 310;
+
     private readonly AvaloniaUiBrandImages? _brand = AvaloniaUiBrandImages.TryLoadProduct();
     private readonly Bitmap? _fallback;
     private AvaloniaUiBrandImages? _themeBrand;
@@ -19,7 +23,8 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
     private bool _splashReduced;
     private readonly Image _mark;
     private readonly TextBlock _name, _edition, _version, _stage;
-    private readonly Border _rail, _statusDot;
+    private readonly Border _rail;
+    private readonly AvaloniaUiProgressRing _statusRing;
     private readonly ScrollViewer _stageViewport;
     private readonly StackPanel _buttons;
     private readonly Button _cancel, _retry;
@@ -67,15 +72,7 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
             Children = { _mark, identity }
         };
         _rail = new Border { Height = 2, CornerRadius = new CornerRadius(1), IsHitTestVisible = false };
-        _statusDot = new Border
-        {
-            Width = 6,
-            Height = 6,
-            CornerRadius = new CornerRadius(3),
-            HorizontalAlignment = HorizontalAlignment.Left,
-            VerticalAlignment = VerticalAlignment.Top,
-            Margin = new Thickness(0, 7, 0, 0)
-        };
+        _statusRing = new AvaloniaUiProgressRing { HorizontalAlignment = HorizontalAlignment.Center };
         _stage = Text(localize(_stageSource), 12);
         _stage.TextWrapping = TextWrapping.Wrap;
         _stage.TextTrimming = TextTrimming.None;
@@ -87,8 +84,8 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
             HorizontalScrollBarVisibility = global::Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
             VerticalScrollBarVisibility = global::Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
         };
-        Grid.SetColumn(_stageViewport, 1);
-        var status = new Grid { ColumnDefinitions = new ColumnDefinitions("18,*"), Children = { _statusDot, _stageViewport } };
+        _stage.TextAlignment = TextAlignment.Center;
+        var status = new StackPanel { Spacing = 16, Margin = new Thickness(0, 12, 0, 0), Children = { _statusRing, _stageViewport } };
         _cancel = new Button
         {
             Content = localize("取消并退出"),
@@ -127,6 +124,7 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
         if (_splashMotion == motion && _splashReduced == reducedMotion) return;
         AvaloniaUiMotion.CancelAll(this);
         _splashMotion = motion; _splashReduced = reducedMotion;
+        _statusRing.ReducedMotion = reducedMotion; _statusRing.UpdateMotion();
         _mark.Opacity = 1; _mark.Clip = null;
         if (reducedMotion || motion is AvaloniaUiThemeSplashMotion.Default or AvaloniaUiThemeSplashMotion.None or AvaloniaUiThemeSplashMotion.Fade) return;
         if (motion == AvaloniaUiThemeSplashMotion.Breathe) Breathe(lower: true);
@@ -220,8 +218,9 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
         Color ink = _failed ? (_dark ? Color.FromRgb(255, 186, 130) : Color.FromRgb(153, 74, 24))
             : _dark ? Color.FromRgb(179, 206, 219) : Color.FromRgb(74, 101, 121);
         _stage.Foreground = new SolidColorBrush(ink);
-        _statusDot.Background = new SolidColorBrush(_failed ? ink
-            : _dark ? Color.FromRgb(80, 229, 195) : Color.FromRgb(14, 126, 134));
+        _statusRing.Ink = _edition.Foreground ?? Brushes.DodgerBlue;
+        _statusRing.IsVisible = !_failed;
+        _statusRing.UpdateMotion();
     }
 
     internal void Relocalize(Func<string, string> localize)
@@ -243,6 +242,7 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _statusRing.Dispose();
         AvaloniaUiMotion.CancelAll(this);
         _mark.Source = null;
         _themeBrand?.Dispose();

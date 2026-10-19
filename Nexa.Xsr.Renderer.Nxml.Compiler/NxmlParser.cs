@@ -162,7 +162,8 @@ public static class NxmlParser
         if (raw.StartsWith(dataPrefix, StringComparison.Ordinal) && raw.EndsWith('}') && raw.IndexOf('}') == raw.Length - 1)
         {
             string name = raw[dataPrefix.Length..^1];
-            if (name.Length is 0 or > 128 || !name.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-' or '.'))
+            string parameter = name.StartsWith('!') && attributeName == "IsVisible" ? name[1..] : name;
+            if (parameter.Length is 0 or > 128 || !parameter.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-' or '.'))
                 throw new NxmlParseException("A data binding needs a simple parameter name.");
             return new(NxmlValueKind.DataBinding, name);
         }

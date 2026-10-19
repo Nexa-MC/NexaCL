@@ -1,4 +1,4 @@
-﻿using Nexa.Desktop.Ui;
+using Nexa.Desktop.Ui;
 using Nexa.Services.Resources;
 using Nexa.Services.Settings;
 using Nexa.Xsr;
@@ -12,6 +12,14 @@ internal static partial class Program
     private static void ResourceContinuousListAppendsOnceAndRetainsRowsScrollAndDraft()
     {
         using var f = new ContinuousResourceHarness();
+        AssertTrue(f.Scene.Nodes.Any(node => node.ProgressRing is { Indeterminate: true }));
+        AssertFalse(f.Scene.Nodes.Any(node => f.Fixture.Shell.Tree.Name(node.Entity) == "ResourceSearch"));
+        var region = FindByKey(f.Fixture.Shell, f.Scene, "ResourceWorkspace").Rect;
+        var loading = FindByKey(f.Fixture.Shell, f.Scene, "ResourceInitialLoading").Rect;
+        var initialRing = f.Scene.Nodes.Single(node => node.ProgressRing is not null).Rect;
+        AssertClose(region.X + region.Width / 2, loading.X + loading.Width / 2);
+        AssertClose(region.Y + region.Height / 2, loading.Y + loading.Height / 2);
+        AssertClose(40, initialRing.Width); AssertClose(40, initialRing.Height);
         f.Complete(0, ContinuousProjects("First", 20), hasMore: true);
         f.Pump(() => f.Rows.Length > 0);
         var search = FindByKey(f.Fixture.Shell, f.Scene, "ResourceSearch").Entity;
@@ -20,6 +28,7 @@ internal static partial class Program
         f.Fixture.Shell.Renderer.SetTextInputValue(FindByKey(f.Fixture.Shell, f.Scene, "ResourceLoader").Entity, "unsubmitted loader");
         f.ScrollToBottom();
         f.Pump(() => f.Reads.Count == 2);
+        AssertTrue(f.Scene.Nodes.Any(node => node.ProgressRing is { Indeterminate: true }));
         var anchor = f.Row("First19");
         double offset = f.Snapshot.OffsetY;
         double height = f.Snapshot.ContentHeight;
@@ -105,16 +114,19 @@ internal static partial class Program
         AssertTrue(f.Reads[1].Token.IsCancellationRequested);
         AssertEqual(0, f.Reads[2].Query.Page);
         AssertEqual("replacement", f.Reads[2].Query.Text);
-        AssertClose(0, f.Snapshot.OffsetY);
+        AssertClose(0, f.Fixture.Shell.Tree.GetComponent<XsrUiScroll>(f.Page.Find("ResourceList"))!.OffsetY);
         f.Complete(1, ContinuousProjects("LateOld", 20), hasMore: false);
         f.RenderFrames(3);
         AssertFalse(f.Scene.Nodes.Any(node => node.Text?.StartsWith("LateOld", StringComparison.Ordinal) == true));
-        f.Click("ResourceNetwork.1");
+        // The replacement view is empty while loading; source policy can still supersede it.
+        AssertTrue(f.Fixture.Foundation.Commands.TryResolve(SettingsPolicyContract.SetCommand, out var sourcePolicy));
+        AssertTrue(f.Fixture.Foundation.Commands.Dispatch(sourcePolicy, new SettingsMutation("network.resource-source", SettingsLayer.Global,
+            new(SettingsOverrideMode.Custom, "official-first"))).Completion.GetAwaiter().GetResult().IsSuccess);
         f.Pump(() => f.Reads.Count == 4);
         AssertTrue(f.Reads[2].Token.IsCancellationRequested);
         AssertEqual(0, f.Reads[3].Query.Page);
         AssertEqual("replacement", f.Reads[3].Query.Text);
-        AssertFalse(f.Reads[3].Query.MirrorFirst);
+        AssertTrue(f.Reads[3].Query.MirrorFirst); // Source policy changes preserve the submitted request preference.
         f.Complete(2, ContinuousProjects("LateMirror", 20), hasMore: false);
         f.Complete(3, ContinuousProjects("Official", 20), hasMore: true);
         f.Pump(() => f.Scene.Nodes.Any(node => node.Text == "Official0"));
@@ -133,7 +145,7 @@ internal static partial class Program
         AssertTrue(f.Reads[4].Token.IsCancellationRequested);
         AssertEqual(0, f.Reads[5].Query.Page);
         AssertEqual("replacement", f.Reads[5].Query.Text);
-        AssertFalse(f.Reads[5].Query.MirrorFirst); // The global override retains the submitted local preference.
+        AssertTrue(f.Reads[5].Query.MirrorFirst); // The new global policy supersedes the earlier override.
         AssertFalse(f.Fixture.Shell.Tree.GetComponent<XsrUiInput>(f.Page.Find("ResourceNetwork.1"))!.Enabled);
         AssertTrue(f.Fixture.Shell.Tree.GetComponent<XsrUiSelection>(f.Page.Find("ResourceNetwork.0"))!.IsSelected);
         f.Complete(4, ContinuousProjects("LatePolicy", 20), hasMore: false);

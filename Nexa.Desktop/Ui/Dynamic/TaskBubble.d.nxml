@@ -1,8 +1,8 @@
-﻿<nxml-dynamic>
+<nxml-dynamic>
   <Button Scroll="true" ShowsHorizontalIndicator="true" UseVerticalWheelForHorizontalScroll="true" Key="task-bubble" Class="desktop-bubble task-bubble capsule" IsVisible="false" Command="ui.tasks.open" Icon="lucide/list-checks" Content="{data caption}" Localize="false" Label="{data label}">
     <ContentHost Key="task-bubble-details" IsVisible="{data details}">
-      <ContentHost Key="task-bubble-track" Class="task-bubble-track">
-        <Progress Key="task-bubble-fill" Class="task-bubble-fill" Value="{data progress}" />
+      <ContentHost Key="task-bubble-track" Class="task-bubble-track" Width="12" Height="12" HorizontalAlignment="Start" VerticalAlignment="End" Margin="16,0,0,1">
+        <ProgressRing Key="task-bubble-fill" Class="task-bubble-fill" Value="{data progress}" Indeterminate="true" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" Label="任务进度" />
       </ContentHost>
     </ContentHost>
   </Button>

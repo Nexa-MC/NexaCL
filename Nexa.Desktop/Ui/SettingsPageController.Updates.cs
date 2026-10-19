@@ -204,6 +204,7 @@ internal sealed partial class SettingsPageController
         return new()
         {
             ["version"] = _updateQuery?.CurrentVersion ?? "",
+            ["busy"] = Flag(AutomaticUpdateInProgress || _updateReading is not null),
             ["canCheck"] = Flag(_updateReading is null),
             ["status"] = _updateStatus.Length == 0 ? CustomCopy("update.initial") : _updateStatus,
             ["downloading"] = Flag(phase == "downloading"),

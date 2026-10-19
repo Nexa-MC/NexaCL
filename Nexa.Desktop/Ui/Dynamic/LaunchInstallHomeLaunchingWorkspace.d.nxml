@@ -1,38 +1,37 @@
 <nxml-dynamic>
-    <ContentHost Key="LaunchingHost" Class="launch-install-launching-host">
-      <StackPanel Key="LaunchingCard" Class="layout-LaunchingPage-LaunchingCard">
-        <Image Key="LaunchingIcon" Source="lucide/loader-circle" Class="layout-LaunchingPage-LaunchingIcon" />
-        <Text Key="LaunchingTitle" Localize="false" Content="{state launch.launching.title}" Class="layout-LaunchingPage-LaunchingTitle" />
-        <Text Key="LaunchingName" Localize="false" Content="{state launch.launching.name}" Class="layout-LaunchingPage-LaunchingName" />
-        <StackPanel Key="LaunchingBody" Class="layout-LaunchingPage-LaunchingBody">
-          <ContentHost Key="LaunchProgressTrack" Class="layout-LaunchingPage-LaunchProgressTrack">
-            <Progress Key="LaunchProgressFill" Value="{state minecraft.launch.progress}" Label="启动进度条" Class="layout-LaunchingPage-LaunchProgressFill" />
+  <ContentHost Key="LaunchingHost" Class="launch-install-launching-host">
+    <StackPanel Key="LaunchingCard" Class="layout-LaunchingPage-LaunchingCard">
+      <ProgressRing Key="LaunchProgressFill" Value="{state minecraft.launch.progress}" Label="启动进度" Indeterminate="true" Width="40" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,24,0,0" />
+      <Text Key="LaunchingTitle" Localize="false" Content="{state launch.launching.title}" Class="layout-LaunchingPage-LaunchingTitle" />
+      <Text Key="LaunchingName" Localize="false" Content="{state launch.launching.name}" Class="layout-LaunchingPage-LaunchingName" />
+      <StackPanel Key="LaunchingBody" Class="layout-LaunchingPage-LaunchingBody">
+        <ContentHost Key="LaunchProgressTrack" Class="layout-LaunchingPage-LaunchProgressTrack" Height="40" IsVisible="false">
           </ContentHost>
-          <StackPanel Key="LaunchingStageRow" Class="layout-LaunchingPage-LaunchingStageRow">
-            <Text Key="LaunchingStageLabel" Content="当前步骤" Class="layout-LaunchingPage-LaunchingStageLabel" />
-            <Text Key="LaunchingStageValue" Localize="false" Content="{state launch.launching.stage}" Class="layout-LaunchingPage-LaunchingStageValue" />
-          </StackPanel>
-          <StackPanel Key="LaunchingMethodRow" Class="layout-LaunchingPage-LaunchingMethodRow">
-            <Text Key="LaunchingMethodLabel" Content="登录方式" Class="layout-LaunchingPage-LaunchingMethodLabel" />
-            <Text Key="LaunchingMethodValue" Localize="false" Content="{state launch.launching.method}" Class="layout-LaunchingPage-LaunchingMethodValue" />
-          </StackPanel>
-          <StackPanel Key="LaunchingPercentRow" Class="layout-LaunchingPage-LaunchingPercentRow">
-            <Text Key="LaunchingPercentLabel" Content="启动进度" Class="layout-LaunchingPage-LaunchingPercentLabel" />
-            <Text Key="LaunchingPercentValue" Localize="false" Content="{state launch.launching.percent}" Class="layout-LaunchingPage-LaunchingPercentValue" />
-          </StackPanel>
-          <StackPanel Key="LaunchingSpeedRow" IsVisible="{state launch.launching.speed-visible}" Class="layout-LaunchingPage-LaunchingSpeedRow">
-            <Text Key="LaunchingSpeedLabel" Content="下载速度" Class="layout-LaunchingPage-LaunchingSpeedLabel" />
-            <Text Key="LaunchingSpeedValue" Localize="false" Content="{state launch.launching.speed}" Class="layout-LaunchingPage-LaunchingSpeedValue" />
-          </StackPanel>
-          <ContentHost Key="LaunchingHintBox" IsVisible="{data hint_visible}" Class="layout-LaunchingPage-LaunchingHintBox">
-            <StackPanel Class="layout-LaunchingPage-23">
-              <Text Key="LaunchingHintTitle" Content="启动贴士" Class="layout-LaunchingPage-LaunchingHintTitle" />
-              <Text Key="LaunchingHintValue" Content="{state launch.launching.hint}" Class="layout-LaunchingPage-LaunchingHintValue" />
-            </StackPanel>
-          </ContentHost>
+        <StackPanel Key="LaunchingStageRow" Class="layout-LaunchingPage-LaunchingStageRow">
+          <Text Key="LaunchingStageLabel" Content="当前步骤" Class="layout-LaunchingPage-LaunchingStageLabel" />
+          <Text Key="LaunchingStageValue" Localize="false" Content="{state launch.launching.stage}" Class="layout-LaunchingPage-LaunchingStageValue" />
         </StackPanel>
-        <Button Key="LaunchingCancelButton" Localize="false" Label="{state launch.launching.cancel-label}" Content="{state launch.launching.cancel-label}" Command="ui.launch.cancel" Class="layout-LaunchingPage-LaunchingCancelButton" />
-        <ContentHost Key="LaunchingBottomInset" Class="layout-LaunchingPage-LaunchingBottomInset" />
+        <StackPanel Key="LaunchingMethodRow" Class="layout-LaunchingPage-LaunchingMethodRow">
+          <Text Key="LaunchingMethodLabel" Content="登录方式" Class="layout-LaunchingPage-LaunchingMethodLabel" />
+          <Text Key="LaunchingMethodValue" Localize="false" Content="{state launch.launching.method}" Class="layout-LaunchingPage-LaunchingMethodValue" />
+        </StackPanel>
+        <StackPanel Key="LaunchingPercentRow" Class="layout-LaunchingPage-LaunchingPercentRow">
+          <Text Key="LaunchingPercentLabel" Content="启动进度" Class="layout-LaunchingPage-LaunchingPercentLabel" />
+          <Text Key="LaunchingPercentValue" Localize="false" Content="{state launch.launching.percent}" Class="layout-LaunchingPage-LaunchingPercentValue" />
+        </StackPanel>
+        <StackPanel Key="LaunchingSpeedRow" IsVisible="{state launch.launching.speed-visible}" Class="layout-LaunchingPage-LaunchingSpeedRow">
+          <Text Key="LaunchingSpeedLabel" Content="下载速度" Class="layout-LaunchingPage-LaunchingSpeedLabel" />
+          <Text Key="LaunchingSpeedValue" Localize="false" Content="{state launch.launching.speed}" Class="layout-LaunchingPage-LaunchingSpeedValue" />
+        </StackPanel>
+        <ContentHost Key="LaunchingHintBox" IsVisible="{data hint_visible}" Class="layout-LaunchingPage-LaunchingHintBox">
+          <StackPanel Class="layout-LaunchingPage-23">
+            <Text Key="LaunchingHintTitle" Content="启动贴士" Class="layout-LaunchingPage-LaunchingHintTitle" />
+            <Text Key="LaunchingHintValue" Content="{state launch.launching.hint}" Class="layout-LaunchingPage-LaunchingHintValue" />
+          </StackPanel>
+        </ContentHost>
       </StackPanel>
-    </ContentHost>
+      <Button Key="LaunchingCancelButton" Localize="false" Label="{state launch.launching.cancel-label}" Content="{state launch.launching.cancel-label}" Command="ui.launch.cancel" Class="layout-LaunchingPage-LaunchingCancelButton" />
+      <ContentHost Key="LaunchingBottomInset" Class="layout-LaunchingPage-LaunchingBottomInset" />
+    </StackPanel>
+  </ContentHost>
 </nxml-dynamic>

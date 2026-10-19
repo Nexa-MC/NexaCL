@@ -66,6 +66,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
 
     private void DrawContent(DrawingContext context, Rect rect, XsrUiVisualStyleSnapshot style)
     {
+        if (_node.ProgressRing is { } ring) { DrawProgressRing(context, rect, ring); return; }
         if (_node.Range is { } range) { DrawRange(context, rect, style, range); return; }
         if (_node.Role is XsrUiSemanticRole.Switch or XsrUiSemanticRole.CheckBox)
         {

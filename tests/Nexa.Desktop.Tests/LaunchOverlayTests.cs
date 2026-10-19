@@ -95,14 +95,14 @@ internal static partial class Program
         AssertEqual("25%", FindByKey(fixture.Shell, scene, "LaunchingPercentValue").Text);
         AssertEqual("离线模式", FindByKey(fixture.Shell, scene, "LaunchingMethodValue").Text);
 
-        // The fill bar layout follows the renderer-presented fraction, not the raw state:
-        // the backend drives the presented value, and the test drives it directly here.
+        // Ring geometry stays square while presentation progress changes; the real percentage
+        // remains in the state-bound label below the ring.
         XsrUiSceneNode fill = FindByKey(fixture.Shell, scene, "LaunchProgressFill");
-        XsrUiSceneNode track = FindByKey(fixture.Shell, scene, "LaunchProgressTrack");
         fixture.Shell.Renderer.SetProgressPresentation(fill.Entity, 0.25d);
         scene = fixture.Shell.Render(new XsrUiSize(850, 500));
         fill = FindByKey(fixture.Shell, scene, "LaunchProgressFill");
-        AssertClose(track.Rect.Width * 0.25d, fill.Rect.Width);
+        AssertTrue(fill.ProgressRing is { Indeterminate: true });
+        AssertClose(40, fill.Rect.Width); AssertClose(40, fill.Rect.Height);
 
         // The launched report switches the title to the legacy launched wording.
         MinecraftLaunchProgressSnapshot current = fixture.Store

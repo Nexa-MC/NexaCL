@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Nxml;
@@ -321,6 +321,7 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
         bool alternate = dialog.Alternate is not null && !string.IsNullOrWhiteSpace(dialog.AlternateLabel);
         return DesktopMarkup.Dynamic("FeedbackDialog.d.nxml", new Dictionary<string, string>
         {
+            ["loading"] = Flag(dialog.IsLoading),
             ["title"] = title,
             ["message"] = message,
             ["enabled"] = Flag(enabled),

@@ -1,6 +1,6 @@
-﻿<nxml-dynamic>
+<nxml-dynamic>
   <StackPanel Key="LibraryContent" Class="layout-VersionSelectionPage-LibraryContent version-base">
-    <StackPanel Key="LibraryDirectoryBar" Class="layout-VersionSelectionPage-LibraryDirectoryBar version-base">
+    <StackPanel Key="LibraryDirectoryBar" Class="layout-VersionSelectionPage-LibraryDirectoryBar version-base" IsVisible="{data !loading}">
       <Text Key="LibraryDirectoryCaption" Content="当前目录：" MaxLines="1" TrimOverflow="true" Class="layout-VersionSelectionPage-LibraryDirectoryCaption version-base" />
       <Button Key="LibraryChooseDirectory" Label="{data path}" Localize="false" Command="ui.versions.directories" Class="layout-VersionSelectionPage-LibraryChooseDirectory version-base version-choose">
         <StackPanel Class="layout-VersionSelectionPage-6 version-base">
@@ -12,7 +12,7 @@
       <Button Key="LibraryAddDirectory" Content="添加文件夹" Label="添加文件夹" Command="ui.versions.browse" Icon="lucide/plus" MaxLines="1" TrimOverflow="true" Class="layout-VersionSelectionPage-LibraryAddDirectory version-base capsule version-add" />
       <Button Key="LibraryRefresh" Label="刷新版本" Command="ui.versions.refresh" Icon="pcl/refresh" Class="layout-VersionSelectionPage-LibraryRefresh version-base capsule version-refresh" />
     </StackPanel>
-    <StackPanel Key="LibraryVersions" Class="layout-VersionSelectionPage-LibraryVersions version-base">
+    <StackPanel Key="LibraryVersions" Class="layout-VersionSelectionPage-LibraryVersions version-base" IsVisible="{data !loading}">
       <StackPanel Class="layout-VersionSelectionPage-13 version-base">
         <Text Key="LibraryCount" Content="{data count}" Localize="false" MaxLines="1" TrimOverflow="true" Class="layout-VersionSelectionPage-LibraryCount version-base version-detail" />
         <TextInput Key="LibrarySearch" Label="搜索版本" Placeholder="搜索版本" MaximumLength="2048" Class="layout-VersionSelectionPage-LibrarySearch version-base version-input" />
@@ -20,5 +20,8 @@
       <Dynamic Key="LibraryVersionRows" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true" StableContent="true" Class="layout-VersionSelectionPage-LibraryVersionRows version-base" />
       <Text Key="LibraryEmpty" Content="{data status}" Localize="false" IsVisible="{data empty}" Class="layout-VersionSelectionPage-LibraryEmpty version-base version-empty" />
     </StackPanel>
+    <LoadingView Key="LibraryLoading" IsVisible="{data loading}">
+      <Text Content="正在读取版本列表…" Class="loading-hint" LiveSetting="Polite" />
+    </LoadingView>
   </StackPanel>
 </nxml-dynamic>

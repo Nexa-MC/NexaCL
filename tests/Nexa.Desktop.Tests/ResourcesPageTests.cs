@@ -1,4 +1,4 @@
-﻿using Nexa.Desktop.Ui;
+using Nexa.Desktop.Ui;
 using Nexa.Services.Composition;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Resources;
@@ -317,13 +317,25 @@ internal static partial class Program
         fixture.Shell.Renderer.ReducedMotion = true;
         Emit(fixture.Intents, "ui.navigation.community");
         var scene = fixture.Shell.Render(new(1000, 650));
-        var first = source.Calls[0];
+        AssertTrue(scene.Nodes.Any(node => node.ProgressRing is not null));
+        source.Calls[0].Completion.SetResult(new([new("Seed", "Seed result", "", "", 1, "https://modrinth.com/project/Seed")], 1, 0));
+        AssertTrue(SpinWait.SpinUntil(() =>
+        {
+            scene = fixture.Shell.Render(new(1000, 650));
+            return scene.Nodes.Any(node => node.Text == "Seed result");
+        }, TimeSpan.FromSeconds(5)));
         var search = FindByKey(fixture.Shell, scene, "ResourceSearch").Entity;
         fixture.Shell.Renderer.SetTextInputValue(search, "new");
         Emit(fixture.Intents, "ui.resources.action", page.Find("ResourceSearchButton"));
         fixture.Shell.Render(new(1000, 650));
+        var first = source.Calls[1];
+        // Loading content is hidden. Navigate away to retire it, then retry the retained draft.
+        Emit(fixture.Intents, "ui.navigation.launch"); fixture.Shell.Render(new(1000, 650));
+        Emit(fixture.Intents, "ui.navigation.community"); fixture.Shell.Render(new(1000, 650));
+        Emit(fixture.Intents, "ui.resources.action", page.Find("ResourceSearchButton"));
+        fixture.Shell.Render(new(1000, 650));
         AssertTrue(first.Token.IsCancellationRequested);
-        source.Calls[1].Completion.SetResult(new([new("New", "New result", "", "", 1, "https://modrinth.com/project/New")], 1, 0));
+        source.Calls[2].Completion.SetResult(new([new("New", "New result", "", "", 1, "https://modrinth.com/project/New")], 1, 0));
         AssertTrue(SpinWait.SpinUntil(() =>
         {
             scene = fixture.Shell.Render(new(1000, 650));

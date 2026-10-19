@@ -143,6 +143,7 @@ public sealed partial class XsrUiRenderer
             components.Get<XsrUiScrollGesture>() is { } motion ? new(motion.Revision, motion.Dragging, motion.Velocity) { Direction = motion.Direction } : null,
             IsStableContent(entity), ProjectTextRuns(text?.Runs))
         {
+            ProgressRing = components.Get<XsrUiProgress>() is { Ring: true } ring ? new(ring.Indeterminate, ring.Presented) : null,
             ColorScheme = _colorScheme,
             Range = components.Get<XsrUiRangeInput>()?.Snapshot(),
             FontFamily = themeStyle?.FontFamily,

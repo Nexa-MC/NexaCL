@@ -22,6 +22,8 @@ internal sealed partial class SettingsPageController
         {
             ["hasError"] = Flag(_workspaceError is not null),
             ["error"] = _workspaceError is null ? "" : InstanceToolTerm(_workspaceError),
+            ["loadingWeight"] = LoadingWeight(listing is null && _workspaceError is null || _workspaceDocumentRead is not null || _workspacePreviewRead is not null),
+            ["loading"] = Flag(listing is null && _workspaceError is null || _workspaceDocumentRead is not null || _workspacePreviewRead is not null),
             ["loadingList"] = Flag(listing is null && _workspaceError is null),
             ["loadingFile"] = Flag(_workspaceDocumentRead is not null),
             ["showList"] = Flag(listing is not null && document is null),

@@ -63,6 +63,7 @@ internal static partial class Program
         ("theme portable materials produce visible tint without blurring text", ThemePortableMaterialsProduceVisibleTintWithoutBlurringText),
         ("theme decoded budget rejects highly compressible raster collections", ThemeDecodedBudgetRejectsHighlyCompressibleRasterCollections),
         ("theme owner retirement and final native borrow release are concurrent safe", ThemeOwnerRetirementAndFinalNativeBorrowReleaseAreConcurrentSafe),
+        ("progress ring shares clock stops and draws a hollow arc", ProgressRingSharesClockStopsAndDrawsHollowArc),
         ("theme SVG tile submits a bounded repeating picture for large viewports", ThemeSvgTileSubmitsBoundedRepeatingPictureForLargeViewports),
     ];
 

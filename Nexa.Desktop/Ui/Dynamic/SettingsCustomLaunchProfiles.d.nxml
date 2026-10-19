@@ -1,3 +1,69 @@
 <nxml-dynamic>
-<SettingsForm Key="LaunchProfiles"><Text Content="启动配置与临时覆盖" Class="settings-form-label" /><StackPanel Class="settings-form-surface"><StackPanel Class="settings-form-body"><Text Content="正在读取启动配置…" IsVisible="{data loading}" Class="settings-custom-caption" /><Text Content="{data error}" Localize="false" IsVisible="{data failed}" Class="settings-custom-caption" /><Button Key="LaunchProfilesRetry" Content="重新读取启动配置" Label="重新读取启动配置" Command="ui.settings.launch-profile.action" IsVisible="{data failed}" Enabled="{data retryEnabled}" Class="settings-catalog-action settings-custom-action" /><StackPanel IsVisible="{data ready}" Class="settings-custom-column"><Text Content="{data layer}" Localize="false" Class="settings-custom-status" /><Text Content="下方普通设置直接编辑当前层；Safe Launch 会暂时移走模组、资源包、光影和配置，游戏退出后恢复。" Class="settings-custom-caption" /><SettingsForm Key="SafeLaunchPolicy"><Text Content="安全启动固定策略" Class="settings-form-label" /><StackPanel Class="settings-custom-fact"><Text Content="光影" Class="settings-custom-fact-label" /><Text Content="禁用全部光影；退出后恢复原目录" Class="settings-custom-fact-value" /></StackPanel><StackPanel Class="settings-custom-fact"><Text Content="资源包" Class="settings-custom-fact-label" /><Text Content="禁用全部资源包；退出后恢复原目录" Class="settings-custom-fact-value" /></StackPanel><StackPanel Class="settings-custom-fact"><Text Content="启动钩子" Class="settings-custom-fact-label" /><Text Content="跳过 Wrapper、启动前及退出后命令" Class="settings-custom-fact-value" /></StackPanel><StackPanel Class="settings-custom-fact"><Text Content="自定义 JVM 参数" Class="settings-custom-fact-label" /><Text Content="跳过自定义 JVM、游戏参数、环境变量和前置 classpath" Class="settings-custom-fact-value" /></StackPanel><Text Content="仅在安全启动开启时生效；账户认证、Java 兼容和完整性检查始终执行。模组与配置全量隔离。" Class="settings-custom-note" /></SettingsForm><Button Key="LaunchProfileBase" Content="使用实例设置" Label="使用实例设置" Command="ui.settings.launch-profile.action" Enabled="{data enabled}"  Class="settings-catalog-action settings-custom-action" /><Dynamic Key="LaunchProfileChoices" Class="settings-custom-column" /><StackPanel Class="settings-custom-field"><Text Content="配置名称" Class="settings-custom-label" /><TextInput Key="LaunchProfileName" Label="配置名称" Placeholder="配置名称" MaximumLength="4096" Class="settings-custom-input" /></StackPanel><StackPanel Class="settings-custom-field"><Text Content="临时模组目录（完整路径；空白不覆盖）" Class="settings-custom-label" /><TextInput Key="LaunchOverlayMods" Label="临时模组目录（完整路径；空白不覆盖）" Placeholder="临时模组目录（完整路径；空白不覆盖）" MaximumLength="4096" Class="settings-custom-input" /></StackPanel><StackPanel Class="settings-custom-field"><Text Content="临时资源包目录（完整路径）" Class="settings-custom-label" /><TextInput Key="LaunchOverlayResourcePacks" Label="临时资源包目录（完整路径）" Placeholder="临时资源包目录（完整路径）" MaximumLength="4096" Class="settings-custom-input" /></StackPanel><StackPanel Class="settings-custom-field"><Text Content="临时光影目录（完整路径）" Class="settings-custom-label" /><TextInput Key="LaunchOverlayShaders" Label="临时光影目录（完整路径）" Placeholder="临时光影目录（完整路径）" MaximumLength="4096" Class="settings-custom-input" /></StackPanel><StackPanel Class="settings-custom-field"><Text Content="临时配置目录（完整路径）" Class="settings-custom-label" /><TextInput Key="LaunchOverlayConfig" Label="临时配置目录（完整路径）" Placeholder="临时配置目录（完整路径）" MaximumLength="4096" Class="settings-custom-input" /></StackPanel><StackPanel Class="settings-custom-actions"><Button Key="LaunchProfileCreate" Content="保存为新配置" Label="保存为新配置" Command="ui.settings.launch-profile.action" Enabled="{data enabled}"  Class="settings-catalog-action settings-custom-action" /><Button Key="LaunchProfileSave" Content="保存名称与覆盖" Label="保存名称与覆盖" Command="ui.settings.launch-profile.action" Enabled="{data enabled}" IsVisible="{data selected}" Class="settings-catalog-action settings-custom-action" /><Button Key="LaunchTemporaryBegin" Content="启用临时覆盖" Label="启用临时覆盖" Command="ui.settings.launch-profile.action" Enabled="{data enabled}" IsVisible="{data permanent}" Class="settings-catalog-action settings-custom-action" /><Button Key="LaunchTemporarySave" Content="保存临时目录" Label="保存临时目录" Command="ui.settings.launch-profile.action" Enabled="{data enabled}" IsVisible="{data temporary}" Class="settings-catalog-action settings-custom-action" /><Button Key="LaunchTemporaryEnd" Content="撤销临时覆盖" Label="撤销临时覆盖" Command="ui.settings.launch-profile.action" Enabled="{data enabled}" IsVisible="{data temporary}" Class="settings-catalog-action settings-custom-action" /></StackPanel></StackPanel></StackPanel></StackPanel></SettingsForm>
+  <SettingsForm Key="LaunchProfiles" Weight="{data loadingWeight}" MinHeight="124">
+    <StackPanel IsVisible="{data !loading}" Weight="1" Spacing="12">
+      <Text Content="启动配置与临时覆盖" Class="settings-form-label" />
+      <StackPanel Class="settings-form-surface">
+        <StackPanel Class="settings-form-body">
+          <Text Content="{data error}" Localize="false" IsVisible="{data failed}" Class="settings-custom-caption" />
+          <Button Key="LaunchProfilesRetry" Content="重新读取启动配置" Label="重新读取启动配置" Command="ui.settings.launch-profile.action" IsVisible="{data failed}" Enabled="{data retryEnabled}" Class="settings-catalog-action settings-custom-action" />
+          <StackPanel IsVisible="{data ready}" Class="settings-custom-column">
+            <Text Content="{data layer}" Localize="false" Class="settings-custom-status" />
+            <Text Content="下方普通设置直接编辑当前层；Safe Launch 会暂时移走模组、资源包、光影和配置，游戏退出后恢复。" Class="settings-custom-caption" />
+            <SettingsForm Key="SafeLaunchPolicy">
+              <Text Content="安全启动固定策略" Class="settings-form-label" />
+              <StackPanel Class="settings-custom-fact">
+                <Text Content="光影" Class="settings-custom-fact-label" />
+                <Text Content="禁用全部光影；退出后恢复原目录" Class="settings-custom-fact-value" />
+              </StackPanel>
+              <StackPanel Class="settings-custom-fact">
+                <Text Content="资源包" Class="settings-custom-fact-label" />
+                <Text Content="禁用全部资源包；退出后恢复原目录" Class="settings-custom-fact-value" />
+              </StackPanel>
+              <StackPanel Class="settings-custom-fact">
+                <Text Content="启动钩子" Class="settings-custom-fact-label" />
+                <Text Content="跳过 Wrapper、启动前及退出后命令" Class="settings-custom-fact-value" />
+              </StackPanel>
+              <StackPanel Class="settings-custom-fact">
+                <Text Content="自定义 JVM 参数" Class="settings-custom-fact-label" />
+                <Text Content="跳过自定义 JVM、游戏参数、环境变量和前置 classpath" Class="settings-custom-fact-value" />
+              </StackPanel>
+              <Text Content="仅在安全启动开启时生效；账户认证、Java 兼容和完整性检查始终执行。模组与配置全量隔离。" Class="settings-custom-note" />
+            </SettingsForm>
+            <Button Key="LaunchProfileBase" Content="使用实例设置" Label="使用实例设置" Command="ui.settings.launch-profile.action" Enabled="{data enabled}" Class="settings-catalog-action settings-custom-action" />
+            <Dynamic Key="LaunchProfileChoices" Class="settings-custom-column" />
+            <StackPanel Class="settings-custom-field">
+              <Text Content="配置名称" Class="settings-custom-label" />
+              <TextInput Key="LaunchProfileName" Label="配置名称" Placeholder="配置名称" MaximumLength="4096" Class="settings-custom-input" />
+            </StackPanel>
+            <StackPanel Class="settings-custom-field">
+              <Text Content="临时模组目录（完整路径；空白不覆盖）" Class="settings-custom-label" />
+              <TextInput Key="LaunchOverlayMods" Label="临时模组目录（完整路径；空白不覆盖）" Placeholder="临时模组目录（完整路径；空白不覆盖）" MaximumLength="4096" Class="settings-custom-input" />
+            </StackPanel>
+            <StackPanel Class="settings-custom-field">
+              <Text Content="临时资源包目录（完整路径）" Class="settings-custom-label" />
+              <TextInput Key="LaunchOverlayResourcePacks" Label="临时资源包目录（完整路径）" Placeholder="临时资源包目录（完整路径）" MaximumLength="4096" Class="settings-custom-input" />
+            </StackPanel>
+            <StackPanel Class="settings-custom-field">
+              <Text Content="临时光影目录（完整路径）" Class="settings-custom-label" />
+              <TextInput Key="LaunchOverlayShaders" Label="临时光影目录（完整路径）" Placeholder="临时光影目录（完整路径）" MaximumLength="4096" Class="settings-custom-input" />
+            </StackPanel>
+            <StackPanel Class="settings-custom-field">
+              <Text Content="临时配置目录（完整路径）" Class="settings-custom-label" />
+              <TextInput Key="LaunchOverlayConfig" Label="临时配置目录（完整路径）" Placeholder="临时配置目录（完整路径）" MaximumLength="4096" Class="settings-custom-input" />
+            </StackPanel>
+            <StackPanel Class="settings-custom-actions">
+              <Button Key="LaunchProfileCreate" Content="保存为新配置" Label="保存为新配置" Command="ui.settings.launch-profile.action" Enabled="{data enabled}" Class="settings-catalog-action settings-custom-action" />
+              <Button Key="LaunchProfileSave" Content="保存名称与覆盖" Label="保存名称与覆盖" Command="ui.settings.launch-profile.action" Enabled="{data enabled}" IsVisible="{data selected}" Class="settings-catalog-action settings-custom-action" />
+              <Button Key="LaunchTemporaryBegin" Content="启用临时覆盖" Label="启用临时覆盖" Command="ui.settings.launch-profile.action" Enabled="{data enabled}" IsVisible="{data permanent}" Class="settings-catalog-action settings-custom-action" />
+              <Button Key="LaunchTemporarySave" Content="保存临时目录" Label="保存临时目录" Command="ui.settings.launch-profile.action" Enabled="{data enabled}" IsVisible="{data temporary}" Class="settings-catalog-action settings-custom-action" />
+              <Button Key="LaunchTemporaryEnd" Content="撤销临时覆盖" Label="撤销临时覆盖" Command="ui.settings.launch-profile.action" Enabled="{data enabled}" IsVisible="{data temporary}" Class="settings-catalog-action settings-custom-action" />
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+      </StackPanel>
+    </StackPanel>
+    <LoadingView IsVisible="{data loading}">
+      <Text Content="正在读取启动配置…" Class="loading-hint" LiveSetting="Polite" />
+    </LoadingView>
+  </SettingsForm>
 </nxml-dynamic>

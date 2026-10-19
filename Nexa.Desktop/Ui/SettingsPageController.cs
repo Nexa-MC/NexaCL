@@ -34,6 +34,9 @@ internal sealed partial class SettingsPageController : IDisposable
     private readonly Dictionary<string, double> _scrollPositions = [];
     private readonly XsrUiEntityId _navigationRoot, _pager, _saveStatus;
     private XsrUiEntityId _sections;
+    private readonly XsrUiEntityId _settingsWorkspace;
+    private bool _pageLoading;
+    private string _pageLoadingMessage = "";
     private readonly Dictionary<string, XsrUiEntityId> _pages = [];
     private Task<XsrResult<SettingsCatalogSnapshot>>? _catalogReading;
     private readonly XsrStateId _revisionId;
@@ -59,6 +62,9 @@ internal sealed partial class SettingsPageController : IDisposable
         if (instanceDirectory is not null) _selected = "overview";
         _revisionId = store.Resolve(SettingsPolicyContract.RevisionKey);
         Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load(instanceDirectory is null ? "SettingsPage.nxml" : "VersionSettingsPage.nxml"), shell.Tree, store);
+        _settingsWorkspace = _dynamic.Append(shell.Tree.Children(Page).Single(), DesktopMarkup.Dynamic(
+            instanceDirectory is null ? "SettingsPageWorkspace.d.nxml" : "VersionSettingsPageWorkspace.d.nxml",
+            new Dictionary<string, string> { ["loading"] = "false", ["message"] = "" }));
         var names = new Dictionary<string, XsrUiEntityId>();
         shell.Tree.Walk(Page, entity => { names[shell.Tree.Name(entity)] = entity; return true; });
         _navigationRoot = names["SettingsNavigation"]; _pager = names["SettingsPager"];
@@ -79,6 +85,12 @@ internal sealed partial class SettingsPageController : IDisposable
         else if (args.Intent.Command == RemediationExecuted) OnPlatformRemediation(sender, args);
     }
     private void OnFrame(object? sender, EventArgs args)
+    {
+        try { OnFrameCore(sender, args); }
+        finally { if (!_disposed) UpdatePageLoading(); }
+    }
+
+    private void OnFrameCore(object? sender, EventArgs args)
     {
         if (_disposed) return;
         bool visible = _shell.Stage.Navigation.Current.Equals(Page);

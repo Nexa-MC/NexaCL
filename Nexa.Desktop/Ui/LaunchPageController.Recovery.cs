@@ -13,7 +13,7 @@ internal sealed partial class LaunchPageController
         string reason = ProductPresentationText.Format("CrashReason", _shell.Renderer.LocalizeText, ("summary", CrashSummary(failure.Report)), ("message", failure.Report.Message));
         if (!_feedback.TryShowMessageDialog("minecraft.crash." + failure.SessionId,
             ProductPresentationText.Format("CrashTitle", _shell.Renderer.LocalizeText, ("instance", failure.InstanceId)),
-            ProductPresentationText.Format("CrashComparing", _shell.Renderer.LocalizeText, ("reason", reason)), ProductPresentationText.Raw("crash.acknowledge"), out var id, localizeMessage: false, localizeTitle: false))
+            ProductPresentationText.Format("CrashComparing", _shell.Renderer.LocalizeText, ("reason", reason)), ProductPresentationText.Raw("crash.acknowledge"), out var id, localizeMessage: false, localizeTitle: false, isLoading: true))
             return false;
         _ = LoadCrashChangesAsync(failure, id, reason);
         return true;

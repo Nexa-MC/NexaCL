@@ -59,4 +59,5 @@
   <Node Recipe="Text" Key="WardrobePreview_enabled" Content="true" Localize="false" />
   <Node Recipe="Text" Key="WardrobeUpload_enabled" Content="true" Localize="false" />
   <Node Recipe="Text" Key="WardrobeHeadPreview_source" Content="pcl/avatar/steve" Localize="false" />
+  <Node Recipe="Text" Key="pageLoading" Content="false" Localize="false" />
 </Node>

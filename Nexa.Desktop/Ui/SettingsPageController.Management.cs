@@ -208,7 +208,7 @@ internal sealed partial class SettingsPageController
         if (_selected == "overview") BuildInstanceDevelopmentMode();
         if (_management is not { } snapshot)
         {
-            var loading = AppendContent(_sections, "SettingsContentLoading.d.nxml", new() { ["enabled"] = ContentFlag(_managementWrite is null), ["message"] = _managementError ?? ContentTerm("loading") });
+            var loading = AppendContent(_sections, "SettingsContentLoading.d.nxml", new() { ["loading"] = ContentFlag(_managementError is null), ["enabled"] = ContentFlag(_managementWrite is null), ["message"] = _managementError ?? ContentTerm("loading") });
             BindContentAction(ContentNodes(loading), ContentKey("refresh"), RefreshManagement); return;
         }
         var page = snapshot.Pages.First(item => item.Id == _selected);

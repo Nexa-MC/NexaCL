@@ -30,7 +30,7 @@ internal static partial class Program
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
         XsrUiThemeMode mode = theme == "dark" ? XsrUiThemeMode.Dark : XsrUiThemeMode.Light;
         await using var startup = await AvaloniaUiStartupSession.StartWithAppearanceAsync([], disableHardwareAcceleration: true,
-            new AvaloniaUiStartupAppearance(mode, ReducedMotion: true), cancellationToken: timeout.Token);
+            new AvaloniaUiStartupAppearance(mode, ReducedMotion: false), cancellationToken: timeout.Token);
         NativeResourcePreviewHarness? harness = null;
         DesktopAppearanceSession? appearance = null;
         AvaloniaUiShellWindow? window = null;
@@ -50,7 +50,6 @@ internal static partial class Program
                 AssertTrue(policy.Set(new("appearance.theme-mode", SettingsLayer.Global, new(SettingsOverrideMode.Custom, theme == "dark" ? "1" : "0"))).IsSuccess);
                 appearance = new(harness.Fixture.Shell, harness.Fixture.Store, actions);
                 pointer = new(Pointer.GetNextFreeId(), PointerType.Mouse, isPrimary: true);
-                harness.Complete(0, hasMore: true);
             }, timeout.Token);
             var h = harness!;
             await startup.PrepareShellAsync(h.Fixture.Shell, actions, timeout.Token);
@@ -63,12 +62,15 @@ internal static partial class Program
                 window = nativeWindow;
                 surface = nativeWindow.GetVisualDescendants().OfType<AvaloniaUiSceneSurface>().Single();
                 nativeWindow.UpdateLayout(); surface.CommitScene();
-                return surface.Scene is { Count: > 0 } && h.Rows.Length > 0;
+                return surface.Scene is { Count: > 0 } && surface.Scene.Nodes.Any(node => node.ProgressRing is not null);
             });
             var nativeSurface = surface!;
             var nativeWindow = window!;
             XsrUiEntityId list = h.Page.Find("ResourceList");
             await startup.InvokeAsync(() => AssertEqual(theme == "dark", h.Fixture.Shell.Renderer.ColorScheme.IsDark), timeout.Token);
+            await CaptureStage("initial-loading");
+            await startup.InvokeAsync(() => h.Complete(0, hasMore: true), timeout.Token);
+            await Eventually(() => h.Rows.Length > 0);
             await CaptureStage("list-initial");
             double originalWidth = 0;
             await startup.InvokeAsync(() => { originalWidth = nativeWindow.Width; nativeWindow.Width = 800; nativeWindow.UpdateLayout(); nativeSurface.CommitScene(); }, timeout.Token);
@@ -258,7 +260,7 @@ internal static partial class Program
             });
             Page = new(Fixture.Shell, Fixture.Intents, queries.Build(new NoopDispatchObserver()), Fixture.Store, _ => { });
             Fixture.Controller.ResourcesPage = Page.Page;
-            Fixture.Shell.Renderer.ReducedMotion = true;
+            Fixture.Shell.Renderer.ReducedMotion = false;
             Emit(Fixture.Intents, "ui.navigation.community");
             Fixture.Shell.Render(new(1100, 700));
             AssertEqual(1, Reads.Count);

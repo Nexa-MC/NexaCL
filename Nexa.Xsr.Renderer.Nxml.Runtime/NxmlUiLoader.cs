@@ -166,7 +166,7 @@ public sealed partial class NxmlUiLoader
                 tree.SetComponent(entity, new XsrUiInput { Focusable = true });
                 break;
             case NxmlRuntimeRecipe.Progress:
-                XsrUiProgress progress = new();
+                XsrUiProgress progress = new() { Ring = node.Ring, Indeterminate = node.Indeterminate };
                 progress.SetTarget(node.Value);
                 NxmlIrBinding? valueBinding = node.Bindings.FirstOrDefault(
                     binding => binding.Property == XsrUiStateProperty.Value);

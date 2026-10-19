@@ -76,6 +76,8 @@ internal sealed partial class SettingsPageController
         {
             ["enabled"] = ContentFlag(_managementWrite is null),
             ["message"] = _contentIntegrityError ?? ContentTerm("integrityLoading"),
+            ["loading"] = ContentFlag(_contentIntegrityRead is not null),
+            ["failed"] = ContentFlag(_contentIntegrityError is not null),
             ["pending"] = ContentFlag(fact is null),
             ["ready"] = ContentFlag(fact is not null),
             ["Sha256"] = fact?.Sha256 ?? "",

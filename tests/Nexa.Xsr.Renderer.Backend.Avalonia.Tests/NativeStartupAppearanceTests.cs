@@ -71,7 +71,7 @@ internal static partial class Program
                 AssertTrue(ReferenceEquals(window, desktop.MainWindow) && window.Topmost && window.IsVisible);
                 AssertFalse(startup.Completion.IsCompleted);
                 AssertEqual(1d, ((AvaloniaUiStartupCard)window.Content!).Opacity);
-                AssertEqual(1, AvaloniaUiMotion.CaptureDiagnostics().ActiveTracks);
+                AssertEqual(startup.Appearance.ReducedMotion ? 1 : 2, AvaloniaUiMotion.CaptureDiagnostics().ActiveTracks);
                 AssertTrue(unrelatedProgress > 0 && unrelatedProgress < 1);
 
                 startup.SetAppearance(startup.Appearance with { ReducedMotion = true });
@@ -80,6 +80,8 @@ internal static partial class Program
                 AssertEqual(1, AvaloniaUiMotion.CaptureDiagnostics().ActiveTracks);
                 startup.SetAppearance(startup.Appearance with { ReducedMotion = false });
                 AssertFalse(startup.Appearance.ReducedMotion);
+                AssertEqual(2, AvaloniaUiMotion.CaptureDiagnostics().ActiveTracks);
+                startup.SetAppearance(startup.Appearance with { ReducedMotion = true });
                 AssertEqual(1, AvaloniaUiMotion.CaptureDiagnostics().ActiveTracks);
             }, token);
         }

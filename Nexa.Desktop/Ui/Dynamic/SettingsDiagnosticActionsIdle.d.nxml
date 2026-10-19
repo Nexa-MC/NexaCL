@@ -1,6 +1,9 @@
-﻿<nxml-dynamic>
-  <StackPanel Key="DiagnosticExportActions" Class="settings-about-actions">
-    <Button Key="Management.导出诊断包" Label="导出诊断包" Content="导出诊断包" Command="ui.settings.management.action" Enabled="{data enabled}" Class="settings-catalog-action settings-diagnostic-export" />
-    <Button Key="Management.取消诊断包导出" Label="取消导出" Content="取消导出" Command="ui.settings.management.action" IsVisible="false" Enabled="false" Class="settings-catalog-action settings-about-link" />
+<nxml-dynamic>
+  <StackPanel Key="DiagnosticExportActions" Class="settings-about-actions" MinHeight="96">
+    <LoadingView IsVisible="false" Weight="0" Class="loading-view loading-inline">
+      <Text Content="正在导出…" Class="loading-hint" LiveSetting="Polite" />
+    </LoadingView>
+    <Button Key="Management.导出诊断包" Label="导出诊断包" Content="导出诊断包" Command="ui.settings.management.action" Enabled="{data enabled}" Class="settings-catalog-action settings-diagnostic-export" IsVisible="true" VerticalAlignment="Center" />
+    <Button Key="Management.取消诊断包导出" Label="取消导出" Content="取消导出" Command="ui.settings.management.action" IsVisible="false" Enabled="false" Class="settings-catalog-action settings-about-link" VerticalAlignment="Center" />
   </StackPanel>
 </nxml-dynamic>

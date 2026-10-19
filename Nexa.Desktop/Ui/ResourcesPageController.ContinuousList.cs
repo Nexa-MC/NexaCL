@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Nexa.Services.Resources;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
@@ -35,7 +35,7 @@ internal sealed partial class ResourcesPageController
         _shell.Tree.GetComponent<XsrUiScroll>(_entities["ResourceList"])!.OffsetY = 0;
         _listLayoutVersion = _shell.Renderer.SceneVersion;
         if (_favoriteMode) { ShowFavorites(); return; }
-        AppendResource(_entities["ResourceList"], "ResourceMessage.d.nxml", new() { ["key"] = "ResourceLoading", ["message"] = L(DesktopResourcesText.Raw("copy.acafb089bdb9")) });
+
         RequestNextPage();
     }
 
@@ -190,7 +190,8 @@ internal sealed partial class ResourcesPageController
             if (!string.IsNullOrWhiteSpace(_result.Notice)) status = ResourceFormat("Notice", ("text", status), ("notice", _shell.Renderer.LocalizeText(_result.Notice)));
         }
         // Localize finite status fragments before appending provider notices/counts.
-        WorkspaceResource(("status", status), ("previousEnabled", Flag(_result?.Projects.Count > 0)),
+        WorkspaceResource(("initialLoading", Flag(_searching is not null && _result is null)),
+            ("appendLoading", Flag(_searching is not null && _result is not null)), ("status", status), ("previousEnabled", Flag(_result?.Projects.Count > 0)),
             ("nextEnabled", Flag(_searching is null && !_favoriteMode && _listHasMore)),
             ("nextCaption", L(_listFailure is null ? DesktopResourcesText.Raw("copy.af90a08fec8e") : DesktopResourcesText.Raw("copy.8924c7887461"))));
     }

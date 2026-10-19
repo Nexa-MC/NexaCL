@@ -45,6 +45,14 @@ internal sealed partial class SettingsPageController
     private Dictionary<string, XsrUiEntityId> WorldView(XsrUiEntityId slot, ref XsrUiEntityId root, string name, Dictionary<string, string> data)
     {
         data = new(data, StringComparer.Ordinal) { ["actionDirection"] = WorldActionDirection, ["language"] = DesktopResourceText.Language(_store) };
+        string? loadingFlag = name switch
+        {
+            "Health" => "checking",
+            "Details" or "Online" => "reading",
+            "Servers" or "Export" or "ModpackUpdate" => "loading",
+            _ => null,
+        };
+        if (loadingFlag is not null) data["loadingWeight"] = LoadingWeight(data[loadingFlag] == "true");
         var fragment = DesktopMarkup.Dynamic("SettingsWorld" + name + ".d.nxml", data, _shell.Renderer.LocalizeText);
         if (!_shell.Tree.IsAlive(root) || _shell.Tree.Parent(root) != slot)
         {

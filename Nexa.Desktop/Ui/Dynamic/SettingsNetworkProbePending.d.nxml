@@ -1,3 +1,5 @@
 <nxml-dynamic>
-  <Button Key="NetworkProbe.Start" Content="正在网络探测" Command="ui.settings.network.probe.start" Class="settings-network-probe" />
+  <LoadingView Key="NetworkProbe.Start" Class="loading-view loading-inline">
+    <Text Content="正在网络探测" Class="loading-hint" LiveSetting="Polite" />
+  </LoadingView>
 </nxml-dynamic>

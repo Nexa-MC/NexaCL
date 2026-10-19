@@ -46,6 +46,7 @@ internal sealed partial class SettingsPageController
             : selected is not null ? CustomFormat("ProfileLayer", new() { ["name"] = selected.Name }) : CustomCopy("profile.instance");
         return new()
         {
+            ["loadingWeight"] = LoadingWeight(_launchProfiles is null && _launchProfilesError is null),
             ["loading"] = Flag(_launchProfiles is null && _launchProfilesError is null),
             ["failed"] = Flag(_launchProfilesError is not null),
             ["error"] = _launchProfilesError ?? "",

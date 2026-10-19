@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -442,6 +442,7 @@ internal sealed class WardrobePageController : IDisposable
     private void Present()
     {
         if (!_dirty) return; _dirty = false;
+        _presentation["pageLoading"] = Flag(_reading is not null);
         var profile = _writing is not null && _writingProfile is { } captured && SamePrincipal(captured, CurrentProfile())
             ? CurrentProfile() : _snapshot?.Profile ?? CurrentProfile();
         Text("WardrobeIdentity", string.IsNullOrWhiteSpace(profile.Username) ? Raw("copy.7e7d4ca64386") : profile.Username, literal: true);

@@ -19,7 +19,7 @@ public sealed class AvaloniaSplashWindow : Window
     {
         ArgumentNullException.ThrowIfNull(iconStream);
         Width = 400;
-        Height = 238;
+        Height = AvaloniaUiStartupCard.PassiveHeight;
         CanResize = false;
         ShowInTaskbar = false;
         ShowActivated = false;
@@ -57,6 +57,7 @@ public sealed class AvaloniaSplashWindow : Window
     {
         bool dark = AvaloniaUiBrandImages.ResolveDark(_appearance.ThemeMode, ActualThemeVariant);
         _card.ApplyAppearance(dark, _appearance.ProductVersion);
+        _card.ApplySplashMotion(AvaloniaUiThemeSplashMotion.Default, _appearance.ReducedMotion);
         Icon = _card.ProductIcon;
         TransparencyBackgroundFallback = new SolidColorBrush(dark ? Color.FromRgb(13, 26, 36) : Color.FromRgb(248, 252, 255));
     }

@@ -101,6 +101,8 @@ public readonly record struct XsrUiSceneNode(
     public bool IsSelectionRequired { get; init; } = true;
     /// <summary>Confirmed, immutable palette for backend-owned decorations; independent of custom style colors.</summary>
     public XsrUiColorScheme ColorScheme { get; init; }
+
+    public XsrUiProgressRingSnapshot? ProgressRing { get; init; }
 }
 
 /// <summary>

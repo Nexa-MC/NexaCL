@@ -118,7 +118,7 @@ internal sealed partial class LaunchPageController
             _shell.Renderer.TryGetVirtualLayoutMetrics(_catalogHosts[page.PageKey], out var currentMetrics);
             _installVirtualMetrics[page.PageKey] = currentMetrics;
             var status = AppendInstall(_javaInstallEntities[page.PageKey + "StatusSlot"], "LaunchInstallCatalogStatus.d.nxml", new()
-            { ["key"] = page.PageKey + "Status", ["message"] = InstallCopy("catalog.loading"), ["label"] = InstallCopy("catalog.retry"), ["visible"] = "true" });
+            { ["key"] = page.PageKey + "Status", ["message"] = InstallCopy("catalog.loading"), ["label"] = InstallCopy("catalog.retry"), ["visible"] = "true", ["loading"] = "true", ["enabled"] = "false" });
             _catalogStatus[page.PageKey] = status;
             var parking = _javaInstallEntities["JavaInstallRowParking"];
             var before = AppendInstall(parking, "LaunchInstallSpacer.d.nxml", new() { ["key"] = "CatalogBefore." + page.PageKey, ["height"] = "0" });
@@ -307,7 +307,7 @@ internal sealed partial class LaunchPageController
                     : snapshot.Versions[0].Warning is not null ? InstallCopy("catalog.partial") : "");
         if (message.Length == 0 && snapshot.Loader is not null && snapshot.Versions.Count > 0)
             message = eligibility?.Builds.Values.Select(item => item.Notice).FirstOrDefault(notice => notice is not null) ?? "";
-        ProjectInstallStatus(_activeJavaInstallPage, message);
+        ProjectInstallStatus(_activeJavaInstallPage, message, snapshot.Loading && !_startupCatalogOffline);
         foreach (var version in window)
         {
             string key = (snapshot.Loader is null ? "game:" : "loader:") + InstallIdentity(version.Id);

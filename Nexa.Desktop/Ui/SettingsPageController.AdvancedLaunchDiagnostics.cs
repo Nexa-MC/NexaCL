@@ -60,6 +60,7 @@ internal sealed partial class SettingsPageController
         string? status = _advancedLaunchReading is not null ? "launch.loading" : _advancedLaunch?.Error ?? (_advancedLaunch is null ? "launch.idle" : null);
         var data = new Dictionary<string, string>
         {
+            ["loading"] = Flag(_advancedLaunchReading is not null),
             ["readEnabled"] = Flag(_advancedLaunchReading is null),
             ["status"] = status is null ? "" : InstanceDiagnosticTerm(status),
             ["showStatus"] = Flag(status is not null),

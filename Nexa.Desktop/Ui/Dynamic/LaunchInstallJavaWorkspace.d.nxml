@@ -26,79 +26,79 @@
       <HorizontalPager Key="JavaInstallPager" Label="Java 版安装子页面，可使用左右方向键或拖动切换" Class="layout-JavaInstallPage-JavaInstallPager">
         <StackPanel Key="JavaMinecraftPage" Label="Minecraft 安装选项" Scroll="true" Class="layout-JavaInstallPage-JavaMinecraftPage launch-install-catalog-page" IsVisible="{data JavaMinecraftPage_visible}" ScrollGesture="true" ShowsVerticalIndicator="true">
           <Text Key="JavaMinecraftPageTitle" Content="Minecraft" IsVisible="false" Class="layout-JavaInstallPage-JavaMinecraftPageTitle launch-install-catalog-title" />
-          <Dynamic Key="JavaMinecraftPageStatusSlot" IsVisible="{data JavaMinecraftPage_statusVisible}" />
-          <Dynamic Key="JavaMinecraftVersions" Class="layout-JavaInstallPage-JavaMinecraftVersions launch-install-versions" StableContent="true" Spacing="0" />
+          <Dynamic Key="JavaMinecraftPageStatusSlot" IsVisible="{data JavaMinecraftPage_statusVisible}" Weight="1" />
+          <Dynamic Key="JavaMinecraftVersions" Class="layout-JavaInstallPage-JavaMinecraftVersions launch-install-versions" StableContent="true" Spacing="0" IsVisible="{data !JavaMinecraftPage_loading}" />
         </StackPanel>
         <StackPanel Key="JavaForgePage" Label="Forge 安装选项" Class="layout-JavaInstallPage-JavaForgePage launch-install-catalog-page" IsVisible="{data JavaForgePage_visible}" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true">
           <Text Key="JavaForgePageTitle" Content="Forge" Class="layout-JavaInstallPage-JavaForgePageTitle launch-install-catalog-title" />
-          <Button Key="JavaLoaderForge" Label="选择 Forge 加载器" Content="选择 Forge" Command="ui.install.loader.forge" Class="{data JavaLoaderForge_style}" IsVisible="false" Selected="{data JavaLoaderForge_selected}" />
-          <Dynamic Key="JavaForgePageStatusSlot" IsVisible="{data JavaForgePage_statusVisible}" />
-          <Dynamic Key="JavaForgePageRows" StableContent="true" Spacing="0" />
+          <Button Key="JavaLoaderForge" Label="选择 Forge 加载器" Content="选择 Forge" Command="ui.install.loader.forge" Class="{data JavaLoaderForge_style}" IsVisible="{data !JavaForgePage_loading}" Selected="{data JavaLoaderForge_selected}" />
+          <Dynamic Key="JavaForgePageStatusSlot" IsVisible="{data JavaForgePage_statusVisible}" Weight="1" />
+          <Dynamic Key="JavaForgePageRows" StableContent="true" Spacing="0" IsVisible="{data !JavaForgePage_loading}" />
         </StackPanel>
         <StackPanel Key="JavaCleanroomPage" Label="Cleanroom 安装选项" Class="layout-JavaInstallPage-JavaCleanroomPage launch-install-catalog-page" IsVisible="{data JavaCleanroomPage_visible}" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true">
           <Text Key="JavaCleanroomPageTitle" Content="Cleanroom" Class="layout-JavaInstallPage-JavaCleanroomPageTitle launch-install-catalog-title" />
-          <Button Key="JavaLoaderCleanroom" Label="选择 Cleanroom 加载器" Content="选择 Cleanroom" Command="ui.install.loader.cleanroom" Class="{data JavaLoaderCleanroom_style}" IsVisible="false" Selected="{data JavaLoaderCleanroom_selected}" />
-          <Dynamic Key="JavaCleanroomPageStatusSlot" IsVisible="{data JavaCleanroomPage_statusVisible}" />
-          <Dynamic Key="JavaCleanroomPageRows" StableContent="true" Spacing="0" />
+          <Button Key="JavaLoaderCleanroom" Label="选择 Cleanroom 加载器" Content="选择 Cleanroom" Command="ui.install.loader.cleanroom" Class="{data JavaLoaderCleanroom_style}" IsVisible="{data !JavaCleanroomPage_loading}" Selected="{data JavaLoaderCleanroom_selected}" />
+          <Dynamic Key="JavaCleanroomPageStatusSlot" IsVisible="{data JavaCleanroomPage_statusVisible}" Weight="1" />
+          <Dynamic Key="JavaCleanroomPageRows" StableContent="true" Spacing="0" IsVisible="{data !JavaCleanroomPage_loading}" />
         </StackPanel>
         <StackPanel Key="JavaNeoForgePage" Label="NeoForge 安装选项" Class="layout-JavaInstallPage-JavaNeoForgePage launch-install-catalog-page" IsVisible="{data JavaNeoForgePage_visible}" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true">
           <Text Key="JavaNeoForgePageTitle" Content="NeoForge" Class="layout-JavaInstallPage-JavaNeoForgePageTitle launch-install-catalog-title" />
-          <Button Key="JavaLoaderNeoForge" Label="选择 NeoForge 加载器" Content="选择 NeoForge" Command="ui.install.loader.neoforge" Class="{data JavaLoaderNeoForge_style}" IsVisible="false" Selected="{data JavaLoaderNeoForge_selected}" />
-          <Dynamic Key="JavaNeoForgePageStatusSlot" IsVisible="{data JavaNeoForgePage_statusVisible}" />
-          <Dynamic Key="JavaNeoForgePageRows" StableContent="true" Spacing="0" />
+          <Button Key="JavaLoaderNeoForge" Label="选择 NeoForge 加载器" Content="选择 NeoForge" Command="ui.install.loader.neoforge" Class="{data JavaLoaderNeoForge_style}" IsVisible="{data !JavaNeoForgePage_loading}" Selected="{data JavaLoaderNeoForge_selected}" />
+          <Dynamic Key="JavaNeoForgePageStatusSlot" IsVisible="{data JavaNeoForgePage_statusVisible}" Weight="1" />
+          <Dynamic Key="JavaNeoForgePageRows" StableContent="true" Spacing="0" IsVisible="{data !JavaNeoForgePage_loading}" />
         </StackPanel>
         <StackPanel Key="JavaFabricPage" Label="Fabric 安装选项" Class="layout-JavaInstallPage-JavaFabricPage launch-install-catalog-page" IsVisible="{data JavaFabricPage_visible}" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true">
           <Text Key="JavaFabricPageTitle" Content="Fabric" Class="layout-JavaInstallPage-JavaFabricPageTitle launch-install-catalog-title" />
-          <Button Key="JavaLoaderFabric" Label="选择 Fabric 加载器" Content="选择 Fabric" Command="ui.install.loader.fabric" Class="{data JavaLoaderFabric_style}" IsVisible="false" Selected="{data JavaLoaderFabric_selected}" />
-          <Dynamic Key="JavaFabricPageStatusSlot" IsVisible="{data JavaFabricPage_statusVisible}" />
-          <Dynamic Key="JavaFabricPageRows" StableContent="true" Spacing="0" />
+          <Button Key="JavaLoaderFabric" Label="选择 Fabric 加载器" Content="选择 Fabric" Command="ui.install.loader.fabric" Class="{data JavaLoaderFabric_style}" IsVisible="{data !JavaFabricPage_loading}" Selected="{data JavaLoaderFabric_selected}" />
+          <Dynamic Key="JavaFabricPageStatusSlot" IsVisible="{data JavaFabricPage_statusVisible}" Weight="1" />
+          <Dynamic Key="JavaFabricPageRows" StableContent="true" Spacing="0" IsVisible="{data !JavaFabricPage_loading}" />
         </StackPanel>
         <StackPanel Key="JavaLegacyFabricPage" Label="Legacy Fabric 安装选项" Class="layout-JavaInstallPage-JavaLegacyFabricPage launch-install-catalog-page" IsVisible="{data JavaLegacyFabricPage_visible}" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true">
           <Text Key="JavaLegacyFabricPageTitle" Content="Legacy Fabric" Class="layout-JavaInstallPage-JavaLegacyFabricPageTitle launch-install-catalog-title" />
-          <Button Key="JavaLoaderLegacyFabric" Label="选择 Legacy Fabric 加载器" Content="选择 Legacy Fabric" Command="ui.install.loader.legacy-fabric" Class="{data JavaLoaderLegacyFabric_style}" IsVisible="false" Selected="{data JavaLoaderLegacyFabric_selected}" />
-          <Dynamic Key="JavaLegacyFabricPageStatusSlot" IsVisible="{data JavaLegacyFabricPage_statusVisible}" />
-          <Dynamic Key="JavaLegacyFabricPageRows" StableContent="true" Spacing="0" />
+          <Button Key="JavaLoaderLegacyFabric" Label="选择 Legacy Fabric 加载器" Content="选择 Legacy Fabric" Command="ui.install.loader.legacy-fabric" Class="{data JavaLoaderLegacyFabric_style}" IsVisible="{data !JavaLegacyFabricPage_loading}" Selected="{data JavaLoaderLegacyFabric_selected}" />
+          <Dynamic Key="JavaLegacyFabricPageStatusSlot" IsVisible="{data JavaLegacyFabricPage_statusVisible}" Weight="1" />
+          <Dynamic Key="JavaLegacyFabricPageRows" StableContent="true" Spacing="0" IsVisible="{data !JavaLegacyFabricPage_loading}" />
         </StackPanel>
         <StackPanel Key="JavaFabricApiPage" Label="Fabric API 安装选项" IsVisible="{data JavaFabricApiPage_visible}" Class="layout-JavaInstallPage-JavaFabricApiPage launch-install-catalog-page" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true">
           <Text Key="JavaFabricApiPageTitle" Content="Fabric API" Class="layout-JavaInstallPage-JavaFabricApiPageTitle launch-install-catalog-title" />
-          <Button Key="JavaFabricApiSelect" Label="{data JavaFabricApiSelect_label}" Localize="false" Content="添加 Fabric API" Command="ui.install.addon.fabric-api" Class="{data JavaFabricApiSelect_style}" IsVisible="false" Selected="{data JavaFabricApiSelect_selected}" />
-          <Dynamic Key="JavaFabricApiPageStatusSlot" IsVisible="{data JavaFabricApiPage_statusVisible}" />
-          <Dynamic Key="JavaFabricApiPageRows" StableContent="true" Spacing="0" />
+          <Button Key="JavaFabricApiSelect" Label="{data JavaFabricApiSelect_label}" Localize="false" Content="添加 Fabric API" Command="ui.install.addon.fabric-api" Class="{data JavaFabricApiSelect_style}" IsVisible="{data !JavaFabricApiPage_loading}" Selected="{data JavaFabricApiSelect_selected}" />
+          <Dynamic Key="JavaFabricApiPageStatusSlot" IsVisible="{data JavaFabricApiPage_statusVisible}" Weight="1" />
+          <Dynamic Key="JavaFabricApiPageRows" StableContent="true" Spacing="0" IsVisible="{data !JavaFabricApiPage_loading}" />
         </StackPanel>
         <StackPanel Key="JavaOptiFabricPage" Label="OptiFabric 安装选项" IsVisible="{data JavaOptiFabricPage_visible}" Class="layout-JavaInstallPage-JavaOptiFabricPage launch-install-catalog-page" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true">
           <Text Key="JavaOptiFabricPageTitle" Content="OptiFabric" Class="layout-JavaInstallPage-JavaOptiFabricPageTitle launch-install-catalog-title" />
-          <Dynamic Key="JavaOptiFabricPageStatusSlot" IsVisible="{data JavaOptiFabricPage_statusVisible}" />
-          <Dynamic Key="JavaOptiFabricPageRows" StableContent="true" Spacing="0" />
+          <Dynamic Key="JavaOptiFabricPageStatusSlot" IsVisible="{data JavaOptiFabricPage_statusVisible}" Weight="1" />
+          <Dynamic Key="JavaOptiFabricPageRows" StableContent="true" Spacing="0" IsVisible="{data !JavaOptiFabricPage_loading}" />
         </StackPanel>
         <StackPanel Key="JavaQuiltPage" Label="Quilt 安装选项" Class="layout-JavaInstallPage-JavaQuiltPage launch-install-catalog-page" IsVisible="{data JavaQuiltPage_visible}" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true">
           <Text Key="JavaQuiltPageTitle" Content="Quilt" Class="layout-JavaInstallPage-JavaQuiltPageTitle launch-install-catalog-title" />
-          <Button Key="JavaLoaderQuilt" Label="选择 Quilt 加载器" Content="选择 Quilt" Command="ui.install.loader.quilt" Class="{data JavaLoaderQuilt_style}" IsVisible="false" Selected="{data JavaLoaderQuilt_selected}" />
-          <Dynamic Key="JavaQuiltPageStatusSlot" IsVisible="{data JavaQuiltPage_statusVisible}" />
-          <Dynamic Key="JavaQuiltPageRows" StableContent="true" Spacing="0" />
+          <Button Key="JavaLoaderQuilt" Label="选择 Quilt 加载器" Content="选择 Quilt" Command="ui.install.loader.quilt" Class="{data JavaLoaderQuilt_style}" IsVisible="{data !JavaQuiltPage_loading}" Selected="{data JavaLoaderQuilt_selected}" />
+          <Dynamic Key="JavaQuiltPageStatusSlot" IsVisible="{data JavaQuiltPage_statusVisible}" Weight="1" />
+          <Dynamic Key="JavaQuiltPageRows" StableContent="true" Spacing="0" IsVisible="{data !JavaQuiltPage_loading}" />
         </StackPanel>
         <StackPanel Key="JavaQslPage" Label="QSL 安装选项" IsVisible="{data JavaQslPage_visible}" Class="layout-JavaInstallPage-JavaQslPage launch-install-catalog-page" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true">
           <Text Key="JavaQslPageTitle" Content="QSL" Class="layout-JavaInstallPage-JavaQslPageTitle launch-install-catalog-title" />
-          <Button Key="JavaQslSelect" Label="{data JavaQslSelect_label}" Localize="false" Content="添加 QSL" Command="ui.install.addon.qsl" Class="{data JavaQslSelect_style}" IsVisible="false" Selected="{data JavaQslSelect_selected}" />
-          <Dynamic Key="JavaQslPageStatusSlot" IsVisible="{data JavaQslPage_statusVisible}" />
-          <Dynamic Key="JavaQslPageRows" StableContent="true" Spacing="0" />
+          <Button Key="JavaQslSelect" Label="{data JavaQslSelect_label}" Localize="false" Content="添加 QSL" Command="ui.install.addon.qsl" Class="{data JavaQslSelect_style}" IsVisible="{data !JavaQslPage_loading}" Selected="{data JavaQslSelect_selected}" />
+          <Dynamic Key="JavaQslPageStatusSlot" IsVisible="{data JavaQslPage_statusVisible}" Weight="1" />
+          <Dynamic Key="JavaQslPageRows" StableContent="true" Spacing="0" IsVisible="{data !JavaQslPage_loading}" />
         </StackPanel>
         <StackPanel Key="JavaLabyModPage" Label="LabyMod 安装选项" Class="layout-JavaInstallPage-JavaLabyModPage launch-install-catalog-page" IsVisible="{data JavaLabyModPage_visible}" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true">
           <Text Key="JavaLabyModPageTitle" Content="LabyMod" Class="layout-JavaInstallPage-JavaLabyModPageTitle launch-install-catalog-title" />
-          <Button Key="JavaLoaderLabyMod" Label="选择 LabyMod 加载器" Content="选择 LabyMod" Command="ui.install.loader.labymod" Class="{data JavaLoaderLabyMod_style}" IsVisible="false" Selected="{data JavaLoaderLabyMod_selected}" />
-          <Dynamic Key="JavaLabyModPageStatusSlot" IsVisible="{data JavaLabyModPage_statusVisible}" />
-          <Dynamic Key="JavaLabyModPageRows" StableContent="true" Spacing="0" />
+          <Button Key="JavaLoaderLabyMod" Label="选择 LabyMod 加载器" Content="选择 LabyMod" Command="ui.install.loader.labymod" Class="{data JavaLoaderLabyMod_style}" IsVisible="{data !JavaLabyModPage_loading}" Selected="{data JavaLoaderLabyMod_selected}" />
+          <Dynamic Key="JavaLabyModPageStatusSlot" IsVisible="{data JavaLabyModPage_statusVisible}" Weight="1" />
+          <Dynamic Key="JavaLabyModPageRows" StableContent="true" Spacing="0" IsVisible="{data !JavaLabyModPage_loading}" />
         </StackPanel>
         <StackPanel Key="JavaOptiFinePage" Label="OptiFine 安装选项" Class="layout-JavaInstallPage-JavaOptiFinePage launch-install-catalog-page" IsVisible="{data JavaOptiFinePage_visible}" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true">
           <Text Key="JavaOptiFinePageTitle" Content="OptiFine" Class="layout-JavaInstallPage-JavaOptiFinePageTitle launch-install-catalog-title" />
-          <Button Key="JavaLoaderOptiFine" Label="选择 OptiFine 加载器" Content="选择 OptiFine" Command="ui.install.loader.optifine" Class="{data JavaLoaderOptiFine_style}" IsVisible="false" Selected="{data JavaLoaderOptiFine_selected}" />
-          <Dynamic Key="JavaOptiFinePageStatusSlot" IsVisible="{data JavaOptiFinePage_statusVisible}" />
-          <Dynamic Key="JavaOptiFinePageRows" StableContent="true" Spacing="0" />
+          <Button Key="JavaLoaderOptiFine" Label="选择 OptiFine 加载器" Content="选择 OptiFine" Command="ui.install.loader.optifine" Class="{data JavaLoaderOptiFine_style}" IsVisible="{data !JavaOptiFinePage_loading}" Selected="{data JavaLoaderOptiFine_selected}" />
+          <Dynamic Key="JavaOptiFinePageStatusSlot" IsVisible="{data JavaOptiFinePage_statusVisible}" Weight="1" />
+          <Dynamic Key="JavaOptiFinePageRows" StableContent="true" Spacing="0" IsVisible="{data !JavaOptiFinePage_loading}" />
         </StackPanel>
         <StackPanel Key="JavaLiteLoaderPage" Label="LiteLoader 安装选项" Class="layout-JavaInstallPage-JavaLiteLoaderPage launch-install-catalog-page" IsVisible="{data JavaLiteLoaderPage_visible}" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="true">
           <Text Key="JavaLiteLoaderPageTitle" Content="LiteLoader" Class="layout-JavaInstallPage-JavaLiteLoaderPageTitle launch-install-catalog-title" />
-          <Button Key="JavaLoaderLiteLoader" Label="选择 LiteLoader 加载器" Content="选择 LiteLoader" Command="ui.install.loader.liteloader" Class="{data JavaLoaderLiteLoader_style}" IsVisible="false" Selected="{data JavaLoaderLiteLoader_selected}" />
-          <Dynamic Key="JavaLiteLoaderPageStatusSlot" IsVisible="{data JavaLiteLoaderPage_statusVisible}" />
-          <Dynamic Key="JavaLiteLoaderPageRows" StableContent="true" Spacing="0" />
+          <Button Key="JavaLoaderLiteLoader" Label="选择 LiteLoader 加载器" Content="选择 LiteLoader" Command="ui.install.loader.liteloader" Class="{data JavaLoaderLiteLoader_style}" IsVisible="{data !JavaLiteLoaderPage_loading}" Selected="{data JavaLoaderLiteLoader_selected}" />
+          <Dynamic Key="JavaLiteLoaderPageStatusSlot" IsVisible="{data JavaLiteLoaderPage_statusVisible}" Weight="1" />
+          <Dynamic Key="JavaLiteLoaderPageRows" StableContent="true" Spacing="0" IsVisible="{data !JavaLiteLoaderPage_loading}" />
         </StackPanel>
       </HorizontalPager>
     </ContentHost>
