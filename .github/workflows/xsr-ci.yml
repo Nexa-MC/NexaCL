@@ -424,6 +424,8 @@ jobs:
         run: dotnet format NexaCL.slnx --no-restore --verify-no-changes --diagnostics IDE0055 IMPORTS
 
       - name: Publish and run NativeAOT Desktop shell smoke
+        env:
+          NexaCurseForgeApiKey: '$2a$10$NexaCurseForgeFixtureKeyForPublishSmoke'
         run: |
           dotnet publish Nexa.Desktop/Nexa.Desktop.csproj \
             --configuration Release \
@@ -433,6 +435,7 @@ jobs:
             -p:NexaMicrosoftClientId="${{ secrets.CLIENT_ID || secrets.MS_CLIENT_ID || secrets.NEXA_MS_CLIENT_ID || secrets.PCL_MS_CLIENT_ID }}" \
             -p:NexaLittleSkinClientId="${{ secrets.NEXA_LITTLESKIN_CLIENT_ID || secrets.PCL_LITTLESKIN_CLIENT_ID || secrets.LITTLESKIN_CLIENT_ID }}" \
             --output "${{ runner.temp }}/pcl-desktop-aot"
+          "${{ runner.temp }}/pcl-desktop-aot/Nexa.Desktop" --validate-resource-credentials
           "${{ runner.temp }}/pcl-desktop-aot/Nexa.Desktop" --validate-shell
 
       - name: Run NativeAOT first-run shell smoke
@@ -444,13 +447,16 @@ jobs:
           "${{ runner.temp }}/pcl-desktop-aot/Nexa.Desktop" --validate-themes
 
       - name: Analyze trimmed desktop composition
-        run: >-
-          dotnet publish Nexa.Desktop/Nexa.Desktop.csproj
-          --configuration Release
-          -p:XsrVersionChannel=ci
-          -p:PublishTrimmed=true
-          -p:TrimMode=link
-          --output "${{ runner.temp }}/pcl-desktop-trimmed"
+        env:
+          NexaCurseForgeApiKey: '$2a$10$NexaCurseForgeFixtureKeyForPublishSmoke'
+        run: |
+          dotnet publish Nexa.Desktop/Nexa.Desktop.csproj \
+            --configuration Release \
+            -p:XsrVersionChannel=ci \
+            -p:PublishTrimmed=true \
+            -p:TrimMode=link \
+            --output "${{ runner.temp }}/pcl-desktop-trimmed"
+          "${{ runner.temp }}/pcl-desktop-trimmed/Nexa.Desktop" --validate-resource-credentials
 
       - name: Run trimmed Desktop shell smoke
         run: '"${{ runner.temp }}/pcl-desktop-trimmed/Nexa.Desktop" --validate-shell'

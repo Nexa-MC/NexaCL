@@ -42,8 +42,8 @@ internal static partial class Program
         AccountOnboardingOptions fromEnvironment = AccountOnboardingOptions.FromEnvironment();
         return MergeAccountOnboardingOptions(
             fromEnvironment,
-            ResolveEmbeddedClientId("NexaMicrosoftClientId"),
-            ResolveEmbeddedClientId("NexaLittleSkinClientId"));
+            ResolveEmbeddedSetting("NexaMicrosoftClientId"),
+            ResolveEmbeddedSetting("NexaLittleSkinClientId"));
     }
 
     internal static AccountOnboardingOptions MergeAccountOnboardingOptions(
@@ -70,7 +70,7 @@ internal static partial class Program
         };
     }
 
-    private static string? ResolveEmbeddedClientId(string key) =>
+    private static string? ResolveEmbeddedSetting(string key) =>
         System.Reflection.Assembly.GetEntryAssembly()?
             .GetCustomAttributes<System.Reflection.AssemblyMetadataAttribute>()
             .FirstOrDefault(attribute => attribute.Key == key)?.Value;
@@ -83,6 +83,19 @@ internal static partial class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if (args is ["--validate-resource-credentials"])
+        {
+            string? embedded = ResolveEmbeddedSetting("NexaCurseForgeApiKey");
+            string? expected = Environment.GetEnvironmentVariable("NexaCurseForgeApiKey");
+            if (string.IsNullOrWhiteSpace(embedded) || !string.IsNullOrEmpty(expected)
+                && !string.Equals(embedded, expected, StringComparison.Ordinal))
+            {
+                Console.Error.WriteLine("The resource API credential was not embedded correctly during publish.");
+                return 1;
+            }
+            Console.WriteLine("Embedded resource credential validation passed.");
+            return 0;
+        }
         if (args is [Nexa.Services.Minecraft.Process.MinecraftLaunchHookWorker.WorkerArgument])
             return Nexa.Services.Minecraft.Process.MinecraftLaunchHookWorker.RunWorkerAsync().GetAwaiter().GetResult();
         if (RedirectUpdatedLauncher(args)) return 0;
@@ -597,8 +610,9 @@ internal static partial class Program
         settingsPage.ConfigureUpdates(updateQueries, new(buildInfo.ProductVersion, updateRid, updateChannel), platformActions.OpenHttpsUri,
             automaticUpdate, () => { restartAfterUpdate = true; platformActions.RequestClose(); });
         launchPage.SettingsPage = settingsPage.Page;
-        using var resourcesRuntime = ResourceCatalogRuntimeComposer.Compose(observer: dispatchObservation, host: host,
-            favoritesPath: Path.Combine(settingsFolder, "resources-favorites.json"), installer: installRun.Service);
+        using var resourcesRuntime = ResourceCatalogRuntimeComposer.Compose(source: null, observer: dispatchObservation, host: host,
+            favoritesPath: Path.Combine(settingsFolder, "resources-favorites.json"), installer: installRun.Service,
+            packagedCurseForgeApiKey: ResolveEmbeddedSetting("NexaCurseForgeApiKey"));
         settingsPage.ConfigureOnlineContent(resourcesRuntime.Queries, platformActions.OpenHttpsUri, resourcesRuntime.Commands);
         using var resourcesPage = new ResourcesPageController(shell, uiIntents, resourcesRuntime.Queries,
             host.StateStore, platformActions.OpenHttpsUri, functionPatches, sidecarSignals, sidecarUi);

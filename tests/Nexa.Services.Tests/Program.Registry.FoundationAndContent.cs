@@ -313,6 +313,7 @@ internal static partial class Program
         ("resource search cache avoids duplicate provider work", ResourceSearchCacheAvoidsDuplicateProviderWork),
         ("resource dual source Chinese identity and partial failure", ResourceDualSourceChineseIdentityAndPartialFailure),
         ("resource mirror fallback protects credentials", ResourceMirrorFallbackDoesNotLeakCredentials),
+        ("resource packaged API key respects environment and official origins", ResourcePackagedApiKeyRespectsEnvironmentAndOfficialOrigins),
         ("resource mirror timeout fallback preserves caller cancellation", ResourceMirrorTimeoutFallsBackAndCallerCancellationStops),
         ("foundation regional network policy rejects saved mirrors without changing preference", FoundationRegionalNetworkPolicyRejectsSavedMirrorsWithoutChangingPreference),
         ("resource translation current API and mainland cache authorization", ResourceTranslationsUseCurrentContractAndNeverReadOutsideMainland),

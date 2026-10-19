@@ -140,7 +140,14 @@ jobs:
           PY
       - name: Publish NativeAOT launcher
         shell: bash
+        env:
+          NexaCurseForgeApiKey: ${{ secrets.CURSEFORGE_API_KEY }}
         run: |
+          set -euo pipefail
+          if [[ -z "$NexaCurseForgeApiKey" && ( "$GITHUB_REPOSITORY" == Nexa-MC/PCL-N || "$GITHUB_REF" == refs/tags/* ) ]]; then
+            echo 'CURSEFORGE_API_KEY is required for official launcher artifacts' >&2
+            exit 1
+          fi
           dotnet publish Nexa.Desktop/Nexa.Desktop.csproj --configuration Release \
             -r '${{ matrix.rid }}' --self-contained true -m:1 -nodeReuse:false \
             -p:PublishAot=true -p:StripSymbols=true \
@@ -148,6 +155,11 @@ jobs:
             -p:XsrVersionSequence="$VERSION_SEQUENCE" -p:XsrCommitShort="$COMMIT_SHORT" \
             -p:NexaMicrosoftClientId="$NEXA_MS_CLIENT_ID" -p:NexaLittleSkinClientId="$NEXA_LITTLESKIN_CLIENT_ID" \
             --output "$RUNNER_TEMP/launcher"
+          if [[ -n "$NexaCurseForgeApiKey" ]]; then
+            binary="$RUNNER_TEMP/launcher/Nexa.Desktop"
+            if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
+            "$binary" --validate-resource-credentials
+          fi
       - name: Publish isolated NativeAOT JVM host
         shell: bash
         run: |

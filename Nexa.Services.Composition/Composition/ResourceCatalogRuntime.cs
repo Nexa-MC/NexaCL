@@ -20,6 +20,10 @@ public sealed class ResourceCatalogRuntime(XsrQueryRouter queries, HttpClient? o
 public static class ResourceCatalogRuntimeComposer
 {
     public static ResourceCatalogRuntime Compose(IResourceCatalogSource? source = null, IXsrDispatchObserver? observer = null, FoundationHost? host = null, string? favoritesPath = null, MinecraftInstallService? installer = null)
+        => Compose(source, observer, host, favoritesPath, installer, null);
+
+    public static ResourceCatalogRuntime Compose(IResourceCatalogSource? source, IXsrDispatchObserver? observer,
+        FoundationHost? host, string? favoritesPath, MinecraftInstallService? installer, string? packagedCurseForgeApiKey)
     {
         HttpClient? http = source is null ? host?.CreateHttpClient(allowAutoRedirect: false)
             ?? Nexa.Services.Downloads.PooledHttpClient.Create(allowAutoRedirect: false) : null;
@@ -27,7 +31,7 @@ public static class ResourceCatalogRuntimeComposer
         string SourcePriority() => !RegionalPolicy.Current.IsMainlandChina ? "official-first"
             : host?.SettingsPolicy.Read(new()).Value?.Values.FirstOrDefault(item => item.Key == "network.resource-source")?.Value.Value ?? "follow-request";
         bool AutoDependencies() => host?.SettingsPolicy.Read(new()).Value?.Values.FirstOrDefault(item => item.Key == "network.auto-install-dependencies")?.Value.Value != "false";
-        var transport = http is null ? null : new ResourceProviderHttp(http) { SourcePriority = SourcePriority };
+        var transport = http is null ? null : new ResourceProviderHttp(http, ResourceProviderHttp.ResolveApiKey(packagedCurseForgeApiKey)) { SourcePriority = SourcePriority };
         var information = new ResourceOnlineInformationCache(host?.SharedStateCache,
             host?.CacheDirectory is null ? null : Path.Combine(host.CacheDirectory, "resource-information"));
         source ??= new MergedResourceCatalog(new ResourceCatalogService(http!, transport), new CurseForgeResourceCatalog(transport!),

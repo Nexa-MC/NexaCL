@@ -8,6 +8,26 @@ performing HTTP. Country and effective source policy remain part of metadata and
 icon cache identity; a saved mainland preference does not authorize a mirror in
 another region. The network provider switches apply to every attempted origin.
 
+Distributed launchers embed the `CURSEFORGE_API_KEY` Actions secret as the
+`NexaCurseForgeApiKey` assembly metadata value, supplied through the publish step's
+environment rather than a shell-interpolated command. Desktop reads the packaged
+value and passes it explicitly into resource composition; services do not inspect
+Desktop assemblies. Resource transport owns configuration precedence: nonempty
+`NEXA_CURSEFORGE_API_KEY`, legacy `Nexa_CURSEFORGE_API_KEY`, then
+`CURSEFORGE_API_KEY` override the packaged fallback. Existing explicit transport
+credentials, including an empty value disabling the official key, retain their
+meaning. Keys never enter source-policy/cache identities or UI state, and are sent
+only to `api.curseforge.com`, never Modrinth or mirror endpoints. Public composition
+callers retain the existing overload and environment-only behavior.
+
+Launcher Build checks configured credentials in the actual published executable
+using `--validate-resource-credentials`. The check verifies presence and, when the
+build environment is retained, exact equality; it reports no key and exits before
+GUI startup. Official Launcher Build artifacts and tagged releases require the
+secret; builds without secrets remain available to contributors in forks. AOT and
+trimmed CI smoke use a synthetic key containing dollar signs so fork CI also
+verifies metadata retention without real credentials.
+
 The Host also masks the saved mirror-provider preference when it captures an
 effective HTTP policy: `MirrorProviderEnabled` requires both mainland China and
 the saved opt-in. This is evaluated for every new request through the common
@@ -39,3 +59,19 @@ Archive metadata is re-fetched before download. A regional policy captured by th
 download service controls source construction and every redirect; neither a mirror
 URL in metadata nor an old page preference grants international access. Actual
 byte-count/hash verification and non-overwriting publication are unchanged.
+
+## 2026-10-19 packaged credential validation
+
+Release build and formatting checks passed; Services 776, Desktop 356 and all
+72-project architecture checks passed. The PAC fixture's initial two-second
+deadline failure under concurrent compiler load passed both isolated and serial
+full-suite reruns without changing its limits.
+
+Linux NativeAOT and linked-trim Desktop both preserve a synthetic dollar-containing
+key exactly, work without the build environment, reject a mismatched expected key
+without printing either value, and pass shell/setup startup probes. A build with no
+embedded key correctly fails the packaging check even when a runtime API key is
+configured. Header fixtures prove environment precedence and official-only key
+transmission, including international official requests. Workflow YAML/Bash syntax
+and official/fork/tag missing-key guards passed. Publish retains the existing
+third-party Jint IL2098 warning and adds no source trim/AOT warnings.

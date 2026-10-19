@@ -61,6 +61,43 @@ internal static partial class Program
         using var doc = await new ResourceProviderHttp(http, "test-key").ReadAsync(ResourceProvider.CurseForge, "mods/1", true, default);
         AssertEqual("mod.mcimirror.top", hosts[0]); AssertEqual("api.curseforge.com", hosts[1]);
     }
+
+    private static async ValueTask ResourcePackagedApiKeyRespectsEnvironmentAndOfficialOrigins()
+    {
+        const string packaged = "$2a$10$PackagedCurseForgeFixtureKey";
+        Dictionary<string, string> environment = [];
+        string? Read(string name) => environment.GetValueOrDefault(name);
+        AssertEqual(packaged, ResourceProviderHttp.ResolveApiKey(packaged, Read));
+        AssertTrue(ResourceProviderHttp.ResolveApiKey(null, Read) is null);
+        foreach (string name in new[] { "CURSEFORGE_API_KEY", "Nexa_CURSEFORGE_API_KEY", "NEXA_CURSEFORGE_API_KEY" })
+        {
+            environment[name] = " override-" + name + " ";
+            AssertEqual("override-" + name, ResourceProviderHttp.ResolveApiKey(packaged, Read));
+        }
+        foreach (string name in environment.Keys.ToArray()) environment[name] = " \t ";
+        AssertEqual(packaged, ResourceProviderHttp.ResolveApiKey(packaged, Read));
+        List<string> hosts = [];
+        using HttpClient http = new(new ResourceHttp(request =>
+        {
+            string host = request.RequestUri!.Host;
+            hosts.Add(host);
+            if (host == "api.curseforge.com") AssertEqual(packaged, request.Headers.GetValues("x-api-key").Single());
+            else AssertFalse(request.Headers.Contains("x-api-key"));
+            return new(host == "mod.mcimirror.top" ? HttpStatusCode.ServiceUnavailable : HttpStatusCode.OK)
+            { Content = new StringContent("{}") };
+        }));
+        ResourceProviderHttp transport = new(http, ResourceProviderHttp.ResolveApiKey(packaged, Read)) { CountryPolicy = new("CN") };
+        using var official = await transport.ReadAsync(ResourceProvider.CurseForge, "mods/1", true, default);
+        using var modrinth = await transport.ReadAsync(ResourceProvider.Modrinth, "project/fixture", false, default);
+        AssertEqual("mod.mcimirror.top", hosts[0]);
+        AssertEqual("api.curseforge.com", hosts[1]);
+        AssertEqual("api.modrinth.com", hosts[2]);
+        AssertFalse(transport.CachePolicyIdentity.Contains(packaged, StringComparison.Ordinal));
+        ResourceProviderHttp international = new(http, ResourceProviderHttp.ResolveApiKey(packaged, Read)) { CountryPolicy = new("US") };
+        using var overseas = await international.ReadAsync(ResourceProvider.CurseForge, "mods/1", true, default);
+        AssertEqual("api.curseforge.com", hosts[3]);
+        AssertEqual(4, hosts.Count);
+    }
     private static async ValueTask ResourceTranslationRequiresMatchingOriginal()
     {
         int calls = 0;

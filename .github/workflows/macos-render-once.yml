@@ -47,10 +47,15 @@ jobs:
           PY
       - name: Publish current NativeAOT launcher
         shell: bash
+        env:
+          NexaCurseForgeApiKey: ${{ secrets.CURSEFORGE_API_KEY }}
         run: |
           dotnet publish Nexa.Desktop/Nexa.Desktop.csproj -c Release -r '${{ matrix.rid }}' \
             --self-contained true -m:1 -nodeReuse:false -p:PublishAot=true -p:StripSymbols=true \
             -p:XsrVersionChannel=ci -p:XsrCommitShort="${GITHUB_SHA:0:6}" --output "$RUNNER_TEMP/launcher"
+          if [[ -n "$NexaCurseForgeApiKey" ]]; then
+            "$RUNNER_TEMP/launcher/Nexa.Desktop" --validate-resource-credentials
+          fi
       - name: Exercise current NativeAOT normal startup
         env:
           GH_TOKEN: ${{ github.token }}
