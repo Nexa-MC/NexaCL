@@ -9,17 +9,21 @@ public sealed class ResourceModInstallService(IResourceCatalogSource catalog, Re
     private readonly SemaphoreSlim _gate = new(1);
     public Func<bool>? AutoInstallDependencies { get; init; }
     public async Task InstallAsync(ResourceModInstallCommand command, CancellationToken token)
+        => await InstallOwnedAsync(command, token).ConfigureAwait(false);
+
+    private async Task InstallOwnedAsync(ResourceModInstallCommand command, CancellationToken token, ITaskCenterTask? retryTask = null)
     {
         await _gate.WaitAsync(token).ConfigureAwait(false);
-        try { await InstallCoreAsync(command, token).ConfigureAwait(false); }
+        try { await InstallCoreAsync(command, retryTask, token).ConfigureAwait(false); }
         finally { _gate.Release(); }
     }
-    private async Task InstallCoreAsync(ResourceModInstallCommand command, CancellationToken token)
+    private async Task InstallCoreAsync(ResourceModInstallCommand command, ITaskCenterTask? retryTask, CancellationToken token)
     {
         string? staging = null;
         int imported = 0;
         string? dependencyNotice = null;
-        using var task = tasks.Begin(new("resource-install." + Guid.NewGuid().ToString("N"), "安装模组与依赖", ["解析依赖", "下载", "安装"]));
+        using var task = retryTask ?? tasks.Begin(new("resource-install." + Guid.NewGuid().ToString("N"), "安装模组与依赖", ["解析依赖", "下载", "安装"]),
+            (retry, cancellation) => InstallOwnedAsync(command, cancellation, retry));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken);
         token = linked.Token;
         try
@@ -37,7 +41,10 @@ public sealed class ResourceModInstallService(IResourceCatalogSource catalog, Re
                 string directory = Path.Combine(staging, i.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 Directory.CreateDirectory(directory);
                 task.Report("下载", version.Name, (double)i / plan.Count, i, plan.Count, 0);
-                await downloads.DownloadAsync(new(version.Provider, version.ProjectId, version.Id, directory, command.Instance.MirrorFirst), token).ConfigureAwait(false);
+                int completed = i;
+                await downloads.DownloadInTransactionAsync(new(version.Provider, version.ProjectId, version.Id, directory, command.Instance.MirrorFirst),
+                    (_, detail, fraction, _, _, speed) => task.Report("下载", detail, (completed + fraction) / plan.Count,
+                        completed + (fraction >= 1 ? 1 : 0), plan.Count, speed), token).ConfigureAwait(false);
                 artifacts.Add(await MinecraftLocalJarService.InspectAsync(Path.Combine(directory, version.File!.Name), token).ConfigureAwait(false));
             }
             string validation = Path.Combine(staging, "validation");
@@ -57,7 +64,7 @@ public sealed class ResourceModInstallService(IResourceCatalogSource catalog, Re
             foreach (var artifact in artifacts)
             {
                 task.Report("安装", Path.GetFileName(artifact.Path), (double)imported / plan.Count, imported, plan.Count, 0);
-                var result = await jars.ImportAsync(new(artifact, command.Instance.Root, command.Instance.InstanceId, LocalJarAction.Mod), token).ConfigureAwait(false);
+                var result = await jars.ImportInTransactionAsync(new(artifact, command.Instance.Root, command.Instance.InstanceId, LocalJarAction.Mod), token).ConfigureAwait(false);
                 if (!result.IsSuccess) throw new IOException(result.Error?.Message ?? "无法添加模组。");
                 imported++;
             }

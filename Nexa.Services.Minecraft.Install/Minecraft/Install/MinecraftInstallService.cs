@@ -69,9 +69,15 @@ public sealed partial class MinecraftInstallService : IDisposable
     public event Action<string>? Installed;
     public event Action<string, string, string>? Renamed;
 
-    public async Task<XsrResult<MinecraftInstallResult>> InstallAsync(
+    public Task<XsrResult<MinecraftInstallResult>> InstallAsync(
         MinecraftInstallCommand command,
         CancellationToken cancellationToken = default)
+        => InstallOwnedAsync(command, cancellationToken);
+
+    private sealed class InstallRetryState { public string? Stage { get; set; } }
+
+    private async Task<XsrResult<MinecraftInstallResult>> InstallOwnedAsync(MinecraftInstallCommand command,
+        CancellationToken cancellationToken, ITaskCenterTask? retryTask = null, InstallRetryState? retryState = null)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentException.ThrowIfNullOrWhiteSpace(command.RootDirectory);
@@ -85,9 +91,12 @@ public sealed partial class MinecraftInstallService : IDisposable
         string taskId = "install:" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
         InstallExecution execution;
         try { execution = RegisterExecution(command); } catch (OperationCanceledException) { return XsrResult.Failure<MinecraftInstallResult>(XsrRuntimeErrors.Cancelled()); }
-        using ITaskCenterTask task = _tasks.Begin(new TaskCenterStart(taskId, title, StagePlan));
+        retryState ??= new();
+        using ITaskCenterTask task = retryTask ?? _tasks.Begin(new TaskCenterStart(taskId, title, StagePlan),
+            (retry, token) => RetryInstallationAsync(command, retryState, retry, token));
+        var taskToken = task.CancellationToken;
         using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken, task.CancellationToken, execution.Token);
+            cancellationToken, taskToken, execution.Token);
         try
         {
             command = command with { RootDirectory = Nexa.Core.PathIdentity.Normalize(command.RootDirectory) };
@@ -137,6 +146,7 @@ public sealed partial class MinecraftInstallService : IDisposable
                 try { await RollbackInstallationAsync(command.RootDirectory, Guid.ParseExact(Path.GetFileName(retained), "N"), token: CancellationToken.None).ConfigureAwait(false); }
                 catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
                 {
+                    _tasks.SetRetryCancellation(task.TaskId, false, taskToken);
                     task.Fail("改名撤回未完成，恢复记录已保留。");
                     return XsrResult.Failure<MinecraftInstallResult>(MinecraftErrors.InvalidRequest(error.Message));
                 }
@@ -148,11 +158,29 @@ public sealed partial class MinecraftInstallService : IDisposable
         }
         catch (Exception exception) when (exception is not OutOfMemoryException and not AccessViolationException)
         {
+            _tasks.SetRetryCancellation(task.TaskId, execution.Stage is not { } stage
+                || !File.Exists(Path.Combine(stage, InstallTaskJournal.DirectoryName, "plan.json")), taskToken);
             task.Fail(exception.Message);
             return XsrResult.Failure<MinecraftInstallResult>(exception is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException
                 ? MinecraftErrors.InvalidRequest(exception.Message) : XsrRuntimeErrors.HandlerFaulted());
         }
-        finally { FinishExecution(execution); }
+        finally { retryState.Stage = execution.Stage; FinishExecution(execution); }
+    }
+
+    private async Task RetryInstallationAsync(MinecraftInstallCommand command, InstallRetryState state, ITaskCenterTask retry, CancellationToken token)
+    {
+        string? stage = state.Stage;
+        if (stage is not null && File.Exists(Path.Combine(stage, InstallTaskJournal.DirectoryName, "plan.json")))
+        {
+            await ResumeOwnedInstallationAsync(command.RootDirectory, Guid.ParseExact(Path.GetFileName(stage), "N"),
+                command.EditFingerprint is null, retry, token).ConfigureAwait(false);
+            retry.Complete();
+        }
+        else
+        {
+            var result = await InstallOwnedAsync(command, token, retry, state).ConfigureAwait(false);
+            if (!result.IsSuccess && result.Error?.Kind == XsrErrorKind.Cancelled) retry.Canceled();
+        }
     }
 
     private async Task<MinecraftInstallResult> RunAsync(
@@ -389,6 +417,7 @@ public sealed partial class MinecraftInstallService : IDisposable
             DownloadRequest request = new()
             {
                 AllowResume = !string.IsNullOrEmpty(file.Expected.Sha1),
+                CacheIdentity = string.IsNullOrWhiteSpace(file.Sha1) ? null : new(file.Sha1, file.Size > 0 ? file.Size : null),
                 Sources = file.Sources,
                 DestinationPath = file.Destination,
                 ConnectionFactory = _connectionFactory is { } factory
@@ -755,8 +784,7 @@ public sealed partial class MinecraftInstallService : IDisposable
             _response.EnsureSuccessStatusCode();
             if (authoritativeOrigin is not null) AuthoritativeMetadata.RequireSameOrigin(authoritativeOrigin,
                 _response.RequestMessage?.RequestUri ?? new Uri(source));
-            long length = _response.Content.Headers.ContentLength ?? -1;
-            return new DownloadConnectionInfo(length, beginOffset, length >= 0 ? beginOffset + length - 1 : -1, false);
+            return DownloadHttpRanges.Read(_response, beginOffset);
         }
 
         public async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)

@@ -96,9 +96,10 @@ public static class LauncherMigrationRuntime
     }
 
     private static async ValueTask<XsrResult> ExecuteAsync(TaskCenterService tasks, string title,
-        Func<IProgress<LauncherMigrationProgress>, CancellationToken, Task> action, CancellationToken token)
+        Func<IProgress<LauncherMigrationProgress>, CancellationToken, Task> action, CancellationToken token, ITaskCenterTask? retryTask = null)
     {
-        using var task = tasks.Begin(new(TaskPrefix + Guid.NewGuid().ToString("N"), title, ["迁移"]));
+        using var task = retryTask ?? tasks.Begin(new(TaskPrefix + Guid.NewGuid().ToString("N"), title, ["迁移"]),
+            async (retry, cancellation) => { await ExecuteAsync(tasks, title, action, cancellation, retry).ConfigureAwait(false); });
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken);
         try
         {

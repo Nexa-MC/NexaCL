@@ -18,6 +18,7 @@
         <Text Key="TaskCardSpeed" Localize="false" Content="{data speed}" Class="layout-TaskCard-TaskCardSpeed" />
       </StackPanel>
       <Text Key="TaskCardError" Localize="false" Content="{data error}" IsVisible="{data show-error}" Class="layout-TaskCard-TaskCardError" />
+      <Button Key="TaskCardRetry" Icon="lucide/rotate-cw" Content="重试" Label="重试此任务" Command="ui.tasks.card.retry" IsVisible="{data can-retry}" HorizontalAlignment="Start" MinHeight="36" Padding="12,6,12,6" />
       <Button Key="TaskCardDetails" Content="{data details}" Label="{data details-label}" IsVisible="{data has-steps}" Command="ui.tasks.card.details" Class="layout-TaskCard-TaskCardDetails" />
       <Dynamic Key="TaskCardSteps" IsVisible="{data expanded}" Class="layout-TaskCard-TaskCardSteps" />
     </StackPanel>

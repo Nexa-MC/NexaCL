@@ -15,6 +15,10 @@ public static class TaskCenterRuntimeComposer
     public static TaskCenterRuntime Compose(FoundationHost host, IXsrDispatchObserver? observer = null)
     {
         XsrCommandRouterBuilder commands = new();
+        commands.Register<TaskCenterRetryCommand>(TaskCenterRoutes.Retry,
+            (command, _) => ValueTask.FromResult(host.Tasks.RequestRetry(command.TaskId)
+                ? Nexa.Xsr.XsrResult.Success()
+                : Nexa.Xsr.XsrResult.Failure(Nexa.Xsr.XsrRuntimeErrors.TargetNotFound("任务不存在、仍在结束或不支持重试。"))));
         commands.Register<TaskCenterCancelCommand>(TaskCenterRoutes.Cancel,
             (command, _) => ValueTask.FromResult(host.Tasks.RequestCancel(command.TaskId) switch
             {
@@ -48,5 +52,6 @@ public static class TaskCenterRuntimeComposer
 }
 
 public sealed record TaskCenterCancelCommand(string TaskId);
+public sealed record TaskCenterRetryCommand(string TaskId);
 public sealed record TaskCenterDismissCommand(string TaskId);
 public sealed record TaskCenterClearCommand;

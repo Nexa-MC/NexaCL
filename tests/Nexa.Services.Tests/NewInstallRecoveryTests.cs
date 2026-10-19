@@ -11,7 +11,11 @@ internal static partial class Program
     {
         string firstSource = "";
         int reported = 0;
-        using var fixture = new InstallFixture(new() { VanillaJson = VanillaJson(), AssetIndexJson = AssetIndexJson() }, connectionFactory: source =>
+        // The stalled library must be a different artifact from the client whose durable
+        // receipt it waits for; identical digests intentionally share a session transfer.
+        var vanilla = VanillaJson();
+        vanilla["libraries"]![0]!["downloads"]!["artifact"]!["sha1"] = Sha1Hex("LIBCONTENT");
+        using var fixture = new InstallFixture(new() { VanillaJson = vanilla, AssetIndexJson = AssetIndexJson() }, connectionFactory: source =>
         {
             if (source.Contains("/client/", StringComparison.Ordinal))
             { Volatile.Write(ref firstSource, source); return new ServingConnection(PayloadFor(source)); }
@@ -52,7 +56,11 @@ internal static partial class Program
             AssertTrue(plan.Command.EditFingerprint is null);
             AssertEqual("none", plan.Command.DefaultIsolationMode);
             List<string> downloaded = []; var metadata = new FakeMetadata();
-            using var recovery = new InstallFixture(metadata, connectionFactory: source => { lock (downloaded) downloaded.Add(source); return new ServingConnection(PayloadFor(source)); });
+            using var recovery = new InstallFixture(metadata, connectionFactory: source =>
+            {
+                lock (downloaded) downloaded.Add(source);
+                return new ServingConnection(source.Contains("library", StringComparison.Ordinal) ? "LIBCONTENT"u8.ToArray() : PayloadFor(source));
+            });
             AssertTrue((await recovery.Install.RecoverPendingAsync(new([root]))).IsSuccess);
             AssertTrue(File.Exists(manifest)); AssertEqual(0, metadata.VanillaReads);
             AssertFalse((await new Nexa.Services.Minecraft.MinecraftInstanceMetadataStore().LoadAsync(Path.GetDirectoryName(manifest)!)).InstanceIsolation);

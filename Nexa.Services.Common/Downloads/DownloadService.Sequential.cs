@@ -104,6 +104,8 @@ public sealed partial class DownloadService
 
                         if (!request.AllowResume && connectionInfo.Length >= 0 && read > connectionInfo.Length - sessionRead)
                             throw new InvalidDataException("Download response exceeds its declared length.");
+                        if (request.ExpectedSize is { } expectedSize && read > expectedSize - totalRead)
+                            throw new InvalidDataException("Download response exceeds the artifact size.");
 
                         await writeStream
                             .WriteAsync(buffer.AsMemory(0, read), cancellationToken)
@@ -137,8 +139,20 @@ public sealed partial class DownloadService
 
                     if (!request.AllowResume && connectionInfo.Length >= 0 && sessionRead != connectionInfo.Length)
                         throw new EndOfStreamException("Download response ended before its declared length.");
+                    if (request.ExpectedSize is { } expectedLength && totalRead != expectedLength)
+                        throw new EndOfStreamException("Download response ended before the artifact was complete.");
                     stage = "flush";
                     await writeStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    if (request.ExpectedArtifact is { } artifact && writer is FileDownloadWriter fileWriter)
+                    {
+                        stage = "verify";
+                        await writer.StopAsync(cancellationToken).ConfigureAwait(false);
+                        if (!await MatchesCacheAsync(fileWriter.TempPath, artifact, cancellationToken).ConfigureAwait(false))
+                        {
+                            File.Delete(fileWriter.TempPath);
+                            throw new InvalidDataException("Artifact digest or size mismatch.");
+                        }
+                    }
                     stage = "commit";
                     report(new DownloadProgress(DownloadStage.Committing, source, totalRead, totalRead, 0));
                     await writer.FinishAsync(cancellationToken).ConfigureAwait(false);

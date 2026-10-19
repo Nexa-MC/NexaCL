@@ -40,10 +40,11 @@ internal static partial class Program
         }
     }
 
-    private static void WriteUpdatePack(string path, string version, bool next, bool badHash = false)
+    private static void WriteUpdatePack(string path, string version, bool next, bool badHash = false, bool freshDownload = false)
     {
         var index = MrpackIndex(); index["versionId"] = version;
-        index["files"] = badHash ? new JsonArray(PackFile("mods/broken.jar", "required", new string('0', 40))) : new JsonArray();
+        index["files"] = badHash ? new JsonArray(PackFile("mods/broken.jar", "required", new string('0', 40)))
+            : freshDownload ? new JsonArray(PackFile("mods/fresh.jar", "required")) : new JsonArray();
         using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
         using (var writer = new StreamWriter(zip.CreateEntry("modrinth.index.json").Open())) writer.Write(index.ToJsonString());
         foreach (var (name, bytes) in new[]
@@ -66,7 +67,10 @@ internal static partial class Program
             {
                 string root = Path.Combine(temporary, "game"); Directory.CreateDirectory(root);
                 string oldPack = Path.Combine(temporary, "old.mrpack"), newPack = Path.Combine(temporary, "new.mrpack");
-                WriteUpdatePack(oldPack, "1.0", false); WriteUpdatePack(newPack, "2.0", true, scenario == "download-error");
+                WriteUpdatePack(oldPack, "1.0", false);
+                // Cancellation during preparation needs a fresh object; existing dependencies
+                // are served from the verified session cache without opening a connection.
+                WriteUpdatePack(newPack, "2.0", true, scenario == "download-error", scenario == "cancel-preparing");
                 using var stop = new CancellationTokenSource();
                 bool cancelPreparing = false;
                 using var fixture = new InstallFixture(PackMetadata(), connectionFactory: url =>

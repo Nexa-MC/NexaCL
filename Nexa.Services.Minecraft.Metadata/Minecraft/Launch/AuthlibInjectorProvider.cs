@@ -34,6 +34,7 @@ public sealed class AuthlibInjectorProvider(HttpClient http, DownloadService dow
                 DownloadTransferResult result = await downloads.DownloadAsync(new DownloadRequest
                 {
                     Sources = [url],
+                    CacheIdentity = new(hash),
                     DestinationPath = pending,
                     ConnectionFactory = source => new HttpConnection(http, source),
                 }, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -67,9 +68,7 @@ public sealed class AuthlibInjectorProvider(HttpClient http, DownloadService dow
             _response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             _response.EnsureSuccessStatusCode();
             _stream = await _response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            long length = _response.Content.Headers.ContentRange?.Length ?? _response.Content.Headers.ContentLength ?? -1;
-            long start = _response.Content.Headers.ContentRange?.From ?? 0;
-            return new(length, start, length - 1, false);
+            return DownloadHttpRanges.Read(_response, beginOffset);
         }
         public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => _stream!.ReadAsync(buffer, cancellationToken);
         public ValueTask StopAsync(CancellationToken cancellationToken = default) { _response?.Dispose(); _response = null; _stream = null; return ValueTask.CompletedTask; }

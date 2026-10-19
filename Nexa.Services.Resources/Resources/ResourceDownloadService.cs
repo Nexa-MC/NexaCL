@@ -8,9 +8,12 @@ public sealed class ResourceDownloadService(IResourceCatalogSource catalog, Down
 {
     public Func<string>? SourcePriority { get; init; }
     public RegionalPolicy CountryPolicy { get; init; } = RegionalPolicy.Current;
-    public async Task DownloadAsync(ResourceDownloadCommand command, CancellationToken token)
+    public Task DownloadAsync(ResourceDownloadCommand command, CancellationToken token) => DownloadOwnedAsync(command, token);
+
+    private async Task DownloadOwnedAsync(ResourceDownloadCommand command, CancellationToken token, ITaskCenterTask? retryTask = null)
     {
-        using var task = tasks.Begin(new("resource." + Guid.NewGuid().ToString("N"), "下载资源", ["读取版本", "下载", "校验"]));
+        using var task = retryTask ?? tasks.Begin(new("resource." + Guid.NewGuid().ToString("N"), "下载资源", ["读取版本", "下载", "校验"]),
+            (retry, cancellation) => DownloadOwnedAsync(command, cancellation, retry));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken);
         token = linked.Token;
         try
@@ -22,8 +25,11 @@ public sealed class ResourceDownloadService(IResourceCatalogSource catalog, Down
         catch (Exception e) when (e is not OutOfMemoryException and not AccessViolationException) { task.Fail(e.Message); throw; }
     }
 
-    internal ITaskCenterTask BeginUpdateTask() => tasks.Begin(new("resource.update." + Guid.NewGuid().ToString("N"),
-        "更新内容", ["读取版本", "下载", "校验", "应用更新"]));
+    internal ITaskCenterTask BeginUpdateTask(Func<ITaskCenterTask, CancellationToken, Task> retry) => tasks.Begin(new("resource.update." + Guid.NewGuid().ToString("N"),
+        "更新内容", ["读取版本", "下载", "校验", "应用更新"]), retry);
+
+    internal ITaskCenterTask BeginArchiveTask(Func<ITaskCenterTask, CancellationToken, Task> retry) => tasks.Begin(new("resource.archive." + Guid.NewGuid().ToString("N"),
+        "下载整合包", ["读取版本", "下载", "校验", "保存整合包"]), retry);
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350", Justification = "CurseForge publishes SHA1 identities; HTTPS protects metadata. Prefer SHA512 when provided.")]
     internal async Task DownloadInTransactionAsync(ResourceDownloadCommand command,
@@ -51,9 +57,9 @@ public sealed class ResourceDownloadService(IResourceCatalogSource catalog, Down
             var result = await downloads.DownloadAsync(new DownloadRequest
             {
                 DestinationPath = stage,
-                AllowResume = false,
+                CacheIdentity = new(Hash(file.Sha512, 128) ? file.Sha512! : file.Sha1!, file.Size),
                 Sources = Sources(file.Url, ResourceSourcePriority.Apply(SourcePriority?.Invoke(), command.MirrorFirst), CountryPolicy),
-                ConnectionFactory = url => new Connection(http, url, file.Size, Hash(file.Sha512, 128) ? file.Sha512! : file.Sha1!, CountryPolicy)
+                ConnectionFactory = url => new Connection(http, url, file.Size, CountryPolicy)
             }, progress => report("下载", file.Name, (double)progress.DownloadedBytes / file.Size, 0, 1, progress.BytesPerSecond), token).ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
             if (!result.Success) throw new IOException("资源下载失败，请重试。");
@@ -103,28 +109,27 @@ public sealed class ResourceDownloadService(IResourceCatalogSource catalog, Down
         string mirror = ResourceProviderHttp.Mirror + uri.PathAndQuery;
         return mirrorFirst ? [mirror, url] : [url, mirror];
     }
-    private sealed class Connection(HttpClient client, string url, long expected, string expectedHash, RegionalPolicy country) : IDownloadConnection
+    private sealed class Connection(HttpClient client, string url, long expected, RegionalPolicy country) : IDownloadConnection
     {
         private HttpResponseMessage? _response;
         private Stream? _stream;
         private long _read;
-        private IncrementalHash? _hash;
         public async ValueTask<DownloadConnectionInfo> StartAsync(long beginOffset, CancellationToken cancellationToken = default)
         {
-            if (beginOffset != 0) throw new InvalidDataException("此资源不支持续传。");
             string current = url;
             for (int i = 0; i < 5; i++)
             {
                 if (!Allowed(current, country)) throw new InvalidDataException("下载地址不受支持。");
                 using var request = new HttpRequestMessage(HttpMethod.Get, current);
+                if (beginOffset > 0) request.Headers.Range = new(beginOffset, null);
                 _response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 if ((int)_response.StatusCode is >= 300 and < 400 && _response.Headers.Location is { } next)
                 { current = new Uri(new Uri(current), next).AbsoluteUri; _response.Dispose(); _response = null; continue; }
                 _response.EnsureSuccessStatusCode();
-                if (_response.Content.Headers.ContentLength is { } length && length != expected) throw new InvalidDataException("资源长度不匹配。");
-                _stream = await _response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false); _read = 0;
-                _hash = IncrementalHash.CreateHash(expectedHash.Length == 128 ? HashAlgorithmName.SHA512 : HashAlgorithmName.SHA1);
-                return new(expected, 0, expected - 1, false);
+                var range = DownloadHttpRanges.Read(_response, beginOffset);
+                if (range.Length >= 0 && range.Length != expected) throw new InvalidDataException("资源长度不匹配。");
+                _stream = await _response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false); _read = range.BeginOffset;
+                return range with { Length = expected, EndOffset = expected - 1 };
             }
             throw new IOException("下载重定向次数过多。");
         }
@@ -132,15 +137,13 @@ public sealed class ResourceDownloadService(IResourceCatalogSource catalog, Down
         {
             int count = await _stream!.ReadAsync(buffer[..(int)Math.Min(buffer.Length, expected - _read + 1)], cancellationToken).ConfigureAwait(false);
             _read += count;
-            if (count > 0) _hash!.AppendData(buffer.Span[..count]);
             if (_read > expected || count == 0 && _read != expected) throw new InvalidDataException("资源实际长度不匹配。");
             if (_read == expected && count > 0)
             {
                 if (await _stream.ReadAsync(new byte[1], cancellationToken).ConfigureAwait(false) != 0) throw new InvalidDataException("资源超出声明长度。");
-                if (!Convert.ToHexString(_hash!.GetHashAndReset()).Equals(expectedHash, StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("资源哈希不匹配。");
             }
             return count;
         }
-        public ValueTask StopAsync(CancellationToken cancellationToken = default) { _hash?.Dispose(); _hash = null; _stream?.Dispose(); _response?.Dispose(); _stream = null; _response = null; return ValueTask.CompletedTask; }
+        public ValueTask StopAsync(CancellationToken cancellationToken = default) { _stream?.Dispose(); _response?.Dispose(); _stream = null; _response = null; return ValueTask.CompletedTask; }
     }
 }

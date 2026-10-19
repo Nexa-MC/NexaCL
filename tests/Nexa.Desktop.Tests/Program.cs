@@ -457,6 +457,7 @@ internal static partial class Program
         ("task bubble follows the center summary and yields to the page", TaskBubbleFollowsSummaryAndYieldsToPage),
         ("task bubble shows a compact ring with aggregated progress", TaskBubbleUsesCompactProgressRing),
         ("task center page reconciles cards and routes cancel dismiss and clear", TaskCenterPageReconcilesCardsAndRoutesActions),
+        ("task center retry button routes and keeps card identity", () => TaskCenterRetryButtonRoutesAndKeepsCardIdentity().GetAwaiter().GetResult()),
         ("task center page yields the bubble and reclaims it on back", TaskCenterPageYieldsBubbleAndReclaimsOnBack),
         ("operational feedback uses the shared lower-left notification surface", OperationalFeedbackUsesLowerLeftNotification),
         ("notification levels keep exact lifetimes and permanent errors remain closable", NotificationLevelsKeepExactLifetimes),

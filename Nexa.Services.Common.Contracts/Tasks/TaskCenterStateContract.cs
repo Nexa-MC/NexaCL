@@ -38,6 +38,7 @@ public sealed record TaskCenterEntry(
     bool CanCancel = true,
     IReadOnlyList<TaskCenterStep>? Steps = null)
 {
+    public bool CanRetry { get; init; }
     public bool IsTerminal => State is TaskCenterEntryState.Finished or TaskCenterEntryState.Failed or TaskCenterEntryState.Canceled or TaskCenterEntryState.Paused;
 };
 
@@ -61,6 +62,7 @@ public enum TaskCenterCancelResult
 
 public static class TaskCenterRoutes
 {
+    public static readonly XsrSemanticId Retry = XsrSemanticId.Parse("tasks.center.retry");
     public static readonly XsrSemanticId Cancel = XsrSemanticId.Parse("tasks.center.cancel");
     public static readonly XsrSemanticId Dismiss = XsrSemanticId.Parse("tasks.center.dismiss");
     public static readonly XsrSemanticId ClearFinished = XsrSemanticId.Parse("tasks.center.clear");

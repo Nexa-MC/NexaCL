@@ -1,4 +1,7 @@
 [
+  {"source":"重试此任务","en":"Retry this task","zh-Hant":"重試此任務"},
+  {"source":"安装与登记 Java","en":"Install and register Java","zh-Hant":"安裝與登記 Java"},
+  {"source":"下载整合包","en":"Download modpack","zh-Hant":"下載整合包"},
   {"source":"任务进度","en":"Task progress","zh-Hant":"任務進度"},
   {"source":"正在处理启动器迁移…","en":"Migrating launcher data…","zh-Hant":"正在處理啟動器遷移…"},
   {"source":"正在获取资源列表…","en":"Loading resources…","zh-Hant":"正在取得資源清單…"},

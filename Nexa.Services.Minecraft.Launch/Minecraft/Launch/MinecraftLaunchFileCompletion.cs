@@ -172,7 +172,8 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
             Directory.CreateDirectory(Path.GetDirectoryName(file.Destination)!);
             DownloadTransferResult transfer = await TransferAsync(
                 file.Sources, file.Destination, cancellationToken,
-                progress: bytes => batch.Update(index, bytes))
+                progress: bytes => batch.Update(index, bytes),
+                cacheIdentity: string.IsNullOrWhiteSpace(file.Sha1) ? null : new(file.Sha1, file.Size))
                 .ConfigureAwait(false);
             bool verified = transfer.Success
                 && await _verification.VerifyAsync(file.Expected, cancellationToken, forceHash: true).ConfigureAwait(false);
@@ -186,7 +187,8 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
                 }
 
                 await Task.Delay(FileRetryDelay, cancellationToken).ConfigureAwait(false);
-                transfer = await TransferAsync(file.Sources, file.Destination, cancellationToken)
+                transfer = await TransferAsync(file.Sources, file.Destination, cancellationToken,
+                    cacheIdentity: string.IsNullOrWhiteSpace(file.Sha1) ? null : new(file.Sha1, file.Size))
                     .ConfigureAwait(false);
                 verified = transfer.Success
                     && await _verification.VerifyAsync(file.Expected, cancellationToken, forceHash: true).ConfigureAwait(false);
@@ -264,7 +266,7 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
         {
             TryDelete(indexDiskPath);
             DownloadTransferResult transfer = await TransferAsync(sources, indexDiskPath, cancellationToken,
-                allowResume: false).ConfigureAwait(false);
+                allowResume: false, cacheIdentity: string.IsNullOrWhiteSpace(expected.Sha1) ? null : new(expected.Sha1, expected.Size)).ConfigureAwait(false);
             if (transfer.Success && await _verification.VerifyAsync(expected, cancellationToken, forceHash: true).ConfigureAwait(false)) return;
             TryDelete(indexDiskPath);
             if (attempt + 1 < attempts) await Task.Delay(FileRetryDelay, cancellationToken).ConfigureAwait(false);
@@ -276,11 +278,12 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
         IReadOnlyList<string> sources,
         string destination,
         CancellationToken cancellationToken,
-        Action<DownloadProgress>? progress = null, bool allowResume = true) =>
+        Action<DownloadProgress>? progress = null, bool allowResume = true, DownloadArtifactIdentity? cacheIdentity = null) =>
         _downloads.DownloadAsync(
             new DownloadRequest
             {
                 Sources = sources,
+                CacheIdentity = cacheIdentity,
                 DestinationPath = destination,
                 AllowResume = allowResume,
                 ConnectionFactory = _connectionFactory is { } factory
@@ -322,7 +325,7 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
         public async ValueTask<DownloadConnectionInfo> StartAsync(
             long beginOffset, CancellationToken cancellationToken = default)
         {
-            HttpRequestMessage request = new(HttpMethod.Get, source);
+            using HttpRequestMessage request = new(HttpMethod.Get, source);
             if (beginOffset > 0)
             {
                 request.Headers.Range = new(beginOffset, null);
@@ -331,8 +334,7 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
             _response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
                 cancellationToken).ConfigureAwait(false);
             _response.EnsureSuccessStatusCode();
-            long length = _response.Content.Headers.ContentLength ?? -1;
-            return new DownloadConnectionInfo(length, beginOffset, length >= 0 ? beginOffset + length - 1 : -1, false);
+            return DownloadHttpRanges.Read(_response, beginOffset);
         }
 
         public async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)

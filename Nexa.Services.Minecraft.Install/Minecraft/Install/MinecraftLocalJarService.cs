@@ -63,17 +63,24 @@ public sealed class MinecraftLocalJarService(TaskCenterService tasks, XsrStateSt
     }, token);
 
     public async Task<XsrResult> ImportAsync(MinecraftLocalJarCommand command, CancellationToken token = default)
+        => await ImportOwnedAsync(command, token).ConfigureAwait(false);
+
+    internal Task<XsrResult> ImportInTransactionAsync(MinecraftLocalJarCommand command, CancellationToken token) =>
+        ImportOwnedAsync(command, token, trackTask: false);
+
+    private async Task<XsrResult> ImportOwnedAsync(MinecraftLocalJarCommand command, CancellationToken token, ITaskCenterTask? retryTask = null, bool trackTask = true)
     {
         if (Interlocked.CompareExchange(ref _mutating, 1, 0) != 0)
             return XsrResult.Failure(MinecraftErrors.InvalidRequest("已有 JAR 导入正在进行。"));
-        try { return await Task.Run(() => ImportCoreAsync(command, token), token).ConfigureAwait(false); }
+        try { return await Task.Run(() => ImportCoreAsync(command, retryTask, trackTask, token), token).ConfigureAwait(false); }
         finally { Interlocked.Exchange(ref _mutating, 0); }
     }
 
-    private async Task<XsrResult> ImportCoreAsync(MinecraftLocalJarCommand command, CancellationToken token)
+    private async Task<XsrResult> ImportCoreAsync(MinecraftLocalJarCommand command, ITaskCenterTask? retryTask, bool trackTask, CancellationToken token)
     {
-        using var task = tasks.Begin(new("jar:" + Guid.NewGuid().ToString("N"), "导入 " + Path.GetFileName(command.Artifact.Path), ["检查文件", "写入文件", "完成"]));
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken);
+        using var task = trackTask ? retryTask ?? tasks.Begin(new("jar:" + Guid.NewGuid().ToString("N"), "导入 " + Path.GetFileName(command.Artifact.Path), ["检查文件", "写入文件", "完成"]),
+            (retry, cancellation) => ImportOwnedAsync(command, cancellation, retry)) : null;
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task?.CancellationToken ?? default);
         token = linked.Token;
         string? temporary = null;
         try
@@ -92,8 +99,8 @@ public sealed class MinecraftLocalJarService(TaskCenterService tasks, XsrStateSt
                     throw new InvalidDataException("目标版本已存在或安装器版本名称无效。");
                 var result = await installer.InstallAsync(new(root, inspected.Game, inspected.Loader, inspected.Build)
                 { LocalInstaller = inspected }, token).ConfigureAwait(false);
-                if (!result.IsSuccess) { task.Fail(result.Error?.Message ?? "加载器安装失败。"); return XsrResult.Failure(result.Error!); }
-                task.Complete(); return XsrResult.Success();
+                if (!result.IsSuccess) { task?.Fail(result.Error?.Message ?? "加载器安装失败。"); return XsrResult.Failure(result.Error!); }
+                task?.Complete(); return XsrResult.Success();
             }
             if (!MinecraftVersionPaths.IsSafeReference(command.InstanceId)) throw new InvalidDataException("请先选择要修改的版本。");
             string instance = Nexa.Core.PathIdentity.Contained(root, "versions/" + command.InstanceId);
@@ -144,13 +151,13 @@ public sealed class MinecraftLocalJarService(TaskCenterService tasks, XsrStateSt
             }
             else throw new InvalidDataException("未知的 JAR 用途。");
             temporary = null;
-            task.Complete(command.Action == LocalJarAction.CorePatch ? "核心补丁已应用，原核心已备份。" : "模组已添加。");
+            task?.Complete(command.Action == LocalJarAction.CorePatch ? "核心补丁已应用，原核心已备份。" : "模组已添加。");
             return XsrResult.Success();
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
-        { task.Canceled(); return XsrResult.Failure(XsrRuntimeErrors.Cancelled()); }
+        { task?.Canceled(); return XsrResult.Failure(XsrRuntimeErrors.Cancelled()); }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { task.Fail(error.Message); return XsrResult.Failure(MinecraftErrors.InvalidRequest(error.Message)); }
+        { task?.Fail(error.Message); return XsrResult.Failure(MinecraftErrors.InvalidRequest(error.Message)); }
         finally { if (temporary is not null && File.Exists(temporary)) File.Delete(temporary); }
     }
 

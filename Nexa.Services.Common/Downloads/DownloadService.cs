@@ -16,7 +16,7 @@ namespace Nexa.Services.Downloads;
 /// Sources fail over in order with resume support; a 416 against a resumed destination
 /// discards the partial file and retries the source list from scratch semantics.
 /// </summary>
-public sealed partial class DownloadService
+public sealed partial class DownloadService : IDisposable
 {
     public IWorkScheduler? WorkScheduler { get; init; }
     public DownloadBandwidthLimiter? BandwidthLimiter { get; internal set; }
@@ -84,6 +84,8 @@ public sealed partial class DownloadService
         CancellationToken cancellationToken = default)
     {
         ValidateRequest(request);
+        if (request.CacheIdentity is not null)
+            return DownloadCachedAsync(request with { DestinationPath = Path.GetFullPath(request.DestinationPath) }, progress, cancellationToken);
         if (WorkScheduler?.CurrentPriority is WorkPriority.Background or WorkPriority.Idle && BackgroundDownloadsEnabled?.Invoke() == false)
             throw new InvalidOperationException("Background downloads are disabled by the committed policy.");
         request = request with { BandwidthBudget = BandwidthLimiter?.Capture() };
@@ -116,6 +118,7 @@ public sealed partial class DownloadService
     {
         using LogOperation? trace = _log?.BeginOperation(LogModuleName, "Transfer", $"destination={destinationPath}");
         int lastStage = -1;
+        Action? complete = null;
         try
         {
             void Report(DownloadProgress progress)
@@ -139,17 +142,17 @@ public sealed partial class DownloadService
                 operation.CancellationToken).ConfigureAwait(false);
             if (result.Success) trace?.Complete($"bytes={result.TotalBytes} failed_sources={result.Errors.Count}");
             else trace?.Reject("download.sources_exhausted");
-            operation.SetResult(result);
+            complete = () => operation.SetResult(result);
         }
         catch (OperationCanceledException failure)
         {
             trace?.Cancel();
-            operation.SetCanceled(failure.CancellationToken);
+            complete = () => operation.SetCanceled(failure.CancellationToken);
         }
         catch (Exception failure)
         {
             trace?.Fail(failure);
-            operation.SetException(failure);
+            complete = () => operation.SetException(failure);
         }
         finally
         {
@@ -161,6 +164,7 @@ public sealed partial class DownloadService
                 _active.TryRemove(new KeyValuePair<string, Lazy<DownloadOperation>>(destinationPath, lazyOperation));
             }
 
+            complete?.Invoke();
             operation.Dispose();
         }
     }

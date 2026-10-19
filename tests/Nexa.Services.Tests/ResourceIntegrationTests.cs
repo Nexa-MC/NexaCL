@@ -10,6 +10,39 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask ResourceFailedTaskRetriesWithRetainedPartialAndFreshMetadata()
+    {
+        string directory = CreateTempDirectory();
+        byte[] data = "archive bytes"u8.ToArray();
+        bool online = false; List<long> offsets = [];
+        var file = new ResourceFile("retry.jar", "https://cdn.modrinth.com/data/test/file.jar", data.Length, null, Convert.ToHexString(SHA512.HashData(data)));
+        var catalog = new CatalogStub((_, _) => throw new NotSupportedException()) { File = file };
+        using var http = new HttpClient(new ResourceHttp(request =>
+        {
+            long offset = request.Headers.Range?.Ranges.Single().From ?? 0; offsets.Add(offset);
+            var content = new StreamContent(new MemoryStream(online ? data[(int)offset..] : data[..4]));
+            content.Headers.ContentLength = data.Length - offset;
+            if (offset > 0) content.Headers.ContentRange = new(offset, data.Length - 1, data.Length);
+            return new(offset > 0 ? HttpStatusCode.PartialContent : HttpStatusCode.OK) { Content = content };
+        }));
+        var builder = new XsrStateStoreBuilder(); DownloadService.DeclareState(builder); TaskCenterStateContract.DeclareState(builder);
+        var store = builder.Build(); using var tasks = new TaskCenterService(store); using var engine = new DownloadService(store);
+        var service = new ResourceDownloadService(catalog, engine, tasks, http) { CountryPolicy = new("US") };
+        try
+        {
+            await TrustRejectsAsync<IOException>(() => service.DownloadAsync(new(ResourceProvider.Modrinth, "Project", "Version", directory), default));
+            var failed = tasks.ReadEntries().Single(); AssertTrue(failed.CanRetry);
+            AssertFalse(File.Exists(Path.Combine(directory, file.Name)));
+            AssertFalse(Directory.EnumerateFiles(directory).Any());
+            online = true; AssertTrue(tasks.RequestRetry(failed.TaskId));
+            await WaitForRetryEntryAsync(tasks, failed.TaskId, entry => entry.State == TaskCenterEntryState.Finished);
+            AssertTrue(offsets.SequenceEqual([0L, 4L]));
+            AssertTrue((await File.ReadAllBytesAsync(Path.Combine(directory, file.Name))).SequenceEqual(data));
+            AssertEqual(1, tasks.ReadEntries().Count);
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
     private static async ValueTask ResourceDualSourceChineseIdentityAndPartialFailure()
     {
         List<string> terms = [];

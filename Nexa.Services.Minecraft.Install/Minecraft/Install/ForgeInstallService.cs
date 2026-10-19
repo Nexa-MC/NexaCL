@@ -216,6 +216,7 @@ public sealed partial class ForgeInstallService(DownloadService downloads, HttpC
         var transfer = new DownloadRequest
         {
             AllowResume = !string.IsNullOrEmpty(sha),
+            CacheIdentity = string.IsNullOrWhiteSpace(sha) ? null : new(sha, size > 0 ? size : null),
             Sources = sources,
             DestinationPath = path,
             ConnectionFactory = source => connectionFactory?.Invoke(source) ?? new MinecraftInstallService.HttpConnection(http, source,
@@ -249,7 +250,7 @@ public sealed partial class ForgeInstallService(DownloadService downloads, HttpC
         return full;
     }
 
-    private static async Task<string> ResolveJavaAsync(MinecraftLoaderInstallRequest request, CancellationToken token)
+    private async Task<string> ResolveJavaAsync(MinecraftLoaderInstallRequest request, CancellationToken token)
     {
         int major = request.VanillaJson["javaVersion"]?["majorVersion"]?.GetValue<int>() ?? 8;
         var requirement = JavaRequirementResolution.Valid(JavaVersionRange.ForMajor(major), major.ToString(System.Globalization.CultureInfo.InvariantCulture));
@@ -257,7 +258,7 @@ public sealed partial class ForgeInstallService(DownloadService downloads, HttpC
         var selected = await new JavaSelectionService(new LocalJavaRuntimeLocator(runtime)).SelectAsync(requirement, new AutoSelectJavaPreference(), token).ConfigureAwait(false);
         if (selected.SelectedJava is { } candidate) return candidate.Installation.JavaExecutablePath;
         using var metadata = new HttpJavaRuntimeMetadataProvider();
-        using var installer = new JavaRuntimeInstaller(metadata);
+        using var installer = new JavaRuntimeInstaller(metadata) { SessionDownloads = downloads };
         string java = await installer.InstallAsync(requirement.RecommendedComponent!, runtime, cancellationToken: token).ConfigureAwait(false);
         string console = Path.Combine(Path.GetDirectoryName(java)!, OperatingSystem.IsWindows() ? "java.exe" : "java");
         return File.Exists(console) ? console : java;

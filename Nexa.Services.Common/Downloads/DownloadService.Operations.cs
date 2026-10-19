@@ -208,6 +208,10 @@ public sealed partial class DownloadService
                 if (Interlocked.Decrement(ref _waiterCount) == 0 && !_completion.Task.IsCompleted)
                 {
                     await _cancellation.CancelAsync().ConfigureAwait(false);
+                    // The last owner must not clean its transaction directory while a writer
+                    // still owns it, or let a retry attach to the canceled transfer.
+                    try { await _completion.Task.ConfigureAwait(false); }
+                    catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException) { }
                 }
             }
         }

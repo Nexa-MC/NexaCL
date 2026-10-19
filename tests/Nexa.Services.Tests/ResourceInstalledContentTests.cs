@@ -110,14 +110,22 @@ internal static partial class Program
                 { ProjectId = id, File = new(id + ".jar", "https://cdn.modrinth.com/data/" + id + ".jar", bytes.Length, null, Convert.ToHexString(SHA512.HashData(bytes))), Dependencies = dependencies };
                 var versions = scenario == "missing" ? new[] { Version("A", a) } : new[] { Version("A", a, new ResourceDependency("B", "B1", "required")), Version("B", b, new ResourceDependency("A", "A1", "required")) };
                 var source = new DependencyCatalog(versions); List<string> order = [];
+                TaskCenterService? observedTasks = null;
                 using var http = new HttpClient(new ResourceHttp(request =>
                 {
                     string path = request.RequestUri!.AbsolutePath;
-                    if (path.EndsWith(".jar", StringComparison.Ordinal)) { order.Add(Path.GetFileName(path)); return new(HttpStatusCode.OK) { Content = new ByteArrayContent(path.EndsWith("A.jar", StringComparison.Ordinal) ? a : b) }; }
+                    if (path.EndsWith(".jar", StringComparison.Ordinal))
+                    {
+                        var parent = observedTasks!.ReadEntries().Single();
+                        AssertEqual(TaskCenterEntryState.Running, parent.State); AssertEqual(versions.Length, parent.TotalFiles);
+                        order.Add(Path.GetFileName(path));
+                        return new(HttpStatusCode.OK) { Content = new ByteArrayContent(path.EndsWith("A.jar", StringComparison.Ordinal) ? a : b) };
+                    }
                     return new(HttpStatusCode.OK) { Content = new StringContent(path.EndsWith("version_files", StringComparison.Ordinal) ? "{}" : "{\"data\":{\"exactMatches\":[]}}") };
                 }));
                 var builder = new XsrStateStoreBuilder(); DownloadService.DeclareState(builder); TaskCenterStateContract.DeclareState(builder);
                 var store = builder.Build(); var tasks = new TaskCenterService(store); var downloads = new DownloadService(store);
+                observedTasks = tasks;
                 using var installer = new MinecraftInstallService(tasks, downloads, http: http);
                 var service = new ResourceModInstallService(source, new(new(http, "")), new(source, downloads, tasks, http), new(tasks, store, installer), tasks);
                 bool failed = false;

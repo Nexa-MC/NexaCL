@@ -135,9 +135,14 @@ internal static partial class Program
                 var final = store.ReadCollection<TaskCenterEntry>(store.Resolve(TaskCenterStateContract.EntriesKey)).Items;
                 AssertEqual(1, final.Count); AssertTrue(final[0].IsTerminal);
                 AssertEqual(failDownload ? TaskCenterEntryState.Failed : TaskCenterEntryState.Finished, final[0].State);
-                if (!failDownload) AssertEqual(2, files);
+                // Both targets reference the same authenticated artifact: transfer it once.
+                if (!failDownload) AssertEqual(1, files);
+                AssertEqual(failDownload, final[0].CanRetry);
                 foreach (var update in updates)
+                {
                     AssertEqual(failDownload, File.Exists(Path.Combine(instance, update.File.PageId, "old.zip")));
+                    if (!failDownload) AssertTrue((await File.ReadAllBytesAsync(Path.Combine(instance, update.File.PageId, "new.zip"))).SequenceEqual(updated));
+                }
             }
             finally { Directory.Delete(root, true); }
         }

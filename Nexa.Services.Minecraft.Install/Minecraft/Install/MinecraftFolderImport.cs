@@ -126,9 +126,11 @@ public sealed class MinecraftFolderImportService(TaskCenterService tasks)
         await input.CopyToAsync(output, token).ConfigureAwait(false);
     }
 
-    private async Task<XsrResult> CopyAsync(MinecraftFolderImportCommand command, CancellationToken cancellationToken)
+    private async Task<XsrResult> CopyAsync(MinecraftFolderImportCommand command, CancellationToken cancellationToken,
+        Nexa.Services.Tasks.ITaskCenterTask? retryTask = null)
     {
-        using var task = tasks.Begin(new("folder:" + Guid.NewGuid().ToString("N"), "导入本地版本", ["检查文件", "复制文件", "完成"]));
+        using var task = retryTask ?? tasks.Begin(new("folder:" + Guid.NewGuid().ToString("N"), "导入本地版本", ["检查文件", "复制文件", "完成"]),
+            (retry, token) => CopyAsync(command, token, retry));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, task.CancellationToken);
         var token = linked.Token;
         string? staging = null;

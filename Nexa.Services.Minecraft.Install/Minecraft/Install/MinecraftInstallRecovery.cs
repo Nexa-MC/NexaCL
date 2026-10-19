@@ -5,7 +5,11 @@ namespace Nexa.Services.Minecraft.Install;
 public sealed partial class MinecraftInstallService
 {
     /// <summary>Internal runner; discovery and user pause/rollback orchestration are separate.</summary>
-    internal async Task<MinecraftInstallResult> ResumeInstallationAsync(string root, Guid taskId, bool newInstallation = false, CancellationToken token = default)
+    internal Task<MinecraftInstallResult> ResumeInstallationAsync(string root, Guid taskId, bool newInstallation = false, CancellationToken token = default) =>
+        ResumeOwnedInstallationAsync(root, taskId, newInstallation, null, token);
+
+    private async Task<MinecraftInstallResult> ResumeOwnedInstallationAsync(string root, Guid taskId, bool newInstallation,
+        Nexa.Services.Tasks.ITaskCenterTask? retryTask, CancellationToken token)
     {
         root = Path.GetFullPath(root);
         string stage = Nexa.Core.PathIdentity.Contained(root, (newInstallation ? ".nexa-install-jobs/" : ".nexa-modify/") + taskId.ToString("N"));
@@ -49,7 +53,12 @@ public sealed partial class MinecraftInstallService
             }
             // Generic cancel would leave a resumable task and silently restart it next time.
             // User controls go through the explicit exit pause/rollback flow.
-            using var task = _tasks.Begin(new("install-recovery:" + taskId.ToString("N"), (newInstallation ? "继续安装 " : "继续修改 ") + saved.Command.InstanceName, StagePlan, CanCancel: false));
+            using var task = retryTask ?? _tasks.Begin(new("install-recovery:" + taskId.ToString("N"), (newInstallation ? "继续安装 " : "继续修改 ") + saved.Command.InstanceName, StagePlan, CanCancel: false),
+                async (retry, cancellation) =>
+                {
+                    await ResumeOwnedInstallationAsync(root, taskId, newInstallation, retry, cancellation).ConfigureAwait(false);
+                    retry.Complete();
+                });
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken);
             try
             {

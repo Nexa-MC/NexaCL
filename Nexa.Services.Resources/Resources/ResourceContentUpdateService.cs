@@ -6,14 +6,37 @@ namespace Nexa.Services.Resources;
 
 public sealed class ResourceContentUpdateService(ResourceContentOnlineService content, ResourceDownloadService downloads, XsrStateStore store)
 {
-    public async Task UpdateAsync(ResourceContentUpdateCommand command, CancellationToken token)
+    public Task UpdateAsync(ResourceContentUpdateCommand command, CancellationToken token) => command.File.PageId == "mods"
+        ? UpdateBatchAsync(new([command]), token) : UpdateOwnedAsync(new([command]), token, singlePack: true);
+
+    public Task UpdateBatchAsync(ResourceContentUpdateBatchCommand command, CancellationToken token) => UpdateOwnedAsync(command, token);
+
+    private async Task UpdateOwnedAsync(ResourceContentUpdateBatchCommand command, CancellationToken token,
+        Nexa.Services.Tasks.ITaskCenterTask? retryTask = null, bool singlePack = false)
+    {
+        if (command.Updates.Count is 0 or > 100 || command.Updates.Any(item => item.File.InstanceDirectory != command.Updates[0].File.InstanceDirectory)
+            || command.Updates.DistinctBy(item => (item.File.PageId, item.File.Name)).Count() != command.Updates.Count)
+            throw new InvalidDataException("请选择同一实例的 1 至 100 个不同内容项。");
+        using var task = retryTask ?? downloads.BeginUpdateTask((retry, cancellation) => UpdateOwnedAsync(command, cancellation, retry, singlePack));
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken);
+        try
+        {
+            string? notice = singlePack
+                ? await UpdatePackCoreAsync(command.Updates[0], task, linked.Token).ConfigureAwait(false)
+                : await UpdateBatchCoreAsync(command, task, linked.Token).ConfigureAwait(false);
+            task.Complete("更新完成。" + notice);
+        }
+        catch (OperationCanceledException) { task.Canceled(); throw; }
+        catch (Exception e) when (e is not OutOfMemoryException and not AccessViolationException) { task.Fail(e.Message); throw; }
+    }
+
+    private async Task<string?> UpdatePackCoreAsync(ResourceContentUpdateCommand command, Nexa.Services.Tasks.ITaskCenterTask task, CancellationToken token)
     {
         var query = command.File;
-        if (query.PageId == "mods") { await UpdateBatchAsync(new([command]), token).ConfigureAwait(false); return; }
         if (query.PageId is not ("resourcepacks" or "shaderpacks")) throw new InvalidDataException("此更新入口支持模组、资源包和光影包。");
         var online = await content.ReadAsync(query, token).ConfigureAwait(false);
-        if (online.Project is not { } project || !project.Sources.Contains(command.Source)
-            || !online.Versions.Any(v => v.Id == command.VersionId && v.Provider == command.Source.Provider && v.ProjectId == command.Source.ProjectId && v.File is not null))
+        var selected = online.Versions.SingleOrDefault(version => version.Id == command.VersionId && version.Provider == command.Source.Provider && version.ProjectId == command.Source.ProjectId);
+        if (online.Project is not { } project || !project.Sources.Contains(command.Source) || selected?.File is not { } expected)
             throw new InvalidDataException("目标版本不属于当前文件或不兼容当前 Minecraft。");
         var snapshot = await InstanceManagementService.ReadAsync(new(query.InstanceDirectory), token).ConfigureAwait(false);
         string stage = Path.Combine(snapshot.GameDirectory, ".nexa-resource-" + Guid.NewGuid().ToString("N"));
@@ -22,13 +45,15 @@ public sealed class ResourceContentUpdateService(ResourceContentOnlineService co
         Directory.CreateDirectory(stage);
         try
         {
-            await downloads.DownloadAsync(new(command.Source.Provider, command.Source.ProjectId, command.VersionId, stage, query.MirrorFirst), token).ConfigureAwait(false);
+            await downloads.DownloadInTransactionAsync(new(command.Source.Provider, command.Source.ProjectId, command.VersionId, stage, query.MirrorFirst), task.Report, token).ConfigureAwait(false);
             string downloaded = Directory.EnumerateFiles(stage).Single();
-            // Download metadata is re-fetched by DownloadService. It chooses the published filename;
-            // the UI cannot supply an arbitrary local target or replace a running game's directory.
+            await VerifySelectedFileAsync(downloaded, expected, token).ConfigureAwait(false);
+            task.Report("应用更新", "", .99, 1, 1, 0);
+            // Single pack updates retain their established trash/restore receipt contract.
             var result = await InstanceContentTrash.ReplacePackAsync(new(query.InstanceDirectory, query.PageId, query.Name, false,
                 query.ExpectedSize, query.ExpectedModifiedUtcTicks), downloaded, Path.GetFileName(downloaded), store, token).ConfigureAwait(false);
             if (!result.IsSuccess) throw new IOException(result.Error?.Message ?? "资源更新未完成。");
+            return null;
         }
         finally
         {
@@ -38,22 +63,6 @@ public sealed class ResourceContentUpdateService(ResourceContentOnlineService co
                 Directory.Delete(stage);
             }
         }
-    }
-
-    public async Task UpdateBatchAsync(ResourceContentUpdateBatchCommand command, CancellationToken token)
-    {
-        if (command.Updates.Count is 0 or > 100 || command.Updates.Any(item => item.File.InstanceDirectory != command.Updates[0].File.InstanceDirectory)
-            || command.Updates.DistinctBy(item => (item.File.PageId, item.File.Name)).Count() != command.Updates.Count)
-            throw new InvalidDataException("请选择同一实例的 1 至 100 个不同内容项。");
-        using var task = downloads.BeginUpdateTask();
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken);
-        try
-        {
-            string? notice = await UpdateBatchCoreAsync(command, task, linked.Token).ConfigureAwait(false);
-            task.Complete("更新完成。" + notice);
-        }
-        catch (OperationCanceledException) { task.Canceled(); throw; }
-        catch (Exception e) when (e is not OutOfMemoryException and not AccessViolationException) { task.Fail(e.Message); throw; }
     }
 
     private async Task<string?> UpdateBatchCoreAsync(ResourceContentUpdateBatchCommand command, Nexa.Services.Tasks.ITaskCenterTask task, CancellationToken token)

@@ -71,8 +71,11 @@ internal static partial class Program
             var metadata = new FakeMetadata { VanillaJson = VanillaJson(), AssetIndexJson = AssetIndexJson() };
             using var fixture = new InstallFixture(metadata, settingsPolicy: settings, connectionFactory: source =>
             {
-                if (source.Contains("client/1.20.1.jar", StringComparison.Ordinal)) Interlocked.Increment(ref attempts);
-                return new ServingConnection("BAD"u8.ToArray());
+                // Count the official fallback once per complete source pass. Mirror failures
+                // precede the independently configured whole-file retry.
+                if (source.Contains("client/1.20.1.jar", StringComparison.Ordinal) && new Uri(source).Host == "piston-data.mojang.com") Interlocked.Increment(ref attempts);
+                // Correct size isolates digest rejection from truncated-source failover.
+                return new ServingConnection("BADCONTENT"u8.ToArray());
             });
             string root = CreateTempDirectory();
             try
@@ -106,9 +109,11 @@ internal static partial class Program
             int attempts = 0, indexAttempts = 0;
             using var completion = new MinecraftLaunchFileCompletion(fixture.Downloads, connectionFactory: source =>
             {
-                if (source.Contains("client/1.20.1.jar", StringComparison.Ordinal)) Interlocked.Increment(ref attempts);
-                if (source.EndsWith("/5.json", StringComparison.Ordinal)) Interlocked.Increment(ref indexAttempts);
-                return new ServingConnection("BAD"u8.ToArray());
+                if (source.Contains("client/1.20.1.jar", StringComparison.Ordinal) && new Uri(source).Host == "piston-data.mojang.com") Interlocked.Increment(ref attempts);
+                if (source.EndsWith("/5.json", StringComparison.Ordinal) && new Uri(source).Host == "piston-meta.mojang.com") Interlocked.Increment(ref indexAttempts);
+                int length = source.EndsWith("/5.json", StringComparison.Ordinal)
+                    ? System.Text.Encoding.UTF8.GetByteCount(AssetIndexJson().ToJsonString()) : PayloadFor(source).Length;
+                return new ServingConnection(Enumerable.Repeat((byte)'X', length).ToArray());
             }, settingsPolicy: settings);
             bool failed = false;
             try

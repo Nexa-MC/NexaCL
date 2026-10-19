@@ -15,10 +15,13 @@ public sealed partial class MinecraftInstallService
         Task.Run(() => InstallModpackCoreAsync(command, token), token);
 
     private async Task<XsrResult<MinecraftInstallResult>> InstallModpackCoreAsync(MinecraftModpackCommand command, CancellationToken token, ModpackInstallJournal? saved = null,
-        bool preparingUpdate = false, Nexa.Services.Tasks.ITaskCenterTask? parentTask = null)
+        bool preparingUpdate = false, Nexa.Services.Tasks.ITaskCenterTask? parentTask = null,
+        Nexa.Services.Tasks.ITaskCenterTask? retryTask = null)
     {
         var execution = RegisterExecution(new(command.RootDirectory, command.Pack.Game, InstanceName: command.Pack.InstanceId), registerRecoveryRoot: !preparingUpdate);
-        using var ownedTask = parentTask is null ? _tasks.Begin(new("modpack:" + Guid.NewGuid().ToString("N"), "安装 " + command.Pack.Name, StagePlan)) : null;
+        ModpackInstallJournal? retryJournal = saved;
+        using var ownedTask = parentTask is null ? retryTask ?? _tasks.Begin(new("modpack:" + Guid.NewGuid().ToString("N"), "安装 " + command.Pack.Name, StagePlan),
+            (retry, cancellation) => InstallModpackCoreAsync(command, cancellation, retryJournal, retryTask: retry)) : null;
         var task = parentTask ?? ownedTask!;
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken, execution.Token);
         token = linked.Token;
@@ -33,6 +36,7 @@ public sealed partial class MinecraftInstallService
             if (journal is null && Path.Exists(Nexa.Core.PathIdentity.Contained(root, "versions/" + command.Pack.InstanceId)))
                 throw new IOException("此整合包版本已经存在，未覆盖任何文件。");
             journal ??= await ModpackInstallJournal.CreateAsync(root, command, token).ConfigureAwait(false);
+            retryJournal = journal;
             lease = journal.Acquire();
             if (journal.Canceled) throw new InvalidOperationException("整合包安装已取消。");
             if (journal.Complete) return XsrResult.Success(new MinecraftInstallResult(command.Pack.InstanceId, journal.Destination));
@@ -111,6 +115,7 @@ public sealed partial class MinecraftInstallService
                         var request = new DownloadRequest
                         {
                             Sources = [url],
+                            CacheIdentity = new(file.Sha512 ?? file.Sha1, file.Size > 0 ? file.Size : null),
                             DestinationPath = target,
                             ConnectionFactory = source => new PackSizeConnection(_connectionFactory is { } factory ? factory(source) : new PackHttpConnection(packHttp, source), file.Size),
                         };
@@ -305,7 +310,7 @@ public sealed partial class MinecraftInstallService
             {
                 current = MinecraftModpackArchive.DownloadUrl(current);
                 using var request = new HttpRequestMessage(HttpMethod.Get, current);
-                // Downloads use a fresh staging file; do not advertise unsupported range resume.
+                if (beginOffset > 0) request.Headers.Range = new(beginOffset, null);
                 _response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 if ((int)_response.StatusCode is >= 300 and < 400 && _response.Headers.Location is { } next)
                 {
@@ -314,8 +319,7 @@ public sealed partial class MinecraftInstallService
                     continue;
                 }
                 _response.EnsureSuccessStatusCode();
-                long length = _response.Content.Headers.ContentLength ?? -1;
-                return new(length, 0, length - 1, false);
+                return DownloadHttpRanges.Read(_response, beginOffset);
             }
             throw new IOException("下载重定向次数过多。");
         }

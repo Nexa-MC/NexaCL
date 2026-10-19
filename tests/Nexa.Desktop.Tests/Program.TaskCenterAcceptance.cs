@@ -17,6 +17,39 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static async Task TaskCenterRetryButtonRoutesAndKeepsCardIdentity()
+    {
+        using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
+        await fixture.Controller.WaitUntilIdle();
+        using DesktopTaskBubblePresenter bubble = new(fixture.Shell, fixture.Store);
+        using TaskCenterRuntime runtime = TaskCenterRuntimeComposer.Compose(fixture.Foundation.Host);
+        using TaskCenterController controller = new(fixture.Shell, fixture.Intents, runtime.Commands, fixture.Store, bubble);
+        var tasks = fixture.Foundation.Host.Tasks;
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using (var original = tasks.Begin(new("retry-ui", "下载资源", ["下载", "校验"]), async (task, token) =>
+        {
+            entered.SetResult(); await release.Task.WaitAsync(token); task.Complete();
+        })) original.Fail("网络中断");
+        Emit(fixture.Intents, "ui.tasks.open");
+        var scene = fixture.Shell.Render(new(1280, 800));
+        var card = FindByKey(fixture.Shell, scene, "task-card:retry-ui").Entity;
+        var retry = FindByKey(fixture.Shell, scene, "TaskCardRetry");
+        AssertEqual("重试", retry.Text);
+        AssertTrue(fixture.Shell.Renderer.Activate(retry.Entity));
+        scene = fixture.Shell.Render(new(1280, 800));
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        AssertEqual(card, FindByKey(fixture.Shell, scene, "task-card:retry-ui").Entity);
+        AssertFalse(HasKey(fixture.Shell, scene, "TaskCardRetry"));
+        AssertTrue(HasKey(fixture.Shell, scene, "TaskCardFill"));
+        release.SetResult();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        while (tasks.ReadEntries().Single().State != TaskCenterEntryState.Finished) await Task.Delay(10, timeout.Token);
+        scene = fixture.Shell.Render(new(1280, 800));
+        AssertEqual(card, FindByKey(fixture.Shell, scene, "task-card:retry-ui").Entity);
+        AssertFalse(HasKey(fixture.Shell, scene, "TaskCardRetry"));
+        AssertTrue(HasKey(fixture.Shell, scene, "TaskCardAction"));
+    }
 
     private static void StagedTaskPageRendersCleanBetweenChanges()
     {

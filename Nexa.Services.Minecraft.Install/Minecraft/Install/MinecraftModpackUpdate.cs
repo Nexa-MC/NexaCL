@@ -78,7 +78,11 @@ public sealed partial class MinecraftInstallService
 
     private readonly MinecraftInstanceMetadataStore _instanceMetadataForPack = new();
 
-    public async Task<XsrResult<MinecraftInstallResult>> UpdateModpackAsync(MinecraftModpackUpdateCommand command, CancellationToken token = default)
+    public Task<XsrResult<MinecraftInstallResult>> UpdateModpackAsync(MinecraftModpackUpdateCommand command, CancellationToken token = default)
+        => UpdateModpackOwnedAsync(command, token);
+
+    private async Task<XsrResult<MinecraftInstallResult>> UpdateModpackOwnedAsync(MinecraftModpackUpdateCommand command, CancellationToken token,
+        Nexa.Services.Tasks.ITaskCenterTask? retryTask = null)
     {
         var request = command.Preview.Request;
         string instance = Nexa.Core.PathIdentity.Normalize(request.InstanceDirectory);
@@ -86,8 +90,8 @@ public sealed partial class MinecraftInstallService
         InstallExecution execution;
         try { execution = RegisterExecution(new(root, command.Preview.Pack.Game, InstanceName: Path.GetFileName(instance))); }
         catch (OperationCanceledException) { return XsrResult.Failure<MinecraftInstallResult>(XsrRuntimeErrors.Cancelled()); }
-        using var task = _tasks.Begin(new("modpack.update:" + Guid.NewGuid().ToString("N"), "更新整合包 " + command.Preview.Pack.Name,
-            ["检查变更", "准备新版", "校验", "应用更新"]));
+        using var task = retryTask ?? _tasks.Begin(new("modpack.update:" + Guid.NewGuid().ToString("N"), "更新整合包 " + command.Preview.Pack.Name,
+            ["检查变更", "准备新版", "校验", "应用更新"]), (retry, cancellation) => UpdateModpackOwnedAsync(command, cancellation, retry));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken, execution.Token);
         token = linked.Token;
         string stage = Path.Combine(root, ".nexa-modify", Guid.NewGuid().ToString("N"));

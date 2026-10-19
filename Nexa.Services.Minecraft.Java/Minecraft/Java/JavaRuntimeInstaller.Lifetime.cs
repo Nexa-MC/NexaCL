@@ -46,8 +46,13 @@ public sealed partial class JavaRuntimeInstaller
         return InstallOwnedAsync(component, runtimeRootDirectory, progress, expectedPlanFingerprint, cancellationToken);
     }
 
+    internal Task<string> InstallConfirmedInTaskAsync(string component, string root, string fingerprint,
+        IProgress<JavaRuntimeInstallProgress> progress, ITaskCenterTask task, CancellationToken token) =>
+        InstallOwnedAsync(component, root, progress, fingerprint, token, task, reportCompletion: false);
+
     private async Task<string> InstallOwnedAsync(string requestedComponent, string runtimeRootDirectory,
-        IProgress<JavaRuntimeInstallProgress>? progress, string? expectedPlanFingerprint, CancellationToken cancellationToken)
+        IProgress<JavaRuntimeInstallProgress>? progress, string? expectedPlanFingerprint, CancellationToken cancellationToken,
+        ITaskCenterTask? retryTask = null, bool reportCompletion = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(requestedComponent);
         string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(runtimeRootDirectory));
@@ -59,20 +64,22 @@ public sealed partial class JavaRuntimeInstaller
         }
         try
         {
-            using var task = _tasks?.Begin(new("java-install:" + Guid.NewGuid().ToString("N"), "安装 Java", ["下载 Java"], CanCancel: false));
+            using var ownedTask = retryTask is null ? _tasks?.Begin(new("java-install:" + Guid.NewGuid().ToString("N"), "安装 Java", ["下载 Java"], CanCancel: false),
+                async (retry, token) => { await InstallOwnedAsync(requestedComponent, root, null, expectedPlanFingerprint, token, retry).ConfigureAwait(false); }) : null;
+            var task = retryTask ?? ownedTask;
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, execution.Token);
             try
             {
                 string result = await InstallCoreAsync(requestedComponent, root, new JavaProgress(value =>
                 {
-                    task?.Report("下载 Java", value.Detail ?? "正在准备", value.Progress, value.CompletedFiles, value.TotalFiles, 0);
+                    if (reportCompletion) task?.Report("下载 Java", value.Detail ?? "正在准备", value.Progress, value.CompletedFiles, value.TotalFiles, 0);
                     progress?.Report(value);
                 }), execution, expectedPlanFingerprint, linked.Token).ConfigureAwait(false);
-                task?.Complete(); return result;
+                if (reportCompletion) task?.Complete(); return result;
             }
-            catch (OperationCanceledException) { task?.Paused(); throw; }
+            catch (OperationCanceledException) { if (reportCompletion) task?.Paused(); throw; }
             catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-            { task?.Fail("Java 安装未完成，已保留恢复记录。"); throw; }
+            { if (reportCompletion) task?.Fail("Java 安装未完成，已保留恢复记录。"); throw; }
         }
         finally
         {

@@ -1,5 +1,6 @@
 using System.Globalization;
 using Nexa.Core;
+using Nexa.Services.Tasks;
 using Nexa.Xsr;
 
 namespace Nexa.Services.Minecraft.Java;
@@ -8,6 +9,7 @@ namespace Nexa.Services.Minecraft.Java;
 public sealed class JavaManualDownloadService(IJavaRuntimeMetadataProvider metadata, IConfirmedJavaRuntimeInstaller installer,
     IJavaRuntimeLocator locator, IJavaRuntimeRegistrationStore registry, string runtimeRoot, JavaRuntimePlatform platform) : IDisposable
 {
+    public TaskCenterService? Tasks { get; init; }
     private sealed record PreviewEntry(JavaManualPreview Preview, JavaRuntimeDownloadPlan Plan, long Revision);
     private readonly object _gate = new();
     private readonly Dictionary<Guid, PreviewEntry> _previews = [];
@@ -60,23 +62,35 @@ public sealed class JavaManualDownloadService(IJavaRuntimeMetadataProvider metad
         { return Reject<JavaManualPreview>("无法读取有效的 Java 下载预览。"); }
     }
 
-    public async ValueTask<XsrResult> InstallAsync(JavaManualInstallCommand command, CancellationToken token = default)
+    public ValueTask<XsrResult> InstallAsync(JavaManualInstallCommand command, CancellationToken token = default) => InstallOwnedAsync(command, token);
+
+    private async ValueTask<XsrResult> InstallOwnedAsync(JavaManualInstallCommand command, CancellationToken token,
+        PreviewEntry? retryEntry = null, ITaskCenterTask? retryTask = null)
     {
         token.ThrowIfCancellationRequested(); PreviewEntry entry; CancellationTokenSource stop;
         lock (_gate)
         {
-            if (_disposed || !command.AcceptLicense || _active != Guid.Empty || !_previews.TryGetValue(command.PreviewId, out entry!)
-                || entry.Preview.ExpiresAt <= DateTimeOffset.UtcNow || registry.Read().Revision != entry.Revision)
+            entry = retryEntry!;
+            if (_disposed || !command.AcceptLicense || _active != Guid.Empty || retryEntry is null && !_previews.TryGetValue(command.PreviewId, out entry!)
+                || retryEntry is null && entry.Preview.ExpiresAt <= DateTimeOffset.UtcNow || registry.Read().Revision != entry.Revision)
+            {
+                retryTask?.Fail("请重新预览并确认许可证后安装 Java。");
                 return Reject("请重新预览并确认许可证后安装 Java。");
+            }
             _previews.Remove(command.PreviewId); _active = command.PreviewId;
             stop = CancellationTokenSource.CreateLinkedTokenSource(token); _stop = stop;
             while (_receipts.Count >= 16) _receipts.Remove(_receipts.Keys.First());
-            _receipts.Add(command.PreviewId, new(command.PreviewId, JavaManualInstallStatus.Downloading, 0, 0, entry.Plan.Files.Count, "", "", "", null, null));
+            _receipts[command.PreviewId] = new(command.PreviewId, JavaManualInstallStatus.Downloading, 0, 0, entry.Plan.Files.Count, "", "", "", null, null);
         }
+        using var stopLifetime = stop;
+        using var task = retryTask ?? Tasks?.Begin(new("java-manual:" + command.PreviewId.ToString("N"), "安装与登记 Java", ["下载 Java", "验证与登记"]),
+            async (retry, cancellation) => { await InstallOwnedAsync(command, cancellation, entry, retry).ConfigureAwait(false); });
+        using var taskCancellation = task?.CancellationToken.Register(() => stop.Cancel());
         try
         {
             var progress = new InlineProgress(value =>
             {
+                task?.Report("下载 Java", value.Detail ?? "正在下载", value.Progress, value.CompletedFiles, value.TotalFiles, 0);
                 lock (_gate) if (_receipts.TryGetValue(command.PreviewId, out var receipt)) _receipts[command.PreviewId] = receipt with
                 {
                     Progress = double.IsFinite(value.Progress) ? Math.Clamp(value.Progress, 0, 1) : 0,
@@ -84,10 +98,13 @@ public sealed class JavaManualDownloadService(IJavaRuntimeMetadataProvider metad
                     Detail = value.Detail is { } text ? text[..Math.Min(text.Length, 256)] : ""
                 };
             });
-            string executable = await installer.InstallConfirmedAsync(entry.Plan.ComponentName, _root, entry.Preview.PlanFingerprint, progress, stop.Token).ConfigureAwait(false);
+            string executable = task is not null && installer is JavaRuntimeInstaller concrete
+                ? await concrete.InstallConfirmedInTaskAsync(entry.Plan.ComponentName, _root, entry.Preview.PlanFingerprint, progress, task, stop.Token).ConfigureAwait(false)
+                : await installer.InstallConfirmedAsync(entry.Plan.ComponentName, _root, entry.Preview.PlanFingerprint, progress, stop.Token).ConfigureAwait(false);
             stop.Token.ThrowIfCancellationRequested();
             if (!Path.IsPathFullyQualified(executable) || !Path.GetFullPath(executable).StartsWith(entry.Plan.TargetDirectory + Path.DirectorySeparatorChar, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)
                 || !File.Exists(executable)) return Finish(JavaManualInstallStatus.InstalledUnverified, executable);
+            task?.Report("验证与登记", "正在检查 Java", .99, entry.Plan.Files.Count, entry.Plan.Files.Count, 0);
             locator.Invalidate(); var candidate = await locator.InspectAsync(executable, stop.Token).ConfigureAwait(false);
             stop.Token.ThrowIfCancellationRequested();
             if (candidate is not { IsAvailable: true } || candidate.Installation.MajorVersion != entry.Preview.Major
@@ -100,7 +117,7 @@ public sealed class JavaManualDownloadService(IJavaRuntimeMetadataProvider metad
         catch (OperationCanceledException) when (stop.IsCancellationRequested) { return Finish(JavaManualInstallStatus.Canceled); }
         catch (Exception error) when (error is IOException or HttpRequestException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or OverflowException or System.Text.Json.JsonException)
         { return Finish(JavaManualInstallStatus.Failed); }
-        finally { lock (_gate) { if (ReferenceEquals(_stop, stop)) { _active = default; _stop = null; } } stop.Dispose(); }
+        finally { lock (_gate) { if (ReferenceEquals(_stop, stop)) { _active = default; _stop = null; } } }
 
         XsrResult Finish(JavaManualInstallStatus status, string executable = "", JavaInstallation? facts = null)
         {
@@ -112,6 +129,9 @@ public sealed class JavaManualDownloadService(IJavaRuntimeMetadataProvider metad
                 ActualBrand = facts?.Brand,
                 ActualArchitecture = facts?.Architecture
             };
+            if (status == JavaManualInstallStatus.Installed) task?.Complete("Java 已验证并登记。");
+            else if (status == JavaManualInstallStatus.Canceled) task?.Canceled();
+            else task?.Fail("Java 安装未完成全部验证与登记，请查看实际结果。");
             return status == JavaManualInstallStatus.Installed ? XsrResult.Success() : Reject("Java 安装未完成全部验证与登记，请查看实际结果。");
         }
     }

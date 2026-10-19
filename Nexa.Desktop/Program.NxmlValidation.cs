@@ -95,7 +95,11 @@ internal static partial class Program
     {
         var previous = shell.Stage.Navigation.Current;
         string id = "nxml-smoke:" + Guid.NewGuid().ToString("N");
-        using var task = tasks.Begin(new(id, "动态模板验证", ["读取", "写入"]));
+        using var task = tasks.Begin(new(id, "动态模板验证", ["读取", "写入"]), (retry, _) =>
+        {
+            retry.Complete("重试验证完成");
+            return Task.CompletedTask;
+        });
         try
         {
             task.Report("写入", "验证", 0.25, 1, 4, 0);
@@ -122,7 +126,23 @@ internal static partial class Program
             if (!shell.Tree.IsAlive(card) || progress?.Target != 0.75
                 || !ReferenceEquals(progress, shell.Tree.GetComponent<XsrUiProgress>(fill)))
                 throw new InvalidOperationException("Dynamic task reload lost retained state.");
-            Console.WriteLine("Dynamic task validation passed: card, nested steps, retained progress and live reload.");
+            task.Fail("验证重试"); task.Dispose();
+            shell.Render(new(1280, 800));
+            XsrUiEntityId retryButton = default;
+            shell.Tree.Walk(card, entity =>
+            {
+                if (shell.Tree.Name(entity) == "TaskCardRetry") retryButton = entity;
+                return true;
+            });
+            if (!retryButton.IsAssigned) throw new InvalidOperationException("Dynamic retry button did not load.");
+            intents.Emit(XsrSemanticId.Parse("ui.tasks.card.retry"), retryButton, XsrCorrelationId.Create());
+            shell.Render(new(1280, 800));
+            if (!SpinWait.SpinUntil(() => tasks.ReadEntries().Any(entry => entry.TaskId == id
+                    && entry.State == Nexa.Services.Tasks.TaskCenterEntryState.Finished), TimeSpan.FromSeconds(10)))
+                throw new InvalidOperationException("Dynamic task retry did not complete.");
+            shell.Render(new(1280, 800));
+            if (!shell.Tree.IsAlive(card)) throw new InvalidOperationException("Retry replaced the task card identity.");
+            Console.WriteLine("Dynamic task validation passed: card, nested steps, retained progress, live reload and retry.");
         }
         finally
         {

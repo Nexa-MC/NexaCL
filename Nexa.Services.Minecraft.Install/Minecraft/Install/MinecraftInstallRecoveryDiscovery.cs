@@ -6,7 +6,9 @@ namespace Nexa.Services.Minecraft.Install;
 
 public sealed partial class MinecraftInstallService
 {
-    public async Task<XsrResult> RecoverPendingAsync(MinecraftInstallRecoveryCommand command, CancellationToken token = default)
+    public Task<XsrResult> RecoverPendingAsync(MinecraftInstallRecoveryCommand command, CancellationToken token = default) => RecoverOwnedAsync(command, token);
+
+    private async Task<XsrResult> RecoverOwnedAsync(MinecraftInstallRecoveryCommand command, CancellationToken token, ITaskCenterTask? retryTask = null)
     {
         if (command.RootDirectories is null || command.RootDirectories.Count > 64)
             return XsrResult.Failure(MinecraftErrors.InvalidRequest("恢复目录数量无效。"));
@@ -17,9 +19,10 @@ public sealed partial class MinecraftInstallService
             foreach (string root in roots.Where(root => !string.IsNullOrWhiteSpace(root) && Path.IsPathFullyQualified(root)))
                 _recoveryRoots.Add(Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)));
         }
-        string queueId = "install-recovery:queue:" + Guid.NewGuid().ToString("N");
-        ITaskCenterTask? queue = null;
-        void BeginQueue() => queue ??= _tasks.Begin(new(queueId, "继续安装与修改", StagePlan, CanCancel: false));
+        string queueId = retryTask?.TaskId ?? "install-recovery:queue:" + Guid.NewGuid().ToString("N");
+        ITaskCenterTask? queue = retryTask;
+        void BeginQueue() => queue ??= _tasks.Begin(new(queueId, "继续安装与修改", StagePlan, CanCancel: false),
+            (retry, cancellation) => RecoverOwnedAsync(command, cancellation, retry));
         try
         {
             await _recoveryDiscoveryGate.WaitAsync(token).ConfigureAwait(false);
@@ -58,7 +61,8 @@ public sealed partial class MinecraftInstallService
         void Fail(string detail)
         {
             failures++;
-            using var task = _tasks.Begin(new("install-recovery-error:" + Guid.NewGuid().ToString("N"), "安装恢复需要处理", StagePlan, CanCancel: false));
+            using var task = _tasks.Begin(new("install-recovery-error:" + Guid.NewGuid().ToString("N"), "安装恢复需要处理", StagePlan, CanCancel: false),
+                (retry, cancellation) => RecoverOwnedAsync(command, cancellation, retry));
             task.Fail(detail);
         }
         foreach (string requested in command.RootDirectories.ToArray().Distinct(Nexa.Core.PathIdentity.Comparer))

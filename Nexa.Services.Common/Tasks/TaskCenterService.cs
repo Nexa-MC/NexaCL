@@ -9,7 +9,7 @@ namespace Nexa.Services.Tasks;
 /// handle; the service owns cancellation so the cancel route works without reaching into the
 /// caller. Terminal entries stay visible until dismissed or evicted by the retention cap.
 /// </summary>
-public sealed class TaskCenterService
+public sealed class TaskCenterService : IDisposable
 {
     private const int MaxStateConflicts = 8;
     private const int RetainedTerminalEntries = 30;
@@ -20,6 +20,7 @@ public sealed class TaskCenterService
     private readonly Dictionary<string, Registration> _registrations = new(StringComparer.Ordinal);
     private readonly Queue<Publication> _publications = new();
     private bool _publishing;
+    private bool _disposed;
     private long _generation;
     private sealed record Publication(long Generation, long Revision, string TaskId, TaskCenterEntry? Entry);
     private readonly XsrStateId _entriesId;
@@ -32,6 +33,10 @@ public sealed class TaskCenterService
         public TaskCenterEntry Entry { get; set; } = entry;
         public CancellationTokenSource Cancellation { get; } = new();
         public bool Released { get; set; }
+        public bool OwnerDisposed { get; set; }
+        public TaskCenterStart Start { get; init; } = null!;
+        public Func<ITaskCenterTask, CancellationToken, Task>? Retry { get; set; }
+        public bool? RetryCanCancel { get; set; }
     }
 
     public TaskCenterService(XsrStateStore store)
@@ -43,11 +48,14 @@ public sealed class TaskCenterService
     }
 
     /// <summary>Registers a task and returns its reporting handle.</summary>
-    public ITaskCenterTask Begin(TaskCenterStart start)
+    public ITaskCenterTask Begin(TaskCenterStart start) => Begin(start, null);
+
+    public ITaskCenterTask Begin(TaskCenterStart start, Func<ITaskCenterTask, CancellationToken, Task>? retry)
     {
         ArgumentNullException.ThrowIfNull(start);
         ArgumentException.ThrowIfNullOrWhiteSpace(start.TaskId);
         ArgumentException.ThrowIfNullOrWhiteSpace(start.Title);
+        start = start with { StagePlan = start.StagePlan.ToArray() };
 
         TaskCenterEntry entry = new(
             start.TaskId,
@@ -64,18 +72,107 @@ public sealed class TaskCenterService
         Registration registration;
         lock (_gate)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (_registrations.TryGetValue(start.TaskId, out Registration? previous) && !previous.Released)
             {
                 throw new InvalidOperationException($"Task '{start.TaskId}' is already registered.");
             }
 
-            registration = new Registration(entry, ++_generation);
+            registration = new Registration(entry, ++_generation) { Start = start, Retry = retry };
             _registrations[start.TaskId] = registration;
             Enqueue(registration);
         }
 
         DrainPublications();
         return new TaskHandle(this, registration);
+    }
+
+    /// <summary>Atomically replaces a failed attempt, then runs its owner outside the state lock.</summary>
+    public bool RequestRetry(string taskId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(taskId);
+        Registration next;
+        Func<ITaskCenterTask, CancellationToken, Task> retry;
+        lock (_gate)
+        {
+            if (_disposed || !_registrations.TryGetValue(taskId, out var previous)
+                || !previous.Entry.CanRetry || previous.Retry is null) return false;
+            retry = previous.Retry;
+            next = new Registration(previous.Entry with
+            {
+                State = TaskCenterEntryState.Running,
+                Stage = previous.Start.StagePlan.Count > 0 ? previous.Start.StagePlan[0] : "准备",
+                Detail = "正在准备重试",
+                Progress = 0,
+                CompletedFiles = 0,
+                TotalFiles = 0,
+                SpeedBytesPerSecond = 0,
+                ErrorMessage = null,
+                CanRetry = false,
+                CanCancel = previous.RetryCanCancel ?? previous.Entry.CanCancel,
+                Steps = TaskStagePlanner.Create(previous.Start.StagePlan),
+            }, ++_generation)
+            { Start = previous.Start, Retry = previous.Retry, RetryCanCancel = previous.RetryCanCancel };
+            previous.Retry = null;
+            _registrations[taskId] = next;
+            Enqueue(next);
+        }
+        DrainPublications();
+        _ = Task.Run(async () =>
+        {
+            using var handle = new TaskHandle(this, next);
+            try
+            {
+                var token = handle.CancellationToken;
+                token.ThrowIfCancellationRequested();
+                await retry(handle, token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { handle.Canceled(); }
+            catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException) { handle.Fail(error.Message); }
+        });
+        return true;
+    }
+
+    internal void SetRetryCancellation(string taskId, bool canCancel, CancellationToken attemptToken)
+    {
+        lock (_gate)
+        {
+            if (!_registrations.TryGetValue(taskId, out var current) || current.Released
+                || current.Cancellation.Token != attemptToken) return;
+            current.RetryCanCancel = canCancel && current.Start.CanCancel;
+        }
+    }
+
+    internal void ReleaseOwner(Registration registration)
+    {
+        Abandon(registration);
+        lock (_gate)
+        {
+            if (registration.OwnerDisposed) return;
+            registration.OwnerDisposed = true;
+            if (_disposed || registration.Entry.State != TaskCenterEntryState.Failed) registration.Retry = null;
+            if (!_disposed && registration.Entry.State == TaskCenterEntryState.Failed && registration.Retry is not null
+                && _registrations.TryGetValue(registration.Entry.TaskId, out var current) && ReferenceEquals(current, registration))
+            {
+                registration.Entry = registration.Entry with { CanRetry = true };
+                Enqueue(registration);
+            }
+        }
+        DrainPublications();
+    }
+
+    public void Dispose()
+    {
+        Registration[] active;
+        lock (_gate)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            active = _registrations.Values.Where(item => !item.Released).ToArray();
+            foreach (var item in _registrations.Values) item.Retry = null;
+        }
+        foreach (var item in active)
+            try { item.Cancellation.Cancel(); } catch (ObjectDisposedException) { }
     }
 
     /// <summary>
@@ -458,7 +555,7 @@ internal sealed class TaskHandle(TaskCenterService service, TaskCenterService.Re
     {
         try
         {
-            service.Abandon(registration);
+            service.ReleaseOwner(registration);
         }
         catch (ObjectDisposedException)
         {

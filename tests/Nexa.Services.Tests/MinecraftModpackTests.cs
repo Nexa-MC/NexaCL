@@ -12,6 +12,29 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask ModpackFailedTaskRetriesPinnedArchive()
+    {
+        string root = CreateTempDirectory(); string archive = Path.Combine(root, "retry.mrpack");
+        WriteLocalJar(archive, ("modrinth.index.json", MrpackIndex().ToJsonString()));
+        bool online = false;
+        var (_, settings) = PolicyFixture();
+        AssertTrue(settings.Set(new("network.file-retry", Nexa.Services.Settings.SettingsLayer.Global, new(Nexa.Services.Settings.SettingsOverrideMode.Custom, "false"))).IsSuccess);
+        using var fixture = new InstallFixture(PackMetadata(), settingsPolicy: settings, connectionFactory: source =>
+            !online && source.Contains("cdn.modrinth.com", StringComparison.Ordinal) ? new FlakyConnection() : new ServingConnection(PayloadFor(source)));
+        try
+        {
+            var preview = await MinecraftModpackArchive.InspectAsync(archive);
+            AssertFalse((await fixture.Install.InstallModpackAsync(new(preview, root, true))).IsSuccess);
+            var failed = fixture.Tasks.ReadEntries().Single(); AssertTrue(failed.CanRetry);
+            File.Delete(archive); online = true;
+            AssertTrue(fixture.Tasks.RequestRetry(failed.TaskId));
+            await WaitForRetryEntryAsync(fixture.Tasks, failed.TaskId, entry => entry.State == TaskCenterEntryState.Finished);
+            AssertTrue(File.Exists(Path.Combine(root, "versions", preview.InstanceId, "mods", "required.jar")));
+            AssertEqual(1, fixture.Tasks.ReadEntries().Count);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     private static async ValueTask ArchiveActualByteLimits()
     {
         static async Task Reject(byte[] bytes, long declared, long limit, ArchiveReadBudget budget)
@@ -102,6 +125,21 @@ internal static partial class Program
         ["hashes"] = new JsonObject { ["sha1"] = hash ?? Sha1Hex("MODJAR!"), ["sha512"] = Convert.ToHexString(SHA512.HashData("MODJAR!"u8)) },
         ["downloads"] = new JsonArray("https://cdn.modrinth.com/data/test/versions/1/mod.jar"),
     };
+    private static (JsonObject Index, Dictionary<string, byte[]> Payloads) DistinctPackIndex()
+    {
+        var index = MrpackIndex();
+        var payloads = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        foreach (var file in index["files"]!.AsArray())
+        {
+            string path = file!["path"]!.ToString(); byte[] bytes = Encoding.UTF8.GetBytes(path);
+            string url = "https://cdn.modrinth.com/data/test/versions/1/" + Path.GetFileName(path);
+            payloads[url] = bytes; file["fileSize"] = bytes.Length;
+            file["hashes"]!["sha1"] = Convert.ToHexString(SHA1.HashData(bytes));
+            file["hashes"]!["sha512"] = Convert.ToHexString(SHA512.HashData(bytes));
+            file["downloads"] = new JsonArray(url);
+        }
+        return (index, payloads);
+    }
     private static FakeMetadata PackMetadata() => new() { VanillaJson = VanillaJson(), AssetIndexJson = AssetIndexJson(), LoaderJson = new JsonObject { ["mainClass"] = "fabric.Main", ["inheritsFrom"] = "1.20.1" } };
 
     private static async ValueTask MrpackInstallsClientFilesAndOverridesAtomically()
@@ -284,7 +322,8 @@ internal static partial class Program
         {
             string source = Path.Combine(temporary, "pack.mrpack"), root = Path.Combine(temporary, "game");
             Directory.CreateDirectory(root);
-            WriteLocalJar(source, ("modrinth.index.json", MrpackIndex().ToJsonString()), ("overrides/config/test.txt", "preserved"));
+            var (index, payloads) = DistinctPackIndex();
+            WriteLocalJar(source, ("modrinth.index.json", index.ToJsonString()), ("overrides/config/test.txt", "preserved"));
             var preview = await MinecraftModpackArchive.InspectAsync(source);
             using var cancellation = new CancellationTokenSource();
             int downloads = 0;
@@ -294,8 +333,9 @@ internal static partial class Program
             // Interrupt only after the first file has a verified durable receipt. Parallel
             // workers can otherwise be canceled together before either receipt is committed.
             using (var fixture = new InstallFixture(PackMetadata(), connectionFactory: url =>
-                url.StartsWith("https://cdn.modrinth.com/", StringComparison.Ordinal) && Interlocked.Increment(ref downloads) == 2
-                    ? new CancelPackConnection(cancellation) : new ServingConnection(PayloadFor(url)), settingsPolicy: settings))
+                payloads.TryGetValue(url, out var bytes)
+                    ? Interlocked.Increment(ref downloads) == 2 ? new CancelPackConnection(cancellation) : new ServingConnection(bytes)
+                    : new ServingConnection(PayloadFor(url)), settingsPolicy: settings))
             {
                 AssertFalse((await fixture.Install.InstallModpackAsync(new(preview, root, true), cancellation.Token)).IsSuccess);
                 AssertFalse(Directory.Exists(Path.Combine(root, "versions", preview.InstanceId)));
@@ -309,7 +349,7 @@ internal static partial class Program
             using var resumed = new InstallFixture(metadata, connectionFactory: url =>
             {
                 if (url.StartsWith("https://cdn.modrinth.com/", StringComparison.Ordinal)) Interlocked.Increment(ref resumedDownloads);
-                return new ServingConnection(PayloadFor(url));
+                return new ServingConnection(payloads.GetValueOrDefault(url) ?? PayloadFor(url));
             }, settingsPolicy: settings);
             var result = await resumed.Install.RecoverPendingAsync(new([root]));
             AssertTrue(result.IsSuccess, result.Error?.Message ?? "recovery failed");

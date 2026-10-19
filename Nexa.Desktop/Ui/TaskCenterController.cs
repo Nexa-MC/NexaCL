@@ -24,6 +24,7 @@ internal sealed class TaskCenterController : IDisposable
     private readonly ConcurrentQueue<string> _detailToggles = new();
     private static readonly XsrSemanticId OpenCommand = XsrSemanticId.Parse("ui.tasks.open");
     private static readonly XsrSemanticId CardCancelCommand = XsrSemanticId.Parse("ui.tasks.card.cancel");
+    private static readonly XsrSemanticId CardRetryCommand = XsrSemanticId.Parse("ui.tasks.card.retry");
     private static readonly XsrSemanticId CardDismissCommand = XsrSemanticId.Parse("ui.tasks.card.dismiss");
     private static readonly XsrSemanticId ClearFinishedCommand = XsrSemanticId.Parse("ui.tasks.clear-finished");
 
@@ -123,7 +124,7 @@ internal sealed class TaskCenterController : IDisposable
             return;
         }
 
-        if (e.Intent.Command != CardCancelCommand && e.Intent.Command != CardDismissCommand && e.Intent.Command != DetailsCommand)
+        if (e.Intent.Command != CardCancelCommand && e.Intent.Command != CardDismissCommand && e.Intent.Command != CardRetryCommand && e.Intent.Command != DetailsCommand)
         {
             return;
         }
@@ -136,7 +137,11 @@ internal sealed class TaskCenterController : IDisposable
             {
                 if (e.Intent.Command == DetailsCommand)
                 { _detailToggles.Enqueue(card.Value!.TaskId); return; }
-                if (e.Intent.Command == CardCancelCommand)
+                if (e.Intent.Command == CardRetryCommand)
+                {
+                    Dispatch(TaskCenterRoutes.Retry, new TaskCenterRetryCommand(card.Value!.TaskId));
+                }
+                else if (e.Intent.Command == CardCancelCommand)
                 {
                     Dispatch(TaskCenterRoutes.Cancel, new TaskCenterCancelCommand(card.Value!.TaskId));
                 }
@@ -187,6 +192,7 @@ internal sealed class TaskCenterController : IDisposable
         string taskId = command switch
         {
             TaskCenterCancelCommand cancel => cancel.TaskId,
+            TaskCenterRetryCommand retry => retry.TaskId,
             TaskCenterDismissCommand dismiss => dismiss.TaskId,
             _ => string.Empty,
         };
@@ -228,7 +234,12 @@ internal sealed class TaskCenterController : IDisposable
         _dispatchedThisFrame = true;
         while (_dispatches.TryDequeue(out (string TaskId, XsrSemanticId Command) pending))
         {
-            if (pending.Command == TaskCenterRoutes.Cancel)
+            if (pending.Command == TaskCenterRoutes.Retry)
+            {
+                if (_commands.TryResolve(TaskCenterRoutes.Retry, out var retryId))
+                    _ = _commands.Dispatch(retryId, new TaskCenterRetryCommand(pending.TaskId));
+            }
+            else if (pending.Command == TaskCenterRoutes.Cancel)
             {
                 if (_commands.TryResolve(TaskCenterRoutes.Cancel, out XsrCommandId cancelId))
                 {
@@ -412,6 +423,7 @@ internal sealed class TaskCenterController : IDisposable
             ["action-label"] = TaskTerm(entry.IsTerminal ? "task.dismiss" : "task.cancel"),
             ["action"] = entry.IsTerminal ? "ui.tasks.card.dismiss" : "ui.tasks.card.cancel",
             ["show-action"] = Flag(entry.IsTerminal || entry.CanCancel),
+            ["can-retry"] = Flag(entry.CanRetry),
             ["has-steps"] = Flag(hasSteps),
             ["expanded"] = Flag(hasSteps && expanded),
             ["details"] = TaskTerm(expanded ? "task.collapse" : "task.expand"),

@@ -5,6 +5,10 @@ internal static partial class Program
     private static (string Name, Func<ValueTask> Body)[] RegisterTransfersAndLaunch() =>
     [
         ("downloads fail over across sources", DownloadFailsOverAcrossSources),
+        ("download session cache resumes across scratch directories and closes", DownloadSessionCacheResumesAcrossScratchDirectoriesAndCloses),
+        ("download session cache rejects corruption and coalesces artifacts", DownloadSessionCacheRejectsCorruptionAndCoalescesArtifacts),
+        ("download session cache rejects bad mirror and tries official source", DownloadSessionCacheRejectsBadMirrorAndTriesOfficialSource),
+        ("download session cache defers shutdown until writers release", DownloadSessionCacheDefersShutdownUntilWritersRelease),
         ("downloads fail when every source fails", DownloadFailsWhenEverySourceFails),
         ("writer temp files survive for resume", WriterTempFileSurvivesForResume),
         ("concurrent downloaders share one transfer", ConcurrentDownloadersShareOneTransfer),

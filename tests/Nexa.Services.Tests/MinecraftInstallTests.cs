@@ -19,6 +19,35 @@ namespace Nexa.Services.Tests;
 // Everything runs against in-memory metadata and connection fakes — no network.
 internal static partial class Program
 {
+    private static async ValueTask InstallFailedTaskRetriesAndReusesSuccessfulDownloads()
+    {
+        string root = CreateTempDirectory();
+        bool online = false; int clientDownloads = 0;
+        var (_, settings) = PolicyFixture();
+        AssertTrue(settings.Set(new("network.file-concurrency", Nexa.Services.Settings.SettingsLayer.Global, new(Nexa.Services.Settings.SettingsOverrideMode.Custom, "1"))).IsSuccess);
+        AssertTrue(settings.Set(new("network.file-retry", Nexa.Services.Settings.SettingsLayer.Global, new(Nexa.Services.Settings.SettingsOverrideMode.Custom, "false"))).IsSuccess);
+        using var fixture = new InstallFixture(new() { VanillaJson = VanillaJson(), AssetIndexJson = AssetIndexJson() }, settingsPolicy: settings,
+            connectionFactory: url =>
+            {
+                if (url.Contains("/client/", StringComparison.Ordinal)) Interlocked.Increment(ref clientDownloads);
+                if (!online && url.Contains("/assets/", StringComparison.Ordinal)) return new FlakyConnection();
+                if (!online && url.Contains("resources.download", StringComparison.Ordinal)) return new FlakyConnection();
+                return new ServingConnection(PayloadFor(url));
+            });
+        try
+        {
+            AssertFalse((await fixture.Install.InstallAsync(new(root, "1.20.1"))).IsSuccess);
+            string id = fixture.Entry().TaskId; AssertTrue(fixture.Entry().CanRetry);
+            int downloaded = clientDownloads; AssertTrue(downloaded > 0);
+            online = true; AssertTrue(fixture.Tasks.RequestRetry(id));
+            await WaitForRetryEntryAsync(fixture.Tasks, id, entry => entry.State == TaskCenterEntryState.Finished);
+            AssertEqual(downloaded, clientDownloads);
+            AssertEqual("JARCONTENT", await File.ReadAllTextAsync(Path.Combine(root, "versions", "1.20.1", "1.20.1.jar")));
+            AssertEqual(1, fixture.InstalledRoots.Count);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     private sealed class FakeMetadata : IMinecraftInstallMetadataSource
     {
         public JsonObject VanillaJson { get; set; } = [];
@@ -89,6 +118,7 @@ internal static partial class Program
         public XsrStateStore Store;
         public TaskCenterService Tasks;
         public MinecraftInstallService Install;
+        private readonly DownloadService _downloads;
         public List<string> InstalledRoots = [];
 
         public InstallFixture(FakeMetadata metadata, IInstallCatalogSource? catalog = null, IMinecraftLoaderInstaller? loaderInstaller = null, HttpClient? http = null,
@@ -101,7 +131,7 @@ internal static partial class Program
             Nexa.Services.Minecraft.Process.MinecraftProcessStateComposition.DeclareState(builder);
             Store = builder.Build();
             Tasks = new TaskCenterService(Store);
-            DownloadService downloads = new(Store);
+            DownloadService downloads = _downloads = new(Store);
             Install = new MinecraftInstallService(
                 Tasks, downloads, catalog, http: http, metadata: metadata,
                 connectionFactory: connectionFactory ?? (source => new ServingConnection(PayloadFor(source))), loaderInstaller: loaderInstaller, inheritVanilla: inheritVanilla,
@@ -112,7 +142,7 @@ internal static partial class Program
         public TaskCenterEntry Entry() => Store.ReadCollection<TaskCenterEntry>(
             Store.Resolve(TaskCenterStateContract.EntriesKey)).Items.Single();
 
-        public void Dispose() => Install.Dispose();
+        public void Dispose() { Install.Dispose(); Tasks.Dispose(); _downloads.Dispose(); }
     }
 
     private static string Sha1Hex(string content) =>

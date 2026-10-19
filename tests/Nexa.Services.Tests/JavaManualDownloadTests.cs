@@ -8,6 +8,30 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask ManualJavaRetryCompletesVerificationAndRegistration()
+    {
+        string root = CreateTempDirectory();
+        string executable = Path.Combine(root, "java-runtime-test", "bin", OperatingSystem.IsWindows() ? "java.exe" : "java");
+        Directory.CreateDirectory(Path.GetDirectoryName(executable)!); await File.WriteAllTextAsync(executable, "fixture");
+        using var tasks = NewTaskCenter(out _);
+        using var locator = new RegistrationLocator(new(new(Path.GetDirectoryName(executable)!, executable, null, new Version(21, 0, 2), JavaBrand.Microsoft, JavaArchitecture.X64, true, false)));
+        var installer = new ManualConfirmedInstaller(executable) { Work = _ => throw new IOException("Offline") };
+        var registry = new ManualRegistry();
+        using var service = new JavaManualDownloadService(new ManualMetadata(JavaRuntimeInstaller.DetectPlatform().ToMojangKey()), installer, locator, registry, root, JavaRuntimeInstaller.DetectPlatform()) { Tasks = tasks };
+        try
+        {
+            var preview = (await service.PreviewAsync(new(21, 0))).Value;
+            AssertFalse((await service.InstallAsync(new(preview.Id, true))).IsSuccess);
+            string id = tasks.ReadEntries().Single().TaskId; AssertTrue(tasks.ReadEntries().Single().CanRetry);
+            installer.Work = null; AssertTrue(tasks.RequestRetry(id));
+            await WaitForRetryEntryAsync(tasks, id, entry => entry.State == Nexa.Services.Tasks.TaskCenterEntryState.Finished);
+            AssertEqual(JavaManualInstallStatus.Installed, (await service.StatusAsync(new(preview.Id))).Value.Status);
+            AssertEqual(2, installer.Calls); AssertEqual(preview.PlanFingerprint, installer.Fingerprint);
+            AssertEqual(executable, registry.Read().Registrations.Single().Executable);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     private static async ValueTask ManualJavaRequiresReviewedLicenseAndRegistersActualFacts()
     {
         string root = Path.Combine(Path.GetTempPath(), "nexacl-manual-java-" + Guid.NewGuid().ToString("N"));

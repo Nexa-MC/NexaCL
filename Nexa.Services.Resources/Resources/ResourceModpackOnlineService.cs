@@ -127,23 +127,32 @@ public sealed class ResourceModpackOnlineService(MinecraftInstallService install
             allowStale: false, token: token).ConfigureAwait(false);
         return result.Path;
     }
-    private async Task<string> DownloadArchiveCoreAsync(ResourceVersion version, bool mirror, CancellationToken token)
+    private async Task<string> DownloadArchiveCoreAsync(ResourceVersion version, bool mirror, CancellationToken token,
+        Nexa.Services.Tasks.ITaskCenterTask? retryTask = null)
     {
+        string destination = ArchivePath(version); ResourceOnlineInformationCache.CheckLinks(destination);
+        bool cached = await VerifiedAsync(destination, version.File!, token).ConfigureAwait(false);
+        if (cached && retryTask is null) return destination;
+        using var task = retryTask ?? downloader.BeginArchiveTask((retry, cancellation) => DownloadArchiveCoreAsync(version, mirror, cancellation, retry));
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken);
+        token = linked.Token;
         string? temporary = null;
         try
         {
-            string destination = ArchivePath(version); ResourceOnlineInformationCache.CheckLinks(destination);
-            if (await VerifiedAsync(destination, version.File!, token).ConfigureAwait(false)) return destination;
+            if (cached) { task.Complete("整合包已缓存"); return destination; }
             string root = Path.GetFullPath(archiveDirectory); ResourceOnlineInformationCache.CheckLinks(root); Directory.CreateDirectory(root);
             temporary = Path.Combine(root, "staging-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(temporary);
-            await downloader.DownloadAsync(new(version.Provider, version.ProjectId, version.Id, temporary, mirror) { Refresh = true }, token).ConfigureAwait(false);
+            await downloader.DownloadInTransactionAsync(new(version.Provider, version.ProjectId, version.Id, temporary, mirror) { Refresh = true }, task.Report, token).ConfigureAwait(false);
             string downloaded = Path.Combine(temporary, version.File!.Name);
             if (!await VerifiedAsync(downloaded, version.File, token).ConfigureAwait(false)) throw new IOException("在线整合包与预览版本不一致，请重新预览。");
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!); ResourceOnlineInformationCache.CheckLinks(destination);
             File.Move(downloaded, destination, overwrite: true);
             PruneArchives(destination);
+            task.Complete("整合包已缓存，请继续预览更新。");
             return destination;
         }
+        catch (OperationCanceledException) { task.Canceled(); throw; }
+        catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException) { task.Fail(error.Message); throw; }
         finally
         {
             if (temporary is not null) { try { ResourceOnlineInformationCache.CheckLinks(temporary); Directory.Delete(temporary, true); } catch (IOException) { } catch (UnauthorizedAccessException) { } }

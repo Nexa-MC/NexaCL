@@ -163,7 +163,7 @@ public sealed class FoundationHost : IDisposable
     public WorkScheduler Work { get; }
     public SharedStateCache SharedStateCache { get; }
     public string? CacheDirectory { get; }
-    public void Dispose() { SharedStateCache.Dispose(); _loggingSettings.Dispose(); NetworkHttp.Dispose(); Work.Dispose(); }
+    public void Dispose() { Tasks.Dispose(); Downloads.Dispose(); SharedStateCache.Dispose(); _loggingSettings.Dispose(); NetworkHttp.Dispose(); Work.Dispose(); }
 
     public NetworkHttpClientPool NetworkHttp { get; }
     public IReadOnlyList<string> JavaManagedRuntimeRoots { get; }

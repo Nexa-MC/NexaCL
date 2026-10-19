@@ -301,14 +301,16 @@ internal static partial class Program
             var (_, settings) = PolicyFixture();
             AssertTrue(settings.Set(new("network.file-concurrency", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "2"))).IsSuccess);
             string pack = Path.Combine(temporary, "pack.mrpack"), root = Path.Combine(temporary, "game"); Directory.CreateDirectory(root);
-            WriteLocalJar(pack, ("modrinth.index.json", MrpackIndex().ToJsonString()));
+            // Distinct objects exercise concurrency; identical digests now share one transfer.
+            var (index, payloads) = DistinctPackIndex();
+            WriteLocalJar(pack, ("modrinth.index.json", index.ToJsonString()));
             var preview = await MinecraftModpackArchive.InspectAsync(pack);
             var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             int active = 0, peak = 0;
             using var fixture = new InstallFixture(PackMetadata(), settingsPolicy: settings, connectionFactory: source =>
                 source.Contains("cdn.modrinth.com", StringComparison.Ordinal)
-                ? new NetworkGatedPackConnection(new ServingConnection(PayloadFor(source)), async token =>
+                ? new NetworkGatedPackConnection(new ServingConnection(payloads[source]), async token =>
                 { int count = Interlocked.Increment(ref active); InterlockedExtensionsUpdateMaximum(ref peak, count); if (count == 2) started.TrySetResult(); await release.Task.WaitAsync(token); }, () => Interlocked.Decrement(ref active))
                 : new ServingConnection(PayloadFor(source)));
             Task<Nexa.Xsr.XsrResult<MinecraftInstallResult>> install = fixture.Install.InstallModpackAsync(new(preview, root, true));

@@ -16,6 +16,7 @@ public sealed partial class JavaRuntimeInstaller : IConfirmedJavaRuntimeInstalle
     private readonly LogService? _log;
     public event Action? RuntimesChanged;
     public Nexa.Services.Downloads.DownloadBandwidthLimiter? BandwidthLimiter { get; init; }
+    public Nexa.Services.Downloads.DownloadService? SessionDownloads { get; init; }
 
     public JavaRuntimeInstaller(IJavaRuntimeMetadataProvider metadataProvider, LogService? log = null, Nexa.Services.Tasks.TaskCenterService? tasks = null)
         : this(
@@ -229,6 +230,21 @@ public sealed partial class JavaRuntimeInstaller : IConfirmedJavaRuntimeInstalle
 
     private async Task DownloadFileAsync(JavaRuntimeDownloadFile file, Nexa.Services.Downloads.DownloadBandwidthBudget? bandwidth, CancellationToken cancellationToken)
     {
+        if (SessionDownloads is { } downloads)
+        {
+            if (file.Size is < 0 or > 512L * 1024 * 1024) throw new InvalidDataException("Java 下载文件大小超过限制。");
+            var result = await downloads.DownloadAsync(new()
+            {
+                Sources = [file.Url],
+                DestinationPath = file.TargetPath,
+                CacheIdentity = new(file.Sha1, file.Size),
+                ConnectionFactory = url => new RuntimeConnection(_httpClient, url),
+            }, cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (!result.Success || !await MatchesAsync(file.TargetPath, file, cancellationToken).ConfigureAwait(false))
+                throw new IOException("Java 下载或校验失败。");
+            ApplyExecutableMode(file);
+            return;
+        }
         _log?.Debug("Java", $"Downloading runtime file path={file.RelativePath}");
         using HttpResponseMessage response = await _httpClient.GetAsync(
             file.Url,
@@ -275,6 +291,23 @@ public sealed partial class JavaRuntimeInstaller : IConfirmedJavaRuntimeInstalle
                 try { File.Delete(temporary); } catch (IOException) { }
             }
         }
+    }
+
+    private sealed class RuntimeConnection(HttpClient client, string url) : Nexa.Services.Downloads.IDownloadConnection
+    {
+        private HttpResponseMessage? _response;
+        private Stream? _stream;
+        public async ValueTask<Nexa.Services.Downloads.DownloadConnectionInfo> StartAsync(long beginOffset, CancellationToken cancellationToken = default)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            if (beginOffset > 0) request.Headers.Range = new(beginOffset, null);
+            _response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            _response.EnsureSuccessStatusCode();
+            _stream = await _response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            return Nexa.Services.Downloads.DownloadHttpRanges.Read(_response, beginOffset);
+        }
+        public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => _stream!.ReadAsync(buffer, cancellationToken);
+        public ValueTask StopAsync(CancellationToken cancellationToken = default) { _stream?.Dispose(); _response?.Dispose(); return ValueTask.CompletedTask; }
     }
 
     private static async Task<string> ComputeSha1Async(string path, CancellationToken cancellationToken)

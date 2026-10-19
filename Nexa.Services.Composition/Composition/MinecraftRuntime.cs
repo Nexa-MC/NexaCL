@@ -146,7 +146,7 @@ public static class MinecraftRuntimeComposer
             javaDownloadHttp.Timeout = TimeSpan.FromMinutes(10);
             JavaRuntimeInstaller concreteInstaller = new(new JavaRuntimeDownloadPlanService(metadata), javaDownloadHttp,
                 ownsHttpClient: true, log: host.Logging, tasks: host.Tasks)
-            { BandwidthLimiter = host.Downloads.BandwidthLimiter };
+            { BandwidthLimiter = host.Downloads.BandwidthLimiter, SessionDownloads = host.Downloads };
             owned.Add(metadata);
             concreteInstaller.RuntimesChanged += locator.Invalidate;
             owned.Add(concreteInstaller);
@@ -235,8 +235,13 @@ public static class MinecraftRuntimeComposer
             (query, token) => processService.ReadOutputAsync(query.SessionId, token));
         MinecraftSafeLaunchSessionRuntime.Register(commandBuilder, queryBuilder, coordinator);
         if (manualJavaMetadata is not null && installer is IConfirmedJavaRuntimeInstaller confirmedInstaller)
-            owned.Add(JavaManualDownloadRuntime.Register(queryBuilder, commandBuilder, manualJavaMetadata,
-                confirmedInstaller, locator, host.JavaRegistrations, runtimeRoot));
+        {
+            var manual = new JavaManualDownloadService(manualJavaMetadata, confirmedInstaller, locator,
+                host.JavaRegistrations, runtimeRoot, JavaRuntimeInstaller.DetectPlatform())
+            { Tasks = host.Tasks };
+            JavaManualDownloadRuntime.Register(queryBuilder, commandBuilder, manual);
+            owned.Add(manual);
+        }
         return new MinecraftRuntime(
             versionDiscovery,
             instanceDiscovery,

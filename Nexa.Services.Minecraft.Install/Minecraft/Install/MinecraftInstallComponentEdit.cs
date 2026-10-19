@@ -29,6 +29,7 @@ public sealed partial class MinecraftInstallService
             var request = new DownloadRequest
             {
                 AllowResume = !string.IsNullOrWhiteSpace(first.Sha1),
+                CacheIdentity = string.IsNullOrWhiteSpace(first.Sha1) ? null : new(first.Sha1, first.Size > 0 ? first.Size : null),
                 Sources = downloads.Where(file => string.IsNullOrWhiteSpace(first.Sha1) || file.Sha1 == first.Sha1).Select(file => file.Url.ToString()).ToArray(),
                 DestinationPath = path,
                 ConnectionFactory = url => _connectionFactory?.Invoke(url) ?? new HttpConnection(_http, url),

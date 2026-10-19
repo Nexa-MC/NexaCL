@@ -2,7 +2,9 @@ namespace Nexa.Services.Minecraft.Java;
 
 public sealed partial class JavaRuntimeInstaller
 {
-    public async Task<Nexa.Xsr.XsrResult> RecoverAsync(string root, CancellationToken token = default)
+    public Task<Nexa.Xsr.XsrResult> RecoverAsync(string root, CancellationToken token = default) => RecoverOwnedAsync(root, token);
+
+    private async Task<Nexa.Xsr.XsrResult> RecoverOwnedAsync(string root, CancellationToken token, Nexa.Services.Tasks.ITaskCenterTask? retryTask = null)
     {
         root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
         lock (_gate)
@@ -10,14 +12,16 @@ public sealed partial class JavaRuntimeInstaller
             if (_stopping) return Nexa.Xsr.XsrResult.Failure(Nexa.Xsr.XsrRuntimeErrors.Cancelled());
             _roots.Add(root);
         }
-        string queueId = "java-install:recovery:" + Guid.NewGuid().ToString("N");
-        Nexa.Services.Tasks.ITaskCenterTask? queue = null;
+        string queueId = retryTask?.TaskId ?? "java-install:recovery:" + Guid.NewGuid().ToString("N");
+        Nexa.Services.Tasks.ITaskCenterTask? queue = retryTask;
+        Nexa.Services.Tasks.ITaskCenterTask BeginQueue() => _tasks!.Begin(new(queueId, "恢复 Java 安装", ["恢复 Java"], CanCancel: false),
+            (retry, cancellation) => RecoverOwnedAsync(root, cancellation, retry));
         await _recoveryGate.WaitAsync(token).ConfigureAwait(false);
         try
         {
             foreach (var journal in await PendingAsync(root, token).ConfigureAwait(false))
             {
-                queue ??= _tasks?.Begin(new(queueId, "恢复 Java 安装", ["恢复 Java"], CanCancel: false));
+                if (_tasks is not null) queue ??= BeginQueue();
                 lock (_gate) if (_stopping) { queue?.Paused(); return Nexa.Xsr.XsrResult.Failure(Nexa.Xsr.XsrRuntimeErrors.Cancelled()); }
                 if (journal.CancelRequested)
                 {
@@ -37,7 +41,7 @@ public sealed partial class JavaRuntimeInstaller
         catch (OperationCanceledException) { queue?.Paused(); return Nexa.Xsr.XsrResult.Failure(Nexa.Xsr.XsrRuntimeErrors.Cancelled()); }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
         {
-            queue ??= _tasks?.Begin(new(queueId, "恢复 Java 安装", ["恢复 Java"], CanCancel: false));
+            if (_tasks is not null) queue ??= BeginQueue();
             queue?.Fail("Java 安装恢复需要处理。"); return Nexa.Xsr.XsrResult.Failure(MinecraftErrors.InvalidRequest(error.Message));
         }
         finally { queue?.Dispose(); _recoveryGate.Release(); }
