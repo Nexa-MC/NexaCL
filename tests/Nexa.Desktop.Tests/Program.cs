@@ -34,6 +34,11 @@ internal static partial class Program
             return;
         }
         if (Environment.GetEnvironmentVariable("NEXA_COUNTRY") is null) Environment.SetEnvironmentVariable("NEXA_COUNTRY", "CN");
+        if (args is ["--native-task-layout-preview", var taskLayoutOutput])
+        {
+            Environment.ExitCode = RunNativeTaskLayoutPreview(taskLayoutOutput);
+            return;
+        }
         if (args is ["--native-theme-preview", var themeMode, var themeDirectory])
         {
             Environment.ExitCode = RunNativeThemePreview(themeMode, themeDirectory);

@@ -26,10 +26,10 @@ internal static partial class Program
         AssertEqual(start, AvaloniaUiProgressRingDrawing.Sample(1, true, 0));
         AssertEqual(90d, AvaloniaUiProgressRingDrawing.Sample(0, false, .25).Sweep);
         using var card = new AvaloniaUiStartupCard(text => text, cancel: () => { });
-        card.Measure(new Size(400, double.PositiveInfinity));
+        card.Measure(new Size(AvaloniaUiStartupCard.WindowWidth, double.PositiveInfinity));
         AssertTrue(card.DesiredSize.Height <= AvaloniaUiStartupCard.LoadingHeight);
         card.SetStage("failure", failed: true, canRetry: true);
-        card.Measure(new Size(400, double.PositiveInfinity));
+        card.Measure(new Size(AvaloniaUiStartupCard.WindowWidth, double.PositiveInfinity));
         AssertTrue(card.DesiredSize.Height <= AvaloniaUiStartupCard.FailureHeight);
         using var ring = new AvaloniaUiProgressRing { ReducedMotion = true };
         ring.Measure(new Size(40, 40)); ring.Arrange(new Rect(0, 0, 40, 40));

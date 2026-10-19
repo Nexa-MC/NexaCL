@@ -1,19 +1,21 @@
 /* TaskCard layout. */
 .layout-TaskCard-TaskCard { Orientation: Vertical; }
-.layout-TaskCard-TaskCardContent { Orientation: Vertical; Spacing: 10; Padding: 22,18,22,18; }
+.layout-TaskCard-TaskCardContent { Orientation: Horizontal; Spacing: 16; Padding: 22,18,22,18; }
+.layout-TaskCard-TaskCardIndicator { Width: 32; VerticalAlignment: Start; Margin: 0,2,0,0; }
+.layout-TaskCard-TaskCardBody { Orientation: Vertical; Weight: 1; Spacing: 8; }
 .layout-TaskCard-TaskCardHeader { Orientation: Horizontal; }
-.layout-TaskCard-TaskCardIcon { Width: 22; Height: 22; Margin: 0,3,12,0; }
-.layout-TaskCard-TaskCardTitle { Height: 26; Weight: 1; }
+.layout-TaskCard-TaskCardIcon { Width: 32; Height: 32; }
+.layout-TaskCard-TaskCardTitle { MinHeight: 26; Weight: 1; WrapText: true; }
 .layout-TaskCard-TaskCardAction { Width: 30; Height: 30; }
 .layout-TaskCard-TaskCardStatus { Orientation: Horizontal; }
-.layout-TaskCard-TaskCardStage { Height: 20; Weight: 1; }
+.layout-TaskCard-TaskCardStage { MinHeight: 20; Weight: 1; WrapText: true; }
 .layout-TaskCard-TaskCardPercent { Width: 64; Height: 20; Margin: 12,0,0,0; }
-.layout-TaskCard-TaskCardTrack { Height: 4; }
-.layout-TaskCard-TaskCardFill { Height: 4; }
+.layout-TaskCard-TaskCardTrack { Width: 32; Height: 32; }
 .layout-TaskCard-TaskCardMeta { Orientation: Horizontal; }
-.layout-TaskCard-TaskCardFiles { Height: 20; Weight: 1; }
-.layout-TaskCard-TaskCardSpeed { Height: 20; }
+.layout-TaskCard-TaskCardFiles { MinHeight: 20; Weight: 1; WrapText: true; }
+.layout-TaskCard-TaskCardSpeed { Height: 20; Margin: 12,0,0,0; }
 .layout-TaskCard-TaskCardError { MinHeight: 20; }
+.layout-TaskCard-TaskCardRetry { MinWidth: 92; MinHeight: 36; Padding: 12,6,12,6; HorizontalAlignment: Start; }
 .layout-TaskCard-TaskCardDetails { Width: 92; Height: 28; HorizontalAlignment: Start; }
 .layout-TaskCard-TaskCardSteps { Orientation: Vertical; Spacing: 2; }
 
@@ -26,6 +28,7 @@
 .layout-TaskCard-TaskCardFiles { Foreground: #707c8a; FontSize: 12; }
 .layout-TaskCard-TaskCardSpeed { Foreground: #707c8a; FontSize: 12; }
 .layout-TaskCard-TaskCardError { Foreground: #c44036; FontSize: 12; WrapText: true; }
+.layout-TaskCard-TaskCardRetry { Background: #eff4fb; Foreground: #305791; Surface: Solid; CornerRadius: 8; Hover: #1370f316; FontSize: 13; FontWeight: 550; TextAlignment: Center; }
 .layout-TaskCard-TaskCardDetails { Foreground: #707c8a; CornerRadius: 6; Hover: #1370f316; FontSize: 12; }
 .layout-TaskCard-TaskCardTrack { Background: #00000000; }
 .layout-TaskCard-TaskCardAction { Foreground: #707c8a; CornerRadius: 15; Hover: #1370f316; }

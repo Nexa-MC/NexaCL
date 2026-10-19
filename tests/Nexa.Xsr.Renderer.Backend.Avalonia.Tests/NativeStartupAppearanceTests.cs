@@ -73,6 +73,23 @@ internal static partial class Program
                 AssertEqual(1d, ((AvaloniaUiStartupCard)window.Content!).Opacity);
                 AssertEqual(startup.Appearance.ReducedMotion ? 1 : 2, AvaloniaUiMotion.CaptureDiagnostics().ActiveTracks);
                 AssertTrue(unrelatedProgress > 0 && unrelatedProgress < 1);
+                window.UpdateLayout();
+                var mark = window.GetVisualDescendants().OfType<Image>().Single();
+                var name = window.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Text == "NexaCL");
+                var ring = window.GetVisualDescendants().OfType<AvaloniaUiProgressRing>().Single();
+                var hint = window.GetVisualDescendants().OfType<ScrollViewer>().Single();
+                Point markOrigin = mark.TranslatePoint(default, window)!.Value;
+                Point nameOrigin = name.TranslatePoint(default, window)!.Value;
+                Point ringOrigin = ring.TranslatePoint(default, window)!.Value;
+                Point hintOrigin = hint.TranslatePoint(default, window)!.Value;
+                AssertTrue(markOrigin.X + mark.Bounds.Width < nameOrigin.X);
+                AssertTrue(ringOrigin.X >= nameOrigin.X && ringOrigin.X + ring.Bounds.Width < hintOrigin.X);
+                AssertTrue(ringOrigin.Y < hintOrigin.Y + hint.Bounds.Height && hintOrigin.Y < ringOrigin.Y + ring.Bounds.Height);
+                foreach (Button button in window.GetVisualDescendants().OfType<Button>().Where(button => button.IsVisible))
+                {
+                    Point origin = button.TranslatePoint(default, window)!.Value;
+                    AssertTrue(origin.X > 0 && origin.Y + button.Bounds.Height < window.ClientSize.Height);
+                }
 
                 startup.SetAppearance(startup.Appearance with { ReducedMotion = true });
                 AssertTrue(startup.Appearance.ReducedMotion);

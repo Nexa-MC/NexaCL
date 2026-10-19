@@ -393,7 +393,7 @@ def launch_theme(args, probe, theme, value):
                 # mapping every 5ms. GIF capture does not wait for the animation to end.
                 candidates = probe.windows_for_pid(primary.pid, include_hidden=True)
                 for window, attributes in candidates:
-                    if attributes.width == 400 and 200 <= attributes.height <= 500:
+                    if attributes.width == 480 and 200 <= attributes.height <= 500:
                         splash = window
                         if attributes.map_state == 2 and splash_start is None:
                             splash_start = now

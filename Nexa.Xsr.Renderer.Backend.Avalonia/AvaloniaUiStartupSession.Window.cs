@@ -21,7 +21,7 @@ public sealed partial class AvaloniaUiStartupSession
             _rendered = rendered;
             _appearance = appearance;
             Title = "NexaCL";
-            Width = 400;
+            Width = AvaloniaUiStartupCard.WindowWidth;
             Height = AvaloniaUiStartupCard.LoadingHeight;
             CanResize = false;
             ShowInTaskbar = false;

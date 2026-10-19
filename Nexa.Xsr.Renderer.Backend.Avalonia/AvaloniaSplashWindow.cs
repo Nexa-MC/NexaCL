@@ -18,7 +18,7 @@ public sealed class AvaloniaSplashWindow : Window
     public AvaloniaSplashWindow(Stream iconStream)
     {
         ArgumentNullException.ThrowIfNull(iconStream);
-        Width = 400;
+        Width = AvaloniaUiStartupCard.WindowWidth;
         Height = AvaloniaUiStartupCard.PassiveHeight;
         CanResize = false;
         ShowInTaskbar = false;

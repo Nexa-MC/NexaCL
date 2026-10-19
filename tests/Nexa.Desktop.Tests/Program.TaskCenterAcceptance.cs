@@ -27,21 +27,25 @@ internal static partial class Program
         var tasks = fixture.Foundation.Host.Tasks;
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        using (var original = tasks.Begin(new("retry-ui", "下载资源", ["下载", "校验"]), async (task, token) =>
+        using (var original = tasks.Begin(new("retry-ui", "下载资源与依赖文件 · Minecraft Fabric 光影与高清材质整合包的完整安装任务", ["下载", "校验"]), async (task, token) =>
         {
             entered.SetResult(); await release.Task.WaitAsync(token); task.Complete();
-        })) original.Fail("网络中断");
+        })) original.Fail("网络中断，部分文件尚未完成下载。请检查网络连接后重试；本次启动期间已下载的文件会保留，并在重试时继续复用。");
         Emit(fixture.Intents, "ui.tasks.open");
         var scene = fixture.Shell.Render(new(1280, 800));
         var card = FindByKey(fixture.Shell, scene, "task-card:retry-ui").Entity;
         var retry = FindByKey(fixture.Shell, scene, "TaskCardRetry");
         AssertEqual("重试", retry.Text);
+        VerifyTaskCardHorizontalLayout(fixture, "TaskCardIcon");
+        _captureTaskLayout?.Invoke(fixture, "failed");
         AssertTrue(fixture.Shell.Renderer.Activate(retry.Entity));
         scene = fixture.Shell.Render(new(1280, 800));
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
         AssertEqual(card, FindByKey(fixture.Shell, scene, "task-card:retry-ui").Entity);
         AssertFalse(HasKey(fixture.Shell, scene, "TaskCardRetry"));
         AssertTrue(HasKey(fixture.Shell, scene, "TaskCardFill"));
+        VerifyTaskCardHorizontalLayout(fixture, "TaskCardFill");
+        _captureTaskLayout?.Invoke(fixture, "running");
         release.SetResult();
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         while (tasks.ReadEntries().Single().State != TaskCenterEntryState.Finished) await Task.Delay(10, timeout.Token);
@@ -49,6 +53,30 @@ internal static partial class Program
         AssertEqual(card, FindByKey(fixture.Shell, scene, "task-card:retry-ui").Entity);
         AssertFalse(HasKey(fixture.Shell, scene, "TaskCardRetry"));
         AssertTrue(HasKey(fixture.Shell, scene, "TaskCardAction"));
+        VerifyTaskCardHorizontalLayout(fixture, "TaskCardIcon");
+        _captureTaskLayout?.Invoke(fixture, "completed");
+    }
+
+    private static void VerifyTaskCardHorizontalLayout(LaunchPageFixture fixture, string indicatorKey)
+    {
+        foreach (int width in TaskLayoutPreviewWidths)
+        {
+            var scene = fixture.Shell.Render(new(width, 800));
+            var card = FindByKey(fixture.Shell, scene, "task-card:retry-ui").Rect;
+            var indicator = FindByKey(fixture.Shell, scene, indicatorKey).Rect;
+            var title = FindByKey(fixture.Shell, scene, "TaskCardTitle").Rect;
+            var body = FindByKey(fixture.Shell, scene, "TaskCardBody").Rect;
+            AssertTrue(indicator.X > card.X && indicator.X + indicator.Width < body.X);
+            AssertTrue(title.Y < indicator.Y + indicator.Height && indicator.Y < title.Y + title.Height);
+            foreach (string key in new[] { "TaskCardTitle", "TaskCardStage", "TaskCardPercent", "TaskCardAction", "TaskCardRetry", "TaskCardError", "TaskCardDetails" })
+            {
+                if (!HasKey(fixture.Shell, scene, key)) continue;
+                var rect = FindByKey(fixture.Shell, scene, key).Rect;
+                AssertTrue(rect.Width > 0 && rect.Height > 0);
+                AssertTrue(rect.X >= body.X && rect.X + rect.Width <= body.X + body.Width + .01);
+                AssertTrue(rect.Y >= card.Y && rect.Y + rect.Height < card.Y + card.Height);
+            }
+        }
     }
 
     private static void StagedTaskPageRendersCleanBetweenChanges()

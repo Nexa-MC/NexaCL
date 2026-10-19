@@ -11,9 +11,10 @@ namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 /// <summary>Bounded native startup decoration using the shared presentation clock.</summary>
 internal sealed class AvaloniaUiStartupCard : Border, IDisposable
 {
-    internal const double LoadingHeight = 352;
-    internal const double FailureHeight = 392;
-    internal const double PassiveHeight = 310;
+    internal const double WindowWidth = 480;
+    internal const double LoadingHeight = 272;
+    internal const double FailureHeight = 338;
+    internal const double PassiveHeight = 230;
 
     private readonly AvaloniaUiBrandImages? _brand = AvaloniaUiBrandImages.TryLoadProduct();
     private readonly Bitmap? _fallback;
@@ -25,6 +26,7 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
     private readonly TextBlock _name, _edition, _version, _stage;
     private readonly Border _rail;
     private readonly AvaloniaUiProgressRing _statusRing;
+    private readonly Grid _status;
     private readonly ScrollViewer _stageViewport;
     private readonly StackPanel _buttons;
     private readonly Button _cancel, _retry;
@@ -72,7 +74,13 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
             Children = { _mark, identity }
         };
         _rail = new Border { Height = 2, CornerRadius = new CornerRadius(1), IsHitTestVisible = false };
-        _statusRing = new AvaloniaUiProgressRing { HorizontalAlignment = HorizontalAlignment.Center };
+        _statusRing = new AvaloniaUiProgressRing
+        {
+            Width = 24,
+            Height = 24,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
         _stage = Text(localize(_stageSource), 12);
         _stage.TextWrapping = TextWrapping.Wrap;
         _stage.TextTrimming = TextTrimming.None;
@@ -83,9 +91,14 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
             Height = 42,
             HorizontalScrollBarVisibility = global::Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
             VerticalScrollBarVisibility = global::Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            VerticalAlignment = VerticalAlignment.Center,
         };
-        _stage.TextAlignment = TextAlignment.Center;
-        var status = new StackPanel { Spacing = 16, Margin = new Thickness(0, 12, 0, 0), Children = { _statusRing, _stageViewport } };
+        Grid.SetColumn(_stageViewport, 1);
+        _status = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("40,*"),
+            Children = { _statusRing, _stageViewport },
+        };
         _cancel = new Button
         {
             Content = localize("取消并退出"),
@@ -116,7 +129,15 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
             IsVisible = cancel is not null,
             Children = { _retry, _cancel }
         };
-        Child = new StackPanel { Spacing = 14, Children = { Header, _rail, status, _buttons } };
+        // Keep the identity header as the native drag region. Recovery buttons and
+        // the scrollable hint remain outside it, aligned with the identity column.
+        var details = new StackPanel
+        {
+            Spacing = 14,
+            Margin = new Thickness(92, 0, 0, 0),
+            Children = { _rail, _status, _buttons },
+        };
+        Child = new StackPanel { Spacing = 14, Children = { Header, details } };
     }
 
     internal void ApplySplashMotion(AvaloniaUiThemeSplashMotion motion, bool reducedMotion)
@@ -206,6 +227,7 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
         string display = _localize(stage);
         _stage.Text = display.Length <= 1024 ? display : display[..1024];
         _stageViewport.Height = failed ? 108 : 42;
+        _status.ColumnDefinitions[0].Width = new GridLength(failed ? 0 : 40);
         _stageViewport.Offset = default;
         _retry.IsVisible = canRetry;
         _retry.IsEnabled = canRetry;
