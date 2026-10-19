@@ -190,9 +190,9 @@ internal static partial class Program
             {
                 window!.UpdateLayout(); surface!.CommitScene();
                 var workspace = h.Find("LauncherMigrationWorkspace");
-                var children = f.Shell.Tree.Children(workspace);
-                var card = children[children.Count - 1];
-                var body = f.Shell.Tree.Children(card).Single();
+                var card = h.Find("LauncherMigration.Card");
+                var body = h.Find("LauncherMigration.Body");
+                AssertEqual(card, f.Shell.Tree.Parent(body));
                 var padding = f.Shell.Tree.GetComponent<XsrUiElement>(body)!.Padding;
                 AssertTrue(padding.Left > 0 && padding.Top > 0 && padding.Right > 0 && padding.Bottom > 0);
                 double scale = window.RenderScaling;

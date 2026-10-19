@@ -1,9 +1,9 @@
 <nxml-dynamic>
   <SettingsForm Key="LauncherMigrationWorkspace">
-    <StackPanel IsVisible="{data !busy}" Spacing="12">
+    <StackPanel IsVisible="{data !loading}" Spacing="12">
       <Text Content="从其他启动器迁移" Class="settings-form-label" />
-      <StackPanel Class="settings-form-surface">
-        <StackPanel Class="settings-launcher-migration-body">
+      <StackPanel Key="LauncherMigration.Card" Class="settings-form-surface">
+        <StackPanel Key="LauncherMigration.Body" Class="settings-launcher-migration-body">
           <Text Content="复制所选实例到新的独立目录；保留原启动器的数据，不覆盖现有目录。支持 Nexa/PCL II/PCL CE、Prism/MultiMC/PolyMC、Modrinth、CurseForge、HMCL、XMCL、ATLauncher、GDLauncher、FTB App、Technic，以及官方启动器、SKlauncher、TLauncher 等使用的标准 Minecraft Java 目录。" Class="settings-launcher-migration-note" />
           <StackPanel Class="settings-launcher-migration-field">
             <Text Content="来源类型" Class="settings-launcher-migration-label" />
@@ -28,6 +28,7 @@
             <Button Key="LauncherMigration.preview" Label="预览实例和数据量" Content="预览迁移" Command="ui.settings.launcher-migration.action" Enabled="{data previewEnabled}" Class="settings-catalog-action settings-launcher-migration-action" />
             <Button Key="LauncherMigration.apply" Label="迁移勾选的实例" Content="迁移所选实例" Command="ui.settings.launcher-migration.action" Enabled="{data applyEnabled}" Class="settings-catalog-action settings-launcher-migration-wide" />
           </StackPanel>
+          <Dynamic Key="LauncherMigration.Status" />
           <Dynamic Key="LauncherMigration.Warnings" />
           <Dynamic Key="LauncherMigration.Instances" Class="settings-launcher-migration-instances" />
           <Text Content="已迁入的实例会加入版本库。关闭页面或登记失败后，可选择迁入目录恢复记录并重试登记。撤销只清理本次创建且未被修改的副本；原目录始终保留。" Class="settings-launcher-migration-note" />
@@ -40,9 +41,8 @@
         </StackPanel>
       </StackPanel>
     </StackPanel>
-    <LoadingView IsVisible="{data busy}">
+    <LoadingView IsVisible="{data loading}">
       <Text Content="正在处理启动器迁移…" Class="loading-hint" LiveSetting="Polite" />
-      <Dynamic Key="LauncherMigration.Status" />
       <Button Key="LauncherMigration.cancel" Label="取消当前迁移操作" Content="取消操作" Command="ui.settings.launcher-migration.action" Enabled="{data busy}" IsVisible="{data busy}" Class="settings-catalog-action settings-launcher-migration-action" />
     </LoadingView>
   </SettingsForm>

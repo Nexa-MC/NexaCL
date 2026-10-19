@@ -1,5 +1,9 @@
 # Loading presentation
 
+Native migration previews select the business card and its padded body by semantic keys (`LauncherMigration.Card` / `LauncherMigration.Body`). Loading content is a sibling of the retained ready workspace, so positional assumptions such as “the last child is the business card” are invalid. Native padding assertions still check actual painted card insets whenever that card is visible, and busy stages capture the centered loading presentation.
+Migration selection, completion and failure messages belong to the ready business card; the busy view supplies its own working hint. Hiding the busy view must not hide the results of the completed operation.
+The migration confirmation dialog keeps the reviewable form visible behind its modal. Pending user confirmation disables actions but does not represent loading; only a running migration/read or cleanup operation masks the business content.
+
 The host projects progress as finite renderer facts: a progress primitive may opt into ring presentation and indeterminate motion. Existing bar primitives retain their behavior and API. NXML `ProgressRing` uses additive literal `Ring` and `Indeterminate` flags; determinate values remain bounded fractions. The scene carries only immutable ring facts, never a clock or service.
 
 Avalonia owns the rounded arc and its phase. Rings share the existing presentation clock, invalidate paint only, and stop when removed, clipped out, minimized, or under reduced motion. Reduced motion shows a static arc. Native Splash uses the same arc and clock. Theme accent and progress accessibility semantics are preserved.

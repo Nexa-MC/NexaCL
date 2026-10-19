@@ -23,6 +23,7 @@ internal sealed partial class SettingsPageController
     {
         ["enabled"] = Flag(!LauncherMigrationBusy && _launcherMigrationCleanupReceipt is null),
         ["busy"] = Flag(LauncherMigrationBusy),
+        ["loading"] = Flag(LauncherMigrationLoading),
         ["sourceKind"] = MigrationCopy("source." + _launcherMigrationKind),
         ["source"] = _launcherMigrationSource ?? MigrationCopy("sourceEmpty"),
         ["destination"] = _launcherMigrationDestination ?? MigrationCopy("destinationEmpty"),
@@ -77,7 +78,7 @@ internal sealed partial class SettingsPageController
             _launcherMigrationActions[CatalogNodes(row)["LauncherMigration.Select." + instance.Id]] = ("select", instance.Id);
         }
         _dynamic.Reorder(nodes["LauncherMigration.Instances"], instances.Select(instance => _launcherMigrationRows[instance.Id]).ToArray());
-        string status = LauncherMigrationBusy ? MigrationCopy("working") : _launcherMigrationMessage ?? MigrationCopy("initial");
+        string status = LauncherMigrationLoading ? MigrationCopy("working") : _launcherMigrationMessage ?? MigrationCopy("initial");
         if (_launcherMigrationPreview is not null)
             status += "\n" + MigrationFormat("Selection", ("selected", _launcherMigrationSelected.Count.ToString(System.Globalization.CultureInfo.CurrentCulture)),
                 ("total", instances.Count.ToString(System.Globalization.CultureInfo.CurrentCulture)),

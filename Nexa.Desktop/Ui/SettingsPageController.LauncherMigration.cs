@@ -30,7 +30,8 @@ internal sealed partial class SettingsPageController
     private bool _launcherMigrationPresentationDirty;
     private Guid _launcherMigrationDialog;
     private XsrUiEntityId _launcherMigrationPanel, _launcherMigrationStatus, _launcherMigrationWarnings;
-    private bool LauncherMigrationBusy => _launcherMigrationTask is not null || _launcherMigrationDialog != Guid.Empty || Volatile.Read(ref _launcherMigrationCleanupActive) != 0;
+    private bool LauncherMigrationLoading => _launcherMigrationTask is not null || Volatile.Read(ref _launcherMigrationCleanupActive) != 0;
+    private bool LauncherMigrationBusy => LauncherMigrationLoading || _launcherMigrationDialog != Guid.Empty;
     private sealed record LauncherMigrationResult(string Kind, string? Path = null,
         LauncherMigrationPreview? Preview = null, LauncherMigrationReceipt? Receipt = null, bool Registered = false,
         LauncherMigrationDiscoveryResult? Discovery = null);
