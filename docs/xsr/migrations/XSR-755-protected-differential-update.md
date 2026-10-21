@@ -74,3 +74,16 @@ Python tests cover chunk reuse after shifts, unchanged/deleted/new files, archiv
 signed identity and reproducible complete-tree reconstruction. Native CI exercises differential
 transactions through real admitted filesystem ports on all six RIDs; AOT/trim checks remain
 mandatory. Physical power-loss and same-account replacement-race acceptance remains with Dots.
+
+
+## Independent-source publication evidence (2026-10-21)
+
+- Publisher tooling commit: `2698b76005cf54541e6d01909b4e845c2288db16` on `main`.
+- All 80 release tooling tests and the 72-project architecture suite passed locally.
+- [Signed Alpha 8 backfill](https://github.com/Nexa-MC/NexaCL/actions/runs/39560086426) passed against the existing published Alpha 8 packages, without rebuilding them.
+- [Independent mirror publication](https://github.com/Nexa-MC/NexaCL-Update/actions/runs/39561201887) verified the complete signed distribution and appended the extension successfully.
+- Alpha 6 → Alpha 8 and Alpha 7 → Alpha 8 each have six differential bundles. Compared with the corresponding full portable archive, transfers are 14.6–25.7% and 17.2–28.4% smaller, respectively.
+- Both public releases contain the same 66 asset identities. All original 40 files retain their exact sizes and SHA256 digests, including the original manifests, checksum file and detached signatures.
+- The published `Nexa-Delta.json` signature was independently verified again with the unchanged pinned public key; all twelve target archive hashes match the original Alpha 8 release.
+- Existing helpers keep their signature, source-version and full-fallback behavior. Historical builds pinned to old discovery repositories still need the documented initial manual repository migration.
+- [Organization profile](https://github.com/Nexa-MC) now points to NexaCL source/feedback, NexaCL-Update releases and the website, with the old PCL-N/Patches roles described as historical.
