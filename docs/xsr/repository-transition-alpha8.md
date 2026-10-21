@@ -125,3 +125,20 @@ Independent update-source follow-up validation:
   discovery, real HTTP, signed-update and scheduler scenarios passed as native executables.
   The existing Jint IL2098 warning remains visible. Cross-platform deployment is verified
   separately by the destination CI and tagged build.
+
+
+## Verified Alpha 8 publication and main continuation (2026-10-21)
+
+- Exact Alpha 8 source: `e2e2c6b8e0259b6c6b3dc6450d1ee2fe1f92a611`; tag `v2.0.0.alpha.8` identifies the verified code.
+- [Alpha 8 source CI](https://github.com/Nexa-MC/NexaCL/actions/runs/39548161849): 21 jobs passed.
+- [Official tagged build](https://github.com/Nexa-MC/NexaCL/actions/runs/39549529111): all six RID jobs passed, including native installation and protected update checks.
+- [Public Alpha 8](https://github.com/Nexa-MC/NexaCL/releases/tag/v2.0.0.alpha.8) and [independently verified distribution mirror](https://github.com/Nexa-MC/NexaCL-Update/releases/tag/v2.0.0.alpha.8): 40 assets with identical names, sizes and GitHub SHA256 digests. The existing publisher signing identity remains unchanged.
+- Six existing release Secrets were securely transferred; destination values were preserved. The update repository receives no signing private key.
+- `main` is the only source branch and the default. Existing Git ancestry and historical release tags remain intact; the superseded unpublished Beta 1 attempt produced no Release.
+- CI filters, source links and contributor instructions follow `main`. The update publisher follows the source default branch.
+- The one-time workflow/script/encrypted envelope were retired and `Nexa-MC/PCL-N` is archived after successful source CI, signed Alpha 8 and independent mirror verification.
+
+- [Final archival controller](https://github.com/Nexa-MC/PCL-N/actions/runs/39553952027) completed successfully after verifying the source tag and the published source/mirror pair.
+- [Web CI](https://github.com/Nexa-MC/PCL-N-Plugin-Center-Web/actions/runs/39553955308) and [production Worker deployment](https://github.com/Nexa-MC/PCL-N-Plugin-Center-Web/actions/runs/39553970722) passed. The live website resolves all 18 Alpha 8 packages on six platform/architecture selectors from `NexaCL-Update`; the saved catalog also includes Alpha 8 for outages.
+
+Earlier preparation notes above are historical evidence; these publication links and repository flags record the completed transition.
