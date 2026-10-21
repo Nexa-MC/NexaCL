@@ -3,7 +3,7 @@ name: Modpack benchmark pilot
 on:
   workflow_dispatch:
   push:
-    branches: [refactor/xsr]
+    branches: [main]
     paths:
       - .github/workflows/modpack-benchmark.yml
       - eng/benchmarks/**

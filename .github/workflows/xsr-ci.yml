@@ -3,7 +3,7 @@ name: XSR CI
 on:
   push:
     branches:
-      - refactor/xsr
+      - main
   pull_request:
   workflow_dispatch:
 

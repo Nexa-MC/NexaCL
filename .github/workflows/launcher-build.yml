@@ -1,7 +1,7 @@
 name: Launcher Build
 on:
   push:
-    branches: [refactor/xsr]
+    branches: [main]
     tags: ['[0-9]*', 'v[0-9]*']
   release:
     types: [published]

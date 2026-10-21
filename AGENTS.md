@@ -16,7 +16,7 @@
 
 ## XSR migration rules
 
-- **XSR-01 — Isolate the migration checkout.** XSR development belongs on `refactor/xsr` in a dedicated Git worktree outside the active `dev` checkout. Do not build the new architecture inside the `dev` working directory.
+- **XSR-01 — Isolate the migration checkout.** XSR development belongs on `main` in `Nexa-MC/NexaCL`, renamed from `refactor/xsr` during the repository migration. Keep a dedicated workspace outside the read-only legacy `dev` checkout; do not recreate legacy branches in the new repository.
   **Why:** Separate checkouts keep migration edits and build outputs from interfering with active legacy development.
 
 - **XSR-02 — Migrate contracts, not the legacy implementation.** This is a clean-slate branch. Do not restore, merge, copy wholesale, add a project reference to, or add a submodule for legacy implementation code. Inspect the `dev` worktree read-only and migrate only documented behavior, algorithms, data contracts, and compatibility requirements, not legacy type or assembly shapes. Every source project on this branch must be created intentionally for XSR; do not recreate the legacy solution or its assembly graph as migration scaffolding. Do not modify a legacy implementation merely to make an XSR migration diff smaller.

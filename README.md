@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://htmlpreview.github.io/?https://github.com/Nexa-MC/NexaCL/blob/refactor/xsr/docs/readme/overview.html">
+  <a href="https://htmlpreview.github.io/?https://github.com/Nexa-MC/NexaCL/blob/main/docs/readme/overview.html">
     <img src="./docs/readme/open-overview.svg" alt="Open the complete Nexa product overview" width="100%" />
   </a>
 </p>

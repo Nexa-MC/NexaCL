@@ -1,7 +1,10 @@
 # NexaCL continuation and Beta 1 publication
 
 The user-created destination is the public `Nexa-MC/NexaCL` repository, carrying the current
-`refactor/xsr` code and its Git history. The working branch remains `refactor/xsr`; product
+`refactor/xsr` code and its Git history. After exact-source CI verification, the migrated
+branch is renamed to `main` and becomes the only source branch and default branch.
+Other imported branch refs and the temporary bootstrap `main` are removed at the user’s
+request; Git ancestry and historical/release tags are preserved. Product
 branding stays NexaCL Firefly. Beta 1 has canonical identity `2.0.0.beta.1` and tag
 `v2.0.0.beta.1`. Notes are in [the release draft](../releases/2.0.0.beta.1.md).
 
@@ -24,16 +27,23 @@ existing independent signature and manifest verification passes. The update repo
 workflow uses its own `GITHUB_TOKEN` to publish there; no signing private key or cross-repo
 write token is transferred. The seed files live in `eng/release/updates-repository/`; copy
 the existing `GPG-PUBLIC-KEY.asc` and `LICENSE` alongside them when initializing `main`. Its
-scheduled/manual workflow fetches the publisher tooling from the source branch and retains
+scheduled/manual workflow fetches the publisher tooling from the source default branch and retains
 the update repository's public key/fingerprint check. Update-repository tags identify
 distribution metadata, while the source repository retains the corresponding code tag.
+
+The branch rename does not move the immutable Beta 1 tag or interrupt its in-flight
+build. Old-source archival still waits for successful signed publication and mirror verification.
+
+The final branch topology is `Nexa-MC/NexaCL:main` only. CI push filters, contributor
+instructions, the update publisher checkout and current source links must follow this
+rename; recorded historical XSR branch references remain historical evidence.
 
 Publication order:
 
 1. Validate the global entitlement and mainland distribution changes, including local-only
    launch/update behavior, signed-update source compatibility and AOT/trim deployment.
 2. Create the continuation repository, push the XSR branch with its existing ancestry, retain
-   the historical source branches/tags, select `refactor/xsr` as the default branch, and enable
+   historical tags and ancestry, rename the migrated branch to `main` as the sole/default branch, and enable
    Issues and Discussions for the migrated feedback entry points.
    Create and initialize `NexaCL-Update` with the seed files and the public verification key.
 3. Configure the required Actions credentials securely. GitHub never returns stored secret
