@@ -57,7 +57,7 @@ source repository and the two exact historical locations as 404-only fallbacks. 
 release links accept only those four pinned repositories and the exact
 candidate version; unrelated repository URLs remain rejected. Existing signing trust and
 artifact identity are unchanged. Repository creation, required CI credentials, verification
-and the `2.0.0.beta.1` publication precede archival of `Nexa-MC/PCL-N`; an unavailable GitHub
+and the `2.0.0.alpha.8` publication precede archival of `Nexa-MC/PCL-N`; an unavailable GitHub
 administration permission is not grounds to archive before the continuation is usable.
 
 NSC is now a standard native executable whose extension is renamed to `.nsc`.

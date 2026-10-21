@@ -2,7 +2,7 @@
 
 ## Repository isolation
 
-The migration branch is `main` in `Nexa-MC/NexaCL`, renamed from `refactor/xsr` during the Beta 1 repository continuation. It is the only source branch and the default branch. Git ancestry and release tags are preserved; the old `dev` reference remains read-only in the archived `Nexa-MC/PCL-N` repository. XSR work must stay in a dedicated workspace outside that legacy checkout.
+The migration branch is `main` in `Nexa-MC/NexaCL`, renamed from `refactor/xsr` during the Alpha 8 repository continuation. It is the only source branch and the default branch. Git ancestry and release tags are preserved; the old `dev` reference remains read-only in the archived `Nexa-MC/PCL-N` repository. XSR work must stay in a dedicated workspace outside that legacy checkout.
 
 The migration branch itself contains no legacy source, project, solution, implementation submodule, installer, native bootstrap, or release tooling. Reference work is performed against the separate `dev` checkout as described in [source-reference.md](source-reference.md).
 

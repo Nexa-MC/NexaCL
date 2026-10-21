@@ -2,7 +2,7 @@ namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
 /// <summary>Finite startup presentation preferences supplied by the product composition root.</summary>
 public sealed record AvaloniaUiStartupAppearance(XsrUiThemeMode ThemeMode = XsrUiThemeMode.System,
-    bool ReducedMotion = false, string ProductVersion = "2.0.0.beta.1",
+    bool ReducedMotion = false, string ProductVersion = "2.0.0.alpha.8",
     AvaloniaUiThemeStartupSnapshot? Theme = null)
 {
     public AvaloniaUiStartupAppearance(XsrUiThemeMode themeMode, bool reducedMotion, string productVersion)

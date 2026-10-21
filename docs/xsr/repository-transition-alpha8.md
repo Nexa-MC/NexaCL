@@ -1,12 +1,12 @@
-# NexaCL continuation and Beta 1 publication
+# NexaCL continuation and Alpha 8 publication
 
 The user-created destination is the public `Nexa-MC/NexaCL` repository, carrying the current
 `refactor/xsr` code and its Git history. After exact-source CI verification, the migrated
 branch is renamed to `main` and becomes the only source branch and default branch.
 Other imported branch refs and the temporary bootstrap `main` are removed at the user’s
 request; Git ancestry and historical/release tags are preserved. Product
-branding stays NexaCL Firefly. Beta 1 has canonical identity `2.0.0.beta.1` and tag
-`v2.0.0.beta.1`. Notes are in [the release draft](../releases/2.0.0.beta.1.md).
+branding stays NexaCL Firefly. Alpha 8 has canonical identity `2.0.0.alpha.8` and tag
+`v2.0.0.alpha.8`. Notes are in [the release draft](../releases/2.0.0.alpha.8.md).
 
 The independent public distribution repository is `Nexa-MC/NexaCL-Update`. It holds
 publisher-signed packages, release manifests, signatures and release notes; the source
@@ -31,8 +31,10 @@ scheduled/manual workflow fetches the publisher tooling from the source default 
 the update repository's public key/fingerprint check. Update-repository tags identify
 distribution metadata, while the source repository retains the corresponding code tag.
 
-The branch rename does not move the immutable Beta 1 tag or interrupt its in-flight
-build. Old-source archival still waits for successful signed publication and mirror verification.
+The branch rename preserves published historical tags. The superseded, unpublished Beta 1
+build was cancelled and its temporary tag retired at the user’s request; no Beta 1 release
+or update-mirror publication was created. Alpha 8 is the next publication. Old-source archival still waits for successful signed
+publication and mirror verification.
 
 The final branch topology is `Nexa-MC/NexaCL:main` only. CI push filters, contributor
 instructions, the update publisher checkout and current source links must follow this
@@ -49,7 +51,7 @@ Publication order:
 3. Configure the required Actions credentials securely. GitHub never returns stored secret
    values through its secrets listing API. Keep the existing publisher signing key/trust;
    do not generate a substitute production key or publish unsigned assets.
-4. Verify CI in the destination. Publish the Beta 1 tag and human-written notes using the
+4. Verify CI in the destination. Publish the Alpha 8 tag and human-written notes using the
    existing `Launcher Build` workflow, and verify its six platform packages and signatures.
    Replace the draft/preparation notices only after the repositories are operational.
    Run the update repository's publication workflow and verify its independently mirrored
@@ -75,7 +77,7 @@ The temporary workflow copies known nonempty release Secrets only when the desti
 name is absent, preserves existing destination values and the initialized source `main`,
 and pushes historical heads/tags without force. Destination Actions are paused during the
 historical tag import, then restored. The temporary migration branch is excluded from the
-copy. CI and the signed Beta 1 build must succeed before the verified update mirror is
+copy. CI and the signed Alpha 8 build must succeed before the verified update mirror is
 published; old-repository archival is the final operation. A failure leaves the old source
 unarchived and restores destination Actions. This describes the authorized procedure;
 completion is established by the resulting GitHub runs/releases, not these instructions.
