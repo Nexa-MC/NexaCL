@@ -5,7 +5,7 @@ namespace Nexa.Services.Updates;
 /// <summary>Independent publisher fetch: no caller URLs, credentials or tool paths.</summary>
 public sealed class GitHubUpdateReleaseSource(HttpClient client) : IUpdateReleaseSource, IUpdateDeltaSource
 {
-    private static readonly string[] Repositories = [LauncherRepository.Url, LauncherRepository.LegacyUrl, LauncherRepository.HistoricalUrl];
+    private static readonly string[] Repositories = [LauncherRepository.UpdatesUrl, LauncherRepository.Url, LauncherRepository.LegacyUrl, LauncherRepository.HistoricalUrl];
     async Task<(byte[] Index, byte[] Signature)> IUpdateDeltaSource.ReadDeltaIndexAsync(string version, CancellationToken token)
     {
         UpdateHighWaterJournal.ParseVersion(version);

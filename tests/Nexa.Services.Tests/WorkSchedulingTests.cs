@@ -153,7 +153,7 @@ internal static partial class Program
         AssertFalse(check.IsCompleted); AssertEqual(0, handler.Calls);
         stop.Cancel(); AssertFalse((await check).IsSuccess); AssertEqual(0, handler.Calls);
         check = updates.CheckAsync(new("2.0.0.alpha.5", "linux-x64", "alpha"));
-        quiet.Dispose(); AssertTrue((await check).IsSuccess); AssertEqual(1, handler.Calls);
+        quiet.Dispose(); AssertTrue((await check).IsSuccess); AssertEqual(2, handler.Calls);
     }
 
     private static async ValueTask WorkCancellationRacesNeverRetainResourceLeases()
@@ -271,7 +271,7 @@ internal static partial class Program
     {
         public int Calls;
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
-        { Calls++; return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent)); }
+        { Calls++; return Task.FromResult(new HttpResponseMessage(request.RequestUri!.Host == "api.github.com" ? HttpStatusCode.NotFound : HttpStatusCode.NoContent)); }
     }
     private sealed class SchedulingClock : TimeProvider, IDisposable
     {

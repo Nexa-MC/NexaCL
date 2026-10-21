@@ -11,6 +11,8 @@ internal static partial class Program
         internal string Body = "";
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (request.RequestUri!.Host == "api.github.com")
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
             AssertEqual("/v2/updates/latest", request.RequestUri!.AbsolutePath);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(Body) });
         }

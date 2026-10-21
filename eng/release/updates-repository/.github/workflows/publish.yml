@@ -1,0 +1,41 @@
+name: Publish verified updates
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Source release tag; blank synchronizes public release channels'
+        required: false
+        type: string
+  schedule:
+    - cron: '*/15 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: update-repository-publication
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'Nexa-MC/NexaMC-Updates'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: Nexa-MC/NexaMC
+          ref: refactor/xsr
+          path: publisher
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Verify signed source assets and publish the complete update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          python publisher/eng/release/publish_updates.py \
+            --destination "$GITHUB_REPOSITORY" --tag "$RELEASE_TAG" \
+            --public-key "$GITHUB_WORKSPACE/GPG-PUBLIC-KEY.asc"

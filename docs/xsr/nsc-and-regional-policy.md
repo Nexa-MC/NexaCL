@@ -52,8 +52,9 @@ base-game installation actions.
 
 The continuation repository is `Nexa-MC/NexaMC`, carrying the existing XSR branch and Git
 history. Source/about links and publisher packaging use the new repository. Signed update
-downloads try it first, retaining the two exact historical repository locations as 404-only
-fallbacks. Update release links accept only those three pinned repositories and the exact
+downloads prefer the independent `Nexa-MC/NexaMC-Updates` distribution repository, then the
+source repository and the two exact historical locations as 404-only fallbacks. Update
+release links accept only those four pinned repositories and the exact
 candidate version; unrelated repository URLs remain rejected. Existing signing trust and
 artifact identity are unchanged. Repository creation, required CI credentials, verification
 and the `2.0.0.beta.1` publication precede archival of `Nexa-MC/PCL-N`; an unavailable GitHub

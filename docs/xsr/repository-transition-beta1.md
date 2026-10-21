@@ -5,6 +5,29 @@ The requested destination is the public `Nexa-MC/NexaMC` repository, carrying th
 branding stays NexaCL Firefly. Beta 1 has canonical identity `2.0.0.beta.1` and tag
 `v2.0.0.beta.1`. Notes are in [the release draft](../releases/2.0.0.beta.1.md).
 
+The independent public distribution repository is `Nexa-MC/NexaMC-Updates`. It holds
+publisher-signed packages, release manifests, signatures and release notes; the source
+repository retains code and Git ancestry. Launcher discovery reads the pinned update
+repository's public releases first, selects a strictly newer canonical version matching
+the requested channel/RID, and accepts only exact package identities at that repository.
+An absent repository or no eligible release falls back to the existing API discovery
+contract, including its rollout checks. HTTP errors and malformed candidate releases
+remain failures. A public release in the dedicated repository is an explicit full-rollout
+publication; unsigned discovery metadata never grants installation authority.
+
+The protected helper downloads from the update repository first, then the pinned source
+and historical repositories after 404 only. Publisher signature, version, channel,
+anti-replay, hash and installation-boundary checks are unchanged.
+
+`eng/release/publish_updates.py` mirrors a complete public source release only after the
+existing independent signature and manifest verification passes. The update repository's
+workflow uses its own `GITHUB_TOKEN` to publish there; no signing private key or cross-repo
+write token is transferred. The seed files live in `eng/release/updates-repository/`; copy
+the existing `GPG-PUBLIC-KEY.asc` and `LICENSE` alongside them when initializing `main`. Its
+scheduled/manual workflow fetches the publisher tooling from the source branch and retains
+the update repository's public key/fingerprint check. Update-repository tags identify
+distribution metadata, while the source repository retains the corresponding code tag.
+
 Publication order:
 
 1. Validate the global entitlement and mainland distribution changes, including local-only
@@ -12,11 +35,15 @@ Publication order:
 2. Create the continuation repository, push the XSR branch with its existing ancestry, retain
    the historical source branches/tags, select `refactor/xsr` as the default branch, and enable
    Issues and Discussions for the migrated feedback entry points.
+   Create and initialize `NexaMC-Updates` with the seed files and the public verification key.
 3. Configure the required Actions credentials securely. GitHub never returns stored secret
    values through its secrets listing API. Keep the existing publisher signing key/trust;
    do not generate a substitute production key or publish unsigned assets.
 4. Verify CI in the destination. Publish the Beta 1 tag and human-written notes using the
    existing `Launcher Build` workflow, and verify its six platform packages and signatures.
+   Replace the draft/preparation notices only after the repositories are operational.
+   Run the update repository's publication workflow and verify its independently mirrored
+   signed distribution and the launcher discovery response.
 5. Once the continuation and release are available, archive `Nexa-MC/PCL-N` and link to the
    continuation. Old releases remain accessible for the pinned fallback sources.
 
@@ -32,6 +59,13 @@ integration`). Repository and organization Actions secret management also return
 Creation, credential configuration, destination CI/release and final archival are pending
 the required GitHub connection permissions. This is an external access limitation; the
 repository must not be reported migrated, archived or released while those steps are pending.
+The retried creation of both repositories still returned the same HTTP 403. Authentication
+diagnostics show the environment applies its existing GitHub integration even to requests
+without an Authorization header or with a deliberately invalid diagnostic header. Supplying
+a PAT in chat therefore does not change this connection's effective administration rights.
+An initial local `main` checkout is prepared at `/workspace/NexaMC-Updates` with the seed
+workflow, README, original LICENSE and verified publisher public key. Its initial commit
+is `ddc0e70`; it has not been pushed and does not establish a GitHub repository exists.
 
 Prepared-code validation on 2026-10-21:
 
@@ -56,3 +90,22 @@ Prepared-code validation on 2026-10-21:
   architecture suite passed again after the source-link update.
 
 These local checks do not constitute destination CI verification or a signed public release.
+
+Independent update-source follow-up validation:
+
+- Release solution build: zero warnings/errors after scoped IDE0055/import formatting.
+- Services runner: 793 cases passed, including channel/RID discovery, strict package URLs,
+  primary-source routing, 404 fallback, real loopback transfers, signature rejection,
+  differential recovery and quiet-scheduler cancellation. Five native/privileged/keyring
+  fixture subchecks explicitly skip in the managed run and belong to their dedicated CI jobs.
+- Three Desktop automatic-update scenarios passed; all 72 architecture projects passed.
+- All 70 publisher tests passed. The six new mirror tests include actual GnuPG verification
+  using an isolated test key, tampered-package rejection before destination writes, draft
+  retention on incomplete uploads, and immutable published releases.
+- The seed workflow YAML parses successfully. A live run in the new repositories remains
+  unverified until creation/access is available; unit-test publication messages describe
+  mocked GitHub operations, not an actual public release.
+- The follow-up Linux Native AOT publish was interrupted during native code generation;
+  it did not produce a verified final candidate. The follow-up trimmed publish was not run.
+  Earlier policy-only AOT/trim evidence above does not validate this subsequent update-source
+  change. Its deployment validation remains pending the dedicated CI build/checks.

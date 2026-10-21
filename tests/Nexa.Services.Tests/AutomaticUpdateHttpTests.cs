@@ -134,7 +134,7 @@ internal static partial class Program
         try
         {
             Console.WriteLine($"Test-only update server: {server.Address}");
-            Console.WriteLine("GET /test-key.asc or /Nexa-MC/NexaMC/releases/download/2.0.0.alpha.6/Nexa-Release.json");
+            Console.WriteLine("GET /test-key.asc or /Nexa-MC/NexaMC-Updates/releases/download/2.0.0.alpha.6/Nexa-Release.json");
             Console.WriteLine("Fresh test key; fixture payloads are not executable. Ctrl+C stops the server.");
             try { await Task.Delay(Timeout.InfiniteTimeSpan, stop.Token); }
             catch (OperationCanceledException) when (stop.IsCancellationRequested) { }
@@ -152,7 +152,7 @@ internal static partial class Program
         {
             Uri target = request.RequestUri!;
             if (target.Scheme != "https" || target.Host != "github.com"
-                || !target.AbsolutePath.StartsWith("/Nexa-MC/NexaMC/releases/download/", StringComparison.Ordinal))
+                || !target.AbsolutePath.StartsWith("/Nexa-MC/NexaMC-Updates/releases/download/", StringComparison.Ordinal))
                 throw new InvalidOperationException("Unexpected production release request");
             request.RequestUri = new Uri(address, target.PathAndQuery);
             return base.SendAsync(request, cancellationToken);
@@ -218,7 +218,7 @@ internal static partial class Program
             Interlocked.Increment(ref _requests);
             UpdateHttpMode mode = _mode;
             string route = request.Length == 3 && request[0] == "GET" ? request[1] : "";
-            const string prefix = "/Nexa-MC/NexaMC/releases/download/";
+            const string prefix = "/Nexa-MC/NexaMC-Updates/releases/download/";
             string release = prefix + (mode == UpdateHttpMode.PrefixedTag ? "v" : "") + "2.0.0.alpha.6/";
             byte[]? body = null;
             bool package = false;

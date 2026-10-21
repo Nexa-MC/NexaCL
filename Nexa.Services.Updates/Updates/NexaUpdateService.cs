@@ -27,6 +27,8 @@ public sealed class NexaUpdateService(HttpClient http, Rollouts.RolloutService? 
                 throw new InvalidDataException("此构建不支持在线更新检查。");
             using IDisposable? admission = WorkScheduler is null ? null
                 : await WorkScheduler.AcquireAsync(WorkPriority.Background, WorkResource.Http, token).ConfigureAwait(false);
+            if (await GitHubUpdateDiscovery.ReadAsync(http, query, current, token).ConfigureAwait(false) is { } published)
+                return XsrResult.Success(new NexaUpdateStatus(published));
             using var response = await http.GetAsync($"{Origin}/v2/updates/latest?channel={query.Channel}&rid={query.RuntimeIdentifier}{(rollouts is null ? "" : "&rollout=1")}", HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.NoContent) return XsrResult.Success(new NexaUpdateStatus(null));
             response.EnsureSuccessStatusCode();
@@ -72,7 +74,8 @@ public sealed class NexaUpdateService(HttpClient http, Rollouts.RolloutService? 
 
     private static bool IsReleaseUrl(string release, string version)
     {
-        return Matches(LauncherRepository.Url) || Matches(LauncherRepository.LegacyUrl) || Matches(LauncherRepository.HistoricalUrl);
+        return Matches(LauncherRepository.UpdatesUrl) || Matches(LauncherRepository.Url)
+            || Matches(LauncherRepository.LegacyUrl) || Matches(LauncherRepository.HistoricalUrl);
         bool Matches(string repository) => release == repository + "/releases/tag/" + version
             || release == repository + "/releases/tag/v" + version;
     }
