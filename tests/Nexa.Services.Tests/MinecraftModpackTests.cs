@@ -12,14 +12,14 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
-    private static async ValueTask ModpackFailedTaskRetriesPinnedArchive()
+    private static async ValueTask ModpackFailedTaskRetriesPinnedArchive(RegionalPolicy countryPolicy)
     {
         string root = CreateTempDirectory(); string archive = Path.Combine(root, "retry.mrpack");
         WriteLocalJar(archive, ("modrinth.index.json", MrpackIndex().ToJsonString()));
         bool online = false;
         var (_, settings) = PolicyFixture();
         AssertTrue(settings.Set(new("network.file-retry", Nexa.Services.Settings.SettingsLayer.Global, new(Nexa.Services.Settings.SettingsOverrideMode.Custom, "false"))).IsSuccess);
-        using var fixture = new InstallFixture(PackMetadata(), settingsPolicy: settings, connectionFactory: source =>
+        using var fixture = new InstallFixture(PackMetadata(), settingsPolicy: settings, countryPolicy: countryPolicy, connectionFactory: source =>
             !online && source.Contains("cdn.modrinth.com", StringComparison.Ordinal) ? new FlakyConnection() : new ServingConnection(PayloadFor(source)));
         try
         {
@@ -213,7 +213,7 @@ internal static partial class Program
         finally { Directory.Delete(temporary, true); }
     }
 
-    private static async ValueTask CursePackResolvesFilesAndHonorsDownloadRestrictions()
+    private static async ValueTask CursePackResolvesFilesAndHonorsDownloadRestrictions(RegionalPolicy countryPolicy)
     {
         string temporary = Path.Combine(Path.GetTempPath(), "nexa-cf-pack-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(temporary);
         try
@@ -233,7 +233,7 @@ internal static partial class Program
             foreach (bool allowed in new[] { true, false })
             {
                 using var http = new HttpClient(new PackCurseHandler(allowed));
-                using var fixture = new InstallFixture(PackMetadata(), http: http);
+                using var fixture = new InstallFixture(PackMetadata(), http: http, countryPolicy: countryPolicy);
                 string root = Path.Combine(temporary, allowed ? "allowed" : "blocked"); Directory.CreateDirectory(root);
                 var result = await fixture.Install.InstallModpackAsync(new(preview, root));
                 AssertEqual(allowed, result.IsSuccess);
@@ -314,7 +314,7 @@ internal static partial class Program
         finally { Directory.Delete(temporary, true); }
     }
 
-    private static async ValueTask ModpackRecoveryUsesPinnedArchiveAndReusesVerifiedDownloads()
+    private static async ValueTask ModpackRecoveryUsesPinnedArchiveAndReusesVerifiedDownloads(RegionalPolicy countryPolicy)
     {
         string temporary = Path.Combine(Path.GetTempPath(), "nexa-pack-resume-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temporary);
@@ -335,7 +335,7 @@ internal static partial class Program
             using (var fixture = new InstallFixture(PackMetadata(), connectionFactory: url =>
                 payloads.TryGetValue(url, out var bytes)
                     ? Interlocked.Increment(ref downloads) == 2 ? new CancelPackConnection(cancellation) : new ServingConnection(bytes)
-                    : new ServingConnection(PayloadFor(url)), settingsPolicy: settings))
+                    : new ServingConnection(PayloadFor(url)), settingsPolicy: settings, countryPolicy: countryPolicy))
             {
                 AssertFalse((await fixture.Install.InstallModpackAsync(new(preview, root, true), cancellation.Token)).IsSuccess);
                 AssertFalse(Directory.Exists(Path.Combine(root, "versions", preview.InstanceId)));
@@ -350,7 +350,7 @@ internal static partial class Program
             {
                 if (url.StartsWith("https://cdn.modrinth.com/", StringComparison.Ordinal)) Interlocked.Increment(ref resumedDownloads);
                 return new ServingConnection(payloads.GetValueOrDefault(url) ?? PayloadFor(url));
-            }, settingsPolicy: settings);
+            }, settingsPolicy: settings, countryPolicy: countryPolicy);
             var result = await resumed.Install.RecoverPendingAsync(new([root]));
             AssertTrue(result.IsSuccess, result.Error?.Message ?? "recovery failed");
             AssertEqual(0, metadata.VanillaReads);

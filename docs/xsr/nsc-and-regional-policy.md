@@ -39,16 +39,29 @@ profile or a manually supplied token is not evidence. The roster mutation bounda
 the rule, including mainland China; there is no country exemption. Ownership is
 rechecked through Microsoft refresh when an existing profile is used as evidence.
 
-Mainland China does not receive Minecraft base-game downloads. New game/pack installation
-is rejected at service admission, before metadata or payload transfer; retries and recovery
-cannot bypass the policy. Launch file completion and edits/pack updates may reuse verified
-local game files, but cannot fetch a missing/corrupt client, base library, asset index or
-asset object. Version catalogue metadata, account authentication, Java, loaders, mods,
+Mainland China does not receive standalone Minecraft base-game downloads. New standalone
+game installation is rejected at service admission, before metadata or payload transfer;
+retries and recovery cannot bypass that admission. Direct modpack installation is available
+in all countries, including CN, and may fetch the game's client, base libraries, asset index
+and asset objects required by the inspected pack. The exception belongs only to the private
+modpack execution path, including pack updates, retries and recovery; it is not a public
+command flag and does not mutate the shared country policy. Pack validation, hashes,
+transactional publication and task cache reuse remain unchanged. Launch file completion and
+ordinary instance edits may reuse verified local game files, but cannot fetch a
+missing/corrupt base-game file in CN. Version catalogue metadata, account authentication, Java, loaders, mods,
 resource/shader packs and user-provided local imports remain separate capabilities.
 The policy uses the same captured deployment country described above, including its stated
 limitations; UI language/format settings do not change admission. International download
 behavior remains available. The UI explains the restriction and does not offer unavailable
 base-game installation actions.
+
+Direct-pack regression coverage installs MRPack/Nexa archives into an empty CN game root,
+checks the actual client, library, asset index/object, mods and overrides, and confirms that a
+subsequent standalone installation is still rejected before metadata reads. Existing
+CurseForge author-download restrictions, pinned-archive retry and interrupted-install recovery
+fixtures run for both CN and international policies. The regional/modpack selection passes
+21 managed and 21 NativeAOT checks; the complete 798-case managed Services suite and
+the 72-project architecture gate also pass.
 
 The continuation repository is `Nexa-MC/NexaCL`, carrying the existing XSR branch and Git
 history. Source/about links and publisher packaging use the new repository. Signed update
@@ -97,8 +110,9 @@ The new Java download destination in CN is an official-launcher guide, linking o
 product). It opens the existing HTTPS platform action after an explicit, visible button
 activation and never dispatches a game-install task or catalogue request. The guide
 explains the Windows Store requirement and continued local-import support on other OSes.
-Existing instance editing retains its original editor; the service-level Minecraft download
-restriction and international installation flow remain in force.
+Existing instance editing retains its original editor; the service-level standalone Minecraft
+download restriction and international installation flow remain in force. The guide does not
+disable direct modpack installation through the existing file activation/import flow.
 
 The Java guide and Bedrock handoff share `OfficialDownload.nss` and explicit padded
 content inside separate painted card carriers. `--native-install-guides-preview` exports

@@ -40,7 +40,7 @@ internal static partial class Program
         finally { Directory.Delete(temporary, true); }
     }
 
-    private static async ValueTask MainlandRejectsNewGameAndPackBeforeNetwork()
+    private static async ValueTask MainlandRejectsStandaloneGameBeforeNetwork()
     {
         string root = CreateTempDirectory();
         try
@@ -53,14 +53,44 @@ internal static partial class Program
             AssertEqual("minecraft.download_region_unavailable", result.Error.Code.Value);
             AssertEqual(0, metadata.VanillaReads);
             AssertFalse(Directory.Exists(Path.Combine(root, "versions")));
-            var pack = new MinecraftModpackPreview(Path.Combine(root, "absent.mrpack"), "", "Pack", "1", "modrinth", "1.20.1", null, null, "pack", 0, 0);
-            var installed = await fixture.Install.InstallModpackAsync(new(pack, root));
-            AssertFalse(installed.IsSuccess);
-            AssertTrue(installed.Error!.Message.Contains(RegionalPolicy.MinecraftDownloadUnavailable, StringComparison.Ordinal));
-            AssertEqual(0, metadata.VanillaReads);
-            AssertFalse(Directory.Exists(Path.Combine(root, "versions")));
         }
         finally { Directory.Delete(root, true); }
+    }
+
+    private static async ValueTask MainlandInstallsModpacksWithRequiredGameFiles()
+    {
+        string temporary = CreateTempDirectory();
+        try
+        {
+            foreach (string extension in new[] { "mrpack", "nexapack" })
+            {
+                string archive = Path.Combine(temporary, "pack." + extension), root = Path.Combine(temporary, extension);
+                Directory.CreateDirectory(root);
+                WriteLocalJar(archive, ("modrinth.index.json", MrpackIndex().ToJsonString()), ("overrides/config/test.txt", "pack configuration"));
+                var pack = await MinecraftModpackArchive.InspectAsync(archive);
+                var metadata = PackMetadata();
+                using var fixture = new InstallFixture(metadata, countryPolicy: new("CN"));
+                var result = await fixture.Install.InstallModpackAsync(new(pack, root, IncludeOptional: true));
+                AssertTrue(result.IsSuccess, result.Error?.Message ?? "Mainland pack installation failed.");
+                string instance = result.Value!.InstanceDirectory;
+                AssertEqual("JARCONTENT", await File.ReadAllTextAsync(Path.Combine(root, "versions", pack.Game, pack.Game + ".jar")));
+                AssertEqual("JARCONTENT", await File.ReadAllTextAsync(Path.Combine(root, "libraries/com/example/library/1.0.0/library-1.0.0.jar")));
+                AssertEqual("ASSET!", await File.ReadAllTextAsync(Path.Combine(root, "assets/objects", Sha1Hex("ASSET!")[..2], Sha1Hex("ASSET!"))));
+                AssertTrue(File.Exists(Path.Combine(root, "assets/indexes/5.json")));
+                AssertTrue(File.Exists(Path.Combine(instance, "mods/required.jar")));
+                AssertTrue(File.Exists(Path.Combine(instance, "mods/optional.jar")));
+                AssertEqual("pack configuration", await File.ReadAllTextAsync(Path.Combine(instance, "config/test.txt")));
+                AssertEqual(1, fixture.InstalledRoots.Count);
+                AssertEqual(Nexa.Services.Tasks.TaskCenterEntryState.Finished, fixture.Entry().State);
+                int reads = metadata.VanillaReads;
+                var standalone = await fixture.Install.InstallAsync(new(root, "1.20.1"));
+                AssertFalse(standalone.IsSuccess);
+                AssertEqual("minecraft.download_region_unavailable", standalone.Error!.Code.Value);
+                AssertEqual(reads, metadata.VanillaReads);
+                AssertEqual(1, fixture.Tasks.ReadEntries().Count);
+            }
+        }
+        finally { Directory.Delete(temporary, true); }
     }
 
     private static async ValueTask MainlandCompletionUsesLocalGameAndRejectsEveryMissingBaseKind()

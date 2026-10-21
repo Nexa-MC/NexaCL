@@ -31,7 +31,6 @@ public sealed partial class MinecraftInstallService
         FileStream? lease = null;
         try
         {
-            if (!preparingUpdate) CountryPolicy.EnsureMinecraftDownloadsAllowed();
             string root = Nexa.Core.PathIdentity.Normalize(command.RootDirectory);
             using var recoveryOperation = await Management.InstanceRecoveryOperationGate.EnterOperationAsync(root, token).ConfigureAwait(false);
             MinecraftModpackArchive.CheckPath(root);
@@ -96,7 +95,8 @@ public sealed partial class MinecraftInstallService
             // Reuse the same manifest, Java/loader installer, libraries, assets and download pipeline.
             var installed = await RunAsync(new(buildRoot, pack.Game, pack.Loader, pack.Build, InstanceName: pack.InstanceId)
             { PreparingEdit = true, ReuseRoot = baseReuseRoot ?? root, ModsRelativeDirectory = "versions/" + pack.InstanceId + "/mods" }, task, token,
-                new PersistentInstallMetadataSource(buildRoot, _metadata, journal), deferCompletion: true, reuseClientPath: baseReuseClientPath).ConfigureAwait(false);
+                new PersistentInstallMetadataSource(buildRoot, _metadata, journal), deferCompletion: true,
+                reuseClientPath: baseReuseClientPath, modpackInstallation: true).ConfigureAwait(false);
             using var packHttp = HttpClientFactory?.Invoke(false) ?? Nexa.Services.Downloads.PooledHttpClient.Create(allowAutoRedirect: false);
             packHttp.Timeout = TimeSpan.FromMinutes(5);
             int completed = 0;
