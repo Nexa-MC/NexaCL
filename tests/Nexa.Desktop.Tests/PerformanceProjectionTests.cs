@@ -12,7 +12,7 @@ internal static partial class Program
         int before = fixture.Controller.ProjectionPasses;
         for (int index = 0; index < 100; index++) fixture.Shell.Render(new XsrUiSize(1280, 800));
         AssertEqual(before, fixture.Controller.ProjectionPasses);
-        AssertTrue(fixture.Service.AddProfile(new Nexa.Services.Accounts.LaunchProfile
+        AssertTrue(AddFixtureProfile(fixture.Service, new Nexa.Services.Accounts.LaunchProfile
         { Username = "Cache wake", Kind = Nexa.Services.Accounts.LaunchProfileKind.Offline }).IsSuccess);
         fixture.Shell.Render(new XsrUiSize(1280, 800));
         AssertTrue(fixture.Controller.ProjectionPasses > before);

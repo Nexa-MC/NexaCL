@@ -139,8 +139,8 @@ internal static partial class Program
         AssertTrue(runtime.Commands.TryResolve(FoundationRouteIds.TelemetryConsent, out _));
         AssertTrue(runtime.Commands.TryResolve(FoundationRouteIds.AccountUpsertProfile, out _));
         AssertTrue(runtime.Commands.TryResolve(FoundationRouteIds.AccountSelectProfile, out XsrCommandId selectId));
-        AssertTrue(host.Accounts.AddProfile(new LaunchProfile { Username = "First" }).IsSuccess);
-        AssertTrue(host.Accounts.AddProfile(new LaunchProfile { Username = "Second" }).IsSuccess);
+        AssertTrue(AddFixtureProfile(host.Accounts, new LaunchProfile { Username = "First" }).IsSuccess);
+        AssertTrue(AddFixtureProfile(host.Accounts, new LaunchProfile { Username = "Second" }).IsSuccess);
         long rosterRevision = host.StateStore.ReadCollection<LaunchProfileView>(
             host.StateStore.Resolve(AccountService.ProfilesKey)).Revision;
         AssertTrue((await runtime.Commands.Dispatch(selectId,
@@ -252,7 +252,7 @@ internal static partial class Program
 
         // Seed each capability so its entries carry applied values.
         logging.Write(LogLevel.Info, "x", "seed");
-        AssertTrue(AccountLoginProfiles.Upsert(accounts, new LaunchProfile
+        AssertTrue(AddFixtureProfile(accounts, new LaunchProfile
         {
             Username = "Steve",
             Kind = LaunchProfileKind.Offline,

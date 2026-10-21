@@ -1,4 +1,4 @@
-using Nexa.Desktop.Ui;
+﻿using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
 using Nexa.Services.Foundation;
@@ -148,7 +148,7 @@ internal static partial class Program
 
     private static void InstallationEntryPresentsJavaAndBedrockSubpages()
     {
-        using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
+        using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), regionalPolicy: new("US"));
         fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();
 
         Emit(fixture.Intents, "ui.navigation.download");
@@ -208,7 +208,7 @@ internal static partial class Program
         AssertTrue(fixture.Shell.Renderer.Activate(FindByKey(fixture.Shell, java, "CatalogRow:game:1.20.6").Entity));
         fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();
         java = fixture.Shell.Render(new XsrUiSize(1280, 800));
-        AssertEqual(7, FindByKey(fixture.Shell, java, "JavaInstallPager").Pager!.Value.PageCount);
+        AssertEqual(6, FindByKey(fixture.Shell, java, "JavaInstallPager").Pager!.Value.PageCount);
         AssertTrue(IsVisible(fixture.Shell, "JavaFabricTab"));
         AssertTrue(IsVisible(fixture.Shell, "JavaForgeTab"));
         AssertFalse(IsVisible(fixture.Shell, "JavaCleanroomTab"));
@@ -231,12 +231,12 @@ internal static partial class Program
             notification.Level == DesktopNotificationLevel.Warn && notification.Message.Contains("无法开始安装", StringComparison.Ordinal)));
         Emit(fixture.Intents, "ui.install.loader.vanilla");
         java = fixture.Shell.Render(new XsrUiSize(1280, 800));
-        AssertEqual(7, FindByKey(fixture.Shell, java, "JavaInstallPager").Pager!.Value.PageCount);
+        AssertEqual(6, FindByKey(fixture.Shell, java, "JavaInstallPager").Pager!.Value.PageCount);
         Emit(fixture.Intents, "ui.install.page.forge");
         Emit(fixture.Intents, "ui.install.loader.forge");
         java = fixture.Shell.Render(new XsrUiSize(1280, 800));
-        AssertEqual(3, FindByKey(fixture.Shell, java, "JavaInstallPager").Pager!.Value.PageCount);
-        AssertTrue(IsVisible(fixture.Shell, "JavaOptiFineTab"));
+        AssertEqual(2, FindByKey(fixture.Shell, java, "JavaInstallPager").Pager!.Value.PageCount);
+        AssertFalse(IsVisible(fixture.Shell, "JavaOptiFineTab"));
         AssertFalse(IsVisible(fixture.Shell, "JavaFabricApiTab"));
         Emit(fixture.Intents, "ui.install.loader.vanilla");
         fixture.Shell.Render(new XsrUiSize(1280, 800));
@@ -342,7 +342,7 @@ internal static partial class Program
     private static void AccountCardListsProfilesAndSwitchesSelection()
     {
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), addProfile: true);
-        AssertTrue(fixture.Service.AddProfile(new LaunchProfile
+        AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile
         {
             Username = "Second",
             Kind = LaunchProfileKind.Microsoft,

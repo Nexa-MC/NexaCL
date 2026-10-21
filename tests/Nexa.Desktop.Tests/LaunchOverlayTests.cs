@@ -19,7 +19,7 @@ internal static partial class Program
         using MinecraftRuntime runtime = CreateRecordingRuntime(recording);
         LaunchPageFixture fixture = new(new ImmediateInstanceSource([Instance("playable")]), runtime,
             addProfile: true, ownsMinecraftRuntime: false);
-        AssertTrue(fixture.Service.AddProfile(new LaunchProfile { Username = "Selected" }).IsSuccess);
+        AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile { Username = "Selected" }).IsSuccess);
         return fixture;
     }
 
@@ -188,7 +188,7 @@ internal static partial class Program
         // button without emitting feedback, so no frame loop can spin on it.
         RecordingStartRoute recording = new();
         using LaunchPageFixture fixture = ComposeLaunchOverlayFixture(recording);
-        AssertTrue(fixture.Service.AddProfile(new LaunchProfile
+        AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile
         {
             Username = "Linked",
             Kind = LaunchProfileKind.LittleSkin,

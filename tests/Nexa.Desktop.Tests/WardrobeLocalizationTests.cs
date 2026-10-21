@@ -39,7 +39,7 @@ internal static partial class Program
         {
             using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
             fixture.Service.ConfigureRegionalPolicy(new("CN"));
-            AssertTrue(fixture.Service.AddProfile(new LaunchProfile
+            AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile
             { Username = "皮肤", Info = "皮肤", Kind = LaunchProfileKind.Microsoft, Uuid = "literal-user" }).IsSuccess);
             UiLocalizationCatalog catalog = new();
             catalog.SetLanguage(locale);
@@ -86,7 +86,7 @@ internal static partial class Program
             AssertEqual(locale == "en" ? "Page 1 · 1 items · Blessing Skin 皮肤 {0}" : "第 1 頁 · 1 項 · Blessing Skin 皮肤 {0}", FindByKey(fixture.Shell, scene, "WardrobeLibrarySiteStatus").Text);
             foreach (string key in new[] { "WardrobeLibrarySiteName", "WardrobeLibraryCard.901.Name", "WardrobeLibraryCard.901.Uploader", "WardrobeLibrarySiteStatus" })
                 AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiText>(FindEntity(fixture.Shell, key))!.Localize);
-            AssertTrue(fixture.Service.AddProfile(new LaunchProfile
+            AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile
             { Username = "Other", Info = "皮肤", Kind = LaunchProfileKind.ThirdParty, Uuid = "third-party-user", AuthServer = "https://skins.example/api/yggdrasil" }).IsSuccess);
             AssertTrue(fixture.Service.SelectProfile(1) is null);
             fixture.Shell.Stage.Navigation.Replace(wardrobe.Page);

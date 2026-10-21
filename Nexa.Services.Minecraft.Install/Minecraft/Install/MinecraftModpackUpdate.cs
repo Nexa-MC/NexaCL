@@ -109,7 +109,8 @@ public sealed partial class MinecraftInstallService
             string scratch = Path.Combine(stage, "prepared"); Directory.CreateDirectory(scratch);
             task.Report("准备新版", state.Preview.Pack.Version, .1, 0, 1, 0);
             var built = await InstallModpackCoreAsync(new(state.Preview.Pack, scratch, request.IncludeOptional), token,
-                preparingUpdate: true, parentTask: task).ConfigureAwait(false);
+                preparingUpdate: true, parentTask: task, baseReuseRoot: root,
+                baseReuseClientPath: Path.Combine(instance, Path.GetFileName(instance) + ".jar")).ConfigureAwait(false);
             if (!built.IsSuccess)
             {
                 if (built.Error?.Kind == XsrErrorKind.Cancelled) throw new OperationCanceledException(token);

@@ -126,7 +126,7 @@ internal static partial class Program
                 var builder = new XsrStateStoreBuilder(); DownloadService.DeclareState(builder); TaskCenterStateContract.DeclareState(builder);
                 var store = builder.Build(); var tasks = new TaskCenterService(store); var downloads = new DownloadService(store);
                 observedTasks = tasks;
-                using var installer = new MinecraftInstallService(tasks, downloads, http: http);
+                using var installer = new MinecraftInstallService(tasks, downloads, http: http) { CountryPolicy = new("US") };
                 var service = new ResourceModInstallService(source, new(new(http, "")), new(source, downloads, tasks, http), new(tasks, store, installer), tasks);
                 bool failed = false;
                 try { await service.InstallAsync(new(new(ResourceProvider.Modrinth, "A"), "A1", new(root, "fixture", false)), default); }

@@ -21,6 +21,7 @@ public sealed partial class MinecraftInstallService
     private async Task<MinecraftInstallResult> InstallNewAsync(MinecraftInstallCommand command, ITaskCenterTask task,
         CancellationToken token, string? resumeStage = null, InstallExecution? execution = null)
     {
+        CountryPolicy.EnsureMinecraftDownloadsAllowed();
         _ = ValidatePrimaryLoader(command);
         string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(command.RootDirectory));
         string instance = InstallInstanceId(command);

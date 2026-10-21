@@ -10,6 +10,36 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static void MainlandBaseInstallControlsExplainAndRejectUnavailableActions()
+    {
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]), regionalPolicy: new("CN"));
+        Emit(fixture.Intents, "ui.install.java");
+        var scene = fixture.Shell.Render(new(1280, 800));
+        var start = FindByKey(fixture.Shell, scene, "JavaInstallStart");
+        AssertFalse(start.IsEnabled);
+        AssertEqual("不提供本体下载", start.Text);
+        AssertEqual(RegionalPolicy.MinecraftDownloadUnavailable, start.Label);
+        Emit(fixture.Intents, "ui.install.start");
+        fixture.Shell.Render(new(1280, 800));
+        AssertTrue(fixture.Feedback.Snapshot().Notifications.Any(notice => notice.Message == RegionalPolicy.MinecraftDownloadUnavailable));
+        AssertEqual(0, fixture.Foundation.Host.Tasks.ReadEntries().Count);
+        var catalog = new UiLocalizationCatalog();
+        fixture.Shell.Renderer.TextLocalizer = catalog.Translate;
+        foreach (var (language, caption) in new[] { ("en", "Game download unavailable"), ("zh-Hant", "不提供本體下載") })
+        {
+            catalog.SetLanguage(language);
+            scene = fixture.Shell.Render(new(1280, 800));
+            start = FindByKey(fixture.Shell, scene, "JavaInstallStart");
+            AssertFalse(start.IsEnabled);
+            AssertEqual(caption, start.Text);
+            AssertEqual(catalog.Translate(RegionalPolicy.MinecraftDownloadUnavailable), start.Label);
+            Emit(fixture.Intents, "ui.install.start");
+            fixture.Shell.Render(new(1280, 800));
+            AssertTrue(fixture.Feedback.Snapshot().Notifications.Any(notice => notice.Message == start.Label));
+            AssertEqual(0, fixture.Foundation.Host.Tasks.ReadEntries().Count);
+        }
+    }
+
     private static void RegionalSettingsHideMainlandFacilitiesAndRestoreSavedPreferences()
     {
         foreach (string country in new[] { "US", "HK", "MO", "TW", "" })

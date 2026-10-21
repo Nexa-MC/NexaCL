@@ -52,9 +52,9 @@ internal sealed partial class LaunchPageController
         Dictionary<string, string> data = new()
         {
             ["inputLabel"] = InstallCopy("input.search"),
-            ["startText"] = InstallCopy("install.start"),
-            ["startLabel"] = InstallCopy("install.start-label"),
-            ["startEnabled"] = "true",
+            ["startText"] = InstallCopy(_region.AllowMinecraftDownloads ? "install.start" : "install.download-unavailable"),
+            ["startLabel"] = _region.AllowMinecraftDownloads ? InstallCopy("install.start-label") : _shell.Renderer.LocalizeText(Nexa.Services.RegionalPolicy.MinecraftDownloadUnavailable),
+            ["startEnabled"] = InstallFlag(_region.AllowMinecraftDownloads),
         };
         foreach (var subpage in JavaInstallSubpages)
         {
@@ -113,9 +113,9 @@ internal sealed partial class LaunchPageController
         _editPlanKey = null;
         Publish(LaunchPageState.JavaInstallTitleKey, InstallCopy(_editingInstall ? "edit.title" : "install.title"));
         if (!_editingInstall || _installEdit is null)
-            ReloadInstall(_installWorkspace, ("startEnabled", InstallFlag(!_editingInstall)),
-                ("startText", InstallCopy(_editingInstall ? "edit.save" : "install.start")),
-                ("startLabel", InstallCopy(_editingInstall ? "edit.save-label" : "install.start-label")));
+            ReloadInstall(_installWorkspace, ("startEnabled", InstallFlag(!_editingInstall && _region.AllowMinecraftDownloads)),
+                ("startText", InstallCopy(_editingInstall ? "edit.save" : _region.AllowMinecraftDownloads ? "install.start" : "install.download-unavailable")),
+                ("startLabel", _editingInstall || _region.AllowMinecraftDownloads ? InstallCopy(_editingInstall ? "edit.save-label" : "install.start-label") : _shell.Renderer.LocalizeText(Nexa.Services.RegionalPolicy.MinecraftDownloadUnavailable)));
         RefreshJavaInstallPresentation();
         UpdateTitleBar();
         return true;

@@ -29,15 +29,35 @@ cached catalogue rows, provider adapters or HTTP. Local installation from a user
 official installer remains available. General loader/resource filtering, LittleSkin, third-party/offline
 account providers and ordinary network diagnostics remain global. Manual network probes include
 BMCLAPI/MCIM only in CN; other regions request and display the three official endpoints only.
-International account additions
-continue to use the verified-ownership admission below; their providers are not disabled by
+Account additions in every country
+use the verified-ownership admission below; their providers are not disabled by
 country. Mainland purchase reminders are emitted only for admitted CN account operations.
 
-International profile creation/import requires a Microsoft Minecraft Java entitlement
+Non-Microsoft profile creation/import in every country requires a Microsoft Minecraft Java entitlement
 verified by the authentication service in the current Host session. An imported Microsoft
 profile or a manually supplied token is not evidence. The roster mutation boundary enforces
-the rule; mainland users receive a purchase reminder without being blocked. Ownership is
+the rule, including mainland China; there is no country exemption. Ownership is
 rechecked through Microsoft refresh when an existing profile is used as evidence.
+
+Mainland China does not receive Minecraft base-game downloads. New game/pack installation
+is rejected at service admission, before metadata or payload transfer; retries and recovery
+cannot bypass the policy. Launch file completion and edits/pack updates may reuse verified
+local game files, but cannot fetch a missing/corrupt client, base library, asset index or
+asset object. Version catalogue metadata, account authentication, Java, loaders, mods,
+resource/shader packs and user-provided local imports remain separate capabilities.
+The policy uses the same captured deployment country described above, including its stated
+limitations; UI language/format settings do not change admission. International download
+behavior remains available. The UI explains the restriction and does not offer unavailable
+base-game installation actions.
+
+The continuation repository is `Nexa-MC/NexaMC`, carrying the existing XSR branch and Git
+history. Source/about links and publisher packaging use the new repository. Signed update
+downloads try it first, retaining the two exact historical repository locations as 404-only
+fallbacks. Update release links accept only those three pinned repositories and the exact
+candidate version; unrelated repository URLs remain rejected. Existing signing trust and
+artifact identity are unchanged. Repository creation, required CI credentials, verification
+and the `2.0.0.beta.1` publication precede archival of `Nexa-MC/PCL-N`; an unavailable GitHub
+administration permission is not grounds to archive before the continuation is usable.
 
 NSC is now a standard native executable whose extension is renamed to `.nsc`.
 There is no custom `NEXA NSC` magic, encryption, in-memory executable loading or temporary

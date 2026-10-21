@@ -12,11 +12,32 @@ internal static partial class Program
 {
     private static readonly XsrUiSize AccountTestSize = new(810, 470);
 
+    private static void SeedFixtureOwner(LaunchPageFixture fixture)
+    {
+        AddVerifiedFixtureOwner(fixture.Service, "Owner");
+    }
+
+    private static void AccountFormsRejectUnverifiedOfflineCreationInEveryRegion()
+    {
+        foreach (string country in new[] { "CN", "US", "" })
+        {
+            using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
+            fixture.Service.ConfigureRegionalPolicy(new(country));
+            AccountClick(fixture, "AccountAdd"); AccountClick(fixture, "ProviderOffline");
+            AccountFill(fixture, "OfflineName", "New_Player"); AccountClick(fixture, "FormSubmit");
+            fixture.Onboarding.Service.WhenIdle.GetAwaiter().GetResult();
+            AssertEqual(AccountLoginPhase.Failed, AccountSnapshot(fixture).Phase);
+            AssertEqual(0, fixture.Service.GetViews().Count);
+            AssertTrue(AccountSnapshot(fixture).Message.Contains("请先登录并验证", StringComparison.Ordinal));
+        }
+    }
+
     private static void AccountFormsUseOneHeaderAndCreateOfflineProfiles()
     {
         foreach (XsrUiShellStyle style in Enum.GetValues<XsrUiShellStyle>())
         {
             using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
+            SeedFixtureOwner(fixture);
             fixture.Shell.SetStyle(style);
             AccountClick(fixture, "AccountAdd");
             XsrUiScene scene = fixture.Shell.Render(AccountTestSize);
@@ -36,7 +57,7 @@ internal static partial class Program
             scene = fixture.Shell.Render(AccountTestSize);
             AssertEqual("New_Player", FindByKey(fixture.Shell, scene, "AccountName").Text);
             AssertEqual("账户", FindByKey(fixture.Shell, scene, "AccountHeader").Text);
-            AssertEqual(FindByKey(fixture.Shell, scene, "AccountSwitch").Entity, fixture.Shell.Renderer.Focused);
+            AssertEqual(FindByKey(fixture.Shell, scene, "AccountAdd").Entity, fixture.Shell.Renderer.Focused);
             AssertFalse(HasKey(fixture.Shell, scene, "AccountForm"));
             AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiTextInput>(FindEntity(fixture.Shell, "OfflineName"))!.ReadDraft().Length > 0);
             AccountClick(fixture, "AccountAdd"); AccountClick(fixture, "ProviderOffline");
@@ -132,6 +153,7 @@ internal static partial class Program
             """{"accessToken":"PRIVATE-YGG","clientToken":"CLIENT","selectedProfile":{"id":"uuid","name":"ThirdPlayer"}}""");
         using HttpClient client = new(handler);
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), accountHttp: client);
+        SeedFixtureOwner(fixture);
         AccountClick(fixture, "AccountAdd"); AccountClick(fixture, "ProviderThirdParty");
         AccountFill(fixture, "AuthServer", "https://auth.example");
         AccountFill(fixture, "AuthUsername", "fixture@example.org");
@@ -161,6 +183,7 @@ internal static partial class Program
         using HttpClient client = new(handler);
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), accountHttp: client,
             accountOptions: new("fixture", new("fixture", "", new Uri("http://127.0.0.1:17342/callback"))));
+        SeedFixtureOwner(fixture);
         AccountClick(fixture, "AccountAdd"); AccountClick(fixture, "ProviderLittleSkin");
         AwaitAccountPhase(fixture, AccountLoginPhase.ChoosingProfile);
         XsrUiScene scene = fixture.Shell.Render(AccountTestSize);
@@ -168,7 +191,7 @@ internal static partial class Program
         AssertTrue(fixture.Shell.Renderer.Activate(scene.Nodes.Single(node => node.Label == "选择角色 Second").Entity));
         fixture.Onboarding.Service.WhenIdle.GetAwaiter().GetResult();
         AssertEqual(AccountLoginPhase.Completed, AccountSnapshot(fixture).Phase);
-        LaunchProfile profile = fixture.Service.GetProfile(0).Value!;
+        LaunchProfile profile = fixture.Service.GetProfile(fixture.Service.SelectedIndex).Value!;
         AssertEqual("PRIVATE-MC", profile.AccessToken);
         AssertEqual("PRIVATE-OAUTH", profile.ProviderAccessToken);
         AssertEqual("PRIVATE-REFRESH", profile.RefreshToken);
@@ -207,6 +230,7 @@ internal static partial class Program
             using HttpClient http = new(new AccountTimeoutHttp());
             using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), accountHttp: http,
                 accountOptions: new("fixture", LittleSkinConfigForPreparation()));
+            SeedFixtureOwner(fixture);
             AccountClick(fixture, "AccountAdd");
             AccountClick(fixture, provider);
             if (provider == "ProviderThirdParty")
@@ -327,6 +351,7 @@ internal static partial class Program
     private static void ImportedProfilesRemainVisibleWhenPickerReopens()
     {
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
+        SeedFixtureOwner(fixture);
         string path = Path.Combine(fixture.TemporaryDirectory, "legacy-profiles.json");
         new LaunchProfileFilePort(path).Save(new LaunchProfileSet
         {
@@ -338,6 +363,7 @@ internal static partial class Program
         });
         byte[] original = File.ReadAllBytes(path);
         XsrUiSize size = new(810, 470);
+        AccountClick(fixture, "AccountSwitch");
         XsrUiScene scene = fixture.Shell.Render(size);
         AssertTrue(fixture.Shell.Renderer.Activate(FindByKey(fixture.Shell, scene, "AccountImport").Entity));
         scene = fixture.Shell.Render(size);
@@ -346,6 +372,7 @@ internal static partial class Program
         fixture.Onboarding.Service.WhenIdle.GetAwaiter().GetResult();
         AssertEqual(AccountLoginPhase.Completed, fixture.Store.Read<AccountLoginSnapshot>(
             fixture.Store.Resolve(AccountOnboardingState.Login)).Value!.Phase);
+        AssertTrue(fixture.Service.RemoveProfile(0).IsSuccess);
         scene = fixture.Shell.Render(size); // roster gets built while hidden behind the selected profile
         AssertEqual("Imported0", FindByKey(fixture.Shell, scene, "AccountName").Text);
         AssertTrue(original.SequenceEqual(File.ReadAllBytes(path)));

@@ -33,9 +33,9 @@ internal sealed partial class LaunchPageController
         Publish(LaunchPageState.JavaInstallTitleKey, InstallCopy(editing ? "edit.title" : "install.title"));
         _editPlan = null;
         _editPlanKey = null;
-        ReloadInstall(_installWorkspace, ("startEnabled", InstallFlag(!editing)),
-            ("startText", InstallCopy(editing ? "edit.save" : "install.start")),
-            ("startLabel", InstallCopy(editing ? "edit.save-label" : "install.start-label")));
+        ReloadInstall(_installWorkspace, ("startEnabled", InstallFlag(!editing && _region.AllowMinecraftDownloads)),
+            ("startText", InstallCopy(editing ? "edit.save" : _region.AllowMinecraftDownloads ? "install.start" : "install.download-unavailable")),
+            ("startLabel", editing || _region.AllowMinecraftDownloads ? InstallCopy(editing ? "edit.save-label" : "install.start-label") : _shell.Renderer.LocalizeText(Nexa.Services.RegionalPolicy.MinecraftDownloadUnavailable)));
     }
 
     private void ProjectInstallEditor()

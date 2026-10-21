@@ -59,7 +59,7 @@ internal static partial class Program
                 Directory.CreateDirectory(Path.GetDirectoryName(executable)!); File.WriteAllBytes(executable, [0]);
                 using var host = FoundationComposer.Compose(new InMemorySettingsPort(), LauncherDefaults.CreateSchema(),
                     new LaunchProfileFilePort(Path.Combine(game, "profiles.json")));
-                AssertTrue(host.Accounts.AddProfile(new LaunchProfile { Username = "Fixture", Kind = LaunchProfileKind.Offline }).IsSuccess);
+                AssertTrue(AddFixtureProfile(host.Accounts, new LaunchProfile { Username = "Fixture", Kind = LaunchProfileKind.Offline }).IsSuccess);
                 if (item.Global is { } global)
                     AssertTrue(host.SettingsPolicy.Set(new("game.system-glfw", SettingsLayer.Global, new(SettingsOverrideMode.Custom, global))).IsSuccess);
                 if (item.Instance is { } local)

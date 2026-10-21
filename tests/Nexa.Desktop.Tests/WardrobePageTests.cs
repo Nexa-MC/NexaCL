@@ -13,7 +13,7 @@ internal static partial class Program
     {
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
         fixture.Service.ConfigureRegionalPolicy(new("US"));
-        AssertTrue(fixture.Service.AddProfile(new LaunchProfile
+        AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile
         { Username = "Alice", Kind = LaunchProfileKind.Microsoft, Uuid = "0123456789abcdef0123456789abcdef", AccessToken = "PRIVATE" }).IsSuccess);
         PngImage image = WardrobeDesktopSkin();
         AccountWardrobeUploadSkinCommand? upload = null; AccountWardrobeSetCapeCommand? cape = null;
@@ -62,7 +62,7 @@ internal static partial class Program
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
         fixture.Service.ConfigureRegionalPolicy(new("US"));
         foreach (string name in new[] { "Alice", "Bob" })
-            AssertTrue(fixture.Service.AddProfile(new LaunchProfile { Username = name, Kind = LaunchProfileKind.Microsoft, Uuid = name }).IsSuccess);
+            AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile { Username = name, Kind = LaunchProfileKind.Microsoft, Uuid = name }).IsSuccess);
         var first = new TaskCompletionSource<XsrResult<AccountWardrobeSnapshot>>(TaskCreationOptions.RunContinuationsAsynchronously);
         var picker = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var validation = new TaskCompletionSource<XsrResult<AccountWardrobeSkinPreview>>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -128,7 +128,7 @@ internal static partial class Program
     {
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
         fixture.Service.ConfigureRegionalPolicy(new("US"));
-        AssertTrue(fixture.Service.AddProfile(new LaunchProfile { Username = "Alice", Kind = LaunchProfileKind.Microsoft, Uuid = "alice" }).IsSuccess);
+        AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile { Username = "Alice", Kind = LaunchProfileKind.Microsoft, Uuid = "alice" }).IsSuccess);
         int reads = 0, attempts = 0; long secondStamp = 0;
         var queries = new XsrQueryRouterBuilder();
         queries.Register<AccountWardrobeQuery, AccountWardrobeSnapshot>(AccountWardrobeContract.Read, (_, _) =>
@@ -181,7 +181,7 @@ internal static partial class Program
     {
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
         fixture.Service.ConfigureRegionalPolicy(new("US"));
-        fixture.Service.AddProfile(new LaunchProfile { Username = "Alice", Kind = LaunchProfileKind.Microsoft, Uuid = "alice" });
+        AddFixtureProfile(fixture.Service, new LaunchProfile { Username = "Alice", Kind = LaunchProfileKind.Microsoft, Uuid = "alice" });
         int textureReads = 0;
         var queries = new XsrQueryRouterBuilder();
         queries.Register<AccountWardrobeQuery, AccountWardrobeSnapshot>(AccountWardrobeContract.Read, (_, _) =>
@@ -434,7 +434,7 @@ internal static partial class Program
         foreach (bool removeAndReadd in new[] { false, true })
         {
             using LaunchPageFixture fixture = LibraryFixture(LaunchProfileKind.LittleSkin);
-            if (!removeAndReadd) AssertTrue(fixture.Service.AddProfile(new LaunchProfile
+            if (!removeAndReadd) AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile
             { Username = "Bob", Kind = LaunchProfileKind.LittleSkin, Uuid = "bob" }).IsSuccess);
             var delayed = new TaskCompletionSource<XsrResult<AccountWardrobeSnapshot>>(TaskCreationOptions.RunContinuationsAsynchronously);
             CancellationToken capturedToken = default;
@@ -461,7 +461,7 @@ internal static partial class Program
             {
                 var samePrincipal = fixture.Service.GetProfile(0).Value;
                 AssertTrue(fixture.Service.RemoveProfile(0).IsSuccess);
-                AssertTrue(fixture.Service.AddProfile(samePrincipal).IsSuccess);
+                AssertTrue(AddFixtureProfile(fixture.Service, samePrincipal).IsSuccess);
             }
             else
             { AssertTrue(fixture.Service.SelectProfile(1) is null); AssertTrue(fixture.Service.SelectProfile(0) is null); }
@@ -519,7 +519,7 @@ internal static partial class Program
         foreach (bool removeAndReadd in new[] { false, true })
         {
             using LaunchPageFixture fixture = LibraryFixture(LaunchProfileKind.LittleSkin);
-            if (!removeAndReadd) AssertTrue(fixture.Service.AddProfile(new LaunchProfile
+            if (!removeAndReadd) AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile
             { Username = "Bob", Kind = LaunchProfileKind.LittleSkin, Uuid = "bob" }).IsSuccess);
             var completed = new TaskCompletionSource<XsrResult>(TaskCreationOptions.RunContinuationsAsynchronously);
             CancellationToken writeToken = default;
@@ -549,7 +549,7 @@ internal static partial class Program
             {
                 var samePrincipal = fixture.Service.GetProfile(0).Value;
                 AssertTrue(fixture.Service.RemoveProfile(0).IsSuccess);
-                AssertTrue(fixture.Service.AddProfile(samePrincipal).IsSuccess);
+                AssertTrue(AddFixtureProfile(fixture.Service, samePrincipal).IsSuccess);
             }
             else
             { AssertTrue(fixture.Service.SelectProfile(1) is null); AssertTrue(fixture.Service.SelectProfile(0) is null); }

@@ -16,8 +16,8 @@ internal static partial class Program
 
     private static async ValueTask WardrobeProjectsMruOtherProfilesAndOwnedCapePrecedence()
     {
-        var accounts = WardrobeAccounts(); AssertTrue(accounts.AddProfile(WardrobeMicrosoft()).IsSuccess);
-        AssertTrue(accounts.AddProfile(WardrobeMicrosoft("Bob")).IsSuccess);
+        var accounts = WardrobeAccounts(); AssertTrue(AddFixtureProfile(accounts, WardrobeMicrosoft()).IsSuccess);
+        AssertTrue(AddFixtureProfile(accounts, WardrobeMicrosoft("Bob")).IsSuccess);
         var history = new WardrobeHistoryStore();
         string key = WardrobeHistoryStore.ProfileKey(accounts.GetViews()[0]);
         var now = DateTimeOffset.UtcNow;
@@ -51,7 +51,7 @@ internal static partial class Program
     {
         foreach (bool timeout in new[] { false, true })
         {
-            var accounts = WardrobeAccounts(); accounts.AddProfile(WardrobeMicrosoft() with { RefreshToken = "REFRESH" });
+            var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, WardrobeMicrosoft() with { RefreshToken = "REFRESH" });
             using var handler = new ParityWardrobeHttp { SessionTextures = true };
             using var http = new HttpClient(handler); using var skins = new AccountSkinService(accounts, http);
             var auth = new ParityMicrosoftRefresh { Fail = true, Timeout = timeout };
@@ -66,7 +66,7 @@ internal static partial class Program
         }
         foreach (bool failure in new[] { false, true })
         {
-            var accounts = WardrobeAccounts(); accounts.AddProfile(WardrobeMicrosoft());
+            var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, WardrobeMicrosoft());
             var history = new WardrobeHistoryStore();
             await history.RecordAsync([new("other", "Not owned", AccountWardrobeTextureKind.Cape,
                 "https://textures.minecraft.net/history-cape", false, DateTimeOffset.UtcNow)]);
@@ -83,7 +83,7 @@ internal static partial class Program
 
     private static async ValueTask WardrobeMicrosoftOwnershipUnauthorizedRefreshesOnceAndRetiresOldStamp()
     {
-        var accounts = WardrobeAccounts(); accounts.AddProfile(WardrobeMicrosoft() with { RefreshToken = "REFRESH" });
+        var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, WardrobeMicrosoft() with { RefreshToken = "REFRESH" });
         using var handler = new ParityWardrobeHttp { RejectFirstCapeRead = true };
         using var http = new HttpClient(handler); using var skins = new AccountSkinService(accounts, http);
         var auth = new ParityMicrosoftRefresh();
@@ -99,7 +99,7 @@ internal static partial class Program
 
     private static async ValueTask WardrobePublicMicrosoftSkinDownloadsAndUploadsWithoutPublicCredentials()
     {
-        var accounts = WardrobeAccounts(); accounts.AddProfile(WardrobeMicrosoft());
+        var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, WardrobeMicrosoft());
         using var handler = new ParityWardrobeHttp(); using var http = new HttpClient(handler);
         using var skins = new AccountSkinService(accounts, http);
         var service = new AccountWardrobeService(accounts, http, skins);
@@ -120,7 +120,7 @@ internal static partial class Program
     {
         foreach (bool cape in new[] { false, true })
         {
-            var accounts = WardrobeAccounts(); accounts.AddProfile(ParityLittleSkin());
+            var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, ParityLittleSkin());
             var history = new WardrobeHistoryStore();
             using var handler = new ParityWardrobeHttp { PublicCape = cape };
             using var http = new HttpClient(handler); using var skins = new AccountSkinService(accounts, http);
@@ -142,7 +142,7 @@ internal static partial class Program
             AssertTrue((await history.LoadAsync()).Any(entry => entry.Address == address
                 && entry.Kind == (cape ? AccountWardrobeTextureKind.Cape : AccountWardrobeTextureKind.Skin)));
         }
-        var failedAccounts = WardrobeAccounts(); failedAccounts.AddProfile(ParityLittleSkin());
+        var failedAccounts = WardrobeAccounts(); AddFixtureProfile(failedAccounts, ParityLittleSkin());
         using var failedHandler = new ParityWardrobeHttp { IgnoreApply = true };
         using var failedHttp = new HttpClient(failedHandler); using var failedSkins = new AccountSkinService(failedAccounts, failedHttp);
         var failedService = new AccountWardrobeService(failedAccounts, failedHttp, failedSkins, littleSkin: new LittleSkinOAuthService(failedHttp));
@@ -153,7 +153,7 @@ internal static partial class Program
 
     private static async ValueTask WardrobeCloudKeepsUploadsAndSiteReferencesDistinctAndAdmitted()
     {
-        var accounts = WardrobeAccounts(); accounts.AddProfile(WardrobeMicrosoft() with { Kind = LaunchProfileKind.NCloud });
+        var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, WardrobeMicrosoft() with { Kind = LaunchProfileKind.NCloud });
         using var handler = new ParityWardrobeHttp(); using var http = new HttpClient(handler);
         using var skins = new AccountSkinService(accounts, http);
         var cloud = new ParityCloudWardrobe();
@@ -184,7 +184,7 @@ internal static partial class Program
     {
         foreach (var kind in new[] { LaunchProfileKind.LittleSkin, LaunchProfileKind.NCloud, LaunchProfileKind.Offline, LaunchProfileKind.ThirdParty })
         {
-            var accounts = WardrobeAccounts(); accounts.AddProfile(WardrobeMicrosoft() with { Kind = kind });
+            var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, WardrobeMicrosoft() with { Kind = kind });
             using var handler = new ParityWardrobeHttp(); using var http = new HttpClient(handler);
             using var skins = new AccountSkinService(accounts, http);
             var service = new AccountWardrobeService(accounts, http, skins);
@@ -206,7 +206,7 @@ internal static partial class Program
             ("https://skin.example.test/api/yggdrasil?secret=token", (string?)null)
         })
         {
-            var accounts = WardrobeAccounts(); accounts.AddProfile(WardrobeMicrosoft() with { Kind = LaunchProfileKind.ThirdParty, AuthServer = address });
+            var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, WardrobeMicrosoft() with { Kind = LaunchProfileKind.ThirdParty, AuthServer = address });
             using var http = new HttpClient(new ParityWardrobeHttp()); using var skins = new AccountSkinService(accounts, http);
             var read = await new AccountWardrobeService(accounts, http, skins).ReadAsync(new());
             AssertTrue(read.IsSuccess); AssertEqual(expected, read.Value.ManageUri);
@@ -215,7 +215,7 @@ internal static partial class Program
 
     private static async ValueTask WardrobeCardAndPublicRoutesRejectUnprojectedOrMismatchedSources()
     {
-        var accounts = WardrobeAccounts(); accounts.AddProfile(WardrobeMicrosoft());
+        var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, WardrobeMicrosoft());
         var history = new WardrobeHistoryStore();
         await history.RecordAsync([new("other", "Other", AccountWardrobeTextureKind.Skin,
             "https://textures.minecraft.net/history", false, DateTimeOffset.UtcNow)]);
@@ -249,7 +249,7 @@ internal static partial class Program
         foreach (string route in new[] { "public_preview", "card_preview", "public_apply" })
             foreach (bool cancel in new[] { false, true })
             {
-                var accounts = WardrobeAccounts(); accounts.AddProfile(WardrobeMicrosoft()); accounts.AddProfile(WardrobeMicrosoft("Bob"));
+                var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, WardrobeMicrosoft()); AddFixtureProfile(accounts, WardrobeMicrosoft("Bob"));
                 var history = new WardrobeHistoryStore();
                 await history.RecordAsync([new("other", "Historical", AccountWardrobeTextureKind.Skin,
                 "https://littleskin.cn/textures/" + CatalogHash, false, DateTimeOffset.UtcNow)]);
@@ -283,7 +283,7 @@ internal static partial class Program
             string blocked = Path.Combine(root, "blocked");
             await File.WriteAllTextAsync(blocked, "A file cannot contain an Appearance directory.");
             var history = new WardrobeHistoryStore(blocked);
-            var accounts = WardrobeAccounts(); accounts.AddProfile(WardrobeMicrosoft());
+            var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, WardrobeMicrosoft());
             using var handler = new ParityWardrobeHttp(); using var http = new HttpClient(handler);
             using var skins = new AccountSkinService(accounts, http);
             var service = new AccountWardrobeService(accounts, http, skins, history);
@@ -305,7 +305,7 @@ internal static partial class Program
         foreach (string path in new[] { "/api/yggdrasil/authserver/oauth", "/api/players", "/api/closet" })
             foreach (bool forbidden in new[] { false, true })
             {
-                var accounts = WardrobeAccounts(); accounts.AddProfile(ParityLittleSkin() with { RefreshToken = "REFRESH" });
+                var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, ParityLittleSkin() with { RefreshToken = "REFRESH" });
                 using var handler = new ParityWardrobeHttp { FaultPath = path, Forbidden = forbidden };
                 using var http = new HttpClient(handler); using var skins = new AccountSkinService(accounts, http);
                 var service = new AccountWardrobeService(accounts, http, skins, littleSkin: new LittleSkinOAuthService(http),
@@ -326,7 +326,7 @@ internal static partial class Program
     {
         foreach (string stage in new[] { "apply", "readback", "upload", "clear" })
         {
-            var accounts = WardrobeAccounts(); accounts.AddProfile(ParityLittleSkin() with { RefreshToken = "REFRESH" });
+            var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, ParityLittleSkin() with { RefreshToken = "REFRESH" });
             using var handler = new ParityWardrobeHttp(); using var http = new HttpClient(handler);
             using var skins = new AccountSkinService(accounts, http);
             var service = new AccountWardrobeService(accounts, http, skins, littleSkin: new LittleSkinOAuthService(http),
@@ -367,7 +367,7 @@ internal static partial class Program
     {
         foreach (bool session in new[] { false, true })
         {
-            var accounts = WardrobeAccounts(); accounts.AddProfile(ParityLittleSkin() with { RefreshToken = "REFRESH" });
+            var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, ParityLittleSkin() with { RefreshToken = "REFRESH" });
             using var handler = new ParityWardrobeHttp { FaultPath = session ? "/api/yggdrasil/authserver/oauth" : "/api/players", RepeatedUnauthorized = true };
             using var http = new HttpClient(handler); using var skins = new AccountSkinService(accounts, http);
             var service = new AccountWardrobeService(accounts, http, skins, littleSkin: new LittleSkinOAuthService(http),
@@ -381,7 +381,7 @@ internal static partial class Program
             AssertEqual("https://textures.minecraft.net/texture/original", accounts.GetProfile(0).Value.SkinAddress!);
             AssertFalse(read.Value.ToString().Contains("REMOTE-PRIVATE", StringComparison.Ordinal));
         }
-        var stageAccounts = WardrobeAccounts(); stageAccounts.AddProfile(ParityLittleSkin() with { RefreshToken = "REFRESH" });
+        var stageAccounts = WardrobeAccounts(); AddFixtureProfile(stageAccounts, ParityLittleSkin() with { RefreshToken = "REFRESH" });
         using var stageHandler = new ParityWardrobeHttp { FaultPath = "/api/yggdrasil/authserver/oauth", FailInventoryAfterRefresh = true };
         using var stageHttp = new HttpClient(stageHandler); using var stageSkins = new AccountSkinService(stageAccounts, stageHttp);
         var stageService = new AccountWardrobeService(stageAccounts, stageHttp, stageSkins, littleSkin: new LittleSkinOAuthService(stageHttp),
@@ -396,8 +396,8 @@ internal static partial class Program
         foreach (bool cancel in new[] { false, true })
             foreach (bool mutation in new[] { false, true })
             {
-                var accounts = WardrobeAccounts(); accounts.AddProfile(ParityLittleSkin() with { RefreshToken = "REFRESH" });
-                accounts.AddProfile(WardrobeMicrosoft("Bob"));
+                var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, ParityLittleSkin() with { RefreshToken = "REFRESH" });
+                AddFixtureProfile(accounts, WardrobeMicrosoft("Bob"));
                 using var handler = new ParityWardrobeHttp(); using var http = new HttpClient(handler);
                 using var skins = new AccountSkinService(accounts, http);
                 var service = new AccountWardrobeService(accounts, http, skins, littleSkin: new LittleSkinOAuthService(http),
@@ -425,7 +425,7 @@ internal static partial class Program
     {
         foreach (string path in new[] { "/skinlib/info/42", "/textures/" + CatalogHash })
         {
-            var accounts = WardrobeAccounts(); accounts.AddProfile(ParityLittleSkin() with { RefreshToken = "REFRESH" });
+            var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, ParityLittleSkin() with { RefreshToken = "REFRESH" });
             using var handler = new ParityWardrobeHttp(); using var http = new HttpClient(handler);
             using var skins = new AccountSkinService(accounts, http);
             var service = new AccountWardrobeService(accounts, http, skins, littleSkin: new LittleSkinOAuthService(http),

@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="../Shared/LicensedAccountFixture.cs" Link="Fixtures/LicensedAccountFixture.cs" />
+    <Using Include="Nexa.Testing.LicensedAccountFixture" Static="true" />
+  </ItemGroup>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <Description>Executable tests for the Desktop composition root: launch page routing, state binding, and intent dispatch.</Description>

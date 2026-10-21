@@ -12,7 +12,7 @@ internal static partial class Program
     private static LaunchProfile SampleProfile(string username = "Steve", string accessToken = "") => new()
     {
         Username = username,
-        Kind = LaunchProfileKind.Offline,
+        Kind = LaunchProfileKind.Microsoft,
         Uuid = "uuid-" + username,
         AccessToken = accessToken,
     };
@@ -130,6 +130,7 @@ internal static partial class Program
             string path = Path.Combine(directory, "profiles.json");
             AccountService first = CreateAccountService(new LaunchProfileFilePort(path));
             AssertTrue(first.AddProfile(SampleProfile("Steve", "tok-1")).TryGetValue(out int steve) && steve == 0);
+            first.RecordVerifiedOwnership("uuid-Steve");
             AssertTrue(first.AddProfile(new LaunchProfile
             {
                 Username = "Herobrine",
@@ -140,8 +141,9 @@ internal static partial class Program
 
             AccountService restarted = CreateAccountService(new LaunchProfileFilePort(path));
             IReadOnlyList<LaunchProfileView> views = restarted.GetViews();
+            AssertFalse(restarted.HasVerifiedMinecraftOwnership);
             AssertEqual(2, views.Count);
-            AssertTrue(views[0].Username == "Steve" && views[0].Kind == LaunchProfileKind.Offline);
+            AssertTrue(views[0].Username == "Steve" && views[0].Kind == LaunchProfileKind.Microsoft);
             AssertTrue(views[1].Username == "Herobrine" && views[1].Kind == LaunchProfileKind.ThirdParty);
 
             AssertTrue(restarted.ReplaceProfile(1, SampleProfile("Notch")).IsSuccess);

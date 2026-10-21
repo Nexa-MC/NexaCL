@@ -14,7 +14,7 @@ internal static partial class Program
         using ProfileSkinHttp handler = new();
         using HttpClient http = new(handler);
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), accountHttp: http, enableSkins: true);
-        AssertTrue(fixture.Service.AddProfile(new LaunchProfile
+        AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile
         {
             Username = "Skin fixture",
             Kind = LaunchProfileKind.Offline,
@@ -46,7 +46,7 @@ internal static partial class Program
             AssertTrue(shell.Renderer.Activate(FindByKey(shell, scene, "AccountBack").Entity));
             scene = shell.Render(size);
         }
-        AssertTrue(fixture.Service.AddProfile(new LaunchProfile { Username = "Default", Kind = LaunchProfileKind.Offline }).IsSuccess);
+        AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile { Username = "Default", Kind = LaunchProfileKind.Offline }).IsSuccess);
         AssertTrue(fixture.Service.SelectProfile(1) is null);
         scene = shell.Render(size);
         AssertTrue(FindByKey(shell, scene, "AccountAvatar").RasterImage is null);
@@ -73,7 +73,7 @@ internal static partial class Program
         AssertEqual("pcl/avatar/steve", LaunchProfilePresentation.Avatar("00000000-0000-0000-0000-000000000000"));
         AssertEqual("pcl/avatar/alex", LaunchProfilePresentation.Avatar("00000000-0000-0000-0000-000000000001"));
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), addProfile: true);
-        AssertTrue(fixture.Service.AddProfile(new LaunchProfile
+        AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile
         {
             Username = "Second",
             Kind = LaunchProfileKind.ThirdParty,

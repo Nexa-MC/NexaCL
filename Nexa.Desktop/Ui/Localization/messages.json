@@ -1,4 +1,6 @@
 [
+  {"source":"不提供本体下载","en":"Game download unavailable","zh-Hant":"不提供本體下載"},
+  {"source":"不向中国大陆提供 Minecraft 本体下载服务。请使用已完整安装的本地版本，或通过本地导入迁移已有版本。","en":"Minecraft base-game downloads are not provided in mainland China. Use a fully installed local version or import an existing installation.","zh-Hant":"不向中國大陸提供 Minecraft 本體下載服務。請使用已完整安裝的本機版本，或透過本機匯入遷移已有版本。"},
   {"source":"重试此任务","en":"Retry this task","zh-Hant":"重試此任務"},
   {"source":"安装与登记 Java","en":"Install and register Java","zh-Hant":"安裝與登記 Java"},
   {"source":"下载整合包","en":"Download modpack","zh-Hant":"下載整合包"},
@@ -9169,9 +9171,9 @@
     "zh-Hant": "Copyright © 2025 muxue。Nexa 專案貢獻者保留各自貢獻的版權。"
   },
   {
-    "source": "Nexa Host 采用 Apache License 2.0。源代码、许可证及贡献记录：\nhttps://github.com/PCL-N-Edition/PCL-N\n随附 LICENSE 为完整授权条款；独立 Sidecar、插件与第三方依赖按各自许可证发布。",
-    "en": "Nexa Host is licensed under Apache License 2.0. Source, license and contributions:\nhttps://github.com/PCL-N-Edition/PCL-N\nThe accompanying LICENSE contains the full terms. Independent Sidecars, plugins and third-party dependencies use their respective licenses.",
-    "zh-Hant": "Nexa Host 採用 Apache License 2.0。原始碼、授權條款及貢獻記錄：\nhttps://github.com/PCL-N-Edition/PCL-N\n隨附 LICENSE 為完整授權條款；獨立 Sidecar、外掛與第三方相依套件按各自授權條款發布。"
+    "source": "Nexa Host 采用 Apache License 2.0。源代码、许可证及贡献记录：\nhttps://github.com/Nexa-MC/NexaMC\n随附 LICENSE 为完整授权条款；独立 Sidecar、插件与第三方依赖按各自许可证发布。",
+    "en": "Nexa Host is licensed under Apache License 2.0. Source, license and contributions:\nhttps://github.com/Nexa-MC/NexaMC\nThe accompanying LICENSE contains the full terms. Independent Sidecars, plugins and third-party dependencies use their respective licenses.",
+    "zh-Hant": "Nexa Host 採用 Apache License 2.0。原始碼、授權條款及貢獻記錄：\nhttps://github.com/Nexa-MC/NexaMC\n隨附 LICENSE 為完整授權條款；獨立 Sidecar、外掛與第三方相依套件按各自授權條款發布。"
   },
   {
     "source": "Minecraft 是 Mojang / Microsoft 的商标。本项目由社区独立维护，与 Mojang / Microsoft 无隶属或官方认可关系。",

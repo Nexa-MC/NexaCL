@@ -48,12 +48,16 @@ internal static partial class Program
         finally { Directory.Delete(root, true); }
     }
 
-    private sealed class FakeMetadata : IMinecraftInstallMetadataSource
+    private sealed class FakeMetadata : IMinecraftInstallMetadataSource, IVerifiedAssetIndexSource
     {
         public JsonObject VanillaJson { get; set; } = [];
         public int VanillaReads;
         public JsonObject? LoaderJson { get; set; }
         public JsonObject AssetIndexJson { get; set; } = [];
+        public bool HasVerifiedIndexBytes { get; set; }
+
+        public Task<byte[]> FetchVerifiedAssetIndexAsync(string url, string? sha1, long size, CancellationToken token) =>
+            Task.FromResult(System.Text.Encoding.UTF8.GetBytes(AssetIndexJson.ToJsonString()));
 
         public Task<JsonObject> FetchVanillaVersionJsonAsync(string gameVersion, CancellationToken cancellationToken)
         { VanillaReads++; return Task.FromResult(VanillaJson); }
@@ -123,7 +127,7 @@ internal static partial class Program
 
         public InstallFixture(FakeMetadata metadata, IInstallCatalogSource? catalog = null, IMinecraftLoaderInstaller? loaderInstaller = null, HttpClient? http = null,
             Func<string, IDownloadConnection>? connectionFactory = null, Func<bool>? inheritVanilla = null,
-            Nexa.Services.Settings.SettingsPolicyService? settingsPolicy = null)
+            Nexa.Services.Settings.SettingsPolicyService? settingsPolicy = null, RegionalPolicy? countryPolicy = null)
         {
             XsrStateStoreBuilder builder = new();
             TaskCenterStateContract.DeclareState(builder);
@@ -135,7 +139,8 @@ internal static partial class Program
             Install = new MinecraftInstallService(
                 Tasks, downloads, catalog, http: http, metadata: metadata,
                 connectionFactory: connectionFactory ?? (source => new ServingConnection(PayloadFor(source))), loaderInstaller: loaderInstaller, inheritVanilla: inheritVanilla,
-                settingsPolicy: settingsPolicy, hostStore: Store);
+                settingsPolicy: settingsPolicy, hostStore: Store)
+            { CountryPolicy = countryPolicy ?? new("US") };
             Install.Installed += root => InstalledRoots.Add(root);
         }
 

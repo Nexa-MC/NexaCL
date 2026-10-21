@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="../Shared/LicensedAccountFixture.cs" Link="Fixtures/LicensedAccountFixture.cs" />
+    <Using Include="Nexa.Testing.LicensedAccountFixture" Static="true" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="../../Nexa.Jvm.Host/JvmChildLaunch.cs" Link="Fixtures/JvmChildLaunch.cs" />
     <Compile Include="../../Nexa.Jvm.Host/JvmChildWindowsJob.cs" Link="Fixtures/JvmChildWindowsJob.cs" />
     <Compile Include="../../Nexa.Jvm.Host/JvmChildRuntimeLease.cs" Link="Fixtures/JvmChildRuntimeLease.cs" />

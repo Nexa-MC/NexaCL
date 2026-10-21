@@ -13,9 +13,9 @@ internal static partial class Program
         fixture.Shell.Renderer.ReducedMotion = true;
         const string name = "设置";
         const string detail = "provider <literal> {data secret} {state launch.action.label}";
-        AssertTrue(fixture.Service.AddProfile(new LaunchProfile { Username = name, Info = detail, Kind = LaunchProfileKind.Offline }).IsSuccess);
+        AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile { Username = name, Info = detail, Kind = LaunchProfileKind.Offline }).IsSuccess);
         for (int index = 1; index < 10; index++)
-            AssertTrue(fixture.Service.AddProfile(new LaunchProfile { Username = "Player" + index, Kind = LaunchProfileKind.Offline }).IsSuccess);
+            AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile { Username = "Player" + index, Kind = LaunchProfileKind.Offline }).IsSuccess);
         Emit(fixture.Intents, "ui.account.switch");
         bool translated = false;
         fixture.Shell.Renderer.TextLocalizer = source => !translated ? source : source switch

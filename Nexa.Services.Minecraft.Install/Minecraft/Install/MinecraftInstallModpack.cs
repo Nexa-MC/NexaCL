@@ -16,12 +16,13 @@ public sealed partial class MinecraftInstallService
 
     private async Task<XsrResult<MinecraftInstallResult>> InstallModpackCoreAsync(MinecraftModpackCommand command, CancellationToken token, ModpackInstallJournal? saved = null,
         bool preparingUpdate = false, Nexa.Services.Tasks.ITaskCenterTask? parentTask = null,
-        Nexa.Services.Tasks.ITaskCenterTask? retryTask = null)
+        Nexa.Services.Tasks.ITaskCenterTask? retryTask = null, string? baseReuseRoot = null, string? baseReuseClientPath = null)
     {
         var execution = RegisterExecution(new(command.RootDirectory, command.Pack.Game, InstanceName: command.Pack.InstanceId), registerRecoveryRoot: !preparingUpdate);
         ModpackInstallJournal? retryJournal = saved;
         using var ownedTask = parentTask is null ? retryTask ?? _tasks.Begin(new("modpack:" + Guid.NewGuid().ToString("N"), "安装 " + command.Pack.Name, StagePlan),
-            (retry, cancellation) => InstallModpackCoreAsync(command, cancellation, retryJournal, retryTask: retry)) : null;
+            (retry, cancellation) => InstallModpackCoreAsync(command, cancellation, retryJournal, retryTask: retry,
+                baseReuseRoot: baseReuseRoot, baseReuseClientPath: baseReuseClientPath)) : null;
         var task = parentTask ?? ownedTask!;
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken, execution.Token);
         token = linked.Token;
@@ -30,6 +31,7 @@ public sealed partial class MinecraftInstallService
         FileStream? lease = null;
         try
         {
+            if (!preparingUpdate) CountryPolicy.EnsureMinecraftDownloadsAllowed();
             string root = Nexa.Core.PathIdentity.Normalize(command.RootDirectory);
             using var recoveryOperation = await Management.InstanceRecoveryOperationGate.EnterOperationAsync(root, token).ConfigureAwait(false);
             MinecraftModpackArchive.CheckPath(root);
@@ -93,8 +95,8 @@ public sealed partial class MinecraftInstallService
             if (pinnedFiles is null) await journal.SaveFilesAsync(files.ToArray(), token).ConfigureAwait(false);
             // Reuse the same manifest, Java/loader installer, libraries, assets and download pipeline.
             var installed = await RunAsync(new(buildRoot, pack.Game, pack.Loader, pack.Build, InstanceName: pack.InstanceId)
-            { PreparingEdit = true, ReuseRoot = root, ModsRelativeDirectory = "versions/" + pack.InstanceId + "/mods" }, task, token,
-                new PersistentInstallMetadataSource(buildRoot, _metadata, journal), deferCompletion: true).ConfigureAwait(false);
+            { PreparingEdit = true, ReuseRoot = baseReuseRoot ?? root, ModsRelativeDirectory = "versions/" + pack.InstanceId + "/mods" }, task, token,
+                new PersistentInstallMetadataSource(buildRoot, _metadata, journal), deferCompletion: true, reuseClientPath: baseReuseClientPath).ConfigureAwait(false);
             using var packHttp = HttpClientFactory?.Invoke(false) ?? Nexa.Services.Downloads.PooledHttpClient.Create(allowAutoRedirect: false);
             packHttp.Timeout = TimeSpan.FromMinutes(5);
             int completed = 0;

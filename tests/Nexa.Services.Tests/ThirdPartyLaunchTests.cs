@@ -19,7 +19,7 @@ internal static partial class Program
                 Uuid = "0123456789abcdef0123456789abcdef",
                 ClientToken = "client"
             };
-            AssertTrue(accounts.AddProfile(profile).IsSuccess);
+            AssertTrue(AddFixtureProfile(accounts, profile).IsSuccess);
             using var stop = new CancellationTokenSource();
             var handler = new ThirdPartyLaunchHandler(behavior, profile.Uuid, () =>
             {

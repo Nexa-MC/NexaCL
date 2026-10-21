@@ -7,7 +7,7 @@ internal static partial class Program
 {
     private static void InstallEditorLocksBaseVersionAndResetsOnExit()
     {
-        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([Instance("playable")]), addProfile: true);
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([Instance("playable")]), addProfile: true, regionalPolicy: new("US"));
         fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();
         var snapshot = (MinecraftLibrarySnapshot)fixture.Store.ReadAppliedValue(fixture.Store.Resolve(MinecraftLibraryService.StateKey))!;
         string directory = Path.Combine(snapshot.RootDirectory, "versions", "playable");

@@ -12,7 +12,7 @@ from manifest import release_channel, unique_object
 from sign import FINGERPRINT, gpg, import_public, keyring
 from verify import expected_names
 
-REPOSITORY = "PCL-N-Edition/PCL-N"
+REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "Nexa-MC/NexaMC")
 ROOT = Path(__file__).resolve().parents[2]
 HISTORY_LIST_LIMIT = MAX_HISTORY_SOURCES + 1  # The current release may already be present.
 HISTORY_LIST_BYTES = 4 * 1024 * 1024

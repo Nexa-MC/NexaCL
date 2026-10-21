@@ -126,8 +126,8 @@ internal static partial class Program
         FoundationHost host = FoundationComposer.Compose(
             new InMemorySettingsPort(), schema,
             new LaunchProfileFilePort(Path.Combine(Path.GetTempPath(), "nexa-cap-acct", Guid.NewGuid().ToString("N"), "profiles.json")));
-        _ = host.Accounts.AddProfile(new LaunchProfile { Username = "Steve", Kind = LaunchProfileKind.Offline }).IsSuccess;
-        _ = host.Accounts.AddProfile(new LaunchProfile { Username = "Alex", Kind = LaunchProfileKind.Microsoft }).IsSuccess;
+        _ = AddFixtureProfile(host.Accounts, new LaunchProfile { Username = "Steve", Kind = LaunchProfileKind.Offline }).IsSuccess;
+        _ = AddFixtureProfile(host.Accounts, new LaunchProfile { Username = "Alex", Kind = LaunchProfileKind.Microsoft }).IsSuccess;
 
         AccountCapabilityProvider provider = new(host.Accounts);
         IReadOnlyList<ICapability> facts = await provider.CollectAsync(DateTimeOffset.UtcNow, CancellationToken.None);

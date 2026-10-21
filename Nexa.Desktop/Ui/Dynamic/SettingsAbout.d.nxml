@@ -7,7 +7,7 @@
     </StackPanel>
     <StackPanel Key="AboutOpenSource" Class="settings-about-section">
       <Text Content="开源声明" Class="settings-about-title" />
-      <Text Content="Nexa Host 采用 Apache License 2.0。源代码、许可证及贡献记录：&#10;https://github.com/PCL-N-Edition/PCL-N&#10;随附 LICENSE 为完整授权条款；独立 Sidecar、插件与第三方依赖按各自许可证发布。" Class="settings-about-copy settings-about-license" />
+      <Text Content="Nexa Host 采用 Apache License 2.0。源代码、许可证及贡献记录：&#10;https://github.com/Nexa-MC/NexaMC&#10;随附 LICENSE 为完整授权条款；独立 Sidecar、插件与第三方依赖按各自许可证发布。" Class="settings-about-copy settings-about-license" />
     </StackPanel>
     <StackPanel Key="AboutLinks" IsVisible="{data links}" Class="settings-about-actions">
       <Button Key="Management.源代码" Label="源代码" Content="源代码" Command="ui.settings.management.action" Class="settings-catalog-action settings-about-link" />

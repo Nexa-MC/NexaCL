@@ -40,6 +40,7 @@ public sealed partial class MinecraftInstallService : IDisposable
     private readonly SettingsPolicyService? _settingsPolicy;
     private readonly XsrStateStore? _hostStore;
     public Func<bool, HttpClient>? HttpClientFactory { get; init; }
+    public RegionalPolicy CountryPolicy { get; init; } = RegionalPolicy.Current;
 
     public MinecraftInstallService(
         TaskCenterService tasks,
@@ -82,6 +83,9 @@ public sealed partial class MinecraftInstallService : IDisposable
         ArgumentNullException.ThrowIfNull(command);
         ArgumentException.ThrowIfNullOrWhiteSpace(command.RootDirectory);
         ArgumentException.ThrowIfNullOrWhiteSpace(command.GameVersion);
+        if (command.EditFingerprint is null && !CountryPolicy.AllowMinecraftDownloads)
+            return XsrResult.Failure<MinecraftInstallResult>(new(XsrErrorKind.Rejected,
+                XsrSemanticId.Parse("minecraft.download_region_unavailable"), RegionalPolicy.MinecraftDownloadUnavailable));
 
         string loaderName = command.Loader is { } loader ? LoaderDisplayName(loader) : null!;
         string title = command.Loader is null
@@ -188,7 +192,7 @@ public sealed partial class MinecraftInstallService : IDisposable
         ITaskCenterTask task,
         CancellationToken token,
         IMinecraftInstallMetadataSource? metadataSource = null,
-        bool deferCompletion = false)
+        bool deferCompletion = false, string? reuseClientPath = null)
     {
         IMinecraftInstallMetadataSource metadata = metadataSource ?? _metadata;
         MinecraftDownloadPolicy downloadPolicy = MinecraftDownloadPolicy.Read(_settingsPolicy);
@@ -281,7 +285,12 @@ public sealed partial class MinecraftInstallService : IDisposable
         // Assets are planned after the index document exists on disk.
         JsonObject assetIndexJson;
         byte[]? assetIndexContent = null;
-        if (assetIndexPlan.HasDownload)
+        if (!CountryPolicy.AllowMinecraftDownloads)
+        {
+            assetIndexContent = await ReadLocalBaseIndexAsync(assetIndexPlan, root, command.ReuseRoot, token).ConfigureAwait(false);
+            assetIndexJson = AuthoritativeMetadata.ParseVerified(assetIndexContent, assetIndexPlan.Sha1, assetIndexPlan.Size);
+        }
+        else if (assetIndexPlan.HasDownload)
         {
             if (metadata is IVerifiedAssetIndexSource { HasVerifiedIndexBytes: true } verified)
             {
@@ -386,6 +395,14 @@ public sealed partial class MinecraftInstallService : IDisposable
         List<(string Stage, PlannedFile File)> allFiles = [];
         foreach (var candidate in planned.Values)
         {
+            if (!CountryPolicy.AllowMinecraftDownloads && reuseClientPath is not null && clientPlan.File is { } localClient
+                && Nexa.Core.PathIdentity.Comparer.Equals(candidate.File.Destination, localClient.LocalPath)
+                && !File.Exists(candidate.File.Destination)
+                && await _verification.VerifyAsync(candidate.File.Expected with { Path = reuseClientPath }, token).ConfigureAwait(false))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(candidate.File.Destination)!);
+                File.Copy(reuseClientPath, candidate.File.Destination);
+            }
             if (metadata is PersistentInstallMetadataSource && string.IsNullOrEmpty(candidate.File.Expected.Sha1))
             {
                 // A prior process may have preallocated or partially filled a size-only file.
@@ -407,6 +424,7 @@ public sealed partial class MinecraftInstallService : IDisposable
                 allFiles.Add(candidate);
             }
         }
+        if (allFiles.Any(candidate => candidate.Stage == StagePlan[1])) CountryPolicy.EnsureMinecraftDownloadsAllowed();
         int totalFiles = allFiles.Count;
         var batch = new FileBatchProgress(totalFiles, (fraction, done, speed) =>
             task.Report(StagePlan[1], "正在下载游戏文件", .02 + .96 * fraction, done, totalFiles, speed));

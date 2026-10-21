@@ -160,7 +160,7 @@ def linux(payload, output, work, base, version, prefix, arch):
         options += [f"--{package_type}-user", "root", f"--{package_type}-group", "root"]
         run("fpm", "-s", "dir", "-t", package_type, "-n", "nexacl", "-v", native_version, "--iteration", "1",
             "-a", package_arch, "--maintainer", "Nexa", "--description", "Nexa Minecraft Launcher",
-            "--url", "https://github.com/PCL-N-Edition/PCL-N", "--license", "Apache-2.0", *options,
+            "--url", "https://github.com/Nexa-MC/NexaMC", "--license", "Apache-2.0", *options,
             "-C", appdir, "-p", output / f"{base}.{package_type}", "usr")
     environment = dict(os.environ, ARCH="aarch64" if arch == "arm64" else "x86_64", APPIMAGE_EXTRACT_AND_RUN="1")
     run(required_tool("APPIMAGETOOL"), "--runtime-file", required_tool("APPIMAGE_RUNTIME"),

@@ -114,7 +114,8 @@ internal static partial class Program
                 int length = source.EndsWith("/5.json", StringComparison.Ordinal)
                     ? System.Text.Encoding.UTF8.GetByteCount(AssetIndexJson().ToJsonString()) : PayloadFor(source).Length;
                 return new ServingConnection(Enumerable.Repeat((byte)'X', length).ToArray());
-            }, settingsPolicy: settings);
+            }, settingsPolicy: settings)
+            { CountryPolicy = new("US") };
             bool failed = false;
             try
             {

@@ -184,7 +184,7 @@ internal static partial class Program
                 JavaBrand.EclipseTemurin, JavaArchitecture.X64, is64Bit: true, isJre: false));
             using FoundationHost host = FoundationComposer.Compose(new InMemorySettingsPort(), LauncherDefaults.CreateSchema(),
                 new LaunchProfileFilePort(Path.Combine(workspace, "profiles.json")));
-            AssertTrue(host.Accounts.AddProfile(new() { Username = "Player", Uuid = "player-uuid", Kind = LaunchProfileKind.Offline }).IsSuccess);
+            AssertTrue(AddFixtureProfile(host.Accounts, new() { Username = "Player", Uuid = "player-uuid", Kind = LaunchProfileKind.Offline }).IsSuccess);
             MinecraftLaunchCoordinator coordinator = new(root, Path.Combine(root, "runtime"), discovery, host.Accounts, host.Settings,
                 new JavaSelectionService(new InMemoryJavaLocator([runtime])), new NeverJavaInstaller(),
                 new MinecraftLaunchExecutor(new MinecraftProcessService(hostStore: host.StateStore)), settingsPolicy: host.SettingsPolicy);

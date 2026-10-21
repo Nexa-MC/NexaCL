@@ -1,5 +1,14 @@
 # 更新日志
 
+## 2.0.0.beta.1 · Firefly Beta 1（准备发布）
+
+- 正版资格围栏扩展到全球；中国大陆停止提供 Minecraft 本体下载，覆盖新安装、整合包携带的本体及启动补全，保留完整本地版本的使用与本地导入。
+- 准备迁移到 `Nexa-MC/NexaMC`，保留 XSR 代码与 Git 历史，并保留旧仓库更新来源兼容。
+- 增加整合包在线身份与更新、失败任务重试和会话下载缓存复用；统一圆环加载展示，Splash 与任务卡片改为左右布局。
+- 修复账户登录准备、安装验证误拒绝、迁移状态展示和 macOS 启动/窗口绘制问题。
+
+完整说明见 [Beta 1 发布说明](docs/releases/2.0.0.beta.1.md)。实际 GitHub 发布与仓库归档须在新仓库及发布权限就绪后进行。
+
 ## Alpha 6 以来 · 未发布
 
 本节对比正式发布的 [NexaCL Firefly Alpha 6（v2.0.0.alpha.6）](https://github.com/Nexa-MC/PCL-N/releases/tag/v2.0.0.alpha.6) 与 `refactor/xsr` 截至 2026-10-16 的代码。

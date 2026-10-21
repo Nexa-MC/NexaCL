@@ -36,13 +36,14 @@ internal static partial class Program
             });
             var host = FoundationComposer.Compose(new InMemorySettingsPort(), LauncherDefaults.CreateSchema(),
                 new LaunchProfileFilePort(Path.Combine(root, "profiles.json")));
-            AssertTrue(host.Accounts.AddProfile(new LaunchProfile { Username = "Player", Kind = LaunchProfileKind.Offline }).IsSuccess);
+            AssertTrue(AddFixtureProfile(host.Accounts, new LaunchProfile { Username = "Player", Kind = LaunchProfileKind.Offline }).IsSuccess);
             string java = Path.Combine(root, "java.exe"); await File.WriteAllBytesAsync(java, [0]);
             var candidate = new JavaRuntimeCandidate(new JavaInstallation(root, java, null, new Version(17, 0),
                 JavaBrand.EclipseTemurin, JavaArchitecture.X64, true, false));
             int requests = 0;
             using var completion = new MinecraftLaunchFileCompletion(host.Downloads, connectionFactory: _ =>
-            { Interlocked.Increment(ref requests); return new ServingConnection("BAD"u8.ToArray()); }, settingsPolicy: host.SettingsPolicy);
+            { Interlocked.Increment(ref requests); return new ServingConnection("BAD"u8.ToArray()); }, settingsPolicy: host.SettingsPolicy)
+            { CountryPolicy = new("US") };
             var coordinator = new MinecraftLaunchCoordinator(root, Path.Combine(root, "runtime"), new MinecraftInstanceDiscovery(),
                 host.Accounts, host.Settings, new JavaSelectionService(new InMemoryJavaLocator([candidate])), new NeverJavaInstaller(),
                 new MinecraftLaunchExecutor(new MinecraftProcessService(hostStore: host.StateStore)),

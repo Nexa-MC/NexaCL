@@ -5,7 +5,7 @@ namespace Nexa.Services.Updates;
 /// <summary>Independent publisher fetch: no caller URLs, credentials or tool paths.</summary>
 public sealed class GitHubUpdateReleaseSource(HttpClient client) : IUpdateReleaseSource, IUpdateDeltaSource
 {
-    private const string Repository = "https://github.com/PCL-N-Edition/PCL-N/releases/download/";
+    private static readonly string[] Repositories = [LauncherRepository.Url, LauncherRepository.LegacyUrl, LauncherRepository.HistoricalUrl];
     async Task<(byte[] Index, byte[] Signature)> IUpdateDeltaSource.ReadDeltaIndexAsync(string version, CancellationToken token)
     {
         UpdateHighWaterJournal.ParseVersion(version);
@@ -28,15 +28,16 @@ public sealed class GitHubUpdateReleaseSource(HttpClient client) : IUpdateReleas
     }
     private async Task<Stream> OpenAsync(string version, string name, CancellationToken token)
     {
-        foreach (string tag in new[] { version, "v" + version })
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, Repository + tag + "/" + name);
-            request.Headers.UserAgent.ParseAdd("NexaCL-Update/1.0");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
-            if (response.StatusCode == HttpStatusCode.NotFound) { response.Dispose(); continue; }
-            try { response.EnsureSuccessStatusCode(); return new ResponseStream(await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false), response); }
-            catch { response.Dispose(); throw; }
-        }
+        foreach (string repository in Repositories)
+            foreach (string tag in new[] { version, "v" + version })
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, repository + "/releases/download/" + tag + "/" + name);
+                request.Headers.UserAgent.ParseAdd("NexaCL-Update/1.0");
+                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
+                if (response.StatusCode == HttpStatusCode.NotFound) { response.Dispose(); continue; }
+                try { response.EnsureSuccessStatusCode(); return new ResponseStream(await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false), response); }
+                catch { response.Dispose(); throw; }
+            }
         throw new FileNotFoundException("GitHub 发布缺少更新文件。");
     }
     private async Task<byte[]> ReadBoundedAsync(string version, string name, CancellationToken token)

@@ -103,7 +103,8 @@ internal static partial class Program
             var store = builder.Build();
             List<string> transfers = [];
             using var service = new MinecraftInstallService(new TaskCenterService(store), new DownloadService(store), http: http,
-                connectionFactory: url => { transfers.Add(url); return new ServingConnection("JARCONTENT"u8.ToArray()); });
+                connectionFactory: url => { transfers.Add(url); return new ServingConnection("JARCONTENT"u8.ToArray()); })
+            { CountryPolicy = new("US") };
             var result = await service.InstallAsync(new(root, "1.20.1", InstanceName: "test"));
             AssertTrue(result.IsSuccess);
             AssertEqual(index, await File.ReadAllTextAsync(Path.Combine(root, "assets", "indexes", "5.json")));

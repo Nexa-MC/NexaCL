@@ -116,6 +116,8 @@ internal static partial class Program
     private static readonly (string Name, Action Body)[] TestCases =
     [
         ("RegionalSettingsHideMainlandFacilitiesAndRestoreSavedPreferences", RegionalSettingsHideMainlandFacilitiesAndRestoreSavedPreferences),
+        ("MainlandBaseInstallControlsExplainAndRejectUnavailableActions", MainlandBaseInstallControlsExplainAndRejectUnavailableActions),
+        ("AccountFormsRejectUnverifiedOfflineCreationInEveryRegion", AccountFormsRejectUnverifiedOfflineCreationInEveryRegion),
         ("RegionalResourcesHideMirrorChoicesAndRejectSyntheticIntents", RegionalResourcesHideMirrorChoicesAndRejectSyntheticIntents),
         ("RegionalAutomaticOptiFineTabsStayHiddenAndRejectIntents", RegionalAutomaticOptiFineTabsStayHiddenAndRejectIntents),
         ("ThemeOptionsRetainLiteralDraftCaretAndFocusAcrossProjection", ThemeOptionsRetainLiteralDraftCaretAndFocusAcrossProjection),

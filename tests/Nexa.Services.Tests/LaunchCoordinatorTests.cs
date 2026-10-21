@@ -119,7 +119,7 @@ internal static partial class Program
                 new InMemorySettingsPort(),
                 schema,
                 new LaunchProfileFilePort(Path.Combine(root, "profiles.json")));
-            AssertTrue(host.Accounts.AddProfile(new LaunchProfile
+            AssertTrue(AddFixtureProfile(host.Accounts, new LaunchProfile
             {
                 Username = "Player",
                 Uuid = "player-uuid",
@@ -248,7 +248,7 @@ internal static partial class Program
                 new InMemorySettingsPort(),
                 schema,
                 new LaunchProfileFilePort(Path.Combine(root, "profiles.json")));
-            AssertTrue(host.Accounts.AddProfile(new LaunchProfile
+            AssertTrue(AddFixtureProfile(host.Accounts, new LaunchProfile
             {
                 Username = "Player",
                 Kind = LaunchProfileKind.Offline,

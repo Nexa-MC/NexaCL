@@ -153,7 +153,7 @@ internal static partial class Program
                         new MinecraftVersionClassification("1.20.1", "release", MinecraftVersionCategory.Release, null)), new MinecraftInstanceMetadata());
                 File.Delete(Path.Combine(instance.DirectoryPath, "1.20.1.jar"));
                 using var fixture = new CompletionFixture();
-                using var completion = new MinecraftLaunchFileCompletion(fixture.Downloads, connectionFactory: Connect, settingsPolicy: policy);
+                using var completion = new MinecraftLaunchFileCompletion(fixture.Downloads, connectionFactory: Connect, settingsPolicy: policy) { CountryPolicy = new("US") };
                 await completion.CompleteAsync(root, instance, new(VanillaJson(), []), new(MinecraftLibraryOperatingSystem.Win32, "10.0", true, false),
                     "offline", null, CancellationToken.None);
                 AssertSources();

@@ -3,6 +3,7 @@
     <Text Key="install.title" Content="安装 Java 版" />
     <Text Key="edit.title" Content="修改版本" />
     <Text Key="install.start" Content="开始安装" />
+    <Text Key="install.download-unavailable" Content="不提供本体下载" />
     <Text Key="install.start-label" Content="开始安装 Java 版 Minecraft" />
     <Text Key="edit.save" Content="保存修改" />
     <Text Key="edit.save-label" Content="保存版本修改" />

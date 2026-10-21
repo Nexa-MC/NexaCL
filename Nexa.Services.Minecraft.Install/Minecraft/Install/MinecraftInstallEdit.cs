@@ -55,7 +55,8 @@ public sealed partial class MinecraftInstallService
                     ReuseRoot = original.RootDirectory,
                     PreparingEdit = true,
                     ModsRelativeDirectory = original.ModsRelativeDirectory
-                }, task, token, new PersistentInstallMetadataSource(stage, _metadata)).ConfigureAwait(false);
+                }, task, token, new PersistentInstallMetadataSource(stage, _metadata),
+                    reuseClientPath: Path.Combine(original.RootDirectory, "versions", instance, instance + ".jar")).ConfigureAwait(false);
             string relativeManifest = $"versions/{instance}/{instance}.json";
             string targetManifest = Nexa.Core.PathIdentity.Contained(original.RootDirectory, relativeManifest);
             var current = await MinecraftInstallEditService.ReadAsync(new(original.RootDirectory, instance), token).ConfigureAwait(false);

@@ -149,7 +149,7 @@ internal static partial class Program
     {
         using LaunchPageFixture fixture = LibraryFixture(LaunchProfileKind.LittleSkin);
         var launchPage = fixture.Shell.Stage.Navigation.Current;
-        fixture.Service.AddProfile(new LaunchProfile { Username = "Bob", Kind = LaunchProfileKind.LittleSkin, Uuid = "bob" });
+        AddFixtureProfile(fixture.Service, new LaunchProfile { Username = "Bob", Kind = LaunchProfileKind.LittleSkin, Uuid = "bob" });
         var firstCatalog = new TaskCompletionSource<XsrResult<WardrobeCatalogPage>>(TaskCreationOptions.RunContinuationsAsynchronously);
         var oldImage = new TaskCompletionSource<XsrResult<AccountWardrobeResolvedTextures>>(TaskCreationOptions.RunContinuationsAsynchronously);
         CancellationToken firstToken = default, oldImageToken = default;
@@ -377,7 +377,7 @@ internal static partial class Program
     private static void WardrobeLibraryAdmitsOwnProfileRenameAndRejectsStaleIdentities()
     {
         using LaunchPageFixture fixture = LibraryFixture(LaunchProfileKind.Microsoft);
-        AssertTrue(fixture.Service.AddProfile(new LaunchProfile { Username = "Bob", Kind = LaunchProfileKind.Microsoft, Uuid = "bob" }).IsSuccess);
+        AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile { Username = "Bob", Kind = LaunchProfileKind.Microsoft, Uuid = "bob" }).IsSuccess);
         var delayed = new TaskCompletionSource<XsrResult<AccountWardrobeSnapshot>>(TaskCreationOptions.RunContinuationsAsynchronously);
         AccountWardrobeSnapshot? retiredSnapshot = null;
         AccountWardrobeApplyPublicCommand? applied = null;
@@ -446,7 +446,7 @@ internal static partial class Program
     private static void WardrobeLibraryKeepsOwnMutationRenameAndRetiresSelectionAba()
     {
         using LaunchPageFixture fixture = LibraryFixture(LaunchProfileKind.Microsoft);
-        AssertTrue(fixture.Service.AddProfile(new LaunchProfile { Username = "Bob", Kind = LaunchProfileKind.Microsoft, Uuid = "bob" }).IsSuccess);
+        AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile { Username = "Bob", Kind = LaunchProfileKind.Microsoft, Uuid = "bob" }).IsSuccess);
         var firstWrite = new TaskCompletionSource<XsrResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         var secondWrite = new TaskCompletionSource<XsrResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         CancellationToken firstToken = default, secondToken = default;
@@ -504,7 +504,7 @@ internal static partial class Program
     {
         var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
         fixture.Service.ConfigureRegionalPolicy(new("CN"));
-        AssertTrue(fixture.Service.AddProfile(new LaunchProfile { Username = "Alice", Kind = kind, Uuid = "alice", AuthServer = kind == LaunchProfileKind.ThirdParty ? "https://account.example/api/yggdrasil" : "" }).IsSuccess);
+        AssertTrue(AddFixtureProfile(fixture.Service, new LaunchProfile { Username = "Alice", Kind = kind, Uuid = "alice", AuthServer = kind == LaunchProfileKind.ThirdParty ? "https://account.example/api/yggdrasil" : "" }).IsSuccess);
         return fixture;
     }
     private static XsrQueryRouterBuilder LibraryQueries(LaunchPageFixture fixture, Action? onAccount = null)

@@ -24,6 +24,7 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
     private readonly LogService? _log;
     private readonly HttpClient _http = PooledHttpClient.Create();
     public HttpClient? Transport { get; init; }
+    public RegionalPolicy CountryPolicy { get; init; } = RegionalPolicy.Current;
     private readonly MinecraftFileVerificationCache _verification = new();
     private readonly Func<string, IDownloadConnection>? _connectionFactory;
     private readonly SettingsPolicyService? _settingsPolicy;
@@ -72,7 +73,7 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
         {
             AddIfMissing(candidates,
                 downloadPolicy.SelectSources(client.Url, MinecraftDownloadSourcePlanner.GetLauncherOrMetaSources(client.Url, true, client.Sha1)),
-                client.LocalPath, client.ActualSize, client.Sha1);
+                client.LocalPath, client.ActualSize, client.Sha1, baseGame: true);
         }
 
         MinecraftAssetIndexDownloadPlan indexPlan = MinecraftClientDownloadPlanner.CreateAssetIndexPlan(
@@ -84,7 +85,7 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
             });
 
         // Libraries accumulate across the whole chain: the child's overrides win.
-        Dictionary<string, (string Url, string? Sha1, long Size)> libraries = new(Nexa.Core.PathIdentity.Comparer);
+        Dictionary<string, (string Url, string? Sha1, long Size, bool BaseGame)> libraries = new(Nexa.Core.PathIdentity.Comparer);
         foreach (JsonObject manifest in new[] { manifests.Current }.Concat(manifests.Inherited))
         {
             foreach (MinecraftLibraryToken library in MinecraftLibraryResolver.Resolve(
@@ -103,11 +104,11 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
                     continue;
                 }
 
-                libraries[library.LocalPath] = (library.Url, library.Sha1, library.Size);
+                libraries[library.LocalPath] = (library.Url, library.Sha1, library.Size, ReferenceEquals(manifest, baseManifest));
             }
         }
 
-        foreach ((string localPath, (string url, string? sha1, long size)) in libraries)
+        foreach ((string localPath, (string url, string? sha1, long size, bool baseGame)) in libraries)
         {
             string[] sources = MinecraftDownloadSourcePlanner.GetLibrarySources(url, true, sha1);
             if (!sources.Contains(url, StringComparer.Ordinal))
@@ -115,7 +116,7 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
                 sources = [.. sources, url];
             }
 
-            AddIfMissing(candidates, downloadPolicy.SelectSources(url, sources), localPath, size > 0 ? size : null, sha1);
+            AddIfMissing(candidates, downloadPolicy.SelectSources(url, sources), localPath, size > 0 ? size : null, sha1, baseGame: baseGame);
         }
 
         // Assets are planned from the index document, so fetch the index first when missing,
@@ -149,7 +150,7 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
                             MinecraftAssetListResolver.GetObjectUrl(asset.Hash), true)),
                         asset.LocalPath,
                         asset.Size > 0 ? asset.Size : null,
-                        asset.Hash, contentAddressed: true);
+                        asset.Hash, contentAddressed: true, baseGame: true);
                 }
             }
         }
@@ -163,6 +164,7 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
             _log?.Debug("Launch", "File completion found nothing missing; continuing.");
             return;
         }
+        if (missing.Any(file => file.BaseGame)) CountryPolicy.EnsureMinecraftDownloadsAllowed();
         _log?.Info("Launch", $"File completion repairing {missing.Count} missing file(s).");
         var batch = new FileBatchProgress(missing.Count, (fraction, _, speed) =>
             ReportProgress(progress, method, fraction, speed));
@@ -259,6 +261,7 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
             return;
         }
 
+        CountryPolicy.EnsureMinecraftDownloadsAllowed();
         Directory.CreateDirectory(Path.GetDirectoryName(indexDiskPath)!);
         string[] sources = downloadPolicy.SelectSources(plan.Url!, MinecraftDownloadSourcePlanner.GetLauncherOrMetaSources(plan.Url!, true, plan.Sha1));
         int attempts = downloadPolicy.Retry ? 2 : 1;
@@ -293,7 +296,7 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
             progress,
             cancellationToken);
 
-    private sealed record PendingFile(string[] Sources, string Destination, long? Size, string? Sha1, bool ContentAddressed = false)
+    private sealed record PendingFile(string[] Sources, string Destination, long? Size, string? Sha1, bool ContentAddressed = false, bool BaseGame = false)
     {
         public MinecraftExpectedFile Expected => new(Destination, Size, Sha1);
     }
@@ -312,8 +315,8 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
     }
 
     private static void AddIfMissing(Dictionary<string, PendingFile> candidates, string[] sources,
-        string destination, long? size, string? sha1, bool contentAddressed = false) =>
-        candidates[Path.GetFullPath(destination)] = new(sources, destination, size, sha1, contentAddressed);
+        string destination, long? size, string? sha1, bool contentAddressed = false, bool baseGame = false) =>
+        candidates[Path.GetFullPath(destination)] = new(sources, destination, size, sha1, contentAddressed, baseGame);
 
     public void Dispose() => _http.Dispose();
 

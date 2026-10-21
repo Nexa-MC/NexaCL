@@ -39,7 +39,7 @@ internal static partial class Program
         public CompletionProgressRecorder? Progress;
         public string Root;
 
-        public CompletionFixture(byte[]? indexContent = null)
+        public CompletionFixture(byte[]? indexContent = null, RegionalPolicy? countryPolicy = null)
         {
             XsrStateStoreBuilder builder = new();
             DownloadService.DeclareState(builder);
@@ -55,7 +55,8 @@ internal static partial class Program
                     lock (RequestedUrls) RequestedUrls.Add(source);
                     return new ServingConnection(indexContent is not null && source.EndsWith("5.json", StringComparison.Ordinal)
                         ? indexContent : "REPAIRED"u8.ToArray());
-                });
+                })
+            { CountryPolicy = countryPolicy ?? new("US") };
         }
 
         public void Dispose()

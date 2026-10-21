@@ -33,7 +33,7 @@ internal static partial class Program
     {
         var accounts = CreateAccountService(new ThrowingProfilePort());
         accounts.ConfigureRegionalPolicy(new("US"));
-        var offline = SampleProfile("Offline");
+        var offline = SampleProfile("Offline") with { Kind = LaunchProfileKind.Offline };
         var owner = SampleProfile("Owner") with { Kind = LaunchProfileKind.Microsoft, Uuid = "owner-uuid" };
         AssertFalse(accounts.AddProfile(offline).IsSuccess);
         AssertFalse(accounts.ImportProfiles([owner, offline]).IsSuccess);
@@ -45,12 +45,14 @@ internal static partial class Program
         accounts.RecordVerifiedOwnership(owner.Uuid);
         AssertTrue(accounts.AddProfile(offline).IsSuccess);
         AssertTrue(accounts.RemoveProfile(0).IsSuccess);
-        AssertFalse(accounts.AddProfile(SampleProfile("Another")).IsSuccess);
+        AssertFalse(accounts.AddProfile(SampleProfile("Another") with { Kind = LaunchProfileKind.Offline }).IsSuccess);
         AssertTrue(accounts.AddProfile(owner).IsSuccess);
         AssertFalse(accounts.HasVerifiedMinecraftOwnership); // Removed evidence cannot resurrect.
         accounts.ConfigureRegionalPolicy(new("CN"));
-        AssertTrue(accounts.AddProfile(SampleProfile("Mainland")).IsSuccess);
-        AssertTrue(accounts.ImportProfiles([SampleProfile("Imported")]).IsSuccess);
+        AssertFalse(accounts.AddProfile(offline with { Username = "Mainland" }).IsSuccess);
+        AssertFalse(accounts.ImportProfiles([offline with { Username = "Imported" }]).IsSuccess);
+        accounts.RecordVerifiedOwnership(owner.Uuid);
+        AssertTrue(accounts.AddProfile(offline with { Username = "Mainland" }).IsSuccess);
     }
 
     private static void RegionalPolicyDisablesMirrorsOutsideMainland()
@@ -63,6 +65,9 @@ internal static partial class Program
             AssertEqual(official[0], MinecraftDownloadSourcePlanner.OrderSources(official, mirror, false, policy).Single());
         }
         AssertEqual(mirror[0], MinecraftDownloadSourcePlanner.OrderSources(official, mirror, false, new("CN"))[0]);
-        AssertFalse(RegionalPolicy.Resolve("cn").RequireMinecraftOwnership);
+        AssertTrue(RegionalPolicy.Resolve("cn").RequireMinecraftOwnership);
+        AssertFalse(RegionalPolicy.Resolve("cn").AllowMinecraftDownloads);
+        AssertTrue(RegionalPolicy.Resolve("HK").AllowMinecraftDownloads);
+        AssertTrue(RegionalPolicy.Resolve("US").AllowMinecraftDownloads);
     }
 }

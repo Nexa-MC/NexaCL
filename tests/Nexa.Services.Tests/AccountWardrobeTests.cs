@@ -23,7 +23,7 @@ internal static partial class Program
     };
     private static async ValueTask WardrobeMicrosoftUsesValidatedBytesAndOwnedCapes()
     {
-        var accounts = WardrobeAccounts(); AssertTrue(accounts.AddProfile(WardrobeMicrosoft()).IsSuccess);
+        var accounts = WardrobeAccounts(); AssertTrue(AddFixtureProfile(accounts, WardrobeMicrosoft()).IsSuccess);
         using var handler = new WardrobeHttp(); using var http = new HttpClient(handler);
         using var skins = new AccountSkinService(accounts, http);
         var service = new AccountWardrobeService(accounts, http, skins);
@@ -48,7 +48,7 @@ internal static partial class Program
     }
     private static async ValueTask WardrobeRejectsUnsupportedInvalidAndStaleRequests()
     {
-        var accounts = WardrobeAccounts(); AssertTrue(accounts.AddProfile(SampleProfile()).IsSuccess);
+        var accounts = WardrobeAccounts(); AssertTrue(AddFixtureProfile(accounts, SampleProfile() with { Kind = LaunchProfileKind.Offline }).IsSuccess);
         using var handler = new WardrobeHttp(); using var http = new HttpClient(handler);
         using var skins = new AccountSkinService(accounts, http);
         var service = new AccountWardrobeService(accounts, http, skins);
@@ -67,16 +67,16 @@ internal static partial class Program
             var original = accounts.GetProfile(0).Value;
             if (mutation == "selection_aba")
             {
-                AssertTrue(accounts.AddProfile(WardrobeMicrosoft("Bob")).IsSuccess);
+                AssertTrue(AddFixtureProfile(accounts, WardrobeMicrosoft("Bob")).IsSuccess);
                 AssertTrue(accounts.SelectProfile(1) is null); AssertTrue(accounts.SelectProfile(0) is null);
             }
             else if (mutation == "remove_readd")
             {
                 while (accounts.GetViews().Count > 0) AssertTrue(accounts.RemoveProfile(0).IsSuccess);
-                AssertTrue(accounts.AddProfile(original).IsSuccess);
+                AssertTrue(AddFixtureProfile(accounts, original).IsSuccess);
             }
             else if (mutation == "replace") AssertTrue(accounts.ReplaceProfile(0, original with { AccessToken = "REPLACED" }).IsSuccess);
-            else AssertTrue(accounts.AddProfile(WardrobeMicrosoft("Bob")).IsSuccess);
+            else AssertTrue(AddFixtureProfile(accounts, WardrobeMicrosoft("Bob")).IsSuccess);
             before = handler.Requests.Count;
             AssertFalse((await service.SetCapeAsync(new(stamp, null))).IsSuccess);
             AssertFalse((await service.UploadSkinAsync(new(stamp, SkinFixture(), "skin.png", false))).IsSuccess);
@@ -88,8 +88,8 @@ internal static partial class Program
         foreach (string mutation in new[] { "select", "remove_readd", "replace", "cancel", "persist" })
         {
             var port = new ThrowingProfilePort(); var accounts = WardrobeAccounts(port);
-            var original = WardrobeMicrosoft(); AssertTrue(accounts.AddProfile(original).IsSuccess);
-            AssertTrue(accounts.AddProfile(WardrobeMicrosoft("Bob")).IsSuccess);
+            var original = WardrobeMicrosoft(); AssertTrue(AddFixtureProfile(accounts, original).IsSuccess);
+            AssertTrue(AddFixtureProfile(accounts, WardrobeMicrosoft("Bob")).IsSuccess);
             using var handler = new WardrobeHttp { PauseUpload = true }; using var http = new HttpClient(handler);
             using var skins = new AccountSkinService(accounts, http);
             var service = new AccountWardrobeService(accounts, http, skins);
@@ -101,7 +101,7 @@ internal static partial class Program
             if (mutation == "remove_readd")
             {
                 AssertTrue(accounts.RemoveProfile(0).IsSuccess); AssertTrue(accounts.RemoveProfile(0).IsSuccess);
-                AssertTrue(accounts.AddProfile(original).IsSuccess);
+                AssertTrue(AddFixtureProfile(accounts, original).IsSuccess);
             }
             if (mutation == "replace") AssertTrue(accounts.ReplaceProfile(0, original with { AccessToken = "NEW" }).IsSuccess);
             if (mutation == "cancel") stop.Cancel();
@@ -112,7 +112,7 @@ internal static partial class Program
             AssertTrue(before.SequenceEqual(accounts.GetViews()));
             AssertEqual("https://textures.minecraft.net/texture/original", accounts.GetProfile(0).Value.SkinAddress);
         }
-        var failureAccounts = WardrobeAccounts(); failureAccounts.AddProfile(WardrobeMicrosoft());
+        var failureAccounts = WardrobeAccounts(); AddFixtureProfile(failureAccounts, WardrobeMicrosoft());
         using var failureHandler = new WardrobeHttp { RejectAll = true }; using var failureHttp = new HttpClient(failureHandler);
         using var failureSkins = new AccountSkinService(failureAccounts, failureHttp);
         var failed = await new AccountWardrobeService(failureAccounts, failureHttp, failureSkins).ReadAsync(new());
@@ -122,7 +122,7 @@ internal static partial class Program
     }
     private static async ValueTask WardrobeLittleSkinUsesProviderAndGameTokensAndClearsCape()
     {
-        var accounts = WardrobeAccounts(); accounts.AddProfile(new LaunchProfile
+        var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, new LaunchProfile
         {
             Username = "Alice",
             Kind = LaunchProfileKind.LittleSkin,
@@ -148,7 +148,7 @@ internal static partial class Program
     {
         foreach (bool chunked in new[] { false, true })
         {
-            var accounts = WardrobeAccounts(); accounts.AddProfile(WardrobeMicrosoft());
+            var accounts = WardrobeAccounts(); AddFixtureProfile(accounts, WardrobeMicrosoft());
             using var handler = new WardrobeHttp { OversizedProfile = chunked, ExcessiveCapes = !chunked };
             using var http = new HttpClient(handler); using var skins = new AccountSkinService(accounts, http);
             var result = await new AccountWardrobeService(accounts, http, skins).ReadAsync(new());

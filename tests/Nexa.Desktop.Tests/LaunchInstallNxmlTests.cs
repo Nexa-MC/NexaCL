@@ -89,7 +89,7 @@ internal static partial class Program
 
     private static void LaunchInstallCatalogLocaleReloadRetainsLiteralDraftAndOwnedRows()
     {
-        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]), regionalPolicy: new("US"));
         fixture.Shell.Renderer.ReducedMotion = true;
         Emit(fixture.Intents, "ui.navigation.download");
         Emit(fixture.Intents, "ui.install.java");

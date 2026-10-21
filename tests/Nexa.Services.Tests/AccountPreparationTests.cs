@@ -14,6 +14,7 @@ internal static partial class Program
             using PreparationHttp handler = new(stallBody: true);
             using HttpClient http = new(handler) { Timeout = Timeout.InfiniteTimeSpan };
             AccountService accounts = CreatePreparationAccounts();
+            AddVerifiedFixtureOwner(accounts);
             using AccountOnboardingService service = CreatePreparationService(clock, accounts, http);
             AssertTrue(service.Start(PreparationCommand(provider)).IsSuccess);
             await handler.BodyStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -24,7 +25,7 @@ internal static partial class Program
             AssertEqual(AccountLoginPhase.Failed, snapshot.Phase);
             AssertTrue(snapshot.Message.Contains("超时", StringComparison.Ordinal));
             AssertFalse(snapshot.IsBusy);
-            AssertEqual(0, accounts.GetViews().Count);
+            AssertEqual(1, accounts.GetViews().Count);
             AssertEqual(0, clock.ActiveTimers);
             AssertTrue(service.Start(new(AccountLoginProvider.Offline, "Recovered")).IsSuccess);
             await service.WhenIdle.WaitAsync(TimeSpan.FromSeconds(5));
@@ -41,6 +42,7 @@ internal static partial class Program
                 using PreparationHttp handler = new(stallBody: false);
                 using HttpClient http = new(handler) { Timeout = Timeout.InfiniteTimeSpan };
                 AccountService accounts = CreatePreparationAccounts();
+                AddVerifiedFixtureOwner(accounts);
                 using AccountOnboardingService service = CreatePreparationService(clock, accounts, http);
                 service.Start(PreparationCommand(provider));
                 await handler.HeadersStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -56,8 +58,8 @@ internal static partial class Program
                 handler.Headers.SetResult(new(HttpStatusCode.OK) { Content = new StringContent("{}") });
                 await handler.Returned.Task.WaitAsync(TimeSpan.FromSeconds(5));
                 AssertEqual(generation, PreparationSnapshot(accounts).Generation);
-                AssertEqual(replace ? 1 : 0, accounts.GetViews().Count);
-                if (replace) AssertEqual("Newer", accounts.GetViews()[0].Username);
+                AssertEqual(replace ? 2 : 1, accounts.GetViews().Count);
+                if (replace) AssertEqual("Newer", accounts.GetProfile(accounts.SelectedIndex).Value!.Username);
                 AssertEqual(0, clock.ActiveTimers);
             }
     }
@@ -69,7 +71,7 @@ internal static partial class Program
         using HttpClient http = new(handler);
         AccountService accounts = CreatePreparationAccounts();
         accounts.ConfigureRegionalPolicy(new("US"));
-        AssertTrue(accounts.AddProfile(SampleProfile("Owner", "OLD-ACCESS") with
+        AssertTrue(AddFixtureProfile(accounts, SampleProfile("Owner", "OLD-ACCESS") with
         { Kind = LaunchProfileKind.Microsoft, RefreshToken = "PRIVATE-REFRESH" }).IsSuccess);
         PreparationMicrosoft microsoft = new();
         using AccountOnboardingService service = CreatePreparationService(clock, accounts, http, microsoft);

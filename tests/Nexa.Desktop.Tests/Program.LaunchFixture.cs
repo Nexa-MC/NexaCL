@@ -52,9 +52,14 @@ internal static partial class Program
             SettingsSchema schema = LauncherDefaults.CreateSchema();
             string minecraftRoot = Path.Combine(_temporaryDirectory, "minecraft");
             Directory.CreateDirectory(minecraftRoot);
+            var profilePort = new LaunchProfileFilePort(Path.Combine(_temporaryDirectory, "profiles.json"));
+            if (addProfile) profilePort.Save(new LaunchProfileSet
+            {
+                Profiles = [new() { Username = "Player", Kind = LaunchProfileKind.Offline }],
+            });
             FoundationHost host = FoundationComposer.Compose(
                 new LauncherSettingsJsonPort(Path.Combine(_temporaryDirectory, "settings.json"), schema),
-                schema, new LaunchProfileFilePort(Path.Combine(_temporaryDirectory, "profiles.json")),
+                schema, profilePort,
                 observer: storeObservation, declareHostState: LaunchPageState.DeclareState,
                 minecraftRootDirectory: minecraftRoot);
             Foundation = FoundationRuntimeComposer.Compose(host);
@@ -69,15 +74,6 @@ internal static partial class Program
             Minecraft = minecraft ?? MinecraftRuntimeComposer.Compose();
             _ownsMinecraftRuntime = minecraft is null || ownsMinecraftRuntime;
             Service = host.Accounts;
-            if (addProfile)
-            {
-                AssertTrue(Service.AddProfile(new LaunchProfile
-                {
-                    Username = "Player",
-                    Kind = LaunchProfileKind.Offline,
-                }).IsSuccess);
-            }
-
             Library = MinecraftLibraryRuntimeComposer.Compose(host, minecraftRoot, source);
             InstallCatalog = InstallCatalogRuntimeComposer.Compose(host, installSource ?? new FixtureInstallSource());
             Controller = new LaunchPageController(

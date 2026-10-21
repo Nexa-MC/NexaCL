@@ -21,8 +21,8 @@ internal static partial class Program
                     ProviderTokenExpiresAtUnix = 0
                 };
                 var other = original with { Username = "Bob", Uuid = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" };
-                AssertTrue(accounts.AddProfile(original).IsSuccess);
-                AssertTrue(accounts.AddProfile(other).IsSuccess);
+                AssertTrue(AddFixtureProfile(accounts, original).IsSuccess);
+                AssertTrue(AddFixtureProfile(accounts, other).IsSuccess);
                 var barrier = new AuthStageBarrier(stage);
                 using var http = new HttpClient(new LittleSkinRaceHandler(barrier, original.Uuid));
                 using var cancellation = new CancellationTokenSource();
@@ -36,7 +36,7 @@ internal static partial class Program
                 {
                     AssertTrue(accounts.RemoveProfile(0).IsSuccess);
                     AssertTrue(accounts.RemoveProfile(0).IsSuccess);
-                    AssertTrue(accounts.AddProfile(current).IsSuccess);
+                    AssertTrue(AddFixtureProfile(accounts, current).IsSuccess);
                 }
                 if (mutation == "shift") AssertTrue(accounts.RemoveProfile(0).IsSuccess);
                 if (mutation == "replace") AssertTrue(accounts.ReplaceProfile(0, current with { AccessToken = "newer" }).IsSuccess);

@@ -36,7 +36,7 @@ internal static partial class Program
             ["rid"] = rid,
             ["installer"] = Asset(".setup.exe"),
             ["portable"] = Asset(".portable.zip"),
-            ["githubUrl"] = $"https://github.com/PCL-N-Edition/PCL-N/releases/tag/{version}"
+            ["githubUrl"] = $"https://github.com/Nexa-MC/NexaMC/releases/tag/{version}"
         };
         handler.Body = root.ToJsonString();
         var result = await service.CheckAsync(new("2.0.0.alpha.4", rid, "alpha"));

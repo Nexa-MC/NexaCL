@@ -121,6 +121,10 @@ jobs:
           set -euo pipefail
           microsoft="${NEXA_MS_CLIENT_ID:-${MS_CLIENT_ID:-${CLIENT_ID:-}}}"
           little_skin="${NEXA_LITTLESKIN_CLIENT_ID:-${LITTLESKIN_CLIENT_ID:-}}"
+          if [[ "$GITHUB_REF" == refs/tags/* && -z "$microsoft" ]]; then
+            echo 'A Microsoft OAuth client ID is required for official release account entitlement verification' >&2
+            exit 1
+          fi
           if [[ -n "$microsoft" ]]; then echo "::add-mask::$microsoft"; fi
           if [[ -n "$little_skin" ]]; then echo "::add-mask::$little_skin"; fi
           echo "NEXA_MS_CLIENT_ID=$microsoft" >> "$GITHUB_ENV"
@@ -144,7 +148,7 @@ jobs:
           NexaCurseForgeApiKey: ${{ secrets.CURSEFORGE_API_KEY }}
         run: |
           set -euo pipefail
-          if [[ -z "$NexaCurseForgeApiKey" && ( "$GITHUB_REPOSITORY" == Nexa-MC/PCL-N || "$GITHUB_REF" == refs/tags/* ) ]]; then
+          if [[ -z "$NexaCurseForgeApiKey" && ( "$GITHUB_REPOSITORY" == Nexa-MC/PCL-N || "$GITHUB_REPOSITORY" == Nexa-MC/NexaMC || "$GITHUB_REF" == refs/tags/* ) ]]; then
             echo 'CURSEFORGE_API_KEY is required for official launcher artifacts' >&2
             exit 1
           fi

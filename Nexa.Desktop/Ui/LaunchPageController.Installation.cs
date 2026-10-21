@@ -57,6 +57,7 @@ internal sealed partial class LaunchPageController
 
     private void NotifyInstallUnavailable()
     {
+        if (!_editingInstall && !_region.AllowMinecraftDownloads) { _feedback.Warn(_shell.Renderer.LocalizeText(Nexa.Services.RegionalPolicy.MinecraftDownloadUnavailable)); return; }
         if (_editingInstall && _installEdit is null) { _feedback.Warn(InstallCopy("copy.8599bb4a4f3b")); return; }
         if (!_installGameChosen) { _feedback.Warn(InstallCopy("copy.26a1214b777a")); return; }
         if (QueryInstallEligibility()?.CommitError is { } conflict) { _feedback.Warn(conflict); return; }

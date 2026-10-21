@@ -255,6 +255,7 @@ internal static partial class Program
                 "Steve", "uuid-ms", "ms-access", "ms-refresh", "https://skin/steve", true);
             XsrResult<int> microsoftIndex = AccountLoginProfiles.Upsert(accounts, AccountLoginProfiles.FromMicrosoft(microsoft));
             AssertTrue(microsoftIndex.TryGetValue(out int steve) && steve == 0);
+            accounts.RecordVerifiedOwnership(microsoft.Uuid);
 
             YggdrasilAuthLoginResult littleSkin = new(
                 "Lemon", "uuid-ls", "ls-access", "https://littleskin.cn/api/yggdrasil", "littleskin.cn", "CT", "RT");

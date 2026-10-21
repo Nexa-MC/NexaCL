@@ -61,14 +61,20 @@ public sealed class NexaUpdateService(HttpClient http, Rollouts.RolloutService? 
             string installer = Asset(root.GetProperty("installer"), version, query.RuntimeIdentifier);
             string portable = Asset(root.GetProperty("portable"), version, query.RuntimeIdentifier);
             string release = root.GetProperty("githubUrl").GetString() ?? "";
-            string prefix = "https://github.com/PCL-N-Edition/PCL-N/releases/tag/";
-            if (release != prefix + version && release != prefix + "v" + version) throw new InvalidDataException("更新说明地址无效。");
+            if (!IsReleaseUrl(release, version)) throw new InvalidDataException("更新说明地址无效。");
             return XsrResult.Success(new NexaUpdateStatus(new(version, installer, portable, release)));
         }
         catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or JsonException or InvalidOperationException or KeyNotFoundException or FormatException or UnauthorizedAccessException or OperationCanceledException)
         {
             return XsrResult.Failure<NexaUpdateStatus>(new(XsrErrorKind.Unavailable, XsrSemanticId.Parse("nexa.update.unavailable"), "暂时无法检查更新，请稍后重试。"));
         }
+    }
+
+    private static bool IsReleaseUrl(string release, string version)
+    {
+        return Matches(LauncherRepository.Url) || Matches(LauncherRepository.LegacyUrl) || Matches(LauncherRepository.HistoricalUrl);
+        bool Matches(string repository) => release == repository + "/releases/tag/" + version
+            || release == repository + "/releases/tag/v" + version;
     }
 
     private static string Asset(JsonElement asset, string version, string rid)
