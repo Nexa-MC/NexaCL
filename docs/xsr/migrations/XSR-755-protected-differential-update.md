@@ -40,6 +40,31 @@ and independent signature verification. Missing historical releases keep full-on
 malformed or unauthenticated historical evidence fails generation rather than being trusted.
 CI commit labels remain manual-only. No plugin, UI or user staging path gains update authority.
 
+## Independent update repository and immutable backfill
+
+History discovery queries only the pinned update, source and archived repositories,
+merges duplicate canonical versions with update/source/history priority, and uses a
+single five-record published history window across them. Signed historical envelopes
+and exact portable bytes remain prerequisites. Missing optional history is allowed;
+malformed metadata, signature failure and non-404 network failures remain errors.
+
+An already published full-only release may gain one immutable differential extension:
+`Nexa-Delta.json`, its signature, and the referenced bundles/signatures. Existing full
+packages, release envelope, checksum file and all existing signatures are never replaced.
+The original checksum list therefore retains its original coverage; each supplemental
+bundle is authenticated independently by its detached signature and the signed delta
+index, which binds the exact target full-package hash. Future normal releases continue
+to include deltas in their complete checksum set.
+
+Backfill uses the source repository's existing signing Secrets and never rebuilds or
+executes historical packages. Bundles are round-trip checked before signing. Publication
+uploads bundles and signatures first, then the index signature, and the index last so
+clients cannot discover a partial extension. Retrying reuses identical existing bytes;
+conflicting published assets fail without overwrite. The independent mirror verifies
+the complete signed distribution before appending only missing differential assets to
+an existing public release, preserving existing names, sizes and SHA256 digests. A
+published index is immutable. Clients retain their existing authenticated full fallback.
+
 ## Validation
 
 Contract tests cover reduced transfers, initial installer and active-slot sources, wrong

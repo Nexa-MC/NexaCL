@@ -1,0 +1,42 @@
+name: Backfill signed differential updates
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing public release tag
+        required: true
+        type: string
+      expected_sha:
+        description: Exact reviewed main commit containing the publisher tooling
+        required: true
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: signed-delta-publication
+  cancel-in-progress: false
+jobs:
+  backfill:
+    if: github.repository == 'Nexa-MC/NexaCL' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Verify reviewed publisher commit
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Test release contracts before signing
+        run: python -m unittest discover -s eng/release -p 'test_*.py'
+      - name: Generate, round-trip, sign and append differential assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: python eng/release/backfill_deltas.py --tag "$RELEASE_TAG"

@@ -5,6 +5,7 @@ import os
 import tempfile
 import urllib.error
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 
 from delta import MAX_HISTORY_SOURCES, MAX_PACKAGE, RIDS, canonical_order, digest, package_name
@@ -12,7 +13,8 @@ from manifest import release_channel, unique_object
 from sign import FINGERPRINT, gpg, import_public, keyring
 from verify import expected_names
 
-REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "Nexa-MC/NexaCL")
+REPOSITORY = "Nexa-MC/NexaCL"
+REPOSITORIES = ("Nexa-MC/NexaCL-Update", REPOSITORY, "Nexa-MC/PCL-N")
 ROOT = Path(__file__).resolve().parents[2]
 HISTORY_LIST_LIMIT = MAX_HISTORY_SOURCES + 1  # The current release may already be present.
 HISTORY_LIST_BYTES = 4 * 1024 * 1024
@@ -57,8 +59,7 @@ def validate_remote_manifest(raw, version):
     return assets
 
 
-def recent_history_candidates(raw, version):
-    """Filter within five other published records, never refill from older history."""
+def history_records(raw):
     releases = json.loads(raw, object_pairs_hook=unique_object)
     if not isinstance(releases, list) or len(releases) > HISTORY_LIST_LIMIT:
         raise ValueError("Invalid bounded historical release list")
@@ -73,6 +74,12 @@ def recent_history_candidates(raw, version):
             raise ValueError("Duplicate historical release record")
         seen_ids.add(release["id"])
         seen_versions.add(value)
+    return releases
+
+
+def recent_history_candidates(raw, version):
+    """Filter within five other published records, never refill from older history."""
+    releases = history_records(raw)
     candidates, considered = [], 0
     for release in releases:
         tag = release["tag_name"]
@@ -92,6 +99,28 @@ def recent_history_candidates(raw, version):
     return candidates
 
 
+def merged_history_candidates(catalogs, version):
+    """One bounded window, with pinned origin retained across repository migration."""
+    versions = {}
+    for repository, raw in catalogs:
+        if repository not in REPOSITORIES:
+            raise ValueError("Unexpected historical repository")
+        for release in history_records(raw):
+            value = release["tag_name"].removeprefix("v")
+            if release["draft"] or value == version:
+                continue
+            stamp = release.get("published_at")
+            if not isinstance(stamp, str) or len(stamp) > 40:
+                raise ValueError("Invalid historical publication time")
+            published = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+            if published.tzinfo is None:
+                raise ValueError("Historical publication time lacks a timezone")
+            versions.setdefault(value, (repository, release, published))
+    recent = sorted(versions.values(), key=lambda item: item[2], reverse=True)[:MAX_HISTORY_SOURCES]
+    selected = recent_history_candidates(json.dumps([item[1] for item in recent]).encode(), version)
+    return [(value, tag, versions[value][0]) for value, tag in selected]
+
+
 def fetch(history, version):
     history.mkdir(parents=True, exist_ok=True)
     if release_channel(version) == "ci":
@@ -99,15 +128,23 @@ def fetch(history, version):
     with tempfile.TemporaryDirectory(prefix="nexa-history-") as temp, keyring() as home:
         work = Path(temp)
         import_public(home, (ROOT / "GPG-PUBLIC-KEY.asc").read_bytes(), FINGERPRINT)
-        listing = work / "releases"
-        download(f"https://api.github.com/repos/{REPOSITORY}/releases?per_page={HISTORY_LIST_LIMIT}&page=1",
-                 listing, HISTORY_LIST_BYTES, authenticated=True)
-        candidates = recent_history_candidates(listing.read_bytes(), version)
+        catalogs = []
+        for number, repository in enumerate(REPOSITORIES):
+            listing = work / f"releases-{number}"
+            try:
+                download(f"https://api.github.com/repos/{repository}/releases?per_page={HISTORY_LIST_LIMIT}&page=1",
+                         listing, HISTORY_LIST_BYTES, authenticated=True)
+            except urllib.error.HTTPError as error:
+                if error.code == 404:
+                    continue
+                raise
+            catalogs.append((repository, listing.read_bytes()))
+        candidates = merged_history_candidates(catalogs, version)
         accepted = 0
-        for value, tag in candidates:
+        for value, tag, repository in candidates:
             directory = work / value
             directory.mkdir()
-            base = f"https://github.com/{REPOSITORY}/releases/download/{tag}/"
+            base = f"https://github.com/{repository}/releases/download/{tag}/"
             manifest = directory / "Nexa-Release.json"
             try:
                 download(base + manifest.name, manifest, 1024 * 1024)

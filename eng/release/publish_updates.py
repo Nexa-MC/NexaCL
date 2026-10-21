@@ -9,6 +9,8 @@ from pathlib import Path
 from manifest import release_channel
 from release_notes import get_release, require_notes
 from sign import verify_signatures
+from delta import INDEX_NAME, digest, validate_index
+from verify import expected_names
 
 SOURCE = "Nexa-MC/NexaCL"
 DESTINATION = "Nexa-MC/NexaCL-Update"
@@ -39,7 +41,7 @@ def identity(tag):
     return version, channel
 
 
-def assets_for(release, tag):
+def assets_for(release, tag, repository=SOURCE):
     assets = release.get("assets")
     if not isinstance(assets, list) or not 1 <= len(assets) <= 128:
         raise ValueError("Release asset set is missing or too large")
@@ -50,12 +52,54 @@ def assets_for(release, tag):
         if (not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,240}", name)
                 or name in (".", "..") or name in sizes
                 or type(size) is not int or not 0 < size <= MAXIMUM_ASSET_BYTES
-                or asset.get("browser_download_url") != f"https://github.com/{SOURCE}/releases/download/{tag}/{name}"):
+                or asset.get("browser_download_url") != f"https://github.com/{repository}/releases/download/{tag}/{name}"):
             raise ValueError("Release contains an invalid asset identity")
         sizes[name] = size
     if sum(sizes.values()) > 16 * 1024**3:
         raise ValueError("Release assets exceed the total byte budget")
     return sizes
+
+
+def append_deltas(repository, tag, directory, version):
+    """Append authenticated optional files; never replace any published byte."""
+    if repository not in (SOURCE, DESTINATION):
+        raise ValueError("Unexpected differential destination")
+    extension = validate_index(directory, version)
+    if not extension:
+        return False
+    extension |= {name + ".asc" for name in extension}
+    expected = {p.name: (p.stat().st_size, "sha256:" + digest(p)) for p in directory.iterdir()}
+    base = expected_names(version) | {"SHA256SUMS", "Nexa-Release.json"}
+    base |= {name + ".asc" for name in base}
+
+    def read():
+        release = api(f"repos/{repository}/releases/tags/{tag}")
+        if release.get("tag_name") != tag or release.get("draft") is not False:
+            raise ValueError("Differential extension requires the existing public release")
+        assets_for(release, tag, repository)
+        actual = {a["name"]: (a["size"], a.get("digest")) for a in release["assets"]}
+        if not base <= actual.keys() or any(name not in expected or value != expected[name] for name, value in actual.items()):
+            raise ValueError("Existing published assets differ; refusing overwrite")
+        return actual
+
+    actual = read()
+    missing = expected.keys() - actual.keys()
+    if not missing:
+        return False
+    if not missing <= extension or INDEX_NAME in actual:
+        raise ValueError("Published differential index is immutable")
+    # Index publication is the discovery commit point. Retries retain existing files.
+    bundles = sorted(missing - {INDEX_NAME, INDEX_NAME + ".asc"})
+    for offset in range(0, len(bundles), 20):
+        gh("release", "upload", tag, "--repo", repository,
+           *(directory / name for name in bundles[offset:offset + 20]))
+    for name in (INDEX_NAME + ".asc", INDEX_NAME):
+        if name in missing:
+            gh("release", "upload", tag, "--repo", repository, directory / name)
+    if read() != expected:
+        raise ValueError("Published differential extension is incomplete")
+    print(f"Appended verified differential assets: {repository} {tag}")
+    return True
 
 
 def publish(tag, public_key, destination=DESTINATION):
@@ -72,8 +116,15 @@ def publish(tag, public_key, destination=DESTINATION):
     sizes = assets_for(release, tag)
     existing = get_release(destination, tag)
     if existing is not None and not existing["draft"]:
-        print(f"Already published: {destination} {tag}")
-        return False
+        if INDEX_NAME not in sizes:
+            print(f"Already published: {destination} {tag}")
+            return False
+        remote = api(f"repos/{destination}/releases/tags/{tag}")
+        assets_for(remote, tag, destination)
+        identities = lambda row: {a["name"]: (a["size"], a.get("digest")) for a in row["assets"]}
+        if identities(remote) == identities(release) and all(a.get("digest") for a in release["assets"]):
+            print(f"Already published with differential updates: {destination} {tag}")
+            return False
     if existing is not None:
         require_notes(existing.get("body"))
     with tempfile.TemporaryDirectory(prefix="nexa-update-publish-") as temporary:
@@ -87,6 +138,8 @@ def publish(tag, public_key, destination=DESTINATION):
         # This does not regenerate hashes/manifests or sign any bytes. It verifies the
         # original complete eighteen-package distribution with the pinned publisher key.
         verify_signatures(packages, version, public_key)
+        if existing is not None and not existing["draft"]:
+            return append_deltas(destination, tag, packages, version)
         if existing is None:
             notes_file = root / "RELEASE.md"
             notes_file.write_text(notes + f"\n\n源码与构建记录：https://github.com/{SOURCE}/releases/tag/{tag}\n", encoding="utf-8")

@@ -69,6 +69,36 @@ def verify_signatures(directory, version, public_key, fingerprint=FINGERPRINT):
     validate_manifest(directory, version)
 
 
+def sign_files(directory, names, public_key, private_key, passphrase, fingerprint):
+    if not private_key.strip():
+        raise ValueError("Publisher signing key is required")
+    if "\n" in passphrase or "\r" in passphrase:
+        raise ValueError("Signing passphrase cannot contain line breaks")
+    with keyring() as home:
+        import_public(home, public_key, fingerprint)
+        gpg(home, "--import", data=private_key.encode("utf-8"))
+        for name in sorted(names):
+            gpg(home, "--pinentry-mode", "loopback", "--passphrase-fd", "0",
+                "--local-user", fingerprint + "!", "--digest-algo", "SHA256",
+                "--armor", "--detach-sign", "--output", str(directory / (name + ".asc")),
+                str(directory / name), data=(passphrase + "\n").encode("utf-8"))
+
+
+def sign_delta_extension(directory, version, public_key, private_key, passphrase,
+                         fingerprint=FINGERPRINT):
+    names = validate_index(directory, version)
+    if not names:
+        raise ValueError("No useful differential extension was generated")
+    unsigned = {name for name in names if not (directory / (name + ".asc")).exists()}
+    try:
+        sign_files(directory, unsigned, public_key, private_key, passphrase, fingerprint)
+        verify_signatures(directory, version, public_key, fingerprint)
+    except BaseException:
+        for name in unsigned:
+            (directory / (name + ".asc")).unlink(missing_ok=True)
+        raise
+
+
 def sign_distribution(directory, version, public_key, private_key, passphrase,
                       fingerprint=FINGERPRINT):
     if not private_key.strip():
@@ -82,14 +112,7 @@ def sign_distribution(directory, version, public_key, private_key, passphrase,
         (directory / (name + ".asc")).unlink(missing_ok=True)
     verify(directory, version)
     try:
-        with keyring() as home:
-            import_public(home, public_key, fingerprint)
-            gpg(home, "--import", data=private_key.encode("utf-8"))
-            for name in sorted(names):
-                gpg(home, "--pinentry-mode", "loopback", "--passphrase-fd", "0",
-                    "--local-user", fingerprint + "!", "--digest-algo", "SHA256",
-                    "--armor", "--detach-sign", "--output", str(directory / (name + ".asc")),
-                    str(directory / name), data=(passphrase + "\n").encode("utf-8"))
+        sign_files(directory, names, public_key, private_key, passphrase, fingerprint)
         verify_signatures(directory, version, public_key, fingerprint)
     except BaseException:
         for name in names:

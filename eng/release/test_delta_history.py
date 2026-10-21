@@ -19,7 +19,7 @@ PREVIOUS = "2.0.0.alpha.5"
 
 
 def record(version, identifier=1, draft=False):
-    return dict(id=identifier, tag_name=version, draft=draft)
+    return dict(id=identifier, tag_name=version, draft=draft, published_at="2026-10-01T00:00:00Z")
 
 
 class HistorySelectionTests(unittest.TestCase):
@@ -71,6 +71,30 @@ class HistorySelectionTests(unittest.TestCase):
                 history.recent_history_candidates(raw, CURRENT)
 
 
+class HistoryMergeTests(unittest.TestCase):
+    def merge(self, rows):
+        return history.merged_history_candidates([(repo, json.dumps(records).encode()) for repo, records in rows], CURRENT)
+
+    def test_deduplicates_mirrors_with_pinned_priority_and_retains_original_tags(self):
+        updates, source, legacy = history.REPOSITORIES
+        previous = record("v" + PREVIOUS)
+        older = dict(record("v2.0.0.alpha.4", 2), published_at="2026-09-01T00:00:00Z")
+        self.assertEqual([(PREVIOUS, "v" + PREVIOUS, updates), ("2.0.0.alpha.4", older["tag_name"], legacy)], self.merge([
+            (updates, [previous]), (source, [record(PREVIOUS, 3)]), (legacy, [older])]))
+
+    def test_newer_source_precedes_older_mirror_in_the_single_five_record_window(self):
+        updates, source, legacy = history.REPOSITORIES
+        incompatible = [dict(record(f"v2.0.0.beta.{i}", i), published_at="2026-10-02T00:00:00Z") for i in range(1, 6)]
+        self.assertEqual([], self.merge([(updates, [record("v" + PREVIOUS, 77)]), (source, incompatible), (legacy, [])]))
+
+    def test_untrusted_roots_invalid_dates_and_duplicate_catalogs_fail(self):
+        for rows in [[("other/repo", [])], [(history.REPOSITORY, [dict(record("v" + PREVIOUS), published_at=None)])],
+                     [(history.REPOSITORY, [dict(record("v" + PREVIOUS), published_at="2026-10-01")])],
+                     [(history.REPOSITORY, [record("v" + PREVIOUS), record(PREVIOUS, 2)])]]:
+            with self.subTest(rows=rows), self.assertRaises(ValueError):
+                self.merge(rows)
+
+
 class HistoryFetchTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -81,6 +105,8 @@ class HistoryFetchTests(unittest.TestCase):
         self.calls = []
         self.records = [record("v" + CURRENT), record("v" + PREVIOUS, 2)]
         self.raw_listing = None
+        self.repositories = (history.REPOSITORY,)
+        self.extra_catalogs = {}
         self.responses = {}
         self.listing_url = f"https://api.github.com/repos/{history.REPOSITORY}/releases?per_page=6&page=1"
         self.asset_base = f"https://github.com/{history.REPOSITORY}/releases/download/v{PREVIOUS}/"
@@ -103,8 +129,8 @@ class HistoryFetchTests(unittest.TestCase):
         self.assertEqual(120, timeout)
         url = request.full_url
         self.calls.append(url)
-        if url == self.listing_url:
-            response = self.raw_listing if self.raw_listing is not None else json.dumps(self.records).encode()
+        if url == self.listing_url or url in self.extra_catalogs:
+            response = self.extra_catalogs[url] if url in self.extra_catalogs else (self.raw_listing if self.raw_listing is not None else json.dumps(self.records).encode())
             self.assertEqual("Bearer fixture-token", request.get_header("Authorization"))
         else:
             self.assertIsNone(request.get_header("Authorization"))
@@ -120,6 +146,7 @@ class HistoryFetchTests(unittest.TestCase):
     def fetch(self):
         with ExitStack() as stack:
             stack.enter_context(patch.object(history, "ROOT", self.root))
+            stack.enter_context(patch.object(history, "REPOSITORIES", self.repositories))
             stack.enter_context(patch.object(history, "keyring", return_value=nullcontext(self.root / "keyring")))
             imported = stack.enter_context(patch.object(history, "import_public"))
             stack.enter_context(patch.object(history, "gpg", return_value=self.signature_status, side_effect=self.signature_error))
@@ -127,6 +154,25 @@ class HistoryFetchTests(unittest.TestCase):
             stack.enter_context(patch.dict(history.os.environ, {"GH_TOKEN": "fixture-token"}))
             history.fetch(self.output, CURRENT)
             imported.assert_called_once_with(self.root / "keyring", b"public key fixture", history.FINGERPRINT)
+
+    def test_migration_fetches_the_signed_archive_from_its_pinned_legacy_origin(self):
+        self.repositories = history.REPOSITORIES
+        self.records = [record("v" + CURRENT)]
+        legacy = "Nexa-MC/PCL-N"
+        for repository in self.repositories:
+            if repository != history.REPOSITORY:
+                url = f"https://api.github.com/repos/{repository}/releases?per_page=6&page=1"
+                rows = [record("v" + PREVIOUS, 22)] if repository == legacy else []
+                self.extra_catalogs[url] = json.dumps(rows).encode()
+        previous_base = self.asset_base
+        self.asset_base = previous_base.replace(history.REPOSITORY, legacy)
+        self.manifest_url = self.asset_base + "Nexa-Release.json"
+        self.signature_url = self.manifest_url + ".asc"
+        self.responses = {url.replace(previous_base, self.asset_base): value for url, value in self.responses.items()}
+        self.fetch()
+        self.assertEqual(11, len(self.calls))
+        self.assertEqual(6, len(list(self.output.glob("*/*"))))
+        self.assertTrue(all(url.startswith(self.asset_base) for url in self.calls if "/releases/download/" in url))
 
     def test_one_authenticated_source_downloads_exactly_six_packages(self):
         self.fetch()
