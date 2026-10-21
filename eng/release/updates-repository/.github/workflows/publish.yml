@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish:
-    if: github.repository == 'Nexa-MC/NexaMC-Updates'
+    if: github.repository == 'Nexa-MC/NexaCL-Update'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -24,7 +24,7 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          repository: Nexa-MC/NexaMC
+          repository: Nexa-MC/NexaCL
           ref: refactor/xsr
           path: publisher
           persist-credentials: false

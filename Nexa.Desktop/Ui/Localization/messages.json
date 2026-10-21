@@ -9171,9 +9171,9 @@
     "zh-Hant": "Copyright © 2025 muxue。Nexa 專案貢獻者保留各自貢獻的版權。"
   },
   {
-    "source": "Nexa Host 采用 Apache License 2.0。源代码、许可证及贡献记录：\nhttps://github.com/Nexa-MC/NexaMC\n随附 LICENSE 为完整授权条款；独立 Sidecar、插件与第三方依赖按各自许可证发布。",
-    "en": "Nexa Host is licensed under Apache License 2.0. Source, license and contributions:\nhttps://github.com/Nexa-MC/NexaMC\nThe accompanying LICENSE contains the full terms. Independent Sidecars, plugins and third-party dependencies use their respective licenses.",
-    "zh-Hant": "Nexa Host 採用 Apache License 2.0。原始碼、授權條款及貢獻記錄：\nhttps://github.com/Nexa-MC/NexaMC\n隨附 LICENSE 為完整授權條款；獨立 Sidecar、外掛與第三方相依套件按各自授權條款發布。"
+    "source": "Nexa Host 采用 Apache License 2.0。源代码、许可证及贡献记录：\nhttps://github.com/Nexa-MC/NexaCL\n随附 LICENSE 为完整授权条款；独立 Sidecar、插件与第三方依赖按各自许可证发布。",
+    "en": "Nexa Host is licensed under Apache License 2.0. Source, license and contributions:\nhttps://github.com/Nexa-MC/NexaCL\nThe accompanying LICENSE contains the full terms. Independent Sidecars, plugins and third-party dependencies use their respective licenses.",
+    "zh-Hant": "Nexa Host 採用 Apache License 2.0。原始碼、授權條款及貢獻記錄：\nhttps://github.com/Nexa-MC/NexaCL\n隨附 LICENSE 為完整授權條款；獨立 Sidecar、外掛與第三方相依套件按各自授權條款發布。"
   },
   {
     "source": "Minecraft 是 Mojang / Microsoft 的商标。本项目由社区独立维护，与 Mojang / Microsoft 无隶属或官方认可关系。",

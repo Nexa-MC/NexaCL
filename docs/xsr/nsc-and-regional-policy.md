@@ -50,9 +50,9 @@ limitations; UI language/format settings do not change admission. International 
 behavior remains available. The UI explains the restriction and does not offer unavailable
 base-game installation actions.
 
-The continuation repository is `Nexa-MC/NexaMC`, carrying the existing XSR branch and Git
+The continuation repository is `Nexa-MC/NexaCL`, carrying the existing XSR branch and Git
 history. Source/about links and publisher packaging use the new repository. Signed update
-downloads prefer the independent `Nexa-MC/NexaMC-Updates` distribution repository, then the
+downloads prefer the independent `Nexa-MC/NexaCL-Update` distribution repository, then the
 source repository and the two exact historical locations as 404-only fallbacks. Update
 release links accept only those four pinned repositories and the exact
 candidate version; unrelated repository URLs remain rejected. Existing signing trust and

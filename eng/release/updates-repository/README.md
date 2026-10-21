@@ -2,9 +2,9 @@
 
 Independent distribution repository for **NexaCL Firefly**.
 
-[Releases](https://github.com/Nexa-MC/NexaMC-Updates/releases) contain verified publisher-signed
+[Releases](https://github.com/Nexa-MC/NexaCL-Update/releases) contain verified publisher-signed
 installers, portable packages, manifests and signatures. Source and development history live in
-[Nexa-MC/NexaMC](https://github.com/Nexa-MC/NexaMC).
+[Nexa-MC/NexaCL](https://github.com/Nexa-MC/NexaCL).
 
 The publication workflow checks the original complete distribution against the public key
 stored here and the pinned fingerprint `5701218D69B531E1A7ED35BB6E31F5974A273AEE` before making

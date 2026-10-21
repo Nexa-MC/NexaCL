@@ -10,8 +10,8 @@ from manifest import release_channel
 from release_notes import get_release, require_notes
 from sign import verify_signatures
 
-SOURCE = "Nexa-MC/NexaMC"
-DESTINATION = "Nexa-MC/NexaMC-Updates"
+SOURCE = "Nexa-MC/NexaCL"
+DESTINATION = "Nexa-MC/NexaCL-Update"
 MAXIMUM_ASSET_BYTES = 2 * 1024**3
 
 

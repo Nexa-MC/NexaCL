@@ -1,11 +1,11 @@
-# NexaMC continuation and Beta 1 publication
+# NexaCL continuation and Beta 1 publication
 
-The requested destination is the public `Nexa-MC/NexaMC` repository, carrying the current
+The user-created destination is the public `Nexa-MC/NexaCL` repository, carrying the current
 `refactor/xsr` code and its Git history. The working branch remains `refactor/xsr`; product
 branding stays NexaCL Firefly. Beta 1 has canonical identity `2.0.0.beta.1` and tag
 `v2.0.0.beta.1`. Notes are in [the release draft](../releases/2.0.0.beta.1.md).
 
-The independent public distribution repository is `Nexa-MC/NexaMC-Updates`. It holds
+The independent public distribution repository is `Nexa-MC/NexaCL-Update`. It holds
 publisher-signed packages, release manifests, signatures and release notes; the source
 repository retains code and Git ancestry. Launcher discovery reads the pinned update
 repository's public releases first, selects a strictly newer canonical version matching
@@ -35,7 +35,7 @@ Publication order:
 2. Create the continuation repository, push the XSR branch with its existing ancestry, retain
    the historical source branches/tags, select `refactor/xsr` as the default branch, and enable
    Issues and Discussions for the migrated feedback entry points.
-   Create and initialize `NexaMC-Updates` with the seed files and the public verification key.
+   Create and initialize `NexaCL-Update` with the seed files and the public verification key.
 3. Configure the required Actions credentials securely. GitHub never returns stored secret
    values through its secrets listing API. Keep the existing publisher signing key/trust;
    do not generate a substitute production key or publish unsigned assets.
@@ -53,19 +53,22 @@ The Microsoft ID, CurseForge key and API client identity are release prerequisit
 values must be supplied or transferred through an authorized secure channel, never committed
 to source, printed to logs, or placed in plaintext artifacts.
 
-Operational status on 2026-10-21: the current GitHub integration can access the source
-repository, but `POST /orgs/Nexa-MC/repos` returned HTTP 403 (`Resource not accessible by
-integration`). Repository and organization Actions secret management also returned HTTP 403.
-Creation, credential configuration, destination CI/release and final archival are pending
-the required GitHub connection permissions. This is an external access limitation; the
-repository must not be reported migrated, archived or released while those steps are pending.
-The retried creation of both repositories still returned the same HTTP 403. Authentication
-diagnostics show the environment applies its existing GitHub integration even to requests
-without an Authorization header or with a deliberately invalid diagnostic header. Supplying
-a PAT in chat therefore does not change this connection's effective administration rights.
-An initial local `main` checkout is prepared at `/workspace/NexaMC-Updates` with the seed
-workflow, README, original LICENSE and verified publisher public key. Its initial commit
-is `ddc0e70`; it has not been pushed and does not establish a GitHub repository exists.
+Migration execution on 2026-10-21: the user created both destination repositories and
+explicitly authorized a one-time Action in the old repository to migrate existing Secrets.
+The cloud integration cannot administer Secrets or repository metadata; the hosted runner
+uses the separately authorized PAT. An ephemeral RSA public-key artifact binds encrypted
+credential delivery to the exact workflow run, temporary branch, nonce and source commit.
+Only ciphertext enters that branch; the private transport key stays in runner temporary
+storage and is deleted at completion. No signing identity is replaced.
+
+The temporary workflow copies known nonempty release Secrets only when the destination
+name is absent, preserves existing destination values and the initialized source `main`,
+and pushes historical heads/tags without force. Destination Actions are paused during the
+historical tag import, then restored. The temporary migration branch is excluded from the
+copy. CI and the signed Beta 1 build must succeed before the verified update mirror is
+published; old-repository archival is the final operation. A failure leaves the old source
+unarchived and restores destination Actions. This describes the authorized procedure;
+completion is established by the resulting GitHub runs/releases, not these instructions.
 
 Prepared-code validation on 2026-10-21:
 
@@ -105,7 +108,8 @@ Independent update-source follow-up validation:
 - The seed workflow YAML parses successfully. A live run in the new repositories remains
   unverified until creation/access is available; unit-test publication messages describe
   mocked GitHub operations, not an actual public release.
-- The follow-up Linux Native AOT publish was interrupted during native code generation;
-  it did not produce a verified final candidate. The follow-up trimmed publish was not run.
-  Earlier policy-only AOT/trim evidence above does not validate this subsequent update-source
-  change. Its deployment validation remains pending the dedicated CI build/checks.
+- The follow-up Linux Native AOT services publish succeeded after replacing a test-only
+  generic `JsonArray` collection initializer that raised IL2026/IL3050. All seven targeted
+  discovery, real HTTP, signed-update and scheduler scenarios passed as native executables.
+  The existing Jint IL2098 warning remains visible. Cross-platform deployment is verified
+  separately by the destination CI and tagged build.

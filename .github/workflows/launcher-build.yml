@@ -148,7 +148,7 @@ jobs:
           NexaCurseForgeApiKey: ${{ secrets.CURSEFORGE_API_KEY }}
         run: |
           set -euo pipefail
-          if [[ -z "$NexaCurseForgeApiKey" && ( "$GITHUB_REPOSITORY" == Nexa-MC/PCL-N || "$GITHUB_REPOSITORY" == Nexa-MC/NexaMC || "$GITHUB_REF" == refs/tags/* ) ]]; then
+          if [[ -z "$NexaCurseForgeApiKey" && ( "$GITHUB_REPOSITORY" == Nexa-MC/PCL-N || "$GITHUB_REPOSITORY" == Nexa-MC/NexaCL || "$GITHUB_REF" == refs/tags/* ) ]]; then
             echo 'CURSEFORGE_API_KEY is required for official launcher artifacts' >&2
             exit 1
           fi

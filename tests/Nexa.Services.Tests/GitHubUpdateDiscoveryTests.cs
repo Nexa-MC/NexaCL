@@ -42,7 +42,11 @@ internal static partial class Program
         using var http = new HttpClient(handler);
         var service = new NexaUpdateService(http);
         var draft = DistributionRelease("2.0.0.beta.3"); draft["draft"] = true;
-        JsonArray releases = [DistributionRelease("2.0.0.beta.1"), DistributionRelease("2.0.0.alpha.9"), draft, DistributionRelease("2.0.0.beta.2")];
+        JsonArray releases = new(
+            DistributionRelease("2.0.0.beta.1"),
+            DistributionRelease("2.0.0.alpha.9"),
+            draft,
+            DistributionRelease("2.0.0.beta.2"));
         handler.Body = releases.ToJsonString();
         foreach (string rid in new[] { "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" })
             foreach (string channel in new[] { "alpha", "beta" })
@@ -106,7 +110,7 @@ internal static partial class Program
             AssertTrue(request.Headers.Authorization is null);
             if (request.RequestUri!.Host == "api.github.com")
             {
-                AssertEqual("/repos/Nexa-MC/NexaMC-Updates/releases", request.RequestUri.AbsolutePath);
+                AssertEqual("/repos/Nexa-MC/NexaCL-Update/releases", request.RequestUri.AbsolutePath);
                 AssertEqual("?per_page=30", request.RequestUri.Query);
                 AssertTrue(request.Headers.UserAgent.Count > 0);
                 return Task.FromResult(new HttpResponseMessage(Status) { Content = new StringContent(Body) });
