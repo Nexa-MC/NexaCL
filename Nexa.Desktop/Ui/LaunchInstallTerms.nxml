@@ -1,6 +1,9 @@
 <nxml-page>
   <StackPanel>
     <Text Key="install.title" Content="安装 Java 版" />
+    <Text Key="java-guide.title" Content="Java 版下载" />
+    <Text Key="java-guide.store-opened" Content="已请求打开 Microsoft Store 中的 Minecraft Launcher 页面。" />
+    <Text Key="java-guide.store-failed" Content="无法打开 Microsoft Store，请稍后重试。" />
     <Text Key="edit.title" Content="修改版本" />
     <Text Key="install.start" Content="开始安装" />
     <Text Key="install.download-unavailable" Content="不提供本体下载" />

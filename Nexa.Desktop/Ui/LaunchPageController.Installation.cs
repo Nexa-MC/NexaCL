@@ -190,6 +190,8 @@ internal sealed partial class LaunchPageController
         bool subpage = _shell.Stage.Navigation.Depth > 1;
         string caption = subpage ? _shell.Stage.Navigation.Current == _javaInstallPage
             ? InstallCopy(_editingInstall ? "edit.title" : "install.title")
+            : _shell.Stage.Navigation.Current == _javaLauncherGuidePage
+                ? InstallCopy("java-guide.title")
             : _shell.Tree.GetComponent<XsrUiSemantic>(_shell.Stage.Navigation.Current)?.Label ?? string.Empty : string.Empty;
         Publish(LaunchPageState.TitleRootKey, !subpage);
         Publish(LaunchPageState.TitleSubpageKey, subpage);

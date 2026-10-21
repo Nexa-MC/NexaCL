@@ -60,11 +60,39 @@ internal static partial class Program
         AssertEqual(0, handler.LegacyCalls);
         var stableOnly = await service.CheckAsync(new("2.0.0.alpha.7", "win-x64", "stable"));
         AssertTrue(stableOnly.IsSuccess); AssertTrue(stableOnly.Value!.Offer is null);
-        AssertEqual(1, handler.LegacyCalls);
+        AssertEqual(0, handler.LegacyCalls);
         releases.Add((JsonNode)DistributionRelease("2.0.0")); handler.Body = releases.ToJsonString();
         foreach (string channel in new[] { "alpha", "beta", "stable" })
             AssertEqual("2.0.0", (await service.CheckAsync(new("2.0.0.alpha.7", "win-x64", channel))).Value!.Offer!.Version);
         AssertTrue((await service.CheckAsync(new("2.0.0", "win-x64", "stable"))).Value!.Offer is null);
+    }
+
+    private static async ValueTask DedicatedUpdateDiscoveryCurrentReleaseDoesNotCallUnavailableLegacyApi()
+    {
+        using var handler = new DistributionDiscoveryHandler
+        {
+            Body = new JsonArray(DistributionRelease("2.0.0.alpha.8")).ToJsonString(),
+            LegacyStatus = HttpStatusCode.ServiceUnavailable,
+        };
+        using var http = new HttpClient(handler);
+        var service = new NexaUpdateService(http);
+        foreach (string version in new[] { "2.0.0.alpha.8", "2.0.0.alpha.9" })
+            foreach (string rid in new[] { "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" })
+            {
+                var result = await service.CheckAsync(new(version, rid, "alpha"));
+                AssertTrue(result.IsSuccess);
+                AssertTrue(result.Value!.Offer is null);
+            }
+        AssertEqual(0, handler.LegacyCalls);
+        foreach (string body in new[] { "[]", new JsonArray(DistributionRelease("2.0.0.alpha.8")).ToJsonString() })
+            foreach (string channel in new[] { "alpha", "beta", "stable" })
+            {
+                handler.Body = body;
+                var result = await service.CheckAsync(new("2.0.0.alpha.8", "win-x64", channel));
+                AssertTrue(result.IsSuccess);
+                AssertTrue(result.Value!.Offer is null);
+            }
+        AssertEqual(0, handler.LegacyCalls);
     }
 
     private static async ValueTask DedicatedUpdateDiscoveryRejectsUntrustedMetadataWithoutFallback()
@@ -105,6 +133,7 @@ internal static partial class Program
         internal string Body = "[]";
         internal HttpStatusCode Status = HttpStatusCode.OK;
         internal int LegacyCalls;
+        internal HttpStatusCode LegacyStatus = HttpStatusCode.NoContent;
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
             AssertTrue(request.Headers.Authorization is null);
@@ -117,7 +146,7 @@ internal static partial class Program
             }
             AssertEqual("https://api.pcln.top/v2/updates/latest", request.RequestUri.GetLeftPart(UriPartial.Path));
             LegacyCalls++;
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));
+            return Task.FromResult(new HttpResponseMessage(LegacyStatus));
         }
     }
 }

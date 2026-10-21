@@ -13,8 +13,9 @@ publisher-signed packages, release manifests, signatures and release notes; the 
 repository retains code and Git ancestry. Launcher discovery reads the pinned update
 repository's public releases first, selects a strictly newer canonical version matching
 the requested channel/RID, and accepts only exact package identities at that repository.
-An absent repository or no eligible release falls back to the existing API discovery
-contract, including its rollout checks. HTTP errors and malformed candidate releases
+An absent repository falls back to the existing API discovery contract, including its
+rollout checks. A successful independent catalog is authoritative even when empty or when
+no newer release matches the requested channel. HTTP errors and malformed candidate releases
 remain failures. A public release in the dedicated repository is an explicit full-rollout
 publication; unsigned discovery metadata never grants installation authority.
 
@@ -142,3 +143,16 @@ Independent update-source follow-up validation:
 - [Web CI](https://github.com/Nexa-MC/PCL-N-Plugin-Center-Web/actions/runs/39553955308) and [production Worker deployment](https://github.com/Nexa-MC/PCL-N-Plugin-Center-Web/actions/runs/39553970722) passed. The live website resolves all 18 Alpha 8 packages on six platform/architecture selectors from `NexaCL-Update`; the saved catalog also includes Alpha 8 for outages.
 
 Earlier preparation notes above are historical evidence; these publication links and repository flags record the completed transition.
+
+## Successful no-update discovery
+
+A valid independent-repository catalog is authoritative even when empty, when no release
+matches the selected channel, or when its releases are equal to or older than the installed version.
+That result is a successful check with no offer, not permission to consult an unavailable
+legacy endpoint. An absent repository may still use the legacy API. HTTP errors and malformed/untrusted metadata remain
+failures. No signature, rollout or installation authority is inferred from discovery.
+
+Follow-up validation: 794 service tests (including current/newer installed versions on all
+six RIDs with an unavailable legacy API), 359 desktop tests and 72 architecture checks
+passed. Release build and managed `--validate-shell` passed; the startup validation covers
+both the international Java catalogue and the mainland guide in light/dark constrained layouts.

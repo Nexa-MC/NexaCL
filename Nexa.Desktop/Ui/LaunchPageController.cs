@@ -217,6 +217,7 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
         InitializeInstallCatalog();
         UpdateJavaInstallSubpageVisibility();
         _bedrockInstallPage = LoadBedrockInstallPage();
+        InitializeJavaLauncherGuide();
         (_launchingPage, _launchingEntities) = LoadLaunchingPage();
         _shell.Tree.Walk(_shell.TitleBar, entity =>
         {
@@ -297,6 +298,7 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
         _processLayer?.Dispose();
         _processDocks.Clear();
         if (_javaChoicePage.IsAssigned) _shell.Tree.Destroy(_javaChoicePage);
+        if (_javaLauncherGuidePage.IsAssigned) _shell.Tree.Destroy(_javaLauncherGuidePage);
         DismissAcquisitionDialog();
 
         _shutdownTask = CompleteShutdownAsync(save);

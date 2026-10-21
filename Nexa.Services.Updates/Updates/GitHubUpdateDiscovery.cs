@@ -9,7 +9,7 @@ internal static class GitHubUpdateDiscovery
     private const int MaximumBytes = 4 * 1024 * 1024;
     private const string Releases = "https://api.github.com/repos/" + LauncherRepository.UpdatesSlug + "/releases?per_page=30";
 
-    internal static async Task<NexaUpdateOffer?> ReadAsync(HttpClient http, NexaUpdateQuery query,
+    internal static async Task<NexaUpdateStatus?> ReadAsync(HttpClient http, NexaUpdateQuery query,
         UpdateVersion current, CancellationToken token)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, Releases);
@@ -39,7 +39,7 @@ internal static class GitHubUpdateDiscovery
             string tag = release.GetProperty("tag_name").GetString() ?? "";
             string version = tag.StartsWith('v') ? tag[1..] : tag;
             if (!UpdateVersion.TryParse(version, out var candidate) || candidate.ToString() != version || candidate.Major != 2
-                || candidate.Stage == UpdateVersionStage.Ci || candidate.CompareTo(best) <= 0
+                || candidate.Stage == UpdateVersionStage.Ci
                 || query.Channel == "stable" && candidate.Stage != UpdateVersionStage.Stable
                 || query.Channel == "beta" && candidate.Stage == UpdateVersionStage.Alpha) continue;
             if (release.GetProperty("prerelease").GetBoolean() != (candidate.Stage != UpdateVersionStage.Stable))
@@ -47,6 +47,7 @@ internal static class GitHubUpdateDiscovery
             string releaseUrl = LauncherRepository.UpdatesUrl + "/releases/tag/" + tag;
             if (release.GetProperty("html_url").GetString() != releaseUrl)
                 throw new InvalidDataException("更新说明地址无效。");
+            if (candidate.CompareTo(best) <= 0) continue;
             string installerFormat = query.RuntimeIdentifier.StartsWith("win-", StringComparison.Ordinal) ? "setup.exe"
                 : query.RuntimeIdentifier.StartsWith("osx-", StringComparison.Ordinal) ? "dmg" : "AppImage";
             string portableFormat = query.RuntimeIdentifier.StartsWith("win-", StringComparison.Ordinal) ? "portable.zip" : "portable.tar.gz";
@@ -57,7 +58,7 @@ internal static class GitHubUpdateDiscovery
             result = new(version, Asset(assets, tag, prefix + installerFormat), Asset(assets, tag, prefix + portableFormat), releaseUrl);
             best = candidate;
         }
-        return result;
+        return new NexaUpdateStatus(result);
     }
 
     private static string Asset(JsonElement assets, string tag, string name)

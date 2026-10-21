@@ -24,6 +24,9 @@ internal sealed partial class LaunchPageController
         }
 
         if (HandleProcessIntent(e)) return;
+        if (HandleJavaLauncherGuideIntent(e)) return;
+        if (_region.IsMainlandChina && _shell.Stage.Navigation.Current == _javaLauncherGuidePage
+            && e.Intent.Command.Value.StartsWith("ui.install.", StringComparison.Ordinal)) return;
         if (HandleInstallCatalogIntent(e)) return;
         XsrSemanticId command = e.Intent.Command;
         if (command == LaunchRoute)
@@ -38,6 +41,11 @@ internal sealed partial class LaunchPageController
         }
         else if (command == InstallJavaCommand)
         {
+            if (_region.IsMainlandChina)
+            {
+                OpenSubpage(_javaLauncherGuidePage, e.Intent.Source);
+                return;
+            }
             OpenSubpage(_javaInstallPage, e.Intent.Source);
             RequestInstallCatalog();
             RefreshJavaInstallPresentation();

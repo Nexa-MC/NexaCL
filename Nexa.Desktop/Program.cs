@@ -540,6 +540,7 @@ internal static partial class Program
             library, feedback, accountCommands: accounts.Commands,
             directoryEffects: new NativeVersionDirectoryEffects(platformActions), installCatalogCommands: installCatalog.Commands, installCatalogQueries: installCatalog.Queries, installRunCommands: installRun.Commands, recoveryQueries: runtime.Queries);
         launchPage.CopyProcessLogText = platformActions.CopyTextAsync;
+        launchPage.OpenJavaLauncherStore = platformActions.OpenHttpsUri;
         using WardrobePageController wardrobePage = new(shell, uiIntents, accounts.Queries!, accounts.Commands, host.StateStore, feedback);
         wardrobePage.ConfigureFilePicker(platformActions.PickSkinFileAsync);
         wardrobePage.ConfigureOpenUrl(platformActions.OpenHttpsUri);
@@ -673,6 +674,7 @@ internal static partial class Program
             {
                 await ValidateDynamicNetworkPageAsync(shell, settingsPage, uiIntents).ConfigureAwait(false);
                 await ValidateDynamicLaunchInstallAsync().ConfigureAwait(false);
+                await ValidateDynamicLaunchInstallAsync(mainlandGuide: true).ConfigureAwait(false);
                 await ValidateDynamicSettingsMigrationAsync(shell, host.StateStore, uiIntents).ConfigureAwait(false);
                 ValidateDynamicTaskPage(shell, taskCenterPage, host.Tasks, uiIntents);
                 ValidateDynamicDock(shell, host.StateStore);

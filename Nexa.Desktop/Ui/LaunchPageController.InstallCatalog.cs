@@ -129,6 +129,7 @@ internal sealed partial class LaunchPageController
     }
     private void RequestInstallCatalog(bool force = false)
     {
+        if (_region.IsMainlandChina && _shell.Stage.Navigation.Current != _javaInstallPage) return;
         if (ActiveCatalogLoader == InstallLoader.OptiFine && !_region.IsMainlandChina) return;
         if (force) _startupCatalogOffline = false;
         if (_installCatalogCommands is null || !_catalogHosts.ContainsKey(_activeJavaInstallPage)) return;

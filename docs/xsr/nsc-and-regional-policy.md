@@ -89,3 +89,13 @@ ABI follows [function-patches.md](function-patches.md), and the UI caption State
 [sidecar-ui-patches.md](sidecar-ui-patches.md). New UI rendering, other visual properties,
 further Function shapes and the independently owned Sidecar executable remain
 separate work; declaration retention alone does not grant execution.
+
+## Mainland Java acquisition handoff
+
+The new Java download destination in CN is an official-launcher guide, linking only to
+`https://apps.microsoft.com/detail/9PGW18NPBZV5` (Minecraft Launcher, not the Bedrock
+product). It opens the existing HTTPS platform action after an explicit, visible button
+activation and never dispatches a game-install task or catalogue request. The guide
+explains the Windows Store requirement and continued local-import support on other OSes.
+Existing instance editing retains its original editor; the service-level Minecraft download
+restriction and international installation flow remain in force.

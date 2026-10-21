@@ -28,7 +28,7 @@ public sealed class NexaUpdateService(HttpClient http, Rollouts.RolloutService? 
             using IDisposable? admission = WorkScheduler is null ? null
                 : await WorkScheduler.AcquireAsync(WorkPriority.Background, WorkResource.Http, token).ConfigureAwait(false);
             if (await GitHubUpdateDiscovery.ReadAsync(http, query, current, token).ConfigureAwait(false) is { } published)
-                return XsrResult.Success(new NexaUpdateStatus(published));
+                return XsrResult.Success(published);
             using var response = await http.GetAsync($"{Origin}/v2/updates/latest?channel={query.Channel}&rid={query.RuntimeIdentifier}{(rollouts is null ? "" : "&rollout=1")}", HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.NoContent) return XsrResult.Success(new NexaUpdateStatus(null));
             response.EnsureSuccessStatusCode();

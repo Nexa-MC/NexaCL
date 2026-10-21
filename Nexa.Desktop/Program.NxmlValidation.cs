@@ -647,7 +647,7 @@ internal static partial class Program
         }
     }
 
-    private static async Task ValidateDynamicLaunchInstallAsync()
+    private static async Task ValidateDynamicLaunchInstallAsync(bool mainlandGuide = false)
     {
         // This validates production controllers against bounded, typed in-memory service facts.
         // It does not contact a catalogue provider, launch Minecraft or open a native Store/browser.
@@ -671,7 +671,8 @@ internal static partial class Program
             shell.Renderer.ReducedMotion = true;
             using var feedback = new DesktopFeedbackService();
             await using var controller = new LaunchPageController(shell, intents, minecraft, foundation.Commands,
-                host.StateStore, library, feedback, installCatalogCommands: catalogs.Commands, installCatalogQueries: catalogs.Queries);
+                host.StateStore, library, feedback, installCatalogCommands: catalogs.Commands, installCatalogQueries: catalogs.Queries,
+                regionalPolicy: new(mainlandGuide ? "CN" : "US"));
             using var subscription = observation.Subscribe(controller.StateObserver);
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             controller.Attach();
@@ -689,6 +690,31 @@ internal static partial class Program
             var page = shell.Stage.Navigation.Current;
             shell.Render(wide);
             XsrUiEntityId Find(string key) => FindLaunchInstallValidationNode(shell, page, key);
+            if (mainlandGuide)
+            {
+                int opened = 0;
+                controller.OpenJavaLauncherStore = uri =>
+                {
+                    if (uri.AbsoluteUri != "https://apps.microsoft.com/detail/9PGW18NPBZV5")
+                        throw new InvalidOperationException("The guide did not use the pinned official launcher product.");
+                    opened++;
+                };
+                foreach (bool dark in new[] { false, true })
+                {
+                    shell.Renderer.ColorScheme = new(dark);
+                    var guideScene = shell.Render(narrow);
+                    var button = guideScene.Nodes.Single(node => node.Entity == Find("JavaLauncherStore"));
+                    if (shell.Tree.Name(page) != "JavaLauncherGuidePage" || !button.IsEnabled
+                        || button.Rect.Height < 40 || button.Rect.Y < 0 || button.Rect.Y + button.Rect.Height > narrow.Height
+                        || guideScene.Nodes.Any(node => shell.Tree.Name(node.Entity) == "JavaInstallVersionInput"))
+                        throw new InvalidOperationException("The mainland guide lost its product handoff or constrained layout.");
+                    if (!shell.Renderer.Activate(button.Entity))
+                        throw new InvalidOperationException("The official launcher link did not activate.");
+                }
+                if (opened != 2) throw new InvalidOperationException("The guide did not dispatch the explicit browser requests.");
+                Console.WriteLine("Mainland Java launcher guide validation passed: pinned Store product, both themes, constrained geometry and no local install controls.");
+                return;
+            }
             var workspace = Find("JavaInstallContent");
             var list = Find("JavaMinecraftVersions");
             var input = Find("JavaInstallVersionInput");

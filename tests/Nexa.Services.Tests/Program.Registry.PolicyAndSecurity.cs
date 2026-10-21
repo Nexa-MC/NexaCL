@@ -79,6 +79,7 @@ internal static partial class Program
         ("rollouts keep cohorts and fail closed", RolloutsKeepCohortsAndFailClosed),
         ("Nexa updates reject legacy and wrong platform", NexaUpdatesRejectLegacyAndWrongPlatform),
         ("dedicated update discovery selects channels platforms and newer versions", DedicatedUpdateDiscoverySelectsChannelsPlatformsAndNewerVersions),
+        ("dedicated update current release skips unavailable legacy API", DedicatedUpdateDiscoveryCurrentReleaseDoesNotCallUnavailableLegacyApi),
         ("dedicated update discovery rejects untrusted metadata without fallback", DedicatedUpdateDiscoveryRejectsUntrustedMetadataWithoutFallback),
         ("folder import requires resolvable parents", FolderImportRequiresResolvableParents),
         ("folder import copies only required parent artifacts", FolderImportCopiesOnlyRequiredParentArtifacts),

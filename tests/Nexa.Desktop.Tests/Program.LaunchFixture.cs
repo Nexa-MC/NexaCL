@@ -85,7 +85,7 @@ internal static partial class Program
                 Library,
                 Feedback, accountCommands: enableSkins ? Onboarding.Commands : null,
                 timeProvider: timeProvider, directoryEffects: directoryEffects, installCatalogCommands: InstallCatalog.Commands, installCatalogQueries: InstallCatalog.Queries, recoveryQueries: Foundation.Queries,
-                regionalPolicy: regionalPolicy);
+                regionalPolicy: regionalPolicy ?? new("US"));
             _bedrockInstall = new(Shell, Intents, Store, Feedback, () => { }, _ => { });
             Controller.BedrockInstallPage = _bedrockInstall.Page;
             AccountForm = new AccountFormController(Shell, Intents, Onboarding.Commands, Store,

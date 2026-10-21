@@ -1,5 +1,6 @@
 using Nexa.Desktop.Ui;
 using Nexa.Services;
+using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Resources;
 using Nexa.Services.Settings;
 using Nexa.Xsr;
@@ -12,32 +13,74 @@ internal static partial class Program
 {
     private static void MainlandBaseInstallControlsExplainAndRejectUnavailableActions()
     {
-        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]), regionalPolicy: new("CN"));
+        var source = new GuideCatalogSource();
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]), regionalPolicy: new("CN"), installSource: source);
+        fixture.Shell.Renderer.ReducedMotion = true;
+        int opened = 0;
+        fixture.Controller.OpenJavaLauncherStore = uri =>
+        {
+            AssertEqual("https://apps.microsoft.com/detail/9PGW18NPBZV5", uri.AbsoluteUri);
+            opened++;
+        };
         Emit(fixture.Intents, "ui.install.java");
         var scene = fixture.Shell.Render(new(1280, 800));
-        var start = FindByKey(fixture.Shell, scene, "JavaInstallStart");
-        AssertFalse(start.IsEnabled);
-        AssertEqual("不提供本体下载", start.Text);
-        AssertEqual(RegionalPolicy.MinecraftDownloadUnavailable, start.Label);
+        AssertTrue(HasKey(fixture.Shell, scene, "JavaLauncherGuidePage"));
+        AssertFalse(HasKey(fixture.Shell, scene, "JavaInstallStart"));
+        AssertFalse(HasKey(fixture.Shell, scene, "JavaInstallVersionInput"));
+        var store = FindByKey(fixture.Shell, scene, "JavaLauncherStore");
+        AssertTrue(store.IsEnabled);
+        Emit(fixture.Intents, "ui.install.java.store", fixture.Shell.Stage.Root);
+        AssertEqual(0, opened);
+        AssertTrue(fixture.Shell.Renderer.Activate(store.Entity));
+        AssertEqual(1, opened);
         Emit(fixture.Intents, "ui.install.start");
-        fixture.Shell.Render(new(1280, 800));
-        AssertTrue(fixture.Feedback.Snapshot().Notifications.Any(notice => notice.Message == RegionalPolicy.MinecraftDownloadUnavailable));
+        Emit(fixture.Intents, "ui.install.page.forge");
+        Emit(fixture.Intents, "ui.install.catalog.retry");
         AssertEqual(0, fixture.Foundation.Host.Tasks.ReadEntries().Count);
+        AssertEqual(0, source.Reads);
         var catalog = new UiLocalizationCatalog();
         fixture.Shell.Renderer.TextLocalizer = catalog.Translate;
-        foreach (var (language, caption) in new[] { ("en", "Game download unavailable"), ("zh-Hant", "不提供本體下載") })
+        foreach (var (language, caption) in new[] { ("en", "Go to Microsoft Store"), ("zh-Hant", "前往 Microsoft Store") })
         {
             catalog.SetLanguage(language);
             scene = fixture.Shell.Render(new(1280, 800));
-            start = FindByKey(fixture.Shell, scene, "JavaInstallStart");
-            AssertFalse(start.IsEnabled);
-            AssertEqual(caption, start.Text);
-            AssertEqual(catalog.Translate(RegionalPolicy.MinecraftDownloadUnavailable), start.Label);
-            Emit(fixture.Intents, "ui.install.start");
-            fixture.Shell.Render(new(1280, 800));
-            AssertTrue(fixture.Feedback.Snapshot().Notifications.Any(notice => notice.Message == start.Label));
-            AssertEqual(0, fixture.Foundation.Host.Tasks.ReadEntries().Count);
+            store = FindByKey(fixture.Shell, scene, "JavaLauncherStore");
+            AssertEqual(caption, store.Text);
+            AssertEqual(catalog.Translate("Java 版下载"), FindByKey(fixture.Shell, scene, "TitleSubpage").Text);
+            AssertTrue(store.Rect.Height >= 40);
+            AssertTrue(FindByKey(fixture.Shell, scene, "JavaLauncherGuideDescription").Rect.Height > 0);
         }
+        foreach (var size in new[] { new XsrUiSize(810, 500), new XsrUiSize(1280, 800) })
+        {
+            scene = fixture.Shell.Render(size);
+            foreach (string key in new[] { "JavaLauncherGuideTitle", "JavaLauncherGuideDescription", "JavaLauncherStore", "JavaLauncherGuideLocal", "JavaLauncherGuidePlatform" })
+            {
+                var node = FindByKey(fixture.Shell, scene, key);
+                AssertTrue(node.Rect.Width > 0 && node.Rect.Height > 0);
+                AssertTrue(node.Rect.Y >= 0 && node.Rect.Y + node.Rect.Height <= size.Height);
+            }
+        }
+        fixture.Controller.OpenJavaLauncherStore = _ => throw new IOException("test browser unavailable");
+        AssertTrue(fixture.Shell.Renderer.Activate(store.Entity));
+        AssertTrue(fixture.Feedback.Snapshot().Notifications.Any(notice => notice.Message == catalog.Translate("无法打开 Microsoft Store，请稍后重试。")));
+        fixture.Controller.OpenJavaLauncherStore = _ => opened++;
+        AssertTrue(fixture.Shell.Renderer.Activate(store.Entity));
+        AssertEqual(2, opened);
+        Emit(fixture.Intents, "ui.page.back");
+        fixture.Shell.Render(new(1280, 800));
+        Emit(fixture.Intents, "ui.install.java.store", store.Entity);
+        AssertEqual(2, opened);
+    }
+
+    private sealed class GuideCatalogSource : IInstallCatalogSource
+    {
+        internal int Reads;
+        public Task<IReadOnlyList<InstallCatalogVersion>> GetGamesAsync(CancellationToken token)
+        {
+            Interlocked.Increment(ref Reads);
+            return Task.FromResult<IReadOnlyList<InstallCatalogVersion>>([]);
+        }
+        public Task<IReadOnlyList<InstallCatalogVersion>> GetLoadersAsync(InstallLoader loader, string game, CancellationToken token) => GetGamesAsync(token);
     }
 
     private static void RegionalSettingsHideMainlandFacilitiesAndRestoreSavedPreferences()
@@ -147,6 +190,11 @@ internal static partial class Program
             Emit(fixture.Intents, "ui.install.java");
             fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();
             var scene = fixture.Shell.Render(new(1280, 800));
+            if (country == "CN")
+            {
+                AssertTrue(HasKey(fixture.Shell, scene, "JavaLauncherGuidePage"));
+                continue;
+            }
             AssertTrue(fixture.Shell.Renderer.Activate(FindByKey(fixture.Shell, scene, "CatalogRow:game:1.20.6").Entity));
             fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();
             fixture.Shell.Render(new(1280, 800));

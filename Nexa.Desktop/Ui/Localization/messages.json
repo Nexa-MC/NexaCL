@@ -10750,5 +10750,14 @@
   {"source": "未发现可直接下载的更新版本。", "en": "No newer versions are available for direct download.", "zh-Hant": "未發現可直接下載的更新版本。"},
   {"source": "正在下载新版整合包并准备变更预览…", "en": "Downloading the new modpack and preparing the change preview…", "zh-Hant": "正在下載新版整合包並準備變更預覽…"},
   {"source": "{data name} · {data source}\n已安装：{data version}\n{data description}", "en": "{data name} · {data source}\nInstalled: {data version}\n{data description}", "zh-Hant": "{data name} · {data source}\n已安裝：{data version}\n{data description}"},
-  {"source": "{data version} · Minecraft {data games} · {data channel}", "en": "{data version} · Minecraft {data games} · {data channel}", "zh-Hant": "{data version} · Minecraft {data games} · {data channel}"}
+  {"source": "{data version} · Minecraft {data games} · {data channel}", "en": "{data version} · Minecraft {data games} · {data channel}", "zh-Hant": "{data version} · Minecraft {data games} · {data channel}"},
+  {"source": "Java 版下载", "en": "Java Edition download", "zh-Hant": "Java 版下載"},
+  {"source": "通过官方启动器获取 Minecraft", "en": "Get Minecraft with the official launcher", "zh-Hant": "透過官方啟動器取得 Minecraft"},
+  {"source": "不向中国大陆提供 Minecraft 本体下载服务。请前往 Microsoft Store 下载 Minecraft Launcher，再通过官方启动器获取 Minecraft：Java 版。", "en": "Minecraft base-game downloads are not provided in mainland China. Get Minecraft Launcher from Microsoft Store, then use the official launcher to download Minecraft: Java Edition.", "zh-Hant": "不向中國大陸提供 Minecraft 本體下載服務。請前往 Microsoft Store 下載 Minecraft Launcher，再透過官方啟動器取得 Minecraft：Java 版。"},
+  {"source": "前往 Microsoft Store", "en": "Go to Microsoft Store", "zh-Hant": "前往 Microsoft Store"},
+  {"source": "在 Microsoft Store 下载 Minecraft Launcher", "en": "Download Minecraft Launcher from Microsoft Store", "zh-Hant": "在 Microsoft Store 下載 Minecraft Launcher"},
+  {"source": "已有完整的本地游戏？仍可导入并使用 NexaCL 启动。", "en": "Already have a complete local game? Import it and launch it with NexaCL.", "zh-Hant": "已有完整的本機遊戲？仍可匯入並使用 NexaCL 啟動。"},
+  {"source": "Microsoft Store 中的 Minecraft Launcher 适用于 Windows；macOS / Linux 用户可继续使用完整的本地版本。", "en": "Minecraft Launcher in Microsoft Store is for Windows. On macOS / Linux, you can continue using a complete local installation.", "zh-Hant": "Microsoft Store 中的 Minecraft Launcher 適用於 Windows；macOS / Linux 使用者可繼續使用完整的本機版本。"},
+  {"source": "已请求打开 Microsoft Store 中的 Minecraft Launcher 页面。", "en": "Requested the Minecraft Launcher page in Microsoft Store.", "zh-Hant": "已要求開啟 Microsoft Store 中的 Minecraft Launcher 頁面。"},
+  {"source": "无法打开 Microsoft Store，请稍后重试。", "en": "Could not open Microsoft Store. Please try again.", "zh-Hant": "無法開啟 Microsoft Store，請稍後重試。"}
 ]

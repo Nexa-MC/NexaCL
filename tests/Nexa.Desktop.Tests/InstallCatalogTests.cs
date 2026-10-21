@@ -108,9 +108,11 @@ internal static partial class Program
     }
     private static void InstallCatalogChecksBridgeSelection()
     {
-        using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), installSource: new BridgeInstallSource());
+        using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), installSource: new BridgeInstallSource(), regionalPolicy: new("CN"));
         fixture.Shell.Renderer.ReducedMotion = true;
-        Emit(fixture.Intents, "ui.navigation.download"); Emit(fixture.Intents, "ui.install.java");
+        // Cover the retained loader editor surface; CN new-install navigation has its own guide tests.
+        fixture.Shell.Stage.Navigation.Replace(fixture.Shell.Tree.LiveEntities.Single(entity => fixture.Shell.Tree.Name(entity) == "JavaInstallPage"));
+        fixture.Shell.Render(new(1024, 600));
         fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();
         void Select(string id)
         {
@@ -147,8 +149,8 @@ internal static partial class Program
         AssertFalse(IsVisible(fixture.Shell, "JavaOptiFineTab"));
         Emit(fixture.Intents, "ui.page.back"); fixture.Shell.Render(new(1024, 600));
         Emit(fixture.Intents, "ui.install.java"); scene = fixture.Shell.Render(new(1024, 600));
-        AssertFalse(IsVisible(fixture.Shell, "JavaFabricTab"));
-        AssertFalse(FindByKey(fixture.Shell, scene, "CatalogRow:game:1.20.1").IsSelected);
+        AssertTrue(HasKey(fixture.Shell, scene, "JavaLauncherGuidePage"));
+        AssertFalse(HasKey(fixture.Shell, scene, "CatalogRow:game:1.20.1"));
     }
     private sealed class BridgeInstallSource : IInstallCatalogSource
     {
