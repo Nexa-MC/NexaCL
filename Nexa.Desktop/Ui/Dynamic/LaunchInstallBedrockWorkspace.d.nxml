@@ -1,17 +1,31 @@
 <nxml-dynamic>
   <ContentHost Key="BedrockInstallHost" Label="Minecraft for Windows 官方安装入口" Class="launch-install-bedrock-base launch-install-bedrock-host">
-    <StackPanel Key="BedrockInstallCard" Class="launch-install-bedrock-base layout-BedrockInstallPage-BedrockInstallCard">
-      <Image Key="BedrockInstallIcon" Label="Bedrock 版图标" Source="lucide/box" Class="launch-install-bedrock-base layout-BedrockInstallPage-BedrockInstallIcon" />
-      <StackPanel Key="BedrockInstallHeader" Class="launch-install-bedrock-base layout-BedrockInstallPage-BedrockInstallHeader">
-        <Text Key="BedrockInstallTitle" Content="安装 Minecraft for Windows" Class="launch-install-bedrock-base layout-BedrockInstallPage-BedrockInstallTitle launch-install-bedrock-title" />
-        <Text Key="BedrockInstallDescription" Content="Bedrock 版 Windows 客户端由 Microsoft Store 提供。购买、许可证和安装由商店处理。" Class="launch-install-bedrock-base layout-BedrockInstallPage-BedrockInstallDescription" />
+    <StackPanel Class="official-download-layout">
+      <StackPanel Key="BedrockInstallCard" Class="official-download-card">
+        <StackPanel Class="official-download-card-body">
+          <StackPanel Key="BedrockInstallHeader" Class="official-download-header">
+            <ContentHost Class="official-download-icon-well official-download-bedrock">
+              <Image Key="BedrockInstallIcon" Label="Bedrock 版图标" Source="nexa/content-package" Class="official-download-icon official-download-bedrock-ink" />
+            </ContentHost>
+            <StackPanel Class="official-download-heading">
+              <Text Content="BEDROCK EDITION" Localize="false" Class="official-download-eyebrow" />
+              <Text Key="BedrockInstallTitle" Content="Minecraft for Windows" Localize="false" Class="official-download-title" />
+            </StackPanel>
+          </StackPanel>
+          <Text Key="BedrockInstallDescription" Content="Bedrock 版 Windows 客户端由 Microsoft Store 提供。购买、许可证和安装由商店处理。" Class="official-download-description" />
+          <StackPanel Key="BedrockInstallActions" Class="official-download-actions">
+            <Button Key="BedrockInstallStore" Enabled="{data storeEnabled}" Clickable="{data storeEnabled}" Focusable="{data storeEnabled}" Label="打开 Microsoft Store 中的 Minecraft for Windows" Content="打开 Microsoft Store" Icon="lucide/arrow-up-right" Command="ui.bedrock.install.store" Class="official-download-button official-download-primary" />
+            <Button Key="BedrockInstallWebsite" Label="打开 Minecraft for Windows 官方产品页" Content="官方产品页" Icon="lucide/arrow-up-right" Command="ui.bedrock.install.website" Class="official-download-button official-download-secondary" />
+          </StackPanel>
+        </StackPanel>
       </StackPanel>
-      <Text Key="BedrockInstallStatus" Localize="false" Content="{data status}" Label="{data status}" Class="launch-install-bedrock-base layout-BedrockInstallPage-BedrockInstallStatus" />
-      <StackPanel Key="BedrockInstallActions" Class="launch-install-bedrock-base layout-BedrockInstallPage-BedrockInstallActions">
-        <Button Key="BedrockInstallStore" Enabled="{data storeEnabled}" Clickable="{data storeEnabled}" Focusable="{data storeEnabled}" Label="打开 Microsoft Store 中的 Minecraft for Windows" Content="打开 Microsoft Store" Icon="lucide/shopping-bag" Command="ui.bedrock.install.store" Class="launch-install-bedrock-base layout-BedrockInstallPage-BedrockInstallStore launch-install-bedrock-button" />
-        <Button Key="BedrockInstallWebsite" Label="打开 Minecraft for Windows 官方产品页" Content="官方产品页" Icon="lucide/external-link" Command="ui.bedrock.install.website" Class="launch-install-bedrock-base layout-BedrockInstallPage-BedrockInstallWebsite launch-install-bedrock-button" />
+      <StackPanel Class="official-download-notes">
+        <StackPanel Class="official-download-notes-body">
+          <Text Content="下载与使用说明" Class="official-download-note-title" />
+          <Text Key="BedrockInstallStatus" Localize="false" Content="{data status}" Label="{data status}" Class="official-download-note" />
+          <Text Key="BedrockInstallReturn" Content="使用左上角返回，可继续选择 Java 版安装。" Class="official-download-note" />
+        </StackPanel>
       </StackPanel>
-      <Text Key="BedrockInstallReturn" Content="使用左上角返回，可继续选择 Java 版安装。" Class="launch-install-bedrock-base layout-BedrockInstallPage-BedrockInstallReturn launch-install-bedrock-return" />
     </StackPanel>
   </ContentHost>
 </nxml-dynamic>

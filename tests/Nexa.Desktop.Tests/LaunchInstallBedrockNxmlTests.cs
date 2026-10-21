@@ -28,9 +28,6 @@ internal static partial class Program
         var storeInput = shell.Tree.GetComponent<XsrUiInput>(store)!;
         AssertEqual("BedrockInstallWorkspaceSlot", shell.Tree.Name(slot));
         AssertTrue(shell.Tree.GetComponent<NxmlDynamicSlot>(slot) is not null);
-        AssertEqual(19d, FindByKey(shell, scene, "BedrockInstallTitle").VisualStyle.FontSize);
-        AssertEqual(600d, FindByKey(shell, scene, "BedrockInstallTitle").VisualStyle.FontWeight);
-        AssertEqual(10d, FindByKey(shell, scene, "BedrockInstallStore").VisualStyle.CornerRadius);
         AssertTrue(shell.Renderer.Focus(store, showIndicator: false));
         AssertTrue(shell.Renderer.Activate(store));
         scene = fixture.Render();
@@ -112,7 +109,7 @@ internal static partial class Program
         var scene = shell.Render(new(900, 650));
         var workspace = FindByKey(shell, scene, "BedrockInstallHost").Entity;
         AssertTrue(shell.Tree.GetComponent<NxmlDynamicSlot>(shell.Tree.Parent(workspace)) is not null);
-        AssertEqual("安装 Minecraft for Windows", FindByKey(shell, scene, "BedrockInstallTitle").Text);
+        AssertEqual("Minecraft for Windows", FindByKey(shell, scene, "BedrockInstallTitle").Text);
         var description = FindByKey(shell, scene, "BedrockInstallDescription");
         AssertTrue(description.Text!.Contains("Microsoft Store", StringComparison.Ordinal));
         AssertTrue(description.Rect.Height > 0);

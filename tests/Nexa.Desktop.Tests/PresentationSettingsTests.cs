@@ -116,7 +116,7 @@ internal static partial class Program
             fixture.Foundation.Commands, fixture.Store, fixture.Feedback);
         fixture.Shell.Stage.Navigation.Replace(settings.Page);
         var scene = fixture.Shell.Render(new(1000, 650));
-        Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.advanced").Entity);
+        Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.appearance").Entity);
         scene = fixture.Shell.Render(new(1000, 650));
         const string animationsKey = "SettingsOption.appearance.animations-disabled.true";
         XsrUiEntityId animationOption = default;

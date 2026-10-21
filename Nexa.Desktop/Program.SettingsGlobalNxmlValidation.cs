@@ -255,6 +255,16 @@ internal static partial class Program
         }
         void EnsureVisible(XsrUiEntityId entity)
         {
+            // Search the controlled form from its beginning. Projection may cull a target
+            // above the current viewport after a different command editor was exercised.
+            var section = ActiveSections();
+            for (var ancestor = entity; ancestor.IsAssigned; ancestor = shell.Tree.Parent(ancestor))
+            {
+                if (ancestor != section) continue;
+                shell.Tree.GetComponent<XsrUiScroll>(section)!.OffsetY = 0;
+                shell.Tree.MarkDirty(section, XsrUiDirtyKinds.Layout);
+                break;
+            }
             for (int pass = 0; pass < 128; pass++)
             {
                 timeout.Token.ThrowIfCancellationRequested();

@@ -99,3 +99,8 @@ activation and never dispatches a game-install task or catalogue request. The gu
 explains the Windows Store requirement and continued local-import support on other OSes.
 Existing instance editing retains its original editor; the service-level Minecraft download
 restriction and international installation flow remain in force.
+
+The Java guide and Bedrock handoff share `OfficialDownload.nss` and explicit padded
+content inside separate painted card carriers. `--native-install-guides-preview` exports
+their actual light/dark renderer output at 1280x800 and 810x500, including action bounds
+and visible card insets; preview callbacks never open the browser or Store.

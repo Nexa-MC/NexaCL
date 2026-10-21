@@ -313,7 +313,10 @@ internal static partial class Program
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.advanced").Entity);
         scene = fixture.Shell.Render(new(1000, 650));
         var toggle = ShowSettingsFixtureControl(fixture, settings, ref scene, "SettingsOption.developer.enabled.true").Entity;
-        var list = FindByKey(fixture.Shell, scene, "SettingsSections").Entity;
+        var listNode = FindByKey(fixture.Shell, scene, "SettingsSections");
+        var list = listNode.Entity;
+        AssertTrue(fixture.Shell.Renderer.PointerScroll(new(listNode.Rect.X + 30, listNode.Rect.Y + 30), 24));
+        scene = fixture.Shell.Render(new(1000, 650));
         double offset = fixture.Shell.Tree.GetComponent<XsrUiScroll>(list)!.OffsetY;
         AssertTrue(offset > 0);
         AssertTrue(fixture.Shell.Renderer.Focus(toggle));

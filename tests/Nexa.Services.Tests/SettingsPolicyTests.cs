@@ -272,9 +272,10 @@ internal static partial class Program
         AssertEqual(520, catalog.Entries.Count);
         var fixedAppearance = catalog.Entries.Where(entry => entry.Page == "appearance" && !entry.DeveloperOnly && entry.Kind == SettingsCatalogEntryKind.Setting)
             .Select(entry => entry.SettingKey).Order(StringComparer.Ordinal).ToArray();
-        AssertEqual("appearance.launcher-icon-mode|appearance.theme-mode|appearance.theme-pack-id", string.Join("|", fixedAppearance));
+        AssertEqual("appearance.animations-disabled|appearance.hardware-acceleration-disabled|appearance.launcher-icon-mode|appearance.reduced-motion|appearance.theme-mode|appearance.theme-pack-id", string.Join("|", fixedAppearance));
         foreach (string protectedKey in new[] { "appearance.reduced-motion", "appearance.animations-disabled", "appearance.hardware-acceleration-disabled" })
-            AssertEqual("advanced", catalog.Entries.Single(entry => entry.SettingKey == protectedKey).Page);
+            AssertEqual("appearance", catalog.Entries.Single(entry => entry.SettingKey == protectedKey).Page);
+        AssertEqual("game", catalog.Entries.Single(entry => entry.SettingKey == "install.inherit-vanilla").Page);
         AssertFalse(catalog.GlobalPages.Any(page => page.Id == "cloud"));
         AssertFalse(catalog.Entries.Any(entry => entry.Page is "cloud" or "sync" || entry.Label.Contains("云同步", StringComparison.Ordinal)));
         AssertTrue(catalog.InstanceSettingsSections.Any(page => page.Id == "backup"));

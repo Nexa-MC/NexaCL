@@ -13,13 +13,23 @@ internal static partial class Program
     {
         using var f = new ContinuousResourceHarness();
         AssertTrue(f.Scene.Nodes.Any(node => node.ProgressRing is { Indeterminate: true }));
-        AssertFalse(f.Scene.Nodes.Any(node => f.Fixture.Shell.Tree.Name(node.Entity) == "ResourceSearch"));
-        var region = FindByKey(f.Fixture.Shell, f.Scene, "ResourceWorkspace").Rect;
+        var searchDuringLoad = FindByKey(f.Fixture.Shell, f.Scene, "ResourceSearch");
+        AssertTrue(searchDuringLoad.IsEnabled);
+        foreach (string key in new[] { "ResourceGame", "ResourceLoader", "ResourceProvider", "ResourceTag" })
+            AssertTrue(FindByKey(f.Fixture.Shell, f.Scene, key).IsClickable);
+        var region = FindByKey(f.Fixture.Shell, f.Scene, "ResourceResults").Rect;
+        var filters = FindByKey(f.Fixture.Shell, f.Scene, "ResourceFilters").Rect;
+        AssertTrue(region.Y >= filters.Y + filters.Height);
         var loading = FindByKey(f.Fixture.Shell, f.Scene, "ResourceInitialLoading").Rect;
         var initialRing = f.Scene.Nodes.Single(node => node.ProgressRing is not null).Rect;
         AssertClose(region.X + region.Width / 2, loading.X + loading.Width / 2);
         AssertClose(region.Y + region.Height / 2, loading.Y + loading.Height / 2);
         AssertClose(40, initialRing.Width); AssertClose(40, initialRing.Height);
+        f.Click("ResourceProvider");
+        f.RenderFrames(1);
+        AssertTrue(f.Scene.Nodes.Any(node => f.Fixture.Shell.Tree.Name(node.Entity) == "ResourceFilterCard"));
+        f.Click("ResourceFilterDismiss");
+        AssertEqual(1, f.Reads.Count);
         f.Complete(0, ContinuousProjects("First", 20), hasMore: true);
         f.Pump(() => f.Rows.Length > 0);
         var search = FindByKey(f.Fixture.Shell, f.Scene, "ResourceSearch").Entity;

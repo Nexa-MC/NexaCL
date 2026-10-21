@@ -30,6 +30,7 @@
     <Text Key="catalog.copy.33650a369521ec29" Content="世界" Localize="false" />
     <Text Key="catalog.copy.36769ec63d49e00b" Content="启动器标志" Localize="false" />
     <Text Key="catalog.copy.38084d301e3f1a31" Content="开发者" Localize="false" />
+    <Text Key="catalog.planned" Content="规划与暂不可用" Localize="false" />
     <Text Key="catalog.copy.38941425982294bf" Content="默认地址，可带端口；版本单独设置与临时加入优先。" Localize="false" />
     <Text Key="catalog.copy.3aaa26113647e845" Content="崩溃分析" Localize="false" />
     <Text Key="catalog.copy.3d13868593ae4eeb" Content="界面语言" Localize="false" />

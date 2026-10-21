@@ -10,6 +10,17 @@ internal sealed partial class SettingsPageController
     private readonly Dictionary<XsrUiEntityId, XsrUiEntityId> _inheritRows = [], _autoModeViews = [];
     private static string Flag(bool value) => value ? "true" : "false";
     private static string CatalogCopy(string key) => ProductPresentationText.Raw(key);
+    private XsrUiEntityId AppendSettingGroup(IEnumerable<SettingsCatalogEntry> entries, string label)
+    {
+        var rows = entries.ToArray();
+        var body = AppendSettingsForm(_sections, "SettingsGroup." + rows[0].Id, DisplayLabel(label));
+        for (int i = 0; i < rows.Length; i++)
+        {
+            BuildRow(body, rows[i]);
+            if (i + 1 < rows.Length) _dynamic.Append(body, DesktopMarkup.Dynamic("SettingsCatalogDivider.d.nxml"));
+        }
+        return body;
+    }
     private static readonly Lazy<Dictionary<string, Nexa.Xsr.Renderer.Nxml.NxmlIrNode>> CatalogMetrics = new(() =>
         DesktopMarkup.Load("SettingsCatalogMetrics.nxml").Root.Children.ToDictionary(node => node.Key!, StringComparer.Ordinal));
 

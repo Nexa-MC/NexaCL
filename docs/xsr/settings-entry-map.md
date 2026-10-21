@@ -555,7 +555,27 @@ current value contracts and are not actively deleted from user data.
 
 ## Platform Features extension
 
-The global catalog has ten categories. Its eighth category, `platform` (平台功能), presents the Machine Capability Registry snapshot through `machine.capabilities.query`, with explicit refresh through `machine.capabilities.refresh`. Its read-only rows are generated from capability definitions (system, CPU, memory, runtime and providers whose ports are not connected), rather than durable settings. No cloud controls are introduced.
+The global catalog has ten categories. The `platform` page presents the Machine Capability Registry snapshot through `machine.capabilities.query`, with explicit refresh through `machine.capabilities.refresh`. Its read-only rows are generated from capability definitions (system, CPU, memory, runtime and providers whose ports are not connected), rather than durable settings. No cloud controls are introduced.
+
+## Alpha 9 settings presentation regrouping
+
+The current global navigation order is general, appearance, game, Java, network, storage,
+updates/maintenance, privacy/diagnostics, system capabilities and about. Stable page IDs,
+all 520 catalog IDs, setting keys, values and instance override behavior remain compatible.
+This presentation order supersedes the historical positions recorded in the table above.
+
+- General separates language/region, startup, tray/window behavior, notifications and system integration. The tray master switch precedes its dependent actions.
+- Appearance groups theme/color, motion and display compatibility. Animation/reduced-motion and hardware acceleration controls move here from advanced.
+- Game groups resources, window, startup, installation/isolation and command arguments. Vanilla inheritance belongs to installation, rather than the network page.
+- Network groups transfer limits/retry, content sources, connection and the existing dedicated proxy/diagnostic workspaces. Background downloads appear here once.
+- Storage, privacy and update pages put working settings and workspaces before a clearly labeled group of planned/unavailable catalog controls. Plans remain declared and unavailable.
+- The global launch-hint alias is shown once under General; the game alias remains available in instance settings. This affects presentation only, without removing catalog entries or changing stored keys.
+
+Validation: 359 Desktop and 794 Services cases, the 72-project architecture check and
+managed `--validate-shell` pass. `--native-settings-resource-preview <directory>` exports
+all ten global pages in both themes and the resource loading region at wide/narrow sizes.
+Together with the official-download preview this produces 32 actual native PNGs with
+controlled fixture data and no browser, Store or download effects.
 
 Effective availability follows `SettingsCatalog.ResolveAvailability`, including the schema and reviewed consumer map. The current platform conditions produce the following counts; these are catalog facts and do not certify every machine capability provider.
 

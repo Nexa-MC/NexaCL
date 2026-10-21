@@ -16,6 +16,8 @@ This is a presentation migration. Service caches, operation ownership, cancellat
 
 Navigation remains available while a content region loads. Independent settings controls and live theme option saves remain interactive; background save rings do not remove input focus or IME composition. Idle/busy/cancelling variants that reload in place share exactly the same NXML shape. Native dialog analysis carries an explicit loading fact rather than changing a text-format contract.
 
+Resource discovery keeps its category/sort tracks, search and filter controls visible and interactive during initial or replacement searches. Only the results region switches to the centered loading presentation. Pagination continues to retain existing items and its bottom indicator. Filter changes retire the previous search through the existing request lifecycle.
+
 Dynamic templates support a single boolean inverse (`{data !loading}`) on `IsVisible` only. It resolves before compilation, rejects non-boolean data, and does not introduce executable expressions or alter the plugin UI ABI. The native startup window reserves room for the ring, bounded hint viewport and cancellation/retry controls.
 
 Blocking cards project a numeric loading weight: they use available space while waiting, with a minimum sufficient for the ring and hint, then return to intrinsic height when ready. This prevents long settings forms from collapsing or overlapping adjacent cards. Independent background-save and recovery-policy controls keep their ordinary flow.

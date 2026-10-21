@@ -107,9 +107,8 @@ internal static partial class Program
             }, timeout.Token);
             await Task.Delay(1200, timeout.Token); // Display hold for the external X11 recording.
 
-            await SelectCategory("advanced");
-            // Current motion policy lives in advanced settings. Exercise real pointer-scroll
-            // admission and the live viewport rather than obsolete appearance-page labels.
+            await SelectCategory("appearance");
+            // Exercise the live motion group and pointer-scroll admission after regrouping.
             for (int step = 0; step < 128; step++)
             {
                 bool ready = false, atEnd = false;

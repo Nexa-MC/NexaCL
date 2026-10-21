@@ -1,13 +1,33 @@
 <nxml-page>
   <Page Key="JavaLauncherGuidePage" Label="Java 版下载">
     <ContentHost Class="java-launcher-guide-host">
-      <StackPanel Key="JavaLauncherGuideCard" Class="launch-install-bedrock-base java-launcher-guide-card">
-        <Image Key="JavaLauncherGuideIcon" Source="lucide/shopping-bag" Label="Microsoft Store" Class="java-launcher-guide-icon" />
-        <Text Key="JavaLauncherGuideTitle" Content="通过官方启动器获取 Minecraft" Class="launch-install-bedrock-base java-launcher-guide-title" />
-        <Text Key="JavaLauncherGuideDescription" Content="不向中国大陆提供 Minecraft 本体下载服务。请前往 Microsoft Store 下载 Minecraft Launcher，再通过官方启动器获取 Minecraft：Java 版。" Class="launch-install-bedrock-base java-launcher-guide-copy" />
-        <Button Key="JavaLauncherStore" Content="前往 Microsoft Store" Label="在 Microsoft Store 下载 Minecraft Launcher" Icon="lucide/external-link" Command="ui.install.java.store" Class="launch-install-bedrock-button java-launcher-guide-button" />
-        <Text Key="JavaLauncherGuideLocal" Content="已有完整的本地游戏？仍可导入并使用 NexaCL 启动。" Class="launch-install-bedrock-base java-launcher-guide-copy" />
-        <Text Key="JavaLauncherGuidePlatform" Content="Microsoft Store 中的 Minecraft Launcher 适用于 Windows；macOS / Linux 用户可继续使用完整的本地版本。" Class="launch-install-bedrock-base launch-install-bedrock-return java-launcher-guide-copy" />
+      <StackPanel Class="official-download-layout">
+        <StackPanel Key="JavaLauncherGuideCard" Class="official-download-card">
+          <StackPanel Class="official-download-card-body">
+            <StackPanel Class="official-download-header">
+              <ContentHost Class="official-download-icon-well official-download-java">
+                <Image Key="JavaLauncherGuideIcon" Source="lucide/flask-conical" Label="Java Edition" Class="official-download-icon official-download-java-ink" />
+              </ContentHost>
+              <StackPanel Class="official-download-heading">
+                <Text Content="JAVA EDITION" Localize="false" Class="official-download-eyebrow" />
+                <Text Key="JavaLauncherGuideTitle" Content="Minecraft：Java 版" Class="official-download-title" />
+              </StackPanel>
+            </StackPanel>
+            <Text Key="JavaLauncherGuideDescription" Content="通过 Microsoft Store 下载 Minecraft Launcher，再由官方启动器获取游戏。" Class="official-download-description" />
+            <StackPanel Class="official-download-actions">
+              <Button Key="JavaLauncherStore" Content="前往 Microsoft Store" Label="在 Microsoft Store 下载 Minecraft Launcher" Icon="lucide/arrow-up-right" Command="ui.install.java.store" Class="official-download-button official-download-primary" />
+              <Text Content="Microsoft Store · Windows" Localize="false" Class="official-download-action-hint" />
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+        <StackPanel Class="official-download-notes">
+          <StackPanel Class="official-download-notes-body">
+            <Text Content="下载与使用说明" Class="official-download-note-title" />
+            <Text Key="JavaLauncherGuidePolicy" Content="不向中国大陆提供 Minecraft 本体下载服务。" Class="official-download-note" />
+            <Text Key="JavaLauncherGuideLocal" Content="已有完整的本地游戏？仍可导入并使用 NexaCL 启动。" Class="official-download-note" />
+            <Text Key="JavaLauncherGuidePlatform" Content="Microsoft Store 中的 Minecraft Launcher 适用于 Windows；macOS / Linux 用户可继续使用完整的本地版本。" Class="official-download-note" />
+          </StackPanel>
+        </StackPanel>
       </StackPanel>
     </ContentHost>
   </Page>

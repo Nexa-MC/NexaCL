@@ -357,7 +357,9 @@ internal sealed partial class SettingsPageController : IDisposable
         }
         var entries = _catalog!.Entries.Where(item => item.Scope == "global"
             && (item.Page == _selected || _instanceDirectory is not null && _selected == "game" && item.Page == "java")
-            && (_instanceDirectory is null || item.Definition?.InstanceOverride == true) && !item.IsRuntimeDetail && (_developer || !item.DeveloperOnly)).ToArray();
+            && (_instanceDirectory is null || item.Definition?.InstanceOverride == true) && !item.IsRuntimeDetail && (_developer || !item.DeveloperOnly)
+            && (_instanceDirectory is not null || (item.SettingKey != "general.launch-hints" || item.Page == "general")
+                && (item.SettingKey != "network.background-download" || item.Page == "network"))).ToArray();
         var available = entries.Where(item => item.Kind == SettingsCatalogEntryKind.Setting
             && (item.Definition is not null || item.Availability != SettingsCapabilityAvailability.Available)
             && (_region.IsMainlandChina || item.SettingKey is not ("network.game-source" or "network.resource-source" or "network.provider-mirror"))
@@ -369,17 +371,14 @@ internal sealed partial class SettingsPageController : IDisposable
             { ["label"] = Pages.First(page => page.Id == _selected).Label }));
         }
         if (_instanceDirectory is not null && _selected == "game") BuildLaunchProfiles();
-        foreach (var section in available.GroupBy(item => (Section: item.DeveloperOnly ? CatalogCopy("catalog.copy.38084d301e3f1a31") : _instanceDirectory is not null ? InstanceSettingGroup(item) : item.Section, item.DeveloperOnly))
-            .OrderBy(group => _instanceDirectory is null ? 0 : group.Key.Section switch { var copy when copy == CatalogCopy("catalog.copy.8cdf1da0d4c7e55e") => 0, var copy when copy == CatalogCopy("catalog.copy.2720b4221e5e4ca3") => 1, var copy when copy == CatalogCopy("catalog.copy.2388cbc6a486af9f") => 2, _ => 3 }))
+        string planned = CatalogCopy("catalog.planned");
+        var groups = available.GroupBy(item => (Section: item.DeveloperOnly ? CatalogCopy("catalog.copy.38084d301e3f1a31")
+                : _instanceDirectory is not null ? InstanceSettingGroup(item)
+                : item.Definition is null && item.Availability != SettingsCapabilityAvailability.Available ? planned : item.Section, item.DeveloperOnly))
+            .OrderBy(group => _instanceDirectory is null ? 0 : group.Key.Section switch { var copy when copy == CatalogCopy("catalog.copy.8cdf1da0d4c7e55e") => 0, var copy when copy == CatalogCopy("catalog.copy.2720b4221e5e4ca3") => 1, var copy when copy == CatalogCopy("catalog.copy.2388cbc6a486af9f") => 2, _ => 3 }).ToArray();
+        foreach (var section in groups.Where(group => group.Key.Section != planned))
         {
-            var cardContent = AppendSettingsForm(_sections, "SettingsGroup." + section.First().Id, DisplayLabel(section.Key.Section));
-            var rows = section.ToArray();
-            for (int i = 0; i < rows.Length; i++)
-            {
-                BuildRow(cardContent, rows[i]);
-                if (i + 1 < rows.Length)
-                    _dynamic.Append(cardContent, DesktopMarkup.Dynamic("SettingsCatalogDivider.d.nxml"));
-            }
+            var cardContent = AppendSettingGroup(section, section.Key.Section);
             if (_instanceDirectory is not null && section.Key.Section == CatalogCopy("catalog.copy.2720b4221e5e4ca3")) BuildJavaInventory(cardContent);
         }
         if (_instanceDirectory is null && _selected == "network") { BuildProxyPreferences(); BuildNetworkDiagnostics(); }
@@ -394,6 +393,8 @@ internal sealed partial class SettingsPageController : IDisposable
         BuildRuntimeTraceDiagnostics();
         BuildAdvancedWorkspace();
         BuildThemeSettings();
+        foreach (var section in groups.Where(group => group.Key.Section == planned))
+            AppendSettingGroup(section, planned);
         var scroll = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!;
         scroll.OffsetY = _scrollPositions.GetValueOrDefault(_selected);
         _shell.Tree.GetComponent<XsrUiTransition>(_sections)!.Key = _selected + ":" + _developer;
