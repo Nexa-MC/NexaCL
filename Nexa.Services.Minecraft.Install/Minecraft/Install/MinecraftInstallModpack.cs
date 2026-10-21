@@ -72,6 +72,8 @@ public sealed partial class MinecraftInstallService
             string buildRoot = journal.Game;
             await InstallRecoveredScratch.ResetAsync(buildRoot, token).ConfigureAwait(false);
             Directory.CreateDirectory(buildRoot);
+            var metadata = new PersistentInstallMetadataSource(buildRoot, _metadata, journal);
+            await EnsureLocalModpackBaseAsync(pack, baseReuseRoot ?? root, baseReuseClientPath, metadata, token).ConfigureAwait(false);
             var pinnedFiles = await journal.ReadFilesAsync(token).ConfigureAwait(false);
             var files = pinnedFiles?.ToList() ?? plan.Files.Where(file => command.IncludeOptional || !file.Optional).ToList();
             if (pinnedFiles is null)
@@ -95,8 +97,7 @@ public sealed partial class MinecraftInstallService
             // Reuse the same manifest, Java/loader installer, libraries, assets and download pipeline.
             var installed = await RunAsync(new(buildRoot, pack.Game, pack.Loader, pack.Build, InstanceName: pack.InstanceId)
             { PreparingEdit = true, ReuseRoot = baseReuseRoot ?? root, ModsRelativeDirectory = "versions/" + pack.InstanceId + "/mods" }, task, token,
-                new PersistentInstallMetadataSource(buildRoot, _metadata, journal), deferCompletion: true,
-                reuseClientPath: baseReuseClientPath, modpackInstallation: true).ConfigureAwait(false);
+                metadata, deferCompletion: true, reuseClientPath: baseReuseClientPath).ConfigureAwait(false);
             using var packHttp = HttpClientFactory?.Invoke(false) ?? Nexa.Services.Downloads.PooledHttpClient.Create(allowAutoRedirect: false);
             packHttp.Timeout = TimeSpan.FromMinutes(5);
             int completed = 0;
@@ -190,7 +191,14 @@ public sealed partial class MinecraftInstallService
             return XsrResult.Failure<MinecraftInstallResult>(XsrRuntimeErrors.Cancelled());
         }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-        { if (parentTask is null) task.Fail(error.Message); return XsrResult.Failure<MinecraftInstallResult>(MinecraftErrors.InvalidRequest(error.Message)); }
+        {
+            Exception failure = !CountryPolicy.AllowMinecraftDownloads && error is InvalidDataException && error.Message == RegionalPolicy.MinecraftDownloadUnavailable
+                ? new ModpackLocalBaseRequiredException(command.Pack.Game) : error;
+            if (parentTask is null) task.Fail(failure.Message);
+            return XsrResult.Failure<MinecraftInstallResult>(failure is ModpackLocalBaseRequiredException
+                ? new(XsrErrorKind.Rejected, XsrSemanticId.Parse("minecraft.modpack_base_required"), failure.Message)
+                : MinecraftErrors.InvalidRequest(failure.Message));
+        }
         finally
         {
             lease?.Dispose();

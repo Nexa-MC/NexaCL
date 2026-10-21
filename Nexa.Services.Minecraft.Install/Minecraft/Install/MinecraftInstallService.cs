@@ -192,7 +192,7 @@ public sealed partial class MinecraftInstallService : IDisposable
         ITaskCenterTask task,
         CancellationToken token,
         IMinecraftInstallMetadataSource? metadataSource = null,
-        bool deferCompletion = false, string? reuseClientPath = null, bool modpackInstallation = false)
+        bool deferCompletion = false, string? reuseClientPath = null)
     {
         IMinecraftInstallMetadataSource metadata = metadataSource ?? _metadata;
         MinecraftDownloadPolicy downloadPolicy = MinecraftDownloadPolicy.Read(_settingsPolicy);
@@ -285,7 +285,7 @@ public sealed partial class MinecraftInstallService : IDisposable
         // Assets are planned after the index document exists on disk.
         JsonObject assetIndexJson;
         byte[]? assetIndexContent = null;
-        if (!modpackInstallation && !CountryPolicy.AllowMinecraftDownloads)
+        if (!CountryPolicy.AllowMinecraftDownloads)
         {
             assetIndexContent = await ReadLocalBaseIndexAsync(assetIndexPlan, root, command.ReuseRoot, token).ConfigureAwait(false);
             assetIndexJson = AuthoritativeMetadata.ParseVerified(assetIndexContent, assetIndexPlan.Sha1, assetIndexPlan.Size);
@@ -424,7 +424,7 @@ public sealed partial class MinecraftInstallService : IDisposable
                 allFiles.Add(candidate);
             }
         }
-        if (!modpackInstallation && allFiles.Any(candidate => candidate.Stage == StagePlan[1])) CountryPolicy.EnsureMinecraftDownloadsAllowed();
+        if (allFiles.Any(candidate => candidate.Stage == StagePlan[1])) CountryPolicy.EnsureMinecraftDownloadsAllowed();
         int totalFiles = allFiles.Count;
         var batch = new FileBatchProgress(totalFiles, (fraction, done, speed) =>
             task.Report(StagePlan[1], "正在下载游戏文件", .02 + .96 * fraction, done, totalFiles, speed));

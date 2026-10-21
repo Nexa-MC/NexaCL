@@ -57,37 +57,126 @@ internal static partial class Program
         finally { Directory.Delete(root, true); }
     }
 
-    private static async ValueTask MainlandInstallsModpacksWithRequiredGameFiles()
+    private static async Task SeedLocalPackBaseAsync(string root)
+    {
+        string hash = Sha1Hex("ASSET!");
+        foreach (var (relative, content) in new[]
+        {
+            ("versions/1.20.1/1.20.1.json", VanillaJson().ToJsonString()),
+            ("versions/1.20.1/1.20.1.jar", "JARCONTENT"),
+            ("libraries/com/example/library/1.0.0/library-1.0.0.jar", "JARCONTENT"),
+            ("assets/indexes/5.json", AssetIndexJson().ToJsonString()),
+            ($"assets/objects/{hash[..2]}/{hash}", "ASSET!")
+        })
+        {
+            string path = Path.Combine(root, relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            await File.WriteAllTextAsync(path, content);
+        }
+    }
+
+    private static async ValueTask RegionalModpacksReuseMainlandBaseAndDownloadInternationally()
     {
         string temporary = CreateTempDirectory();
         try
         {
-            foreach (string extension in new[] { "mrpack", "nexapack" })
+            foreach (string country in new[] { "CN", "US" })
+                foreach (string extension in new[] { "mrpack", "nexapack" })
+                {
+                    string archive = Path.Combine(temporary, "pack." + extension), root = Path.Combine(temporary, country + extension);
+                    Directory.CreateDirectory(root);
+                    if (country == "CN") await SeedLocalPackBaseAsync(root);
+                    if (File.Exists(archive)) File.Delete(archive);
+                    WriteLocalJar(archive, ("modrinth.index.json", MrpackIndex().ToJsonString()), ("overrides/config/test.txt", "pack configuration"));
+                    var pack = await MinecraftModpackArchive.InspectAsync(archive);
+                    var metadata = PackMetadata();
+                    var transfers = new System.Collections.Concurrent.ConcurrentQueue<string>();
+                    using var fixture = new InstallFixture(metadata, countryPolicy: new(country), connectionFactory: url =>
+                    { transfers.Enqueue(url); return new ServingConnection(PayloadFor(url)); });
+                    var result = await fixture.Install.InstallModpackAsync(new(pack, root, IncludeOptional: true));
+                    AssertTrue(result.IsSuccess, result.Error?.Message ?? "Mainland pack installation failed.");
+                    string instance = result.Value!.InstanceDirectory;
+                    AssertEqual("JARCONTENT", await File.ReadAllTextAsync(Path.Combine(root, "versions", pack.Game, pack.Game + ".jar")));
+                    AssertEqual("JARCONTENT", await File.ReadAllTextAsync(Path.Combine(root, "libraries/com/example/library/1.0.0/library-1.0.0.jar")));
+                    AssertEqual("ASSET!", await File.ReadAllTextAsync(Path.Combine(root, "assets/objects", Sha1Hex("ASSET!")[..2], Sha1Hex("ASSET!"))));
+                    AssertTrue(File.Exists(Path.Combine(root, "assets/indexes/5.json")));
+                    AssertTrue(File.Exists(Path.Combine(instance, "mods/required.jar")));
+                    AssertTrue(File.Exists(Path.Combine(instance, "mods/optional.jar")));
+                    AssertEqual("pack configuration", await File.ReadAllTextAsync(Path.Combine(instance, "config/test.txt")));
+                    AssertEqual(1, fixture.InstalledRoots.Count);
+                    AssertEqual(1, metadata.VanillaReads);
+                    AssertFalse(transfers.IsEmpty);
+                    AssertEqual(country == "CN", transfers.All(url => url.StartsWith("https://cdn.modrinth.com/", StringComparison.Ordinal)));
+                    AssertEqual(Nexa.Services.Tasks.TaskCenterEntryState.Finished, fixture.Entry().State);
+                    if (country == "CN")
+                    {
+                        int reads = metadata.VanillaReads;
+                        var standalone = await fixture.Install.InstallAsync(new(root, "1.20.1"));
+                        AssertFalse(standalone.IsSuccess);
+                        AssertEqual("minecraft.download_region_unavailable", standalone.Error!.Code.Value);
+                        AssertEqual(reads, metadata.VanillaReads);
+                        AssertEqual(1, fixture.Tasks.ReadEntries().Count);
+                    }
+                }
+        }
+        finally { Directory.Delete(temporary, true); }
+    }
+
+    private static async ValueTask MainlandModpacksPromptForMissingOrCorruptBaseBeforeTransfers()
+    {
+        string temporary = CreateTempDirectory();
+        try
+        {
+            foreach (string scenario in new[] { "missing", "wrong-version", "client-missing", "client-corrupt", "library-missing", "library-corrupt", "index-missing", "index-corrupt", "asset-missing", "asset-corrupt" })
             {
-                string archive = Path.Combine(temporary, "pack." + extension), root = Path.Combine(temporary, extension);
+                string root = Path.Combine(temporary, scenario), archive = Path.Combine(root, "pack.mrpack");
                 Directory.CreateDirectory(root);
-                WriteLocalJar(archive, ("modrinth.index.json", MrpackIndex().ToJsonString()), ("overrides/config/test.txt", "pack configuration"));
-                var pack = await MinecraftModpackArchive.InspectAsync(archive);
+                WriteLocalJar(archive, ("modrinth.index.json", MrpackIndex().ToJsonString()));
+                if (scenario != "missing") await SeedLocalPackBaseAsync(root);
+                if (scenario == "wrong-version") Directory.Move(Path.Combine(root, "versions/1.20.1"), Path.Combine(root, "versions/1.20.2"));
+                string hash = Sha1Hex("ASSET!");
+                string? damaged = scenario.Split('-')[0] switch
+                {
+                    "client" => "versions/1.20.1/1.20.1.jar",
+                    "library" => "libraries/com/example/library/1.0.0/library-1.0.0.jar",
+                    "index" => "assets/indexes/5.json",
+                    "asset" => $"assets/objects/{hash[..2]}/{hash}",
+                    _ => null
+                };
+                if (damaged is not null)
+                {
+                    string path = Path.Combine(root, damaged);
+                    if (scenario.EndsWith("-missing", StringComparison.Ordinal)) File.Delete(path);
+                    else await File.WriteAllTextAsync(path, scenario == "asset-corrupt" ? "WRONG!" : scenario == "index-corrupt"
+                        ? AssetIndexJson().ToJsonString().Replace("click.ogg", "clack.ogg", StringComparison.Ordinal) : "BADCONTENT");
+                }
                 var metadata = PackMetadata();
-                using var fixture = new InstallFixture(metadata, countryPolicy: new("CN"));
-                var result = await fixture.Install.InstallModpackAsync(new(pack, root, IncludeOptional: true));
-                AssertTrue(result.IsSuccess, result.Error?.Message ?? "Mainland pack installation failed.");
-                string instance = result.Value!.InstanceDirectory;
-                AssertEqual("JARCONTENT", await File.ReadAllTextAsync(Path.Combine(root, "versions", pack.Game, pack.Game + ".jar")));
-                AssertEqual("JARCONTENT", await File.ReadAllTextAsync(Path.Combine(root, "libraries/com/example/library/1.0.0/library-1.0.0.jar")));
-                AssertEqual("ASSET!", await File.ReadAllTextAsync(Path.Combine(root, "assets/objects", Sha1Hex("ASSET!")[..2], Sha1Hex("ASSET!"))));
-                AssertTrue(File.Exists(Path.Combine(root, "assets/indexes/5.json")));
-                AssertTrue(File.Exists(Path.Combine(instance, "mods/required.jar")));
-                AssertTrue(File.Exists(Path.Combine(instance, "mods/optional.jar")));
-                AssertEqual("pack configuration", await File.ReadAllTextAsync(Path.Combine(instance, "config/test.txt")));
-                AssertEqual(1, fixture.InstalledRoots.Count);
-                AssertEqual(Nexa.Services.Tasks.TaskCenterEntryState.Finished, fixture.Entry().State);
-                int reads = metadata.VanillaReads;
-                var standalone = await fixture.Install.InstallAsync(new(root, "1.20.1"));
-                AssertFalse(standalone.IsSuccess);
-                AssertEqual("minecraft.download_region_unavailable", standalone.Error!.Code.Value);
-                AssertEqual(reads, metadata.VanillaReads);
-                AssertEqual(1, fixture.Tasks.ReadEntries().Count);
+                var transfers = new System.Collections.Concurrent.ConcurrentQueue<string>();
+                using var fixture = new InstallFixture(metadata, countryPolicy: new("CN"), connectionFactory: url =>
+                { transfers.Enqueue(url); return new ServingConnection(PayloadFor(url)); });
+                var pack = await MinecraftModpackArchive.InspectAsync(archive);
+                var result = await fixture.Install.InstallModpackAsync(new(pack, root));
+                AssertFalse(result.IsSuccess);
+                AssertEqual(XsrErrorKind.Rejected, result.Error!.Kind);
+                AssertEqual("minecraft.modpack_base_required", result.Error.Code.Value);
+                AssertTrue(result.Error.Message.Contains(pack.Game, StringComparison.Ordinal));
+                AssertTrue(result.Error.Message.Contains("Minecraft Launcher", StringComparison.Ordinal));
+                AssertEqual(0, transfers.Count);
+                AssertEqual(0, metadata.LoaderReads);
+                AssertFalse(Directory.Exists(Path.Combine(root, "versions", pack.InstanceId)));
+                AssertEqual(0, fixture.InstalledRoots.Count);
+                AssertTrue(fixture.Entry().CanRetry);
+                if (scenario is "missing" or "wrong-version" or "client-missing") AssertEqual(0, metadata.VanillaReads);
+                if (scenario == "missing")
+                {
+                    await SeedLocalPackBaseAsync(root);
+                    File.Delete(archive);
+                    string id = fixture.Entry().TaskId;
+                    AssertTrue(fixture.Tasks.RequestRetry(id));
+                    await WaitForRetryEntryAsync(fixture.Tasks, id, entry => entry.State == Nexa.Services.Tasks.TaskCenterEntryState.Finished);
+                    AssertTrue(transfers.All(url => url.StartsWith("https://cdn.modrinth.com/", StringComparison.Ordinal)));
+                    AssertTrue(File.Exists(Path.Combine(root, "versions", pack.InstanceId, "mods/required.jar")));
+                }
             }
         }
         finally { Directory.Delete(temporary, true); }

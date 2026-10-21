@@ -52,6 +52,7 @@ internal static partial class Program
     {
         public JsonObject VanillaJson { get; set; } = [];
         public int VanillaReads;
+        public int LoaderReads;
         public JsonObject? LoaderJson { get; set; }
         public JsonObject AssetIndexJson { get; set; } = [];
         public bool HasVerifiedIndexBytes { get; set; }
@@ -63,8 +64,8 @@ internal static partial class Program
         { VanillaReads++; return Task.FromResult(VanillaJson); }
 
         public Task<JsonObject> FetchLoaderProfileJsonAsync(
-            InstallLoader loader, string gameVersion, string build, CancellationToken cancellationToken) =>
-            Task.FromResult(LoaderJson ?? []);
+            InstallLoader loader, string gameVersion, string build, CancellationToken cancellationToken)
+        { LoaderReads++; return Task.FromResult(LoaderJson ?? []); }
 
         public Task<JsonObject> FetchAssetIndexJsonAsync(string indexUrl, CancellationToken cancellationToken) =>
             Task.FromResult(AssetIndexJson);

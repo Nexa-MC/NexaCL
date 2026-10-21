@@ -1,6 +1,6 @@
 # NexaCL Firefly
 
-[Alpha 9 · v2.0.0.alpha.9](https://github.com/Nexa-MC/NexaCL/releases/tag/v2.0.0.alpha.9) · [Signed update source](https://github.com/Nexa-MC/NexaCL-Update/releases/tag/v2.0.0.alpha.9) · [Website](https://pcln.top) · [Migration record](docs/xsr/repository-transition-alpha8.md)
+[Alpha 10 · v2.0.0.alpha.10](https://github.com/Nexa-MC/NexaCL/releases/tag/v2.0.0.alpha.10) · [Signed update source](https://github.com/Nexa-MC/NexaCL-Update/releases/tag/v2.0.0.alpha.10) · [Website](https://pcln.top) · [Migration record](docs/xsr/repository-transition-alpha8.md)
 
 Development continues on `main` with the migrated Git history. The illustrations below preserve the earlier Alpha overview.
 

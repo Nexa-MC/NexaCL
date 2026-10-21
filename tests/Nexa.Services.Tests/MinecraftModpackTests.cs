@@ -17,6 +17,7 @@ internal static partial class Program
         string root = CreateTempDirectory(); string archive = Path.Combine(root, "retry.mrpack");
         WriteLocalJar(archive, ("modrinth.index.json", MrpackIndex().ToJsonString()));
         bool online = false;
+        if (countryPolicy.IsMainlandChina) await SeedLocalPackBaseAsync(root);
         var (_, settings) = PolicyFixture();
         AssertTrue(settings.Set(new("network.file-retry", Nexa.Services.Settings.SettingsLayer.Global, new(Nexa.Services.Settings.SettingsOverrideMode.Custom, "false"))).IsSuccess);
         using var fixture = new InstallFixture(PackMetadata(), settingsPolicy: settings, countryPolicy: countryPolicy, connectionFactory: source =>
@@ -235,6 +236,7 @@ internal static partial class Program
                 using var http = new HttpClient(new PackCurseHandler(allowed));
                 using var fixture = new InstallFixture(PackMetadata(), http: http, countryPolicy: countryPolicy);
                 string root = Path.Combine(temporary, allowed ? "allowed" : "blocked"); Directory.CreateDirectory(root);
+                if (countryPolicy.IsMainlandChina) await SeedLocalPackBaseAsync(root);
                 var result = await fixture.Install.InstallModpackAsync(new(preview, root));
                 AssertEqual(allowed, result.IsSuccess);
                 string instance = Path.Combine(root, "versions", preview.InstanceId);
@@ -327,6 +329,7 @@ internal static partial class Program
             var preview = await MinecraftModpackArchive.InspectAsync(source);
             using var cancellation = new CancellationTokenSource();
             int downloads = 0;
+            if (countryPolicy.IsMainlandChina) await SeedLocalPackBaseAsync(root);
             var (_, settings) = PolicyFixture();
             AssertTrue(settings.Set(new("network.file-concurrency", Nexa.Services.Settings.SettingsLayer.Global,
                 new(Nexa.Services.Settings.SettingsOverrideMode.Custom, "1"))).IsSuccess);
