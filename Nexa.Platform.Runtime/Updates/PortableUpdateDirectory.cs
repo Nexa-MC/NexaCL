@@ -74,8 +74,14 @@ public sealed partial class PortableUpdateDirectory : IUpdateDirectory
 
     private static FileStreamOptions Options(FileMode mode, bool publicRead, bool executable, FileShare sharing)
     {
-        var options = new FileStreamOptions { Mode = mode, Access = FileAccess.ReadWrite, Share = sharing,
-            BufferSize = 65536, Options = FileOptions.WriteThrough };
+        var options = new FileStreamOptions
+        {
+            Mode = mode,
+            Access = FileAccess.ReadWrite,
+            Share = sharing,
+            BufferSize = 65536,
+            Options = FileOptions.WriteThrough
+        };
         if (!OperatingSystem.IsWindows()) options.UnixCreateMode = (UnixFileMode)(publicRead ? executable ? 0x1ed : 0x1a4 : 0x180);
         return options;
     }
