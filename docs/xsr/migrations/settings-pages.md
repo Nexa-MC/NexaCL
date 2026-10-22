@@ -1,6 +1,6 @@
 # Compact global settings pages
 
-The global Settings destination now opens its real PXML page instead of the migration placeholder. The eight categories and their final groups are projected from the sealed settings catalog query.
+The global Settings destination opens its real NXML page. The active categories and their groups are projected from the sealed settings catalog query.
 
 ## Presentation
 
@@ -8,7 +8,8 @@ The global Settings destination now opens its real PXML page instead of the migr
 - Typography uses 14 px setting labels and 12 px secondary group labels, the existing shell accent, quiet white grouped surfaces and inset separators. There is no Hero or repeated page title.
 - Category transitions use a zero-offset fade. Scroll uses the existing drag/inertia component and visible indicator, with no per-row entry animation. Each category remembers its current scroll position during the session.
 - The developer preference uses a confirmed-state draggable On/Off radio group. Adding developer groups preserves the triggering control's focus and scroll position. Exclusive preferences use draggable radio-group segmented controls; XSR-773 adds native toggle/selection semantics.
-- Unsupported entries remain in their final groups with readable “尚未可用” status and no write intent. No new renderer or Avalonia dependency enters Services.
+- Only available entries with a concrete editable value contract appear in settings forms. Unsupported, undelivered and currently unavailable entries do not create rows or empty groups; their stable catalog IDs and persisted values remain intact. No new renderer or Avalonia dependency enters Services.
+- The 2026-10-22 simplification removes inline help, static explanatory notices and read-only policy cards, including the protocol-registration and content-trust summaries. Empty theme-option and permission groups stay hidden. Required preview-build telemetry does not appear as a disabled setting; first-run disclosure and the underlying policy remain. Loading/error/empty results, actual diagnostic data, form labels, confirmations and working tools retain their behavior.
 
 ## Active settings
 
@@ -21,7 +22,7 @@ Edits dispatch through Foundation settings commands. Text drafts are not overwri
 
 ## Verification
 
-Desktop regressions cover all eight categories, narrow-window geometry, command-to-persistence behavior, draft focus, developer-section continuity, unavailable rows, and anchored choice menu geometry/selection. Visual review uses the actual Avalonia scene surface rendered to a bitmap in an external headless probe, not a separate HTML mock-up. Standard architecture, formatting, native and trim checks still apply.
+Desktop regressions cover all current categories, narrow-window geometry, command-to-persistence behavior, draft focus, developer-section continuity, omission of ineffective rows/help and anchored choice menu geometry/selection. Visual review uses the actual Avalonia scene surface rendered to a bitmap in an external headless probe, not a separate HTML mock-up. Standard architecture, formatting, native and trim checks still apply.
 
 Settings cards use an unpadded painted surface and a padded inner body. Platform facts,
 preflight issues and update actions therefore share the full page width while content has

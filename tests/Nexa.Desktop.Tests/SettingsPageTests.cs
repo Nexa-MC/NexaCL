@@ -7,6 +7,34 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static void AssertSettingsHaveOnlyEditableRows(LaunchPageFixture fixture, SettingsPageController settings)
+    {
+        var catalog = SettingsCatalog.Entries.ToDictionary(entry => entry.Id, StringComparer.Ordinal);
+        fixture.Shell.Tree.Walk(settings.Page, entity =>
+        {
+            string name = fixture.Shell.Tree.Name(entity);
+            AssertFalse(name is "SettingsUnavailable" or "SettingsGeneral.Protocol" or "SettingsGeneral.Confirmations"
+                or "ContentTrustStates" or "SafeLaunchPolicy" or "SettingsProxyHint" or "NetworkMirrorResolution.Policy");
+            if (name.StartsWith("SettingsRow.", StringComparison.Ordinal))
+            {
+                var entry = catalog[name["SettingsRow.".Length..]];
+                AssertEqual(SettingsCapabilityAvailability.Available, entry.Availability);
+                AssertTrue(entry.Definition is not null);
+                AssertFalse(settings.TelemetryRequired && entry.SettingKey == "diagnostics.telemetry");
+            }
+            if (name.StartsWith("SettingsLabel.", StringComparison.Ordinal))
+                AssertEqual(1, fixture.Shell.Tree.Children(entity).Count);
+            if (name.StartsWith("SettingsGroup.", StringComparison.Ordinal) && !name.EndsWith(".Body", StringComparison.Ordinal)
+                && !name.EndsWith(".Surface", StringComparison.Ordinal))
+            {
+                bool hasSetting = false;
+                fixture.Shell.Tree.Walk(entity, child => { hasSetting |= fixture.Shell.Tree.Name(child).StartsWith("SettingsRow.", StringComparison.Ordinal); return true; });
+                AssertTrue(hasSetting);
+            }
+            return true;
+        });
+    }
+
     private static XsrUiSceneNode ShowSettingsFixtureControl(LaunchPageFixture fixture, SettingsPageController settings,
         ref XsrUiScene scene, string key, XsrUiSize? viewport = null)
     {
@@ -87,6 +115,7 @@ internal static partial class Program
         PageInsetsSurviveControllerTransitions();
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
         using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, fixture.Foundation.Queries, fixture.Foundation.Commands, fixture.Store, fixture.Feedback);
+        settings.TelemetryRequired = true;
         fixture.Shell.Renderer.ReducedMotion = true;
         fixture.Controller.SettingsPage = settings.Page;
         Emit(fixture.Intents, "ui.navigation.settings");
@@ -136,6 +165,7 @@ internal static partial class Program
                 AssertFalse(retired.IsAssigned);
             }
             AssertTrue(scene.Nodes.Where(item => fixture.Shell.Tree.Name(item.Entity).StartsWith("SettingsRow.", StringComparison.Ordinal)).All(item => item.Rect.Width > 0));
+            AssertSettingsHaveOnlyEditableRows(fixture, settings);
         }
         scene = fixture.Shell.Render(new(760, 500));
         AssertTrue(FindByKey(fixture.Shell, scene, "SettingsSections").Rect.Width > 480);
@@ -186,6 +216,7 @@ internal static partial class Program
         });
         AssertTrue(javaRuntimePresent);
         AssertFalse(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) is "SettingsNav.java" or "SettingsNav.components"));
+        AssertSettingsHaveOnlyEditableRows(fixture, settings);
         fixture.Shell.Renderer.SetTextInputValue(input.Entity, "1440");
         fixture.Shell.Renderer.Focus(input.Entity);
         // Showing Apply pumps asynchronous management facts; preserve a real focused edit through any rebuild.
@@ -334,7 +365,7 @@ internal static partial class Program
         bool hasInspector = false;
         fixture.Shell.Tree.Walk(settings.Page, entity => { hasInspector |= fixture.Shell.Tree.GetComponent<XsrUiText>(entity)?.Content == "XSR State Inspector"; return true; });
         AssertTrue(hasInspector);
-        AssertFalse(scene.Nodes.Any(item => item.Label?.EndsWith("，尚未可用", StringComparison.Ordinal) == true && item.IsClickable));
+        AssertSettingsHaveOnlyEditableRows(fixture, settings);
     }
 
     private static void SettingsArgumentRowsSupportAddRemoveAndApply()

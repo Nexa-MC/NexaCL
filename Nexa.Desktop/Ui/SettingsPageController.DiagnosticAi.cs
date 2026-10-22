@@ -43,25 +43,26 @@ internal sealed partial class SettingsPageController
             if (!DiagnosticAiEnabled) ClearDiagnosticAiSecret();
         }
         var slot = CatalogNodes(_diagnosticAiWorkspace)["DiagnosticAi.Editor"];
-        var fragment = DiagnosticAiEnabled
-            ? DesktopMarkup.Dynamic("SettingsDiagnosticAiEditor.d.nxml", new Dictionary<string, string> { ["enabled"] = Flag(!ContentWorkspaceBusy) })
-            : DesktopMarkup.Dynamic("SettingsDiagnosticAiDisabled.d.nxml");
+        if (!DiagnosticAiEnabled)
+        {
+            if (_shell.Tree.IsAlive(_diagnosticAiEditor)) _dynamic.Clear(slot);
+            _diagnosticAiEditor = default;
+            _diagnosticAiWorkspaceEnabled = false;
+            return;
+        }
+        var fragment = DesktopMarkup.Dynamic("SettingsDiagnosticAiEditor.d.nxml", new Dictionary<string, string> { ["enabled"] = Flag(!ContentWorkspaceBusy) });
         if (changed || !_shell.Tree.IsAlive(_diagnosticAiEditor))
         {
             _diagnosticAiEditor = _dynamic.Replace(slot, fragment);
             _diagnosticAiWorkspaceEnabled = DiagnosticAiEnabled;
-            if (DiagnosticAiEnabled)
+            var controls = CatalogNodes(_diagnosticAiEditor);
+            foreach (string key in _diagnosticAiDraft.Keys)
             {
-                var controls = CatalogNodes(_diagnosticAiEditor);
-                foreach (string key in _diagnosticAiDraft.Keys)
-                {
-                    var input = controls["DiagnosticAi." + key];
-                    _shell.Renderer.SetTextInputValue(input, _diagnosticAiDraft[key]); _diagnosticAiInputs[key] = input;
-                }
+                var input = controls["DiagnosticAi." + key];
+                _shell.Renderer.SetTextInputValue(input, _diagnosticAiDraft[key]); _diagnosticAiInputs[key] = input;
             }
         }
         else _dynamic.Reload(_diagnosticAiEditor, fragment);
-        if (!DiagnosticAiEnabled) return;
         var actions = CatalogNodes(_diagnosticAiEditor);
         RegisterWorkspaceAction(actions, "AiFacts", "ai-facts"); RegisterWorkspaceAction(actions, "AiRaw", "ai-raw"); RegisterWorkspaceAction(actions, "AiRepair", "prune");
     }

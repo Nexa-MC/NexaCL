@@ -1,3 +1,0 @@
-﻿<nxml-dynamic>
-<Text Key="SettingsUnavailable" Content="{data reason}" Label="{data accessible}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-catalog-unavailable" />
-</nxml-dynamic>

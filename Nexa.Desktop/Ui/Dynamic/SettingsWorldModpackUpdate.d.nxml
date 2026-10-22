@@ -12,7 +12,6 @@
           <Dynamic Key="ModpackUpdate.OnlineVersions" Class="world-stack" />
         </StackPanel>
         <Text Content="更新整合包" Class="world-title" />
-        <Text Content="选择新版 MRPack、CurseForge 或 Nexa 整合包。更新保留存档、截图、游戏选项和额外文件；修改过的配置会继续保留。" Class="world-hint" />
         <StackPanel Class="world-field">
           <Text Content="新版整合包" Class="world-field-label" />
           <TextInput Key="ModpackUpdate.Archive" Label="新版整合包路径" Placeholder="新版整合包的完整文件路径" Class="world-input" />

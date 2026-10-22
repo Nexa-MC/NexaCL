@@ -9,7 +9,6 @@
           <Button Key="Theme.IconPick" Content="选择图标" Label="选择图标" Command="ui.settings.theme.action" Enabled="{data canPick}" Class="theme-action" />
         </StackPanel>
         <Text Content="{data value}" Label="{data value}" Localize="false" WrapText="true" Class="theme-path" />
-        <Text Content="窗口和托盘使用此图标；安装程序图标保持不变。" Class="theme-description" />
       </StackPanel>
     </StackPanel>
   </SettingsForm>

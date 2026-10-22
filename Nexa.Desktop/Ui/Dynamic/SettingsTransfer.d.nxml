@@ -5,14 +5,12 @@
       <StackPanel Key="SettingsImport.Row" Class="settings-transfer-row">
         <StackPanel Class="settings-storage-labels">
           <Text Content="导入设置" Class="settings-storage-label" />
-          <Text Content="先预览更改，确认后应用。" Class="settings-transfer-description" />
         </StackPanel>
         <Button Key="SettingsImport" Label="选择文件" Content="选择文件" Command="ui.settings.data.import" Enabled="{data importEnabled}" Class="settings-catalog-action settings-storage-action" />
       </StackPanel>
       <StackPanel Key="SettingsExport.Row" Class="settings-transfer-row">
         <StackPanel Class="settings-storage-labels">
           <Text Content="导出设置" Class="settings-storage-label" />
-          <Text Content="不包含账户、凭据或本机路径。" Class="settings-transfer-description" />
         </StackPanel>
         <Button Key="SettingsExport" Label="导出" Content="导出" Command="ui.settings.data.export" Enabled="{data exportEnabled}" Class="settings-catalog-action settings-storage-action" />
       </StackPanel>
@@ -20,7 +18,6 @@
         <StackPanel Class="settings-storage-labels">
           <Text Content="恢复默认" IsVisible="{data global}" Class="settings-storage-label" />
           <Text Content="恢复继承" IsVisible="{data instance}" Class="settings-storage-label" />
-          <Text Content="仅重置已接入的设置，不删除版本或文件。" Class="settings-transfer-description" />
         </StackPanel>
         <Button Key="SettingsReset" Label="恢复" Content="恢复" Command="ui.settings.data.reset" Enabled="{data resetEnabled}" Class="settings-catalog-action settings-storage-action" />
       </StackPanel>

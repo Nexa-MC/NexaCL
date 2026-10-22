@@ -59,24 +59,23 @@ internal sealed partial class SettingsPageController
         return nodes;
     }
 
+    private bool IsEditableSetting(SettingsCatalogEntry entry) => entry.Kind == SettingsCatalogEntryKind.Setting
+        && entry.Availability == SettingsCapabilityAvailability.Available && entry.Definition is not null
+        && !(entry.SettingKey == "diagnostics.telemetry" && TelemetryRequired);
+
     private void BuildRow(XsrUiEntityId parent, SettingsCatalogEntry entry)
     {
+        if (!IsEditableSetting(entry)) return;
         string key = entry.SettingKey ?? entry.Id;
-        bool enabled = entry.Availability == SettingsCapabilityAvailability.Available && entry.Definition is not null;
-        bool required = key == "diagnostics.telemetry" && TelemetryRequired;
-        bool inherit = enabled && !required && _instanceDirectory is not null && key != "instance.development-mode";
+        bool inherit = _instanceDirectory is not null && key != "instance.development-mode";
         bool multiline = key is "game.pre-launch" or "game.post-exit" or "game.environment" or "game.classpath-head" or "game.jvm" or "game.arguments";
         string label = key == "diagnostics.telemetry" ? CatalogCopy("catalog.copy.dd29c4ef967a202e") : DisplayLabel(entry.Label);
-        string? hint = SettingHint(key);
         var row = AppendCatalog(parent, "SettingsCatalogRow.d.nxml", new()
         {
             ["row"] = "SettingsRow." + entry.Id,
             ["labelKey"] = "SettingsLabel." + entry.Id,
             ["label"] = label,
-            ["hint"] = hint ?? "",
-            ["hasHint"] = Flag(hint is not null),
-            ["labelStyle"] = "settings-catalog-labels" + (key == "diagnostics.telemetry" ? " settings-catalog-labels-wide" : "")
-                + (multiline ? " settings-catalog-labels-top" : ""),
+            ["labelStyle"] = "settings-catalog-labels" + (multiline ? " settings-catalog-labels-top" : ""),
             ["inheritKey"] = "SettingsInherit." + key,
             ["inheritVisible"] = Flag(inherit),
             ["inheritLabel"] = CatalogCopy("catalog.copy.49f1e2b9d18b55b5"),
@@ -84,20 +83,6 @@ internal sealed partial class SettingsPageController
         });
         var nodes = CatalogNodes(row);
         var controls = nodes["SettingsControlSlot"];
-        if (required) { _dynamic.Append(controls, DesktopMarkup.Dynamic("SettingsCatalogRequired.d.nxml")); return; }
-        if (!enabled)
-        {
-            string reason = entry.Availability switch
-            {
-                SettingsCapabilityAvailability.PlatformUnsupported => CatalogCopy("catalog.copy.e353f6b3b95a9db8"),
-                SettingsCapabilityAvailability.DependencyMissing => CatalogCopy("catalog.copy.0ee882fbcb4d2488"),
-                SettingsCapabilityAvailability.TemporarilyUnavailable => CatalogCopy("catalog.copy.f36cac96220bb1e4"),
-                _ => CatalogCopy("catalog.copy.1e0c0ff9dbad0fc5"),
-            };
-            _dynamic.Append(controls, DesktopMarkup.Dynamic("SettingsCatalogUnavailable.d.nxml", new Dictionary<string, string>
-            { ["reason"] = _shell.Renderer.LocalizeText(reason), ["accessible"] = _shell.Renderer.LocalizeText(label) + ", " + _shell.Renderer.LocalizeText(reason) }));
-            return;
-        }
         if (inherit)
         {
             var button = AppendCatalog(nodes["SettingsInheritSlot"], "SettingsCatalogInherit.d.nxml", new()

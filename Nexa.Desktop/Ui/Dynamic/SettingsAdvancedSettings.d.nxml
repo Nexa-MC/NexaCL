@@ -1,7 +1,7 @@
 <nxml-dynamic>
 <StackPanel Key="AdvancedWorkspace.Settings" Class="settings-diagnostics-card"><StackPanel Class="settings-advanced-body"><Text Content="只读脱敏设置快照" Class="settings-advanced-title" />
-<Text Content="只显示有效设置的类型、来源和公开值；文本、路径、凭据与命令内容保持脱敏。" Class="settings-advanced-hint" />
-<Text Content="本地设置文件可能包含路径、账户和凭据。仅在本机编辑器中打开，请勿公开分享。" Class="settings-advanced-hint" />
+
+
 <StackPanel Class="settings-advanced-toolbar"><Button Key="AdvancedWorkspace.Settings.OpenFile" Content="打开 settings.json" Command="ui.settings.management.action" Class="settings-catalog-action settings-advanced-action" Enabled="{data open}" /><Button Key="AdvancedWorkspace.Settings.Read" Content="捕获设置快照" Command="ui.settings.management.action" Class="settings-catalog-action settings-advanced-action" Enabled="{data read}" /></StackPanel>
 <Dynamic Key="AdvancedWorkspace.Settings.Rows" Class="settings-advanced-rows" />
 <StackPanel Class="settings-advanced-toolbar"><Button Key="AdvancedWorkspace.Settings.Next" Content="下一页" Command="ui.settings.management.action" Class="settings-catalog-action settings-advanced-action" IsVisible="{data next}" /><Button Key="AdvancedWorkspace.Settings.Copy" Content="复制脱敏设置快照" Command="ui.settings.management.action" Class="settings-catalog-action settings-advanced-action" Enabled="{data copy}" IsVisible="{data captured}" /></StackPanel>

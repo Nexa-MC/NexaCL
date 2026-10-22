@@ -264,7 +264,7 @@ internal sealed partial class SettingsPageController : IDisposable
     private void UpdateIndependentFacts()
     {
         UpdateReleaseCheck(); UpdateStoragePreferences(); UpdateContentWorkspace(); UpdateLauncherMigration();
-        UpdateNetworkDiagnostics(); UpdateGeneralRuntimeStates(); UpdateRuntimeTrace(); UpdateAdvancedWorkspace();
+        UpdateNetworkDiagnostics(); UpdateRuntimeTrace(); UpdateAdvancedWorkspace();
     }
 
     private void SwitchPage(string page)
@@ -351,17 +351,12 @@ internal sealed partial class SettingsPageController : IDisposable
         if (_selected == "advanced") BuildUpdateCard();
         if (_instanceDirectory is null && _selected == "storage") BuildStoragePreferences();
         bool transfer = _instanceDirectory is null && _selected == "storage" || _instanceDirectory is not null && _selected == "game";
-        if (_selected == "privacy")
-        {
-            _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsPrivacyNotice.d.nxml"));
-        }
         var entries = _catalog!.Entries.Where(item => item.Scope == "global"
             && (item.Page == _selected || _instanceDirectory is not null && _selected == "game" && item.Page == "java")
             && (_instanceDirectory is null || item.Definition?.InstanceOverride == true) && !item.IsRuntimeDetail && (_developer || !item.DeveloperOnly)
             && (_instanceDirectory is not null || (item.SettingKey != "general.launch-hints" || item.Page == "general")
                 && (item.SettingKey != "network.background-download" || item.Page == "network"))).ToArray();
-        var available = entries.Where(item => item.Kind == SettingsCatalogEntryKind.Setting
-            && (item.Definition is not null || item.Availability != SettingsCapabilityAvailability.Available)
+        var available = entries.Where(item => IsEditableSetting(item)
             && (_region.IsMainlandChina || item.SettingKey is not ("network.game-source" or "network.resource-source" or "network.provider-mirror"))
             && item.SettingKey is not ("network.proxy-mode" or "network.proxy-address" or "network.proxy-user" or "network.proxy-password"
                 or "appearance.theme-pack-id" or "appearance.launcher-icon-mode" or "appearance.launcher-icon-path")).ToArray();
@@ -371,30 +366,26 @@ internal sealed partial class SettingsPageController : IDisposable
             { ["label"] = Pages.First(page => page.Id == _selected).Label }));
         }
         if (_instanceDirectory is not null && _selected == "game") BuildLaunchProfiles();
-        string planned = CatalogCopy("catalog.planned");
         var groups = available.GroupBy(item => (Section: item.DeveloperOnly ? CatalogCopy("catalog.copy.38084d301e3f1a31")
                 : _instanceDirectory is not null ? InstanceSettingGroup(item)
-                : item.Definition is null && item.Availability != SettingsCapabilityAvailability.Available ? planned : item.Section, item.DeveloperOnly))
+                : item.Section, item.DeveloperOnly))
             .OrderBy(group => _instanceDirectory is null ? 0 : group.Key.Section switch { var copy when copy == CatalogCopy("catalog.copy.8cdf1da0d4c7e55e") => 0, var copy when copy == CatalogCopy("catalog.copy.2720b4221e5e4ca3") => 1, var copy when copy == CatalogCopy("catalog.copy.2388cbc6a486af9f") => 2, _ => 3 }).ToArray();
-        foreach (var section in groups.Where(group => group.Key.Section != planned))
+        foreach (var section in groups)
         {
             var cardContent = AppendSettingGroup(section, section.Key.Section);
             if (_instanceDirectory is not null && section.Key.Section == CatalogCopy("catalog.copy.2720b4221e5e4ca3")) BuildJavaInventory(cardContent);
         }
         if (_instanceDirectory is null && _selected == "network") { BuildProxyPreferences(); BuildNetworkDiagnostics(); }
-        if (_instanceDirectory is null && _selected == "privacy") { BuildDiskLogActions(); BuildPrivacyDiagnosticExport(); BuildContentTrustStates(); }
+        if (_instanceDirectory is null && _selected == "privacy") { BuildDiskLogActions(); BuildPrivacyDiagnosticExport(); }
         if (_instanceDirectory is null && _selected == "storage") { BuildContentWorkspace(); BuildLauncherMigration(); }
         if (transfer) BuildSettingsTransfer();
         BuildJavaInventory();
 
-        BuildGeneralRuntimeStates();
         BuildDeveloperDiagnostics();
         BuildRuntimeDiagnostics();
         BuildRuntimeTraceDiagnostics();
         BuildAdvancedWorkspace();
         BuildThemeSettings();
-        foreach (var section in groups.Where(group => group.Key.Section == planned))
-            AppendSettingGroup(section, planned);
         var scroll = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!;
         scroll.OffsetY = _scrollPositions.GetValueOrDefault(_selected);
         _shell.Tree.GetComponent<XsrUiTransition>(_sections)!.Key = _selected + ":" + _developer;
@@ -410,42 +401,6 @@ internal sealed partial class SettingsPageController : IDisposable
         if (focus is not null)
             _shell.Tree.Walk(_sections, entity => { if (_shell.Tree.Name(entity) == focus) _shell.Renderer.Focus(entity); return true; });
     }
-
-    private static string? SettingHint(string? key) => key switch
-    {
-        "general.region" => CatalogCopy("catalog.copy.776e862b6d0e9031"),
-        "updates.channel" => CatalogCopy("catalog.copy.eed8e45d95df9f6b"),
-        "updates.auto-check" => CatalogCopy("catalog.copy.50cfbc4a9decb781"),
-        "diagnostics.log-level" => CatalogCopy("catalog.copy.3fb6e525b2a48120"),
-        "diagnostics.log-lines" => CatalogCopy("catalog.copy.ca8c03c6f3e906cf"),
-        "diagnostics.disk-log-days" => CatalogCopy("catalog.copy.c30fd87eb5fd49a2"),
-        "game.process-priority" => CatalogCopy("catalog.copy.67ff7775ee009846"),
-        "game.title" => CatalogCopy("catalog.copy.0b68f43e8196aeff"),
-        "game.default-isolation" => CatalogCopy("catalog.copy.d772866356f942b9"),
-        "game.launcher-visibility" => CatalogCopy("catalog.copy.43cb3d790f2aa8fb"),
-        "game.jvm" => CatalogCopy("catalog.copy.d9363eeb833c6cfc"),
-        "install.inherit-vanilla" => CatalogCopy("catalog.copy.8525fed239dc4e36"),
-        "game.arguments" => CatalogCopy("catalog.copy.5dc1231308729d53"),
-        "game.wrapper" => CatalogCopy("catalog.copy.855b5d4a658b6f02"),
-        "game.pre-launch" => CatalogCopy("catalog.copy.b3b5b1c0f702ed1e"),
-        "game.pre-launch-wait" => CatalogCopy("catalog.copy.f4896949ed55c37f"),
-        "game.memory" => CatalogCopy("catalog.copy.501986da6c15d7d4"),
-        "java.auto-install" => CatalogCopy("catalog.copy.b2c48db2fd181406"),
-        "java.vendor" => CatalogCopy("catalog.copy.a87cf2ecb1567b67"),
-        "network.file-concurrency" => CatalogCopy("catalog.copy.edf875f11bedb518"),
-        "network.file-retry" => CatalogCopy("catalog.copy.62c58790dd3a97db"),
-        "network.game-source" => CatalogCopy("catalog.copy.487f9059ca0adc09"),
-        "network.bandwidth-kib" => CatalogCopy("catalog.copy.84d4da5cad300809"),
-        "network.ip-stack" => CatalogCopy("catalog.copy.e6e2c696df92cabf"),
-        "network.doh" => CatalogCopy("catalog.copy.a644428ae54619b0"),
-        "game.server" => CatalogCopy("catalog.copy.38941425982294bf"),
-        "game.auto-repair" => CatalogCopy("catalog.copy.6f4a69151ae79608"),
-        "appearance.animations-disabled" => CatalogCopy("catalog.copy.5ca216328e84d4c6"),
-        "appearance.animation-fps" => CatalogCopy("catalog.copy.3ead916bdc23c0e6"),
-        "appearance.theme-mode" => CatalogCopy("catalog.copy.56b6daeaafec549c"),
-        "appearance.accent" => CatalogCopy("catalog.copy.63ca81911d9ec19a"),
-        _ => null,
-    };
 
     private void UpdateEditors()
     {

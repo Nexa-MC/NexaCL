@@ -15,9 +15,8 @@ internal sealed partial class SettingsPageController
     private readonly Dictionary<string, XsrUiEntityId> _proxyInputs = [];
     private readonly Dictionary<XsrUiEntityId, string> _proxyModes = [];
     private readonly Dictionary<string, string> _proxyCommitted = [];
-    private XsrUiEntityId _proxyWorkspace, _proxyTrack, _proxyProtocolTrack, _proxyProtocolHint;
+    private XsrUiEntityId _proxyWorkspace, _proxyTrack, _proxyProtocolTrack;
     private readonly Dictionary<XsrUiEntityId, string> _proxyProtocols = [];
-    private string? _proxyHintTemplate;
     private string _proxyDraftProtocol = "http";
     private string _proxyDraftMode = "1";
     private string _proxyCommittedMode = "1";
@@ -44,8 +43,6 @@ internal sealed partial class SettingsPageController
         var names = new Dictionary<string, XsrUiEntityId>(StringComparer.Ordinal);
         _shell.Tree.Walk(root, entity => { names[_shell.Tree.Name(entity)] = entity; return true; });
         _proxyTrack = names["SettingsProxyMode"]; _proxyProtocolTrack = names["SettingsProxyProtocol"];
-        _proxyProtocolHint = names["SettingsProxyHint"];
-        _proxyHintTemplate = null;
         foreach (string value in new[] { "1", "0", "2" })
         {
             var option = names["SettingsProxyMode." + value];
@@ -110,17 +107,6 @@ internal sealed partial class SettingsPageController
         {
             bool selected = protocol == _proxyDraftProtocol;
             if (selected) _shell.Tree.GetComponent<XsrUiSegmentedTrack>(_proxyProtocolTrack)!.Selected = option;
-        }
-        string hintTemplate = _proxyDraftProtocol switch
-        {
-            "socks4" => "SettingsProxyHintSocks4.d.nxml",
-            "pac" => "SettingsProxyHintPac.d.nxml",
-            _ => "SettingsProxyHintDefault.d.nxml",
-        };
-        if (_proxyHintTemplate != hintTemplate)
-        {
-            _dynamic.Replace(_proxyProtocolHint, DesktopMarkup.Dynamic(hintTemplate));
-            _proxyHintTemplate = hintTemplate;
         }
         foreach (var (option, value) in _proxyModes)
         {

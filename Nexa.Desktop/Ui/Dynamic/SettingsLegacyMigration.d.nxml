@@ -1,5 +1,5 @@
 <nxml-dynamic>
 <SettingsForm Key="LegacyMigrationWorkspace"><Text Content="迁移助手" Class="settings-form-label" /><StackPanel Class="settings-form-surface"><StackPanel Class="settings-form-body">
-<Text Content="预览旧启动器 JSON 设置和离线账户；在线账户需要重新登录。来源保留，新目录不覆盖现有数据。" Class="settings-workspace-migration-hint" /><Button Key="ContentWorkspace.Migrate" Label="预览旧数据迁移" Content="预览旧数据迁移" Command="ui.settings.storage.workspace" Enabled="{data enabled}" Class="settings-catalog-action settings-workspace-action" />
+<Button Key="ContentWorkspace.Migrate" Label="预览旧数据迁移" Content="预览旧数据迁移" Command="ui.settings.storage.workspace" Enabled="{data enabled}" Class="settings-catalog-action settings-workspace-action" />
 </StackPanel></StackPanel></SettingsForm>
 </nxml-dynamic>

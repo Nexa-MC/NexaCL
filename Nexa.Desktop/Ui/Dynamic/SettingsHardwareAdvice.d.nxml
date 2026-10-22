@@ -1,7 +1,6 @@
 <nxml-dynamic>
   <StackPanel Class="platform-group">
     <Text Content="硬件与资源建议" Class="platform-group-title" />
-    <Text Content="建议只根据本次捕获的估算与预检，不会自动修改游戏配置；未知输入仍需启动后验证。" Class="hardware-advice-hint" />
     <StackPanel Key="HardwareAdvice.Shader" Class="platform-card">
       <StackPanel Class="hardware-advice-body">
         <Text Content="光影" Class="hardware-advice-title" />
@@ -30,7 +29,6 @@
       <StackPanel Class="hardware-advice-body">
         <Text Content="风险" Class="hardware-advice-title" />
         <Text Key="HardwareAdvice.Risk.Facts" Content="{data risk}" Label="{data risk}" Localize="false" MaxLines="1" TrimOverflow="true" Class="hardware-advice-facts" />
-        <Text Content="这里只显示当前预检分类；时间关联、估算和未知读数不能证明崩溃原因。" Class="hardware-advice-hint" />
       </StackPanel>
     </StackPanel>
   </StackPanel>

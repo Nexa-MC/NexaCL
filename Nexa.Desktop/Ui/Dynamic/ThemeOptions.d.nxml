@@ -4,9 +4,7 @@
     <StackPanel Key="Theme.Options.Surface" Class="settings-form-surface">
       <StackPanel Key="Theme.Options.Body" Class="theme-surface">
         <Text Content="{data name}" Localize="false" Class="theme-name" />
-        <Text Content="每个主题独立保存参数。选择文件会单独授予该主题读取权限；导入参数不会授予权限。" Class="theme-description" />
         <Dynamic Key="Theme.OptionRows" Class="theme-rows" />
-        <Text Content="此主题没有可配置参数。" IsVisible="{data empty}" Class="theme-description" />
         <StackPanel Class="theme-actions">
           <Button Key="Theme.OptionsSave" Content="保存参数" Label="保存参数" Command="ui.settings.theme.action" Enabled="{data enabled}" Class="theme-action" />
           <Button Key="Theme.OptionsReset" Content="恢复默认" Label="恢复默认" Command="ui.settings.theme.action" Enabled="{data enabled}" Class="theme-action" />

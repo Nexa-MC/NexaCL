@@ -8,27 +8,6 @@
           <Button Key="LaunchProfilesRetry" Content="重新读取启动配置" Label="重新读取启动配置" Command="ui.settings.launch-profile.action" IsVisible="{data failed}" Enabled="{data retryEnabled}" Class="settings-catalog-action settings-custom-action" />
           <StackPanel IsVisible="{data ready}" Class="settings-custom-column">
             <Text Content="{data layer}" Localize="false" Class="settings-custom-status" />
-            <Text Content="下方普通设置直接编辑当前层；Safe Launch 会暂时移走模组、资源包、光影和配置，游戏退出后恢复。" Class="settings-custom-caption" />
-            <SettingsForm Key="SafeLaunchPolicy">
-              <Text Content="安全启动固定策略" Class="settings-form-label" />
-              <StackPanel Class="settings-custom-fact">
-                <Text Content="光影" Class="settings-custom-fact-label" />
-                <Text Content="禁用全部光影；退出后恢复原目录" Class="settings-custom-fact-value" />
-              </StackPanel>
-              <StackPanel Class="settings-custom-fact">
-                <Text Content="资源包" Class="settings-custom-fact-label" />
-                <Text Content="禁用全部资源包；退出后恢复原目录" Class="settings-custom-fact-value" />
-              </StackPanel>
-              <StackPanel Class="settings-custom-fact">
-                <Text Content="启动钩子" Class="settings-custom-fact-label" />
-                <Text Content="跳过 Wrapper、启动前及退出后命令" Class="settings-custom-fact-value" />
-              </StackPanel>
-              <StackPanel Class="settings-custom-fact">
-                <Text Content="自定义 JVM 参数" Class="settings-custom-fact-label" />
-                <Text Content="跳过自定义 JVM、游戏参数、环境变量和前置 classpath" Class="settings-custom-fact-value" />
-              </StackPanel>
-              <Text Content="仅在安全启动开启时生效；账户认证、Java 兼容和完整性检查始终执行。模组与配置全量隔离。" Class="settings-custom-note" />
-            </SettingsForm>
             <Button Key="LaunchProfileBase" Content="使用实例设置" Label="使用实例设置" Command="ui.settings.launch-profile.action" Enabled="{data enabled}" Class="settings-catalog-action settings-custom-action" />
             <Dynamic Key="LaunchProfileChoices" Class="settings-custom-column" />
             <StackPanel Class="settings-custom-field">

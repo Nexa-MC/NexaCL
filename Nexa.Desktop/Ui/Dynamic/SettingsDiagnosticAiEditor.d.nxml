@@ -1,6 +1,6 @@
 <nxml-dynamic>
 <StackPanel Class="settings-workspace-column">
-<Text Content="仅在确认发送范围和预览后请求指定服务；API 密钥只保留在当前页面会话。建议不会自动执行命令。" Class="settings-workspace-ai-hint" />
+
 <StackPanel Key="DiagnosticAi.endpointRow" Class="settings-workspace-field"><Text Content="服务 HTTPS 地址" Class="settings-workspace-field-label" /><TextInput Key="DiagnosticAi.endpoint" Label="服务 HTTPS 地址" Placeholder="服务 HTTPS 地址" MaximumLength="2048" IsPassword="false" Class="settings-workspace-input" /></StackPanel>
 <StackPanel Key="DiagnosticAi.modelRow" Class="settings-workspace-field"><Text Content="模型" Class="settings-workspace-field-label" /><TextInput Key="DiagnosticAi.model" Label="模型" Placeholder="模型" MaximumLength="128" IsPassword="false" Class="settings-workspace-input" /></StackPanel>
 <StackPanel Key="DiagnosticAi.keyRow" Class="settings-workspace-field"><Text Content="API 密钥" Class="settings-workspace-field-label" /><TextInput Key="DiagnosticAi.key" Label="API 密钥" Placeholder="API 密钥" MaximumLength="4096" IsPassword="true" Class="settings-workspace-input" /></StackPanel>

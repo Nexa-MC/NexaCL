@@ -1,6 +1,6 @@
 <nxml-dynamic>
 <StackPanel Key="AdvancedWorkspace.Navigation" Class="settings-diagnostics-card"><StackPanel Class="settings-advanced-body"><Text Content="自动化与安全模式" Class="settings-advanced-title" />
-<Text Content="导航命令只切换页面；安全模式在下次启动时使用 --safe-mode 指定。" Class="settings-advanced-hint" />
+
 <Dynamic Key="AdvancedWorkspace.Navigation.State" />
 <Button Key="AdvancedWorkspace.Palette" Content="打开命令面板" Command="ui.settings.management.action" Class="settings-catalog-action settings-advanced-action" Enabled="{data palette}" />
 <Dynamic Key="AdvancedWorkspace.Navigation.Routes" Class="settings-advanced-rows" />

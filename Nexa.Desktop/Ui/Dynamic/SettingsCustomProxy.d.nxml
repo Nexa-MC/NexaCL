@@ -3,7 +3,6 @@
     <Text Content="代理" Class="settings-form-label" />
     <StackPanel Class="settings-form-surface">
       <StackPanel Key="SettingsProxy.Body" Class="settings-form-body">
-        <Text Content="应用后对新请求生效。" Class="settings-network-note" />
         <StackPanel Key="SettingsProxyToolbar" Class="settings-proxy-toolbar">
           <SettingsChoiceTrack Key="SettingsProxyMode" SegmentThumb="SettingsProxyModeThumb" Label="代理模式草稿" Class="settings-proxy-track">
             <ContentHost Key="SettingsProxyModeThumb" TransitionKey="SettingsProxyModeThumb" IsVisible="false" Class="settings-proxy-thumb" />
@@ -23,7 +22,6 @@
             <SettingsChoice Key="SettingsProxyProtocol.socks5" Selected="{data protocolsocks5}" Content="SOCKS5" Label="SOCKS5" Command="ui.settings.proxy.protocol" Class="{data protocolsocks5Style}" />
             <SettingsChoice Key="SettingsProxyProtocol.pac" Selected="{data protocolpac}" Content="PAC" Label="PAC" Command="ui.settings.proxy.protocol" Class="{data protocolpacStyle}" />
           </SettingsChoiceTrack>
-          <Dynamic Key="SettingsProxyHint" />
           <StackPanel Key="SettingsProxyRow.network.proxy-address" Class="settings-proxy-input-row">
             <Text Content="地址" Class="settings-proxy-input-label" />
             <TextInput Key="SettingsInput.network.proxy-address" Label="地址" Placeholder="http://localhost:8080" IsPassword="false" Class="settings-proxy-input" />

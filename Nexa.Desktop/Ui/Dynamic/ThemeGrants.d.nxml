@@ -1,9 +1,8 @@
 <nxml-dynamic>
-  <SettingsForm Key="Theme.Grants">
+  <SettingsForm Key="Theme.Grants" IsVisible="{data hasGrants}">
     <Text Content="外部资源授权" Class="settings-form-label" />
     <StackPanel Key="Theme.Grants.Surface" Class="settings-form-surface">
       <StackPanel Key="Theme.Grants.Body" Class="theme-surface">
-        <Text Content="仅显示当前主题的授权。撤销后停止读取，并释放正在使用的资源。" Class="theme-description" />
         <Dynamic Key="Theme.GrantRows" Class="theme-rows" />
       </StackPanel>
     </StackPanel>

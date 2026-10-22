@@ -6,7 +6,7 @@
 <Node Class="instance-diagnostics-spacer" />
 <Button Key="InstanceDiagnostics.Refresh" Label="刷新实例诊断" Command="ui.settings.management.action" Icon="pcl/refresh" Class="settings-diagnostics-refresh" />
 </StackPanel>
-<Text Content="仅显示此实例的捕获事实；点击刷新更新。缺少采样时显示不可用。" Class="instance-diagnostics-hint" />
+
 <StackPanel Key="InstanceDiagnostics.Status" Class="settings-diagnostics-card"><StackPanel Class="instance-diagnostics-body"><Text Content="当前状态" Class="instance-diagnostics-title" />
 <Text IsVisible="{data noSession}" Content="此实例尚无当前进程记录。" Class="instance-diagnostics-hint" />
 <StackPanel Key="InstanceDiagnostics.Session" Class="instance-diagnostics-field" IsVisible="{data hasSession}"><Text Content="运行身份" Class="instance-diagnostics-label" /><Text Key="InstanceDiagnostics.Session.Value" Content="{data Session}" Label="{data Session}" Localize="false" MaxLines="1" TrimOverflow="true" Class="instance-diagnostics-value" /></StackPanel>
@@ -18,7 +18,7 @@
 <StackPanel Key="InstanceDiagnostics.StartedAt" Class="instance-diagnostics-field"><Text Content="进程创建时间" Class="instance-diagnostics-label" /><Text Key="InstanceDiagnostics.StartedAt.Value" Content="{data StartedAt}" Label="{data StartedAt}" Localize="false" MaxLines="1" TrimOverflow="true" Class="instance-diagnostics-value" /></StackPanel>
 <StackPanel Key="InstanceDiagnostics.LaunchDuration" Class="instance-diagnostics-field"><Text Content="进程启动耗时" Class="instance-diagnostics-label" /><Text Key="InstanceDiagnostics.LaunchDuration.Value" Content="{data LaunchDuration}" Label="{data LaunchDuration}" Localize="false" MaxLines="1" TrimOverflow="true" Class="instance-diagnostics-value" /></StackPanel>
 <StackPanel Key="InstanceDiagnostics.LaunchWindow" Class="instance-diagnostics-field"><Text Content="启动采样窗口" Class="instance-diagnostics-label" /><Text Key="InstanceDiagnostics.LaunchWindow.Value" Content="{data LaunchWindow}" Label="{data LaunchWindow}" Localize="false" MaxLines="1" TrimOverflow="true" Class="instance-diagnostics-value" /></StackPanel>
-<Text Content="进程耗时与前 30 秒采样不代表进入世界耗时或 Minecraft 帧率。" Class="instance-diagnostics-hint" />
+
 </StackPanel></StackPanel>
 <StackPanel Key="InstanceDiagnostics.Resources" Class="settings-diagnostics-card"><StackPanel Class="instance-diagnostics-body"><Text Content="资源分析" Class="instance-diagnostics-title" />
 <StackPanel Key="InstanceDiagnostics.Physical" Class="instance-diagnostics-field"><Text Content="进程工作集峰值" Class="instance-diagnostics-label" /><Text Key="InstanceDiagnostics.Physical.Value" Content="{data Physical}" Label="{data Physical}" Localize="false" MaxLines="1" TrimOverflow="true" Class="instance-diagnostics-value" /></StackPanel>

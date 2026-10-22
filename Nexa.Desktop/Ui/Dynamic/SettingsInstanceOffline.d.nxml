@@ -2,7 +2,6 @@
   <StackPanel Key="InstanceOfflineReadiness" Class="settings-diagnostics-card">
     <StackPanel Class="instance-tools-body">
       <Text Content="离线就绪" Class="instance-tools-title" />
-      <Text Content="检查本地版本、库、Native、资源索引/对象及兼容 Java；不下载、不登录，也不替代启动前检查。" Class="instance-tools-hint" />
       <StackPanel Class="instance-tools-toolbar">
         <Button Key="InstanceOfflineReadiness.Check" Content="检查本地离线依赖" Command="ui.settings.management.action" Enabled="{data canCheck}" Class="settings-catalog-action instance-tools-check" />
         <LoadingView IsVisible="{data pending}">

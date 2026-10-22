@@ -163,7 +163,9 @@ internal static partial class Program
             await Activate("Management.检查世界健康");
             await Eventually(() => h.HealthReads == 1 && surface!.Scene!.Nodes.Any(node => node.Text == "已完成检查，未发现结构损坏。"));
             await Activate("Management.读取快照历史");
-            await Eventually(() => h.SnapshotReads == 1 && surface!.Scene!.Nodes.Any(node => node.Text?.Contains("7 个文件", StringComparison.Ordinal) == true));
+            await Eventually(() => h.SnapshotReads == 1);
+            await Show("WorldSnapshots.Rows");
+            await Eventually(() => surface!.Scene!.Nodes.Any(node => node.Text?.Contains("7 个文件", StringComparison.Ordinal) == true));
             await Show("WorldSnapshots");
             await startup.InvokeAsync(() => { AssertOwned("WorldDetails"); AssertOwned("WorldSnapshots"); }, timeout.Token);
             await CapturePair("instance-world-snapshots");

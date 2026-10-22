@@ -7,7 +7,6 @@
           <Text Content="{data path}" Localize="false" IsVisible="{data loaded}" Class="settings-storage-location" />
           <Text Content="此位置由环境变量指定。" IsVisible="{data locked}" Class="settings-storage-hint" />
           <Text Content="迁移已排队，重新启动后完成。" Class="loading-hint" LiveSetting="Polite" IsVisible="{data pending}" />
-          <Text Content="迁移启动器设置和本地记录；Minecraft 与 Java 的独立路径保持原位置。" IsVisible="{data movable}" Class="settings-storage-hint" />
           <Button Key="SettingsStorageMove" Label="选择迁移位置" Content="选择迁移位置" Command="ui.settings.storage.move" Enabled="{data moveEnabled}" Class="settings-catalog-action settings-storage-move" />
           <Button Key="SettingsStorageCancel" Label="取消待迁移" Content="取消待迁移" Command="ui.settings.storage.cancel" IsVisible="{data cancelVisible}" Enabled="{data cancelEnabled}" Class="settings-catalog-action settings-storage-move" />
         </StackPanel>

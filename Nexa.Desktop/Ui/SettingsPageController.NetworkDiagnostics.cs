@@ -58,9 +58,6 @@ internal sealed partial class SettingsPageController
         ReadResourceResolution();
         if (_region.IsMainlandChina)
         {
-            string source = _values?.Values.FirstOrDefault(item => item.Key == "network.resource-source")?.Value.Value ?? "follow-request";
-            RefreshNetworkRows("NetworkMirrorResolution.Policy", [DesktopMarkup.Dynamic(source switch
-            { "official-first" => "SettingsNetworkOfficialFirst.d.nxml", "mirrors-first" => "SettingsNetworkMirrorsFirst.d.nxml", _ => "SettingsNetworkFollowRequest.d.nxml" })]);
             var resolution = _resourceResolutionSnapshot?.LastResolution;
             RefreshNetworkRows("NetworkMirrorResolution.Rows", [resolution is null ? DesktopMarkup.Dynamic("SettingsNetworkResolutionEmpty.d.nxml")
                 : DesktopMarkup.Dynamic("SettingsCustomNetworkResolution.d.nxml", new Dictionary<string, string>

@@ -45,7 +45,6 @@
         <Text Content="此世界的数据版本不支持 Minecraft 数据包。" Class="world-hint" IsVisible="{data unsupported}" />
         <Text Content="此世界尚未安装数据包。" Class="world-hint" IsVisible="{data emptyPacks}" />
         <Dynamic Key="WorldDetails.Packs" Class="world-rows" />
-        <Text Content="数据包更改将在下次加载世界时生效。" Class="world-hint" IsVisible="{data supported}" />
       </StackPanel>
     </StackPanel>
     <LoadingView IsVisible="{data reading}">

@@ -5,8 +5,6 @@
       <StackPanel Class="settings-form-surface">
         <Dynamic Key="RecoveryPolicy.Body" Class="settings-form-body" />
       </StackPanel>
-      <Text Content="开发模式会自动保留历史快照；关闭开发模式后使用此设置。" IsVisible="{data development}" Class="settings-recovery-hint settings-recovery-policy-hint" />
-      <Text Content="默认只保留最新成功快照。关闭历史保留后，下次成功采集时清理旧快照。" IsVisible="{data normal}" Class="settings-recovery-hint settings-recovery-policy-hint" />
     </SettingsForm>
     <StackPanel Key="RecoveryStorage" IsVisible="{data loaded}" Class="settings-recovery-workspace">
       <Text Content="{data error}" Label="{data error}" Localize="false" IsVisible="{data hasError}" Class="settings-recovery-status" />
@@ -25,8 +23,6 @@
           </StackPanel>
         </StackPanel>
       </SettingsForm>
-      <Text Content="按文件大小统计；版本文件不含快照及版本目录外的共享文件。快照含压缩对象、清单和暂存。" Class="settings-recovery-hint settings-recovery-storage-hint" />
-      <Text Content="资源包和光影包仅自动备份单个不超过 64 MiB、合计不超过 256 MiB 的文件。大型包请另外备份。" Class="settings-recovery-hint settings-recovery-storage-hint" />
       <SettingsForm Key="RecoveryHistory">
         <Text Content="成功快照" Class="settings-form-label" />
         <StackPanel Class="settings-form-surface">

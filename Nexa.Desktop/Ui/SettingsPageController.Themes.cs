@@ -64,7 +64,7 @@ internal sealed partial class SettingsPageController
         _themeRoot = _dynamic.Append(_sections, DesktopMarkup.Dynamic("ThemeSettings.d.nxml", ThemeSettingsData()));
         _themeIconRoot = _dynamic.Append(_sections, DesktopMarkup.Dynamic("ThemeLauncherIcon.d.nxml", ThemeIconData()));
         _themeOptionsRoot = _dynamic.Append(_sections, DesktopMarkup.Dynamic("ThemeOptions.d.nxml", ThemeOptionsData()));
-        _themeGrantRoot = _dynamic.Append(_sections, DesktopMarkup.Dynamic("ThemeGrants.d.nxml"));
+        _themeGrantRoot = _dynamic.Append(_sections, DesktopMarkup.Dynamic("ThemeGrants.d.nxml", new Dictionary<string, string> { ["hasGrants"] = "false" }));
         _themePresentationRevision = -1;
         ProjectThemeSettings();
     }
@@ -129,12 +129,11 @@ internal sealed partial class SettingsPageController
         return new()
         {
             ["name"] = source is null ? "" : ThemeLocalized(source.Manifest.Name),
-            ["ready"] = Flag(source is not null),
+            ["ready"] = Flag(source is not null && source.Manifest.Options.Count > 0),
             ["enabled"] = Flag(source is not null && !ThemeSettingsBusy),
             ["canImport"] = Flag(source is not null && !ThemeSettingsBusy && _themeOptionsImportPicker is not null),
             ["canExport"] = Flag(source is not null && !ThemeSettingsBusy && _themeExportDirectoryPicker is not null),
             ["preview"] = Flag(_themeSession?.Snapshot.IsPreview == true),
-            ["empty"] = Flag(source is not null && source.Manifest.Options.Count == 0),
         };
     }
 

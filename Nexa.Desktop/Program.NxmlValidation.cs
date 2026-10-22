@@ -21,11 +21,11 @@ internal static partial class Program
         shell.Render(new(1280, 800));
         intents.Emit(XsrSemanticId.Parse("ui.settings.proxy.mode"), Find("SettingsProxyMode.2"), XsrCorrelationId.Create());
         shell.Render(new(1280, 800));
-        if (shell.Tree.GetComponent<NxmlDynamicSlot>(Find("SettingsProxyHint")) is null
+        if (shell.Tree.GetComponent<XsrUiSegmentedTrack>(Find("SettingsProxyProtocol")) is null
             || shell.Tree.GetComponent<XsrUiElement>(Find("SettingsProxyManual"))?.IsVisible == false
             || shell.Tree.GetComponent<XsrUiTextInput>(Find("SettingsInput.network.proxy-password"))?.IsPassword != true)
             throw new InvalidOperationException("Dynamic proxy template validation failed.");
-        Console.WriteLine("Dynamic network validation passed: external fragment, slot, manual protocol and protected password input.");
+        Console.WriteLine("Dynamic network validation passed: external fragment, manual protocol selector and protected password input.");
         intents.Emit(XsrSemanticId.Parse("ui.settings.section"), Find("SettingsNav.game"), XsrCorrelationId.Create());
         shell.Render(new(1280, 800));
         await settings.PrepareVisibleStartupAsync(timeout.Token).ConfigureAwait(false);
@@ -77,9 +77,9 @@ internal static partial class Program
         Console.WriteLine("Dynamic storage validation passed: owned directory, backup and AI slots, migration, cleanup and transfer controls; no filesystem changes.");
         intents.Emit(XsrSemanticId.Parse("ui.settings.section"), Find("SettingsNav.general"), XsrCorrelationId.Create());
         shell.Render(new(1280, 800));
-        if (shell.Tree.GetComponent<XsrUiText>(Find("SettingsGeneral.Protocol.Details"))?.Localize != false)
-            throw new InvalidOperationException("Protocol observation details lost literal presentation.");
-        Console.WriteLine("Dynamic general validation passed: external protocol observation with literal details.");
+        if (shell.Tree.GetComponent<XsrUiSegmentedTrack>(Find("SettingsSelector.general.single-instance")) is null)
+            throw new InvalidOperationException("Editable general settings did not load.");
+        Console.WriteLine("Dynamic general validation passed: editable general settings.");
         shell.Stage.Navigation.Replace(previous);
 
         XsrUiEntityId Find(string key)

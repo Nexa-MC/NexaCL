@@ -8,6 +8,15 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static void ThemeSettingsHideEmptyOptionAndPermissionGroups()
+    {
+        using var page = new ThemeSettingsFixture([]);
+        AssertFalse(page.Tree.GetComponent<XsrUiElement>(page.Find("Theme.Options"))!.IsVisible);
+        AssertFalse(page.Tree.GetComponent<XsrUiElement>(page.Find("Theme.Grants"))!.IsVisible);
+        AssertTrue(page.Tree.GetComponent<XsrUiElement>(page.Find("Theme.Settings"))!.IsVisible);
+        AssertTrue(page.Tree.GetComponent<XsrUiElement>(page.Find("Theme.LauncherIcon"))!.IsVisible);
+    }
+
     private static void ThemeOptionsRetainLiteralDraftCaretAndFocusAcrossProjection()
     {
         using var page = new ThemeSettingsFixture([ThemeTestOption("draft", ThemeOptionKind.Text, "saved")]);
@@ -18,7 +27,7 @@ internal static partial class Program
             foreach (double width in new[] { 760d, 1040d })
             {
                 var scene = page.Fixture.Shell.Render(new(width, 2400));
-                foreach (string key in new[] { "Theme.Settings", "Theme.Options", "Theme.LauncherIcon", "Theme.Grants" })
+                foreach (string key in new[] { "Theme.Settings", "Theme.Options", "Theme.LauncherIcon" })
                 {
                     AssertInset(page.Find(key + ".Surface"), page.Find(key + ".Body"));
                 }
@@ -88,14 +97,17 @@ internal static partial class Program
         string path = Path.Combine(page.Fixture.TemporaryDirectory, "literal {data name}.png"); File.WriteAllBytes(path, [1, 2, 3]);
         page.Settings.ConfigureThemePickers((_, _) => Task.FromResult<IReadOnlyList<string>>([path]), _ => Task.FromResult<string?>(null), _ => Task.FromResult<string?>(null));
         page.Render(); AssertEqual(0, page.Session.Grants.Count);
+        AssertFalse(page.Tree.GetComponent<XsrUiElement>(page.Find("Theme.Grants"))!.IsVisible);
         Emit(page.Fixture.Intents, "ui.settings.theme.action", page.ActionForOption("file", ".Pick"));
         page.Pump(() => page.Session.Grants.Count == 1 && page.Find("Theme.Grant." + page.Session.Grants[0].GrantId.ToString("N") + ".Path", false).IsAssigned);
         var granted = page.Session.Grants.Single(); AssertEqual("theme-a", granted.SourceIdentity); AssertEqual(path, granted.CanonicalPath);
+        AssertTrue(page.Tree.GetComponent<XsrUiElement>(page.Find("Theme.Grants"))!.IsVisible);
         AssertEqual(ThemeResourceKind.Image, granted.Kind); AssertEqual(ThemeGrantScope.File, granted.Scope);
         page.Pump(() => page.TextExists(path));
         var revoke = page.Find("Theme.Grant." + granted.GrantId.ToString("N") + ".Revoke");
         Emit(page.Fixture.Intents, "ui.settings.theme.action", revoke); page.Pump(() => page.Session.Grants.Count == 0);
         AssertEqual(granted.GrantId, page.Session.LastRevoked);
+        AssertFalse(page.Tree.GetComponent<XsrUiElement>(page.Find("Theme.Grants"))!.IsVisible);
         Emit(page.Fixture.Intents, "ui.settings.theme.action", revoke); page.Render(); AssertEqual(1, page.Session.RevokeCalls);
     }
 

@@ -236,6 +236,7 @@ internal sealed partial class SettingsPageController
     private void ProjectThemeGrants(ThemeCatalogueEntry? source, DesktopThemeSettingsSnapshot? snapshot)
     {
         var grants = snapshot?.Current.Grants.Where(item => item.SourceIdentity == source?.SourceIdentity).ToArray() ?? [];
+        _dynamic.Reload(_themeGrantRoot, DesktopMarkup.Dynamic("ThemeGrants.d.nxml", new Dictionary<string, string> { ["hasGrants"] = Flag(grants.Length > 0) }));
         var wanted = grants.Select(item => item.GrantId).ToHashSet();
         foreach (var stale in _themeGrantRows.Keys.Where(key => !wanted.Contains(key)).ToArray())
         { _dynamic.Remove(_themeGrantRows[stale]); _themeGrantRows.Remove(stale); }

@@ -14,12 +14,6 @@ internal sealed partial class SettingsPageController
     private string? _contentIntegrityError, _contentIntegritySourceCaption;
     private XsrUiEntityId _contentIntegritySection, _contentIntegritySource;
 
-    private void BuildContentTrustStates()
-    {
-        if (_instanceDirectory is not null || _selected != "privacy") return;
-        AppendContent(_sections, "SettingsContentTrust.d.nxml", new());
-    }
-
     private void CancelContentIntegrity()
     {
         ObserveRetiredInstanceToolRead(_contentIntegrityRead);

@@ -1,3 +1,0 @@
-﻿<nxml-dynamic>
-<Text Label="测试版本必须启用" Content="测试版本必须启用" MaxLines="1" TrimOverflow="true" Class="settings-catalog-required" />
-</nxml-dynamic>

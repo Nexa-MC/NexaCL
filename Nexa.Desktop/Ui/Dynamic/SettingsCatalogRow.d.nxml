@@ -2,7 +2,6 @@
 <StackPanel Key="{data row}" Class="settings-catalog-row">
   <StackPanel Key="{data labelKey}" Class="{data labelStyle}">
     <Text Label="{data label}" Content="{data label}" MaxLines="1" TrimOverflow="true" Class="settings-catalog-label" />
-    <Text Content="{data hint}" Label="{data hint}" IsVisible="{data hasHint}" MaxLines="2" TrimOverflow="true" Class="settings-catalog-hint" />
   </StackPanel>
   <Dynamic Key="SettingsInheritSlot" IsVisible="{data inheritVisible}" Class="settings-inherit-slot" />
   <Dynamic Key="{data controls}" Class="settings-catalog-controls" />

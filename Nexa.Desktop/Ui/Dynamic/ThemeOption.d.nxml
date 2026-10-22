@@ -2,7 +2,6 @@
   <StackPanel Key="{data key}" IsVisible="{data visible}" Class="theme-option">
     <Text Content="{data group}" Localize="false" IsVisible="{data hasGroup}" Class="theme-group" />
     <Text Content="{data label}" Label="{data label}" Localize="false" Class="theme-option-label" />
-    <Text Content="{data description}" Localize="false" WrapText="true" Class="theme-description" />
     <Dynamic Key="{data editorKey}" Class="theme-option-editor" />
   </StackPanel>
 </nxml-dynamic>

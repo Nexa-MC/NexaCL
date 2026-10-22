@@ -34,7 +34,6 @@
             <Dynamic Key="Export.Categories" Class="world-rows" />
           </StackPanel>
         </StackPanel>
-        <Text Content="配置和模组默认包含。存档与游戏选项需自行选择；分享前请检查配置中的敏感信息和文件的分发许可。" Class="world-hint" />
         <Button Key="Management.导出整合包" Content="导出整合包" Command="ui.settings.management.action" Class="settings-catalog-action world-button-health" Enabled="{data enabled}" />
       </StackPanel>
       <Text Content="{data error}" Class="world-hint" IsVisible="{data hasError}" Localize="false" />

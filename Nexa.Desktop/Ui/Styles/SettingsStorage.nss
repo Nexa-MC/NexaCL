@@ -1,8 +1,5 @@
 ﻿/* General observation and storage/transfer settings. */
 .settings-runtime-groups { Orientation: Vertical; Spacing: 18; }
-.settings-general-protocol { Orientation: Horizontal; Spacing: 4; }
-.settings-general-description { Height: 32; FontSize: 12; Foreground: #717c8c; }
-.settings-general-details { Height: 32; Weight: 1; FontSize: 12; Foreground: #717c8c; }
 .settings-storage-location { Height: 26; FontSize: 12; Foreground: #2b3340; }
 .settings-storage-hint { Height: 34; FontSize: 11; Foreground: #717c8c; WrapText: true; }
 .settings-storage-move { Width: 112; }

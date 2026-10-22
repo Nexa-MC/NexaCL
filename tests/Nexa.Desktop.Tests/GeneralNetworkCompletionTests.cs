@@ -108,11 +108,8 @@ internal static partial class Program
         Pump(() => reads[1].Token.IsCancellationRequested);
         reads[1].Reply.SetResult(XsrResult.Success(new NetworkManualProbeSnapshot(at, at, [new("retired.example", at, 200, 0, null)])));
         fixture.Shell.Render(new(1000, 1800)); AssertFalse(Texts(page.Page).Any(text => text.Contains("retired.example", StringComparison.Ordinal)));
-        AssertTrue(Texts(page.Page).Contains("文件修改、恢复与数据发送前保留确认。", StringComparer.Ordinal));
-        var protocol = FindCompletionEntity(page.Page, "SettingsGeneral.Protocol"); AssertTrue(protocol.IsAssigned);
-        var state = FindCompletionText(protocol, _ => true);
-        AssertEqual(fixture.Shell.Tree.GetComponent<XsrUiText>(state)!.Content, fixture.Shell.Tree.GetComponent<XsrUiSemantic>(state)!.Label);
-        AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiSemantic>(state)!.Localize);
+        AssertFalse(Texts(page.Page).Contains("文件修改、恢复与数据发送前保留确认。", StringComparer.Ordinal));
+        AssertFalse(FindCompletionEntity(page.Page, "SettingsGeneral.Protocol").IsAssigned);
 
         XsrUiEntityId FindCompletionEntity(XsrUiEntityId root, string name)
         {

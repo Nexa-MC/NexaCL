@@ -27,13 +27,11 @@
           <Text Key="InstanceDiagnostics.CrashHistory.Counter" Content="第 {data CrashPage} / {data CrashPages} 页" Localize="false" Class="instance-diagnostics-counter" />
           <Button Key="InstanceDiagnostics.CrashHistory.Next" Content="下一页" Command="ui.settings.management.action" Class="settings-catalog-action instance-diagnostics-page" />
         </StackPanel>
-        <Text Content="历史仅包含结构化运行事实；旧的无实例身份记录不会混入此页。" Class="instance-diagnostics-hint" />
       </StackPanel>
     </StackPanel>
     <StackPanel Key="InstanceDiagnostics.OperationHistory" IsVisible="{data OperationVisible}" Class="settings-diagnostics-card">
       <StackPanel Class="instance-diagnostics-body">
         <Text Content="操作阶段历史" Class="instance-diagnostics-title" />
-        <Text Content="逐条显示此实例的已记录操作和阶段，保留同一运行中的所有事件。" Class="instance-diagnostics-hint" />
         <Dynamic Key="InstanceDiagnostics.OperationHistory.Rows" Class="instance-diagnostics-rows" />
         <StackPanel Class="instance-diagnostics-toolbar" IsVisible="{data OperationPaging}">
           <Text Key="InstanceDiagnostics.OperationHistory.Counter" Content="第 {data OperationPage} / {data OperationPages} 页" Localize="false" Class="instance-diagnostics-counter" />

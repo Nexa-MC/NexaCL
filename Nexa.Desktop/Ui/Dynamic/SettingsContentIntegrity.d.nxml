@@ -30,8 +30,6 @@
         <Text Content="关联来源" Class="settings-content-integrity-label" />
         <Text Key="ContentIntegrity.Source.Value" Content="{data Source}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-content-integrity-value" />
       </StackPanel>
-      <Text Content="未知来源保留；更新仍需已识别来源和兼容版本，发布前校验文件与依赖。" Class="settings-content-integrity-note" />
-      <Text Content="修改状态只比较已保存的受管理更新摘要；首次读取不会建立可信基准。" Class="settings-content-integrity-note" />
       <Button Key="ContentIntegrity.Refresh" Content="重新读取完整性" Label="重新读取完整性" Command="ui.settings.management.action" Enabled="{data enabled}" Width="136" Class="settings-content-button" />
     </StackPanel>
   </StackPanel>
