@@ -1,0 +1,12 @@
+<nxml-dynamic>
+  <Node Kind="GamepadEntry" Recipe="Element" Role="Dialog" Key="GamepadEntry" Label="手柄模式" Clickable="true" DismissCommand="ui.gamepad.dismiss" Background="{data background}" Class="gamepad-scrim">
+    <StackPanel Key="GamepadPrompt" IsVisible="{data prompt_visible}" Opacity="{data prompt_opacity}" Class="gamepad-prompt">
+      <Image Key="GamepadDrawing" Source="gamepad/drawing" Label="左右摇杆同时向中心倾斜" Class="gamepad-drawing" />
+      <Text Key="GamepadInstruction" Content="左右摇杆内推以进入手柄模式" Class="gamepad-instruction" />
+      <Button Key="GamepadDismiss" Content="暂不进入" Command="ui.gamepad.dismiss" Class="gamepad-dismiss" />
+    </StackPanel>
+    <StackPanel Key="GamepadIntro" IsVisible="{data intro_visible}" Opacity="{data intro_opacity}" Class="gamepad-intro">
+      <Image Key="GamepadLogo" Source="brand/n" Label="NexaCL" Width="{data logo_size}" Height="{data logo_size}" Class="gamepad-logo" />
+    </StackPanel>
+  </Node>
+</nxml-dynamic>

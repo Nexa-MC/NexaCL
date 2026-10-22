@@ -69,6 +69,18 @@ public sealed partial class AvaloniaUiPlatformActions
     public event Action<AvaloniaUiInputKind>? InputObserved;
     public event Action<IReadOnlyList<string>>? FilesDropped;
 
+    /// <summary>Dims native title controls to match a renderer-owned client scrim.</summary>
+    public void SetClientScrimOpacity(double opacity)
+    {
+        if (_owner is AvaloniaUiShellWindow window) window.SetClientScrimOpacity(opacity);
+    }
+
+    /// <summary>Expands to the current monitor, or restores the captured window bounds/state.</summary>
+    public void SetImmersivePresentation(bool enabled)
+    {
+        if (_owner is AvaloniaUiShellWindow window) window.SetImmersivePresentation(enabled);
+    }
+
     /// <summary>Closes through the normal native window lifecycle and its exit animation.</summary>
     public void RequestClose()
     {

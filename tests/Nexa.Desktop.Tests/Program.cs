@@ -34,6 +34,11 @@ internal static partial class Program
             return;
         }
         if (Environment.GetEnvironmentVariable("NEXA_COUNTRY") is null) Environment.SetEnvironmentVariable("NEXA_COUNTRY", "CN");
+        if (args is ["--native-gamepad-preview", var gamepadPreviewOutput])
+        {
+            Environment.ExitCode = RunNativeGamepadEntryPreview(gamepadPreviewOutput);
+            return;
+        }
         if (args is ["--native-install-guides-preview", var installGuidesOutput])
         {
             Environment.ExitCode = RunNativeInstallGuidesPreview(installGuidesOutput);
@@ -125,6 +130,9 @@ internal static partial class Program
 
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("gamepad entry requires neutral same-device gesture and restores", GamepadEntryRequiresNeutralSameDeviceGestureAndRestores),
+        ("gamepad entry disconnect disposes and defers existing modal", GamepadEntryDisconnectDisposesAndDefersExistingModal),
+        ("gamepad entry layouts artwork and reduced motion", GamepadEntryLayoutsArtworkAndReducedMotion),
         ("RegionalSettingsHideMainlandFacilitiesAndRestoreSavedPreferences", RegionalSettingsHideMainlandFacilitiesAndRestoreSavedPreferences),
         ("RegionalPrimaryNavigationHidesOnlyMainlandInstall", RegionalPrimaryNavigationHidesOnlyMainlandInstall),
         ("MainlandBaseInstallControlsExplainAndRejectUnavailableActions", MainlandBaseInstallControlsExplainAndRejectUnavailableActions),

@@ -589,6 +589,7 @@ public sealed partial class AvaloniaUiShellWindow : Window
 
     private void OnSceneCommitted(object? sender, AvaloniaUiSceneCommittedEventArgs e)
     {
+        RememberNormalPlacement();
         ApplyCommittedBranding(e.Scene);
         var title = e.Scene.Nodes.FirstOrDefault(node => node.Role == XsrUiSemanticRole.TitleBar).VisualStyle.Background;
         var body = e.Scene.Nodes.FirstOrDefault(node => node.Entity == _shell.Root).VisualStyle.Background;

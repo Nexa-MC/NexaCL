@@ -719,6 +719,7 @@ internal static partial class Program
             message => { host.Logging.Warn("Desktop", message); feedback.Warn(message); }, openFile: dropController.OpenFile, registerProtocol: !safeMode);
         using var commandPalette = new DesktopCommandPalette(shell, uiIntents, host.StateStore, platformActions,
             route => desktopIntegration.ActivateProtocol("nexacl://" + route.Id));
+        using var gamepadEntry = new GamepadEntrySession(shell, uiIntents, host.StateStore, platformActions);
         settingsPage.LauncherSafeMode = safeMode;
         settingsPage.NavigateAdvancedCommand = route => desktopIntegration.ActivateProtocol("nexacl://" + route.Id);
         settingsPage.OpenAdvancedCommandPalette = commandPalette.Open;
@@ -752,6 +753,7 @@ internal static partial class Program
         finally
         {
             // Dispose UI objects on the GUI thread before the first asynchronous handoff.
+            gamepadEntry.Dispose();
             appearanceSession.Dispose();
             launchPage.Dispose();
             accountForm.Dispose();

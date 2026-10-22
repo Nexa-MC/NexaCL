@@ -10,6 +10,21 @@ internal static partial class AvaloniaMacWindow
     [StructLayout(LayoutKind.Sequential)]
     private struct NativeRect { public double X, Y, Width, Height; }
 
+    internal static void SetControlsScrimOpacity(Window window, double opacity)
+    {
+        if (!OperatingSystem.IsMacOS() || window.TryGetPlatformHandle() is not { } handle) return;
+        nint native = handle.HandleDescriptor == "NSWindow" ? handle.Handle
+            : handle.HandleDescriptor == "NSView" ? Send(handle.Handle, Selector("window")) : 0;
+        if (native == 0) return;
+        for (nint kind = 0; kind < 3; kind++)
+        {
+            nint button = SendIntegerResult(native, Selector("standardWindowButton:"), kind);
+            if (button == 0) continue;
+            SendDouble(button, Selector("setAlphaValue:"), 1 - opacity);
+            SendBool(button, Selector("setEnabled:"), opacity <= .01 ? (byte)1 : (byte)0);
+        }
+    }
+
     internal static double ConfigureAndMeasure(Window window)
     {
         if (!OperatingSystem.IsMacOS() || window.TryGetPlatformHandle() is not { } handle) return 0;
@@ -38,6 +53,8 @@ internal static partial class AvaloniaMacWindow
     private static partial nint Send(nint target, nint selector);
     [LibraryImport(ObjC, EntryPoint = "objc_msgSend")]
     private static partial void SendBool(nint target, nint selector, byte value);
+    [LibraryImport(ObjC, EntryPoint = "objc_msgSend")]
+    private static partial void SendDouble(nint target, nint selector, double value);
     [LibraryImport(ObjC, EntryPoint = "objc_msgSend")]
     private static partial void SendInteger(nint target, nint selector, nint value);
     [LibraryImport(ObjC, EntryPoint = "objc_msgSend")]
