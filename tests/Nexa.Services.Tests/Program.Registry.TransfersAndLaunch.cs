@@ -5,6 +5,9 @@ internal static partial class Program
     private static (string Name, Func<ValueTask> Body)[] RegisterTransfersAndLaunch() =>
     [
         ("downloads fail over across sources", DownloadFailsOverAcrossSources),
+        ("download declared length guards resumed transfers", DownloadDeclaredLengthGuardsResumedTransfers),
+        ("download unknown artifact size retains interrupted prefix", DownloadUnknownArtifactSizeRetainsInterruptedPrefix),
+        ("NeoForge dependency interruption preserves cause and retries", NeoForgeDependencyInterruptionPreservesCauseAndRetries),
         ("download session cache resumes across scratch directories and closes", DownloadSessionCacheResumesAcrossScratchDirectoriesAndCloses),
         ("download session cache rejects corruption and coalesces artifacts", DownloadSessionCacheRejectsCorruptionAndCoalescesArtifacts),
         ("download session cache rejects bad mirror and tries official source", DownloadSessionCacheRejectsBadMirrorAndTriesOfficialSource),

@@ -222,14 +222,21 @@ public sealed partial class ForgeInstallService(DownloadService downloads, HttpC
             ConnectionFactory = source => connectionFactory?.Invoke(source) ?? new MinecraftInstallService.HttpConnection(http, source,
                 officialInstaller ? uri : null),
         };
+        List<Exception> failures = [];
         for (int attempt = 0; attempt < (downloadPolicy.Retry ? 2 : 1); attempt++)
         {
             if (attempt > 0) await Task.Delay(TimeSpan.FromSeconds(3), token).ConfigureAwait(false);
             var result = await downloads.DownloadAsync(transfer, cancellationToken: token).ConfigureAwait(false);
-            if (result.Success && await MinecraftFileVerifier.VerifyAsync(new(path, size > 0 ? size : null, sha), token).ConfigureAwait(false)) return;
-            if (result.Success) File.Delete(path);
+            if (result.Success)
+            {
+                if (await MinecraftFileVerifier.VerifyAsync(new(path, size > 0 ? size : null, sha), token).ConfigureAwait(false)) return;
+                File.Delete(path);
+                failures.Add(new InvalidDataException("加载器文件校验失败：" + Path.GetFileName(path)));
+            }
+            else
+                failures.AddRange(result.Errors.Select(error => error.Failure));
         }
-        throw new IOException("加载器文件下载或校验失败：" + Path.GetFileName(path));
+        throw new IOException("加载器文件下载失败：" + Path.GetFileName(path), new AggregateException(failures));
     }
 
     private static JsonObject ReadJson(ZipArchive archive, string name)

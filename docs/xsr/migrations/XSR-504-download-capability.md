@@ -40,6 +40,13 @@ callbacks.
 - Cleanup isolation: writer and connection shutdown swallow cleanup exceptions so the
   original transfer outcome is preserved, matching the legacy rule that diagnostic and
   cleanup paths never mask results.
+- A known connection `Length` is the complete artifact length, including any resumed
+  prefix. Single-stream transfers check that bound even when resume is enabled: short
+  EOF is an `EndOfStreamException`, before digest verification or commit; an overlong
+  response is rejected before writing the excess bytes. An unknown length remains valid.
+  Interrupted partials remain available for failover/retry; a complete body with a wrong
+  authoritative digest is deleted instead. See the
+  [NeoForge download investigation](../neoforge-download-interruption.md).
 - Logging: the service optionally receives the Wave 5 `LogService` through its constructor
   and writes the legacy log lines (queued, per-source attempts, resume checks, completion,
   exhaustion) with the `Download` module name — no static logging.

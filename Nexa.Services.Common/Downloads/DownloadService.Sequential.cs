@@ -102,7 +102,7 @@ public sealed partial class DownloadService
                         if (request.BandwidthBudget is { } bandwidth)
                             await bandwidth.WaitAsync(read, cancellationToken).ConfigureAwait(false);
 
-                        if (!request.AllowResume && connectionInfo.Length >= 0 && read > connectionInfo.Length - sessionRead)
+                        if (connectionInfo.Length >= 0 && read > connectionInfo.Length - totalRead)
                             throw new InvalidDataException("Download response exceeds its declared length.");
                         if (request.ExpectedSize is { } expectedSize && read > expectedSize - totalRead)
                             throw new InvalidDataException("Download response exceeds the artifact size.");
@@ -137,7 +137,7 @@ public sealed partial class DownloadService
                             CalculateSpeed(sessionRead, readStartedAt)));
                     }
 
-                    if (!request.AllowResume && connectionInfo.Length >= 0 && sessionRead != connectionInfo.Length)
+                    if (connectionInfo.Length >= 0 && totalRead != connectionInfo.Length)
                         throw new EndOfStreamException("Download response ended before its declared length.");
                     if (request.ExpectedSize is { } expectedLength && totalRead != expectedLength)
                         throw new EndOfStreamException("Download response ended before the artifact was complete.");
