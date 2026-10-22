@@ -11,6 +11,34 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static void RegionalPrimaryNavigationHidesOnlyMainlandInstall()
+    {
+        foreach (string country in new[] { "CN", "US", "HK", "MO", "TW", "" })
+        {
+            using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]), regionalPolicy: new(country));
+            fixture.Shell.Renderer.ReducedMotion = true;
+            var scene = fixture.Shell.Render(new(1000, 800));
+            var installId = XsrSemanticId.Parse("navigation.download");
+            var install = fixture.Shell.NavigationEntities[installId];
+            bool mainland = country == "CN";
+            AssertEqual(!mainland, scene.Nodes.Any(node => node.Entity == install));
+            AssertEqual(!mainland, scene.Nodes.Any(node => node.Entity == install && node.IsEnabled));
+            AssertEqual(!mainland, fixture.Shell.Select(installId));
+            AssertEqual(!mainland, fixture.Shell.Renderer.Activate(install));
+            if (mainland)
+            {
+                AssertFalse(scene.Nodes.Any(node => node.Entity == install));
+                var previous = fixture.Shell.Stage.Navigation.Current;
+                Emit(fixture.Intents, "ui.navigation.download", install);
+                fixture.Shell.Render(new(1000, 800));
+                AssertEqual(previous, fixture.Shell.Stage.Navigation.Current);
+                AssertEqual(XsrSemanticId.Parse("navigation.launch"), fixture.Shell.SelectedNavigationId);
+            }
+            foreach (string destination in new[] { "launch", "community", "settings" })
+                AssertTrue(RegionalVisible(fixture.Shell, fixture.Shell.NavigationEntities[XsrSemanticId.Parse("navigation." + destination)]));
+        }
+    }
+
     private static void MainlandBaseInstallControlsExplainAndRejectUnavailableActions()
     {
         var source = new GuideCatalogSource();

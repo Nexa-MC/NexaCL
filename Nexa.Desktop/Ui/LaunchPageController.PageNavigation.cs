@@ -36,6 +36,7 @@ internal sealed partial class LaunchPageController
     /// </summary>
     private void ShowInstallRoot()
     {
+        if (_region.IsMainlandChina) return;
         _boundDestination = DownloadNavigationId; _ = _shell.Select(_boundDestination);
         ClearSubpageHistory();
         if (!_shell.Stage.Navigation.Current.Equals(_installPage))

@@ -25,6 +25,7 @@ internal static class LaunchPageState
     public static readonly XsrSemanticId TitleRootKey = XsrSemanticId.Parse("launch.navigation.root");
     public static readonly XsrSemanticId TitleSubpageKey = XsrSemanticId.Parse("launch.navigation.subpage");
     public static readonly XsrSemanticId TitleCaptionKey = XsrSemanticId.Parse("launch.navigation.caption");
+    public static readonly XsrSemanticId InstallNavigationVisibleKey = XsrSemanticId.Parse("launch.navigation.install-visible");
     public static readonly XsrSemanticId JavaInstallTitleKey = XsrSemanticId.Parse("launch.install.title");
     public static readonly XsrSemanticId AccountBackVisibleKey = XsrSemanticId.Parse("launch.account.back-visible");
     public static readonly XsrSemanticId AccountAddVisibleKey = XsrSemanticId.Parse("launch.account.add-visible");
@@ -83,6 +84,7 @@ internal static class LaunchPageState
         builder.Cell<bool>(TitleRootKey, OwnerName);
         builder.Cell<bool>(TitleSubpageKey, OwnerName);
         builder.Cell<string>(TitleCaptionKey, OwnerName);
+        builder.Cell<bool>(InstallNavigationVisibleKey, OwnerName);
         builder.Cell<string>(JavaInstallTitleKey, OwnerName);
         builder.Cell<bool>(AccountBackVisibleKey, OwnerName);
         builder.Cell<bool>(AccountAddVisibleKey, OwnerName);

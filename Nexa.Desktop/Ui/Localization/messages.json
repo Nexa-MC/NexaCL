@@ -310,7 +310,7 @@
   {"source":"更新完成。","en":"Update complete.","zh-Hant":"更新完成。"},
   {"source":"重新启动后生效。","en":"Takes effect after a restart.","zh-Hant":"重新啟動後生效。"},
   {"source":"更新未完成。可以继续更新，或下载安装包。","en":"The update did not finish. Resume the update or download an installer.","zh-Hant":"更新未完成。可以繼續更新，或下載安裝套件。"},
-  {"source":"此安装位置无法自动更新，请使用系统安装包。","en":"This installation location does not support automatic updates. Use the system installer.","zh-Hant":"此安裝位置無法自動更新，請使用系統安裝套件。"},
+  {"source":"此安装位置无法自动更新。便携版请放在可写目录并以普通权限运行，或使用系统安装包。","en":"Automatic updates are unavailable here. Run the portable launcher from a writable folder without administrator privileges, or use the system installer.","zh-Hant":"此安裝位置無法自動更新。可攜版請放在可寫入目錄並以一般權限執行，或使用系統安裝套件。"},
   {"source":"正在下载并校验","en":"Downloading and verifying","zh-Hant":"正在下載並驗證"},
   {"source":"正在准备新版本","en":"Preparing the new version","zh-Hant":"正在準備新版本"},
   {"source":"正在切换版本","en":"Switching versions","zh-Hant":"正在切換版本"},

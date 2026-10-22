@@ -129,6 +129,11 @@ internal sealed partial class LaunchPageController
 
     private void NavigateToDownload()
     {
+        if (_region.IsMainlandChina)
+        {
+            OpenSubpage(_javaLauncherGuidePage, _launchPage);
+            return;
+        }
         _ = _shell.Select(DownloadNavigationId);
         ShowInstallRoot();
         _feedback.Info(HomeCopy("navigate.download"));

@@ -22,7 +22,10 @@ class RuntimePayloadTests(unittest.TestCase):
                     "Nexa.Desktop.Tests.exe", "Nexa.Desktop.Tests.dll", "Nexa.Services.Tests",
                     "Nexa.Desktop.Tests.runtimeconfig.json", "testhost.exe", "testhost.dll",
                     "Microsoft.TestPlatform.CoreUtilities.dll", "Microsoft.VisualStudio.TestPlatform.ObjectModel.dll",
-                    "TestResults/run/results.trx", "coverage/index.html", "coverage.cobertura.xml"]
+                    "TestResults/run/results.trx", "coverage/index.html", "coverage.cobertura.xml",
+                    "portable-baseline.journal", "active-update.journal", "update-status.journal",
+                    "pending-update.journal", "highest-accepted-version.journal", "update-transaction.lock",
+                    ".nexa-tx-123/package", ".nexa-slot-456/Nexa.Desktop"]
         for relative in keep + excluded:
             path = source / relative
             path.parent.mkdir(parents=True, exist_ok=True)

@@ -606,7 +606,7 @@ internal static partial class Program
         var rollouts = networking.Rollouts;
         var updateService = networking.Updates;
         var updateQueries = networking.Queries;
-        var automaticUpdate = new Nexa.Services.Updates.AutomaticUpdateControl(new Nexa.Platform.Updates.AutomaticUpdateHost());
+        var automaticUpdate = CreateUpdateControl(updateHttp, buildInfo.ProductVersion, updateRid);
         bool restartAfterUpdate = false;
         settingsPage.ConfigureUpdates(updateQueries, new(buildInfo.ProductVersion, updateRid, updateChannel), platformActions.OpenHttpsUri,
             automaticUpdate, () => { restartAfterUpdate = true; platformActions.RequestClose(); });

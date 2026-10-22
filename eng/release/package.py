@@ -20,16 +20,29 @@ DEVELOPMENT_ARTIFACTS = (
     "testresults", "coverage", "coverage.cobertura.xml", "coverage.opencover.xml",
 )
 
+# A native shell smoke can initialize portable update state in the publish directory.
+# Installation-local journals, transactions and slots must never become publisher payloads.
+UPDATE_STATE_ARTIFACTS = (
+    "portable-baseline.journal", "active-update.journal", "update-status.journal",
+    "pending-update.journal", "highest-accepted-version.journal", "update-transaction.lock",
+    ".nexa-tx-*", ".nexa-slot-*",
+)
+
 
 def is_development_artifact(name):
     return any(fnmatch.fnmatchcase(name.lower(), pattern) for pattern in DEVELOPMENT_ARTIFACTS)
 
 
+def is_payload_artifact(name):
+    return is_development_artifact(name) or any(
+        fnmatch.fnmatchcase(name.lower(), pattern) for pattern in UPDATE_STATE_ARTIFACTS)
+
+
 def validate_runtime_contents(payload):
     unwanted = [str(path.relative_to(payload)) for path in payload.rglob("*")
-                if is_development_artifact(path.name)]
+                if is_payload_artifact(path.name)]
     if unwanted:
-        raise ValueError(f"Development artifacts in runtime payload: {sorted(unwanted)}")
+        raise ValueError(f"Development or update-state artifacts in runtime payload: {sorted(unwanted)}")
 
 
 def required_tool(variable):
@@ -43,7 +56,7 @@ def copy_runtime_payload(source, destination):
     # NativeAOT emits large debugging sidecars; they are not runtime dependencies.
     # Keep the publish directory intact for separate diagnostic artifact retention.
     shutil.copytree(source, destination,
-                    ignore=lambda _directory, names: [name for name in names if is_development_artifact(name)])
+                    ignore=lambda _directory, names: [name for name in names if is_payload_artifact(name)])
     validate_runtime_contents(destination)
 
 

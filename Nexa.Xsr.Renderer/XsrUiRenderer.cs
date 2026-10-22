@@ -364,7 +364,7 @@ public sealed partial class XsrUiRenderer
         _tree.GetComponent<XsrUiVisualStyle>(entity)?.HoverExpand == true
             ? XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint : XsrUiDirtyKinds.Paint);
 
-    private bool IsVisible(XsrUiEntityId entity)
+    internal bool IsVisible(XsrUiEntityId entity)
     {
         XsrUiElement? element = _tree.GetComponent<XsrUiElement>(entity);
         if (element?.BoundVisibility is { } bound && bound.IsAssigned)

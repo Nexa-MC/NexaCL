@@ -1,11 +1,11 @@
 # Privileged update boundary
 
-The required attacker model includes a malicious unprivileged process running as
+For privileged system updates, the required attacker model includes a malicious unprivileged process running as
 the same operating-system user as Nexa. It may keep replacing entries in user-owned
 directories. An attacker already holding the updater's root/administrator authority
 is outside this isolation boundary.
 
-If isolation cannot be established, automatic replacement must stop and explain
+If system isolation cannot be established, privileged automatic replacement must stop and explain
 that administrator authorization through a trusted installer is required. Do not
 elevate an executable downloaded or staged in a user-writable directory.
 
@@ -38,8 +38,12 @@ not a guarantee that a same-user process cannot directly change those files.
 
 XSR-754 adds a preinstalled helper, independent publisher verification, protected immutable
 slots, monotonic high-water, journal activation/recovery, rollback and unprivileged restart.
-Settings retains manual download links and enables automatic requests only for admitted
-system installations. See automatic-update-transaction.md and the XSR-754 migration note.
+Settings retains manual download links. System requests require admitted protected
+installations; portable requests run exclusively as the ordinary launcher user through a
+separate adapter and never invoke the privileged helper. Portable user-owned state cannot
+claim same-account isolation or become privileged authority. Elevated portable execution,
+unsafe system layouts and read-only images retain manual updates. See
+automatic-update-transaction.md and the XSR-754 migration note.
 Native CI and physical replacement/power-loss evidence remain acceptance gates; SEC-07 is
 not declared closed by managed tests alone. Legacy path-based utilities stay disabled.
 

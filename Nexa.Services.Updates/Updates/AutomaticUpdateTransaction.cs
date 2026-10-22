@@ -9,7 +9,7 @@ public interface IUpdateReleaseSource
     Task<Stream> OpenPackageAsync(string version, string name, CancellationToken token);
 }
 
-/// <summary>Runs inside the preinstalled helper, over a system-admitted installation.</summary>
+/// <summary>Signed slot transaction over a protected helper namespace or a strictly unprivileged portable namespace.</summary>
 public sealed class AutomaticUpdateTransaction(IUpdateDirectory installation, UpdateBuildIdentity baseline,
     IUpdateSignatureVerifier verifier, IUpdateReleaseSource source)
 {

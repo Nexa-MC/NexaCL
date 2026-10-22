@@ -39,6 +39,7 @@ public static class NxmlShellComposer
         options ??= new XsrUiShellOptions();
         state.Publish(state.Resolve(FirstRunState.NavigationVisible), true);
         state.Publish(state.Resolve(LaunchPageState.TitleRootKey), true);
+        state.Publish(state.Resolve(LaunchPageState.InstallNavigationVisibleKey), true);
 
         // The checked-in product shell deliberately owns its four product destinations, matching
         // the legacy experimental navigation registry. A composition root must not claim a

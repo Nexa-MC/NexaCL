@@ -370,7 +370,9 @@ public sealed partial class XsrUiShell
     /// </summary>
     public bool Select(XsrSemanticId id)
     {
-        if (!_navigationEntities.TryGetValue(id, out XsrUiEntityId entity))
+        if (!_navigationEntities.TryGetValue(id, out XsrUiEntityId entity)
+            || !Renderer.IsVisible(entity)
+            || !Renderer.IsEnabled(Tree.GetComponent<XsrUiInput>(entity)))
         {
             return false;
         }

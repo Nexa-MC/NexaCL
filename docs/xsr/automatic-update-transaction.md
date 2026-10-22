@@ -11,7 +11,8 @@ installed in immutable version slots. Windows uses Program Files/NexaCL; Linux u
 /usr/lib/nexacl; macOS uses /Library/Application Support/NexaCL, with a public application
 entry in /Applications. macOS must not use the group-writable /Applications directory as
 privileged mutation authority. Installer types stay setup.exe/MSI, DEB/RPM/AppImage and DMG
-containing PKG, with portable archives. Portable or unsafe installations use manual updates.
+containing PKG, with portable archives. Unsafe system installations use manual updates.
+Portable archives have a separate, strictly unprivileged update composition described below.
 
 The helper independently obtains the release manifest and detached signature from the
 fixed Nexa GitHub repository, verifies the embedded publisher key, channel, RID, version,
@@ -31,6 +32,27 @@ never lowers high-water. Old slots are retained; updates do not delete unknown f
 user configuration or files still used by a running game.
 
 ## Runtime boundary
+
+### Portable archives
+
+Portable launchers use the same signed release/delta verification, immutable slots,
+journals, full fallback and rollback transaction under their existing extraction root.
+They never invoke a helper, request elevation or write a system installation. The portable
+directory adapter refuses elevated execution and symbolic links/reparse entries, uses create-new
+payloads and exclusive transaction state, and preserves unrelated files. Its user-owned
+state is not a protected authority against another process with the same account; that
+account can already replace the portable launcher. This is distinct from the system helper's
+mandatory same-account isolation, which remains unchanged. Read-only/AppImage and unsafe
+system installations retain manual links rather than falling through to portable mutation.
+
+The extraction root is derived from the running executable's fixed layout, including the
+macOS bundle and active-slot layouts, never from update arguments or journal paths.
+Restart and subsequent stable-bootstrap launches select a complete canonical-version slot
+by that root's journal. The slot name and executable layout are validated before launch.
+Running payloads are never replaced in place. Recovery while running a slot uses the stable
+bootstrap's version as baseline, so selecting the same completed version remains idempotent
+and rollback can return to the original payload. Existing builds without portable bootstrap
+support require one normal upgrade to acquire this capability.
 
 Platform abstractions expose admitted update directory/file leases, exclusive durable state,
 and create-new operations. Platform.Runtime implements Win32 object-relative and Unix

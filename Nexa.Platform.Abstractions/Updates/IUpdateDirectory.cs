@@ -1,6 +1,6 @@
 namespace Nexa.Platform.Updates;
 
-/// <summary>Retains an admitted system namespace. Names are single leaves, never caller paths.</summary>
+/// <summary>Retains an update namespace. System and unprivileged portable adapters have distinct admission policies. Names are single leaves.</summary>
 public interface IUpdateDirectory : IDisposable
 {
     string Path { get; }

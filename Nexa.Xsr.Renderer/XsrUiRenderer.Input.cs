@@ -463,7 +463,7 @@ public sealed partial class XsrUiRenderer
         return true;
     }
 
-    private bool IsEnabled(XsrUiInput? input) => input is null || (input.Enabled
+    internal bool IsEnabled(XsrUiInput? input) => input is null || (input.Enabled
         && (!input.BoundEnabled.IsAssigned || _state.ReadAppliedValue(input.BoundEnabled) is true));
 
     private bool IsInVisibleTree(XsrUiEntityId entity)

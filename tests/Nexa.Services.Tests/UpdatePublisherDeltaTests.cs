@@ -12,10 +12,11 @@ internal static partial class Program
         string rid = System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier;
         var key = GenerateSigningKey();
         var fixture = new PublisherDeltaSource(Path.Combine(fixturePath, "artifacts"), key.Sign);
-        string path = CreateTempDirectory();
+        string path = CreatePortableUpdateTestDirectory();
         try
         {
-            using var directory = new UpdateFixtureDirectory(path);
+            using IUpdateDirectory directory = PortableUpdateInstallation.IsElevated
+                ? new UpdateFixtureDirectory(path) : PortableUpdateDirectory.Open(path);
             string source = Path.Combine(fixturePath, "source", rid), target = Path.Combine(fixturePath, "target", rid);
             foreach (string file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
             {

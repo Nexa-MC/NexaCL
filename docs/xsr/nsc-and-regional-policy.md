@@ -110,6 +110,14 @@ separate work; declaration retention alone does not grant execution.
 
 ## Mainland Java acquisition handoff
 
+In CN the primary navigation's Install item is hidden and disabled before the first frame;
+it occupies no layout space and cannot be selected through a stale navigation intent.
+The existing home acquisition guide, local vanilla import, direct modpack import and
+instance editor remain usable. Country policy, rather than interface language, controls
+visibility; other countries keep all four primary destinations.
+The Desktop controller publishes a country-derived presentation boolean; the shell's
+NXML binds both visibility and enabled state to it, without controller component writes.
+
 The new Java download destination in CN is an official-launcher guide, linking only to
 `https://apps.microsoft.com/detail/9PGW18NPBZV5` (Minecraft Launcher, not the Bedrock
 product). It opens the existing HTTPS platform action after an explicit, visible button

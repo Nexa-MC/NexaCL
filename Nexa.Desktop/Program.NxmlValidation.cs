@@ -682,9 +682,19 @@ internal static partial class Program
             var wide = new XsrUiSize(1100, 700);
             var narrow = new XsrUiSize(810, 500);
             intents.Emit(XsrSemanticId.Parse("ui.navigation.download"), default, XsrCorrelationId.Create());
-            shell.Render(wide);
+            var rootScene = shell.Render(wide);
             var installRoot = shell.Stage.Navigation.Current;
-            if (!shell.Renderer.Activate(FindLaunchInstallValidationNode(shell, installRoot, "InstallJavaChoice")))
+            if (mainlandGuide)
+            {
+                var navigationId = XsrSemanticId.Parse("navigation.download");
+                var navigation = shell.NavigationEntities[navigationId];
+                if (installRoot != home || rootScene.Nodes.Any(node => node.Entity == navigation)
+                    || shell.Select(navigationId) || shell.Renderer.Activate(navigation))
+                    throw new InvalidOperationException("Mainland installation navigation must stay hidden and reject activation.");
+                if (!shell.Renderer.Activate(FindLaunchInstallValidationNode(shell, home, "LaunchButton")))
+                    throw new InvalidOperationException("The mainland home acquisition action did not activate.");
+            }
+            else if (!shell.Renderer.Activate(FindLaunchInstallValidationNode(shell, installRoot, "InstallJavaChoice")))
                 throw new InvalidOperationException("Java installation choice did not activate.");
             await controller.WaitUntilIdle().WaitAsync(timeout.Token).ConfigureAwait(false);
             var page = shell.Stage.Navigation.Current;

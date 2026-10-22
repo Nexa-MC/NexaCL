@@ -236,6 +236,7 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
         }
 
         _attached = true;
+        _store.Publish(_store.Resolve(LaunchPageState.InstallNavigationVisibleKey), !_region.IsMainlandChina);
         _intents.IntentEmitted += OnIntentEmitted;
         _shell.Renderer.FramePreparing += OnFramePreparing;
         _shell.StyleChanged += OnShellStyleChanged;

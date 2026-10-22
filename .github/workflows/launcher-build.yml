@@ -227,6 +227,7 @@ jobs:
           python eng/release/delta_smoke_fixture.py "$RUNNER_TEMP/publisher-delta-fixture"
           binary="$RUNNER_TEMP/update-transaction-tests/Nexa.Services.Tests"
           if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
+          "$binary" 'portable update'
           "$binary" --delta-publisher-smoke "$RUNNER_TEMP/publisher-delta-fixture"
       - name: Preserve installer diagnostics
         if: always()

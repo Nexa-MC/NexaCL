@@ -35,7 +35,7 @@
 <Text Key="update.rolledBack" Content="已回滚更新。" />
 <Text Key="update.complete" Content="更新完成。" />
 <Text Key="update.incomplete" Content="更新未完成。可以继续更新，或下载安装包。" />
-<Text Key="update.unsupported" Content="此安装位置无法自动更新，请使用系统安装包。" />
+<Text Key="update.unsupported" Content="此安装位置无法自动更新。便携版请放在可写目录并以普通权限运行，或使用系统安装包。" />
 <Text Key="update.offline" Content="暂时无法检查更新，请稍后重试。" />
 <Text Key="ai.disabled" Content="请先启用 AI 诊断。" />
 <Text Key="ai.invalidRequest" Content="请填写 HTTPS 服务地址、模型和有效请求预算。" />
