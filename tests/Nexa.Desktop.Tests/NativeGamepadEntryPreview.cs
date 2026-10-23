@@ -47,16 +47,16 @@ internal static partial class Program
                             if (index >= 20) entry.Step([pad with { LeftX = 1, RightX = -1 }], clock);
                             else entry.UpdatePresentation(clock);
                             Save($"frame-{index:D3}");
-                            if (index == 60) AssertTrue(window.GetVisualDescendants().OfType<AvaloniaUiSceneNodeControl>()
-                                .Any(control => control.Node.ImageSource == "brand/n" && control.HasDecodedRaster));
-                            if (index == 48) AssertTrue(window.GetVisualDescendants().OfType<AvaloniaUiSceneNodeControl>()
+                            if (index == 64) AssertTrue(window.GetVisualDescendants().OfType<AvaloniaUiSceneNodeControl>()
+                                .Any(control => control.Node.ImageSource == "gamepad/horizon" && control.HasDecodedRaster));
+                            if (index == 56) AssertTrue(window.GetVisualDescendants().OfType<AvaloniaUiSceneNodeControl>()
                                 .Any(control => control.Node.ImageSource == "gamepad/flash" && control.HasDecodedRaster));
                             string? phase = index switch
                             {
                                 40 => "entry-black",
-                                48 => "entry-flash",
-                                60 => "entry-corner",
-                                69 => "entry-pullback",
+                                56 => "entry-flash",
+                                64 => "entry-corner",
+                                72 => "entry-pullback",
                                 82 => "entry-logo",
                                 96 => "entry-name",
                                 112 => "entry-lockup",
@@ -104,7 +104,7 @@ internal static partial class Program
                         if (name is "entry-black" or "entry-corner" or "entry-flash")
                         {
                             // Decoding alone does not prove a recipe was admitted and painted.
-                            // In particular the giant crop must not silently become a black frame.
+                            // The plate arc must paint, and its interior must occlude the sun.
                             IntPtr pixel = System.Runtime.InteropServices.Marshal.AllocHGlobal(4);
                             try
                             {
@@ -112,6 +112,15 @@ internal static partial class Program
                                 int color = System.Runtime.InteropServices.Marshal.ReadInt32(pixel) & 0x00ffffff;
                                 if (name == "entry-black") AssertEqual(0, color);
                                 else AssertTrue(color != 0);
+                                if (name == "entry-corner")
+                                {
+                                    bitmap.CopyPixels(new PixelRect(bitmap.PixelSize.Width / 2 + 60, bitmap.PixelSize.Height / 2 + 60, 1, 1), pixel, 4, 4);
+                                    int night = System.Runtime.InteropServices.Marshal.ReadInt32(pixel);
+                                    AssertTrue((night & 255) < 24 && ((night >> 8) & 255) < 24 && ((night >> 16) & 255) < 24);
+                                    bitmap.CopyPixels(new PixelRect(bitmap.PixelSize.Width / 5, bitmap.PixelSize.Height / 5, 1, 1), pixel, 4, 4);
+                                    int space = System.Runtime.InteropServices.Marshal.ReadInt32(pixel);
+                                    AssertTrue((space & 255) < 8 && ((space >> 8) & 255) < 8 && ((space >> 16) & 255) < 8);
+                                }
                             }
                             finally { System.Runtime.InteropServices.Marshal.FreeHGlobal(pixel); }
                         }

@@ -6,8 +6,10 @@
       <Button Key="GamepadDismiss" Content="暂不进入" Command="ui.gamepad.dismiss" Class="gamepad-dismiss" />
     </StackPanel>
     <Node Kind="GamepadIntro" Recipe="Element" Key="GamepadIntro" IsVisible="{data intro_visible}" Class="gamepad-intro">
-      <Image Key="GamepadLogo" Source="brand/n" Label="NexaCL" IsVisible="{data logo_visible}" Opacity="{data logo_opacity}" Width="{data logo_size}" Height="{data logo_size}" Margin="{data logo_margin}" Class="gamepad-logo" />
       <Image Key="GamepadFlash" Source="gamepad/flash" IsVisible="{data flash_visible}" Opacity="{data flash_opacity}" Width="{data flash_size}" Height="{data flash_size}" Margin="{data flash_margin}" Class="gamepad-flash" />
+      <Image Key="GamepadHorizon" Source="gamepad/horizon" IsVisible="{data horizon_visible}" Opacity="{data horizon_opacity}" Width="{data logo_size}" Height="{data logo_size}" Margin="{data logo_margin}" Class="gamepad-logo" />
+      <Image Key="GamepadLogo" Source="brand/n" Label="NexaCL" IsVisible="{data logo_visible}" Opacity="{data logo_opacity}" Width="{data logo_size}" Height="{data logo_size}" Margin="{data logo_margin}" Class="gamepad-logo" />
+      <Node Kind="GamepadDawnVeil" Recipe="Element" Key="GamepadDawnVeil" Surface="Solid" Background="#000000" IsVisible="{data veil_visible}" Opacity="{data veil_opacity}" />
       <Text Key="GamepadName" Content="NexaCL" IsVisible="{data name_visible}" Opacity="{data name_opacity}" Margin="{data name_margin}" Class="gamepad-name" />
       <Text Key="GamepadCaption" Content="手柄模式" IsVisible="{data caption_visible}" Opacity="{data caption_opacity}" Margin="{data caption_margin}" Class="gamepad-caption" />
     </Node>

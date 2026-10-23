@@ -31,9 +31,10 @@ internal sealed class GamepadEntrySession : IDisposable
     private long _shownAt, _enteredAt, _heldAt = -1;
     private bool _armed, _dismissRequested, _disposed;
     private int _lastFrame = -1;
-    private PngImage? _logo, _flash;
+    private PngImage? _logo, _flash, _horizon;
     private XsrUiSize? _presentationViewport;
     internal const int IntroDuration = 4400;
+    private const double HorizonFocus = 118d / 1024; // Diagonal edge of the supplied plate outline.
     internal bool IsPromptOpen => _root.IsAssigned && !IsEntered;
     internal bool IsEntered { get; private set; }
     internal bool IsIntroComplete { get; private set; }
@@ -139,23 +140,27 @@ internal sealed class GamepadEntrySession : IDisposable
             double blackout = reduced ? 1 : Smooth(age / 500);
             _scrim(.72 + .28 * blackout);
             if (reduced) age = IntroDuration;
-            double flash = Smooth((age - 1000) / 100) * (1 - Smooth((age - 1120) / 520));
-            double zoom = EaseOut((age - 1950) / 600);
+            double flash = Smooth((age - 1080) / 520) * (1 - Smooth((age - 2000) / 350));
+            double zoom = EaseOut((age - 2100) / 600);
             double name = Smooth((age - 3120) / 440);
             double caption = Smooth((age - 3800) / 520);
             Apply(new("#000000" + ((byte)(184 + 71 * blackout)).ToString("X2", CultureInfo.InvariantCulture),
                 Prompt: reduced ? 0 : 1 - Smooth(age / 180), Intro: true,
-                Logo: Smooth((age - 1050) / 450), Zoom: zoom,
+                Logo: Smooth((age - 2050) / 550), Zoom: zoom,
                 Slide: Smooth((age - 3020) / 520), Lift: caption,
                 Name: name, Caption: caption, Flash: reduced ? 0 : flash,
-                FlashSize: 1.1 + .7 * Smooth((age - 1000) / 640)));
+                FlashSize: 1 + .6 * Smooth((age - 1100) / 900),
+                Horizon: age >= 1000 ? 1 - Smooth((age - 2100) / 500) : 0,
+                Veil: age >= 1000 ? 1 - Smooth((age - 1000) / 850) : 0,
+                SunRise: Smooth((age - 1080) / 850)));
             IsIntroComplete = age >= IntroDuration;
         }
     }
 
     private readonly record struct Presentation(string Background, double Prompt = 0, bool Intro = false,
         double Logo = 0, double Zoom = 0, double Slide = 0, double Lift = 0,
-        double Name = 0, double Caption = 0, double Flash = 0, double FlashSize = 1);
+        double Name = 0, double Caption = 0, double Flash = 0, double FlashSize = 1,
+        double Horizon = 0, double Veil = 0, double SunRise = 0);
 
     private static string Number(double value) => value.ToString("F3", CultureInfo.InvariantCulture);
     private static string Visible(bool value) => value ? "true" : "false";
@@ -168,18 +173,22 @@ internal sealed class GamepadEntrySession : IDisposable
             ["prompt_visible"] = Visible(!frame.Intro || frame.Prompt > 0),
             ["prompt_opacity"] = Number(frame.Prompt),
             ["intro_visible"] = Visible(frame.Intro),
-            ["logo_visible"] = Visible(frame.Logo > 0),
+            ["logo_visible"] = Visible(frame.Logo >= .001),
             ["logo_opacity"] = Number(frame.Logo),
             ["logo_size"] = Number(logoSize),
             ["logo_margin"] = ImagePlacement(logoSize, logoX, logoY),
-            ["flash_visible"] = Visible(frame.Flash > 0),
+            ["flash_visible"] = Visible(frame.Flash >= .001),
             ["flash_opacity"] = Number(frame.Flash),
             ["flash_size"] = Number(flashSize),
-            ["flash_margin"] = ImagePlacement(flashSize, 0, 0),
-            ["name_visible"] = Visible(frame.Name > 0),
+            ["flash_margin"] = ImagePlacement(flashSize, 14 - 26 * frame.SunRise, 14 - 26 * frame.SunRise),
+            ["horizon_visible"] = Visible(frame.Horizon >= .001),
+            ["horizon_opacity"] = Number(frame.Horizon),
+            ["veil_visible"] = Visible(frame.Veil >= .001),
+            ["veil_opacity"] = Number(frame.Veil),
+            ["name_visible"] = Visible(frame.Name >= .001),
             ["name_opacity"] = Number(frame.Name),
             ["name_margin"] = Shift(96 + 32 * (1 - frame.Name), -18 * frame.Lift),
-            ["caption_visible"] = Visible(frame.Caption > 0),
+            ["caption_visible"] = Visible(frame.Caption >= .001),
             ["caption_opacity"] = Number(frame.Caption),
             ["caption_margin"] = Shift(96, 70 - 14 * frame.Caption),
         });
@@ -193,13 +202,13 @@ internal sealed class GamepadEntrySession : IDisposable
         double canvas = Math.Max(1, Math.Min(viewport.Width, viewport.Height));
         // A large carrier uses the same bounded source bitmap and the existing smooth
         // complete-image sampler. Negative margins let NXML place it beyond the viewport;
-        // native window clipping reveals only the illuminated upper-left N face.
-        double size = canvas * 6.5 * Math.Pow(168 / canvas / 6.5, frame.Zoom);
-        double x = (.5 - (.32 + .18 * frame.Zoom)) * size - 162 * frame.Slide;
-        double y = (.5 - (.24 + .26 * frame.Zoom)) * size - 18 * frame.Lift;
+        // native clipping reveals the outer plate arc, like a planet seen from space.
+        double size = canvas * 10 * Math.Pow(168 / canvas / 10, frame.Zoom);
+        double x = (.5 - (HorizonFocus + (.5 - HorizonFocus) * frame.Zoom)) * size - 162 * frame.Slide;
+        double y = (.5 - (HorizonFocus + (.5 - HorizonFocus) * frame.Zoom)) * size - 18 * frame.Lift;
         double flashSize = frame.FlashSize * canvas;
         string signature = string.Create(CultureInfo.InvariantCulture,
-            $"{frame.Background}|{frame.Prompt:F3}|{frame.Intro}|{frame.Logo:F3}|{frame.Flash:F3}|{frame.Name:F3}|{frame.Caption:F3}|{frame.Lift:F3}|{size:F3}|{x:F3}|{y:F3}|{flashSize:F3}");
+            $"{frame.Background}|{frame.Prompt:F3}|{frame.Intro}|{frame.Logo:F3}|{frame.Flash:F3}|{frame.Horizon:F3}|{frame.Veil:F3}|{frame.SunRise:F3}|{frame.Name:F3}|{frame.Caption:F3}|{frame.Lift:F3}|{size:F3}|{x:F3}|{y:F3}|{flashSize:F3}");
         if (signature != _projection)
         {
             _dynamic.Reload(_root, Workspace(frame, size, x, y, flashSize));
@@ -211,6 +220,7 @@ internal sealed class GamepadEntrySession : IDisposable
         {
             _shell.Tree.GetComponent<XsrUiImage>(_nodes["GamepadLogo"])!.Raster = new(Logo(), []) { FitToBounds = true };
             _shell.Tree.GetComponent<XsrUiImage>(_nodes["GamepadFlash"])!.Raster = new(_flash ??= Texture("gamepad-entry-flash.png"), []) { FitToBounds = true };
+            _shell.Tree.GetComponent<XsrUiImage>(_nodes["GamepadHorizon"])!.Raster = new(_horizon ??= Texture("gamepad-entry-horizon.png"), []) { FitToBounds = true };
             _shell.Tree.MarkDirty(_root, XsrUiDirtyKinds.Paint);
         }
     }

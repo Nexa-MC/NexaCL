@@ -20,15 +20,22 @@ Drift, already-held input at attachment and background input cannot activate it.
 
 Confirmation fades the prompt away and smoothly enlarges the existing window to
 the current monitor's full bounds over 600 ms. The entry then follows one bounded
-4.4-second timeline: hold black, flash once at the center to reveal only the
-upper-left corner of an oversized N, rapidly shrink to the center and settle,
+4.4-second timeline: hold black, reveal the **outer tile's upper-left rounded
+corner** as a planet-like dark horizon, let a soft sunrise emerge from behind its
+blue atmospheric rim, rapidly shrink to the center and settle,
 slide left to reveal NexaCL, then lift the lockup and reveal “手柄模式” underneath.
 The final lockup stays on a black canvas. Lighting falls from upper left to lower
-right. The supplied brand artwork remains unchanged; two reusable 512px textures
-provide the lighting treatment and soft flare (`eng/media/bake_gamepad_entry.py`).
+right. The supplied brand artwork remains unchanged; reusable 512px textures
+provide the final lighting treatment and soft sun, and one 1024px texture uses
+the supplied SVG's plate outline for the dark silhouette and atmospheric rim
+(`eng/media/bake_gamepad_entry.py`). The opening shows the rounded plate edge;
+the N letter remains hidden until the camera pulls back. The sun renders behind
+the opaque silhouette and rises outward across the edge. A black veil reveals
+the dawn gradually, rather than displaying a cross-shaped flash over the icon.
 NXML places the oversized image carrier outside the viewport; native clipping and
 the existing smooth complete-image sampler perform the close-up. The immutable
-source texture stays 512px. All layout/opacity values remain NXML projections; no
+source textures stay bounded (12 MiB combined native admission at full size).
+All layout/opacity values remain NXML projections; no
 renderer API or bitmap budget is changed. Zero-opacity stages explicitly hide the
 image carrier so the black hold contains no image pixels.
 No large-screen navigation is introduced here. Escape
@@ -51,7 +58,8 @@ devices, background input, cancellation/suppression, reconnection, disposal,
 layout selection, shared artwork, cinematic phase ordering, stable final placement
 and reduced motion. Native offscreen capture
 under X11 with a window manager checks all three layouts in both color schemes,
-decoded controller/icon/flare pixels, the black hold and giant close-up, actual
+decoded controller/icon/sun/horizon pixels, the black hold, dark-side occultation
+and giant rounded-edge close-up, actual
 fullscreen bounds/state, restoration from normal
 and maximized windows, and subsequent unmaximize bounds. Input is simulated for
 these deterministic captures; physical Windows/macOS controllers remain untested.

@@ -20,6 +20,7 @@
     <EmbeddedResource Include="Assets/Brand/neon-n-dark.png" />
     <EmbeddedResource Include="Assets/Brand/neon-n-entry.png" />
     <EmbeddedResource Include="Assets/Brand/gamepad-entry-flash.png" />
+    <EmbeddedResource Include="Assets/Brand/gamepad-entry-horizon.png" />
     <EmbeddedResource Include="Assets/Gamepads/*.png" />
     <EmbeddedResource Include="../GPG-PUBLIC-KEY.asc" LogicalName="Nexa.Desktop.SidecarReleaseKey.asc" />
     <ProjectReference Include="../Nexa.Xsr.Renderer.Nxml.Runtime/Nexa.Xsr.Renderer.Nxml.Runtime.csproj" />

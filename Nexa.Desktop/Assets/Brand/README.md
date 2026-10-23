@@ -41,9 +41,12 @@ different raster bytes and should be reviewed before replacing these exports.
 | `../icon.png` | `63ebb7951e0485a0542a1bcd2725ab3524607b883760c2350b5a01c139b937ef` |
 | `../icon.ico` | `f40d94ecbf7bb30893ad453d2c19fa9dac63ab194cdf7001335be7612f3218d3` |
 
-Controller entry uses a separate `neon-n-entry.png` lighting treatment and
-`gamepad-entry-flash.png` soft flare, both 512×512. Regenerate these with
-`python eng/media/bake_gamepad_entry.py`. The treatment preserves the source
-alpha and lights from upper left; it does not replace either supplied SVG or the
-normal launcher icons. Runtime zoom uses the existing smooth image sampler and native window clipping;
-the decoded source stays bounded instead of allocating a fullscreen-sized texture.
+Controller entry uses `neon-n-entry.png` for the final upper-left lighting and
+`gamepad-entry-flash.png` for a soft sun, both 512×512. The 1024×1024
+`gamepad-entry-horizon.png` derives its opaque dark plate and atmospheric rim
+from the supplied SVG's `plate-shape` path. The sun rises behind that silhouette;
+the N letter appears during pullback. Regenerate these with
+`python eng/media/bake_gamepad_entry.py` (Inkscape and Pillow).
+The treatment preserves the brand alpha without replacing either supplied SVG
+or the normal launcher icons. Runtime zoom uses the existing smooth image sampler
+and native clipping; the decoded textures stay bounded at 12 MiB combined.
