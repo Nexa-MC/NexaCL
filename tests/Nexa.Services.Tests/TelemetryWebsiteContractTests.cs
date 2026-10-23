@@ -21,8 +21,13 @@ internal static partial class Program
             var p = new Dictionary<string, string> { ["version"] = "2.0.0.alpha.12", ["os"] = "macos", ["arch"] = "arm64", ["result"] = "ok" };
             IReadOnlyDictionary<string, string>? details = name switch
             {
-                "diagnostic.error" => new Dictionary<string, string> { ["category"] = "downloads", ["severity"] = "error",
-                    ["code"] = "System.IO.IOException", ["stack"] = "Nexa.Services.Downloads.HttpDownloadConnection.ReadAsync" },
+                "diagnostic.error" => new Dictionary<string, string>
+                {
+                    ["category"] = "downloads",
+                    ["severity"] = "error",
+                    ["code"] = "System.IO.IOException",
+                    ["stack"] = "Nexa.Services.Downloads.HttpDownloadConnection.ReadAsync"
+                },
                 "diagnostic.metric" => new Dictionary<string, string> { ["metric"] = "network.request.ms", ["value"] = "12.5" },
                 "feature.used" or "feature.invoked" => new Dictionary<string, string> { ["feature"] = "install" },
                 "diagnostic.run" => RunDiagnosticTelemetry.Sample(sample),
@@ -40,8 +45,9 @@ internal static partial class Program
         int sent = 0;
         using var http = new HttpClient(new ResourceHttp(request =>
         {
-            AssertEqual("https://pcln.top/api/v1/telemetry/events", request.RequestUri!.AbsoluteUri);
+            AssertEqual("https://nexa-telemetry.pcln.workers.dev/v1/events", request.RequestUri!.AbsoluteUri);
             AssertEqual(HttpMethod.Post, request.Method);
+            AssertTrue(request.Headers.UserAgent.Any(value => value.Product?.Name == "NexaCL"));
             AssertEqual("application/json", request.Content!.Headers.ContentType!.MediaType);
             AssertFalse(request.Headers.Contains("Authorization") || request.Headers.Contains("Cookie"));
             using var json = JsonDocument.Parse(request.Content.ReadAsStringAsync().GetAwaiter().GetResult());
@@ -60,5 +66,26 @@ internal static partial class Program
         var invalid = examples[0] with { Level = TelemetryLevel.Diagnostic };
         AssertFalse(await transport.SendAsync([invalid]));
         AssertEqual(16, sent);
+    }
+
+    private static async ValueTask TelemetryEdgeChallengeReportsSafeDiagnostic()
+    {
+        List<string> diagnostics = [];
+        using var http = new HttpClient(new ResourceHttp(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.Forbidden)
+            {
+                Content = new StringContent("<html>private challenge response must not be logged</html>")
+            };
+            response.Headers.Add("cf-mitigated", "challenge");
+            return response;
+        }));
+        var transport = new CloudflareTelemetryTransport(http, reportFailure: diagnostics.Add);
+        var item = WebsiteTelemetryExamples()[0];
+        AssertFalse(await transport.SendAsync([item]));
+        AssertFalse(await transport.SendAsync([item]));
+        AssertEqual(1, diagnostics.Count);
+        AssertTrue(diagnostics[0].Contains("Cloudflare", StringComparison.Ordinal));
+        AssertFalse(diagnostics[0].Contains("private", StringComparison.Ordinal));
     }
 }

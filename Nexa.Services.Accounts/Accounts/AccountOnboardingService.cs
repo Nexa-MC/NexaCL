@@ -212,7 +212,7 @@ public sealed class AccountOnboardingService : IDisposable
         ShowDeviceCode(operation, AccountLoginProvider.Microsoft, code.UserCode, code.VerificationUriComplete ?? code.VerificationUri);
         operation.Trace?.Stage("microsoft_authorization_and_minecraft_session");
         MicrosoftMinecraftLoginResult result = await _microsoft.CompleteDeviceLoginAsync(_options.MicrosoftClientId, code,
-            new InlineProgress(value => ReportProgress(operation, value)), operation.Cancellation.Token).ConfigureAwait(false);
+            new InlineProgress(value => ReportProgress(operation, value, microsoft: true)), operation.Cancellation.Token).ConfigureAwait(false);
         if (!result.OwnsMinecraft || string.IsNullOrWhiteSpace(result.Uuid) || string.IsNullOrWhiteSpace(result.AccessToken))
             throw new OnboardingFailure("该 Microsoft 账户未拥有 Minecraft Java 版或未返回可用的游戏身份。", "accounts.minecraft_not_owned");
         return AccountLoginProfiles.FromMicrosoft(result);
@@ -317,10 +317,16 @@ public sealed class AccountOnboardingService : IDisposable
                 "在浏览器完成授权，返回后将自动继续。", userCode, uri));
     }
 
-    private void ReportProgress(Operation operation, double value)
+    private void ReportProgress(Operation operation, double value, bool microsoft = false)
     {
         lock (_gate)
-            if (IsCurrent(operation) && double.IsFinite(value)) Publish(_snapshot with { Progress = Math.Clamp(value, 0, .94) });
+            if (IsCurrent(operation) && double.IsFinite(value))
+            {
+                var next = _snapshot with { Progress = Math.Clamp(value, 0, .94) };
+                if (microsoft && value >= .45 && _snapshot.Phase == AccountLoginPhase.AwaitingAuthorization)
+                    next = next with { Phase = AccountLoginPhase.Starting, Message = "Microsoft 授权已完成，正在完成 Xbox 与 Minecraft 认证…", UserCode = "", VerificationUri = "" };
+                Publish(next);
+            }
     }
 
     private Task<object?> PrepareAsync(Operation operation, string message, Func<CancellationToken, Task> action) =>
@@ -358,6 +364,7 @@ public sealed class AccountOnboardingService : IDisposable
                 OnboardingFailure safe => safe.Message,
                 OperationCanceledException => "连接认证服务超时，请检查网络或代理设置后重试。",
                 TimeoutException => "授权已过期，请重新开始。",
+                MicrosoftAuthenticationFailure safe => safe.Message,
                 HttpRequestException => "无法连接认证服务，请检查网络后重试。",
                 IOException or System.Text.Json.JsonException => "无法读取档案文件，请确认文件格式和访问权限。",
                 _ => "登录未完成，请检查登录信息、授权状态和账户权限后重试。",

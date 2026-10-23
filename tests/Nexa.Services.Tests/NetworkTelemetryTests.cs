@@ -19,7 +19,7 @@ internal static partial class Program
         var properties = new Dictionary<string, string>
         { ["version"] = "2.0.0.alpha.5", ["os"] = "windows", ["arch"] = "x64", ["result"] = "ok" };
         var item = new TelemetryEvent("app.started", DateTimeOffset.UtcNow, properties) { Level = TelemetryLevel.Necessary };
-        const string endpoint = "https://pcln.top/api/v1/telemetry/events";
+        const string endpoint = "https://nexa-telemetry.pcln.workers.dev/v1/events";
         handler.Serve(endpoint, HttpStatusCode.Forbidden);
         AssertFalse(await transport.SendAsync([item]));
         AssertFalse(await transport.SendAsync([item]));

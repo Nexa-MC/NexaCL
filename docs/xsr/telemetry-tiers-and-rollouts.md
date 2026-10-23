@@ -33,10 +33,14 @@ verification, diagnostic consent, accessibility or installation protection.
 
 ## Implemented protocol and lifecycle
 
-- `https://pcln.top/api/v1/telemetry/events` enforces event-to-tier assignment and
-  writes the same `nexa-platform` database queried by the current website. The old
-  `/v2/launcher/telemetry` gateway is retired; this anonymous route requires neither
-  an account token nor an API client certificate. Historical v1 data remains legacy.
+- `https://nexa-telemetry.pcln.workers.dev/v1/events` exposes only anonymous POST
+  events outside the website zone's browser challenges. Its service binding calls
+  the existing `/api/v1/telemetry/events`, which enforces event-to-tier assignment,
+  a 64 KiB body limit and per-IP rate limits, and writes the `nexa-platform` database
+  queried by the current website. Website Bot Fight Mode remains enabled. This
+  route requires neither an account token nor an API client certificate and does
+  not forward them. The old `/v2/launcher/telemetry` receiver and its data store
+  remain legacy; a GET 404 alone does not establish whether its POST route exists.
 - Task Center and game process state changes supply diagnostic lifecycle events. Error logs
   supply only a necessary failure category, never their message. Update and rollout checks
   record bounded success/failure results. CI/Alpha/Beta policy is enforced inside the queue

@@ -1,12 +1,12 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Media.Imaging;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Avalonia.VisualTree;
-using System.Diagnostics;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 using SkiaSharp;

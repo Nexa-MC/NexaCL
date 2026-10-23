@@ -1,7 +1,9 @@
 # 本地构建遥测
 
-当前匿名事件入口为 `https://pcln.top/api/v1/telemetry/events`，与网站管理页读取的
-`nexa-platform` 聚合库一致。旧 `api.pcln.top/v2/launcher/telemetry` 已返回 404。
+当前匿名事件入口为 `https://nexa-telemetry.pcln.workers.dev/v1/events`，通过独立
+Worker 的服务绑定转发到现有 `/api/v1/telemetry/events`，与网站管理页读取的
+`nexa-platform` 聚合库一致。旧 `api.pcln.top/v2/launcher/telemetry` 属于旧服务及旧库，
+不能用该路径的 GET 404 判断 POST 接口不存在，也不能在新管理页查询其聚合数据。
 事件格式仍为分级数组：name、level、timestamp（Unix 毫秒）与白名单 properties；
 必要/诊断分级、同意设置、批次上限与失败保留策略均不改变。
 
@@ -25,6 +27,12 @@ Windows Schannel 使用 `UserKeySet` 导入，不设置 `PersistKeySet`；其他
 必要遥测始终启用；CI/Alpha/Beta 强制诊断，正式版诊断取决于用户设置。
 启动会立即尝试上传，随后每 30 秒重试。HTTP 拒绝记录状态码，不记录响应正文、
 事件内容、证书路径或密码；同一失败原因只记录一次，成功后重置。
+请求声明 NexaCL 产品 User-Agent。原生客户端不能完成 Cloudflare JavaScript/托管浏览器
+挑战。网站的免费 Bot Fight Mode 不能按 API 路径豁免，因此使用上述独立 Workers
+入口，保留网站防护。该入口仅接受匿名事件 POST，不转发账户凭据或开放管理路径，
+仍由现有 API 执行事件白名单、64 KiB 大小上限和每 IP 速率限制。
+若收到 `cf-mitigated: challenge`，日志会明确指出边缘挑战，不能通过伪造浏览器
+Origin 代替。网络或 HTTP 失败仍保留批次，由既有周期重试，不绕过 TLS 校验。
 服务器接受第一批事件后记录一次 Info 日志。未覆盖版本属性的本地构建目前为
 `2.0.0.alpha.1`，管理员版本筛选需与实际构建一致。
 

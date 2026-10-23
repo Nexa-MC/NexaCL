@@ -13,8 +13,15 @@ internal static partial class Program
     private sealed class ScriptedHandler : HttpMessageHandler
     {
         private readonly Dictionary<string, Queue<HttpResponseMessage>> _responses = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, Queue<Exception>> _failures = new(StringComparer.Ordinal);
 
         public List<string> Requests { get; } = [];
+
+        public void Fail(string url, Exception failure)
+        {
+            if (!_failures.TryGetValue(url, out var queue)) _failures[url] = queue = new();
+            queue.Enqueue(failure);
+        }
 
         public void Serve(string url, string body, HttpStatusCode code = HttpStatusCode.OK)
         {
@@ -33,6 +40,8 @@ internal static partial class Program
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Requests.Add(request.Method + " " + request.RequestUri);
+            if (_failures.TryGetValue(request.RequestUri!.ToString(), out var failures) && failures.TryDequeue(out var failure))
+                return Task.FromException<HttpResponseMessage>(failure);
             if (_responses.TryGetValue(request.RequestUri!.ToString(), out Queue<HttpResponseMessage>? queue)
                 && queue.Count > 0)
             {

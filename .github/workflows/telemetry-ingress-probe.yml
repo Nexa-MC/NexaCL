@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
         with:
           dotnet-version: 10.0.x
-      - name: Compare actual .NET requests without ingesting events
+      - name: Verify native .NET ingress without ingesting events
         shell: bash
         run: |
           probe="$RUNNER_TEMP/telemetry-ingress-probe"
@@ -29,16 +29,11 @@ jobs:
           using var handler = new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false };
           using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(20) };
           bool accepted = false;
-          foreach (string mode in new[] { "no-user-agent", "product-user-agent", "browser-origin" })
+          foreach (string mode in new[] { "no-user-agent", "product-user-agent" })
           {
-              using var request = new HttpRequestMessage(HttpMethod.Post, "https://pcln.top/api/v1/telemetry/events")
+              using var request = new HttpRequestMessage(HttpMethod.Post, "https://nexa-telemetry.pcln.workers.dev/v1/events")
               { Content = new StringContent("[]", Encoding.UTF8, "application/json") };
               if (mode != "no-user-agent") request.Headers.UserAgent.ParseAdd("NexaCL/2.0 (+https://github.com/Nexa-MC/NexaCL)");
-              if (mode == "browser-origin")
-              {
-                  request.Headers.Add("Origin", "https://pcln.top");
-                  request.Headers.Add("x-nexa-request", "1");
-              }
               try
               {
                   using var response = await http.SendAsync(request);

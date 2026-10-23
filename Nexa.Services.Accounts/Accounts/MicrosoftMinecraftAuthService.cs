@@ -54,7 +54,7 @@ public sealed class MicrosoftMinecraftAuthService : IMicrosoftMinecraftAuthServi
                 cancellationToken)
             .ConfigureAwait(false);
         string body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        EnsureSuccess(response, body, "获取 Microsoft 设备登录代码失败");
+        EnsureSuccess(response, "获取 Microsoft 设备登录代码失败");
         using JsonDocument document = JsonDocument.Parse(body);
         JsonElement root = document.RootElement;
         string deviceCode = RequiredString(root, "device_code");
@@ -239,7 +239,7 @@ public sealed class MicrosoftMinecraftAuthService : IMicrosoftMinecraftAuthServi
                 cancellationToken)
             .ConfigureAwait(false);
         string body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        EnsureSuccess(response, body, "Xbox Live 登录失败");
+        EnsureSuccess(response, "Xbox Live 登录失败");
         return ReadXboxToken(body, "Xbox Live 登录响应缺少令牌。");
     }
 
@@ -261,15 +261,43 @@ public sealed class MicrosoftMinecraftAuthService : IMicrosoftMinecraftAuthServi
 
     private async Task<string> AuthenticateMinecraftAsync(string userHash, string xstsToken, CancellationToken cancellationToken)
     {
-        using HttpResponseMessage response = await PostJsonAsync(
-                "https://api.minecraftservices.com/authentication/login_with_xbox",
-                $$"""{"identityToken":"XBL3.0 x={{EscapeJson(userHash)}};{{EscapeJson(xstsToken)}}"}""",
-                cancellationToken)
-            .ConfigureAwait(false);
-        string body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        EnsureSuccess(response, body, "Minecraft 服务登录失败");
-        using JsonDocument document = JsonDocument.Parse(body);
-        return RequiredString(document.RootElement, "access_token");
+        const int attempts = 4;
+        for (int attempt = 1; attempt <= attempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            TimeSpan delay;
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.minecraftservices.com/authentication/login_with_xbox")
+                {
+                    Content = new StringContent($$"""{"identityToken":"XBL3.0 x={{EscapeJson(userHash)}};{{EscapeJson(xstsToken)}}"}""",
+                        Encoding.UTF8, "application/json")
+                };
+                using HttpResponseMessage response = await _client.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                if (IsTransientMinecraftServiceFailure(response.StatusCode) && attempt < attempts)
+                {
+                    delay = ResolveRetryDelay(response, attempt);
+                    _log?.Warn("MicrosoftAuth", $"Minecraft session exchange will retry attempt={attempt}/{attempts} http_status={(int)response.StatusCode}");
+                }
+                else
+                {
+                    string body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                    EnsureSuccess(response, "Minecraft 服务登录失败");
+                    using JsonDocument document = JsonDocument.Parse(body);
+                    return RequiredString(document.RootElement, "access_token");
+                }
+            }
+            catch (HttpRequestException error) when (error is not MicrosoftAuthenticationFailure)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (error.StatusCode is not null || MicrosoftAuthenticationFailure.IsCertificateFailure(error) || attempt == attempts)
+                    throw new MicrosoftAuthenticationFailure(error);
+                delay = TimeSpan.FromMilliseconds(300 * attempt * attempt);
+                _log?.Warn("MicrosoftAuth", $"Minecraft session connection will retry attempt={attempt}/{attempts}");
+            }
+            await _delay(delay, cancellationToken).ConfigureAwait(false);
+        }
+        throw new InvalidOperationException("Minecraft 服务登录重试已结束。");
     }
 
     private async Task<(string Username, string Uuid, string? SkinAddress)> GetMinecraftProfileAsync(
@@ -294,7 +322,7 @@ public sealed class MicrosoftMinecraftAuthService : IMicrosoftMinecraftAuthServi
                 continue;
             }
 
-            EnsureSuccess(response, body, "获取 Minecraft 档案失败");
+            EnsureSuccess(response, "获取 Minecraft 档案失败");
             using JsonDocument document = JsonDocument.Parse(body);
             JsonElement root = document.RootElement;
             string? skin = null;
@@ -426,16 +454,16 @@ public sealed class MicrosoftMinecraftAuthService : IMicrosoftMinecraftAuthServi
                 2148916233 => new InvalidOperationException("此 Microsoft 账户尚未创建 Xbox 档案。请先登录 Xbox 官网完成设置。"),
                 2148916235 or 2148916236 => new InvalidOperationException("Xbox 服务在此账户所在地区不可用。"),
                 2148916238 => new InvalidOperationException("此账户受家庭安全设置限制，无法授权 Minecraft。"),
-                _ => new HttpRequestException($"XSTS 授权失败（HTTP {(int)statusCode}，XErr {xerr}）。"),
+                _ => new MicrosoftAuthenticationFailure("XSTS 授权失败", statusCode),
             };
         }
         catch (JsonException)
         {
-            return new HttpRequestException($"XSTS 授权失败（HTTP {(int)statusCode}）。");
+            return new MicrosoftAuthenticationFailure("XSTS 授权失败", statusCode);
         }
     }
 
-    private void EnsureSuccess(HttpResponseMessage response, string body, string operation, [CallerMemberName] string source = "")
+    private void EnsureSuccess(HttpResponseMessage response, string operation, [CallerMemberName] string source = "")
     {
         if (response.IsSuccessStatusCode)
         {
@@ -443,23 +471,7 @@ public sealed class MicrosoftMinecraftAuthService : IMicrosoftMinecraftAuthServi
         }
 
         _log?.Warn("MicrosoftAuth", $"Authentication request failed stage={source} http_status={(int)response.StatusCode}");
-        string detail = string.Empty;
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(body);
-            detail = FirstNonEmpty(
-                ReadOptionalString(document.RootElement, "error_description"),
-                ReadOptionalString(document.RootElement, "errorMessage"),
-                ReadOptionalString(document.RootElement, "message"));
-        }
-        catch (JsonException)
-        {
-        }
-
-        string message = string.IsNullOrWhiteSpace(detail)
-            ? $"{operation}（HTTP {(int)response.StatusCode}）。"
-            : $"{operation}：{detail}";
-        throw new HttpRequestException(message);
+        throw new MicrosoftAuthenticationFailure(operation, response.StatusCode);
     }
 
     private static string RequiredString(JsonElement element, string propertyName) =>

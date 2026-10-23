@@ -5,6 +5,10 @@ internal static partial class Program
     private static (string Name, Func<ValueTask> Body)[] RegisterAccountsAndMinecraft() =>
     [
         ("the microsoft device login runs the full chain", MicrosoftDeviceLoginRunsTheFullChain),
+        ("Microsoft Minecraft handshake retries preserve browser authorization", MicrosoftMinecraftHandshakeRetriesWithoutRepeatingAuthorization),
+        ("Microsoft Minecraft retries are bounded and preserve certificate validation", MicrosoftMinecraftRetriesAreBoundedAndRespectCertificateFailure),
+        ("Microsoft Minecraft retry cancellation stops the exchange", MicrosoftMinecraftRetryCancellationStopsTheExchange),
+        ("Microsoft Minecraft HTTP rejection keeps safe status guidance", MicrosoftMinecraftHttpRejectionKeepsStatusAndSafeGuidance),
         ("microsoft declined and expired are distinct errors", MicrosoftDeclinedAndExpiredAreDistinctErrors),
         ("microsoft refresh runs the chain without a device code", MicrosoftRefreshRunsTheChainWithoutDeviceCode),
         ("yggdrasil authenticate validate and refresh run", YggdrasilAuthenticateValidateAndRefreshRun),

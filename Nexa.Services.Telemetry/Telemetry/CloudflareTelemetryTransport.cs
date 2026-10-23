@@ -15,11 +15,17 @@ public sealed partial class CloudflareTelemetryTransport(HttpClient client, Func
     public async Task<bool> SendAsync(IReadOnlyList<TelemetryEvent> batch, CancellationToken cancellationToken = default)
     {
         if (batch.Count is 0 or > 50 || batch.Any(item => !IsAllowed(item))) return Failure("遥测批次未发送：事件格式未通过本地校验。");
-        using var request = new HttpRequestMessage(HttpMethod.Post, "https://pcln.top/api/v1/telemetry/events");
+        using var request = new HttpRequestMessage(HttpMethod.Post, "https://nexa-telemetry.pcln.workers.dev/v1/events");
+        request.Headers.UserAgent.ParseAdd("NexaCL/2.0 (+https://github.com/Nexa-MC/NexaCL)");
         request.Content = new StringContent(TelemetryService.SerializeBatch(batch), Encoding.UTF8);
         request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode) return Failure($"遥测服务器拒绝批次：HTTP {(int)response.StatusCode}。请检查网络和服务端事件接入规则。");
+        if (!response.IsSuccessStatusCode)
+        {
+            if (response.Headers.TryGetValues("cf-mitigated", out var mitigations) && mitigations.Contains("challenge", StringComparer.OrdinalIgnoreCase))
+                return Failure("遥测被 Cloudflare 浏览器挑战拦截：原生客户端无法完成浏览器验证，请检查该 API 路径的边缘接入规则。");
+            return Failure($"遥测服务器拒绝批次：HTTP {(int)response.StatusCode}。请检查网络和服务端事件接入规则。");
+        }
         Interlocked.Exchange(ref _lastFailure, null);
         return true;
     }
