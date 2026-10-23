@@ -35,6 +35,14 @@ alone authorizes execution, elevation, deletion or replacement.
 
 ## Delivery boundary
 
+Release recovery may reuse completed platform artifacts only from a workflow run whose
+source commit equals the immutable release tag. The recovered platform is built from that
+same tag, with the tagged version/channel, and must pass the native installation, protected
+update and differential-consumption checks. CI-version packages cannot substitute for tagged
+packages. The final distribution still verifies all eighteen packages, creates and verifies
+publisher signatures, and preserves the existing human-written release notes. Splitting an
+installation probe into separately bounded steps changes diagnostics, not release admission.
+
 The publisher generator, independent distribution validation and runtime admission
 primitive must share the schema and package-set contract. Runtime admission is intended
 for independent use inside the protected helper. Desktop discovery remains a manual

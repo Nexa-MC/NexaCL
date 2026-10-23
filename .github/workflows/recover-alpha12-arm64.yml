@@ -1,0 +1,486 @@
+# One-shot recovery for Alpha 12: immutable source and matching original artifacts.
+# All native installation/update/delta checks and final signing remain mandatory.
+name: Recover Alpha 12 ARM64 release
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: recover-alpha12-arm64
+  cancel-in-progress: false
+jobs:
+  metadata:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prefix: ${{ steps.version.outputs.prefix }}
+      channel: ${{ steps.version.outputs.channel }}
+      sequence: ${{ steps.version.outputs.sequence }}
+      commit: ${{ steps.version.outputs.commit }}
+      release: ${{ steps.version.outputs.release }}
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        fetch-depth: 0
+        ref: v2.0.0.alpha.12
+    - name: Require the original artifacts to match the immutable tag
+      env:
+        GH_TOKEN: ${{ github.token }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        original_sha=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/39915172080" --jq .head_sha)
+        test "$original_sha" = "$(git rev-parse HEAD)"
+        test "$original_sha" = cd227e43861c48614c53de50b2e5f795747e0c67
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+      with:
+        python-version: '3.12'
+    - run: python -m unittest discover -s eng/release -p 'test_*.py'
+    - name: Require human-written notes before building a tagged release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        python eng/release/release_notes.py prepare --repository "$GITHUB_REPOSITORY" \
+          --tag "v2.0.0.alpha.12" --output release-metadata/RELEASE.md
+    - id: version
+      run: |
+        set -euo pipefail
+        python eng/release/metadata.py --ref refs/tags/v2.0.0.alpha.12 --sha "$(git rev-parse HEAD)" \
+          --output release-metadata --release-notes-file release-metadata/RELEASE.md
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: release-metadata
+        path: release-metadata/*
+    if: github.repository == 'Nexa-MC/NexaCL' && github.ref == 'refs/heads/main'
+  launcher:
+    needs: metadata
+    name: Launcher ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - rid: win-arm64
+          os: windows-11-arm
+    env:
+      PRODUCT_VERSION: ${{ needs.metadata.outputs.version }}
+      VERSION_PREFIX: ${{ needs.metadata.outputs.prefix }}
+      VERSION_CHANNEL: ${{ needs.metadata.outputs.channel }}
+      VERSION_SEQUENCE: ${{ needs.metadata.outputs.sequence }}
+      COMMIT_SHORT: ${{ needs.metadata.outputs.commit }}
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        ref: v2.0.0.alpha.12
+    - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+      with:
+        global-json-file: global.json
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+      with:
+        python-version: '3.12'
+    - name: Install Linux packaging tools
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        set -euo pipefail
+        sudo apt-get update
+        sudo apt-get install -y clang zlib1g-dev libfontconfig1-dev libx11-dev libice6 libsm6 rpm ruby-dev build-essential desktop-file-utils squashfs-tools
+        sudo gem install fpm -v 1.16.0 --no-document
+        arch=x86_64
+        if [[ '${{ matrix.rid }}' == linux-arm64 ]]; then arch=aarch64; fi
+        python eng/release/fetch_tool.py "appimagetool-${arch}" "$RUNNER_TEMP/appimagetool"
+        python eng/release/fetch_tool.py "runtime-${arch}" "$RUNNER_TEMP/appimage-runtime"
+        echo "APPIMAGE_RUNTIME=$RUNNER_TEMP/appimage-runtime" >> "$GITHUB_ENV"
+        chmod +x "$RUNNER_TEMP/appimagetool"
+        echo "APPIMAGETOOL=$RUNNER_TEMP/appimagetool" >> "$GITHUB_ENV"
+    - name: Install Windows packaging tools
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        dotnet tool install --global wix --version 6.0.2
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        python eng/release/fetch_tool.py innosetup "$env:RUNNER_TEMP\innosetup.exe"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        $innoDirectory = Join-Path $env:RUNNER_TEMP 'nexa-inno'
+        $install = Start-Process -FilePath "$env:RUNNER_TEMP\innosetup.exe" -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', ('/DIR="' + $innoDirectory + '"') -Wait -PassThru -WindowStyle Hidden
+        if ($install.ExitCode -ne 0) { exit $install.ExitCode }
+        "NEXA_ISCC=$innoDirectory\ISCC.exe" >> $env:GITHUB_ENV
+    - name: Resolve public OAuth client ids
+      shell: bash
+      env:
+        CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+        NEXA_MS_CLIENT_ID: ${{ secrets.PCL_MS_CLIENT_ID }}
+        LITTLESKIN_CLIENT_ID: ${{ secrets.LITTLESKIN_CLIENT_ID }}
+        NEXA_LITTLESKIN_CLIENT_ID: ${{ secrets.PCL_LITTLESKIN_CLIENT_ID }}
+      run: |
+        set -euo pipefail
+        microsoft="${NEXA_MS_CLIENT_ID:-${MS_CLIENT_ID:-${CLIENT_ID:-}}}"
+        little_skin="${NEXA_LITTLESKIN_CLIENT_ID:-${LITTLESKIN_CLIENT_ID:-}}"
+        if [[ -z "$microsoft" ]]; then
+          echo 'A Microsoft OAuth client ID is required for official release account entitlement verification' >&2
+          exit 1
+        fi
+        if [[ -n "$microsoft" ]]; then echo "::add-mask::$microsoft"; fi
+        if [[ -n "$little_skin" ]]; then echo "::add-mask::$little_skin"; fi
+        echo "NEXA_MS_CLIENT_ID=$microsoft" >> "$GITHUB_ENV"
+        echo "NEXA_LITTLESKIN_CLIENT_ID=$little_skin" >> "$GITHUB_ENV"
+    - name: Restore Cloudflare API identity
+      shell: bash
+      env:
+        API_CLIENT_PFX: ${{ secrets.PCLN_API_CLIENT_PFX_BASE64 }}
+      run: |
+        python - <<'PY'
+        import base64, os, pathlib
+        encoded = os.environ.get("API_CLIENT_PFX", "")
+        if encoded:
+            pathlib.Path("Nexa.Desktop/Assets/api-client.pfx").write_bytes(base64.b64decode(encoded, validate=True))
+        elif True:
+            raise SystemExit("Cloudflare API identity is required for release builds")
+        PY
+    - name: Publish NativeAOT launcher
+      shell: bash
+      env:
+        NexaCurseForgeApiKey: ${{ secrets.CURSEFORGE_API_KEY }}
+      run: |
+        set -euo pipefail
+        if [[ -z "$NexaCurseForgeApiKey" && ( "$GITHUB_REPOSITORY" == Nexa-MC/PCL-N || "$GITHUB_REPOSITORY" == Nexa-MC/NexaCL || "$GITHUB_REF" == refs/tags/* ) ]]; then
+          echo 'CURSEFORGE_API_KEY is required for official launcher artifacts' >&2
+          exit 1
+        fi
+        dotnet publish Nexa.Desktop/Nexa.Desktop.csproj --configuration Release \
+          -r '${{ matrix.rid }}' --self-contained true -m:1 -nodeReuse:false \
+          -p:PublishAot=true -p:StripSymbols=true \
+          -p:XsrVersionPrefix="$VERSION_PREFIX" -p:XsrVersionChannel="$VERSION_CHANNEL" \
+          -p:XsrVersionSequence="$VERSION_SEQUENCE" -p:XsrCommitShort="$COMMIT_SHORT" \
+          -p:NexaMicrosoftClientId="$NEXA_MS_CLIENT_ID" -p:NexaLittleSkinClientId="$NEXA_LITTLESKIN_CLIENT_ID" \
+          --output "$RUNNER_TEMP/launcher"
+        if [[ -n "$NexaCurseForgeApiKey" ]]; then
+          binary="$RUNNER_TEMP/launcher/Nexa.Desktop"
+          if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
+          "$binary" --validate-resource-credentials
+        fi
+    - name: Publish isolated NativeAOT JVM host
+      shell: bash
+      run: |
+        dotnet publish Nexa.Jvm.Host/Nexa.Jvm.Host.csproj --configuration Release \
+          -r '${{ matrix.rid }}' --self-contained true -m:1 -nodeReuse:false \
+          -p:PublishAot=true -p:StripSymbols=true \
+          -p:XsrVersionPrefix="$VERSION_PREFIX" -p:XsrVersionChannel="$VERSION_CHANNEL" \
+          -p:XsrVersionSequence="$VERSION_SEQUENCE" -p:XsrCommitShort="$COMMIT_SHORT" \
+          --output "$RUNNER_TEMP/launcher"
+    - name: Smoke-run published executable
+      shell: bash
+      run: |
+        dotnet publish Nexa.Update.Helper/Nexa.Update.Helper.csproj --configuration Release \
+          -r '${{ matrix.rid }}' --self-contained true -m:1 -nodeReuse:false \
+          -p:PublishAot=true -p:StripSymbols=true \
+          -p:XsrVersionPrefix="$VERSION_PREFIX" -p:XsrVersionChannel="$VERSION_CHANNEL" \
+          -p:XsrVersionSequence="$VERSION_SEQUENCE" -p:XsrCommitShort="$COMMIT_SHORT" \
+          --output "$RUNNER_TEMP/launcher"
+        helper="$RUNNER_TEMP/launcher/Nexa.Update.Helper"
+        if [[ '${{ matrix.rid }}' == win-* ]]; then helper="${helper}.exe"; fi
+        "$helper" --validate-helper
+    - name: Smoke-run published launcher
+      shell: bash
+      run: |
+        binary="$RUNNER_TEMP/launcher/Nexa.Desktop"
+        if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
+        "$binary" --validate-shell
+        "$binary" --validate-setup
+    - name: Verify Windows game window integration under NativeAOT
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        dotnet publish tests/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj -c Release \
+          -r '${{ matrix.rid }}' --self-contained true -m:1 -nodeReuse:false \
+          -p:PublishAot=true -p:StripSymbols=true --output "$RUNNER_TEMP/window-integration"
+        "$RUNNER_TEMP/window-integration/Nexa.Desktop.Tests.exe" --window-integration-smoke
+    - name: Build native installers and portable archive
+      shell: bash
+      run: python eng/release/package.py --payload "$RUNNER_TEMP/launcher" --output artifacts --rid '${{ matrix.rid
+        }}' --version "$PRODUCT_VERSION"
+    - name: Publish native update transaction regression
+      shell: bash
+      run: |
+        dotnet publish tests/Nexa.Services.Tests -c Release -r '${{ matrix.rid }}' \
+          --self-contained true -p:PublishAot=true -p:StripSymbols=true \
+          -m:1 -nodeReuse:false --output "$RUNNER_TEMP/update-transaction-tests"
+    - name: Execute protected native update and offline recovery
+      shell: bash
+      run: |
+        binary="$RUNNER_TEMP/update-transaction-tests/Nexa.Services.Tests"
+        if [[ '${{ matrix.rid }}' == win-* ]]; then
+          NEXA_TEST_PROTECTED_TRANSACTION=1 "${binary}.exe" 'automatic update native'
+        else
+          sudo env NEXA_TEST_PROTECTED_TRANSACTION=1 "$binary" 'automatic update native'
+        fi
+    - name: Consume publisher-generated differential bundles under NativeAOT
+      shell: bash
+      run: |
+        python eng/release/delta_smoke_fixture.py "$RUNNER_TEMP/publisher-delta-fixture"
+        binary="$RUNNER_TEMP/update-transaction-tests/Nexa.Services.Tests"
+        if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
+        "$binary" 'portable update'
+        "$binary" --delta-publisher-smoke "$RUNNER_TEMP/publisher-delta-fixture"
+    - name: Preserve installer diagnostics
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: install-diagnostics-${{ matrix.rid }}
+        path: install-diagnostics/*
+        if-no-files-found: ignore
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: Nexa-${{ matrix.rid }}
+        path: artifacts/*
+        if-no-files-found: error
+  installation:
+    name: Native ARM64 installation (${{ matrix.format }})
+    needs:
+    - metadata
+    - launcher
+    runs-on: windows-11-arm
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        format:
+        - inno
+        - msi
+    env:
+      PRODUCT_VERSION: ${{ needs.metadata.outputs.version }}
+      INSTALL_FORMAT: ${{ matrix.format }}
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        ref: v2.0.0.alpha.12
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+      with:
+        python-version: '3.12'
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      with:
+        name: Nexa-win-arm64
+        path: artifacts
+    - name: Install the selected machine-wide package
+      shell: python
+      timeout-minutes: 4
+      run: |
+        import os, sys
+        from pathlib import Path
+        sys.path.insert(0, "eng/release")
+        import smoke_install as smoke
+        artifact_root=Path("artifacts").resolve()
+        base="Nexa-"+os.environ["PRODUCT_VERSION"]+"-win-arm64"
+        launcher_root=Path(os.environ.get("ProgramW6432", os.environ["ProgramFiles"])) / "NexaCL"
+        diagnostics=Path("install-diagnostics").resolve()
+        diagnostics.mkdir(exist_ok=True)
+        if os.environ["INSTALL_FORMAT"] == "inno":
+            smoke.run(artifact_root/(base+".setup.exe"), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/TASKS=desktopicon", f"/LOG={diagnostics/'inno-install.log'}", timeout=180)
+        else:
+            smoke.run("msiexec.exe", "/i", artifact_root/(base+".msi"), "/qn", "/norestart", "/L*V", diagnostics/"msi-install.log", timeout=180)
+      id: install
+    - name: Check installed executable and shortcuts
+      shell: python
+      timeout-minutes: 3
+      run: |
+        import os, sys
+        from pathlib import Path
+        sys.path.insert(0, "eng/release")
+        import smoke_install as smoke
+        artifact_root=Path("artifacts").resolve()
+        base="Nexa-"+os.environ["PRODUCT_VERSION"]+"-win-arm64"
+        launcher_root=Path(os.environ.get("ProgramW6432", os.environ["ProgramFiles"])) / "NexaCL"
+        diagnostics=Path("install-diagnostics").resolve()
+        diagnostics.mkdir(exist_ok=True)
+        for item in [launcher_root/"Nexa.Desktop.exe", Path(os.environ["PUBLIC"])/"Desktop/NexaCL.lnk", Path(os.environ["ProgramData"])/"Microsoft/Windows/Start Menu/Programs/NexaCL.lnk"]:
+            smoke.require(item)
+    - name: Check installed native JVM host
+      shell: python
+      timeout-minutes: 3
+      run: |
+        import os, sys
+        from pathlib import Path
+        sys.path.insert(0, "eng/release")
+        import smoke_install as smoke
+        artifact_root=Path("artifacts").resolve()
+        base="Nexa-"+os.environ["PRODUCT_VERSION"]+"-win-arm64"
+        launcher_root=Path(os.environ.get("ProgramW6432", os.environ["ProgramFiles"])) / "NexaCL"
+        diagnostics=Path("install-diagnostics").resolve()
+        diagnostics.mkdir(exist_ok=True)
+        smoke.check_jvm_host(launcher_root/"Nexa.Jvm.Host.exe")
+    - name: Validate installed update helper
+      shell: python
+      timeout-minutes: 3
+      run: |
+        import os, sys
+        from pathlib import Path
+        sys.path.insert(0, "eng/release")
+        import smoke_install as smoke
+        artifact_root=Path("artifacts").resolve()
+        base="Nexa-"+os.environ["PRODUCT_VERSION"]+"-win-arm64"
+        launcher_root=Path(os.environ.get("ProgramW6432", os.environ["ProgramFiles"])) / "NexaCL"
+        diagnostics=Path("install-diagnostics").resolve()
+        diagnostics.mkdir(exist_ok=True)
+        smoke.run(launcher_root/"Nexa.Update.Helper.exe", "--validate-helper", timeout=30)
+    - name: Validate protected installation admission
+      shell: python
+      timeout-minutes: 3
+      run: |
+        import os, sys
+        from pathlib import Path
+        sys.path.insert(0, "eng/release")
+        import smoke_install as smoke
+        artifact_root=Path("artifacts").resolve()
+        base="Nexa-"+os.environ["PRODUCT_VERSION"]+"-win-arm64"
+        launcher_root=Path(os.environ.get("ProgramW6432", os.environ["ProgramFiles"])) / "NexaCL"
+        diagnostics=Path("install-diagnostics").resolve()
+        diagnostics.mkdir(exist_ok=True)
+        smoke.run(launcher_root/"Nexa.Update.Helper.exe", "--validate-installation", timeout=30)
+    - name: Check installed runtime payload
+      shell: python
+      timeout-minutes: 3
+      run: |
+        import os, sys
+        from pathlib import Path
+        sys.path.insert(0, "eng/release")
+        import smoke_install as smoke
+        artifact_root=Path("artifacts").resolve()
+        base="Nexa-"+os.environ["PRODUCT_VERSION"]+"-win-arm64"
+        launcher_root=Path(os.environ.get("ProgramW6432", os.environ["ProgramFiles"])) / "NexaCL"
+        diagnostics=Path("install-diagnostics").resolve()
+        diagnostics.mkdir(exist_ok=True)
+        smoke.validate_runtime_contents(launcher_root)
+    - name: Validate installed launcher shell
+      shell: python
+      timeout-minutes: 3
+      run: |
+        import os, sys
+        from pathlib import Path
+        sys.path.insert(0, "eng/release")
+        import smoke_install as smoke
+        artifact_root=Path("artifacts").resolve()
+        base="Nexa-"+os.environ["PRODUCT_VERSION"]+"-win-arm64"
+        launcher_root=Path(os.environ.get("ProgramW6432", os.environ["ProgramFiles"])) / "NexaCL"
+        diagnostics=Path("install-diagnostics").resolve()
+        diagnostics.mkdir(exist_ok=True)
+        smoke.run(launcher_root/"Nexa.Desktop.exe", "--validate-shell", timeout=30)
+    - name: Uninstall the selected package
+      shell: python
+      timeout-minutes: 4
+      run: |
+        import os, sys
+        from pathlib import Path
+        sys.path.insert(0, "eng/release")
+        import smoke_install as smoke
+        artifact_root=Path("artifacts").resolve()
+        base="Nexa-"+os.environ["PRODUCT_VERSION"]+"-win-arm64"
+        launcher_root=Path(os.environ.get("ProgramW6432", os.environ["ProgramFiles"])) / "NexaCL"
+        diagnostics=Path("install-diagnostics").resolve()
+        diagnostics.mkdir(exist_ok=True)
+        if os.environ["INSTALL_FORMAT"] == "inno":
+            smoke.run(launcher_root/"unins000.exe", "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", f"/LOG={diagnostics/'inno-uninstall.log'}", timeout=180)
+        else:
+            smoke.run("msiexec.exe", "/x", artifact_root/(base+".msi"), "/qn", "/norestart", "/L*V", diagnostics/"msi-uninstall.log", timeout=180)
+      id: uninstall
+      if: always() && steps.install.outcome == 'success'
+    - name: Require clean uninstall
+      shell: python
+      timeout-minutes: 3
+      run: |
+        import os, sys
+        from pathlib import Path
+        sys.path.insert(0, "eng/release")
+        import smoke_install as smoke
+        artifact_root=Path("artifacts").resolve()
+        base="Nexa-"+os.environ["PRODUCT_VERSION"]+"-win-arm64"
+        launcher_root=Path(os.environ.get("ProgramW6432", os.environ["ProgramFiles"])) / "NexaCL"
+        diagnostics=Path("install-diagnostics").resolve()
+        diagnostics.mkdir(exist_ok=True)
+        for item in [launcher_root/"Nexa.Desktop.exe", launcher_root/"Nexa.Jvm.Host.exe", Path(os.environ["PUBLIC"])/"Desktop/NexaCL.lnk", Path(os.environ["ProgramData"])/"Microsoft/Windows/Start Menu/Programs/NexaCL.lnk"]:
+            if item.exists() or item.is_symlink():
+                raise RuntimeError("Uninstall left an installed artifact: "+str(item))
+      if: always() && steps.uninstall.outcome == 'success'
+    - name: Preserve installer diagnostics
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: recovery-install-${{ matrix.format }}
+        path: install-diagnostics/*
+        if-no-files-found: ignore
+  distribution:
+    needs:
+    - metadata
+    - launcher
+    - installation
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    env:
+      PRODUCT_VERSION: ${{ needs.metadata.outputs.version }}
+      VERSION_CHANNEL: ${{ needs.metadata.outputs.channel }}
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        ref: v2.0.0.alpha.12
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      with:
+        pattern: Nexa-*
+        path: artifacts
+        merge-multiple: true
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      with:
+        name: release-metadata
+        path: release-metadata
+    - name: Recover the five completed tagged platform artifacts
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        for rid in win-x64 linux-x64 linux-arm64 osx-x64 osx-arm64; do
+          directory="$RUNNER_TEMP/recovered-$rid"
+          gh run download 39915172080 --repo "$GITHUB_REPOSITORY" --name "Nexa-$rid" --dir "$directory"
+          cp "$directory"/* artifacts/
+        done
+    - name: Require the superseded run to be stopped before publication
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/39915172080" --jq .status)" = completed
+    - name: Require every package and calculate checksums
+      run: python3 eng/release/verify.py artifacts "$PRODUCT_VERSION"
+    - name: Generate and round-trip publisher-authenticated differential packages
+      if: needs.metadata.outputs.release == 'true' && needs.metadata.outputs.channel != 'ci'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        python3 eng/release/delta_history.py "$RUNNER_TEMP/update-history" "$PRODUCT_VERSION"
+        python3 eng/release/delta.py artifacts "$PRODUCT_VERSION" "$RUNNER_TEMP/update-history"
+        python3 eng/release/verify.py artifacts "$PRODUCT_VERSION"
+    - name: Sign and independently verify the complete distribution
+      env:
+        GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      run: python3 eng/release/sign.py artifacts "$PRODUCT_VERSION"
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: Complete-Nexa-distribution
+        overwrite: true
+        path: |
+          artifacts/*
+          release-metadata/CHANGELOG.md
+    - name: Publish tagged release
+      if: needs.metadata.outputs.release == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      shell: bash
+      run: |
+        python3 eng/release/release_notes.py publish --repository "$GITHUB_REPOSITORY" \
+          --tag "v2.0.0.alpha.12" --version "$PRODUCT_VERSION" --channel "$VERSION_CHANNEL" \
+          --notes-file release-metadata/RELEASE.md --assets-directory artifacts
+'on':
+  workflow_dispatch: null
