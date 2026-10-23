@@ -56,6 +56,7 @@ internal sealed partial class SettingsPageController
     {
         if (!_visible || _selected != "advanced" || !_shell.Tree.IsAlive(intent.Source)
             || _shell.Tree.GetComponent<XsrUiInput>(intent.Source)?.Enabled != true
+            || _shell.Tree.GetComponent<XsrUiCommandBinding>(intent.Source)?.Command != intent.Command
             || !_shell.Tree.IsAlive(_updateCard)) return;
         var nodes = CatalogNodes(_updateCard);
         if (intent.Source != nodes["SettingsCheckUpdate"] && !_updateActionViews.ContainsValue(intent.Source)) return;

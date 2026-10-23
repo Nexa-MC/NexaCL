@@ -90,11 +90,22 @@ internal static partial class Program
         Emit(fixture.Intents, "ui.settings.update.check", check); fixture.Shell.Render(new(1000, 800));
         AssertEqual(1, calls.Count); AssertEqual(card, Find("SettingsUpdateCard")); AssertEqual(check, Find("SettingsCheckUpdate"));
         AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiInput>(check)!.Enabled);
-        calls[0].SetResult(XsrResult.Success(new NexaUpdateStatus(new("2.0.1", "https://example.com/installer", "https://example.com/portable", "https://example.com/notes"))));
+        const string literalVersion = "literal <version> {state private}";
+        calls[0].SetResult(XsrResult.Success(new NexaUpdateStatus(new(literalVersion, "https://example.com/installer", "https://example.com/portable", "https://example.com/notes"))));
         Wait(() => Find("SettingsDownloadUpdate", false).IsAssigned);
         var download = Find("SettingsDownloadUpdate");
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiText>(Find("SettingsUpdateStatus"))!.Content.Contains(literalVersion, StringComparison.Ordinal));
         AssertEqual(card, Find("SettingsUpdateCard")); AssertEqual(check, Find("SettingsCheckUpdate"));
         AssertTrue(ReferenceEquals(transition, fixture.Shell.Tree.GetComponent<XsrUiTransition>(check)));
+        // A live card member cannot impersonate another member's command.
+        Emit(fixture.Intents, "ui.settings.update.download", check);
+        Emit(fixture.Intents, "ui.settings.update.notes", download);
+        Emit(fixture.Intents, "ui.settings.update.check", download);
+        fixture.Shell.Render(new(1000, 800));
+        AssertEqual(0, opened.Count); AssertEqual(1, calls.Count);
+        Emit(fixture.Intents, "ui.settings.update.download", download); fixture.Shell.Render(new(1000, 800));
+        AssertEqual("https://example.com/installer", opened.Single().AbsoluteUri);
+        opened.Clear();
         Emit(fixture.Intents, "ui.settings.update.check", check); fixture.Shell.Render(new(1000, 800)); AssertEqual(2, calls.Count);
         calls[1].SetResult(XsrResult.Success(new NexaUpdateStatus(null)));
         Wait(() => !fixture.Shell.Tree.IsAlive(download));
