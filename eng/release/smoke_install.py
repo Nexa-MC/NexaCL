@@ -4,7 +4,9 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
-from package import validate_runtime_contents
+import zipfile
+from delta import MAX_PACKAGE, copy_exact
+from package import is_development_artifact, validate_payload, validate_runtime_contents
 
 
 def run(*args, timeout=None):
@@ -26,6 +28,31 @@ def check_jvm_host(path):
         raise RuntimeError(f"Installed JVM host cannot execute: {result.returncode}")
 
 
+def check_windows_portable(root, base):
+    portable = root / (base + ".portable.zip")
+    require(portable)
+    if portable.stat().st_size > MAX_PACKAGE:
+        raise ValueError("Portable archive exceeds package budget")
+    with tempfile.TemporaryDirectory(prefix="nexa-portable-") as temporary:
+        payload = Path(temporary)
+        with zipfile.ZipFile(portable) as archive:
+            entries = archive.infolist()
+            for entry in entries:
+                if any(is_development_artifact(part) for part in entry.filename.replace("\\", "/").split("/")):
+                    raise RuntimeError(f"Development artifact in portable payload: {entry.filename}")
+            # Only these exact names become destinations; never extract archive paths.
+            for name in ("Nexa.Desktop.exe", "Nexa.Update.Helper.exe", "Nexa.Jvm.Host.exe"):
+                matches = [entry for entry in entries if entry.filename == name]
+                if not matches:
+                    raise RuntimeError(f"Windows portable payload is missing {name}")
+                if len(matches) != 1:
+                    raise RuntimeError(f"Windows portable payload repeats {name}")
+                with archive.open(matches[0]) as source, (payload / name).open("wb") as destination:
+                    copy_exact(source, destination, matches[0].file_size)
+        validate_payload(payload, "win")
+        check_jvm_host(payload / "Nexa.Jvm.Host.exe")
+
+
 def windows(root, base):
     # Bound individual commands so a stalled installer fails while the runner can
     # still upload diagnostics, rather than losing everything at the job timeout.
@@ -36,13 +63,15 @@ def windows(root, base):
     desktop = Path(os.environ["PUBLIC"]) / "Desktop/NexaCL.lnk"
     menu = Path(os.environ["ProgramData"]) / "Microsoft/Windows/Start Menu/Programs/NexaCL.lnk"
     host = executable.parent / "Nexa.Jvm.Host.exe"
+    helper = executable.parent / "Nexa.Update.Helper.exe"
     def check_removed():
-        for path in (executable, host, desktop, menu):
+        for path in (executable, host, helper, desktop, menu):
             if path.exists() or path.is_symlink():
                 raise RuntimeError(f"Windows uninstall left an installed artifact: {path}")
     def check():
         for path in (executable, desktop, menu):
             require(path)
+        validate_payload(executable.parent, "win")
         check_jvm_host(host)
         run(executable.parent / "Nexa.Update.Helper.exe", "--validate-helper", timeout=30)
         try:
@@ -64,6 +93,7 @@ def windows(root, base):
             raise
         validate_runtime_contents(executable.parent)
         run(executable, "--validate-shell", timeout=30)
+    check_windows_portable(root, base)
     run(root / (base + ".setup.exe"), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/TASKS=desktopicon",
         f"/LOG={diagnostics / 'inno-install.log'}", timeout=installer_timeout)
     try:
