@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
@@ -60,17 +61,34 @@ internal static partial class Program
             ((IClassicDesktopStyleApplicationLifetime)Application.Current!.ApplicationLifetime!).MainWindow!);
         await VerifyNativeStartupAppearanceAsync(startup, startupWindow, timeout.Token);
         AssertTrue(await Dispatcher.UIThread.InvokeAsync(() => startupWindow
-            .GetVisualDescendants().OfType<Button>().Any(static button => (string?)button.Content == "Cancel and exit")));
+            .GetVisualDescendants().OfType<Button>().Any(static button => button.Content is "Cancel and exit")));
         startup.ReportStage("settings-loading");
         await WaitForNativeStartupStageAsync(startup, startupWindow, "settings-loading", timeout.Token);
+        string logPath = Path.Combine(Path.GetTempPath(), "20261023T0400000000000Z.log");
+        startup.SetFailureLog(logPath);
         startup.ReportFailure("initialization-failed");
         AssertTrue(!startup.Completion.IsCompleted);
         await WaitForNativeStartupStageAsync(startup, startupWindow, "initialization-failed", timeout.Token);
+        await startup.InvokeAsync(async () =>
+        {
+            // Text changes before the native resize acknowledgement; layout checks
+            // must observe the failure viewport, rather than the previous loading size.
+            while (startupWindow.ClientSize.Height < AvaloniaUiStartupCard.FailureHeight - 1)
+                await Task.Delay(10, timeout.Token);
+        }, timeout.Token);
         await startup.InvokeAsync(() =>
         {
             var desktop = (IClassicDesktopStyleApplicationLifetime)Application.Current!.ApplicationLifetime!;
             AssertTrue(ReferenceEquals(startupWindow, desktop.MainWindow) && startupWindow.Topmost && startupWindow.IsVisible);
             AssertTrue(startupWindow.GetVisualDescendants().OfType<TextBlock>().Any(static text => text.Text == "initialization-failed"));
+            startupWindow.UpdateLayout();
+            var link = startupWindow.GetVisualDescendants().OfType<Button>()
+                .Single(button => AutomationProperties.GetAutomationId(button) == "StartupLogLink");
+            AssertTrue(link.IsVisible && link.IsEnabled);
+            AssertEqual("查看日志：" + Path.GetFileName(logPath), ((TextBlock)link.Content!).Text);
+            AssertEqual(logPath, ToolTip.GetTip(link));
+            Point origin = link.TranslatePoint(default, startupWindow)!.Value;
+            AssertTrue(origin.Y > 0 && origin.Y + link.Bounds.Height < startupWindow.ClientSize.Height);
         }, timeout.Token);
         Task<bool> retry = startup.WaitForRetryAsync("initialization-failed-retry");
         await WaitForNativeStartupStageAsync(startup, startupWindow, "initialization-failed-retry", timeout.Token);
@@ -79,7 +97,7 @@ internal static partial class Program
             var desktop = (IClassicDesktopStyleApplicationLifetime)Application.Current!.ApplicationLifetime!;
             AssertTrue(ReferenceEquals(startupWindow, desktop.MainWindow) && startupWindow.Topmost);
             Button button = desktop.MainWindow!.GetVisualDescendants().OfType<Button>()
-                .Single(static button => (string?)button.Content == "重试");
+                .Single(static button => button.Content is "重试");
             AssertTrue(button.IsVisible && button.IsEnabled && !retry.IsCompleted);
             button.RaiseEvent(new global::Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
         });
@@ -90,6 +108,8 @@ internal static partial class Program
             var desktop = (IClassicDesktopStyleApplicationLifetime)Application.Current!.ApplicationLifetime!;
             AssertTrue(ReferenceEquals(startupWindow, desktop.MainWindow) && startupWindow.Topmost && startupWindow.IsVisible);
             AssertTrue(startupWindow.GetVisualDescendants().OfType<TextBlock>().Any(static text => text.Text == "正在重试启动"));
+            AssertFalse(startupWindow.GetVisualDescendants().OfType<Button>()
+                .Single(button => AutomationProperties.GetAutomationId(button) == "StartupLogLink").IsVisible);
             AssertEqual(0, AvaloniaUiMotion.CaptureDiagnostics().ActiveTracks);
         }, timeout.Token);
         var shell = XsrUiShellComposer.Compose(new XsrStateStoreBuilder().Build());

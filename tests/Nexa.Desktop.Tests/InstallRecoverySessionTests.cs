@@ -1,5 +1,7 @@
 using Nexa.Desktop.Ui;
+using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Install;
+using Nexa.Services.Minecraft.Management;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 
@@ -32,5 +34,32 @@ internal static partial class Program
         release.SetResult();
         shutdown.GetAwaiter().GetResult();
         AssertTrue(stopped.IsSet); AssertEqual("original-root", observed); AssertEqual(0, reports.Count);
+    }
+
+    private static void StartupRecoveryConflictsKeepShellAvailableWithoutResumingWrites()
+    {
+        int installCalls = 0, snapshotCalls = 0;
+        XsrCommandRouterBuilder install = new();
+        install.Register<MinecraftInstallRecoveryCommand>(MinecraftInstallRoutes.Recover, (_, _) =>
+        {
+            installCalls++;
+            return ValueTask.FromResult(XsrResult.Success());
+        });
+        XsrCommandRouterBuilder recovery = new();
+        recovery.Register<InstanceRecoveryResumeCommand>(InstanceRecoveryContract.Recover, (_, _) =>
+        {
+            snapshotCalls++;
+            return ValueTask.FromResult(XsrResult.Failure(MinecraftErrors.InvalidRequest("保留冲突备份")));
+        });
+        List<string> reports = [];
+        using var session = new DesktopInstallRecoverySession(install.Build(new NoopDispatchObserver()), ["root"],
+            reports.Add, recoveryCommands: recovery.Build(new NoopDispatchObserver()));
+        new DesktopStartupReadiness(_ => { }, default).RunAsync("startup_local_recovery", token => session.InitialReady.WaitAsync(token))
+            .WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+        session.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        AssertEqual(1, snapshotCalls);
+        AssertEqual(0, installCalls);
+        AssertEqual(1, reports.Count);
+        AssertTrue(reports[0].Contains("已暂停自动安装恢复", StringComparison.Ordinal));
     }
 }

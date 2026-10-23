@@ -76,14 +76,27 @@ def main():
         commit=os.environ.get("GITHUB_SHA") if args.payload else None,
         bundleTemplate="v2.0.0.alpha.7", rid=args.rid), indent=2))
     outcomes = []
-    for scenario in ("first-run", "configured", "safe-mode"):
+    scenarios = ("first-run", "configured", "safe-mode") + (("recovery-conflict",) if args.payload else ())
+    for scenario in scenarios:
         data = root / ("data-" + scenario)
         data.mkdir(exist_ok=True)
         if scenario != "first-run":
             settings = data / "settings"
             settings.mkdir()
+            text_options = {}
+            marker = None
+            if scenario == "recovery-conflict":
+                library = data / "recovery-library"
+                instance = library / "versions/fixture"
+                transaction = instance / "Nexa/Recovery/transactions/00000000000000000000000000000001"
+                transaction.mkdir(parents=True)
+                (instance / "fixture.json").write_text(json.dumps(dict(id="fixture", type="release", mainClass="fixture.Main", libraries=[])))
+                marker = transaction / "transaction.json"
+                marker.write_text("{}")  # Invalid receipt: retained for inspection, never forced/deleted.
+                text_options["MinecraftLibrary"] = json.dumps(dict(SchemaVersion=1, ActiveDirectory=str(library),
+                    Directories=[dict(Path=str(library), SelectedInstanceId="", Name="")]))
             (settings / "settings.json").write_text(json.dumps(dict(schemaVersion=1,
-                booleanOptions={}, integerOptions={}, textOptions={})))
+                booleanOptions={}, integerOptions={}, textOptions=text_options)))
         environment = dict(os.environ, NEXA_DATA_DIR=str(data), NEXA_COUNTRY="US")
         command = [str(binary)] + (["--safe-mode"] if scenario == "safe-mode" else [])
         observed = []
@@ -104,9 +117,9 @@ def main():
                         time.sleep(1)
                         succeeded = process.poll() is None
                         break
-                    if any(window.get("kCGWindowBounds", {}).get("Width") == 400
+                    if any(window.get("kCGWindowBounds", {}).get("Width") in (400, 480)
                            and window.get("kCGWindowBounds", {}).get("Height", 0) >= 340 for window in windows):
-                        # The production startup window grows to 346 DIPs for an error.
+                        # Current Splash is 480x384 on failure; retain the old bundle check too.
                         # It waits for user retry, so waiting longer cannot establish readiness.
                         break
                     time.sleep(.5)
@@ -131,9 +144,13 @@ def main():
                         process.wait(timeout=10)
         print(f"Normal startup {scenario}: visible main window={succeeded}")
         print((root / f"startup-{scenario}.log").read_text(errors="replace")[-16000:])
-        launcher_log = data / "logs/launcher.log"
-        if launcher_log.exists():
-            print(launcher_log.read_text(errors="replace")[-16000:])
+        for launcher_log in sorted((data / "logs").glob("*.log")):
+            if launcher_log.is_file() and not launcher_log.is_symlink():
+                print(launcher_log.read_text(errors="replace")[-16000:])
+        if scenario == "recovery-conflict":
+            logs = "\n".join(path.read_text(errors="replace") for path in (data / "logs").glob("*.log"))
+            if marker.read_text() != "{}" or "已暂停自动安装恢复" not in logs:
+                raise SystemExit("Recovery conflict did not preserve its receipt and pause automatic writes")
     reports = Path.home() / "Library/Logs/DiagnosticReports"
     if reports.exists():
         for report in reports.glob("*Nexa*"):

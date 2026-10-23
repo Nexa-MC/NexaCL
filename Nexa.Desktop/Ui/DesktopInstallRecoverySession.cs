@@ -27,10 +27,15 @@ internal sealed class DesktopInstallRecoverySession : IDisposable, IAsyncDisposa
                 if (recoveryCommands is not null && recoveryCommands.TryResolve(InstanceRecoveryContract.Recover, out var recoveryRoute))
                 {
                     var recovered = await recoveryCommands.Dispatch(recoveryRoute, new InstanceRecoveryResumeCommand(roots), cancellationToken: _lifetime.Token).Completion.ConfigureAwait(false);
+                    _lifetime.Token.ThrowIfCancellationRequested();
+                    if (!recovered.IsSuccess && recovered.Error?.Code == XsrRuntimeErrors.Cancelled().Code)
+                        throw new OperationCanceledException("快照恢复扫描已取消。");
                     if (!recovered.IsSuccess)
                     {
                         report("快照恢复事务尚未处理完毕，已暂停自动安装恢复。" + recovered.Error?.Message);
-                        _initialReady.TrySetException(new IOException(recovered.Error?.Message ?? "快照恢复事务尚未处理完毕。"));
+                        // A completed scan with retained/conflicting receipts must not
+                        // keep the launcher closed. Automatic writes remain paused.
+                        _initialReady.TrySetResult();
                         return;
                     }
                 }

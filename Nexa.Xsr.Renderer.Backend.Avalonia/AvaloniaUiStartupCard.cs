@@ -13,7 +13,7 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
 {
     internal const double WindowWidth = 480;
     internal const double LoadingHeight = 272;
-    internal const double FailureHeight = 338;
+    internal const double FailureHeight = 384;
     internal const double PassiveHeight = 230;
 
     private readonly AvaloniaUiBrandImages? _brand = AvaloniaUiBrandImages.TryLoadProduct();
@@ -29,7 +29,9 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
     private readonly Grid _status;
     private readonly ScrollViewer _stageViewport;
     private readonly StackPanel _buttons;
-    private readonly Button _cancel, _retry;
+    private readonly Button _cancel, _retry, _logLink;
+    private readonly TextBlock _logLabel;
+    private string? _failureLog;
     private Func<string, string> _localize;
     private string _stageSource = "启动中";
     private bool _dark, _failed, _disposed;
@@ -37,7 +39,7 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
     internal WindowIcon? ProductIcon => (_themeBrand ?? _brand)?.ResolveIcon(_dark);
 
     internal AvaloniaUiStartupCard(Func<string, string> localize, Action? cancel = null,
-        Action? retry = null, Stream? fallback = null)
+        Action? retry = null, Stream? fallback = null, Action? openLog = null)
     {
         _localize = localize;
         if (_brand is null && fallback is not null) _fallback = new Bitmap(fallback);
@@ -121,6 +123,21 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
         };
         _cancel.Click += (_, _) => cancel?.Invoke();
         _retry.Click += (_, _) => { _retry.IsEnabled = false; retry?.Invoke(); };
+        _logLabel = Text(localize("日志文件不可用"), 12);
+        _logLabel.TextDecorations = TextDecorations.Underline;
+        _logLink = new Button
+        {
+            Content = _logLabel,
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(0, 4),
+            Height = 28,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            IsVisible = false,
+            IsEnabled = false
+        };
+        AutomationProperties.SetAutomationId(_logLink, "StartupLogLink");
+        _logLink.Click += (_, _) => { if (_failed && _failureLog is not null) openLog?.Invoke(); };
         _buttons = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -135,7 +152,7 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
         {
             Spacing = 14,
             Margin = new Thickness(92, 0, 0, 0),
-            Children = { _rail, _status, _buttons },
+            Children = { _rail, _status, _logLink, _buttons },
         };
         Child = new StackPanel { Spacing = 14, Children = { Header, details } };
     }
@@ -206,6 +223,7 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
         _cancel.Foreground = _version.Foreground;
         _retry.Background = new SolidColorBrush(dark ? Color.FromRgb(20, 65, 70) : Color.FromRgb(210, 241, 244));
         _retry.Foreground = _name.Foreground;
+        _logLabel.Foreground = _edition.Foreground;
         if (_themeSnapshot?.Colors is { } colors)
         {
             Background = ThemeBrush(colors.Background);
@@ -214,6 +232,7 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
             _rail.Background = ThemeBrush(colors.Accent);
             _version.Foreground = ThemeBrush(colors.Foreground with { Alpha = 180 });
         }
+        _logLabel.Foreground = _edition.Foreground;
         ApplyStatus();
     }
 
@@ -232,7 +251,16 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
         _retry.IsVisible = canRetry;
         _retry.IsEnabled = canRetry;
         _retry.IsDefault = canRetry;
+        _logLink.IsVisible = failed;
         ApplyStatus();
+    }
+
+    internal void SetFailureLog(string? path)
+    {
+        _failureLog = path;
+        _logLabel.Text = path is null ? _localize("日志文件不可用") : _localize("查看日志") + "：" + Path.GetFileName(path);
+        _logLink.IsEnabled = path is not null;
+        ToolTip.SetTip(_logLink, path);
     }
 
     private void ApplyStatus()
@@ -250,6 +278,7 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
         _localize = localize;
         _cancel.Content = localize("取消并退出");
         _retry.Content = localize("重试");
+        SetFailureLog(_failureLog);
         SetStage(_stageSource, _failed, _retry.IsVisible);
     }
 

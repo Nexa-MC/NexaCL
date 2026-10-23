@@ -11,6 +11,13 @@ public sealed partial class AvaloniaUiPlatformActions
     public void OpenLocalFile(string path)
     {
         if (_owner is null) throw new InvalidOperationException("The native window is not ready.");
+        ProcessStartInfo start = CreateLocalFileStartInfo(path);
+        if (LocalFileInvocation is { } invoke) invoke(start);
+        else Process.Start(start)?.Dispose();
+    }
+
+    internal static ProcessStartInfo CreateLocalFileStartInfo(string path)
+    {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         if (path.Length > 32768 || path.Any(char.IsControl) || !Path.IsPathFullyQualified(path))
             throw new ArgumentException("Only absolute local file paths without control characters are supported.", nameof(path));
@@ -27,8 +34,7 @@ public sealed partial class AvaloniaUiPlatformActions
             start.ArgumentList.Add(fullPath);
         }
         else throw new PlatformNotSupportedException("Local file associations are not supported on this platform.");
-        if (LocalFileInvocation is { } invoke) invoke(start);
-        else Process.Start(start)?.Dispose();
+        return start;
     }
 
     private static bool IsRegularLocalFile(string path)

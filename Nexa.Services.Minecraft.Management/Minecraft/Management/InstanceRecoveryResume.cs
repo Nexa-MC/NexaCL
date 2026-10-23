@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Nexa.Services.Logging;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Xsr;
 
@@ -53,13 +54,13 @@ public sealed partial class InstanceRecoveryService
                         }
                         catch (OperationCanceledException) { throw; }
                         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-                        { failures++; log?.Warn("Recovery", $"恢复事务需要处理：{error.GetType().Name}"); }
+                        { failures++; log?.Write(LogLevel.Warn, "Recovery", $"恢复事务需要处理：{error.GetType().Name}", ExceptionDiagnostics.Describe(error)); }
                     }
                 }
             }
             catch (OperationCanceledException) { return XsrResult.Failure(XsrRuntimeErrors.Cancelled()); }
             catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-            { failures++; log?.Warn("Recovery", $"恢复目录未完成：{error.GetType().Name}"); }
+            { failures++; log?.Write(LogLevel.Warn, "Recovery", $"恢复目录未完成：{error.GetType().Name}", ExceptionDiagnostics.Describe(error)); }
         }
         return failures == 0 ? XsrResult.Success() : XsrResult.Failure(MinecraftErrors.InvalidRequest("部分快照恢复事务存在冲突，备份已保留。"));
     }, token);

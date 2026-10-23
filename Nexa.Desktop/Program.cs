@@ -180,6 +180,9 @@ internal static partial class Program
                 try { Console.Error.WriteLine(ProductPresentationText.Raw("program.copy.9da908e4aee4f152") + storageStartup.Error?.Message); }
                 catch (IOException) { }
             }
+            stage = "initialize_session_log";
+            fileSink = TryCreateSessionLog(folders.ResolveSafePath(FolderNames.Logs, string.Empty));
+            WriteBootstrapLog(fileSink, LogLevel.Info, $"Launcher process started pid={Environment.ProcessId} version={ResolveInformationalVersion()}");
             startup?.SetAppearance(ReadStartupAppearance(folders.Root, commandLine.SafeMode));
             while (true)
             {
@@ -191,7 +194,7 @@ internal static partial class Program
                             if (startup?.FirstRenderElapsed is { } firstRender)
                                 logging.Info("Startup", FormattableString.Invariant($"first_native_render_submission_ms={firstRender.TotalMilliseconds:F2} main_to_native_submission_ms={mainToNativeSubmissionMs:F2}"));
                         },
-                        sink => fileSink = sink, value =>
+                        fileSink, value =>
                         {
                             stage = value;
                             if (value is "gui_lifetime" or "first_run_lifetime") guiStarted = true;
@@ -225,14 +228,15 @@ internal static partial class Program
                     && exception is not OperationCanceledException and not OutOfMemoryException and not AccessViolationException)
                 {
                     log?.Error("Startup", "Initialization failed at " + stage, ExceptionDiagnostics.Describe(exception));
+                    string? failureLog = await FlushStartupFailureAsync(fileSink, stage, exception).ConfigureAwait(false);
+                    startup.SetFailureLog(failureLog);
                     try { Console.Error.WriteLine(ProductPresentationText.Raw("program.copy.dc386abc36210cac") + LogRedactor.Redact(ExceptionDiagnostics.Describe(exception))); }
                     catch (IOException) { }
                     bool retry = await startup.WaitForRetryAsync(ProductPresentationText.Raw("program.copy.46040f17634f4218")).ConfigureAwait(false);
                     if (!retry) { exitCode = 1; return exitCode; }
                     log?.Dispose(); log = null;
-                    if (fileSink is not null) await fileSink.DisposeAsync().ConfigureAwait(false);
-                    fileSink = null;
                     stage = "retry_initialization";
+                    WriteBootstrapLog(fileSink, LogLevel.Info, "Retrying launcher initialization.");
                 }
             }
         }
@@ -246,17 +250,18 @@ internal static partial class Program
             string message = $"Launcher session failed stage={stage}";
             string detail = ExceptionDiagnostics.Describe(exception);
             log?.Error("Launcher", message, detail);
-            if (log is null && fileSink is not null)
+            if (fileSink is null)
             {
-                // Keep early folder/schema failures in the same file, before a host store exists.
-                LogEntry bootstrap = new(0, DateTimeOffset.UtcNow, LogLevel.Error, "Launcher",
-                    LogRedactor.Redact(message), LogRedactor.Redact(detail));
-                fileSink.Write(bootstrap, bootstrap.ToDisplayText());
+                // The selected root/storage transaction may fail before normal logging.
+                // Keep its failure in a separate per-user bootstrap log when possible.
+                fileSink = TryCreateSessionLog(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Nexa", "startup-logs"));
             }
+            string? failureLog = await FlushStartupFailureAsync(fileSink, stage, exception).ConfigureAwait(false);
             // A directory/bootstrap failure may precede the host logger entirely.
             try { Console.Error.WriteLine($"{message}{Environment.NewLine}{detail}"); } catch (IOException) { }
             if (startup is not null && !startup.Completion.IsCompleted)
             {
+                startup.SetFailureLog(failureLog);
                 startup.ReportFailure(ProductPresentationText.Raw("program.copy.6b2d855107bbf8f9"));
                 await startup.Completion.ConfigureAwait(false);
             }
@@ -269,6 +274,7 @@ internal static partial class Program
             if (startup?.ShellReadyElapsed is { } shellReady)
                 log?.Info("Startup", FormattableString.Invariant($"shell_handoff_ms={shellReady.TotalMilliseconds:F2}"));
             log?.Info("Launcher", $"Session ended pid={Environment.ProcessId} exit_code={exitCode} last_stage={stage}");
+            WriteBootstrapLog(fileSink, LogLevel.Info, $"Launcher process ended pid={Environment.ProcessId} exit_code={exitCode} last_stage={stage}");
             log?.Dispose();
             if (fileSink is not null) await fileSink.DisposeAsync().ConfigureAwait(false);
             if (startup is not null) await startup.DisposeAsync().ConfigureAwait(false);
@@ -277,7 +283,7 @@ internal static partial class Program
         }
     }
 
-    private static async Task<int> RunAsync(string[] args, Action<LogService> onLogReady, Action<FileLogSink> onSinkReady,
+    private static async Task<int> RunAsync(string[] args, Action<LogService> onLogReady, FileLogSink? sink,
         Action<string> setStage, AppFolders folders, bool locationLocked, Nexa.Xsr.XsrError? storageStartupError,
         DesktopSingleInstance? instance, bool disableHardwareAcceleration, AvaloniaUiStartupSession? startup)
     {
@@ -296,9 +302,7 @@ internal static partial class Program
             return RunFirstRun(args, setup, validateSetup, instance, disableHardwareAcceleration, startup, setStage);
         }
         bool safeMode = args.Contains("--safe-mode", StringComparer.OrdinalIgnoreCase);
-        string logFilePath = Path.Combine(folders.EnsureFolder(FolderNames.Logs), "launcher.log");
-        FileLogSink sink = new(logFilePath);
-        onSinkReady(sink);
+        string logDirectory = sink is null ? folders.ResolveSafePath(FolderNames.Logs, string.Empty) : Path.GetDirectoryName(sink.FilePath)!;
         setStage("ensure_settings_folder");
         string settingsFolder = folders.EnsureFolder(FolderNames.Settings);
         setStage("ensure_profiles_folder");
@@ -338,7 +342,7 @@ internal static partial class Program
             {
                 if (consoleAttached || buildInfo.DiagnosticsRequired) logging.MaximumLevel = LogLevel.RealTime;
                 if (consoleAttached) logging.AddSink(new ConsoleLogSink());
-                logging.AddSink(sink);
+                if (sink is not null) logging.AddSink(sink);
                 onLogReady(logging);
                 operationLog.Attach(logging);
                 logging.Info("Launcher", $"Session started pid={Environment.ProcessId} version={ResolveInformationalVersion()} channel={channel} level={logging.MaximumLevel} runtime={Environment.Version} os={System.Runtime.InteropServices.RuntimeInformation.OSDescription} arch={System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture}");
@@ -578,8 +582,8 @@ internal static partial class Program
             { feedback.Error(ProductPresentationText.Raw("program.copy.0037a8119d3414e3")); }
         };
         settingsPage.ExportDiagnostics = token => ExportDiagnosticsAsync(runtime.Host, platformActions, buildInfo.ProductVersion, token);
-        settingsPage.OpenLogDirectory = () => platformActions.OpenDirectory(Path.GetDirectoryName(logFilePath)!);
-        settingsPage.ExportLogs = token => ExportLogsAsync(sink, platformActions, token);
+        settingsPage.OpenLogDirectory = () => platformActions.OpenDirectory(logDirectory);
+        settingsPage.ExportLogs = token => sink is null ? Task.FromException<bool>(new IOException("磁盘日志不可用。")) : ExportLogsAsync(sink, platformActions, token);
         settingsPage.ConfigureStoragePreferences(async token =>
         {
             token.ThrowIfCancellationRequested();

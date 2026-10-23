@@ -17,6 +17,14 @@ registration finish once; local custom appearance assets, media engine validatio
 video frame, initial updater receipt/channel policy and initial system policy finish before
 the last native preparation pass. The real shell remains hidden throughout this work.
 
+A completed recovery scan with retained/conflicting snapshot receipts is an explicit
+degraded outcome, not a launcher initialization failure. The shell remains available
+for inspecting instances and logs, while automatic installation and Java recovery stay
+paused for that attempt. No conflicting backup is deleted or forced through recovery.
+Caller cancellation still cancels startup; mandatory settings/schema/native failures
+still use the Splash failure/retry path. This distinction prevents a library recovery
+warning from trapping users outside the launcher (observed on macOS Alpha 12).
+
 The native preparation pass uses the actual shell window and scene controls. It measures
 and arranges the initial viewport, drains state/controller projections, resolves text fonts,
 decodes raster assets, resolves icon geometry and draws an off-screen frame. Handoff shows
@@ -26,6 +34,8 @@ No main window may be shown by activation or preference callbacks before handoff
 The startup window's theme-aware neon identity and long-lived topmost presentation follow
 [XSR-830](XSR-830-neon-brand-startup.md). Prolonged loading remains visually quiet and does
 not repeatedly activate the window or schedule decorative motion.
+Reduced-motion startup applies the ring policy before the card joins the native
+visual tree, so an initially disabled animation never starts the shared clock.
 
 ## Finite work and reuse
 

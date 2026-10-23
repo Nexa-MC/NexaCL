@@ -166,6 +166,7 @@ internal static partial class Program
         ("wardrobe PNG rejects invalid and unbounded image data", Sync(WardrobePngRejectsInvalidAndUnboundedImageData)),
         ("appearance preferences retain legacy modes and durable failures", Sync(AppearancePreferencesRetainLegacyModesRestartAndDurableFailures)),
         ("disk logs rotate within physical bounds", DiskLogsRotateWithinPhysicalBounds),
+        ("session logs keep launches separate and protect live files", SessionLogsKeepLaunchesSeparateAndProtectLiveFiles),
         ("disk retention protects current unrelated files and links", DiskRetentionProtectsCurrentUnrelatedFilesAndLinks),
         ("disk retention enforces archive count and byte ceilings", DiskRetentionEnforcesArchiveCountAndByteCeilings),
         ("disk log policy applies committed changes without rendering", DiskLogPolicyAppliesCommittedChangesWithoutRendering),

@@ -7,9 +7,22 @@ in-memory `diagnostics.log-lines` control. Foundation applies only committed,
 validated preferences to LogService, which forwards the policy to retention sinks
 without holding the logging publication lock or performing filesystem IO.
 
-FileLogSink keeps the active `launcher.log` and rotates before adding a record
-that would exceed 4 MiB. Individual disk records are bounded. Archives use the
-owned `launcher-archive-{UTC timestamp}-{GUID}.log` namespace. Cleanup is confined
+Desktop creates a separate file per process launch, named by its UTC timestamp
+(`yyyyMMddTHHmmssfffffffZ.log`). Create-new reservation prevents concurrent launches
+from sharing a file; initialization retries keep the same session file. The sink
+is installed after pending storage migration and before first-run or normal
+composition. Failures before composition are redacted directly into that sink.
+Each live session holds an adjacent `.active` lease, distinct from export read
+handles; normal shutdown removes it, and retention can reclaim an unlocked lease
+left by an interrupted process. Cleanup protects other live sessions while still
+allowing captured export files to be pruned. The historical `launcher.log` remains
+preserved. If log creation fails, launching continues without a disk sink.
+
+FileLogSink rotates before adding a record that would exceed 4 MiB. Individual disk
+records are bounded. Timestamp-named session files and their rotated segments form
+one owned retention namespace; the old `launcher.log` and generated
+`launcher-archive-{UTC timestamp}-{GUID}.log` remain supported for migration/export.
+Cleanup is confined
 to regular files with this exact generated name, without recursion or following
 links. The active log and arbitrary `.log`/`.txt` files are preserved. Age cleanup
 runs after durable policy initialization and after changes/rotation; an additional
@@ -57,3 +70,10 @@ cancellation cleanup, live-worker recovery after an export budget rejection,
 rotation/pruning after a captured export barrier, and Desktop
 action dispatch/disposal. Parent integration runs
 architecture checks, managed suites, NativeAOT and trim validation.
+
+Before showing a startup failure, Desktop drains admitted disk records and passes
+the current session's local path plus an open action to the native Splash. The
+link is visible only for a failed stage and opens that exact local regular file
+through the OS association. It never uploads a log or renders exception details
+as markup. Retrying hides the link. If disk logging itself is unavailable, show
+that fact instead of a working-looking link; failure controls remain usable.

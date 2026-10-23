@@ -37,7 +37,7 @@ internal static partial class Program
                 Task<bool> retry = startup.WaitForRetryAsync(failure);
                 await WaitForStage(failure);
                 Save(splash, "splash-" + theme + "-failed");
-                splash.GetVisualDescendants().OfType<Button>().Single(button => (string?)button.Content == "重试")
+                splash.GetVisualDescendants().OfType<Button>().Single(button => button.Content is "重试")
                     .RaiseEvent(new global::Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
                 AssertTrue(await retry.WaitAsync(timeout.Token));
             }

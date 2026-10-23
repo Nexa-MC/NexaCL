@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -14,6 +15,7 @@ public sealed partial class AvaloniaUiStartupSession
         private readonly AvaloniaUiStartupCard _card;
         private AvaloniaUiStartupAppearance _appearance;
         private bool _firstRender, _closed;
+        private string? _failureLog;
 
         internal StartupWindow(Action rendered, Func<string, string> localize, Action retry,
             AvaloniaUiStartupAppearance appearance)
@@ -31,7 +33,11 @@ public sealed partial class AvaloniaUiStartupSession
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             Background = Brushes.Transparent;
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent, WindowTransparencyLevel.None];
-            _card = new AvaloniaUiStartupCard(localize, Close, retry);
+            _card = new AvaloniaUiStartupCard(localize, Close, retry, openLog: OpenFailureLog);
+            // Apply this before attaching the card: otherwise its progress ring starts
+            // the shared clock briefly, even when startup motion is disabled.
+            if (appearance.ReducedMotion)
+                _card.ApplySplashMotion(appearance.Theme?.Motion ?? AvaloniaUiThemeSplashMotion.Default, reducedMotion: true);
             _card.Header.PointerPressed += OnHeaderPointerPressed;
             Content = _card;
             PropertyChanged += OnThemeChanged;
@@ -78,6 +84,20 @@ public sealed partial class AvaloniaUiStartupSession
             if (_closed) return;
             _card.SetStage(stage, failed, canRetry);
             Height = failed ? AvaloniaUiStartupCard.FailureHeight : AvaloniaUiStartupCard.LoadingHeight;
+        }
+
+        internal void SetFailureLog(string? path)
+        {
+            _failureLog = path;
+            if (!_closed) _card.SetFailureLog(path);
+        }
+
+        private void OpenFailureLog()
+        {
+            if (_failureLog is not { } path) return;
+            try { Process.Start(AvaloniaUiPlatformActions.CreateLocalFileStartInfo(path))?.Dispose(); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or System.ComponentModel.Win32Exception)
+            { _card.SetFailureLog(null); }
         }
 
         internal void Relocalize(Func<string, string> localize)

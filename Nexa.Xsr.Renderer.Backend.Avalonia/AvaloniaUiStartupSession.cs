@@ -152,6 +152,15 @@ public sealed partial class AvaloniaUiStartupSession : IAsyncDisposable
         Dispatcher.UIThread.Post(() => _window?.SetStage(message, true));
     }
 
+    /// <summary>The composition root supplies the already-flushed local session log, or null if unavailable.</summary>
+    public void SetFailureLog(string? filePath)
+    {
+        if (filePath is not null && (!Path.IsPathFullyQualified(filePath) || filePath.Any(char.IsControl)))
+            throw new ArgumentException("An absolute local log path is required.", nameof(filePath));
+        if (Completion.IsCompleted) return;
+        Dispatcher.UIThread.Post(() => _window?.SetFailureLog(filePath));
+    }
+
     internal int Present(XsrUiShell shell, AvaloniaUiPlatformActions? actions, Stream? icon)
     {
         if (Dispatcher.UIThread.CheckAccess())

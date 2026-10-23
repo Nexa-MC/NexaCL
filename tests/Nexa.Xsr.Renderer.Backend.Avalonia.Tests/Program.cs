@@ -65,6 +65,7 @@ internal static partial class Program
         ("theme owner retirement and final native borrow release are concurrent safe", ThemeOwnerRetirementAndFinalNativeBorrowReleaseAreConcurrentSafe),
         ("progress ring shares clock stops and draws a hollow arc", ProgressRingSharesClockStopsAndDrawsHollowArc),
         ("theme SVG tile submits a bounded repeating picture for large viewports", ThemeSvgTileSubmitsBoundedRepeatingPictureForLargeViewports),
+        ("startup failure log link follows stage and needs explicit click", StartupFailureLogLinkFollowsStageAndNeedsExplicitClick),
     ];
 
     private static int Main(string[] args)

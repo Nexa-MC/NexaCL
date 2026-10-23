@@ -1,4 +1,6 @@
 [
+  {"source":"查看日志","en":"View log","zh-Hant":"檢視日誌"},
+  {"source":"日志文件不可用","en":"Log file unavailable","zh-Hant":"日誌檔案無法使用"},
   {"source":"手柄模式","en":"Controller mode","zh-Hant":"手把模式"},
   {"source":"左右摇杆同时向中心倾斜","en":"Tilt both sticks inward","zh-Hant":"左右搖桿同時向中心傾斜"},
   {"source":"左右摇杆内推以进入手柄模式","en":"Tilt both sticks inward to enter controller mode","zh-Hant":"左右搖桿內推以進入手把模式"},

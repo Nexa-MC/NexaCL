@@ -1,10 +1,11 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Threading.Channels;
 
 namespace Nexa.Services.Logging;
 
-/// <summary>A lazy, bounded disk mirror. All writes, rotation and retention run on one worker.</summary>
+/// <summary>A bounded disk mirror, with lazy construction or a reserved session file. One worker owns writes and retention.</summary>
 public sealed class FileLogSink : ILogSink, ILogRetentionSink, IDisposable, IAsyncDisposable
 {
     public const int MaximumFileBytes = 4 * 1024 * 1024;
@@ -15,7 +16,7 @@ public sealed class FileLogSink : ILogSink, ILogRetentionSink, IDisposable, IAsy
     private readonly Task _drain;
     private long _dropped;
     private int _disposed, _failed, _retentionDays, _policyVersion;
-    private readonly record struct PendingLine(string? Line, SnapshotRequest? Snapshot = null);
+    private readonly record struct PendingLine(string? Line, SnapshotRequest? Snapshot = null, TaskCompletionSource? Flushed = null);
     private sealed class SnapshotRequest(CancellationToken token)
     {
         internal CancellationToken Token { get; } = token;
@@ -31,11 +32,57 @@ public sealed class FileLogSink : ILogSink, ILogRetentionSink, IDisposable, IAsy
 
     public FileLogSink(string filePath) : this(filePath, MaximumFileBytes) { }
 
-    internal FileLogSink(string filePath, int maximumFileBytes)
+    internal FileLogSink(string filePath, int maximumFileBytes) : this(filePath, maximumFileBytes, null) { }
+
+    private FileLogSink(string filePath, int maximumFileBytes, FileStream? reserved, FileStream? sessionLease = null)
     {
         if (maximumFileBytes is < 128 or > MaximumFileBytes) throw new ArgumentOutOfRangeException(nameof(maximumFileBytes));
         _files = new(filePath); _maximumFileBytes = maximumFileBytes;
-        _drain = Task.Run(DrainAsync);
+        _drain = Task.Run(() => DrainAsync(reserved, sessionLease));
+    }
+
+    public string FilePath => _files.CurrentPath;
+
+    /// <summary>Reserves a unique UTC timestamp file for one launcher session.</summary>
+    public static FileLogSink CreateSession(string directory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(directory);
+        new OwnedLogFiles(Path.Combine(directory, "launcher.log")).EnsureDirectory();
+        DateTimeOffset timestamp = DateTimeOffset.UtcNow;
+        for (int attempt = 0; attempt < 256; attempt++)
+        {
+            string path = Path.Combine(directory, timestamp.AddTicks(attempt).ToString(OwnedLogFiles.SessionTimestampFormat, CultureInfo.InvariantCulture) + ".log");
+            FileStream? reserved = null;
+            FileStream? lease = null;
+            try
+            {
+                reserved = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read, 65536, useAsync: true);
+                lease = new FileStream(path + ".active", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+                return new FileLogSink(path, MaximumFileBytes, reserved, lease);
+            }
+            catch (IOException) when (reserved is null && File.Exists(path)) { }
+            catch { reserved?.Dispose(); lease?.Dispose(); throw; }
+        }
+        throw new IOException("Unable to reserve a unique session log.");
+    }
+
+    /// <summary>Flushes all admitted records before a startup failure offers its local file link.</summary>
+    public async Task FlushAsync(CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        if (Volatile.Read(ref _disposed) == 0)
+        {
+            var flushed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            try
+            {
+                await _lines.Writer.WriteAsync(new(null, Flushed: flushed), token).ConfigureAwait(false);
+                await flushed.Task.WaitAsync(token).ConfigureAwait(false);
+                return;
+            }
+            catch (ChannelClosedException) { }
+        }
+        await _drain.WaitAsync(token).ConfigureAwait(false);
+        if (Volatile.Read(ref _failed) != 0) throw new IOException("The disk log sink is unavailable.");
     }
 
     public void Write(LogEntry entry, string formattedLine)
@@ -87,12 +134,13 @@ public sealed class FileLogSink : ILogSink, ILogRetentionSink, IDisposable, IAsy
         }
     }
 
-    private async Task DrainAsync()
+    private async Task DrainAsync(FileStream? reserved, FileStream? sessionLease)
     {
-        StreamWriter? writer = null;
+        StreamWriter? writer = reserved is null ? null : new StreamWriter(reserved, new UTF8Encoding(false), 65536);
         long writtenBytes = 0, flushedAt = Stopwatch.GetTimestamp();
         int appliedPolicy = 0;
         SnapshotRequest? capturing = null;
+        TaskCompletionSource? flushing = null;
         try
         {
             while (await _lines.Reader.WaitToReadAsync().ConfigureAwait(false))
@@ -102,6 +150,13 @@ public sealed class FileLogSink : ILogSink, ILogRetentionSink, IDisposable, IAsy
                 while (drained++ < 256 && _lines.Reader.TryRead(out var pending))
                 {
                     if (pending.Line is { } line) await WriteLineAsync(line).ConfigureAwait(false);
+                    if (pending.Flushed is { } barrier)
+                    {
+                        flushing = barrier;
+                        if (writer is not null) await writer.FlushAsync().ConfigureAwait(false);
+                        barrier.TrySetResult();
+                        flushing = null;
+                    }
                     if (pending.Snapshot is { } request)
                     {
                         capturing = request;
@@ -156,13 +211,28 @@ public sealed class FileLogSink : ILogSink, ILogRetentionSink, IDisposable, IAsy
             }
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-        { Volatile.Write(ref _failed, 1); capturing?.Completion.TrySetException(new IOException("The disk log sink is unavailable.")); _lines.Writer.TryComplete(); }
+        {
+            Volatile.Write(ref _failed, 1);
+            capturing?.Completion.TrySetException(new IOException("The disk log sink is unavailable."));
+            flushing?.TrySetException(new IOException("The disk log sink is unavailable."));
+            _lines.Writer.TryComplete();
+        }
         finally
         {
-            while (_lines.Reader.TryRead(out var pending)) pending.Snapshot?.Completion.TrySetException(new IOException("The disk log sink is unavailable."));
+            while (_lines.Reader.TryRead(out var pending))
+            {
+                pending.Snapshot?.Completion.TrySetException(new IOException("The disk log sink is unavailable."));
+                pending.Flushed?.TrySetException(new IOException("The disk log sink is unavailable."));
+            }
             if (writer is not null)
                 try { await writer.DisposeAsync().ConfigureAwait(false); }
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException) { Volatile.Write(ref _failed, 1); }
+            if (sessionLease is not null)
+            {
+                string path = sessionLease.Name;
+                try { sessionLease.Dispose(); _files.EnsureNoDirectoryLinks(); OwnedLogFiles.EnsureRegularFile(path); File.Delete(path); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+            }
         }
     }
 

@@ -10,7 +10,12 @@ internal sealed class OwnedLogFiles(string currentPath)
     private const int MaximumDirectoryEntries = 4096;
     internal string CurrentPath { get; } = Path.GetFullPath(currentPath);
     internal string DirectoryPath { get; } = Path.GetDirectoryName(Path.GetFullPath(currentPath))!;
-    private readonly string _prefix = Path.GetFileNameWithoutExtension(currentPath) + "-archive-";
+    private readonly bool _sessions = IsSessionName(Path.GetFileName(currentPath));
+    private readonly string _prefix = (IsSessionName(Path.GetFileName(currentPath)) ? "launcher" : Path.GetFileNameWithoutExtension(currentPath)) + "-archive-";
+    internal const string SessionTimestampFormat = "yyyyMMdd'T'HHmmssfffffff'Z'";
+
+    private static bool IsSessionName(string name) => name.Length == 27 && name.EndsWith(".log", StringComparison.Ordinal)
+        && DateTime.TryParseExact(name.AsSpan(0, 23), SessionTimestampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
 
     internal void EnsureDirectory()
     {
@@ -49,6 +54,7 @@ internal sealed class OwnedLogFiles(string currentPath)
         {
             if (++examined > MaximumDirectoryEntries) throw new IOException("The log directory exceeds the scan budget.");
             string name = Path.GetFileName(path);
+            if (Nexa.Core.PathIdentity.Comparer.Equals(Path.GetFullPath(path), CurrentPath)) continue;
             if (!IsArchiveName(name)) continue;
             var file = new FileInfo(path);
             if (!file.Exists || file.LinkTarget is not null || (file.Attributes & (FileAttributes.Directory | FileAttributes.ReparsePoint)) != 0) continue;
@@ -64,6 +70,7 @@ internal sealed class OwnedLogFiles(string currentPath)
 
     private bool IsArchiveName(string name)
     {
+        if (_sessions && (IsSessionName(name) || name == "launcher.log")) return true;
         if (!name.StartsWith(_prefix, StringComparison.Ordinal) || !name.EndsWith(".log", StringComparison.Ordinal)) return false;
         var identity = name.AsSpan(_prefix.Length, name.Length - _prefix.Length - 4);
         return identity.Length == 51 && identity[18] == '-'
@@ -117,8 +124,21 @@ internal sealed class OwnedLogFiles(string currentPath)
         {
             bool aged = retentionDays is not null && archive.ModifiedUtc < cutoff;
             if (!aged && count <= MaximumArchiveCount && bytes <= MaximumArchiveBytes) continue;
+            if (_sessions && Path.GetFileName(archive.Path) == "launcher.log") continue;
             EnsureRegularFile(archive.Path);
-            File.Delete(archive.Path);
+            // A separate lease distinguishes a live writer from export read handles.
+            // The latter must not prevent pruning files captured by an export barrier.
+            string active = archive.Path + ".active";
+            FileStream? lease = null;
+            if (_sessions && IsSessionName(Path.GetFileName(archive.Path)) && File.Exists(active))
+            {
+                EnsureRegularFile(active);
+                try { lease = new FileStream(active, FileMode.Open, FileAccess.ReadWrite, FileShare.None); }
+                catch (IOException) { continue; }
+            }
+            try { File.Delete(archive.Path); }
+            finally { lease?.Dispose(); }
+            if (lease is not null) File.Delete(active);
             count--; bytes -= archive.Length;
         }
     }

@@ -21,6 +21,16 @@ jobs:
           global-json-file: global.json
       - name: Build native rendering probe
         run: dotnet build tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release -m:1 -nodeReuse:false
+      - name: Verify native Splash failure log link, retry and cancellation
+        shell: bash
+        run: |
+          mkdir -p "$PROBE_OUTPUT"
+          dotnet tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll \
+            --native-startup-smoke > "$PROBE_OUTPUT/startup-splash.log" 2>&1
+          cat "$PROBE_OUTPUT/startup-splash.log"
+          dotnet tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll \
+            --native-startup-cancel-smoke > "$PROBE_OUTPUT/startup-cancel.log" 2>&1
+          cat "$PROBE_OUTPUT/startup-cancel.log"
       - name: Capture native light and dark offscreen rendering
         shell: bash
         run: |

@@ -388,6 +388,8 @@ internal static partial class Program
         ("Install exit waits for stop and preserves stay choice", InstallExitWaitsForStopAndPreservesStayChoice),
         ("Java only installation guards close until stopped", JavaOnlyInstallationGuardsCloseUntilStopped),
         ("Startup install recovery owns dispatch and shutdown", StartupInstallRecoveryOwnsDispatchAndShutdown),
+        ("Startup recovery conflicts keep shell available without resuming writes", StartupRecoveryConflictsKeepShellAvailableWithoutResumingWrites),
+        ("Startup failure log flushes before link and survives attempt disposal", StartupFailureLogFlushesBeforeLinkAndSurvivesAttemptDisposal),
         ("first run keeps drafts and commits only at finish", FirstRunKeepsDraftsAndCommitsOnlyAtFinish),
         ("account owned rows retain drafts and reject hidden sources", AccountOwnedRowsRetainDraftsAndRejectHiddenSources),
         ("wardrobe owned cards preserve path drafts and responsive orientation", WardrobeOwnedCardsRetainDraftsAcrossLanguageAndOrientation),
