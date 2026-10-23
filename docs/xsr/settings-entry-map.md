@@ -557,6 +557,22 @@ current value contracts and are not actively deleted from user data.
 
 The global catalog has ten categories. The `platform` page presents the Machine Capability Registry snapshot through `machine.capabilities.query`, with explicit refresh through `machine.capabilities.refresh`. Its read-only rows are generated from capability definitions (system, CPU, memory, runtime and providers whose ports are not connected), rather than durable settings. No cloud controls are introduced.
 
+## Removed informational workspaces — 2026-10-23
+
+Global settings no longer present network probes, observed endpoints, source-resolution
+diagnostics, active-download diagnostics or network trace records; the directory-location
+inventory; durable diagnostic history and its raw-export action; or the automation/safe-mode
+card with command-palette and protocol examples. Their page-only reads and actions retire
+with these views. Editable network/proxy settings, data-location migration, cleanup, backup
+and AI controls remain available. Service diagnostic collection, instance diagnostics,
+safe-mode behavior and the independently opened command palette keep their existing contracts.
+
+Verification: 362 Desktop cases and the 72-project architecture check pass. Native captures
+cover all ten global pages in both themes and the detailed settings/backup/proxy/palette
+route. Linux x64 NativeAOT shell validation passes with the retired templates absent from
+the published bundle. Tests for the removed views retire; remaining proxy, backup, AI,
+focus, scroll and migration coverage is retained.
+
 ## Alpha 9 settings presentation regrouping
 
 The current global navigation order is general, appearance, game, Java, network, storage,

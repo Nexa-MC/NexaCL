@@ -7,21 +7,15 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
-    private static void AdvancedWorkspaceDispatchesFiniteRoutesAndCancelsRetiredDelay()
+    private static void AdvancedWorkspaceRestrictsToolsToDeveloperAndCancelsRetiredDelay()
     {
         using var fixture = new DeveloperDiagnosticsFixture();
-        List<DesktopCommandRoute> navigation = []; int palettes = 0, openedFiles = 0;
-        fixture.Settings.LauncherSafeMode = true;
-        fixture.Settings.NavigateAdvancedCommand = navigation.Add;
-        fixture.Settings.OpenAdvancedCommandPalette = () => { palettes++; return true; };
+        int openedFiles = 0;
         fixture.Settings.OpenAdvancedSettingsFile = () => openedFiles++;
         fixture.Select("advanced");
         AssertFalse(fixture.Has("AdvancedWorkspace.Settings.Read"));
         AssertFalse(fixture.Has("AdvancedWorkspace.Settings.OpenFile"));
-        foreach (var route in DesktopCommandLine.Commands) fixture.Click("ui.settings.management.action", "AdvancedWorkspace.Go." + route.Id);
-        AssertEqual(DesktopCommandLine.Commands.Count, navigation.Count);
-        AssertTrue(navigation.SequenceEqual(DesktopCommandLine.Commands));
-        fixture.Click("ui.settings.management.action", "AdvancedWorkspace.Palette"); AssertEqual(1, palettes);
+        AssertFalse(fixture.Has("AdvancedWorkspace.Navigation"));
         fixture.SetDeveloper(true);
         AssertEqual(0, openedFiles); fixture.Click("ui.settings.management.action", "AdvancedWorkspace.Settings.OpenFile"); AssertEqual(1, openedFiles);
         long revision = fixture.Host.SettingsPolicy.Read(new()).Value!.Revision;

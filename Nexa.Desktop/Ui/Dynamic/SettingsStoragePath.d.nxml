@@ -1,3 +1,0 @@
-﻿<nxml-dynamic>
-  <Text Content="{data path}" Localize="false" Class="settings-storage-path" />
-</nxml-dynamic>

@@ -69,22 +69,8 @@ internal static partial class Program
                 && fixture.Shell.Tree.GetComponent<XsrUiSelection>(Get("SettingsOption.diagnostics.ai.reasoning.medium"))!.IsSelected
                 && Get("ContentWorkspace.AiFacts").IsAssigned && fixture.Shell.Tree.GetComponent<XsrUiInput>(Get("ContentWorkspace.AiFacts"))!.Enabled;
         }, TimeSpan.FromSeconds(10)));
-        Emit(fixture.Intents, "ui.settings.storage.workspace", Get("ContentWorkspace.Raw"));
-        AssertTrue(SpinWait.SpinUntil(() => { fixture.Shell.Render(new(1000, 650)); return fixture.Feedback.Snapshot().Dialog is not null; }, TimeSpan.FromSeconds(10)));
-        var exportPreview = fixture.Feedback.Snapshot().Dialog!;
-        AssertFalse(exportPreview.LocalizeMessage); AssertTrue(exportPreview.Message.StartsWith("Export ", StringComparison.Ordinal));
-        AssertTrue(exportPreview.Message.Contains("bytes of redacted text", StringComparison.Ordinal)); AssertTrue(exportPreview.Message.EndsWith(rawBody, StringComparison.Ordinal));
-        scene = fixture.Shell.Render(new(1000, 650));
-        var exportMessage = FindByKey(fixture.Shell, scene, "DialogMessage");
-        AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiText>(exportMessage.Entity)!.Localize); AssertTrue(exportMessage.Text!.EndsWith(rawBody, StringComparison.Ordinal));
-        fixture.Feedback.ResolveDialog(exportPreview.Id, false);
-        AssertTrue(SpinWait.SpinUntil(() =>
-        {
-            fixture.Shell.Render(new(1000, 650));
-            return fixture.Feedback.Snapshot().Dialog is null && Get("ContentWorkspace.AiRaw").IsAssigned
-                && fixture.Shell.Tree.GetComponent<XsrUiInput>(Get("ContentWorkspace.AiRaw"))!.Enabled;
-        }, TimeSpan.FromSeconds(10)));
-        AssertFalse(Directory.EnumerateFiles(directory, "nexa-raw-*.txt").Any()); AssertEqual(0, handler.Calls);
+        AssertFalse(Get("ContentWorkspace.Raw").IsAssigned);
+        AssertEqual(0, handler.Calls);
         Emit(fixture.Intents, "ui.settings.storage.workspace", Get("ContentWorkspace.AiRaw"));
         AssertTrue(SpinWait.SpinUntil(() => { fixture.Shell.Render(new(1000, 650)); return fixture.Feedback.Snapshot().Dialog is not null; }, TimeSpan.FromSeconds(10)));
         var rawPreview = fixture.Feedback.Snapshot().Dialog!;

@@ -1,3 +1,0 @@
-<nxml-dynamic>
-<StackPanel Key="{data row}" Class="settings-advanced-toolbar"><Text Content="--command={data id} · nexacl://{data id}" Localize="false" MaxLines="1" TrimOverflow="true" Class="settings-advanced-route" /><Button Key="{data button}" Content="{data label}" Command="ui.settings.management.action" Enabled="{data enabled}" Class="settings-catalog-action settings-advanced-action" /></StackPanel>
-</nxml-dynamic>

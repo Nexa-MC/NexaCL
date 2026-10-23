@@ -1,4 +1,4 @@
-﻿using Nexa.Desktop.Ui;
+using Nexa.Desktop.Ui;
 using Nexa.Services.Settings;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
@@ -14,7 +14,9 @@ internal static partial class Program
         {
             string name = fixture.Shell.Tree.Name(entity);
             AssertFalse(name is "SettingsUnavailable" or "SettingsGeneral.Protocol" or "SettingsGeneral.Confirmations"
-                or "ContentTrustStates" or "SafeLaunchPolicy" or "SettingsProxyHint" or "NetworkMirrorResolution.Policy");
+                or "ContentTrustStates" or "SafeLaunchPolicy" or "SettingsProxyHint" or "NetworkMirrorResolution.Policy"
+                or "NetworkProbe" or "NetworkObservedEndpoints" or "NetworkMirrorResolution" or "NetworkDownloadDiagnostics" or "NetworkDiagnostics"
+                or "SettingsStorageDirectories" or "DurableDiagnosticWorkspace" or "ContentWorkspace.Raw" or "AdvancedWorkspace.Navigation");
             if (name.StartsWith("SettingsRow.", StringComparison.Ordinal))
             {
                 var entry = catalog[name["SettingsRow.".Length..]];
@@ -346,10 +348,12 @@ internal static partial class Program
         var toggle = ShowSettingsFixtureControl(fixture, settings, ref scene, "SettingsOption.developer.enabled.true").Entity;
         var listNode = FindByKey(fixture.Shell, scene, "SettingsSections");
         var list = listNode.Entity;
-        AssertTrue(fixture.Shell.Renderer.PointerScroll(new(listNode.Rect.X + 30, listNode.Rect.Y + 30), 24));
+        AssertTrue(fixture.Shell.Renderer.TryGetScrollSnapshot(list, out var snapshot));
+        bool overflows = snapshot.ContentHeight > snapshot.ViewportHeight;
+        AssertEqual(overflows, fixture.Shell.Renderer.PointerScroll(new(listNode.Rect.X + 30, listNode.Rect.Y + 30), 24));
         scene = fixture.Shell.Render(new(1000, 650));
         double offset = fixture.Shell.Tree.GetComponent<XsrUiScroll>(list)!.OffsetY;
-        AssertTrue(offset > 0);
+        AssertEqual(overflows, offset > 0);
         AssertTrue(fixture.Shell.Renderer.Focus(toggle));
         Emit(fixture.Intents, "ui.settings.choice", toggle);
         fixture.Shell.Render(new(1000, 650));

@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using Nexa.Services.Setup;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
@@ -65,7 +65,6 @@ internal sealed partial class SettingsPageController
         if (_instanceDirectory is not null || _selected != "storage") return;
         _storageRebuildPending = false;
         _storageLocationPanel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsStorageLocation.d.nxml", StorageLocationProjection()));
-        BuildStorageLocations();
         _storageCleanupPanel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsStorageCleanup.d.nxml", StorageCleanupProjection()));
     }
 
@@ -74,7 +73,6 @@ internal sealed partial class SettingsPageController
         if (_instanceDirectory is not null || _selected != "storage" || !_shell.Tree.IsAlive(_storageLocationPanel) || !_shell.Tree.IsAlive(_storageCleanupPanel)) return;
         _dynamic.Reload(_storageLocationPanel, DesktopMarkup.Dynamic("SettingsStorageLocation.d.nxml", StorageLocationProjection()));
         _dynamic.Reload(_storageCleanupPanel, DesktopMarkup.Dynamic("SettingsStorageCleanup.d.nxml", StorageCleanupProjection()));
-        RefreshStorageLocationsPresentation();
         _storageRebuildPending = false;
     }
 
@@ -114,7 +112,6 @@ internal sealed partial class SettingsPageController
     // Run this before OnFrame's visibility return so a committed queue still closes the host after navigation.
     private void UpdateStoragePreferences()
     {
-        UpdateStorageLocations();
         bool changed = false;
         if (_instanceDirectory is null && _selected == "storage" && _storageStatus is null && _storageStatusRead is null
             && !_storageStatusUnavailable
@@ -192,7 +189,6 @@ internal sealed partial class SettingsPageController
 
     private void CancelStoragePreferences()
     {
-        CancelStorageLocations();
         Interlocked.Increment(ref _storageGeneration);
         _storageStop?.Cancel(); _storageStop?.Dispose(); _storageStop = null;
         _storagePreviewRead = null;

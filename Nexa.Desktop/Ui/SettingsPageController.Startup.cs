@@ -55,7 +55,7 @@ internal sealed partial class SettingsPageController
                 _reading, _catalogReading, _machineReading, _hardwareAdviceRead,
                 _identityRead, _managementRead, _storageStatusRead, _javaInventoryRead,
                 _launchProfilesReading, _runtimeTraceRead,
-                _networkTraceReading, _resourceResolutionReading, _updatePolicyReading,
+                _updatePolicyReading,
                 _themeOperation,
             }.OfType<Task>().Where(task => !task.IsCompleted).ToArray();
             if (pending.Length == 0) return;

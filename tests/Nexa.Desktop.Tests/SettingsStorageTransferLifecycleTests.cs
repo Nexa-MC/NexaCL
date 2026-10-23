@@ -75,7 +75,7 @@ internal static partial class Program
         }
     }
 
-    private static void StorageBusyReloadRetainsCatalogDraftCaretAndOwnedDirectoryRows()
+    private static void StorageBusyReloadRetainsCatalogDraftCaretAndControls()
     {
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
         fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();
@@ -89,10 +89,9 @@ internal static partial class Program
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
         Wait(() => Find("SettingsNav.storage", false).IsAssigned);
         Emit(fixture.Intents, "ui.settings.section", Find("SettingsNav.storage")); fixture.Shell.Render(new(1100, 1000));
-        Wait(() => Find("SettingsInput.storage.backup-keep-count", false).IsAssigned && fixture.Shell.Tree.GetComponent<XsrUiInput>(Find("SettingsStorageMove"))!.Enabled
-            && DirectoryValue() == Path.Combine(data, "settings"));
+        Wait(() => Find("SettingsInput.storage.backup-keep-count", false).IsAssigned && fixture.Shell.Tree.GetComponent<XsrUiInput>(Find("SettingsStorageMove"))!.Enabled);
         var inputEntity = Find("SettingsInput.storage.backup-keep-count"); var move = Find("SettingsStorageMove"); var cleanup = Find("SettingsStorageCleanTemporary");
-        var location = Find("SettingsStorageLocation"); var directories = Find("SettingsStorageDirectories"); var settingsPath = fixture.Shell.Tree.Children(Find("SettingsStorageValue.Settings")).Single();
+        var location = Find("SettingsStorageLocation");
         fixture.Shell.Renderer.SetTextInputValue(inputEntity, "117"); AssertTrue(fixture.Shell.Renderer.Focus(inputEntity, showIndicator: false));
         fixture.Shell.Renderer.EditText(XsrUiTextEdit.Left);
         var input = fixture.Shell.Tree.GetComponent<XsrUiTextInput>(inputEntity)!; int caretStart = input.SelectionStart, caretEnd = input.SelectionEnd;
@@ -108,17 +107,11 @@ internal static partial class Program
         void AssertRetained()
         {
             AssertEqual(inputEntity, Find("SettingsInput.storage.backup-keep-count")); AssertEqual(move, Find("SettingsStorageMove")); AssertEqual(cleanup, Find("SettingsStorageCleanTemporary"));
-            AssertEqual(location, Find("SettingsStorageLocation")); AssertEqual(directories, Find("SettingsStorageDirectories"));
-            AssertEqual(settingsPath, fixture.Shell.Tree.Children(Find("SettingsStorageValue.Settings")).Single()); AssertEqual(inputEntity, fixture.Shell.Renderer.Focused);
+            AssertEqual(location, Find("SettingsStorageLocation")); AssertEqual(inputEntity, fixture.Shell.Renderer.Focused);
             AssertEqual("117", input.ReadDraft()); AssertEqual(caretStart, input.SelectionStart); AssertEqual(caretEnd, input.SelectionEnd);
             AssertTrue(ReferenceEquals(input, fixture.Shell.Tree.GetComponent<XsrUiTextInput>(inputEntity)));
             AssertTrue(ReferenceEquals(transition, fixture.Shell.Tree.GetComponent<XsrUiTransition>(inputEntity)));
             AssertTrue(ReferenceEquals(scroll, fixture.Shell.Tree.GetComponent<XsrUiScroll>(viewport))); AssertEqual(offset, scroll.OffsetY);
-        }
-        string? DirectoryValue()
-        {
-            var slot = Find("SettingsStorageValue.Settings", false);
-            return slot.IsAssigned && fixture.Shell.Tree.Children(slot).Count == 1 ? fixture.Shell.Tree.GetComponent<XsrUiText>(fixture.Shell.Tree.Children(slot)[0])?.Content : null;
         }
         XsrUiEntityId ScrollAncestor(XsrUiEntityId entity)
         {

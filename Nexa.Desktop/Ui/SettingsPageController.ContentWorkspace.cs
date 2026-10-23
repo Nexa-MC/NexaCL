@@ -17,7 +17,6 @@ internal sealed partial class SettingsPageController
     private IReadOnlyList<ContentBackupManifest> _contentBackupRows = [];
     private ContentStoreStatistics? _contentStoreStatistics;
     private ContentBackupRetentionPolicy _contentRetention = new();
-    private IReadOnlyList<DurableDiagnosticEntry> _durableDiagnosticRows = [];
     private Task<ContentWorkspaceResult>? _contentWorkspaceTask;
     private CancellationTokenSource? _contentWorkspaceStop;
     private Guid _contentWorkspaceDialog;
@@ -25,15 +24,13 @@ internal sealed partial class SettingsPageController
     private long _contentAiPolicyRevision = -1;
     private bool _contentWorkspaceLoaded;
     private string? _contentWorkspaceMessage;
-    private XsrUiEntityId _contentWorkspacePanel, _contentMigrationPanel, _contentDiagnosticPanel, _contentSummaryView, _contentRetentionView, _contentMessageView;
+    private XsrUiEntityId _contentWorkspacePanel, _contentMigrationPanel, _contentSummaryView, _contentRetentionView, _contentMessageView;
     private bool _contentSummaryStatistics;
     private readonly Dictionary<string, XsrUiEntityId> _contentBackupViews = new(StringComparer.Ordinal);
-    private readonly List<XsrUiEntityId> _contentHistoryViews = [];
-    private sealed record DiagnosticRawConfirmation(DiagnosticRawPreview Preview, string Destination);
     private sealed record ContentWorkspaceResult(CustomText? Message = null, ContentStoreStatistics? Statistics = null,
-        IReadOnlyList<ContentBackupManifest>? Backups = null, IReadOnlyList<DurableDiagnosticEntry>? History = null,
+        IReadOnlyList<ContentBackupManifest>? Backups = null,
         CustomText? Confirmation = null, Func<CancellationToken, Task<ContentWorkspaceResult>>? Apply = null, ContentBackupRetentionPolicy? Retention = null,
-        DiagnosticAiConfirmation? AiConfirmation = null, DiagnosticAiSuggestion? AiSuggestion = null, DiagnosticRawConfirmation? RawConfirmation = null);
+        DiagnosticAiConfirmation? AiConfirmation = null, DiagnosticAiSuggestion? AiSuggestion = null);
     private bool ContentWorkspaceBusy => _contentWorkspaceTask is not null || _contentWorkspaceDialog != Guid.Empty;
 
     internal void ConfigureContentWorkspace(Func<CancellationToken, Task<string?>> chooseDirectory,
@@ -45,14 +42,13 @@ internal sealed partial class SettingsPageController
 
     private void BuildContentWorkspace()
     {
-        _contentWorkspaceActions.Clear(); _contentBackupViews.Clear(); _contentHistoryViews.Clear();
-        _contentWorkspacePanel = _contentMigrationPanel = _contentDiagnosticPanel = _contentSummaryView = _contentRetentionView = _contentMessageView = default;
+        _contentWorkspaceActions.Clear(); _contentBackupViews.Clear();
+        _contentWorkspacePanel = _contentMigrationPanel = _contentSummaryView = _contentRetentionView = _contentMessageView = default;
         if (_instanceDirectory is not null || _selected != "storage" || _contentBackups is null) return;
         var availability = new Dictionary<string, string> { ["enabled"] = Flag(!ContentWorkspaceBusy) };
         _contentWorkspacePanel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsContentWorkspace.d.nxml",
             new Dictionary<string, string>(availability) { ["truncated"] = Flag(_contentBackupRows.Count > 16) }));
         _contentMigrationPanel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsLegacyMigration.d.nxml", availability));
-        _contentDiagnosticPanel = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsDurableDiagnostics.d.nxml", availability));
         BuildDiagnosticAiWorkspace();
         RefreshContentWorkspacePresentation();
     }
@@ -64,7 +60,6 @@ internal sealed partial class SettingsPageController
         _dynamic.Reload(_contentWorkspacePanel, DesktopMarkup.Dynamic("SettingsContentWorkspace.d.nxml",
             new Dictionary<string, string>(availability) { ["truncated"] = Flag(_contentBackupRows.Count > 16) }));
         _dynamic.Reload(_contentMigrationPanel, DesktopMarkup.Dynamic("SettingsLegacyMigration.d.nxml", availability));
-        _dynamic.Reload(_contentDiagnosticPanel, DesktopMarkup.Dynamic("SettingsDurableDiagnostics.d.nxml", availability));
         var nodes = CatalogNodes(_contentWorkspacePanel);
         var summary = _contentStoreStatistics is { } stats
             ? DesktopMarkup.Dynamic("SettingsContentStats.d.nxml", new Dictionary<string, string>
@@ -114,24 +109,6 @@ internal sealed partial class SettingsPageController
         }
         _dynamic.Reorder(nodes["ContentWorkspace.Backups"], backups.Select(manifest => _contentBackupViews[manifest.Identity]).ToArray());
         RegisterWorkspaceAction(CatalogNodes(_contentMigrationPanel), "Migrate", "migrate");
-        var diagnostics = CatalogNodes(_contentDiagnosticPanel); RegisterWorkspaceAction(diagnostics, "Raw", "raw");
-        var history = _durableDiagnosticRows.Take(12).ToArray();
-        while (_contentHistoryViews.Count > history.Length)
-        { _dynamic.Remove(_contentHistoryViews[^1]); _contentHistoryViews.RemoveAt(_contentHistoryViews.Count - 1); }
-        for (int index = 0; index < history.Length; index++)
-        {
-            var entry = history[index];
-            var fragment = DesktopMarkup.Dynamic("SettingsDurableDiagnosticRow.d.nxml", new Dictionary<string, string>
-            {
-                ["timestamp"] = entry.Timestamp.ToLocalTime().ToString("MM-dd HH:mm", System.Globalization.CultureInfo.CurrentCulture),
-                ["module"] = entry.Module,
-                ["operation"] = entry.Operation,
-                ["stage"] = entry.Stage,
-                ["outcome"] = entry.Outcome.ToString()
-            }, _shell.Renderer.LocalizeText);
-            if (index < _contentHistoryViews.Count) _dynamic.Reload(_contentHistoryViews[index], fragment);
-            else _contentHistoryViews.Add(_dynamic.Append(diagnostics["DurableDiagnosticWorkspace.History"], fragment));
-        }
         if (_contentWorkspaceMessage is { } message)
         {
             var fragment = DesktopMarkup.Dynamic("SettingsContentMessage.d.nxml", new Dictionary<string, string> { ["text"] = message });
@@ -155,17 +132,17 @@ internal sealed partial class SettingsPageController
         CancelContentWorkspace(); _contentWorkspaceStop = new();
         if (aiDraft is not null) _contentAiPolicyRevision = _store.Read<long>(_revisionId).Value;
         // Raw capture reads the current local log snapshot only on this explicit UI action.
-        string? raw = action.Kind is "raw" or "ai-raw" ? _diagnosticRawCapture?.Invoke() : null;
+        string? raw = action.Kind == "ai-raw" ? _diagnosticRawCapture?.Invoke() : null;
         _contentWorkspaceTask = aiDraft is not null ? PreviewDiagnosticAiAsync(aiDraft, raw, _contentWorkspaceStop.Token)
-            : RunContentWorkspaceAsync(action.Kind, action.Identity, raw, _contentWorkspaceStop.Token);
+            : RunContentWorkspaceAsync(action.Kind, action.Identity, _contentWorkspaceStop.Token);
         ObserveTransfer(_contentWorkspaceTask); RefreshContentWorkspacePresentation();
     }
 
     private async Task<ContentWorkspaceResult> RefreshContentWorkspaceAsync(CustomText? message, CancellationToken token) => new(message,
         await _contentBackups!.StatisticsAsync(token).ConfigureAwait(false), await _contentBackups.ListAsync(token).ConfigureAwait(false),
-        await _diagnosticHistory!.ReadAsync(token).ConfigureAwait(false), Retention: await _contentBackups.ReadRetentionAsync(token).ConfigureAwait(false));
+        Retention: await _contentBackups.ReadRetentionAsync(token).ConfigureAwait(false));
 
-    private async Task<ContentWorkspaceResult> RunContentWorkspaceAsync(string kind, string? identity, string? raw, CancellationToken token)
+    private async Task<ContentWorkspaceResult> RunContentWorkspaceAsync(string kind, string? identity, CancellationToken token)
     {
         if (kind == "refresh") return await RefreshContentWorkspaceAsync(null, token).ConfigureAwait(false);
         if (kind == "retention")
@@ -217,12 +194,6 @@ internal sealed partial class SettingsPageController
             return new(Confirmation: CustomFormatted("Export", ("destination", destination)),
                 Apply: async cancellation => { await _contentBackups!.ExportThinAsync(identity!, destination, cancellation).ConfigureAwait(false); return new(CustomTerm("content.exported")); });
         }
-        if (kind == "raw")
-        {
-            var preview = await _contentBackups!.PreviewRawAsync(raw ?? "", token).ConfigureAwait(false); string destination = Path.Combine(directory, "nexa-raw-" + DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture) + ".txt");
-            return new(RawConfirmation: new(preview, destination),
-                Apply: async cancellation => { await _contentBackups.ExportRawAsync(destination, preview, preview.Revision, cancellation).ConfigureAwait(false); return new(CustomTerm("content.rawExported")); });
-        }
         return new();
     }
 
@@ -258,12 +229,11 @@ internal sealed partial class SettingsPageController
                 if (result.Apply is null) _contentAiPolicyRevision = -1;
                 if (result.Statistics is not null) _contentStoreStatistics = result.Statistics;
                 if (result.Backups is not null) _contentBackupRows = result.Backups;
-                if (result.History is not null) _durableDiagnosticRows = result.History;
                 if (result.Retention is not null) _contentRetention = result.Retention;
                 if (result.Message is not null) { _contentWorkspaceMessage = ProjectCustomText(result.Message); _feedback.Info(_contentWorkspaceMessage, localizeMessage: false); }
                 if (result.AiSuggestion is { } suggestion) PresentDiagnosticAiSuggestion(suggestion);
                 string? confirmation = result.AiConfirmation is { } ai ? FormatDiagnosticAiConfirmation(ai)
-                    : result.RawConfirmation is { } raw ? FormatDiagnosticRawConfirmation(raw) : result.Confirmation is { } text ? ProjectCustomText(text) : null;
+                    : result.Confirmation is { } text ? ProjectCustomText(text) : null;
                 if (result.Apply is { } apply && confirmation is not null)
                 {
                     long generation = _contentWorkspaceGeneration;
@@ -282,14 +252,6 @@ internal sealed partial class SettingsPageController
             RefreshContentWorkspacePresentation();
         }
     }
-
-    private string FormatDiagnosticRawConfirmation(DiagnosticRawConfirmation confirmation)
-        => CustomFormat("RawConfirmation", new()
-        {
-            ["bytes"] = confirmation.Preview.Utf8Bytes.ToString(System.Globalization.CultureInfo.CurrentCulture),
-            ["destination"] = confirmation.Destination,
-            ["preview"] = confirmation.Preview.RedactedText,
-        });
 
     private void CancelContentWorkspace()
     {

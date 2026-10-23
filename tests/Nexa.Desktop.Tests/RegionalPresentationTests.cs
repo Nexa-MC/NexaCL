@@ -132,8 +132,8 @@ internal static partial class Program
                 AssertFalse(RegionalFind(fixture.Shell, settings.Page, "SettingsSelector.network.game-source").IsAssigned);
                 AssertFalse(RegionalFind(fixture.Shell, settings.Page, "SettingsSelector.network.resource-source").IsAssigned);
                 AssertFalse(RegionalFind(fixture.Shell, settings.Page, "SettingsSelector.network.provider-mirror").IsAssigned);
-                AssertFalse(RegionalVisible(fixture.Shell, RegionalFind(fixture.Shell, settings.Page, "NetworkMirrorResolution")));
-                AssertTrue(RegionalFind(fixture.Shell, settings.Page, "NetworkProbe.Action").IsAssigned);
+                AssertFalse(RegionalFind(fixture.Shell, settings.Page, "NetworkMirrorResolution").IsAssigned);
+                AssertFalse(RegionalFind(fixture.Shell, settings.Page, "NetworkProbe.Action").IsAssigned);
                 Navigate("about");
                 AssertFalse(RegionalVisible(fixture.Shell, RegionalFind(fixture.Shell, settings.Page, "AboutMainland")));
                 AssertTrue(RegionalFind(fixture.Shell, settings.Page, "AboutThanks").IsAssigned);
@@ -161,7 +161,7 @@ internal static partial class Program
                 var mirrorProvider = RegionalFind(fixture.Shell, mainland.Page, "SettingsOption.network.provider-mirror.false");
                 AssertTrue(mirrorProvider.IsAssigned);
                 AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiSelection>(mirrorProvider)!.IsSelected);
-                AssertTrue(RegionalVisible(fixture.Shell, RegionalFind(fixture.Shell, mainland.Page, "NetworkMirrorResolution")));
+                AssertFalse(RegionalFind(fixture.Shell, mainland.Page, "NetworkMirrorResolution").IsAssigned);
                 Emit(fixture.Intents, "ui.settings.section", RegionalFind(fixture.Shell, mainland.Page, "SettingsNav.about"));
                 fixture.Shell.Render(new(1000, 800));
                 AssertTrue(RegionalVisible(fixture.Shell, RegionalFind(fixture.Shell, mainland.Page, "AboutMainland")));

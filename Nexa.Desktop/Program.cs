@@ -720,8 +720,6 @@ internal static partial class Program
         using var commandPalette = new DesktopCommandPalette(shell, uiIntents, host.StateStore, platformActions,
             route => desktopIntegration.ActivateProtocol("nexacl://" + route.Id));
         using var gamepadEntry = new GamepadEntrySession(shell, uiIntents, host.StateStore, platformActions);
-        settingsPage.LauncherSafeMode = safeMode;
-        settingsPage.NavigateAdvancedCommand = route => desktopIntegration.ActivateProtocol("nexacl://" + route.Id);
         settingsPage.OpenAdvancedCommandPalette = commandPalette.Open;
         settingsPage.CopyAdvancedSettingsTextAsync = platformActions.CopyTextAsync;
         await using var systemPreferences = safeMode ? null : new SystemPreferencesSession(runtime.Queries, host.StateStore,

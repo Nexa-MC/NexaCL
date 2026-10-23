@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Nodes;
+using System.Text.Json.Nodes;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -180,8 +180,6 @@ internal static partial class Program
             await startup.InvokeAsync(() =>
             {
                 var advancedScene = surface!.Scene!;
-                ShowSettingsFixtureControl(f, controller, ref advancedScene, "AdvancedWorkspace.Palette", f.Shell.Renderer.Viewport);
-                surface.CommitScene(); Capture("advanced-navigation");
                 var delay = ShowSettingsFixtureControl(f, controller, ref advancedScene, "AdvancedWorkspace.Delay.Start", f.Shell.Renderer.Viewport);
                 surface.CommitScene(); f.Shell.Renderer.Activate(delay.Entity); surface.CommitScene();
             }, timeout.Token);
@@ -376,14 +374,10 @@ internal static partial class Program
                 surface.CommitScene(); await java.PrepareVisibleStartupAsync(timeout.Token);
                 await Task.Delay(500, timeout.Token); surface.CommitScene(); Capture("storage-top");
                 var storageScene = surface.Scene!;
-                ShowSettingsFixtureControl(f, java, ref storageScene, "SettingsStoragePath.SelectedInstance", f.Shell.Renderer.Viewport);
-                surface.CommitScene(); Capture("storage-locations");
                 ShowSettingsFixtureControl(f, java, ref storageScene, "SettingsReset", f.Shell.Renderer.Viewport);
                 surface.CommitScene(); Capture("storage-transfer");
                 ShowSettingsFixtureControl(f, java, ref storageScene, "ContentWorkspace.Refresh", f.Shell.Renderer.Viewport);
                 surface.CommitScene(); Capture("storage-backups");
-                ShowSettingsFixtureControl(f, java, ref storageScene, "ContentWorkspace.Raw", f.Shell.Renderer.Viewport);
-                surface.CommitScene(); Capture("storage-diagnostics");
                 ShowSettingsFixtureControl(f, java, ref storageScene, "DiagnosticAi.endpoint", f.Shell.Renderer.Viewport);
                 surface.CommitScene(); Capture("storage-ai");
                 ShowSettingsFixtureControl(f, java, ref storageScene, "ContentWorkspace.AiFacts", f.Shell.Renderer.Viewport);
@@ -550,29 +544,16 @@ internal static partial class Program
             await SelectCategory("network");
             await Task.Delay(500, timeout.Token);
             await startup.InvokeAsync(() => Capture("network-top"), timeout.Token);
-            for (int step = 0; step < 128; step++)
-            {
-                bool ready = false;
-                await startup.InvokeAsync(() =>
-                {
-                    surface!.CommitScene();
-                    var body = CurrentBody();
-                    ready = surface.Scene!.Nodes.Any(node => f.Shell.Tree.Name(node.Entity) == "SettingsProxyMode.2"
-                        && node.Rect.Y >= body.Rect.Y && node.Rect.Y + node.Rect.Height <= body.Rect.Y + body.Rect.Height - 220);
-                    if (!ready)
-                    {
-                        f.Shell.Renderer.PointerScroll(new(body.Rect.X + 30, body.Rect.Y + 30), 80);
-                        surface.CommitScene();
-                    }
-                }, timeout.Token);
-                if (ready) break;
-                if (step == 127) throw new InvalidOperationException("Proxy controls did not enter the viewport.");
-                await Task.Delay(20, timeout.Token);
-            }
             await startup.InvokeAsync(() =>
             {
+                var networkScene = surface!.Scene!;
+                ShowSettingsFixtureControl(f, controller, ref networkScene, "SettingsProxyMode.2", f.Shell.Renderer.Viewport);
+                surface.CommitScene();
                 Capture("network-proxy");
-                Emit(f.Intents, "ui.settings.proxy.mode", FindByKey(f.Shell, surface!.Scene!, "SettingsProxyMode.2").Entity);
+                Emit(f.Intents, "ui.settings.proxy.mode", FindByKey(f.Shell, surface.Scene!, "SettingsProxyMode.2").Entity);
+                surface.CommitScene();
+                networkScene = surface.Scene!;
+                ShowSettingsFixtureControl(f, controller, ref networkScene, "SettingsProxyManual", f.Shell.Renderer.Viewport);
                 surface.CommitScene(); Capture("network-manual");
             }, timeout.Token);
             await Task.Delay(250, timeout.Token);

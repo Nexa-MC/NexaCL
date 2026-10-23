@@ -130,31 +130,30 @@ internal static partial class Program
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
         Wait(() => Find("SettingsNav.storage", false).IsAssigned);
         Emit(fixture.Intents, "ui.settings.section", Find("SettingsNav.storage"));
-        Wait(() => Find("DiagnosticAi.endpoint", false).IsAssigned && fixture.Shell.Tree.GetComponent<XsrUiInput>(Find("ContentWorkspace.Raw"))!.Enabled);
-        var endpoint = Find("DiagnosticAi.endpoint"); var key = Find("DiagnosticAi.key"); var rawAction = Find("ContentWorkspace.Raw");
+        Wait(() => Find("DiagnosticAi.endpoint", false).IsAssigned && fixture.Shell.Tree.GetComponent<XsrUiInput>(Find("ContentWorkspace.Capture"))!.Enabled);
+        var endpoint = Find("DiagnosticAi.endpoint"); var key = Find("DiagnosticAi.key"); var captureAction = Find("ContentWorkspace.Capture");
         fixture.Shell.Renderer.SetTextInputValue(endpoint, "https://literal.example/{data endpoint}");
         fixture.Shell.Renderer.SetTextInputValue(key, "ephemeral-custom-secret"); fixture.Shell.Renderer.Focus(endpoint, showIndicator: false);
         fixture.Shell.Renderer.EditText(XsrUiTextEdit.Left);
         var input = fixture.Shell.Tree.GetComponent<XsrUiTextInput>(endpoint)!;
         int start = input.SelectionStart, end = input.SelectionEnd;
         var transition = new XsrUiTransition(); fixture.Shell.Tree.SetComponent(endpoint, transition);
-        Emit(fixture.Intents, "ui.settings.storage.workspace", rawAction);
+        Emit(fixture.Intents, "ui.settings.storage.workspace", captureAction);
         Wait(() => fixture.Feedback.Snapshot().Dialog is not null);
-        AssertEqual(endpoint, Find("DiagnosticAi.endpoint")); AssertEqual(rawAction, Find("ContentWorkspace.Raw"));
+        AssertEqual(endpoint, Find("DiagnosticAi.endpoint")); AssertEqual(captureAction, Find("ContentWorkspace.Capture"));
         AssertEqual(key, Find("DiagnosticAi.key")); AssertEqual(endpoint, fixture.Shell.Renderer.Focused);
         AssertEqual("https://literal.example/{data endpoint}", input.ReadDraft()); AssertEqual(start, input.SelectionStart); AssertEqual(end, input.SelectionEnd);
         AssertTrue(ReferenceEquals(transition, fixture.Shell.Tree.GetComponent<XsrUiTransition>(endpoint)));
         var dialog = fixture.Feedback.Snapshot().Dialog!;
-        AssertFalse(dialog.LocalizeMessage); AssertTrue(dialog.Message.EndsWith(raw, StringComparison.Ordinal));
+        AssertFalse(dialog.LocalizeMessage); AssertTrue(dialog.Message.Contains(directory, StringComparison.Ordinal));
         fixture.Feedback.ResolveDialog(dialog.Id, false);
-        Wait(() => fixture.Shell.Tree.GetComponent<XsrUiInput>(rawAction)!.Enabled);
+        Wait(() => fixture.Shell.Tree.GetComponent<XsrUiInput>(captureAction)!.Enabled);
         AssertEqual(endpoint, Find("DiagnosticAi.endpoint")); AssertEqual("ephemeral-custom-secret", fixture.Shell.Tree.GetComponent<XsrUiTextInput>(key)!.ReadDraft());
         fixture.Shell.Stage.Navigation.Replace(outsidePage); fixture.Shell.Render(new(1000, 800));
         AssertEqual("", fixture.Shell.Tree.GetComponent<XsrUiTextInput>(key)!.ReadDraft());
         fixture.Shell.Stage.Navigation.Replace(settings.Page); fixture.Shell.Render(new(1000, 800));
         AssertEqual("", fixture.Shell.Tree.GetComponent<XsrUiTextInput>(Find("DiagnosticAi.key"))!.ReadDraft());
-        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiInput>(Find("ContentWorkspace.Raw"))!.Enabled);
-        AssertFalse(Directory.EnumerateFiles(directory, "nexa-raw-*.txt").Any());
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiInput>(Find("ContentWorkspace.Capture"))!.Enabled);
 
         void Wait(Func<bool> condition) => AssertTrue(SpinWait.SpinUntil(() =>
         { fixture.Shell.Render(new(1000, 800)); return condition(); }, TimeSpan.FromSeconds(5)));

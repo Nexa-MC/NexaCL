@@ -101,7 +101,6 @@ internal static partial class Program
             await CapturePair("global-proxy", proxy);
 
             await Select(h.Global, "advanced");
-            await Show("AdvancedWorkspace.Navigation");
             await Show("AdvancedWorkspace.Capture");
             await Activate("AdvancedWorkspace.Capture");
             await CapturePair("global-custom-workspace");
@@ -511,7 +510,7 @@ internal static partial class Program
             commands.Register<InstanceModpackExportCommand>(InstanceModpackExportContract.Export, (_, _) => { ExportWrites++; return new(XsrResult.Success()); });
             commands.Register<InstanceServerListSaveCommand>(InstanceServerListContract.Save, (_, _) => { ServerWrites++; return new(XsrResult.Success()); });
             Global = new(Fixture.Shell, Fixture.Intents, Fixture.Foundation.Queries, Fixture.Foundation.Commands, Fixture.Store, Fixture.Feedback)
-            { NavigateAdvancedCommand = _ => { }, OpenAdvancedCommandPalette = () => true };
+            { OpenAdvancedCommandPalette = () => true };
             Instance = new(Fixture.Shell, Fixture.Intents, queries.Build(new NoopDispatchObserver()), commands.Build(new NoopDispatchObserver()), Fixture.Store, Fixture.Feedback, () => InstanceDirectory)
             { OpenManagementDirectory = _ => { }, CopyScreenshotAsync = _ => Task.CompletedTask, ShareScreenshotAsync = (_, _, _) => Task.CompletedTask };
         }

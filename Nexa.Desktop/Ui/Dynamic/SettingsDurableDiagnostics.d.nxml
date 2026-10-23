@@ -1,5 +1,0 @@
-<nxml-dynamic>
-<SettingsForm Key="DurableDiagnosticWorkspace"><Text Content="持久诊断历史" Class="settings-form-label" /><StackPanel Class="settings-form-surface"><StackPanel Class="settings-form-body">
-<Button Key="ContentWorkspace.Raw" Label="预览原始诊断导出" Content="预览原始诊断导出" Command="ui.settings.storage.workspace" Enabled="{data enabled}" Class="settings-catalog-action settings-workspace-action" /><Dynamic Key="DurableDiagnosticWorkspace.History" Class="settings-workspace-column" />
-</StackPanel></StackPanel></SettingsForm>
-</nxml-dynamic>

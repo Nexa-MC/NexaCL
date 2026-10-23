@@ -1,1 +1,0 @@
-<nxml-dynamic><Text Content="{data timestamp} · {data host} · {data stage} · {data downloaded}/{data total} B · {data speed} B/s" Localize="false" Class="settings-network-observation" /></nxml-dynamic>

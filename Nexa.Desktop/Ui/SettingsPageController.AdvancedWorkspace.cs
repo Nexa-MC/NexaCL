@@ -9,9 +9,7 @@ namespace Nexa.Desktop.Ui;
 
 internal sealed partial class SettingsPageController
 {
-    internal bool LauncherSafeMode { get; set; }
     internal Func<bool>? OpenAdvancedCommandPalette { get; set; }
-    internal Action<DesktopCommandRoute>? NavigateAdvancedCommand { get; set; }
     internal Func<string, Task>? CopyAdvancedSettingsTextAsync { get; set; }
     internal Action? OpenAdvancedSettingsFile { get; set; }
     private RuntimeDiagnosticCapture? _advancedRuntime;
@@ -51,24 +49,6 @@ internal sealed partial class SettingsPageController
     {
         _advancedRuntimeRoot = _advancedDelayRoot = _advancedSettingsRoot = default;
         if (!AdvancedWorkspaceVisible) return;
-        var navigation = AppendCatalog(_sections, "SettingsAdvancedNavigation.d.nxml", new Dictionary<string, string>
-        { ["palette"] = Flag(OpenAdvancedCommandPalette is not null) });
-        var nodes = CatalogNodes(navigation);
-        _dynamic.Append(nodes["AdvancedWorkspace.Navigation.State"], DesktopMarkup.Dynamic(LauncherSafeMode ? "SettingsAdvancedSafe.d.nxml" : "SettingsAdvancedNormal.d.nxml"));
-        BindAdvancedAction(nodes, "AdvancedWorkspace.Palette", () =>
-        { if (OpenAdvancedCommandPalette?.Invoke() != true) _feedback.Info(ProductPresentationText.Raw("settings.advanced.paletteBlocked")); }, developerOnly: false);
-        foreach (var route in DesktopCommandLine.Commands)
-        {
-            var row = AppendCatalog(nodes["AdvancedWorkspace.Navigation.Routes"], "SettingsAdvancedRoute.d.nxml", new Dictionary<string, string>
-            {
-                ["row"] = "AdvancedWorkspace.Route." + route.Id,
-                ["button"] = "AdvancedWorkspace.Go." + route.Id,
-                ["id"] = route.Id,
-                ["label"] = RuntimeTerms.Value["route." + route.Id],
-                ["enabled"] = Flag(NavigateAdvancedCommand is not null)
-            });
-            BindAdvancedAction(CatalogNodes(row), "AdvancedWorkspace.Go." + route.Id, () => NavigateAdvancedCommand?.Invoke(route), developerOnly: false);
-        }
         if (!_developer) return;
         _advancedRuntime ??= CaptureRuntimeDiagnostics(_shell);
         _advancedRuntimeRoot = AppendCatalog(_sections, "SettingsAdvancedDiagnostics.d.nxml", AdvancedRuntimeValues());

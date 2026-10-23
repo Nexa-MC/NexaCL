@@ -1,5 +1,0 @@
-<nxml-dynamic>
-  <LoadingView>
-    <Text Content="正在读取目录信息…" Class="loading-hint" LiveSetting="Polite" />
-  </LoadingView>
-</nxml-dynamic>

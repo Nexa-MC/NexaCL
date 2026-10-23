@@ -1,1 +1,0 @@
-<nxml-dynamic><Button Key="NetworkProbe.Start" Content="{data caption}" Label="{data caption}" Localize="false" Enabled="{data enabled}" Command="ui.settings.network.probe.start" Class="settings-network-probe" /></nxml-dynamic>
