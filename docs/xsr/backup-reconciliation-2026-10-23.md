@@ -1,6 +1,15 @@
 # Backup reconciliation against refactor/xsr
 
-The comparison base is `1b69f8c3a`. The source snapshots are stash
+The initial comparison base was `1b69f8c3a` in the archived source repository.
+After its read-only push rejection, the canonical `Nexa-MC/NexaCL` repository was
+verified against its README, transition record, repository metadata and Git ancestry.
+Its `main` at `65528fe50` contains 30 subsequent commits. The selected changes remain
+absent there and integrate cleanly; the only overlapping file changes another test
+method. Follow its updated AGENTS.md: work on `main` and do not recreate legacy
+branches. The dedicated worktree tracks `nexacl/main`; the shared old `origin`
+configuration remains unchanged for the read-only legacy checkout.
+
+The source snapshots are stash
 `49b939aa10de919a432e992dfba4c891f39500cc` (28 modified and 16 new files)
 and the older `codex: preserve XSR-783 work before upstream sync` stash
 (10 modified files). Neither snapshot is applied wholesale or deleted.
@@ -42,7 +51,7 @@ and missing/empty runtime files before executing the host.
 | Runtime KernelTests/Program scheduler changes | Upstream's `SchedulerFaultsAreClassifiedAndIsolated` already checks correlation IDs, deliberately out-of-order async completion and continued execution. Keep upstream. |
 | Saved XSR-837 draft | Superseded by the current encoding implementation and this reconciliation note; do not publish its historical implementation claims as current behavior. |
 
-## Verification, 2026-10-23
+## Initial verification on the archived baseline, 2026-10-23
 
 - The restored update-intent regression fails against upstream with two unexpected
   opened links. With command pairing it passes; all 11 update-focused tests and
@@ -70,3 +79,27 @@ Logs are under `.tmp-cleanup-validation/backup-reconcile-20261023/`. Actual Wind
 installer installation/uninstallation is not run on the developer machine; it
 remains in the existing disposable CI runner flow. Both source stashes and the
 standalone backup patch/archive are retained for recovery.
+
+## Final verification against canonical main
+
+The three restored commits were rebased onto canonical `main` at `65528fe50`;
+none of the selected behaviors had been implemented by its 30 additional commits.
+The newer edits in `SettingsCustomMigrationTests.cs` are preserved.
+
+- Release tools: 85 passed. Runtime: 173 passed, zero skipped. Architecture: all
+  72 projects passed. Scoped formatting verification exits 0 with the same
+  workspace-loading warning; no formatter diagnostics or source changes result.
+- Desktop: 364 passed, zero failed, built into a fresh isolated artifacts directory
+  with zero build warnings/errors. The output NXML hash matches current source.
+  The first incremental run's eight failures came from 16 stale NXML/NSS files
+  left in each ordinary output directory by previous builds. Those files differ
+  from current source; the fresh build verifies the product without changing any
+  failing assertions. Stale files are preserved in the local evidence directory
+  before refreshing the two build-output asset sets from source.
+- A fresh NativeAOT JVM Host publication and both real Java 8/JDK 21 fixture
+  suites also pass on the canonical baseline, including the separate Java 8 JRE
+  compiler path. No legacy Host or class-loader reconstruction is needed.
+
+The authoritative final logs have the `main-` prefix under the evidence directory.
+The older baseline logs remain as comparison evidence, not a substitute for these
+canonical-main checks.
