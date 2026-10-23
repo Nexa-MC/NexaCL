@@ -1,0 +1,59 @@
+name: Anonymous telemetry ingress probe
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  ingress:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, macos-15-intel, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: 10.0.x
+      - name: Compare actual .NET requests without ingesting events
+        shell: bash
+        run: |
+          probe="$RUNNER_TEMP/telemetry-ingress-probe"
+          mkdir -p "$probe"
+          cat > "$probe/Probe.csproj" <<'EOF'
+          <Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup></Project>
+          EOF
+          cat > "$probe/Program.cs" <<'EOF'
+          using System.Net;
+          using System.Text;
+          using System.Text.Json;
+          using var handler = new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false };
+          using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(20) };
+          bool accepted = false;
+          foreach (string mode in new[] { "no-user-agent", "product-user-agent", "browser-origin" })
+          {
+              using var request = new HttpRequestMessage(HttpMethod.Post, "https://pcln.top/api/v1/telemetry/events")
+              { Content = new StringContent("[]", Encoding.UTF8, "application/json") };
+              if (mode != "no-user-agent") request.Headers.UserAgent.ParseAdd("NexaCL/2.0 (+https://github.com/Nexa-MC/NexaCL)");
+              if (mode == "browser-origin")
+              {
+                  request.Headers.Add("Origin", "https://pcln.top");
+                  request.Headers.Add("x-nexa-request", "1");
+              }
+              try
+              {
+                  using var response = await http.SendAsync(request);
+                  string body = await response.Content.ReadAsStringAsync();
+                  var headers = new Dictionary<string, string>();
+                  foreach (string name in new[] { "server", "cf-mitigated", "cf-ray", "x-request-id" })
+                      if (response.Headers.TryGetValues(name, out var values)) headers[name] = string.Join(",", values);
+                  Console.WriteLine(JsonSerializer.Serialize(new { mode, status = (int)response.StatusCode,
+                      contentType = response.Content.Headers.ContentType?.MediaType, headers, body = body[..Math.Min(body.Length, 400)] }));
+                  if (mode == "product-user-agent" && response.StatusCode == HttpStatusCode.BadRequest) accepted = true;
+              }
+              catch (HttpRequestException failure)
+              { Console.WriteLine(JsonSerializer.Serialize(new { mode, error = failure.HttpRequestError.ToString(), type = failure.InnerException?.GetType().Name })); }
+          }
+          // Empty batches must reach schema validation (400), never produce stored events.
+          return accepted ? 0 : 1;
+          EOF
+          dotnet run --project "$probe/Probe.csproj" -c Release
