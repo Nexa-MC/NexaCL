@@ -18,14 +18,25 @@ then the same device must hold left X >= .65 and right X <= -.65 for 200 ms, wit
 vertical axes within .45. Different devices cannot combine halves of the gesture.
 Drift, already-held input at attachment and background input cannot activate it.
 
-Confirmation fades the prompt away, smoothly enlarges the existing window to the
-current monitor's full bounds over 600 ms, and switches to an opaque dark entry
-canvas. The NexaCL N icon fades/scales in, then fades away, leaving an empty dark
-canvas after 1.8 seconds. No large-screen navigation is introduced here. Escape
+Confirmation fades the prompt away and smoothly enlarges the existing window to
+the current monitor's full bounds over 600 ms. The entry then follows one bounded
+4.4-second timeline: hold black, flash once at the center to reveal only the
+upper-left corner of an oversized N, rapidly shrink to the center and settle,
+slide left to reveal NexaCL, then lift the lockup and reveal “手柄模式” underneath.
+The final lockup stays on a black canvas. Lighting falls from upper left to lower
+right. The supplied brand artwork remains unchanged; two reusable 512px textures
+provide the lighting treatment and soft flare (`eng/media/bake_gamepad_entry.py`).
+NXML places the oversized image carrier outside the viewport; native clipping and
+the existing smooth complete-image sampler perform the close-up. The immutable
+source texture stays 512px. All layout/opacity values remain NXML projections; no
+renderer API or bitmap budget is changed. Zero-opacity stages explicitly hide the
+image carrier so the black hold contains no image pixels.
+No large-screen navigation is introduced here. Escape
 or the pad's back/cancel button restores the original window state and focus.
 Disconnect removes the prompt or exits the entry canvas. Dismissed devices do not
-immediately prompt again until reattached. Reduced motion settles transitions and
-uses a static demonstration. Native readers and timers are disposed with Desktop.
+immediately prompt again until reattached. Reduced motion shows the final lockup
+immediately, without flash or zoom, and uses a static demonstration. Native readers
+and timers are disposed with Desktop.
 
 Native readers use Windows XInput plus nonexclusive Raw Input HID, Linux's
 nonblocking joystick interface, and macOS GameController extended gamepads. Sony
@@ -35,11 +46,13 @@ the OS reader cannot activate entry; no guessed input or elevated access is used
 
 ## Verification and preview
 
-The Desktop suite passes 365 tests, including neutral/held/unready input, mixed
+The Desktop suite passes 366 tests, including neutral/held/unready input, mixed
 devices, background input, cancellation/suppression, reconnection, disposal,
-layout selection, shared artwork and reduced motion. Native offscreen capture
+layout selection, shared artwork, cinematic phase ordering, stable final placement
+and reduced motion. Native offscreen capture
 under X11 with a window manager checks all three layouts in both color schemes,
-decoded hand/icon pixels, actual fullscreen bounds/state, restoration from normal
+decoded controller/icon/flare pixels, the black hold and giant close-up, actual
+fullscreen bounds/state, restoration from normal
 and maximized windows, and subsequent unmaximize bounds. Input is simulated for
 these deterministic captures; physical Windows/macOS controllers remain untested.
 
@@ -50,7 +63,9 @@ the macOS standard window buttons.
 
 ![Native controller entry preview](../previews/gamepad-entry/entry.gif)
 
-Static captures for each layout/theme and the entry icon are stored beside the GIF.
+The GIF includes the prompt, window expansion and complete entry timeline. Static
+captures for each layout/theme, black hold, flash, giant corner, pullback, centered
+icon, name and final lockup are stored beside it.
 
 Release compilation, 72-project architecture checks, format verification and
 Linux NativeAOT publication plus `--validate-shell` pass. NativeAOT retains the

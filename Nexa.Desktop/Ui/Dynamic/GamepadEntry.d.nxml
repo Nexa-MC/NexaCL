@@ -5,8 +5,11 @@
       <Text Key="GamepadInstruction" Content="左右摇杆内推以进入手柄模式" Class="gamepad-instruction" />
       <Button Key="GamepadDismiss" Content="暂不进入" Command="ui.gamepad.dismiss" Class="gamepad-dismiss" />
     </StackPanel>
-    <StackPanel Key="GamepadIntro" IsVisible="{data intro_visible}" Opacity="{data intro_opacity}" Class="gamepad-intro">
-      <Image Key="GamepadLogo" Source="brand/n" Label="NexaCL" Width="{data logo_size}" Height="{data logo_size}" Class="gamepad-logo" />
-    </StackPanel>
+    <Node Kind="GamepadIntro" Recipe="Element" Key="GamepadIntro" IsVisible="{data intro_visible}" Class="gamepad-intro">
+      <Image Key="GamepadLogo" Source="brand/n" Label="NexaCL" IsVisible="{data logo_visible}" Opacity="{data logo_opacity}" Width="{data logo_size}" Height="{data logo_size}" Margin="{data logo_margin}" Class="gamepad-logo" />
+      <Image Key="GamepadFlash" Source="gamepad/flash" IsVisible="{data flash_visible}" Opacity="{data flash_opacity}" Width="{data flash_size}" Height="{data flash_size}" Margin="{data flash_margin}" Class="gamepad-flash" />
+      <Text Key="GamepadName" Content="NexaCL" IsVisible="{data name_visible}" Opacity="{data name_opacity}" Margin="{data name_margin}" Class="gamepad-name" />
+      <Text Key="GamepadCaption" Content="手柄模式" IsVisible="{data caption_visible}" Opacity="{data caption_opacity}" Margin="{data caption_margin}" Class="gamepad-caption" />
+    </Node>
   </Node>
 </nxml-dynamic>

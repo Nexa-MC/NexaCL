@@ -131,6 +131,7 @@ internal static partial class Program
     private static readonly (string Name, Action Body)[] TestCases =
     [
         ("gamepad entry requires neutral same-device gesture and restores", GamepadEntryRequiresNeutralSameDeviceGestureAndRestores),
+        ("gamepad entry cinematic timeline and stable lockup", GamepadEntryCinematicTimelineAndStableLockup),
         ("gamepad entry disconnect disposes and defers existing modal", GamepadEntryDisconnectDisposesAndDefersExistingModal),
         ("gamepad entry layouts artwork and reduced motion", GamepadEntryLayoutsArtworkAndReducedMotion),
         ("RegionalSettingsHideMainlandFacilitiesAndRestoreSavedPreferences", RegionalSettingsHideMainlandFacilitiesAndRestoreSavedPreferences),

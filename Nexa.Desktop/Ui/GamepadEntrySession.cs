@@ -8,7 +8,7 @@ using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
 
-/// <summary>Controller entry only; an opaque empty canvas deliberately owns no product navigation.</summary>
+/// <summary>Controller entry presentation; the final brand lockup owns no product navigation.</summary>
 internal sealed class GamepadEntrySession : IDisposable
 {
     private readonly XsrUiShell _shell;
@@ -31,7 +31,9 @@ internal sealed class GamepadEntrySession : IDisposable
     private long _shownAt, _enteredAt, _heldAt = -1;
     private bool _armed, _dismissRequested, _disposed;
     private int _lastFrame = -1;
-    private PngImage? _logo;
+    private PngImage? _logo, _flash;
+    private XsrUiSize? _presentationViewport;
+    internal const int IntroDuration = 4400;
     internal bool IsPromptOpen => _root.IsAssigned && !IsEntered;
     internal bool IsEntered { get; private set; }
     internal bool IsIntroComplete { get; private set; }
@@ -95,7 +97,6 @@ internal sealed class GamepadEntrySession : IDisposable
             {
                 IsEntered = true; _enteredAt = now; _observe(); _immersive(true);
                 _shell.Renderer.Focus(default);
-                _shell.Tree.GetComponent<XsrUiImage>(_nodes["GamepadLogo"])!.Raster = new(Logo(), []) { FitToBounds = true };
             }
         }
         UpdatePresentation(now);
@@ -107,7 +108,7 @@ internal sealed class GamepadEntrySession : IDisposable
         _heldAt = -1; _armed = false; _lastFrame = -1;
         _previousFocus = _shell.Renderer.Focused;
         _layer = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("GamepadEntry.nxml"), _shell.Tree, _store);
-        _root = _dynamic.Append(_layer, Workspace("#00000000", true, 0, false, 0, 160));
+        _root = _dynamic.Append(_layer, Workspace(new("#00000000")));
         _shell.Tree.Walk(_root, entity => { _nodes[_shell.Tree.Name(entity)] = entity; return true; });
         _shell.Stage.Show(_layer, modal: true);
         _shell.Renderer.Focus(_nodes["GamepadDismiss"], showIndicator: false);
@@ -115,13 +116,15 @@ internal sealed class GamepadEntrySession : IDisposable
 
     internal void UpdatePresentation(long now)
     {
-        if (!_root.IsAssigned || IsIntroComplete) return;
+        if (!_root.IsAssigned) return;
+        var viewport = _shell.Renderer.Viewport;
+        if (IsIntroComplete && _presentationViewport == viewport) return;
         bool reduced = _shell.Renderer.EffectiveReducedMotion;
-        double age = IsEntered ? now - _enteredAt : now - _shownAt;
+        double age = IsIntroComplete ? IntroDuration : IsEntered ? now - _enteredAt : now - _shownAt;
         if (!IsEntered)
         {
             double fade = reduced ? 1 : Smooth(age / 220);
-            Apply("#000000" + ((byte)(184 * fade)).ToString("X2", CultureInfo.InvariantCulture), true, fade, false, 0, 160);
+            Apply(new("#000000" + ((byte)(184 * fade)).ToString("X2", CultureInfo.InvariantCulture), Prompt: fade));
             _scrim(.72 * fade);
             int frame = reduced ? 24 : (int)(Math.Max(0, age) % 2400 / 50);
             if (_lastFrame != frame)
@@ -133,37 +136,83 @@ internal sealed class GamepadEntrySession : IDisposable
         }
         else
         {
-            double progress = reduced ? 1 : Smooth(age / 600);
-            _scrim(.72 + .28 * progress);
-            double reveal = reduced ? 0 : Smooth((age - 180) / 420) * (1 - Smooth((age - 1300) / 500));
-            double size = 132 + 36 * Smooth((age - 180) / 600);
-            string background = string.Create(CultureInfo.InvariantCulture, $"#{(byte)(11 * progress):X2}{(byte)(14 * progress):X2}{(byte)(22 * progress):X2}{(byte)(184 + 71 * progress):X2}");
-            Apply(background, !reduced && age < 200, reduced ? 0 : 1 - Smooth(age / 180), !reduced && age < 1800, reveal, size);
-            if (reduced || age >= 1800)
-            {
-                IsIntroComplete = true;
-                // Actual large-screen content intentionally remains empty after the entry animation.
-            }
+            double blackout = reduced ? 1 : Smooth(age / 500);
+            _scrim(.72 + .28 * blackout);
+            if (reduced) age = IntroDuration;
+            double flash = Smooth((age - 1000) / 100) * (1 - Smooth((age - 1120) / 520));
+            double zoom = EaseOut((age - 1950) / 600);
+            double name = Smooth((age - 3120) / 440);
+            double caption = Smooth((age - 3800) / 520);
+            Apply(new("#000000" + ((byte)(184 + 71 * blackout)).ToString("X2", CultureInfo.InvariantCulture),
+                Prompt: reduced ? 0 : 1 - Smooth(age / 180), Intro: true,
+                Logo: Smooth((age - 1050) / 450), Zoom: zoom,
+                Slide: Smooth((age - 3020) / 520), Lift: caption,
+                Name: name, Caption: caption, Flash: reduced ? 0 : flash,
+                FlashSize: 1.1 + .7 * Smooth((age - 1000) / 640)));
+            IsIntroComplete = age >= IntroDuration;
         }
     }
 
-    private static NxmlHostIr Workspace(string background, bool promptVisible, double promptOpacity, bool introVisible, double introOpacity, double logoSize)
+    private readonly record struct Presentation(string Background, double Prompt = 0, bool Intro = false,
+        double Logo = 0, double Zoom = 0, double Slide = 0, double Lift = 0,
+        double Name = 0, double Caption = 0, double Flash = 0, double FlashSize = 1);
+
+    private static string Number(double value) => value.ToString("F3", CultureInfo.InvariantCulture);
+    private static string Visible(bool value) => value ? "true" : "false";
+    private static string Shift(double x, double y) => $"{Number(x)},{Number(y)},{Number(-x)},{Number(-y)}";
+
+    private static NxmlHostIr Workspace(Presentation frame, double logoSize = 168, double logoX = 0, double logoY = 0, double flashSize = 512)
         => DesktopMarkup.Dynamic("GamepadEntry.d.nxml", new Dictionary<string, string>
         {
-            ["background"] = background,
-            ["prompt_visible"] = promptVisible ? "true" : "false",
-            ["prompt_opacity"] = promptOpacity.ToString("F3", CultureInfo.InvariantCulture),
-            ["intro_visible"] = introVisible ? "true" : "false",
-            ["intro_opacity"] = introOpacity.ToString("F3", CultureInfo.InvariantCulture),
-            ["logo_size"] = logoSize.ToString("F3", CultureInfo.InvariantCulture),
+            ["background"] = frame.Background,
+            ["prompt_visible"] = Visible(!frame.Intro || frame.Prompt > 0),
+            ["prompt_opacity"] = Number(frame.Prompt),
+            ["intro_visible"] = Visible(frame.Intro),
+            ["logo_visible"] = Visible(frame.Logo > 0),
+            ["logo_opacity"] = Number(frame.Logo),
+            ["logo_size"] = Number(logoSize),
+            ["logo_margin"] = ImagePlacement(logoSize, logoX, logoY),
+            ["flash_visible"] = Visible(frame.Flash > 0),
+            ["flash_opacity"] = Number(frame.Flash),
+            ["flash_size"] = Number(flashSize),
+            ["flash_margin"] = ImagePlacement(flashSize, 0, 0),
+            ["name_visible"] = Visible(frame.Name > 0),
+            ["name_opacity"] = Number(frame.Name),
+            ["name_margin"] = Shift(96 + 32 * (1 - frame.Name), -18 * frame.Lift),
+            ["caption_visible"] = Visible(frame.Caption > 0),
+            ["caption_opacity"] = Number(frame.Caption),
+            ["caption_margin"] = Shift(96, 70 - 14 * frame.Caption),
         });
 
-    private void Apply(string background, bool promptVisible, double promptOpacity, bool introVisible, double introOpacity, double logoSize)
+    private static string ImagePlacement(double size, double x, double y)
+        => $"{Number(-size + x)},{Number(-size + y)},{Number(-size - x)},{Number(-size - y)}";
+
+    private void Apply(Presentation frame)
     {
-        string signature = string.Create(CultureInfo.InvariantCulture, $"{background}|{promptVisible}|{promptOpacity:F3}|{introVisible}|{introOpacity:F3}|{logoSize:F3}");
-        if (signature == _projection) return;
-        _dynamic.Reload(_root, Workspace(background, promptVisible, promptOpacity, introVisible, introOpacity, logoSize));
-        _projection = signature;
+        var viewport = _shell.Renderer.Viewport;
+        double canvas = Math.Max(1, Math.Min(viewport.Width, viewport.Height));
+        // A large carrier uses the same bounded source bitmap and the existing smooth
+        // complete-image sampler. Negative margins let NXML place it beyond the viewport;
+        // native window clipping reveals only the illuminated upper-left N face.
+        double size = canvas * 6.5 * Math.Pow(168 / canvas / 6.5, frame.Zoom);
+        double x = (.5 - (.32 + .18 * frame.Zoom)) * size - 162 * frame.Slide;
+        double y = (.5 - (.24 + .26 * frame.Zoom)) * size - 18 * frame.Lift;
+        double flashSize = frame.FlashSize * canvas;
+        string signature = string.Create(CultureInfo.InvariantCulture,
+            $"{frame.Background}|{frame.Prompt:F3}|{frame.Intro}|{frame.Logo:F3}|{frame.Flash:F3}|{frame.Name:F3}|{frame.Caption:F3}|{frame.Lift:F3}|{size:F3}|{x:F3}|{y:F3}|{flashSize:F3}");
+        if (signature != _projection)
+        {
+            _dynamic.Reload(_root, Workspace(frame, size, x, y, flashSize));
+            _projection = signature;
+        }
+        if (!frame.Intro) return;
+        _presentationViewport = viewport;
+        if (_shell.Tree.GetComponent<XsrUiImage>(_nodes["GamepadLogo"])!.Raster is null)
+        {
+            _shell.Tree.GetComponent<XsrUiImage>(_nodes["GamepadLogo"])!.Raster = new(Logo(), []) { FitToBounds = true };
+            _shell.Tree.GetComponent<XsrUiImage>(_nodes["GamepadFlash"])!.Raster = new(_flash ??= Texture("gamepad-entry-flash.png"), []) { FitToBounds = true };
+            _shell.Tree.MarkDirty(_root, XsrUiDirtyKinds.Paint);
+        }
     }
 
     internal XsrUiRasterImage Artwork(GamepadLayout layout, int frame)
@@ -182,14 +231,16 @@ internal sealed class GamepadEntrySession : IDisposable
         return new(sheet, [new(new(frame % 3 * 500, frame / 3 * 360, 500, 360), new(0, 0, 1, 1))]) { AspectRatio = 500d / 360 };
     }
 
-    private PngImage Logo()
+    private PngImage Logo() => _logo ??= Texture("neon-n-entry.png");
+
+    private static PngImage Texture(string name)
     {
-        if (_logo is not null) return _logo;
-        using Stream stream = typeof(GamepadEntrySession).Assembly.GetManifestResourceStream("Nexa.Desktop.Assets.Brand.neon-n-dark.png")!;
+        using Stream stream = typeof(GamepadEntrySession).Assembly.GetManifestResourceStream("Nexa.Desktop.Assets.Brand." + name)!;
         using var buffer = new MemoryStream(); stream.CopyTo(buffer);
-        return _logo = PngImage.TryCreatePreview(buffer.ToArray()) ?? throw new InvalidDataException("Invalid entry icon.");
+        return PngImage.TryCreatePreview(buffer.ToArray()) ?? throw new InvalidDataException("Invalid entry texture.");
     }
     private static double Smooth(double progress) { progress = Math.Clamp(progress, 0, 1); return progress * progress * (3 - 2 * progress); }
+    private static double EaseOut(double progress) => 1 - Math.Pow(1 - Math.Clamp(progress, 0, 1), 4);
 
     internal void Close()
     {
@@ -199,6 +250,7 @@ internal sealed class GamepadEntrySession : IDisposable
         _shell.Stage.Dismiss(_layer); _dynamic.Clear(_layer); _shell.Tree.Destroy(_layer);
         _shell.Renderer.Focus(_shell.Tree.IsAlive(_previousFocus) ? _previousFocus : default);
         _root = _layer = _previousFocus = default; _device = _projection = null; _nodes.Clear();
+        _presentationViewport = null;
         IsEntered = IsIntroComplete = false; _armed = false; _heldAt = -1;
     }
 

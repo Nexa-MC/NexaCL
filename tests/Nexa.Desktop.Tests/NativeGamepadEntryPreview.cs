@@ -42,13 +42,27 @@ internal static partial class Program
                         if (!dark || layout != GamepadLayout.OffsetLeftHigh) continue;
                         JsonArray frames = [];
                         long clock = 1200;
-                        for (int index = 0; index < 70; index++)
+                        for (int index = 0; index < 136; index++)
                         {
                             if (index >= 20) entry.Step([pad with { LeftX = 1, RightX = -1 }], clock);
                             else entry.UpdatePresentation(clock);
                             Save($"frame-{index:D3}");
-                            if (index == 40) AssertTrue(window.GetVisualDescendants().OfType<AvaloniaUiSceneNodeControl>()
+                            if (index == 60) AssertTrue(window.GetVisualDescendants().OfType<AvaloniaUiSceneNodeControl>()
                                 .Any(control => control.Node.ImageSource == "brand/n" && control.HasDecodedRaster));
+                            if (index == 48) AssertTrue(window.GetVisualDescendants().OfType<AvaloniaUiSceneNodeControl>()
+                                .Any(control => control.Node.ImageSource == "gamepad/flash" && control.HasDecodedRaster));
+                            string? phase = index switch
+                            {
+                                40 => "entry-black",
+                                48 => "entry-flash",
+                                60 => "entry-corner",
+                                69 => "entry-pullback",
+                                82 => "entry-logo",
+                                96 => "entry-name",
+                                112 => "entry-lockup",
+                                _ => null
+                            };
+                            if (phase is not null) Save(phase);
                             frames.Add((JsonNode)new JsonObject
                             {
                                 ["file"] = $"frame-{index:D3}.png",
@@ -87,6 +101,20 @@ internal static partial class Program
                         window.UpdateLayout();
                         using var bitmap = new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(window.Bounds.Width), (int)Math.Ceiling(window.Bounds.Height)), new Vector(96, 96));
                         bitmap.Render(window); bitmap.Save(Path.Combine(output, name + ".png"), PngBitmapEncoderOptions.Default);
+                        if (name is "entry-black" or "entry-corner" or "entry-flash")
+                        {
+                            // Decoding alone does not prove a recipe was admitted and painted.
+                            // In particular the giant crop must not silently become a black frame.
+                            IntPtr pixel = System.Runtime.InteropServices.Marshal.AllocHGlobal(4);
+                            try
+                            {
+                                bitmap.CopyPixels(new PixelRect(bitmap.PixelSize.Width / 2, bitmap.PixelSize.Height / 2, 1, 1), pixel, 4, 4);
+                                int color = System.Runtime.InteropServices.Marshal.ReadInt32(pixel) & 0x00ffffff;
+                                if (name == "entry-black") AssertEqual(0, color);
+                                else AssertTrue(color != 0);
+                            }
+                            finally { System.Runtime.InteropServices.Marshal.FreeHGlobal(pixel); }
+                        }
                     }
                 }
         }, timeout.Token);

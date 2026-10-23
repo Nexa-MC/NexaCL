@@ -40,3 +40,10 @@ different raster bytes and should be reviewed before replacing these exports.
 | `neon-n-dark.png` | `c6022d1c67a314bc0429e5adc327f4d452a915ff1b45993f263a8b13e29590bb` |
 | `../icon.png` | `63ebb7951e0485a0542a1bcd2725ab3524607b883760c2350b5a01c139b937ef` |
 | `../icon.ico` | `f40d94ecbf7bb30893ad453d2c19fa9dac63ab194cdf7001335be7612f3218d3` |
+
+Controller entry uses a separate `neon-n-entry.png` lighting treatment and
+`gamepad-entry-flash.png` soft flare, both 512×512. Regenerate these with
+`python eng/media/bake_gamepad_entry.py`. The treatment preserves the source
+alpha and lights from upper left; it does not replace either supplied SVG or the
+normal launcher icons. Runtime zoom uses the existing smooth image sampler and native window clipping;
+the decoded source stays bounded instead of allocating a fullscreen-sized texture.

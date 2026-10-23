@@ -3,5 +3,7 @@
 .gamepad-drawing { Height: 300; MaxWidth: 500; HorizontalAlignment: Stretch; }
 .gamepad-instruction { Foreground: #F5F7FF; FontSize: 22; FontWeight: 600; TextAlignment: Center; WrapText: true; }
 .gamepad-dismiss { Height: 32; Width: 112; HorizontalAlignment: Center; Surface: None; Foreground: #AAB3C3; FontSize: 13; TextAlignment: Center; CornerRadius: 16; Hover: #FFFFFF14; }
-.gamepad-intro { HorizontalAlignment: Center; VerticalAlignment: Center; }
-.gamepad-logo { Width: 160; Height: 160; }
+.gamepad-intro { HorizontalAlignment: Stretch; VerticalAlignment: Stretch; }
+.gamepad-logo, .gamepad-flash { HorizontalAlignment: Center; VerticalAlignment: Center; }
+.gamepad-name { Width: 300; Height: 88; HorizontalAlignment: Center; VerticalAlignment: Center; FontSize: 68; FontWeight: 600; Foreground: #F5F7FF; TextAlignment: Center; }
+.gamepad-caption { Width: 300; Height: 32; HorizontalAlignment: Center; VerticalAlignment: Center; FontSize: 20; FontWeight: 400; Foreground: #9DA8B8; TextAlignment: Center; }
