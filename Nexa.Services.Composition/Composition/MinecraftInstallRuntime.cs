@@ -32,18 +32,18 @@ public static class MinecraftInstallRuntimeComposer
     public static MinecraftInstallRuntime Compose(
         FoundationHost host,
         IInstallCatalogSource? catalogSource = null,
-        IXsrDispatchObserver? observer = null)
+        IXsrDispatchObserver? observer = null, string? packagedCurseForgeApiKey = null)
     {
         HttpClient http = host.CreateHttpClient();
         MinecraftInstallService service = new(
             host.Tasks,
             host.Downloads,
-            catalogSource ?? new HttpInstallCatalogSource(http),
+            catalogSource ?? new HttpInstallCatalogSource(http, packagedCurseForgeApiKey),
             http,
             inheritVanilla: () => host.SettingsPolicy.Read(new()).Value?.Values
                 .FirstOrDefault(value => value.Key == "install.inherit-vanilla")?.Value.Value == "true",
             settingsPolicy: host.SettingsPolicy, hostStore: host.StateStore)
-        { HttpClientFactory = host.CreateHttpClient };
+        { HttpClientFactory = host.CreateHttpClient, CurseForgeApiKey = CurseForgeCredentials.ResolveApiKey(packagedCurseForgeApiKey) };
         host.MinecraftRemediations.BindInstall(service);
         XsrCommandRouterBuilder commands = new();
         commands.Register<MinecraftInstallStopCommand>(MinecraftInstallRoutes.Stop,

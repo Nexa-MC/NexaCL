@@ -17,12 +17,7 @@ public sealed class ResourceProviderHttp(HttpClient http, string? curseForgeKey 
     private readonly string? _key = curseForgeKey ?? ResolveApiKey(null);
 
     internal static string? ResolveApiKey(string? packagedFallback, Func<string, string?>? readEnvironment = null)
-    {
-        readEnvironment ??= Environment.GetEnvironmentVariable;
-        foreach (string name in new[] { "NEXA_CURSEFORGE_API_KEY", "Nexa_CURSEFORGE_API_KEY", "CURSEFORGE_API_KEY" })
-            if (readEnvironment(name) is { } value && !string.IsNullOrWhiteSpace(value)) return value.Trim();
-        return string.IsNullOrWhiteSpace(packagedFallback) ? null : packagedFallback.Trim();
-    }
+        => CurseForgeCredentials.ResolveApiKey(packagedFallback, readEnvironment);
     public Task<JsonDocument> ReadAsync(ResourceProvider provider, string path, bool mirrorFirst, CancellationToken token) => SendAsync(provider, path, mirrorFirst, null, token);
     public Task<JsonDocument> PostAsync(ResourceProvider provider, string path, bool mirrorFirst, string json, CancellationToken token) => SendAsync(provider, path, mirrorFirst, json, token);
     private async Task<JsonDocument> SendAsync(ResourceProvider provider, string path, bool mirrorFirst, string? json, CancellationToken token)

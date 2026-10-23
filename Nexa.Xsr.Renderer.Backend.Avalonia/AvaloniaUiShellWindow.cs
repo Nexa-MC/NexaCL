@@ -536,7 +536,10 @@ public sealed partial class AvaloniaUiShellWindow : Window
             TransparencyBackgroundFallback = opaqueBackground;
             _chromeSurface.Background = nativeMaterial ? Brushes.Transparent : opaqueBackground;
             _shadowSurface.Background = nativeMaterial ? Brushes.Transparent : opaqueBackground;
-            CornerRadius radius = maximized ? new CornerRadius(0) : new CornerRadius(ChromeCornerRadius);
+            // Cocoa clips the complete native window already. A second, larger scene
+            // radius exposes an extra arc behind the traffic lights.
+            double sceneRadius = maximized || OperatingSystem.IsMacOS() ? 0 : ChromeCornerRadius;
+            CornerRadius radius = new(sceneRadius);
             _shadowSurface.Margin = new Thickness(inset);
             _shadowSurface.CornerRadius = radius;
             _shadowSurface.BoxShadow = composited && inset > 0 && !_closeAnimationStarted
@@ -546,8 +549,8 @@ public sealed partial class AvaloniaUiShellWindow : Window
             _chromeSurface.Clip = new RectangleGeometry
             {
                 Rect = new Rect(0, 0, Math.Max(0, _root.Bounds.Width - inset * 2), Math.Max(0, _root.Bounds.Height - inset * 2)),
-                RadiusX = maximized ? 0 : ChromeCornerRadius,
-                RadiusY = maximized ? 0 : ChromeCornerRadius,
+                RadiusX = sceneRadius,
+                RadiusY = sceneRadius,
             };
             _windowActions.Margin = new Thickness(0, 0, 12, 0);
             _ = AvaloniaWindowsFrame.SuppressBorder(this);
@@ -561,6 +564,7 @@ public sealed partial class AvaloniaUiShellWindow : Window
                 {
                     _nativeFrameUpdateQueued = false;
                     if (_disposed) return;
+                    _shell.PublishWindowMetrics(AvaloniaMacWindow.ConfigureAndMeasure(this), WindowState == WindowState.FullScreen, 0);
                     _ = AvaloniaWindowsFrame.SuppressBorder(this);
                     ApplyNativeShape();
                 }, DispatcherPriority.Render);

@@ -41,6 +41,7 @@ internal static partial class Program
         await startup.InvokeAsync(() =>
         {
             if (OperatingSystem.IsMacOS()) AssertTrue(AvaloniaUiStartupSession.IsOnProcessMainThread);
+            AssertEqual("NexaCL", Application.Current!.Name);
             AssertEqual(ThemeVariant.Dark, window.ActualThemeVariant);
             ThemeVariant? originalTheme = Application.Current!.RequestedThemeVariant;
             try

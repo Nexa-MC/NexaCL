@@ -246,7 +246,7 @@ internal static partial class Program
     {
         foreach (bool failModrinth in new[] { true, false })
         {
-            using HttpClient http = new(new CatalogFixtureHandler(failModrinth, !failModrinth));
+            using HttpClient http = new(new CatalogFixtureHandler(failModrinth, !failModrinth, "fixture-key"));
             HttpInstallCatalogSource source = new(http, "fixture-key");
             var versions = await source.GetLoadersAsync(InstallLoader.FabricApi, "1.20.1", default);
             AssertEqual(1, versions.Count); AssertEqual(1, versions[0].Downloads!.Count);
@@ -301,11 +301,14 @@ internal static partial class Program
         public Task<IReadOnlyList<InstallCatalogVersion>> GetGamesAsync(CancellationToken token) => First.Task;
         public Task<IReadOnlyList<InstallCatalogVersion>> GetLoadersAsync(InstallLoader loader, string game, CancellationToken token) => game == "1.20.1" ? First.Task : Second.Task;
     }
-    private sealed class CatalogFixtureHandler(bool failModrinth = false, bool failCurseForge = false) : HttpMessageHandler
+    private sealed class CatalogFixtureHandler(bool failModrinth = false, bool failCurseForge = false, string? expectedKey = null) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
             string host = request.RequestUri!.Host;
+            if (host == "api.curseforge.com" && expectedKey is not null)
+                AssertTrue(request.Headers.GetValues("x-api-key").Single() == CurseForgeCredentials.ResolveApiKey(expectedKey));
+            if (host != "api.curseforge.com") AssertFalse(request.Headers.Contains("x-api-key"));
             if (host == "mod.mcimirror.top") AssertTrue(!request.Headers.Contains("x-api-key"));
             if (failModrinth && host == "api.modrinth.com" || failCurseForge && host is "api.curseforge.com" or "mod.mcimirror.top")
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));

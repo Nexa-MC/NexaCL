@@ -215,6 +215,8 @@ public sealed partial class AvaloniaUiStartupSession : IAsyncDisposable
 
     private sealed class StartupApplication : Application
     {
+        public StartupApplication() => Name = "NexaCL";
+
         public override void OnFrameworkInitializationCompleted()
         {
             AvaloniaUiFileActivation.Initialize(this);

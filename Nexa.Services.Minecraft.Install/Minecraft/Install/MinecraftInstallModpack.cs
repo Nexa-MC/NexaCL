@@ -208,11 +208,11 @@ public sealed partial class MinecraftInstallService
 
     private async Task<JsonNode> ReadCurseForgePackDataAsync(string path, CancellationToken token)
     {
-        string? key = Environment.GetEnvironmentVariable("Nexa_CURSEFORGE_API_KEY") ?? Environment.GetEnvironmentVariable("CURSEFORGE_API_KEY");
+        string? key = CurseForgeCredentials.ResolveApiKey(CurseForgeApiKey);
         JsonObject? document = null;
-        if (!RegionalPolicy.Current.IsMainlandChina && string.IsNullOrWhiteSpace(key))
+        if (!CountryPolicy.IsMainlandChina && string.IsNullOrWhiteSpace(key))
             throw new IOException("此地区使用 CurseForge 官方接口，需要配置 CurseForge API Key。");
-        string[] endpoints = !RegionalPolicy.Current.IsMainlandChina ? ["https://api.curseforge.com/v1"]
+        string[] endpoints = !CountryPolicy.IsMainlandChina ? ["https://api.curseforge.com/v1"]
             : string.IsNullOrWhiteSpace(key) ? ["https://mod.mcimirror.top/curseforge/v1"] : ["https://api.curseforge.com/v1", "https://mod.mcimirror.top/curseforge/v1"];
         foreach (string endpoint in endpoints)
         {

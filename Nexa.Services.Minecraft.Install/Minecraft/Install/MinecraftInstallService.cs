@@ -41,6 +41,7 @@ public sealed partial class MinecraftInstallService : IDisposable
     private readonly XsrStateStore? _hostStore;
     public Func<bool, HttpClient>? HttpClientFactory { get; init; }
     public RegionalPolicy CountryPolicy { get; init; } = RegionalPolicy.Current;
+    internal string? CurseForgeApiKey { get; init; }
 
     public MinecraftInstallService(
         TaskCenterService tasks,

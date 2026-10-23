@@ -89,6 +89,8 @@ public static class AvaloniaUiShellHost
 
     private sealed class ShellApplication : Application
     {
+        public ShellApplication() => Name = "NexaCL";
+
         public override void OnFrameworkInitializationCompleted()
         {
             AvaloniaUiFileActivation.Initialize(this);

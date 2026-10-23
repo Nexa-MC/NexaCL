@@ -12,11 +12,12 @@ public sealed class InstallCatalogRuntime(InstallCatalogService service, XsrComm
 }
 public static class InstallCatalogRuntimeComposer
 {
-    public static InstallCatalogRuntime Compose(FoundationHost host, IInstallCatalogSource? source = null, IXsrDispatchObserver? observer = null)
+    public static InstallCatalogRuntime Compose(FoundationHost host, IInstallCatalogSource? source = null, IXsrDispatchObserver? observer = null,
+        string? packagedCurseForgeApiKey = null)
     {
         HttpClient? http = source is null ? host.CreateHttpClient() : null;
         string sourceIdentity = source is null ? "official-install-providers-v1" : Guid.NewGuid().ToString("N");
-        InstallCatalogService service = new(host.StateStore, source ?? new HttpInstallCatalogSource(http!),
+        InstallCatalogService service = new(host.StateStore, source ?? new HttpInstallCatalogSource(http!, packagedCurseForgeApiKey),
             host.SharedStateCache, () => sourceIdentity + "|" + Nexa.Services.RegionalPolicy.Current.CountryCode,
             host.CacheDirectory is null ? null : new InstallCatalogInformationCache(Path.Combine(host.CacheDirectory, "install-catalogs")))
         { WorkScheduler = host.Work };

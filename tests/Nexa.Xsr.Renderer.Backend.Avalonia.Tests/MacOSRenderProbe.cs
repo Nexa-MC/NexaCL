@@ -4,6 +4,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media.Imaging;
+using Avalonia.Media;
+using Avalonia.VisualTree;
+using System.Diagnostics;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.State;
 using SkiaSharp;
@@ -68,6 +71,8 @@ internal static partial class Program
                         AssertEqual(0d, title.Rect.X);
                         AssertEqual(window.Surface.Bounds.Width, title.Rect.Width);
                         double safeArea = AvaloniaMacWindow.ConfigureAndMeasure(window);
+                        AssertEqual("NexaCL", Application.Current!.Name);
+                        AssertEqual(0d, ((RectangleGeometry)window.Surface.GetVisualAncestors().OfType<Border>().First().Clip!).RadiusX);
                         AssertTrue(safeArea > 0);
                         AssertTrue(window.Surface.Scene.Nodes.First(node => node.Text == shell!.Title).Rect.X >= safeArea);
                         using var pixels = AssertNotNull(SKBitmap.Decode(name + ".png"));
@@ -100,6 +105,23 @@ internal static partial class Program
                             ["renderer"] = "RenderTargetBitmap of actual Cocoa window; excludes OS compositor buttons"
                         };
                         File.WriteAllText(name + ".json", facts.ToJsonString());
+                        var platform = window.TryGetPlatformHandle()!;
+                        nint nativeHandle = platform.HandleDescriptor == "NSView"
+                            ? MacProbeSend(platform.Handle, MacProbeSelector("window")) : platform.Handle;
+                        var capture = new ProcessStartInfo("/usr/sbin/screencapture") { UseShellExecute = false };
+                        foreach (string arg in new[] { "-x", "-l", MacProbeSend(nativeHandle, MacProbeSelector("windowNumber")).ToString(System.Globalization.CultureInfo.InvariantCulture), name + "-native.png" })
+                            capture.ArgumentList.Add(arg);
+                        using var process = Process.Start(capture)!;
+                        AssertTrue(process.WaitForExit(10000));
+                        AssertEqual(0, process.ExitCode);
+                        if (stage == "initial")
+                        {
+                            var desktopCapture = new ProcessStartInfo("/usr/sbin/screencapture") { UseShellExecute = false };
+                            foreach (string arg in new[] { "-x", name + "-desktop.png" }) desktopCapture.ArgumentList.Add(arg);
+                            using var desktopProcess = Process.Start(desktopCapture)!;
+                            AssertTrue(desktopProcess.WaitForExit(10000));
+                            AssertEqual(0, desktopProcess.ExitCode);
+                        }
                         Console.WriteLine("PASS capture " + name);
                     }, timeout.Token);
                 }
@@ -143,16 +165,24 @@ internal static partial class Program
             for (nint i = 0; i < 3; i++)
             {
                 nint button = MacProbeButton(native, MacProbeSelector("standardWindowButton:"), i);
-                if (button != 0) buttons.Add((JsonNode)new JsonObject
+                if (button != 0)
                 {
-                    ["kind"] = (int)i,
-                    ["frame"] = MacProbeRectFacts(MacProbeFrame(button)),
-                    ["superviewFrame"] = MacProbeRectFacts(MacProbeFrame(MacProbeSend(button, MacProbeSelector("superview"))))
-                });
+                    var frame = MacProbeFrame(button);
+                    var parent = MacProbeFrame(MacProbeSend(button, MacProbeSelector("superview")));
+                    AssertEqual(XsrUiShell.TitleBarHeight, parent.Height);
+                    AssertEqual(XsrUiShell.TitleBarHeight / 2, frame.Y + frame.Height / 2);
+                    buttons.Add((JsonNode)new JsonObject
+                    {
+                        ["kind"] = (int)i,
+                        ["frame"] = MacProbeRectFacts(frame),
+                        ["superviewFrame"] = MacProbeRectFacts(parent)
+                    });
+                }
             }
         return new()
         {
             ["descriptor"] = handle.HandleDescriptor,
+            ["applicationName"] = Application.Current!.Name,
             ["hasWindow"] = native != 0,
             ["buttons"] = buttons,
             ["frame"] = native == 0 ? null : MacProbeRectFacts(MacProbeFrame(native))

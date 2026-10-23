@@ -519,8 +519,11 @@ internal static partial class Program
         });
         using MinecraftLibraryRuntime library = MinecraftLibraryRuntimeComposer.Compose(host, minecraftRootDirectory, minecraft.Instances, dispatchObservation);
         migrationLibrary = library.Service;
-        using InstallCatalogRuntime installCatalog = InstallCatalogRuntimeComposer.Compose(host, observer: dispatchObservation);
-        using MinecraftInstallRuntime installRun = MinecraftInstallRuntimeComposer.Compose(host, observer: dispatchObservation);
+        string? packagedCurseForgeApiKey = ResolveEmbeddedSetting("NexaCurseForgeApiKey");
+        using InstallCatalogRuntime installCatalog = InstallCatalogRuntimeComposer.Compose(host, observer: dispatchObservation,
+            packagedCurseForgeApiKey: packagedCurseForgeApiKey);
+        using MinecraftInstallRuntime installRun = MinecraftInstallRuntimeComposer.Compose(host, observer: dispatchObservation,
+            packagedCurseForgeApiKey: packagedCurseForgeApiKey);
         migrationInstaller = installRun.Service;
         var folderImports = MinecraftFolderImportRuntimeComposer.Compose(host, library.Service, installRun.Service, dispatchObservation);
         using MinecraftDropController dropController = new(platformActions, folderImports, library.Commands, host.StateStore, feedback);
@@ -613,7 +616,7 @@ internal static partial class Program
         launchPage.SettingsPage = settingsPage.Page;
         using var resourcesRuntime = ResourceCatalogRuntimeComposer.Compose(source: null, observer: dispatchObservation, host: host,
             favoritesPath: Path.Combine(settingsFolder, "resources-favorites.json"), installer: installRun.Service,
-            packagedCurseForgeApiKey: ResolveEmbeddedSetting("NexaCurseForgeApiKey"));
+            packagedCurseForgeApiKey: packagedCurseForgeApiKey);
         settingsPage.ConfigureOnlineContent(resourcesRuntime.Queries, platformActions.OpenHttpsUri, resourcesRuntime.Commands);
         using var resourcesPage = new ResourcesPageController(shell, uiIntents, resourcesRuntime.Queries,
             host.StateStore, platformActions.OpenHttpsUri, functionPatches, sidecarSignals, sidecarUi);
@@ -705,8 +708,7 @@ internal static partial class Program
             return 0;
         }
 
-        await using var telemetry = new LauncherTelemetryRuntime(host, rollouts, updateService, ResolveInformationalVersion(),
-            () => typeof(Program).Assembly.GetManifestResourceStream("Nexa.Desktop.Assets.api-client.pfx"));
+        await using var telemetry = new LauncherTelemetryRuntime(host, rollouts, updateService, ResolveInformationalVersion());
         var telemetrySession = telemetry.Session;
         using IDisposable? telemetrySubscription = telemetrySession is null ? null : stateObservation.Subscribe(telemetrySession);
         operationLog.Diagnostics = telemetrySession;

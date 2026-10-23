@@ -128,7 +128,8 @@ internal static partial class Program
 
         public InstallFixture(FakeMetadata metadata, IInstallCatalogSource? catalog = null, IMinecraftLoaderInstaller? loaderInstaller = null, HttpClient? http = null,
             Func<string, IDownloadConnection>? connectionFactory = null, Func<bool>? inheritVanilla = null,
-            Nexa.Services.Settings.SettingsPolicyService? settingsPolicy = null, RegionalPolicy? countryPolicy = null)
+            Nexa.Services.Settings.SettingsPolicyService? settingsPolicy = null, RegionalPolicy? countryPolicy = null,
+            string? packagedCurseForgeApiKey = null)
         {
             XsrStateStoreBuilder builder = new();
             TaskCenterStateContract.DeclareState(builder);
@@ -141,7 +142,7 @@ internal static partial class Program
                 Tasks, downloads, catalog, http: http, metadata: metadata,
                 connectionFactory: connectionFactory ?? (source => new ServingConnection(PayloadFor(source))), loaderInstaller: loaderInstaller, inheritVanilla: inheritVanilla,
                 settingsPolicy: settingsPolicy, hostStore: Store)
-            { CountryPolicy = countryPolicy ?? new("US") };
+            { CountryPolicy = countryPolicy ?? new("US"), CurseForgeApiKey = packagedCurseForgeApiKey };
             Install.Installed += root => InstalledRoots.Add(root);
         }
 

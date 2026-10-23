@@ -19,6 +19,11 @@ internal static partial class Program
         if (args is [Nexa.Services.Minecraft.Process.MinecraftLaunchHookWorker.WorkerArgument])
             return await Nexa.Services.Minecraft.Process.MinecraftLaunchHookWorker.RunWorkerAsync().ConfigureAwait(false);
         if (args is ["--delta-publisher-smoke", var deltaFixture]) return await RunPublisherDeltaFixture(deltaFixture);
+        if (args is ["--telemetry-website-fixture", var telemetryFixture])
+        {
+            await File.WriteAllTextAsync(telemetryFixture, Nexa.Services.Telemetry.TelemetryService.SerializeBatch(WebsiteTelemetryExamples()));
+            return 0;
+        }
         if (args is ["--update-server-smoke"]) { await AutomaticUpdateLoopbackHttpTransaction(); return 0; }
         if (args is ["--serve-update-fixture"]) return await ServeAutomaticUpdateFixture();
         // Existing parity fixtures model the mainland product; international tests select US explicitly.

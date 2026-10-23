@@ -403,6 +403,7 @@ internal static partial class Program
         ("mod categories distinguish problems unknown and verified updates", ModCategoriesDistinguishProblemsUnknownAndVerifiedUpdates),
         ("mod update checks reject file mutation and retire stale conclusions", ModUpdateCheckRejectsChangedContentAndClearsOldConclusions),
         ("telemetry transport reports bounded failures", TelemetryTransportReportsBoundedFailures),
+        ("telemetry uses website ingress and tiered wire contract", TelemetryUsesWebsiteIngressAndTieredWireContract),
         ("local OptiFine uses static field constants", LocalOptiFineUsesFieldConstants),
     ];
 }

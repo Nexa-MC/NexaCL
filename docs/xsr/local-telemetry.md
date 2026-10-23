@@ -1,8 +1,15 @@
 # 本地构建遥测
 
-普通 `dotnet build/run` 不会自动获得 Cloudflare API 客户端证书。CI 从 secret 恢复的
-`Nexa.Desktop/Assets/api-client.pfx` 不在源码仓库中。没有证书时不会建立上传会话；
-日志会明确记录“遥测未启动”，而不是把没有采集误当成服务器没有收到。
+当前匿名事件入口为 `https://pcln.top/api/v1/telemetry/events`，与网站管理页读取的
+`nexa-platform` 聚合库一致。旧 `api.pcln.top/v2/launcher/telemetry` 已返回 404。
+事件格式仍为分级数组：name、level、timestamp（Unix 毫秒）与白名单 properties；
+必要/诊断分级、同意设置、批次上限与失败保留策略均不改变。
+
+该入口不需要账户或客户端证书。普通 `dotnet build/run` 同样可以按上述策略上传；
+上传使用独立、禁用重定向和 Cookie 的受管 HTTP 客户端，不依赖证书加载是否成功。
+以下证书规则只适用于仍要求 API 客户端身份的其他服务，不是遥测启动前提：
+CI 从 secret 恢复的
+`Nexa.Desktop/Assets/api-client.pfx` 不在源码仓库中。
 
 本地测试可在启动进程的环境中设置 `NEXA_API_CLIENT_CERT_PATH`，指向有私钥、未过期且
 被服务端接受的 PFX。密码通过 `NEXA_API_CLIENT_CERT_PASSWORD` 传入；不要提交证书、
@@ -21,5 +28,5 @@ Windows Schannel 使用 `UserKeySet` 导入，不设置 `PersistKeySet`；其他
 服务器接受第一批事件后记录一次 Info 日志。未覆盖版本属性的本地构建目前为
 `2.0.0.alpha.1`，管理员版本筛选需与实际构建一致。
 
-收到“缺少证书”日志时，先解决客户端身份；收到 HTTP 状态码时再检查 API Shield、
-服务端鉴权和事件校验。只有服务端接受并在管理员聚合结果中出现，才算端到端验证通过。
+遥测失败时检查当前端点、网络、HTTP 状态码和事件校验，不引导用户配置证书。
+只有服务端接受并在管理员聚合结果中出现，才算端到端验证通过。

@@ -216,6 +216,10 @@ internal static partial class Program
 
     private static async ValueTask CursePackResolvesFilesAndHonorsDownloadRestrictions(RegionalPolicy countryPolicy)
     {
+        string[] names = ["NEXA_CURSEFORGE_API_KEY", "Nexa_CURSEFORGE_API_KEY", "CURSEFORGE_API_KEY"];
+        var original = names.ToDictionary(name => name, Environment.GetEnvironmentVariable);
+        foreach (string name in names) Environment.SetEnvironmentVariable(name, null);
+        const string packagedKey = "packaged-curseforge-install-fixture";
         string temporary = Path.Combine(Path.GetTempPath(), "nexa-cf-pack-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(temporary);
         try
         {
@@ -233,8 +237,9 @@ internal static partial class Program
             var preview = await MinecraftModpackArchive.InspectAsync(source);
             foreach (bool allowed in new[] { true, false })
             {
-                using var http = new HttpClient(new PackCurseHandler(allowed));
-                using var fixture = new InstallFixture(PackMetadata(), http: http, countryPolicy: countryPolicy);
+                using var http = new HttpClient(new PackCurseHandler(allowed, packagedKey));
+                using var fixture = new InstallFixture(PackMetadata(), http: http, countryPolicy: countryPolicy,
+                    packagedCurseForgeApiKey: packagedKey);
                 string root = Path.Combine(temporary, allowed ? "allowed" : "blocked"); Directory.CreateDirectory(root);
                 if (countryPolicy.IsMainlandChina) await SeedLocalPackBaseAsync(root);
                 var result = await fixture.Install.InstallModpackAsync(new(preview, root));
@@ -249,13 +254,19 @@ internal static partial class Program
                 AssertEqual(0, Directory.GetDirectories(root, ".nexa-pack-*").Count(path => Path.GetFileName(path) != ".nexa-pack-jobs"));
             }
         }
-        finally { Directory.Delete(temporary, true); }
+        finally
+        {
+            foreach (string name in names) Environment.SetEnvironmentVariable(name, original[name]);
+            Directory.Delete(temporary, true);
+        }
     }
 
-    private sealed class PackCurseHandler(bool allowed) : HttpMessageHandler
+    private sealed class PackCurseHandler(bool allowed, string expectedKey) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            AssertEqual("api.curseforge.com", request.RequestUri!.Host);
+            AssertTrue(request.Headers.GetValues("x-api-key").Single() == expectedKey);
             var data = request.RequestUri!.AbsolutePath.EndsWith("/files/456", StringComparison.Ordinal)
                 ? new JsonObject
                 {

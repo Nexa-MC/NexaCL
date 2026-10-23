@@ -3,8 +3,7 @@ namespace Nexa.Services.Minecraft.Install;
 
 public sealed partial class HttpInstallCatalogSource
 {
-    private readonly string? _curseForgeKey = curseForgeApiKey
-        ?? Environment.GetEnvironmentVariable("Nexa_CURSEFORGE_API_KEY") ?? Environment.GetEnvironmentVariable("CURSEFORGE_API_KEY");
+    private readonly string? _curseForgeKey = CurseForgeCredentials.ResolveApiKey(curseForgeApiKey);
     private sealed record AddonSourceResult(IReadOnlyList<InstallCatalogVersion> Versions, string? Error);
     private async Task<IReadOnlyList<InstallCatalogVersion>> ReadMergedAddonAsync(InstallLoader loader, string game, CancellationToken token)
     {
