@@ -1,12 +1,14 @@
 param(
     [Parameter(Mandatory = $true)][string]$HostExecutable,
-    [Parameter(Mandatory = $true)][string]$JavaHome
+    [Parameter(Mandatory = $true)][string]$JavaHome,
+    [string]$CompilerJavaHome
 )
 $ErrorActionPreference = 'Stop'
 $hostPath = (Resolve-Path -LiteralPath $HostExecutable).Path
 $suffix = if ($IsWindows) { '.exe' } else { '' }
 $javaPath = (Resolve-Path -LiteralPath (Join-Path $JavaHome "bin/java$suffix")).Path
-$javacPath = (Resolve-Path -LiteralPath (Join-Path $JavaHome "bin/javac$suffix")).Path
+if (!$CompilerJavaHome) { $CompilerJavaHome = $JavaHome }
+$javacPath = (Resolve-Path -LiteralPath (Join-Path $CompilerJavaHome "bin/javac$suffix")).Path
 $unicodeToken = '中文'
 $unsupportedVmText = $null
 if ($IsWindows) {
@@ -74,7 +76,7 @@ try {
     $compileStart.CreateNoWindow = $true
     $compileStart.RedirectStandardOutput = $true
     $compileStart.RedirectStandardError = $true
-    foreach ($argument in @('-encoding', 'UTF-8', '-d', '.', 'JvmHostModCompatibility.java')) { $compileStart.ArgumentList.Add($argument) }
+    foreach ($argument in @('-source', '8', '-target', '8', '-Xlint:-options', '-encoding', 'UTF-8', '-d', '.', 'JvmHostModCompatibility.java')) { $compileStart.ArgumentList.Add($argument) }
     $compiler = [Diagnostics.Process]::Start($compileStart)
     try {
         $compileOutput = $compiler.StandardOutput.ReadToEndAsync()

@@ -1,23 +1,25 @@
 param(
     [Parameter(Mandatory = $true)][string]$HostExecutable,
-    [Parameter(Mandatory = $true)][string]$JavaHome
+    [Parameter(Mandatory = $true)][string]$JavaHome,
+    [string]$CompilerJavaHome
 )
 $ErrorActionPreference = 'Stop'
 $hostPath = (Resolve-Path -LiteralPath $HostExecutable).Path
 $suffix = if ($IsWindows) { '.exe' } else { '' }
 $javaPath = (Resolve-Path -LiteralPath (Join-Path $JavaHome "bin/java$suffix")).Path
-$javacPath = Join-Path $JavaHome "bin/javac$suffix"
+if (!$CompilerJavaHome) { $CompilerJavaHome = $JavaHome }
+$javacPath = (Resolve-Path -LiteralPath (Join-Path $CompilerJavaHome "bin/javac$suffix")).Path
 $release = Get-Content -LiteralPath (Join-Path $JavaHome 'release') -Raw
 if ($release -notmatch '(?m)^JAVA_VERSION="(?:1\.)?(\d+)') { throw 'Cannot identify fixture Java major' }
 $javaMajor = [int]$Matches[1]
 $scratch = Join-Path ([IO.Path]::GetTempPath()) ("nexa-jni-smoke-" + [Guid]::NewGuid().ToString('N'))
 [IO.Directory]::CreateDirectory($scratch) | Out-Null
 try {
-    & $javacPath -encoding UTF-8 -d $scratch (Join-Path $PSScriptRoot 'fixtures/JvmHostSmoke.java')
+    & $javacPath -source 8 -target 8 -Xlint:-options -encoding UTF-8 -d $scratch (Join-Path $PSScriptRoot 'fixtures/JvmHostSmoke.java')
     if ($LASTEXITCODE -ne 0) { throw 'javac failed' }
     $cocoaProbe = Join-Path $scratch 'libnexa-cocoa-probe.dylib'
     if ($IsMacOS) {
-        & clang -dynamiclib -framework Cocoa -I (Join-Path $JavaHome 'include') -I (Join-Path $JavaHome 'include/darwin') -o $cocoaProbe (Join-Path $PSScriptRoot 'fixtures/JvmHostCocoaSmoke.m')
+        & clang -dynamiclib -framework Cocoa -I (Join-Path $CompilerJavaHome 'include') -I (Join-Path $CompilerJavaHome 'include/darwin') -o $cocoaProbe (Join-Path $PSScriptRoot 'fixtures/JvmHostCocoaSmoke.m')
         if ($LASTEXITCODE -ne 0) { throw 'Cocoa probe compilation failed' }
     }
     function Write-Field($writer, [string]$value) {
