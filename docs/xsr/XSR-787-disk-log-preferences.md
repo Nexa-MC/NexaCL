@@ -17,6 +17,8 @@ handles; normal shutdown removes it, and retention can reclaim an unlocked lease
 left by an interrupted process. Cleanup protects other live sessions while still
 allowing captured export files to be pruned. The historical `launcher.log` remains
 preserved. If log creation fails, launching continues without a disk sink.
+The lease permits read sharing so the existing storage-migration preview can scan
+it while logging stays active; a second writer or retention owner is still refused.
 
 FileLogSink rotates before adding a record that would exceed 4 MiB. Individual disk
 records are bounded. Timestamp-named session files and their rotated segments form

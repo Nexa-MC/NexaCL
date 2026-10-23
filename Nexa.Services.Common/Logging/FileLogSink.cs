@@ -57,7 +57,7 @@ public sealed class FileLogSink : ILogSink, ILogRetentionSink, IDisposable, IAsy
             try
             {
                 reserved = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read, 65536, useAsync: true);
-                lease = new FileStream(path + ".active", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+                lease = new FileStream(path + ".active", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read);
                 return new FileLogSink(path, MaximumFileBytes, reserved, lease);
             }
             catch (IOException) when (reserved is null && File.Exists(path)) { }

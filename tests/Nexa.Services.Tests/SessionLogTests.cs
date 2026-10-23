@@ -1,5 +1,7 @@
 using System.Globalization;
+using Nexa.Services.Files;
 using Nexa.Services.Logging;
+using Nexa.Services.Setup;
 
 namespace Nexa.Services.Tests;
 
@@ -11,8 +13,9 @@ internal static partial class Program
         if (OperatingSystem.IsMacOS() && root.StartsWith("/var/", StringComparison.Ordinal)) root = "/private" + root;
         try
         {
-            await using var first = FileLogSink.CreateSession(root);
-            await using var second = FileLogSink.CreateSession(root);
+            string source = Path.Combine(root, "launcher-data"), logDirectory = Path.Combine(source, FolderNames.Logs);
+            await using var first = FileLogSink.CreateSession(logDirectory);
+            await using var second = FileLogSink.CreateSession(logDirectory);
             AssertTrue(first.FilePath != second.FilePath);
             foreach (var sink in new[] { first, second })
                 AssertTrue(DateTime.TryParseExact(Path.GetFileNameWithoutExtension(sink.FilePath),
@@ -23,8 +26,11 @@ internal static partial class Program
             await first.FlushAsync(); await second.FlushAsync();
             AssertTrue((await ReadLiveLog(first.FilePath)).Contains("first-launch", StringComparison.Ordinal));
             AssertFalse((await ReadLiveLog(second.FilePath)).Contains("first-launch", StringComparison.Ordinal));
+            using var storage = new StoragePreferencesService(new(source), Path.Combine(root, "bootstrap", "storage.json"), isIdle: () => true);
+            var preview = await storage.PreviewMigrationAsync(new(Path.Combine(root, "destination")));
+            AssertTrue(preview.IsSuccess, preview.Error?.Message ?? "Live session metadata blocked storage preview.");
             File.SetLastWriteTimeUtc(first.FilePath, DateTime.UtcNow.AddDays(-30));
-            string legacy = Path.Combine(root, "launcher.log"), unrelated = Path.Combine(root, "personal.log"), malformed = Path.Combine(root, "20261399T9999990000000Z.log");
+            string legacy = Path.Combine(logDirectory, "launcher.log"), unrelated = Path.Combine(logDirectory, "personal.log"), malformed = Path.Combine(logDirectory, "20261399T9999990000000Z.log");
             File.WriteAllText(legacy, "[12:00:00.000] [Info] [Launcher] old launcher");
             File.WriteAllText(unrelated, "private"); File.WriteAllText(malformed, "private");
             second.SetRetentionDays(1);
