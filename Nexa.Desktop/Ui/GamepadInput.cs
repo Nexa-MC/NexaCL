@@ -4,18 +4,38 @@ namespace Nexa.Desktop.Ui;
 
 internal enum GamepadLayout { SymmetricLow, OffsetLeftHigh, SymmetricHigh }
 internal sealed record GamepadSample(string Id, GamepadLayout Layout, float LeftX = 0, float LeftY = 0,
-    float RightX = 0, float RightY = 0, bool Cancel = false, bool Ready = true);
+    float RightX = 0, float RightY = 0, bool Cancel = false, bool Ready = true, bool Activity = false)
+{
+    internal bool Valid => Ready && float.IsFinite(LeftX) && float.IsFinite(LeftY) && float.IsFinite(RightX) && float.IsFinite(RightY);
+    internal bool Neutral => Valid && Math.Abs(LeftX) < .25 && Math.Abs(RightX) < .25 && Math.Abs(LeftY) < .25 && Math.Abs(RightY) < .25;
+    internal bool HasActivity => Valid && (Activity || Math.Abs(LeftX) > .25 || Math.Abs(RightX) > .25 || Math.Abs(LeftY) > .25 || Math.Abs(RightY) > .25);
+}
 internal interface IGamepadInput : IDisposable { IReadOnlyList<GamepadSample> Read(); }
 
 /// <summary>Nonexclusive, session-owned native readers; never installs keyboard or mouse hooks.</summary>
-internal sealed partial class NativeGamepadInput : IGamepadInput
+internal sealed partial class NativeGamepadInput : IGamepadInput, IGamepadFeedback
 {
     private readonly Dictionary<string, LinuxPad> _linux = [];
     private readonly WindowsHidGamepads? _hid = OperatingSystem.IsWindows() ? new() : null;
     private long _nextScan;
     private bool _disposed;
+    private NativeGamepadFeedback? _feedback;
+    private readonly HashSet<string> _knownDevices = [];
 
     public IReadOnlyList<GamepadSample> Read()
+    {
+        var samples = ReadCore();
+        _knownDevices.Clear(); foreach (var sample in samples) _knownDevices.Add(sample.Id);
+        _feedback?.RetainDevices(samples);
+        return samples;
+    }
+    public void ApplyFeedback(string device, GamepadFeedback feedback)
+    {
+        if (_disposed) return;
+        if (feedback == default) { _feedback?.ApplyFeedback(device, default); return; }
+        if (_knownDevices.Contains(device)) (_feedback ??= new()).ApplyFeedback(device, feedback);
+    }
+    private List<GamepadSample> ReadCore()
     {
         if (_disposed) return [];
         try
@@ -27,7 +47,7 @@ internal sealed partial class NativeGamepadInput : IGamepadInput
                     if (XInputGetState(index, out var state) == 0)
                         result.Add(new("xinput:" + index, GamepadLayout.OffsetLeftHigh,
                             state.LX / 32768f, -state.LY / 32768f, state.RX / 32768f, -state.RY / 32768f,
-                            (state.Buttons & 0x2020) != 0));
+                            (state.Buttons & 0x2020) != 0, Activity: state.Buttons != 0 || state.LT > 30 || state.RT > 30));
                 return result;
             }
             if (OperatingSystem.IsLinux()) return ReadLinux();
@@ -75,6 +95,7 @@ internal sealed partial class NativeGamepadInput : IGamepadInput
     {
         private readonly float[] _axes = new float[64];
         private bool _cancel;
+        private readonly HashSet<byte> _buttons = [];
         internal static LinuxPad? Open(string path)
         {
             int fd = OpenDevice(path, 0x800 | 0x80000); // nonblocking + close-on-exec
@@ -100,14 +121,16 @@ internal sealed partial class NativeGamepadInput : IGamepadInput
                 int type = data[6] & 0x7f, number = data[7];
                 if (type == 2 && number < mapping.Length) _axes[mapping[number]] = value / 32768f;
                 if (type == 1 && number == (layout == GamepadLayout.SymmetricLow ? 2 : 1)) _cancel = value != 0;
+                if (type == 1) { if (value != 0) _buttons.Add((byte)number); else _buttons.Remove((byte)number); }
             }
             bool rx = mapping.Contains((byte)3) && mapping.Contains((byte)4);
-            return new(id, layout, _axes[0], _axes[1], _axes[rx ? 3 : 2], _axes[rx ? 4 : 5], _cancel);
+            return new(id, layout, _axes[0], _axes[1], _axes[rx ? 3 : 2], _axes[rx ? 4 : 5], _cancel, Activity: _buttons.Count != 0);
         }
         public void Dispose() => _ = CloseDevice(fd);
     }
 
     private static bool _macLoaded;
+    private static readonly string[] MacActivityButtons = ["buttonA", "buttonB", "buttonX", "buttonY", "leftShoulder", "rightShoulder", "leftTrigger", "rightTrigger", "buttonMenu", "buttonOptions", "leftThumbstickButton", "rightThumbstickButton"];
     private static nint Selector(string name) => RegisterSelector(name);
     private static nint Property(nint value, string name) => value == 0 ? 0 : Send(value, Selector(name));
     private static float Axis(nint stick, string axis) => stick == 0 ? 0 : SendFloat(Property(stick, axis), Selector("value"));
@@ -127,7 +150,11 @@ internal sealed partial class NativeGamepadInput : IGamepadInput
                 string name = Marshal.PtrToStringUTF8(Property(Property(pad, "vendorName"), "UTF8String")) ?? "";
                 nint left = Property(profile, "leftThumbstick"), right = Property(profile, "rightThumbstick");
                 bool cancel = SendFloat(Property(profile, "buttonB"), Selector("value")) > .5f;
-                result.Add(new("gc:" + pad, Layout(name), Axis(left, "xAxis"), -Axis(left, "yAxis"), Axis(right, "xAxis"), -Axis(right, "yAxis"), cancel));
+                bool activity = MacActivityButtons.Any(button => SendResponds(profile, Selector("respondsToSelector:"), Selector(button)) != 0
+                    && SendFloat(Property(profile, button), Selector("value")) > .25f);
+                nint dpad = Property(profile, "dpad");
+                activity |= Math.Abs(Axis(dpad, "xAxis")) > .25f || Math.Abs(Axis(dpad, "yAxis")) > .25f;
+                result.Add(new("gc:" + pad, Layout(name), Axis(left, "xAxis"), -Axis(left, "yAxis"), Axis(right, "xAxis"), -Axis(right, "yAxis"), cancel, Activity: activity));
             }
             return result;
         }
@@ -137,6 +164,7 @@ internal sealed partial class NativeGamepadInput : IGamepadInput
     public void Dispose()
     {
         if (_disposed) return; _disposed = true;
+        _feedback?.Dispose(); _knownDevices.Clear();
         _hid?.Dispose(); foreach (var pad in _linux.Values) pad.Dispose(); _linux.Clear();
     }
 
@@ -153,4 +181,5 @@ internal sealed partial class NativeGamepadInput : IGamepadInput
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] private static extern nint Send(nint value, nint selector);
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] private static extern nint SendIndex(nint value, nint selector, nint index);
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] private static extern float SendFloat(nint value, nint selector);
+    [DllImport(ObjC, EntryPoint = "objc_msgSend")] private static extern byte SendResponds(nint value, nint selector, nint argument);
 }

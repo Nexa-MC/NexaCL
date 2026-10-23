@@ -27,23 +27,23 @@ internal static partial class Program
         entry.Step([inward], 2500); entry.Step([inward], 2800); AssertFalse(entry.IsEntered);
         entry.Step([centered], 2900); entry.Step([inward with { LeftY = .8f }], 3000);
         entry.Step([inward with { LeftY = .8f }], 3300); AssertFalse(entry.IsEntered);
-        entry.Step([inward], 3400); entry.Step([inward], 3599); AssertFalse(entry.IsEntered);
-        entry.Step([inward], 3600); AssertTrue(entry.IsEntered); AssertTrue(transitions.SequenceEqual([true]));
-        entry.UpdatePresentation(4400);
+        entry.Step([inward], 3400); HoldGamepad(entry, inward, 3400, 4399); AssertFalse(entry.IsEntered);
+        entry.Step([inward], 4400); AssertTrue(entry.IsEntered); AssertTrue(transitions.SequenceEqual([true]));
+        entry.UpdatePresentation(5200);
         var scene = shell.Render(new(1100, 750));
         AssertFalse(scene.Nodes.Any(node => node.ImageSource == "brand/n" && node.PresentationOpacity * node.VisualStyle.Opacity > 0));
         AssertFalse(scene.Nodes.Any(node => node.Text == "左右摇杆内推以进入手柄模式"));
-        entry.UpdatePresentation(9600); AssertTrue(entry.IsIntroComplete);
+        entry.UpdatePresentation(10400); AssertTrue(entry.IsIntroComplete);
         scene = shell.Render(new(1100, 750));
         AssertTrue(scene.Nodes.Any(node => node.ImageSource == "brand/n" && node.RasterImage is not null));
         AssertTrue(scene.Nodes.Any(node => node.Text == "NexaCL"));
         AssertTrue(scene.Nodes.Any(node => node.Text == "手柄模式"));
         AssertEqual((byte)255, shell.Tree.GetComponent<XsrUiVisualStyle>(entry.Root)!.Background.Alpha);
         AssertTrue(shell.Renderer.HandleKey(XsrUiKey.Escape));
-        entry.Step([centered], 9700); AssertFalse(entry.IsEntered); AssertFalse(entry.IsPromptOpen);
+        entry.Step([centered], 10500); AssertFalse(entry.IsEntered); AssertFalse(entry.IsPromptOpen);
         AssertTrue(transitions.SequenceEqual([true, false])); AssertEqual(previous, shell.Renderer.Focused);
-        entry.Step([centered], 9800); AssertFalse(entry.IsPromptOpen);
-        entry.Step([], 9900); entry.Step([centered], 10000); AssertTrue(entry.IsPromptOpen);
+        entry.Step([centered], 10600); AssertFalse(entry.IsPromptOpen);
+        entry.Step([], 10700); entry.Step([centered with { Activity = true }], 10800); AssertTrue(entry.IsPromptOpen);
     }
 
     private static void GamepadEntryCinematicTimelineAndStableLockup()
@@ -55,7 +55,7 @@ internal static partial class Program
         using var entry = new GamepadEntrySession(shell, fixture.Intents, fixture.Store, new(), runTimer: false, immersive: _ => { });
         var pad = new GamepadSample("pad", GamepadLayout.OffsetLeftHigh);
         entry.Step([pad], 0); entry.Step([pad with { LeftX = 1, RightX = -1 }], 10);
-        entry.Step([pad with { LeftX = 1, RightX = -1 }], 210);
+        HoldGamepad(entry, pad with { LeftX = 1, RightX = -1 }, 10, 1010);
 
         var black = At(800);
         AssertEqual((byte)0, shell.Tree.GetComponent<XsrUiVisualStyle>(entry.Root)!.Background.Red);
@@ -100,7 +100,7 @@ internal static partial class Program
         shell.Render(new(1920, 1080)); entry.UpdatePresentation(10220);
         AssertTrue(Math.Abs(Logo(shell.Render(new(1920, 1080))).Height - 168) < .001);
 
-        XsrUiScene At(int age) { entry.UpdatePresentation(210 + age); return shell.Render(new(1440, 900)); }
+        XsrUiScene At(int age) { entry.UpdatePresentation(1010 + age); return shell.Render(new(1440, 900)); }
         static XsrUiRect Logo(XsrUiScene scene) => scene.Nodes.Single(node => node.ImageSource == "brand/n").Rect;
     }
 
@@ -112,7 +112,7 @@ internal static partial class Program
         using var entry = new GamepadEntrySession(shell, fixture.Intents, fixture.Store, new(), runTimer: false, immersive: _ => { });
         var pad = new GamepadSample("camera", GamepadLayout.OffsetLeftHigh);
         entry.Step([pad], 0); entry.Step([pad with { LeftX = 1, RightX = -1 }], 10);
-        entry.Step([pad with { LeftX = 1, RightX = -1 }], 210);
+        HoldGamepad(entry, pad with { LeftX = 1, RightX = -1 }, 10, 1010);
         var initial = Camera(2100);
         AssertTrue(Camera(2200).Width / initial.Width > .97);
         var previous = initial;
@@ -139,7 +139,7 @@ internal static partial class Program
 
         XsrUiRect Camera(int age)
         {
-            entry.UpdatePresentation(210 + age);
+            entry.UpdatePresentation(1010 + age);
             var scene = shell.Render(new(1440, 900));
             return scene.Nodes.First(node => node.ImageSource is "gamepad/horizon" or "brand/n").Rect;
         }
@@ -153,16 +153,16 @@ internal static partial class Program
         using var entry = new GamepadEntrySession(fixture.Shell, fixture.Intents, fixture.Store, new(), source, runTimer: false, immersive: transitions.Add);
         var pad = new GamepadSample("pad", GamepadLayout.SymmetricHigh);
         AssertTrue(palette.Open()); entry.Step([pad], 0); AssertFalse(entry.IsPromptOpen);
-        palette.Close(); entry.Step([pad], 10); AssertTrue(entry.IsPromptOpen);
+        palette.Close(); entry.Step([pad with { Activity = true }], 10); AssertTrue(entry.IsPromptOpen);
         entry.Step([pad with { Cancel = true }], 20); entry.Step([pad], 30); AssertFalse(entry.IsPromptOpen);
         entry.Step([], 40); entry.Step([pad], 50);
         var inward = pad with { LeftX = 1, RightX = -1 };
-        entry.Step([inward], 100); entry.Step([inward], 310); AssertTrue(entry.IsEntered);
-        entry.Step([], 320); AssertFalse(entry.IsEntered); AssertTrue(transitions.SequenceEqual([true, false]));
-        entry.Step([pad], 400); entry.Step([inward], 410); entry.Step([inward], 620);
+        entry.Step([inward], 100); HoldGamepad(entry, inward, 100, 1100); AssertTrue(entry.IsEntered);
+        entry.Step([], 1120); AssertFalse(entry.IsEntered); AssertTrue(transitions.SequenceEqual([true, false]));
+        entry.Step([pad], 2000); entry.Step([inward], 2010); HoldGamepad(entry, inward, 2010, 3010);
         entry.Dispose(); entry.Dispose(); AssertEqual(1, source.Disposals);
         AssertTrue(transitions.SequenceEqual([true, false, true, false]));
-        entry.Step([pad], 1000); AssertFalse(entry.IsPromptOpen);
+        entry.Step([pad], 4000); AssertFalse(entry.IsPromptOpen);
     }
 
     private static void GamepadEntryLayoutsArtworkAndReducedMotion()
@@ -185,15 +185,22 @@ internal static partial class Program
             AssertFalse(first.Image.Key == tilted.Image.Key);
         }
         var pad = new GamepadSample("pad", GamepadLayout.OffsetLeftHigh);
-        entry.Step([pad], 0); var root = entry.Root;
+        entry.Step([pad], 0);
         entry.Step([pad with { LeftX = 1, RightX = -1 }], 10);
-        entry.Step([pad with { LeftX = 1, RightX = -1 }], 220);
+        var root = entry.Root;
+        HoldGamepad(entry, pad with { LeftX = 1, RightX = -1 }, 10, 1010);
         AssertTrue(entry.IsEntered); AssertTrue(entry.IsIntroComplete);
         AssertEqual((byte)255, fixture.Shell.Tree.GetComponent<XsrUiVisualStyle>(root)!.Background.Alpha);
         var scene = fixture.Shell.Render(new(1100, 750));
         AssertFalse(scene.Nodes.Any(node => node.ImageSource == "gamepad/flash"));
         AssertTrue(scene.Nodes.Any(node => node.Text == "NexaCL"));
         AssertTrue(scene.Nodes.Any(node => node.Text == "手柄模式"));
+    }
+
+    private static void HoldGamepad(GamepadEntrySession entry, GamepadSample pad, long from, long to)
+    {
+        for (long now = from + 20; now < to; now += 20) entry.Step([pad], now);
+        entry.Step([pad], to);
     }
 
     private sealed class EmptyGamepadInput : IGamepadInput

@@ -2,7 +2,9 @@
   <Node Kind="GamepadEntry" Recipe="Element" Role="Dialog" Key="GamepadEntry" Label="手柄模式" Clickable="true" DismissCommand="ui.gamepad.dismiss" Background="{data background}" Class="gamepad-scrim">
     <StackPanel Key="GamepadPrompt" IsVisible="{data prompt_visible}" Opacity="{data prompt_opacity}" Class="gamepad-prompt">
       <Image Key="GamepadDrawing" Source="gamepad/drawing" Label="左右摇杆同时向中心倾斜" Class="gamepad-drawing" />
-      <Text Key="GamepadInstruction" Content="左右摇杆内推以进入手柄模式" Class="gamepad-instruction" />
+      <Text Key="GamepadInstruction" Content="左右摇杆内推以进入手柄模式" IsVisible="{data !holding}" LiveSetting="Polite" Class="gamepad-instruction" />
+      <Text Key="GamepadHoldInstruction" Content="保持 1 秒以进入手柄模式" IsVisible="{data holding}" LiveSetting="Polite" Class="gamepad-instruction" />
+      <ProgressRing Key="GamepadHoldProgress" Value="{data hold_progress}" Indeterminate="false" IsVisible="{data holding}" Label="保持进度" Class="gamepad-hold-progress" />
       <Button Key="GamepadDismiss" Content="暂不进入" Command="ui.gamepad.dismiss" Class="gamepad-dismiss" />
     </StackPanel>
     <Node Kind="GamepadIntro" Recipe="Element" Key="GamepadIntro" IsVisible="{data intro_visible}" Class="gamepad-intro">

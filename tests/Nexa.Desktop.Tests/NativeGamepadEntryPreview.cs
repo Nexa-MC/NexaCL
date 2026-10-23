@@ -18,7 +18,8 @@ internal static partial class Program
     private static async Task<int> CaptureGamepadEntryAsync(string output)
     {
         Directory.CreateDirectory(output);
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(180));
+        // Software rendering and encoding every native frame can exceed three minutes.
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(300));
         await using var startup = await AvaloniaUiStartupSession.StartWithAppearanceAsync([], true,
             new AvaloniaUiStartupAppearance(Nexa.Xsr.Renderer.XsrUiThemeMode.Dark, ReducedMotion: true), cancellationToken: timeout.Token);
         await startup.InvokeAsync(async () =>
@@ -29,15 +30,18 @@ internal static partial class Program
                     using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
                     fixture.Shell.Renderer.ColorScheme = new(dark);
                     fixture.Shell.Renderer.ReducedMotion = false;
-                    var window = new AvaloniaUiShellWindow(fixture.Shell) { Width = 1100, Height = 750, ShowInTaskbar = false, Position = new(120, 70) };
+                    var window = new AvaloniaUiShellWindow(fixture.Shell) { Width = 1100, Height = 750, Position = new(120, 70) };
                     var platform = new AvaloniaUiPlatformActions();
-                    platform.Attach(window); window.Show();
+                    platform.Attach(window); window.Show(); window.Activate();
                     using var entry = new GamepadEntrySession(fixture.Shell, fixture.Intents, fixture.Store, platform, runTimer: false);
                     try
                     {
-                        var pad = new GamepadSample("preview", layout);
+                        var pad = new GamepadSample("preview", layout, Activity: true);
                         entry.Step([pad], 0); entry.UpdatePresentation(1200);
                         await Task.Delay(400);
+                        window.Activate();
+                        await Task.Delay(150);
+                        AssertTrue(window.IsActive);
                         Save($"prompt-{layout}-{(dark ? "dark" : "light")}");
                         AssertTrue(window.GetVisualDescendants().OfType<AvaloniaUiSceneNodeControl>()
                             .Any(control => control.Node.ImageSource == "gamepad/drawing" && control.HasDecodedRaster));
@@ -46,7 +50,8 @@ internal static partial class Program
                         List<double> projectionTimes = [];
                         const int step = 20;
                         long clock = 1200;
-                        int frameCount = (1200 + GamepadEntrySession.IntroDuration + 800) / step;
+                        int introStart = 1000 + GamepadEntrySession.HoldMilliseconds;
+                        int frameCount = (introStart + GamepadEntrySession.IntroDuration + 800) / step;
                         for (int index = 0; index < frameCount; index++)
                         {
                             long started = Stopwatch.GetTimestamp();
@@ -55,7 +60,11 @@ internal static partial class Program
                             fixture.Shell.Render(new(window.Bounds.Width, window.Bounds.Height));
                             double projectionMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
                             projectionTimes.Add(projectionMs);
-                            int age = index * step - 1200;
+                            int age = index * step - introStart;
+                            if (age == 0) Console.WriteLine($"Intro started: active={window.IsActive} reduced={fixture.Shell.Renderer.ReducedMotion} suspended={fixture.Shell.Renderer.OptionalMotionSuspended}");
+                            if (age >= 0 && age < GamepadEntrySession.IntroDuration && entry.IsIntroComplete)
+                                throw new InvalidOperationException($"Intro completed early at {age}ms: active={window.IsActive} reduced={fixture.Shell.Renderer.ReducedMotion} suspended={fixture.Shell.Renderer.OptionalMotionSuspended}");
+                            if (index * step == 1500) Save("entry-holding");
                             Save($"frame-{index:D3}");
                             if (age == 2000) AssertTrue(window.GetVisualDescendants().OfType<AvaloniaUiSceneNodeControl>()
                                 .Any(control => control.Node.ImageSource == "gamepad/horizon" && control.HasDecodedRaster));

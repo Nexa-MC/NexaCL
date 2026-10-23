@@ -25,17 +25,22 @@ internal sealed class GamepadEntrySession : IDisposable
     private IGamepadInput? _input;
     private readonly Dictionary<string, XsrUiEntityId> _nodes = [];
     private readonly HashSet<string> _suppressed = [];
+    private readonly HashSet<string> _neutralDevices = [];
     private readonly Dictionary<(GamepadLayout Layout, int Group), PngImage> _sheets = [];
     private XsrUiEntityId _root, _layer, _previousFocus;
     private string? _projection;
     private string? _device;
+    private string? _feedbackDevice;
     private GamepadLayout _layout;
-    private long _shownAt, _enteredAt, _heldAt = -1;
+    private long _shownAt, _enteredAt, _heldAt = -1, _gestureStartedAt = -1;
+    private long _lastInputAt = -1;
+    private double _holdProgress;
     private bool _armed, _dismissRequested, _disposed;
     private int _lastFrame = -1;
     private PngImage? _logo, _flash, _horizon;
     private XsrUiSize? _presentationViewport;
     internal const int IntroDuration = 5800;
+    internal const int HoldMilliseconds = 1000, VibrationRampMilliseconds = 800;
     private const double HorizonFocus = 118d / 1024; // Diagonal edge of the supplied plate outline.
     internal bool IsPromptOpen => _root.IsAssigned && !IsEntered;
     internal bool IsEntered { get; private set; }
@@ -57,13 +62,13 @@ internal sealed class GamepadEntrySession : IDisposable
         intents.IntentEmitted += OnIntent;
         if (runTimer)
         {
-            _timer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Input, (_, _) =>
+            _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(20), DispatcherPriority.Input, (_, _) =>
             {
                 if (_disposed) return;
                 _input ??= new NativeGamepadInput(); // Native message windows belong to the GUI thread.
                 Step(_input.Read(), Environment.TickCount64, _foreground());
                 _timer!.Interval = IsEntered && !IsIntroComplete ? PresentationInterval
-                    : TimeSpan.FromMilliseconds(_root.IsAssigned ? 20 : 1000);
+                    : TimeSpan.FromMilliseconds(20);
             });
             Dispatcher.UIThread.Post(() => { if (!_disposed) _timer.Start(); });
         }
@@ -78,32 +83,60 @@ internal sealed class GamepadEntrySession : IDisposable
     internal void Step(IReadOnlyList<GamepadSample> samples, long now, bool foreground = true)
     {
         if (_disposed) return;
+        if (_gestureStartedAt >= 0 && _lastInputAt >= 0 && now - _lastInputAt > NativeGamepadFeedback.LeaseMilliseconds)
+        {
+            ResetGesture(); _armed = false; _neutralDevices.Clear();
+        }
+        _lastInputAt = now;
         _suppressed.RemoveWhere(id => !samples.Any(sample => sample.Id == id));
+        _neutralDevices.RemoveWhere(id => !samples.Any(sample => sample.Id == id));
         if (_device is not null && !samples.Any(sample => sample.Id == _device)) Close();
         if (_dismissRequested) { foreach (var sample in samples) _suppressed.Add(sample.Id); Close(); _dismissRequested = false; return; }
-        if (!foreground) { _armed = false; _heldAt = -1; return; }
+        if (!foreground)
+        {
+            ResetGesture(); _armed = false; _neutralDevices.Clear(); UpdatePresentation(now); return;
+        }
+        foreach (var sample in samples) if (sample.Neutral) _neutralDevices.Add(sample.Id);
         if (_device is null)
         {
             if (_shell.Stage.Overlays.Any(overlay => _shell.Tree.GetComponent<XsrUiOverlayLayer>(overlay)?.IsModal == true)) return;
-            var candidate = samples.FirstOrDefault(sample => !_suppressed.Contains(sample.Id));
+            var candidate = samples.FirstOrDefault(sample => !_suppressed.Contains(sample.Id) && sample.HasActivity && !sample.Cancel);
             if (candidate is null) return;
             Show(candidate, now);
         }
         GamepadSample current = samples.First(sample => sample.Id == _device);
         if (current.Cancel) { foreach (var sample in samples) _suppressed.Add(sample.Id); Close(); return; }
-        bool neutral = current.Ready && Math.Abs(current.LeftX) < .25 && Math.Abs(current.RightX) < .25
-            && Math.Abs(current.LeftY) < .25 && Math.Abs(current.RightY) < .25;
         if (!IsEntered)
         {
-            if (neutral) _armed = true;
-            bool inward = _armed && current.Ready && current.LeftX >= .65 && current.RightX <= -.65
-                && Math.Abs(current.LeftY) <= .45 && Math.Abs(current.RightY) <= .45;
-            if (!inward) _heldAt = -1;
-            else if (_heldAt < 0) _heldAt = now;
-            else if (now - _heldAt >= 200)
+            if (!current.Valid) { _armed = false; _neutralDevices.Remove(current.Id); }
+            if (current.Neutral) _armed = true;
+            bool attempting = _armed && current.Valid && current.LeftX >= -.25 && current.RightX <= .25
+                && (current.LeftX > .25 || current.RightX < -.25) && Math.Abs(current.LeftY) <= .45 && Math.Abs(current.RightY) <= .45;
+            if (!attempting) ResetGesture();
+            else
             {
-                IsEntered = true; _enteredAt = now; _observe(); _immersive(true);
-                _shell.Renderer.Focus(default);
+                if (_gestureStartedAt < 0) _gestureStartedAt = now;
+                bool inward = current.LeftX >= .65 && current.RightX <= -.65;
+                if (!inward) { _heldAt = -1; _holdProgress = 0; }
+                else
+                {
+                    if (_heldAt < 0) _heldAt = now;
+                    _holdProgress = Math.Clamp((now - _heldAt) / (double)HoldMilliseconds, 0, 1);
+                }
+                double completion = Math.Clamp(Math.Min(current.LeftX, -current.RightX) / .65, 0, 1);
+                float vibration = (float)(.12 + .88 * Math.Clamp((now - _gestureStartedAt) / (double)VibrationRampMilliseconds, 0, 1));
+                if (_input is IGamepadFeedback feedback)
+                {
+                    feedback.ApplyFeedback(current.Id, new(vibration, (float)(completion * completion)));
+                    _feedbackDevice = current.Id;
+                }
+                if (_holdProgress >= 1)
+                {
+                    StopFeedback(); // Stop the physical actuators before any page/window motion.
+                    _gestureStartedAt = -1;
+                    IsEntered = true; _enteredAt = now; _observe(); _immersive(true);
+                    _shell.Renderer.Focus(default);
+                }
             }
         }
         UpdatePresentation(now);
@@ -112,7 +145,7 @@ internal sealed class GamepadEntrySession : IDisposable
     private void Show(GamepadSample sample, long now)
     {
         _device = sample.Id; _layout = sample.Layout; _shownAt = now;
-        _heldAt = -1; _armed = false; _lastFrame = -1;
+        _heldAt = _gestureStartedAt = -1; _holdProgress = 0; _armed = _neutralDevices.Contains(sample.Id); _lastFrame = -1;
         _previousFocus = _shell.Renderer.Focused;
         _layer = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("GamepadEntry.nxml"), _shell.Tree, _store);
         _root = _dynamic.Append(_layer, Workspace(new("#00000000")));
@@ -130,7 +163,7 @@ internal sealed class GamepadEntrySession : IDisposable
         double age = IsIntroComplete ? IntroDuration : IsEntered ? now - _enteredAt : now - _shownAt;
         if (!IsEntered)
         {
-            double fade = reduced ? 1 : Smooth(age / 220);
+            double fade = reduced ? 1 : .15 + .85 * Smooth(age / 140);
             Apply(new("#000000" + ((byte)(184 * fade)).ToString("X2", CultureInfo.InvariantCulture), Prompt: fade));
             _scrim(.72 * fade);
             int frame = reduced ? 24 : (int)(Math.Max(0, age) % 2400 / 50);
@@ -173,12 +206,14 @@ internal sealed class GamepadEntrySession : IDisposable
     private static string Visible(bool value) => value ? "true" : "false";
     private static string Shift(double x, double y) => $"{Number(x)},{Number(y)},{Number(-x)},{Number(-y)}";
 
-    private static NxmlHostIr Workspace(Presentation frame, double logoSize = 168, double logoX = 0, double logoY = 0, double flashSize = 512)
+    private NxmlHostIr Workspace(Presentation frame, double logoSize = 168, double logoX = 0, double logoY = 0, double flashSize = 512)
         => DesktopMarkup.Dynamic("GamepadEntry.d.nxml", new Dictionary<string, string>
         {
             ["background"] = frame.Background,
             ["prompt_visible"] = Visible(!frame.Intro || frame.Prompt > 0),
             ["prompt_opacity"] = Number(frame.Prompt),
+            ["holding"] = Visible(_heldAt >= 0),
+            ["hold_progress"] = Number(_holdProgress),
             ["intro_visible"] = Visible(frame.Intro),
             ["logo_visible"] = Visible(frame.Logo >= .001),
             ["logo_opacity"] = Number(frame.Logo),
@@ -219,7 +254,7 @@ internal sealed class GamepadEntrySession : IDisposable
         double y = cameraOffset - 18 * frame.Lift;
         double flashSize = frame.FlashSize * canvas;
         string signature = string.Create(CultureInfo.InvariantCulture,
-            $"{frame.Background}|{frame.Prompt:F3}|{frame.Intro}|{frame.Logo:F3}|{frame.Flash:F3}|{frame.Horizon:F3}|{frame.Veil:F3}|{frame.SunRise:F3}|{frame.Name:F3}|{frame.Caption:F3}|{frame.Lift:F3}|{size:F3}|{x:F3}|{y:F3}|{flashSize:F3}");
+            $"{frame.Background}|{frame.Prompt:F3}|{frame.Intro}|{frame.Logo:F3}|{frame.Flash:F3}|{frame.Horizon:F3}|{frame.Veil:F3}|{frame.SunRise:F3}|{frame.Name:F3}|{frame.Caption:F3}|{frame.Lift:F3}|{size:F3}|{x:F3}|{y:F3}|{flashSize:F3}|{_heldAt >= 0}|{_holdProgress:F3}");
         if (signature != _projection)
         {
             _dynamic.Reload(_root, Workspace(frame, size, x, y, flashSize));
@@ -269,6 +304,7 @@ internal sealed class GamepadEntrySession : IDisposable
 
     internal void Close()
     {
+        ResetGesture();
         if (!_root.IsAssigned) return;
         if (IsEntered) _immersive(false);
         _scrim(0);
@@ -277,6 +313,16 @@ internal sealed class GamepadEntrySession : IDisposable
         _root = _layer = _previousFocus = default; _device = _projection = null; _nodes.Clear();
         _presentationViewport = null;
         IsEntered = IsIntroComplete = false; _armed = false; _heldAt = -1;
+    }
+
+    private void StopFeedback()
+    {
+        string? device = _feedbackDevice; _feedbackDevice = null;
+        if (device is not null && _input is IGamepadFeedback feedback) feedback.ApplyFeedback(device, default);
+    }
+    private void ResetGesture()
+    {
+        StopFeedback(); _gestureStartedAt = _heldAt = -1; _holdProgress = 0;
     }
 
     public void Dispose()

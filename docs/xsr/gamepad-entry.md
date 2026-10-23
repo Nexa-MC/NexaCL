@@ -12,11 +12,51 @@ brand. Original SVGs remain editable assets. Their bounded SMIL path/opacity mot
 is baked into reusable small sprite sheets, not reparsed on each presentation
 frame. Each sheet fits the renderer's existing critical-memory admission budget.
 
-After a pad is discovered, darken the complete client area and loop its inward-stick
-demonstration with “左右摇杆内推以进入手柄模式”. Both axes must first be neutral,
-then the same device must hold left X >= .65 and right X <= -.65 for 200 ms, with
+After foreground controller activity is observed, immediately darken the complete
+client area and loop its inward-stick demonstration with “左右摇杆内推以进入手柄模式”.
+Connection and neutral idle input alone do not open the prompt. Input is polled at
+20ms while the launcher owns its session; rendering the overlay does not postpone
+activity admission. Both axes must first be observed neutral in the foreground,
+then the same device must hold left X >= .65 and right X <= -.65 for **1000 ms**, with
 vertical axes within .45. Different devices cannot combine halves of the gesture.
 Drift, already-held input at attachment and background input cannot activate it.
+At the threshold the instruction changes to “保持 1 秒以进入手柄模式”, with confirmed
+hold progress. Releasing either stick below threshold resets the hold; returning
+to neutral, an invalid direction, unreadable input or losing focus also retires
+feedback and requires a fresh gesture.
+
+## Entry feedback ownership
+
+Desktop owns device output alongside its native input lifetime; no renderer or
+Service dependency on actuator APIs is introduced. The first admitted inward
+movement starts vibration at 12%, ramping by **elapsed time** to 100% over 800ms.
+Moving faster or farther cannot accelerate vibration. Physical axis damping is a
+separate output, proportional to the squared completion of the two inward axes;
+neither output modifies input samples, dead zones or visual pointer movement.
+Confirmation stops both outputs **before** invoking the fullscreen/page transition.
+Cancel, dismissal, disconnect, focus loss and disposal also stop both outputs.
+Output leases last 300ms without renewal, checked every 100ms independently of
+the UI. A sampling gap longer than the lease also resets the gesture and requires
+neutral input before another attempt. Native finite effects are bounded; an
+unavailable actuator never prevents entry.
+
+Windows XInput supplies ordinary motor vibration, and macOS GameController /
+CoreHaptics supplies controller haptics when the device advertises them. Neither
+interface exposes thumbstick motor resistance. Linux associates each joystick
+with its own sibling evdev node and uses only effects advertised by its FF bitmap:
+`FF_RUMBLE` for vibration, `FF_DAMPER` for actual actuator-axis damping. Drivers
+decide which physical axes have actuators; this is not a claim that both ordinary
+thumbsticks contain motors. No device permissions are elevated and no undocumented
+vendor command is guessed. Unsupported channels stay off, without faking damping
+through stick scaling or replacing it with vibration.
+
+Hardware scope is explicit: [Flydigi APEX 5](https://shops.flydigi.com/products/apex5)
+documents FORCEADAPT **trigger** feedback and manually adjustable stick tension
+rings. Those rings cannot be ramped by software. The open
+[KAIST FS-Pad](https://github.com/KAIST-HCIL/FS-Pad) demonstrates genuinely motorized
+thumbsticks, but its custom firmware is not a universal commercial controller API.
+Vendor-only thumbstick actuators require a documented device-specific adapter;
+this entry flow cannot confer that capability on normal Xbox/DualSense sticks.
 
 Confirmation fades the prompt away and smoothly enlarges the existing window to
 the current monitor's full bounds over 600 ms. The entry then follows one bounded
@@ -81,8 +121,11 @@ the OS reader cannot activate entry; no guessed input or elevated access is used
 
 ## Verification and preview
 
-The Desktop suite passes 367 tests, including neutral/held/unready input, mixed
+The Desktop suite passes 368 tests, including neutral/held/unready input, mixed
 devices, background input, cancellation/suppression, reconnection, disposal,
+activity without connection-only prompts, time-driven vibration independent of
+position-driven damping, continuous one-second confirmation, output stop before
+transition, input-gap resets, device isolation and UI-independent lease expiry,
 layout selection, shared artwork, cinematic phase ordering, gentle camera
 endpoints, monotonic rim anchoring, configured frame rate, stable final placement
 and reduced motion. Native offscreen capture
@@ -91,7 +134,12 @@ decoded controller/icon/sun/horizon pixels, the black hold, dark-side occultatio
 and giant rounded-edge close-up, actual
 fullscreen bounds/state, restoration from normal
 and maximized windows, and subsequent unmaximize bounds. Input is simulated for
-these deterministic captures; physical Windows/macOS controllers remain untested.
+these deterministic captures; physical vibration and force-feedback controllers
+remain untested on all platforms. The manual `gamepad-feedback-once.yml` workflow
+checks gesture/output contracts on Windows, Linux and both Mac architectures;
+Mac also constructs a real CoreHaptics pattern without actuating hardware.
+The Linux C ABI probe checks effect sizes, union offsets and ioctl word sizes
+against the runner's actual kernel headers.
 
 The native window must submit its normal-size layout before re-maximizing on exit,
 so the window manager does not retain the fullscreen animation's final size as the

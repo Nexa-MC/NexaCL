@@ -1,7 +1,8 @@
 .gamepad-scrim { Surface: Solid; Background: #000000B8; Foreground: #F5F7FF; }
 .gamepad-prompt { Width: 560; MaxWidth: 600; HorizontalAlignment: Center; VerticalAlignment: Center; Margin: 24; Spacing: 16; }
-.gamepad-drawing { Height: 300; MaxWidth: 500; HorizontalAlignment: Stretch; }
+.gamepad-drawing { Height: 260; MaxWidth: 500; HorizontalAlignment: Stretch; }
 .gamepad-instruction { Foreground: #F5F7FF; FontSize: 22; FontWeight: 600; TextAlignment: Center; WrapText: true; }
+.gamepad-hold-progress { Width: 32; Height: 32; HorizontalAlignment: Center; Foreground: #75B4FF; }
 .gamepad-dismiss { Height: 32; Width: 112; HorizontalAlignment: Center; Surface: None; Foreground: #AAB3C3; FontSize: 13; TextAlignment: Center; CornerRadius: 16; Hover: #FFFFFF14; }
 .gamepad-intro { HorizontalAlignment: Stretch; VerticalAlignment: Stretch; }
 .gamepad-logo, .gamepad-flash { HorizontalAlignment: Center; VerticalAlignment: Center; }

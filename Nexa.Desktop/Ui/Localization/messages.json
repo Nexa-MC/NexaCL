@@ -4,6 +4,8 @@
   {"source":"手柄模式","en":"Controller mode","zh-Hant":"手把模式"},
   {"source":"左右摇杆同时向中心倾斜","en":"Tilt both sticks inward","zh-Hant":"左右搖桿同時向中心傾斜"},
   {"source":"左右摇杆内推以进入手柄模式","en":"Tilt both sticks inward to enter controller mode","zh-Hant":"左右搖桿內推以進入手把模式"},
+  {"source":"保持 1 秒以进入手柄模式","en":"Hold for 1 second to enter controller mode","zh-Hant":"保持 1 秒以進入手把模式"},
+  {"source":"保持进度","en":"Hold progress","zh-Hant":"保持進度"},
   {"source":"暂不进入","en":"Not now","zh-Hant":"暫不進入"},
   {"source":"不提供本体下载","en":"Game download unavailable","zh-Hant":"不提供本體下載"},
   {"source":"不向中国大陆提供 Minecraft 本体下载服务。请使用已完整安装的本地版本，或通过本地导入迁移已有版本。","en":"Minecraft base-game downloads are not provided in mainland China. Use a fully installed local version or import an existing installation.","zh-Hant":"不向中國大陸提供 Minecraft 本體下載服務。請使用已完整安裝的本機版本，或透過本機匯入遷移已有版本。"},

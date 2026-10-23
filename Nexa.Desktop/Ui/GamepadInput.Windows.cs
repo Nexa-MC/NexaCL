@@ -90,6 +90,7 @@ internal sealed unsafe class WindowsHidGamepads : IDisposable
         private readonly Dictionary<ushort, (ushort Link, int Minimum, int Maximum, int Bits)> _values = [];
         private readonly int _cancel;
         private readonly bool _sony;
+        private readonly Dictionary<ushort, uint> _activityAxes = [];
         internal GamepadSample Sample;
         internal Pad(nint handle, int vendor, int product, byte[] preparsed)
         {
@@ -131,6 +132,18 @@ internal sealed unsafe class WindowsHidGamepads : IDisposable
                 bool rx = !_sony && _values.ContainsKey(0x33) && _values.ContainsKey(0x34);
                 float lx = Axis(0x30), ly = Axis(0x31), rightX = Axis(rx ? (ushort)0x33 : (ushort)0x32), rightY = Axis(rx ? (ushort)0x34 : (ushort)0x35);
                 if (!valid) return;
+                bool extraActivity = false;
+                foreach (ushort usage in _values.Keys.Where(usage => usage == 0x39 || usage is 0x32 or 0x33 or 0x34 or 0x35))
+                {
+                    if (usage == (rx ? 0x33 : 0x32) || usage == (rx ? 0x34 : 0x35)) continue;
+                    var cap = _values[usage];
+                    if (HidPGetUsageValue(0, 1, cap.Link, usage, out uint value, data, report, length) != 0x110000) continue;
+                    // Baseline unused axes (triggers/hat) before admitting a change. A
+                    // stationary half-range trigger or null hat is not foreground activity.
+                    if (!_activityAxes.TryGetValue(usage, out uint before)) _activityAxes[usage] = value;
+                    else if (Math.Abs((long)value - before) >= Math.Max(1, ((long)cap.Maximum - cap.Minimum) / 10))
+                    { extraActivity = true; _activityAxes[usage] = value; }
+                }
                 Sample = Sample with
                 {
                     LeftX = lx,
@@ -138,7 +151,8 @@ internal sealed unsafe class WindowsHidGamepads : IDisposable
                     RightX = rightX,
                     RightY = rightY,
                     Cancel = buttons.Take((int)Math.Min(count, 32)).Contains((ushort)_cancel),
-                    Ready = true
+                    Ready = true,
+                    Activity = count != 0 || extraActivity
                 };
             }
         }
@@ -167,7 +181,11 @@ internal sealed unsafe class WindowsHidGamepads : IDisposable
         if (Owners.TryGetValue(window, out var owner))
         {
             if (message == 0xff) owner.Receive(lParam);
-            if (message == 0xfe) owner._nextScan = 0;
+            if (message == 0xfe)
+            {
+                owner._nextScan = 0;
+                if (wParam == 2) owner._pads.Remove(lParam);
+            }
         }
         return DefWindowProc(window, message, wParam, lParam);
     }

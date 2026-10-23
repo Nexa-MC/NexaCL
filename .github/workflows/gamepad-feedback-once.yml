@@ -1,0 +1,26 @@
+name: Native controller entry feedback contracts
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  feedback:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          global-json-file: global.json
+      - name: Check Linux native force feedback ABI
+        if: runner.os == 'Linux'
+        run: |
+          cc -Wall -Wextra -Werror eng/diagnostics/gamepad_feedback_abi_probe.c -o "$RUNNER_TEMP/gamepad-abi"
+          "$RUNNER_TEMP/gamepad-abi"
+      - name: Build controller entry contracts
+        run: dotnet build tests/Nexa.Desktop.Tests -c Release -m:1 -nodeReuse:false
+      - name: Verify native haptic API construction and gesture lifetimes
+        run: dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --filter gamepad
