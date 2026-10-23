@@ -35,10 +35,10 @@
         </LoadingView>
         <Dynamic Key="ResourceList" IsVisible="{data !initialLoading}" Spacing="{data listSpacing}" Scroll="true" ScrollGesture="true" ShowsVerticalIndicator="false" StableContent="true" Class="layout-ResourcesPage-ResourceList" />
       </ContentHost>
-      <StackPanel Key="ResourcePagination" Class="layout-ResourcesPage-ResourcePagination" Height="64">
-        <ContentHost Weight="1" Height="60">
+      <StackPanel Key="ResourcePagination" Class="layout-ResourcesPage-ResourcePagination">
+        <ContentHost Weight="1" Height="28">
           <Text Key="ResourceStatus" Content="{data status}" Localize="false" MaxLines="1" TrimOverflow="true" Class="resource-base resource-status" Label="{data status}" IsVisible="{data !appendLoading}" />
-          <StackPanel Key="ResourceAppendLoading" IsVisible="{data appendLoading}" Class="loading-view loading-inline" Weight="0" Padding="0" Spacing="4">
+          <StackPanel Key="ResourceAppendLoading" IsVisible="{data appendLoading}" Class="loading-view loading-inline" Orientation="Horizontal" HorizontalAlignment="Start" Weight="0" Padding="0" Spacing="8">
             <ProgressRing Width="24" Height="24" />
             <Text Content="正在加载更多资源…" Class="loading-hint" LiveSetting="Polite" />
           </StackPanel>

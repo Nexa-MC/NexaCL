@@ -232,6 +232,8 @@ internal static partial class Program
         var layoutBounds = FindByKey(fixture.Shell, scene, "ResourcesLayout").Rect;
         var footerBounds = FindByKey(fixture.Shell, scene, "ResourcePagination").Rect;
         AssertTrue(listBounds.Y - layoutBounds.Y <= 128);
+        AssertTrue(footerBounds.Height <= 34);
+        AssertClose(8, footerBounds.Y - listBounds.Y - listBounds.Height);
         AssertTrue(layoutBounds.Y + layoutBounds.Height - footerBounds.Y - footerBounds.Height <= 1);
         fixture.Shell.Renderer.SetTextInputValue(input, "Sodium");
         Emit(fixture.Intents, "ui.resources.action", page.Find("ResourceSearchButton"));

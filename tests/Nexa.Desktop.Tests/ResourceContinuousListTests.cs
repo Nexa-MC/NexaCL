@@ -32,6 +32,7 @@ internal static partial class Program
         AssertEqual(1, f.Reads.Count);
         f.Complete(0, ContinuousProjects("First", 20), hasMore: true);
         f.Pump(() => f.Rows.Length > 0);
+        double readyViewportHeight = FindByKey(f.Fixture.Shell, f.Scene, "ResourceResults").Rect.Height;
         var search = FindByKey(f.Fixture.Shell, f.Scene, "ResourceSearch").Entity;
         f.Fixture.Shell.Renderer.SetTextInputValue(search, "unsubmitted draft");
         f.Fixture.Shell.Renderer.SetTextInputValue(FindByKey(f.Fixture.Shell, f.Scene, "ResourceGame").Entity, "unsubmitted game");
@@ -39,6 +40,15 @@ internal static partial class Program
         f.ScrollToBottom();
         f.Pump(() => f.Reads.Count == 2);
         AssertTrue(f.Scene.Nodes.Any(node => node.ProgressRing is { Indeterminate: true }));
+        var footer = FindByKey(f.Fixture.Shell, f.Scene, "ResourcePagination").Rect;
+        var append = FindByKey(f.Fixture.Shell, f.Scene, "ResourceAppendLoading");
+        var appendRing = f.Scene.Nodes.Single(node => node.ProgressRing is not null).Rect;
+        var appendHint = f.Scene.Nodes.Single(node => node.Text is not null && f.Fixture.Shell.Tree.Parent(node.Entity) == append.Entity).Rect;
+        AssertTrue(footer.Height <= 34);
+        AssertClose(readyViewportHeight, FindByKey(f.Fixture.Shell, f.Scene, "ResourceResults").Rect.Height);
+        AssertTrue(appendRing.Y >= footer.Y && appendRing.Y + appendRing.Height <= footer.Y + footer.Height);
+        AssertTrue(appendHint.Y >= footer.Y && appendHint.Y + appendHint.Height <= footer.Y + footer.Height);
+        AssertTrue(appendRing.X + appendRing.Width <= appendHint.X);
         var anchor = f.Row("First19");
         double offset = f.Snapshot.OffsetY;
         double height = f.Snapshot.ContentHeight;
