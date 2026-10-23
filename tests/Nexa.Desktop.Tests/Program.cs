@@ -34,6 +34,11 @@ internal static partial class Program
             return;
         }
         if (Environment.GetEnvironmentVariable("NEXA_COUNTRY") is null) Environment.SetEnvironmentVariable("NEXA_COUNTRY", "CN");
+        if (args is ["--native-settings-navigation-stress", var settingsNavigationOutput])
+        {
+            Environment.ExitCode = RunNativeSettingsNavigationStress(settingsNavigationOutput);
+            return;
+        }
         if (args is ["--native-gamepad-preview", var gamepadPreviewOutput])
         {
             Environment.ExitCode = RunNativeGamepadEntryPreview(gamepadPreviewOutput);

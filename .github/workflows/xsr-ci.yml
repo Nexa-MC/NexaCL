@@ -152,6 +152,9 @@ jobs:
           $binary = if ($IsWindows) { './native-account-tests/Nexa.Services.Tests.exe' } else { './native-account-tests/Nexa.Services.Tests' }
           & $binary "native input probe" "Linux input"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify native macOS memory query envelope
+        if: runner.os == 'macOS'
+        run: ./native-account-tests/Nexa.Services.Tests "Mac memory probe"
       - name: Verify NativeAOT proxy and PAC routing
         shell: pwsh
         run: |

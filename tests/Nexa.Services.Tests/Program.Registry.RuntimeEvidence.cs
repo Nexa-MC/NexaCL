@@ -31,6 +31,8 @@ internal static partial class Program
         ("machine registry seals typed dependency graph", Sync(MachineRegistrySealsTypedDependencyGraph)),
         ("machine broker coalesces isolates and caches", MachineBrokerCoalescesIsolatesAndCaches),
         ("machine memory and preflight keep independent semantics", Sync(MachineMemoryAndPreflightKeepIndependentSemantics)),
+        ("Mac memory probe matches Mach word count and layout", Sync(MacMemoryProbeMatchesMachWordCountAndLayout)),
+        ("native Mac memory probe survives repeated background collection", NativeMacMemoryProbeSurvivesRepeatedBackgroundCollection),
         ("environment projections answer for the primary instance", EnvironmentProjectionsAnswerForThePrimaryInstance),
         ("account projection reads the roster", AccountProjectionReadsTheRoster),
         ("derivation pass computes cross-provider facts", DerivationPassComputesCrossProviderFacts),

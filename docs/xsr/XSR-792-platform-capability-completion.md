@@ -49,6 +49,21 @@ AMD sysfs / NVML 的整卡静态容量、全系统占用和 Metal 的推荐工�
 
 ## 验证边界
 
+### macOS 内存检测 ABI 修正（2026-10-23）
+
+设置导航经过设备能力页会触发后台内存采集；导航动画不改变该采集的生命周期。
+`host_statistics64(HOST_VM_INFO64)` 的 count 是 32 位整数的**个数**，不是字节数；
+Mach port 和 count 都是 32 位值，不能声明成指针宽度整数。
+内存 provider 只读取 free/inactive，固定请求公开的 REV0（24 个整数、96 字节），
+使用完整对应结构并从结构大小计算 count，避免新系统返回更长版本而越过栈缓冲区。
+成功且返回长度足够才采纳数据；host send right 在 finally 中释放。
+保留既有 free + inactive 估算及 Unknown/PlatformUnsupported 语义，不改导航或服务边界。
+
+回归验证锁定布局与字段偏移，在 macOS 重复执行真实采集，并在 Intel/Apple Silicon
+原生窗口中快速来回拖动实际设置导航。SDK canary 探针安全重现旧长度声明导致的越界写入。
+ABI 依据：[Apple host_info.h](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/mach/host_info.h)
+和 [vm_statistics.h](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/mach/vm_statistics.h)。
+
 合同测试覆盖 XRandR 多屏、未指定主屏、当前模式刷新率、畸形/截断输出和设备状态投影。
 macOS IOPS 数值投影可在任何平台测试；CoreGraphics、IOPS 和 NSProcessInfo 的实际调用
 仍需 macOS 真机验证。Linux 无头云环境只证明失败路径与确定性投影，不证明真实显示器验收。

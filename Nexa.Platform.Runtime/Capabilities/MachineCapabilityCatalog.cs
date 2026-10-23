@@ -116,46 +116,48 @@ internal sealed partial class MemoryCapabilityProvider : IMachineCapabilityProvi
     {
         freePages = 0;
         inactivePages = 0;
-        unsafe
+        uint host = mach_host_self();
+        if (host == 0) return false;
+        try
         {
-            nint host = mach_host_self();
-            if (host == 0)
-            {
-                return false;
-            }
-
-            // vm_statistics_data_64: 12 leading natural_t counters; free=0? Layout:
-            // free, active, inactive, wire, faults, cow, msgs, swaps...
-            uint* stats = stackalloc uint[13];
-            nuint count = (nuint)(13 * sizeof(uint));
+            // Request the stable REV0 prefix. Mach counts 32-bit words, not bytes;
+            // advertising bytes allowed the kernel to overwrite the old stack buffer.
+            uint count = MacVmStatisticsWordCount;
             const int HostVmInfo64 = 4;
-            if (host_statistics64(host, HostVmInfo64, stats, &count) != 0)
-            {
-                _ = mach_port_deallocate(mach_task_self(), host);
-                return false;
-            }
-
-            freePages = stats[0];
-            inactivePages = stats[2];
-            _ = mach_port_deallocate(mach_task_self(), host);
+            if (host_statistics64(host, HostVmInfo64, out var stats, ref count) != 0
+                || count != MacVmStatisticsWordCount) return false;
+            freePages = stats.FreeCount;
+            inactivePages = stats.InactiveCount;
             return true;
         }
+        finally { _ = mach_port_deallocate(mach_task_self(), host); }
     }
+
+    // vm_statistics64 through speculative_count: HOST_VM_INFO64_REV0_COUNT.
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MacVmStatisticsRev0
+    {
+        public uint FreeCount, ActiveCount, InactiveCount, WireCount;
+        public ulong ZeroFillCount, Reactivations, PageIns, PageOuts, Faults, CowFaults, Lookups, Hits, Purges;
+        public uint PurgeableCount, SpeculativeCount;
+    }
+
+    internal static unsafe uint MacVmStatisticsWordCount => (uint)(sizeof(MacVmStatisticsRev0) / sizeof(uint));
 
     [DllImport("libc", SetLastError = true)]
     private static extern unsafe int sysctlbyname(byte[] name, ulong* old, nuint* oldLength, nint zero, nint zero2);
 
     [DllImport("libc", SetLastError = false)]
-    private static extern nint mach_host_self();
+    private static extern uint mach_host_self();
 
     [DllImport("libc", SetLastError = false)]
-    private static extern nint mach_task_self();
+    private static extern uint mach_task_self();
 
     [DllImport("libc", SetLastError = false)]
-    private static extern int mach_port_deallocate(nint task, nint port);
+    private static extern int mach_port_deallocate(uint task, uint port);
 
     [DllImport("libc", SetLastError = false)]
-    private static extern unsafe int host_statistics64(nint host, int flavor, uint* info, nuint* count);
+    private static extern int host_statistics64(uint host, int flavor, out MacVmStatisticsRev0 info, ref uint count);
 
     internal static IReadOnlyList<ICapability> ParseLinux(string text, DateTimeOffset timestamp)
     {

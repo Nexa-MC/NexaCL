@@ -1,0 +1,52 @@
+name: macOS settings navigation crash regression
+on: workflow_dispatch
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  settings:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: macos-15, rid: osx-arm64}
+          - {os: macos-15-intel, rid: osx-x64}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      PROBE_OUTPUT: ${{ github.workspace }}/settings-evidence
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          global-json-file: global.json
+      - name: Reproduce old overwrite safely and verify SDK ABI
+        run: |
+          mkdir -p "$PROBE_OUTPUT"
+          clang -Wall -Wextra -Werror eng/diagnostics/macos_memory_abi_probe.c -o "$RUNNER_TEMP/memory-abi"
+          "$RUNNER_TEMP/memory-abi" | tee "$PROBE_OUTPUT/memory-abi.log"
+      - name: Publish native memory regression tests
+        run: dotnet publish tests/Nexa.Services.Tests -c Release -r '${{ matrix.rid }}' -m:1 -nodeReuse:false -p:PublishAot=true -p:StripSymbols=true -o "$RUNNER_TEMP/memory-tests"
+      - name: Verify NativeAOT memory collection
+        run: '"$RUNNER_TEMP/memory-tests/Nexa.Services.Tests" "Mac memory probe" | tee "$PROBE_OUTPUT/native-memory.log"'
+      - name: Build actual settings navigation regression
+        run: dotnet build tests/Nexa.Desktop.Tests -c Release -m:1 -nodeReuse:false
+      - name: Drag the actual native settings navigation rapidly
+        run: |
+          dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll \
+            --native-settings-navigation-stress "$PROBE_OUTPUT" > "$PROBE_OUTPUT/settings-drag.log" 2>&1
+          cat "$PROBE_OUTPUT/settings-drag.log"
+      - name: Retain crash reports and evidence
+        if: always()
+        run: |
+          mkdir -p "$PROBE_OUTPUT/crash-reports"
+          find "$HOME/Library/Logs/DiagnosticReports" -maxdepth 1 -type f \( -name '*Nexa*' -o -name '*dotnet*' \) -exec cp {} "$PROBE_OUTPUT/crash-reports/" \; 2>/dev/null || true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: macos-settings-${{ matrix.rid }}
+          path: ${{ env.PROBE_OUTPUT }}
+          if-no-files-found: error
+          retention-days: 14
