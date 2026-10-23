@@ -1,6 +1,7 @@
 using System.Globalization;
 using Avalonia.Threading;
 using Nexa.Core.Media;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr.Renderer.Nxml;
@@ -13,6 +14,7 @@ internal sealed class GamepadEntrySession : IDisposable
 {
     private readonly XsrUiShell _shell;
     private readonly XsrStateStore _store;
+    private readonly XsrStateId _animationFrameRate;
     private readonly DesktopUiIntentSink _intents;
     private readonly NxmlDynamicContent _dynamic;
     private readonly Action<bool> _immersive;
@@ -33,18 +35,21 @@ internal sealed class GamepadEntrySession : IDisposable
     private int _lastFrame = -1;
     private PngImage? _logo, _flash, _horizon;
     private XsrUiSize? _presentationViewport;
-    internal const int IntroDuration = 4400;
+    internal const int IntroDuration = 5800;
     private const double HorizonFocus = 118d / 1024; // Diagonal edge of the supplied plate outline.
     internal bool IsPromptOpen => _root.IsAssigned && !IsEntered;
     internal bool IsEntered { get; private set; }
     internal bool IsIntroComplete { get; private set; }
     internal XsrUiEntityId Root => _root;
+    internal TimeSpan PresentationInterval => TimeSpan.FromSeconds(1d / (_animationFrameRate.IsAssigned
+        ? Math.Clamp((long)_store.Read<int>(_animationFrameRate).Value + 1, 1, 240) : 60));
 
     internal GamepadEntrySession(XsrUiShell shell, DesktopUiIntentSink intents, XsrStateStore store,
         AvaloniaUiPlatformActions platform, IGamepadInput? input = null, bool runTimer = true,
         Func<bool>? foreground = null, Action<bool>? immersive = null)
     {
         _shell = shell; _store = store; _intents = intents; _input = input;
+        store.TryResolve(XsrSemanticId.Parse("UiAniFPS"), out _animationFrameRate);
         _dynamic = new(shell.Tree, store);
         _immersive = immersive ?? platform.SetImmersivePresentation;
         _scrim = platform.SetClientScrimOpacity; _observe = platform.ReportControllerInput;
@@ -57,7 +62,8 @@ internal sealed class GamepadEntrySession : IDisposable
                 if (_disposed) return;
                 _input ??= new NativeGamepadInput(); // Native message windows belong to the GUI thread.
                 Step(_input.Read(), Environment.TickCount64, _foreground());
-                _timer!.Interval = TimeSpan.FromMilliseconds(_root.IsAssigned ? 20 : 1000);
+                _timer!.Interval = IsEntered && !IsIntroComplete ? PresentationInterval
+                    : TimeSpan.FromMilliseconds(_root.IsAssigned ? 20 : 1000);
             });
             Dispatcher.UIThread.Post(() => { if (!_disposed) _timer.Start(); });
         }
@@ -140,17 +146,18 @@ internal sealed class GamepadEntrySession : IDisposable
             double blackout = reduced ? 1 : Smooth(age / 500);
             _scrim(.72 + .28 * blackout);
             if (reduced) age = IntroDuration;
-            double flash = Smooth((age - 1080) / 520) * (1 - Smooth((age - 2000) / 350));
-            double zoom = EaseOut((age - 2100) / 600);
-            double name = Smooth((age - 3120) / 440);
-            double caption = Smooth((age - 3800) / 520);
+            double zoom = Smoother((age - 2100) / 1800);
+            double reveal = Smoother((zoom - .25) / .5);
+            double flash = Smooth((age - 1080) / 520) * (1 - Smoother((zoom - .12) / .32));
+            double name = Smoother((age - 4330) / 600);
+            double caption = Smoother((age - 5150) / 600);
             Apply(new("#000000" + ((byte)(184 + 71 * blackout)).ToString("X2", CultureInfo.InvariantCulture),
                 Prompt: reduced ? 0 : 1 - Smooth(age / 180), Intro: true,
-                Logo: Smooth((age - 2050) / 550), Zoom: zoom,
-                Slide: Smooth((age - 3020) / 520), Lift: caption,
+                Logo: reveal, Zoom: zoom,
+                Slide: Smoother((age - 4250) / 650), Lift: caption,
                 Name: name, Caption: caption, Flash: reduced ? 0 : flash,
                 FlashSize: 1 + .6 * Smooth((age - 1100) / 900),
-                Horizon: age >= 1000 ? 1 - Smooth((age - 2100) / 500) : 0,
+                Horizon: age >= 1000 ? 1 - reveal : 0,
                 Veil: age >= 1000 ? 1 - Smooth((age - 1000) / 850) : 0,
                 SunRise: Smooth((age - 1080) / 850)));
             IsIntroComplete = age >= IntroDuration;
@@ -204,8 +211,12 @@ internal sealed class GamepadEntrySession : IDisposable
         // complete-image sampler. Negative margins let NXML place it beyond the viewport;
         // native clipping reveals the outer plate arc, like a planet seen from space.
         double size = canvas * 10 * Math.Pow(168 / canvas / 10, frame.Zoom);
-        double x = (.5 - (HorizonFocus + (.5 - HorizonFocus) * frame.Zoom)) * size - 162 * frame.Slide;
-        double y = (.5 - (HorizonFocus + (.5 - HorizonFocus) * frame.Zoom)) * size - 18 * frame.Lift;
+        // Keep the bright arc stable while the camera pulls back. Recenter in screen
+        // space late in the shot, without coupling a large pan to the shrinking size.
+        double recenter = Smoother((frame.Zoom - .35) / .65);
+        double cameraOffset = (.5 - HorizonFocus) * (size - 168 * recenter);
+        double x = cameraOffset - 162 * frame.Slide;
+        double y = cameraOffset - 18 * frame.Lift;
         double flashSize = frame.FlashSize * canvas;
         string signature = string.Create(CultureInfo.InvariantCulture,
             $"{frame.Background}|{frame.Prompt:F3}|{frame.Intro}|{frame.Logo:F3}|{frame.Flash:F3}|{frame.Horizon:F3}|{frame.Veil:F3}|{frame.SunRise:F3}|{frame.Name:F3}|{frame.Caption:F3}|{frame.Lift:F3}|{size:F3}|{x:F3}|{y:F3}|{flashSize:F3}");
@@ -250,7 +261,11 @@ internal sealed class GamepadEntrySession : IDisposable
         return PngImage.TryCreatePreview(buffer.ToArray()) ?? throw new InvalidDataException("Invalid entry texture.");
     }
     private static double Smooth(double progress) { progress = Math.Clamp(progress, 0, 1); return progress * progress * (3 - 2 * progress); }
-    private static double EaseOut(double progress) => 1 - Math.Pow(1 - Math.Clamp(progress, 0, 1), 4);
+    private static double Smoother(double progress)
+    {
+        progress = Math.Clamp(progress, 0, 1);
+        return progress * progress * progress * (progress * (progress * 6 - 15) + 10);
+    }
 
     internal void Close()
     {

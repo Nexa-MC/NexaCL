@@ -33,17 +33,17 @@ internal static partial class Program
         var scene = shell.Render(new(1100, 750));
         AssertFalse(scene.Nodes.Any(node => node.ImageSource == "brand/n" && node.PresentationOpacity * node.VisualStyle.Opacity > 0));
         AssertFalse(scene.Nodes.Any(node => node.Text == "左右摇杆内推以进入手柄模式"));
-        entry.UpdatePresentation(8100); AssertTrue(entry.IsIntroComplete);
+        entry.UpdatePresentation(9600); AssertTrue(entry.IsIntroComplete);
         scene = shell.Render(new(1100, 750));
         AssertTrue(scene.Nodes.Any(node => node.ImageSource == "brand/n" && node.RasterImage is not null));
         AssertTrue(scene.Nodes.Any(node => node.Text == "NexaCL"));
         AssertTrue(scene.Nodes.Any(node => node.Text == "手柄模式"));
         AssertEqual((byte)255, shell.Tree.GetComponent<XsrUiVisualStyle>(entry.Root)!.Background.Alpha);
         AssertTrue(shell.Renderer.HandleKey(XsrUiKey.Escape));
-        entry.Step([centered], 8200); AssertFalse(entry.IsEntered); AssertFalse(entry.IsPromptOpen);
+        entry.Step([centered], 9700); AssertFalse(entry.IsEntered); AssertFalse(entry.IsPromptOpen);
         AssertTrue(transitions.SequenceEqual([true, false])); AssertEqual(previous, shell.Renderer.Focused);
-        entry.Step([centered], 8400); AssertFalse(entry.IsPromptOpen);
-        entry.Step([], 8500); entry.Step([centered], 8600); AssertTrue(entry.IsPromptOpen);
+        entry.Step([centered], 9800); AssertFalse(entry.IsPromptOpen);
+        entry.Step([], 9900); entry.Step([centered], 10000); AssertTrue(entry.IsPromptOpen);
     }
 
     private static void GamepadEntryCinematicTimelineAndStableLockup()
@@ -77,21 +77,21 @@ internal static partial class Program
         AssertFalse(giant.Nodes.Any(node => shell.Tree.Name(node.Entity) is "GamepadName" or "GamepadDawnVeil"));
         var sun = giant.Nodes.Single(node => node.ImageSource == "gamepad/flash");
         AssertTrue(sun.Depth == horizon.Depth && giant.Nodes.ToList().IndexOf(sun) < giant.Nodes.ToList().IndexOf(horizon));
-        var pullingBack = Logo(At(2400));
-        AssertFalse(At(2599).Nodes.Any(node => node.ImageSource == "gamepad/horizon"));
-        var centered = Logo(At(2900));
+        var pullingBack = Logo(At(3000));
+        AssertFalse(At(3650).Nodes.Any(node => node.ImageSource == "gamepad/horizon"));
+        var centered = Logo(At(4100));
         AssertTrue(pullingBack.Width < corner.Width && pullingBack.Width > centered.Width);
         AssertTrue(Math.Abs(centered.X + centered.Width / 2 - 720) < .001);
         AssertTrue(Math.Abs(centered.Y + centered.Height / 2 - 450) < .001);
-        var named = At(3600);
+        var named = At(5000);
         var moved = Logo(named);
         AssertTrue(moved.X < centered.X);
         AssertTrue(named.Nodes.Any(node => shell.Tree.Name(node.Entity) == "GamepadName" && node.PresentationOpacity * node.VisualStyle.Opacity == 1));
         AssertFalse(named.Nodes.Any(node => node.Text == "手柄模式"));
-        var caption = At(4100);
+        var caption = At(5500);
         AssertTrue(Logo(caption).Y < moved.Y);
         AssertTrue(caption.Nodes.Any(node => node.Text == "手柄模式" && node.PresentationOpacity * node.VisualStyle.Opacity > 0));
-        var final = At(4500);
+        var final = At(5900);
         AssertTrue(entry.IsIntroComplete);
         var still = At(10000);
         AssertEqual(Logo(final), Logo(still));
@@ -102,6 +102,47 @@ internal static partial class Program
 
         XsrUiScene At(int age) { entry.UpdatePresentation(210 + age); return shell.Render(new(1440, 900)); }
         static XsrUiRect Logo(XsrUiScene scene) => scene.Nodes.Single(node => node.ImageSource == "brand/n").Rect;
+    }
+
+    private static void GamepadEntryCameraStartsGentlyAnchorsTheRimAndRespectsFrameRate()
+    {
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
+        var shell = fixture.Shell; shell.Renderer.ReducedMotion = false;
+        shell.Render(new(1440, 900));
+        using var entry = new GamepadEntrySession(shell, fixture.Intents, fixture.Store, new(), runTimer: false, immersive: _ => { });
+        var pad = new GamepadSample("camera", GamepadLayout.OffsetLeftHigh);
+        entry.Step([pad], 0); entry.Step([pad with { LeftX = 1, RightX = -1 }], 10);
+        entry.Step([pad with { LeftX = 1, RightX = -1 }], 210);
+        var initial = Camera(2100);
+        AssertTrue(Camera(2200).Width / initial.Width > .97);
+        var previous = initial;
+        for (int age = 2116; age < 3900; age += 16)
+        {
+            var current = Camera(age);
+            AssertTrue(current.Width <= previous.Width && current.Width >= 168 - .001);
+            AssertTrue(Math.Log(previous.Width / current.Width) < .09);
+            double rim = current.X + current.Width * 118 / 1024;
+            double oldRim = previous.X + previous.Width * 118 / 1024;
+            AssertTrue(rim <= oldRim + .001 && oldRim - rim < 6);
+            AssertTrue(rim >= 720 - (.5 - 118d / 1024) * 168 - .001);
+            previous = current;
+        }
+        AssertTrue(Math.Abs(Camera(2600).X + Camera(2600).Width * 118 / 1024 - 720) < .001);
+        AssertTrue(Math.Log(initial.Width / Camera(2116).Width) < .0001);
+        AssertTrue(Math.Log(Camera(3884).Width / Camera(3900).Width) < .0001);
+        AssertEqual(Camera(3900), Camera(4200));
+        var fps = fixture.Store.Resolve(Nexa.Xsr.XsrSemanticId.Parse("UiAniFPS"));
+        fixture.Store.Publish(fps, 29); shell.Render(new(1440, 900));
+        AssertTrue(Math.Abs(entry.PresentationInterval.TotalMilliseconds - 1000d / 30) < .001);
+        fixture.Store.Publish(fps, 119); shell.Render(new(1440, 900));
+        AssertTrue(Math.Abs(entry.PresentationInterval.TotalMilliseconds - 1000d / 120) < .001);
+
+        XsrUiRect Camera(int age)
+        {
+            entry.UpdatePresentation(210 + age);
+            var scene = shell.Render(new(1440, 900));
+            return scene.Nodes.First(node => node.ImageSource is "gamepad/horizon" or "brand/n").Rect;
+        }
     }
 
     private static void GamepadEntryDisconnectDisposesAndDefersExistingModal()

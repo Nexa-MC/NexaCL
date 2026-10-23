@@ -1,0 +1,7 @@
+{
+  "capture_fps": 50,
+  "projection_layout_p50_ms": 1.6819,
+  "projection_layout_p95_ms": 10.6085,
+  "projection_layout_max_ms": 21.974,
+  "scope": "Linux native offscreen fixture; CPU NXML projection and renderer layout only; drawing and PNG encoding excluded"
+}

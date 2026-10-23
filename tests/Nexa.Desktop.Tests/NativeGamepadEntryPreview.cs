@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json.Nodes;
 using Avalonia;
 using Avalonia.Media.Imaging;
@@ -10,13 +11,14 @@ namespace Nexa.Desktop.Tests;
 internal static partial class Program
 {
     private static readonly bool[] GamepadPreviewThemes = [false, true];
+    private static readonly PngBitmapEncoderOptions GamepadPreviewPng = new() { CompressionLevel = System.IO.Compression.CompressionLevel.Fastest };
     private static int RunNativeGamepadEntryPreview(string output) =>
         AvaloniaUiStartupSession.RunApplicationOnMainThread(() => CaptureGamepadEntryAsync(Path.GetFullPath(output)));
 
     private static async Task<int> CaptureGamepadEntryAsync(string output)
     {
         Directory.CreateDirectory(output);
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(180));
         await using var startup = await AvaloniaUiStartupSession.StartWithAppearanceAsync([], true,
             new AvaloniaUiStartupAppearance(Nexa.Xsr.Renderer.XsrUiThemeMode.Dark, ReducedMotion: true), cancellationToken: timeout.Token);
         await startup.InvokeAsync(async () =>
@@ -41,41 +43,61 @@ internal static partial class Program
                             .Any(control => control.Node.ImageSource == "gamepad/drawing" && control.HasDecodedRaster));
                         if (!dark || layout != GamepadLayout.OffsetLeftHigh) continue;
                         JsonArray frames = [];
+                        List<double> projectionTimes = [];
+                        const int step = 20;
                         long clock = 1200;
-                        for (int index = 0; index < 136; index++)
+                        int frameCount = (1200 + GamepadEntrySession.IntroDuration + 800) / step;
+                        for (int index = 0; index < frameCount; index++)
                         {
-                            if (index >= 20) entry.Step([pad with { LeftX = 1, RightX = -1 }], clock);
+                            long started = Stopwatch.GetTimestamp();
+                            if (index * step >= 1000) entry.Step([pad with { LeftX = 1, RightX = -1 }], clock);
                             else entry.UpdatePresentation(clock);
+                            fixture.Shell.Render(new(window.Bounds.Width, window.Bounds.Height));
+                            double projectionMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+                            projectionTimes.Add(projectionMs);
+                            int age = index * step - 1200;
                             Save($"frame-{index:D3}");
-                            if (index == 64) AssertTrue(window.GetVisualDescendants().OfType<AvaloniaUiSceneNodeControl>()
+                            if (age == 2000) AssertTrue(window.GetVisualDescendants().OfType<AvaloniaUiSceneNodeControl>()
                                 .Any(control => control.Node.ImageSource == "gamepad/horizon" && control.HasDecodedRaster));
-                            if (index == 56) AssertTrue(window.GetVisualDescendants().OfType<AvaloniaUiSceneNodeControl>()
+                            if (age == 1600) AssertTrue(window.GetVisualDescendants().OfType<AvaloniaUiSceneNodeControl>()
                                 .Any(control => control.Node.ImageSource == "gamepad/flash" && control.HasDecodedRaster));
-                            string? phase = index switch
+                            string? phase = age switch
                             {
-                                40 => "entry-black",
-                                56 => "entry-flash",
-                                64 => "entry-corner",
-                                72 => "entry-pullback",
-                                82 => "entry-logo",
-                                96 => "entry-name",
-                                112 => "entry-lockup",
+                                800 => "entry-black",
+                                1600 => "entry-flash",
+                                2000 => "entry-corner",
+                                3000 => "entry-pullback",
+                                4100 => "entry-logo",
+                                5000 => "entry-name",
+                                5800 => "entry-lockup",
                                 _ => null
                             };
                             if (phase is not null) Save(phase);
                             frames.Add((JsonNode)new JsonObject
                             {
                                 ["file"] = $"frame-{index:D3}.png",
+                                ["age"] = age,
+                                ["projection_ms"] = projectionMs,
                                 ["x"] = window.Position.X,
                                 ["y"] = window.Position.Y,
                                 ["width"] = window.Bounds.Width,
                                 ["height"] = window.Bounds.Height
                             });
-                            await Task.Delay(50); clock += 50;
+                            await Task.Delay(step); clock += step;
                         }
                         AssertTrue(entry.IsEntered); AssertTrue(entry.IsIntroComplete);
                         AssertEqual(global::Avalonia.Controls.WindowState.FullScreen, window.WindowState);
                         File.WriteAllText(Path.Combine(output, "frames.json"), frames.ToJsonString());
+                        projectionTimes.Sort();
+                        var metrics = new JsonObject
+                        {
+                            ["capture_fps"] = 1000 / step,
+                            ["projection_layout_p50_ms"] = projectionTimes[projectionTimes.Count / 2],
+                            ["projection_layout_p95_ms"] = projectionTimes[(int)(projectionTimes.Count * .95)],
+                            ["projection_layout_max_ms"] = projectionTimes[^1]
+                        };
+                        File.WriteAllText(Path.Combine(output, "motion-metrics.json"), metrics.ToJsonString());
+                        Console.WriteLine("CPU projection/layout metrics (capture/PNG encoding excluded): " + metrics.ToJsonString());
                         entry.Step([pad with { Cancel = true }], clock);
                         await Task.Delay(150);
                         AssertEqual(global::Avalonia.Controls.WindowState.Normal, window.WindowState);
@@ -100,7 +122,7 @@ internal static partial class Program
                     {
                         window.UpdateLayout();
                         using var bitmap = new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(window.Bounds.Width), (int)Math.Ceiling(window.Bounds.Height)), new Vector(96, 96));
-                        bitmap.Render(window); bitmap.Save(Path.Combine(output, name + ".png"), PngBitmapEncoderOptions.Default);
+                        bitmap.Render(window); bitmap.Save(Path.Combine(output, name + ".png"), GamepadPreviewPng);
                         if (name is "entry-black" or "entry-corner" or "entry-flash")
                         {
                             // Decoding alone does not prove a recipe was admitted and painted.

@@ -132,6 +132,7 @@ internal static partial class Program
     [
         ("gamepad entry requires neutral same-device gesture and restores", GamepadEntryRequiresNeutralSameDeviceGestureAndRestores),
         ("gamepad entry cinematic timeline and stable lockup", GamepadEntryCinematicTimelineAndStableLockup),
+        ("gamepad entry camera starts gently anchors the rim and respects frame rate", GamepadEntryCameraStartsGentlyAnchorsTheRimAndRespectsFrameRate),
         ("gamepad entry disconnect disposes and defers existing modal", GamepadEntryDisconnectDisposesAndDefersExistingModal),
         ("gamepad entry layouts artwork and reduced motion", GamepadEntryLayoutsArtworkAndReducedMotion),
         ("RegionalSettingsHideMainlandFacilitiesAndRestoreSavedPreferences", RegionalSettingsHideMainlandFacilitiesAndRestoreSavedPreferences),
