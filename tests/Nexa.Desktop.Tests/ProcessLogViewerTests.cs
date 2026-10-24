@@ -31,6 +31,76 @@ internal static partial class Program
         fixture.Store.PublishDelta(id, new XsrCollectionDelta<MinecraftProcessSnapshot, Guid>(revision, sessions, []));
     }
 
+    private static void ProcessLogViewerUsesCompactRowsAndRetainsToolbarWhileLoading()
+    {
+        Guid session = Guid.NewGuid();
+        MinecraftProcessOutputSnapshot snapshot = new(session, "fixture", MinecraftProcessState.Failed, 1, 0,
+            [new(1, MinecraftProcessOutputChannel.Stderr, "Nexa JVM Host: bootstrap received"),
+             new(2, MinecraftProcessOutputChannel.Stderr, string.Join(" ", Enumerable.Repeat("A long diagnostic line", 12)))]);
+        TaskCompletionSource<XsrResult<MinecraftProcessOutputSnapshot>> refresh = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int requests = 0;
+        using var runtime = ProcessLogRuntime((_, _) => Interlocked.Increment(ref requests) == 1
+            ? ValueTask.FromResult(XsrResult.Success(snapshot)) : new(refresh.Task));
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]), runtime, ownsMinecraftRuntime: false);
+        fixture.Shell.Renderer.ReducedMotion = true;
+        PublishLogSessions(fixture, new MinecraftProcessSnapshot(session, "fixture", 11, MinecraftProcessState.Failed, 1, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow));
+        fixture.Shell.Render(new(1100, 700));
+        Emit(fixture.Intents, "ui.process.logs." + session.ToString("N"));
+        fixture.Controller.WaitForProcessLogsAsync().GetAwaiter().GetResult();
+        var shell = fixture.Shell;
+        foreach (bool dark in new[] { false, true })
+        {
+            shell.Renderer.ColorScheme = new(dark);
+            foreach (XsrUiSize size in new XsrUiSize[] { new(850, 500), new(1100, 700) })
+            {
+                var scene = shell.Render(size);
+                var layout = FindByKey(shell, scene, "ProcessLogLayout").Rect;
+                var output = FindByKey(shell, scene, "ProcessLogOutput").Rect;
+                var first = FindByKey(shell, scene, "ProcessLogEntry:1");
+                var message = first.Rect;
+                AssertTrue(output.Height > layout.Height * .55);
+                AssertTrue(first.Rect.Height <= 30);
+                AssertTrue(FindByKey(shell, scene, "ProcessLogEntry:2").Rect.Y - first.Rect.Y <= 30);
+                AssertTrue(message.X >= output.X + 10);
+                AssertTrue(message.X + message.Width <= output.X + output.Width);
+                AssertTrue(FindByKey(shell, scene, "ProcessLogEntry:2").Rect.Height > first.Rect.Height);
+                AssertTrue(FindByKey(shell, scene, "ProcessLogFooter").Rect.Y + 30 <= layout.Y + layout.Height + 1);
+                AssertEqual(XsrUiSemanticRole.ListItem, first.Role);
+                AssertFalse(first.IsSelected);
+                AssertFalse(HasKey(shell, scene, "ProcessLogCopySelected"));
+                AssertEqual("2 条日志", FindByKey(shell, scene, "ProcessLogStatus").Text);
+            }
+        }
+        var current = shell.Render(new(1100, 700));
+        var text = FindByKey(shell, current, "ProcessLogEntry:1").Rect;
+        XsrUiPoint point = new(text.X + 10, text.Y + text.Height / 2);
+        AssertTrue(shell.Renderer.PointerPressed(point));
+        AssertTrue(shell.Renderer.PointerReleased(point));
+        current = shell.Render(new(1100, 700));
+        AssertTrue(FindByKey(shell, current, "ProcessLogEntry:1").IsSelected);
+        AssertTrue(HasKey(shell, current, "ProcessLogCopySelected"));
+        var search = FindByKey(shell, current, "ProcessLogSearch").Entity;
+        shell.Renderer.SetTextInputValue(search, "bootstrap");
+        shell.Renderer.Focus(search, showIndicator: false);
+        shell.Renderer.EditText(XsrUiTextEdit.Left);
+        current = shell.Render(new(1100, 700));
+        var input = shell.Tree.GetComponent<XsrUiTextInput>(search)!;
+        int caret = input.SelectionEnd;
+        Emit(fixture.Intents, "ui.process.log.refresh");
+        current = shell.Render(new(1100, 700));
+        AssertTrue(HasKey(shell, current, "ProcessLogLoading"));
+        AssertTrue(FindByKey(shell, current, "ProcessLogSearch").IsEnabled);
+        AssertEqual(search, shell.Renderer.Focused);
+        AssertEqual("bootstrap", input.ReadDraft());
+        AssertEqual(caret, input.SelectionEnd);
+        refresh.SetResult(XsrResult.Success(snapshot));
+        fixture.Controller.WaitForProcessLogsAsync().GetAwaiter().GetResult();
+        current = shell.Render(new(1100, 700));
+        AssertFalse(HasKey(shell, current, "ProcessLogLoading"));
+        AssertTrue(ReferenceEquals(input, shell.Tree.GetComponent<XsrUiTextInput>(search)));
+        AssertEqual(caret, input.SelectionEnd);
+    }
+
     private static void ProcessLogViewerReadsSelectedSessionAndCopiesRedactedPages()
     {
         Guid first = Guid.NewGuid(), second = Guid.NewGuid();
@@ -64,7 +134,7 @@ internal static partial class Program
         var rows = FindByKey(fixture.Shell, scene, "ProcessLogRows").Entity;
         AssertEqual(ProcessLogPageController.PageSize, fixture.Shell.Tree.Children(rows).Count);
         AssertEqual("1 / 3", FindByKey(fixture.Shell, scene, "ProcessLogPageNumber").Text);
-        AssertFalse(FindByKey(fixture.Shell, scene, "ProcessLogEntry:1").Text!.Contains(secret, StringComparison.Ordinal));
+        AssertFalse(FindByKey(fixture.Shell, scene, "ProcessLogEntry:1").Label!.Contains(secret, StringComparison.Ordinal));
         AssertTrue(FindByKey(fixture.Shell, scene, "ProcessLogStatus").Text!.Contains("已省略 10", StringComparison.Ordinal));
         Emit(fixture.Intents, "ui.process.log.copy-page");
         fixture.Controller.WaitForProcessLogsAsync().GetAwaiter().GetResult();
@@ -91,7 +161,7 @@ internal static partial class Program
         fixture.Shell.Renderer.SetTextInputValue(search, "NEEDLE");
         scene = fixture.Shell.Render(new(1000, 700));
         AssertEqual(1, fixture.Shell.Tree.Children(rows).Count);
-        AssertEqual("[stdout] needle {state fake.key}", FindByKey(fixture.Shell, scene, "ProcessLogEntry:37").Text);
+        AssertEqual("[stdout] needle {state fake.key}", FindByKey(fixture.Shell, scene, "ProcessLogEntry:37").Label);
         var input = fixture.Shell.Tree.GetComponent<XsrUiTextInput>(search)!;
         fixture.Shell.Renderer.Focus(search, showIndicator: false);
         fixture.Shell.Renderer.EditText(XsrUiTextEdit.Left);
@@ -113,8 +183,8 @@ internal static partial class Program
         fixture.Controller.WaitForProcessLogsAsync().GetAwaiter().GetResult();
         scene = fixture.Shell.Render(new(1000, 700));
         AssertEqual(second, requested);
-        AssertEqual("[stderr] other session", FindByKey(fixture.Shell, scene, "ProcessLogEntry:1").Text);
-        AssertFalse(FindByKey(fixture.Shell, scene, "ProcessLogCopySelected").IsClickable);
+        AssertEqual("[stderr] other session", FindByKey(fixture.Shell, scene, "ProcessLogEntry:1").Label);
+        AssertFalse(HasKey(fixture.Shell, scene, "ProcessLogCopySelected"));
         PublishLogSessions(fixture,
             new(first, "first", 11, MinecraftProcessState.Exited, 0, started.AddMinutes(-2), started),
             new(second, "second", 12, MinecraftProcessState.Cancelled, null, started.AddMinutes(-1), started));
@@ -164,7 +234,7 @@ internal static partial class Program
         retired.GetAwaiter().GetResult();
         fixture.Controller.WaitForProcessLogsAsync().GetAwaiter().GetResult();
         var scene = fixture.Shell.Render(new(1000, 700));
-        AssertEqual("[stderr] current second output", FindByKey(fixture.Shell, scene, "ProcessLogEntry:1").Text);
+        AssertEqual("[stderr] current second output", FindByKey(fixture.Shell, scene, "ProcessLogEntry:1").Label);
         Emit(fixture.Intents, "ui.process.log.refresh");
         AssertTrue(SpinWait.SpinUntil(() => { lock (gate) return requests.Count == 3; }, TimeSpan.FromSeconds(2)));
         lock (gate) requests[2].Completion.SetResult(XsrResult.Success<MinecraftProcessOutputSnapshot>(new(first, "first",

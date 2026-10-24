@@ -1,29 +1,24 @@
-﻿/* ProcessLogPage layout. */
-.layout-ProcessLogPage-2 { Orientation: Vertical; Margin: 0; Spacing: 10; Weight: 1; }
-.layout-ProcessLogPage-3 { Orientation: Horizontal; Height: 38; Spacing: 8; }
-.layout-ProcessLogPage-ProcessLogPreviousSession { Width: 86; Height: 38; }
-.layout-ProcessLogPage-ProcessLogSession { Weight: 1; VerticalAlignment: Center; }
-.layout-ProcessLogPage-ProcessLogNextSession { Width: 86; Height: 38; }
-.layout-ProcessLogPage-ProcessLogRefresh { Width: 38; Height: 38; }
-.layout-ProcessLogPage-8 { Orientation: Horizontal; Height: 36; Spacing: 8; }
-.layout-ProcessLogPage-ProcessLogSearch { Weight: 1; Height: 36; }
-.layout-ProcessLogPage-ProcessLogAll { Width: 64; Height: 36; }
-.layout-ProcessLogPage-ProcessLogStdout { Width: 74; Height: 36; }
-.layout-ProcessLogPage-ProcessLogStderr { Width: 74; Height: 36; }
-.layout-ProcessLogPage-ProcessLogStatus { Height: 42; }
-.layout-ProcessLogPage-ProcessLogEmpty { Height: 48; }
-.layout-ProcessLogPage-ProcessLogRows { Orientation: Vertical; Weight: 1; Spacing: 6; }
-.layout-ProcessLogPage-16 { Orientation: Horizontal; Height: 36; Spacing: 8; }
-.layout-ProcessLogPage-ProcessLogPrevious { Width: 74; Height: 36; }
-.layout-ProcessLogPage-ProcessLogPageNumber { Width: 64; VerticalAlignment: Center; }
-.layout-ProcessLogPage-ProcessLogNext { Width: 74; Height: 36; }
-.layout-ProcessLogPage-ProcessLogClearSelection { Width: 88; Height: 36; }
-.layout-ProcessLogPage-ProcessLogCopySelected { Width: 88; Height: 36; }
-.layout-ProcessLogPage-ProcessLogCopyPage { Width: 88; Height: 36; }
-
-.process-log-text { Foreground: #263141; FontSize: 13; CornerRadius: 10; Hover: #cfe1fe; }
-.process-log-control { Background: #e0eafd; }
-.layout-ProcessLogPage-ProcessLogStatus { Foreground: #5e6e82; WrapText: true; }
-.layout-ProcessLogPage-ProcessLogEmpty { WrapText: true; }
-.process-log-row { MinHeight: 38; Padding: 12,10,12,10; Foreground: #263141; FontSize: 13; WrapText: true; CornerRadius: 8; Background: #e0eafd; Hover: #cfe1fe; }
+/* A shared reading surface: compact controls, literal rows and one fixed footer. */
+.process-log-base { Background: #00000000; Foreground: #2b3340; FontSize: 13; FontWeight: 400; TextAlignment: Start; CornerRadius: 0; Surface: Solid; Hover: #739edc14; }
+.process-log-layout { Orientation: Vertical; Weight: 1; Spacing: 10; }
+.process-log-toolbar { Orientation: Horizontal; Height: 36; Spacing: 8; }
+.process-log-session { Weight: 1; Height: 32; VerticalAlignment: Center; FontSize: 13; FontWeight: 600; Foreground: #2b3340; }
+.process-log-button { Height: 30; Background: #f1f5fa; Foreground: #2b3340; CornerRadius: 8; TextAlignment: Center; VerticalAlignment: Center; }
+.process-log-chevron { Width: 30; FontSize: 22; }
+.process-log-icon { Width: 32; Height: 32; }
+.process-log-search-surface { Weight: 1; Height: 36; Background: #f1f5fa; CornerRadius: 9; Surface: Solid; }
+.process-log-search { Height: 36; Padding: 10,0,10,0; }
+.process-log-source-track { Orientation: Horizontal; Spacing: 0; Padding: 3; Height: 36; Background: #f1f5fa; Foreground: #2b3340; CornerRadius: 9; Surface: Solid; }
+.process-log-source-thumb { Background: #ffffff; Foreground: #2b3340; CornerRadius: 7; Surface: Solid; }
+.process-log-source { Height: 30; FontSize: 12; TextAlignment: Center; CornerRadius: 7; }
+.process-log-output { Orientation: Vertical; Weight: 1; Spacing: 0; Background: #ffffff; Border: #717c8c30; BorderWidth: 1; CornerRadius: 10; Surface: Solid; }
+.process-log-reading { Weight: 1; }
+.process-log-rows { Orientation: Vertical; Weight: 1; Spacing: 2; Padding: 12,8,12,8; }
+.process-log-row { MinHeight: 22; FontSize: 12; WrapText: true; Background: #00000000; Foreground: #2b3340; CornerRadius: 2; Surface: Solid; Hover: #739edc14; }
 .process-log-row-selected { Background: #e7f0ff; }
+.process-log-empty { MaxWidth: 440; HorizontalAlignment: Center; VerticalAlignment: Center; Foreground: #717c8c; FontSize: 13; TextAlignment: Center; WrapText: true; Margin: 24; }
+.process-log-footer { Orientation: Horizontal; Height: 30; Spacing: 6; }
+.process-log-status { Weight: 1; Height: 28; FontSize: 12; Foreground: #717c8c; VerticalAlignment: Center; }
+.process-log-page-arrow { Width: 26; Height: 26; FontSize: 20; Background: #00000000; }
+.process-log-page-number { Width: 48; Height: 26; Foreground: #717c8c; FontSize: 12; TextAlignment: Center; VerticalAlignment: Center; }
+.process-log-copy { Width: 100; Height: 28; FontSize: 12; }

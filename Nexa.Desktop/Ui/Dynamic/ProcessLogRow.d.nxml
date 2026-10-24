@@ -1,3 +1,3 @@
-﻿<nxml-dynamic>
-  <Button Key="{data key}" Content="{data text}" Label="{data text}" Localize="false" Selected="{data selected}" Command="ui.process.log.select" Class="{data style}" />
+<nxml-dynamic>
+  <ProcessLogEntry Key="{data key}" Label="{data text}" Content="{data sequence}  {data text}" Localize="false" MaxLines="0" Selected="{data selected}" Class="{data style}" />
 </nxml-dynamic>

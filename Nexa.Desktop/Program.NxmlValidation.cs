@@ -162,13 +162,13 @@ internal static partial class Program
         {
             var dynamic = new NxmlDynamicContent(shell.Tree, store);
             var data = new Dictionary<string, string>
-            { ["key"] = "validation-log", ["text"] = "[stdout] {state literal}", ["selected"] = "false", ["style"] = "process-log-row" };
+            { ["key"] = "validation-log", ["sequence"] = "1", ["text"] = "[stdout] {state literal}", ["selected"] = "false", ["style"] = "process-log-row" };
             var row = dynamic.Append(shell.Tree.Children(page).Single(), DesktopMarkup.Dynamic("ProcessLogRow.d.nxml", data));
             data["selected"] = "true";
             dynamic.Reload(row, DesktopMarkup.Dynamic("ProcessLogRow.d.nxml", data));
             if (shell.Tree.GetComponent<XsrUiSelection>(row)?.IsSelected != true
                 || shell.Tree.GetComponent<XsrUiText>(row)?.Localize != false
-                || shell.Tree.GetComponent<XsrUiText>(row)?.Content != data["text"])
+                || shell.Tree.GetComponent<XsrUiText>(row)?.Content != "1  " + data["text"])
                 throw new InvalidOperationException("Literal log row projection failed.");
             var inspector = dynamic.Append(shell.Tree.Children(page).Single(), DesktopMarkup.Dynamic("SettingsStateInspector.d.nxml",
                 new Dictionary<string, string> { ["previous"] = "false", ["next"] = "true" }));

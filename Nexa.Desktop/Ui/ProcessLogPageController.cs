@@ -256,7 +256,7 @@ internal sealed class ProcessLogPageController : IDisposable
         _page = Math.Clamp(_page, 0, pages - 1);
         Text("ProcessLogPageNumber", LogFormat("LogPage", new() { ["page"] = LogNumber(_page + 1), ["pages"] = LogNumber(pages) }));
         string status = _reading is not null ? LogTerm("log.reading")
-            : _error.Length > 0 ? _shell.Renderer.LocalizeText(_error) : LogFormat("LogStatus", new()
+            : _error.Length > 0 ? _shell.Renderer.LocalizeText(_error) : LogFormat(_selected.Count > 0 ? "LogSelectionStatus" : "LogStatus", new()
             { ["count"] = LogNumber(_filtered.Length), ["selected"] = LogNumber(_selected.Count) });
         if (_reading is null && _error.Length == 0 && _snapshot?.DroppedEntries > 0)
             status = LogFormat("LogDropped", new() { ["status"] = status, ["dropped"] = LogNumber(_snapshot.DroppedEntries) });
@@ -269,6 +269,7 @@ internal sealed class ProcessLogPageController : IDisposable
         Enable("ProcessLogNext", _page + 1 < pages);
         Enable("ProcessLogClearSelection", _selected.Count > 0);
         Enable("ProcessLogCopySelected", _selected.Count > 0 && !_copying);
+        _view["hasSelection"] = Flag(_selected.Count > 0);
         Enable("ProcessLogCopyPage", _filtered.Length > 0 && !_copying);
         foreach (var choice in new[] { ("ProcessLogAll", (MinecraftProcessOutputChannel?)null),
             ("ProcessLogStdout", (MinecraftProcessOutputChannel?)MinecraftProcessOutputChannel.Stdout),
@@ -284,6 +285,7 @@ internal sealed class ProcessLogPageController : IDisposable
             {
                 ["key"] = "ProcessLogEntry:" + entry.Sequence,
                 ["text"] = Display(entry),
+                ["sequence"] = LogNumber(entry.Sequence),
                 ["selected"] = Flag(_selected.Contains(entry.Sequence)),
                 ["style"] = _selected.Contains(entry.Sequence) ? "process-log-row process-log-row-selected" : "process-log-row",
             });
@@ -313,6 +315,7 @@ internal sealed class ProcessLogPageController : IDisposable
             ["ProcessLogSession"] = LogTerm("log.title"),
             ["ProcessLogPageNumber"] = LogFormat("LogPage", new() { ["page"] = "1", ["pages"] = "1" }),
             ["loading"] = "true",
+            ["hasSelection"] = "false",
             ["ProcessLogStatus"] = LogTerm("log.reading"),
             ["ProcessLogEmpty"] = "",
             ["ProcessLogEmpty.visible"] = "false",

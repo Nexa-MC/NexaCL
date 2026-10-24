@@ -103,6 +103,7 @@ internal static partial class Program
         AssertEqual(search, logsFixture.Shell.Renderer.Focused); AssertEqual("literal", input.ReadDraft()); AssertEqual(caret, input.SelectionEnd);
         AssertTrue(FindByKey(logsFixture.Shell, logScene, "ProcessLogStatus").Text!.Contains("1 selected", StringComparison.Ordinal));
         AssertTrue(FindByKey(logsFixture.Shell, logScene, "ProcessLogSession").Text!.Contains("literal <metadata> {data percent}", StringComparison.Ordinal));
-        AssertEqual("[stdout] literal {state fake}", FindByKey(logsFixture.Shell, logScene, "ProcessLogEntry:1").Text);
+        AssertEqual("1  [stdout] literal {state fake}", FindByKey(logsFixture.Shell, logScene, "ProcessLogEntry:1").Text);
+        AssertEqual("[stdout] literal {state fake}", FindByKey(logsFixture.Shell, logScene, "ProcessLogEntry:1").Label);
     }
 }

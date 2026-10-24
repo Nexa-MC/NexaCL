@@ -1,1 +1,1 @@
-<nxml-dynamic><Text Content="{data status}&#10;仅保留最近 512 条，已省略 {data dropped} 条较早输出。" Localize="false" /></nxml-dynamic>
+<nxml-dynamic><Text Content="{data status} · 已省略 {data dropped} 条" Localize="false" /></nxml-dynamic>

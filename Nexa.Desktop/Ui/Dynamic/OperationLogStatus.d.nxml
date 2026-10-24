@@ -1,1 +1,1 @@
-<nxml-dynamic><Text Content="{data count} 条日志 · 已选 {data selected} 条 · 打开或点击刷新时读取" Localize="false" /></nxml-dynamic>
+<nxml-dynamic><Text Content="{data count} 条日志" Localize="false" /></nxml-dynamic>

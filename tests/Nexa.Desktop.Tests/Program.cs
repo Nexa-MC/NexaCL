@@ -39,6 +39,11 @@ internal static partial class Program
             Environment.ExitCode = RunNativeSettingsNavigationStress(settingsNavigationOutput);
             return;
         }
+        if (args is ["--native-process-log-preview", var processLogOutput])
+        {
+            Environment.ExitCode = RunNativeProcessLogPreview(processLogOutput);
+            return;
+        }
         if (args is ["--native-gamepad-polling-smoke"])
         {
             Environment.ExitCode = RunNativeGamepadPollingSmoke();
@@ -317,6 +322,7 @@ internal static partial class Program
         ("wardrobe player preserves slim legacy and fallback models", WardrobePlayerPreservesSlimLegacyAndFallbackModels),
         ("wardrobe player composes independent cape and scaled textures", WardrobePlayerComposesIndependentCapeAndScaledTextures),
         ("process logs read selected session and copy redacted pages", ProcessLogViewerReadsSelectedSessionAndCopiesRedactedPages),
+        ("process logs use compact rows and retain toolbar while loading", ProcessLogViewerUsesCompactRowsAndRetainsToolbarWhileLoading),
         ("process logs cancel retired reads and reject wrong sessions", ProcessLogViewerCancelsRetiredReadsAndRejectsWrongSessions),
         ("process output captures bounded redacted streams and ended sessions", ProcessOutputQueryCapturesBoundedRedactedStreamsAndEndedSessions),
         ("developer diagnostics require committed mode and remain read only", DeveloperDiagnosticsAreReadOnlyAndRequireCommittedDeveloperMode),

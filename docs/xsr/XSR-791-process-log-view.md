@@ -41,6 +41,18 @@ the size of retained output or number of retained sessions.
 
 ## Validation
 
+The 2026-10-24 presentation revision uses a compact session toolbar, retained search
+and a three-way segmented source selector above one shared reading surface. Rows
+are continuous, with sequence/source prefixes and wrapping literal output; only
+selected rows receive a highlight. They remain keyboard-focusable list items,
+with the full redacted display text as their accessible label. A single footer
+owns counts, pagination and copy controls; selection actions appear only when
+needed. Refresh keeps the toolbar and search draft in place. Loading and empty
+states occupy the reading surface rather than replacing the entire workspace.
+The existing 24-entry bound, asynchronous query, redaction, session identity and
+generation retirement contracts remain unchanged. All layout and copy stay in
+external NXML/NSS/localization assets.
+
 Desktop contract tests cover distinct session identity, stdout/stderr source,
 secret redaction before display/copy, search/filter/page reachability, selection
 copy, ended-session reads and stale read retirement on navigation/session change.
@@ -51,6 +63,17 @@ Services suites and architecture/AOT checks; this slice adds no reflection, IPC,
 renderer service reference or runtime dynamic code.
 
 ## Executed integration evidence
+
+2026-10-24: the revised viewer passes the complete 370-case Desktop suite and
+72-project architecture check. Native Avalonia captures cover short/full/empty
+output, both color schemes, 850/1100-pixel windows, selection and English labels
+(16 captures). Regression exercises actual row pointer selection, wrapped long
+output and retained search focus/caret during refresh, alongside the existing
+redaction and retired-read checks. Source formatting passes. A fresh Windows x64
+NativeAOT publication executes its actual `--validate-shell` binary with exit 0;
+the literal-row smoke now includes the sequence prefix. Publication retains the
+existing third-party Jint `IL2098` warning. Captures use controlled provider
+fixtures and do not claim to launch Minecraft or reproduce a physical Java fault.
 
 2026-10-05: Release build, Services 599 and Desktop 176 under CoreCLR and
 NativeAOT, the 70-project architecture gate, and NativeAOT/trimmed Desktop
