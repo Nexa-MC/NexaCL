@@ -254,6 +254,15 @@ jobs:
           exit $probeExitCode
       - name: Build actual native NTP preview harness
         run: dotnet build tests/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj --configuration Release
+      - name: Verify gamepad polling survives background composition
+        shell: pwsh
+        run: |
+          if ($IsLinux) {
+            & xvfb-run -a dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-gamepad-polling-smoke
+          } else {
+            & dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-gamepad-polling-smoke
+          }
+          exit $LASTEXITCODE
       - name: Capture native light and dark themes with actual runtime interactions
         shell: pwsh
         run: |

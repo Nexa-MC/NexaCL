@@ -62,14 +62,19 @@ internal sealed class GamepadEntrySession : IDisposable
         intents.IntentEmitted += OnIntent;
         if (runTimer)
         {
-            _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(20), DispatcherPriority.Input, (_, _) =>
+            // Composition runs off-thread; posting Start does not change a timer's dispatcher.
+            _timer = new DispatcherTimer(DispatcherPriority.Input, Dispatcher.UIThread)
+            {
+                Interval = TimeSpan.FromMilliseconds(20)
+            };
+            _timer.Tick += (_, _) =>
             {
                 if (_disposed) return;
                 _input ??= new NativeGamepadInput(); // Native message windows belong to the GUI thread.
                 Step(_input.Read(), Environment.TickCount64, _foreground());
                 _timer!.Interval = IsEntered && !IsIntroComplete ? PresentationInterval
                     : TimeSpan.FromMilliseconds(20);
-            });
+            };
             Dispatcher.UIThread.Post(() => { if (!_disposed) _timer.Start(); });
         }
     }

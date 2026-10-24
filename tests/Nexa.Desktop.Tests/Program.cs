@@ -39,6 +39,11 @@ internal static partial class Program
             Environment.ExitCode = RunNativeSettingsNavigationStress(settingsNavigationOutput);
             return;
         }
+        if (args is ["--native-gamepad-polling-smoke"])
+        {
+            Environment.ExitCode = RunNativeGamepadPollingSmoke();
+            return;
+        }
         if (args is ["--native-gamepad-preview", var gamepadPreviewOutput])
         {
             Environment.ExitCode = RunNativeGamepadEntryPreview(gamepadPreviewOutput);

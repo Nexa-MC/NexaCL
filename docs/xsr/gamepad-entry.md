@@ -121,6 +121,25 @@ the OS reader cannot activate entry; no guessed input or elevated access is used
 
 ## Verification and preview
 
+Polling timers explicitly belong to `Dispatcher.UIThread`, even when Desktop
+constructs the entry session on its background composition thread. Create the
+timer stopped, attach its callback, then post startup to the native dispatcher.
+Posting `Start()` alone does not transfer a timer from its constructor's current
+dispatcher. The `--native-gamepad-polling-smoke` regression constructs the real
+session off-thread, verifies repeated input reads on the native UI thread and
+activity admission, then verifies disposal stops polling. Its simulated input
+does not actuate connected controllers. XSR CI runs it on the native theme matrix.
+
+Windows verification on 2026-10-24 reproduced the stalled polling with the old
+constructor, then passed the same native regression with explicit UI ownership:
+three input reads, all on the UI thread, a visible prompt projection, and no reads
+after disposal. The complete Desktop suite passed 368/0, the architecture graph
+passed for 72 projects, and touched sources passed format verification. A fresh
+Windows x64 NativeAOT publication ran its actual `--validate-shell` process to
+exit code 0; publication retains the existing third-party Jint `IL2098` warning.
+This proves dispatcher integration and publication, not physical gesture or
+actuator behavior on all supported devices.
+
 The Desktop suite passes 368 tests, including neutral/held/unready input, mixed
 devices, background input, cancellation/suppression, reconnection, disposal,
 activity without connection-only prompts, time-driven vibration independent of
