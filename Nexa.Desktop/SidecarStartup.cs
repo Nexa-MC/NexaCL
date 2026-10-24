@@ -15,7 +15,7 @@ internal static class SidecarStartup
         using var reader = new StreamReader(key);
         var verifier = new UpdateGpgVerifier(reader.ReadToEnd());
         return new(verifier.VerifyAsync, (name, status) => log.Info("Sidecar", $"{name}: {status}"))
-        { FunctionPatchAdmission = functionPatches, SignalAdmission = signals, UiPatchAdmission = uiPatches, UiModuleAdmission = uiModules, NxmlModules = nxmlModules };
+        { FunctionPatchAdmission = functionPatches, AutomaticFunctionAdmission = new(), SignalAdmission = signals, UiPatchAdmission = uiPatches, UiModuleAdmission = uiModules, NxmlModules = nxmlModules };
     }
 
     public static async Task StartAsync(SidecarSupervisor supervisor, LogService log)

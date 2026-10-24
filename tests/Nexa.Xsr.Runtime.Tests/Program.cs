@@ -4,6 +4,12 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("automatic Sidecar patches bind ordinary methods without annotations", AutomaticSidecarPatchesOrdinaryMethods),
+        ("automatic patch validation rejects invalid shapes and missing authority", AutomaticPatchesRejectUnsafePrograms),
+        ("automatic patch groups commit and retire together without no-op allocation", Sync(AutomaticPatchGroupsAreAtomicAndNoopIsAllocationFree)),
+        ("automatic retirement discards in-flight changes", AutomaticRetirementDiscardsInFlightChanges),
+        ("automatic faults and global budgets remain isolated", Sync(AutomaticFaultsAndGlobalBudgetsAreIsolated)),
+        ("automatic constructors async and iterators retain semantics", AutomaticConstructorsAsyncAndIteratorsRetainSemantics),
         ("NXML modules compile before ready and retire with their session", NxmlModulesCompileBeforeReadyAndRetire),
         ("NXML modules reject unsupported or invalid documents before activation", NxmlModulesRejectUnsupportedAndInvalidDocuments),
         ("Host facade preserves admission cancellation and shutdown errors", HostFacadePreservesAdmissionCancellationAndShutdownErrors),

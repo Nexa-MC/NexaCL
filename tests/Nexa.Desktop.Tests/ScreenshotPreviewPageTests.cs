@@ -194,7 +194,13 @@ internal static partial class Program
             return count;
         }
         // Include overscan cards retained outside the scene's clip, then require stable IO.
-        page.Pump(() => Realized(loadedOnly: true) == Realized(loadedOnly: false));
+        int observedFrames = 0;
+        try { page.Pump(() => { observedFrames++; return Realized(loadedOnly: true) == Realized(loadedOnly: false); }); }
+        catch
+        {
+            Console.WriteLine($"Screenshot diagnostics: frames={observedFrames}; reads={counts.Count}; loaded={Realized(true)}; realized={Realized(false)}; owned={page.Settings.ScreenshotThumbnailOwnedBytes}; reserved={page.Settings.ScreenshotThumbnailReservedBytes}");
+            throw;
+        }
         AssertTrue(counts.Count > 32); AssertTrue(counts.Values.All(count => count == 1));
         int reads = counts.Values.Sum();
         for (int frame = 0; frame < 8; frame++) page.Render();

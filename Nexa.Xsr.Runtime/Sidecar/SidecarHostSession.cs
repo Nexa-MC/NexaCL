@@ -28,6 +28,9 @@ public sealed partial class SidecarHostSession : IDisposable
     private XsrPreparedFunctionPatch[] _functionPatches = [];
     private IDisposable? _functionPatchLease;
     public XsrFunctionPatchAdmission? FunctionPatchAdmission { get; init; }
+    public XsrAutomaticFunctionAdmission? AutomaticFunctionAdmission { get; init; }
+    private XsrPreparedAutomaticFunction[] _automaticFunctions = [];
+    private IDisposable? _automaticFunctionLease;
     private XsrPreparedSignal[] _signals = [];
     private XsrSignalRuntime.SignalLease? _signalLease;
     public XsrSignalAdmission? SignalAdmission { get; init; }
@@ -269,6 +272,10 @@ public sealed partial class SidecarHostSession : IDisposable
         }
 
         var functionPatches = FunctionPatchAdmission?.Prepare(extensions.Entries) ?? [];
+        if (AutomaticFunctionAdmission is null && extensions.Entries.Any(entry => entry.Kind == SidecarRegistrationKind.FunctionPatch
+            && XsrAutomaticFunctionAdmission.IsProgram(entry.Payload.Span)))
+            throw new SidecarProtocolException("Automatic function patch admission is not enabled by this host.");
+        var automaticFunctions = AutomaticFunctionAdmission?.Prepare(extensions.Entries, NegotiatedFeatures) ?? [];
         var signals = SignalAdmission?.Prepare(extensions.Entries) ?? [];
         var uiPatches = UiPatchAdmission?.Prepare(extensions.Entries) ?? [];
         var uiModules = UiModuleAdmission?.Prepare(declarations.Values, registration, mirror, cache, NegotiatedFeatures) ?? [];
@@ -284,6 +291,7 @@ public sealed partial class SidecarHostSession : IDisposable
             Cache = cache;
             Extensions = extensions;
             _functionPatches = functionPatches;
+            _automaticFunctions = automaticFunctions;
             _signals = signals;
             _uiPatches = uiPatches;
             _uiModules = uiModules;
@@ -448,6 +456,7 @@ public sealed partial class SidecarHostSession : IDisposable
                 if (_stopped || _admissionClosed || _state != SidecarSessionState.Ready)
                     throw new SidecarProtocolException("Session ended or changed before activation publication.");
                 _functionPatchLease = FunctionPatchAdmission?.Runtime.Activate(_functionPatches);
+                _automaticFunctionLease = XsrAutomaticFunctionAdmission.Activate(_automaticFunctions);
                 _signalLease = SignalAdmission?.Runtime.Activate(_signals);
                 captionLease = UiPatchAdmission?.Runtime.Activate(_uiPatches);
                 _uiPatchLease = captionLease;

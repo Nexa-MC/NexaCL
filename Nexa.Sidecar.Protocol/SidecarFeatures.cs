@@ -10,5 +10,6 @@ public enum SidecarFeatures : uint
     Health = 4,
     Unregistration = 8,
     Nxml = 16,
-    All = BinaryPayloads | Streams | Health | Unregistration | Nxml,
+    AutomaticFunctions = 32,
+    All = BinaryPayloads | Streams | Health | Unregistration | Nxml | AutomaticFunctions,
 }

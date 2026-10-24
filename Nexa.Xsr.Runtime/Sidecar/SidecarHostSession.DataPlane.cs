@@ -405,6 +405,7 @@ public sealed partial class SidecarHostSession
             _stopped = true;
             _admissionClosed = true;
             _functionPatchLease?.Dispose(); _functionPatchLease = null; _functionPatches = [];
+            _automaticFunctionLease?.Dispose(); _automaticFunctionLease = null; _automaticFunctions = [];
             _signalLease?.Dispose(); _signalLease = null; _signals = [];
             captions = _uiPatchLease; _uiPatchLease = null; _uiPatches = [];
             modules = _uiModuleLease; _uiModuleLease = null; _uiModules = [];

@@ -283,12 +283,13 @@ internal static partial class Program
         XsrFunctionPatchRuntime runtime, SidecarRegistrationItem[] items, bool grant = true,
         XsrFunctionPatchAdmission? admission = null, Func<Stream, Stream>? wrap = null,
         XsrSignalAdmission? signals = null, XsrUiPatchAdmission? uiPatches = null, XsrUiModuleAdmission? uiModules = null,
-        SidecarFeatures features = SidecarFeatures.None, SidecarSessionLimits? limits = null, XsrNxmlModuleRuntime? nxml = null)
+        SidecarFeatures features = SidecarFeatures.None, SidecarSessionLimits? limits = null, XsrNxmlModuleRuntime? nxml = null,
+        XsrAutomaticFunctionAdmission? automatic = null)
     {
         var (hostStream, pluginStream) = SidecarLoopbackStream.CreatePair();
         SidecarConnection plugin = new(pluginStream);
         SidecarHostSession session = new(new SidecarConnection(wrap?.Invoke(hostStream) ?? hostStream), "PatchFixture", limits: limits)
-        { FunctionPatchAdmission = admission ?? new XsrFunctionPatchAdmission(runtime, grant ? [CaptionPoint] : []), SignalAdmission = signals, UiPatchAdmission = uiPatches, UiModuleAdmission = uiModules, NxmlModules = nxml };
+        { FunctionPatchAdmission = admission ?? new XsrFunctionPatchAdmission(runtime, grant ? [CaptionPoint] : []), AutomaticFunctionAdmission = automatic, SignalAdmission = signals, UiPatchAdmission = uiPatches, UiModuleAdmission = uiModules, NxmlModules = nxml };
         try
         {
             var handshake = session.HandshakeAsync(); var hello = await DataPlaneReceiveAsync(plugin);

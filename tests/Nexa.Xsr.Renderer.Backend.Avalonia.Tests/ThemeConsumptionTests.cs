@@ -384,7 +384,8 @@ internal static partial class Program
             AssertTrue(ReferenceEquals(window.Icon, tray.Icon)); AssertFalse(builtin.IsDisposed);
             recovered.Dispose(); AssertTrue(recovered.IsDisposed); current = null;
 
-            AssertEqual(WindowDecorations.None, window.WindowDecorations);
+            // XSR-833 retains native caption capabilities for DWM and macOS traffic lights.
+            AssertEqual(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? WindowDecorations.Full : WindowDecorations.None, window.WindowDecorations);
             _themeActivationVerified = true;
         }
         finally { window.Close(); current?.Dispose(); }

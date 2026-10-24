@@ -110,6 +110,7 @@ public sealed partial class SidecarHostSession
     private XsrSignalRuntime.SignalLease? RetireActivationLeases(bool cancelSignalWrites = true)
     {
         IDisposable? functionLease;
+        IDisposable? automaticLease;
         XsrSignalRuntime.SignalLease? signalLease;
         XsrUiPatchRuntime.CaptionLease? captionLease;
         XsrUiModuleRuntime.ModuleLease? moduleLease;
@@ -118,6 +119,7 @@ public sealed partial class SidecarHostSession
         {
             functionLease = _functionPatchLease;
             _functionPatchLease = null;
+            automaticLease = _automaticFunctionLease; _automaticFunctionLease = null;
             signalLease = _signalLease;
             _signalLease = null;
             captionLease = _uiPatchLease;
@@ -127,6 +129,7 @@ public sealed partial class SidecarHostSession
             nxmlLease = _nxmlLease; _nxmlLease = null;
         }
         functionLease?.Dispose();
+        automaticLease?.Dispose();
         if (cancelSignalWrites) signalLease?.Dispose();
         else signalLease?.Retire();
         captionLease?.Dispose();

@@ -25,6 +25,7 @@ public sealed class SidecarSupervisor : IDisposable, IAsyncDisposable
     public XsrSignalAdmission? SignalAdmission { get; init; }
     public XsrUiPatchAdmission? UiPatchAdmission { get; init; }
     public XsrUiModuleAdmission? UiModuleAdmission { get; init; }
+    public XsrAutomaticFunctionAdmission? AutomaticFunctionAdmission { get; init; }
     public XsrNxmlModuleRuntime? NxmlModules { get; init; }
 
     public SidecarSupervisor(Func<Stream, Stream, CancellationToken, Task> verify,
@@ -255,7 +256,7 @@ public sealed class SidecarSupervisor : IDisposable, IAsyncDisposable
             }
             await SidecarBootstrap.AuthenticateAsync(stream, challenge, deadline.Token).ConfigureAwait(false);
             session = new(new SidecarConnection(stream), package.Name)
-            { FunctionPatchAdmission = FunctionPatchAdmission, SignalAdmission = SignalAdmission, UiPatchAdmission = UiPatchAdmission, UiModuleAdmission = UiModuleAdmission, NxmlModules = NxmlModules };
+            { FunctionPatchAdmission = FunctionPatchAdmission, AutomaticFunctionAdmission = AutomaticFunctionAdmission, SignalAdmission = SignalAdmission, UiPatchAdmission = UiPatchAdmission, UiModuleAdmission = UiModuleAdmission, NxmlModules = NxmlModules };
             stream = null;
             await session.HandshakeAsync(deadline.Token).ConfigureAwait(false);
             await session.AcceptRegistrationAsync(deadline.Token).ConfigureAwait(false);

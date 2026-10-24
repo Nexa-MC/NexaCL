@@ -36,6 +36,7 @@ public sealed class XsrFunctionPatchAdmission
         foreach (var entry in declarations)
         {
             if (entry.Kind != SidecarRegistrationKind.FunctionPatch) continue;
+            if (XsrAutomaticFunctionAdmission.IsProgram(entry.Payload.Span)) continue;
             if (!_allowed.Contains(entry.Target) || entry.Flags != 0)
                 throw new SidecarProtocolException("Function patch target or flags are not granted by the host.");
             var point = Runtime.Resolve(entry.Target);
