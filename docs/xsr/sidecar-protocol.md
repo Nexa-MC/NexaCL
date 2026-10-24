@@ -6,6 +6,15 @@ portable wire libraries; the independently owned Plugin SDK is outside this deli
 
 ## Host resource admission (SEC-04)
 
+Shared NXML UI documents negotiate feature bit 16 and retain protocol version 1.
+Their source bundle is schema 3, documented in [Sidecar UI documents](sidecar-ui-modules.md).
+REGISTER_ITEM keeps its original encoding for content up to 65,535 bytes.
+Larger content places the first 60 KiB in field 5 and consecutive continuation
+chunks in fields 1024 onward, after existing metadata. Decoders require ordered,
+gap-free chunks and enforce the frame/content budget on actual assembled bytes.
+The existing SHA-256 covers the complete assembled content, not individual chunks.
+Unknown fields outside the reserved continuation range retain skip semantics.
+
 Executable discovery, pinned signature verification, bootstrap authentication and extension
 registration are defined in [NSC startup and regional policy](nsc-and-regional-policy.md).
 `.nsc` is a renamed native executable. New UI uses `UiModule` (5); extension kinds 7–12

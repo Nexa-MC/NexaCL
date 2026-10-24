@@ -26,7 +26,7 @@ internal static partial class Program
             {
                 byte[] payload = ending == "malformed" ? [255] : SidecarHandshake.EncodeWelcome(
                     SidecarProtocol.Version, Guid.NewGuid(), null,
-                    ending == "feature" ? (SidecarFeatures)16 : SidecarFeatures.All);
+                    ending == "feature" ? (SidecarFeatures)0x80000000 : SidecarFeatures.All);
                 await plugin.SendAsync(new(SidecarProtocol.Version, SidecarMessageType.Welcome,
                     SidecarFrameTraits.None, ending == "correlation" ? SidecarCorrelationId.Create() : hello.CorrelationId, payload));
             }

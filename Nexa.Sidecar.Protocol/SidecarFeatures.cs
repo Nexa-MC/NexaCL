@@ -9,5 +9,6 @@ public enum SidecarFeatures : uint
     Streams = 2,
     Health = 4,
     Unregistration = 8,
-    All = BinaryPayloads | Streams | Health | Unregistration,
+    Nxml = 16,
+    All = BinaryPayloads | Streams | Health | Unregistration | Nxml,
 }

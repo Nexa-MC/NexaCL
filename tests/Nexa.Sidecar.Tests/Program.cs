@@ -7,6 +7,7 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("NXML source bundles round trip and reject ambiguity", Sync(NxmlSourceBundlesRoundTripAndRejectAmbiguity)),
         ("portable API preserves legacy and negotiates extensions", Sync(PortableApiPreservesLegacyAndNegotiatesExtensions)),
         ("portable values and data messages round trip", Sync(PortableValuesAndDataMessagesRoundTrip)),
         ("portable messages reject ambiguous malformed values", Sync(PortableMessagesRejectAmbiguousAndMalformedValues)),

@@ -63,6 +63,10 @@ public readonly record struct SidecarRegistrationItem(
 /// </summary>
 public static class SidecarRegistration
 {
+    private const int ContentChunkSize = 60 * 1024;
+    private const ushort FirstContentContinuation = 1024;
+    private const ushort LastContentContinuation = 1311;
+
     public static byte[] EncodeBegin(uint itemCount)
     {
         SidecarPayloadWriter writer = new();
@@ -95,7 +99,9 @@ public static class SidecarRegistration
         writer.WriteUInt32(4, item.CodecId);
         if (item.Payload is { } payload)
         {
-            writer.WriteBytes(5, payload);
+            if (payload.Length > SidecarProtocol.MaxPayloadLength - 4096)
+                throw new SidecarProtocolException("Registration content exceeds the frame budget.");
+            writer.WriteBytes(5, payload.AsSpan(0, payload.Length <= ushort.MaxValue ? payload.Length : ContentChunkSize));
         }
 
         if (item.ContentHash is { } hash)
@@ -109,6 +115,12 @@ public static class SidecarRegistration
         }
         if (item.TargetSemanticId is { } target) writer.WriteString(8, target);
         if (item.ResultCodecId != 0) writer.WriteUInt32(9, item.ResultCodecId);
+        if (item.Payload is { Length: > ushort.MaxValue } continuation)
+        {
+            for (int offset = ContentChunkSize, chunk = 0; offset < continuation.Length; offset += ContentChunkSize, chunk++)
+                writer.WriteBytes((ushort)(FirstContentContinuation + chunk),
+                    continuation.AsSpan(offset, Math.Min(ContentChunkSize, continuation.Length - offset)));
+        }
 
         return writer.ToArray();
     }
@@ -124,6 +136,8 @@ public static class SidecarRegistration
         string? requiredResources = null;
         string? target = null;
         uint resultCodec = 0;
+        using var continuation = new MemoryStream();
+        int chunks = 0;
         SidecarPayloadReader reader = new(payload);
         while (reader.HasMore)
         {
@@ -155,7 +169,22 @@ public static class SidecarRegistration
                     target = field.ReadString();
                     break;
                 case 9: resultCodec = field.ReadUInt32(); break;
+                case >= FirstContentContinuation and <= LastContentContinuation:
+                    if (field.Id != FirstContentContinuation + chunks++ || content is null)
+                        throw new SidecarProtocolException("Registration content continuations must follow their initial content in order.");
+                    byte[] part = field.ReadBytes();
+                    if ((long)content.Length + continuation.Length + part.Length > SidecarProtocol.MaxPayloadLength - 4096)
+                        throw new SidecarProtocolException("Registration content exceeds the frame budget.");
+                    continuation.Write(part);
+                    break;
             }
+        }
+        if (chunks != 0)
+        {
+            var combined = new byte[content!.Length + (int)continuation.Length];
+            content.CopyTo(combined, 0);
+            continuation.GetBuffer().AsSpan(0, (int)continuation.Length).CopyTo(combined.AsSpan(content.Length));
+            content = combined;
         }
 
         if (!Enum.IsDefined((SidecarRegistrationKind)kind))
