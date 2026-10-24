@@ -29,7 +29,7 @@ internal sealed partial class LaunchPageController
         bool active = !_store.TryResolve(XsrUiShellWindowState.Activity, out var activityId)
             || _store.ReadAppliedValue(activityId) is not XsrUiWindowActivity activity
             || activity is { IsActive: true, IsMinimized: false };
-        _shell.Renderer.OptionalMotionSuspended = quiet || !active;
+        _shell.Renderer.OptionalMotionSuspended = !active;
         bool hints = active && !quiet && !LaunchBusy && _shell.Stage.Navigation.Current == _launchPage
             && _shell.Tree.GetComponent<XsrUiPager>(_pageEntities["LaunchWidgetPager"])!.PageIndex == 1;
         lock (_hintGate)

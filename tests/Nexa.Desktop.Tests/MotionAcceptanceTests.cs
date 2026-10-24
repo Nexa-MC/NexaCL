@@ -4,6 +4,42 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static void LaunchQuietPreservesForegroundNavigationAndCapsuleMotion()
+    {
+        using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), addProfile: true);
+        using var productPages = new LaunchFixtureNavigationPages(fixture);
+        XsrUiShell shell = fixture.Shell;
+        shell.PublishWindowActivity(true, false);
+        shell.Renderer.ReducedMotion = false;
+        shell.Render(AccountTestSize);
+        using (fixture.Foundation.Host.Work.EnterQuiet())
+        {
+            var scene = shell.Render(AccountTestSize);
+            AssertFalse(shell.Renderer.OptionalMotionSuspended);
+            AssertFalse(shell.Renderer.EffectiveReducedMotion);
+            var capsule = FindByKey(shell, scene, "AccountSwitch");
+            shell.Renderer.PointerMoved(new(capsule.Rect.X + 1, capsule.Rect.Y + 18));
+            shell.Renderer.SetCapsulePresentationProgress(capsule.Entity, .35);
+            shell.Render(AccountTestSize);
+            AssertEqual(.35, shell.Tree.GetComponent<XsrUiInput>(capsule.Entity)!.CapsuleExpansionProgress);
+
+            shell.Renderer.Activate(FindByKey(shell, scene, "AccountWardrobe").Entity);
+            scene = shell.Render(AccountTestSize);
+            AssertTrue(shell.Renderer.GetTransitionOffset(FindByKey(shell, scene, "TitleSubpage").Entity) > 0);
+            shell.PublishWindowActivity(false, false); shell.Render(AccountTestSize);
+            AssertTrue(shell.Renderer.OptionalMotionSuspended);
+            shell.PublishWindowActivity(true, false); shell.Render(AccountTestSize);
+            AssertFalse(shell.Renderer.EffectiveReducedMotion);
+            shell.Renderer.ReducedMotion = true;
+            shell.Render(AccountTestSize);
+            AssertTrue(shell.Renderer.EffectiveReducedMotion);
+            AssertFalse(shell.Renderer.OptionalMotionSuspended);
+        }
+        shell.Render(AccountTestSize);
+        AssertFalse(shell.Renderer.OptionalMotionSuspended);
+        AssertTrue(shell.Renderer.ReducedMotion);
+    }
+
     private static void CapsulesIgnoreGeometryOnlyHoverMoves()
     {
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), addProfile: true);

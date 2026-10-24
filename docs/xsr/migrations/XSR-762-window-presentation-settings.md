@@ -5,8 +5,10 @@ and `appearance.lock-window` values. Desktop observes their published typed stat
 and projects changes at `FramePreparing`, including values restored before Host attachment.
 No settings page needs to be open and no synchronous query or disk access runs in a frame.
 
-Animation preference drives UI.Next `ReducedMotion`; the independent launch/window-activity
-`OptionalMotionSuspended` policy remains intact. Host reveal, close and control animations
+Animation preference drives UI.Next `ReducedMotion`; the independent window-activity
+`OptionalMotionSuspended` policy remains intact. Launch quiet no longer suspends foreground
+animations (2026-10-24); it only gates scheduled background work and optional hint rotation.
+Host reveal, close and control animations
 already consume the effective renderer preference. The positive “Enable animations” control
 inverts only its displayed labels, not the stored disable flag.
 

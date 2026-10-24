@@ -487,6 +487,7 @@ internal static partial class Program
         ("profile presentation uses Apple hierarchy inside the experimental layout", ProfilePresentationUsesAppleHierarchy),
         ("account capsules and wardrobe navigation preserve geometry", AccountCapsulesAndWardrobeRoutePreserveGeometry),
         ("capsules ignore geometry-only hover moves", CapsulesIgnoreGeometryOnlyHoverMoves),
+        ("launch quiet preserves foreground navigation and capsule motion", LaunchQuietPreservesForegroundNavigationAndCapsuleMotion),
         ("navigation keeps controls stable and immediately reachable", NavigationKeepsControlsStableAndImmediatelyReachable),
         ("skin route publishes media through host state into the rendered profile", SkinRoutePublishesIntoRenderedProfile),
         ("delete actions persist only the requested profile and reject stale rows", DeleteActionsPersistAndRejectStaleRows),

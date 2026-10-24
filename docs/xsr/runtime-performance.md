@@ -95,7 +95,7 @@ receipt 不持久化，不是同账户攻击隔离，也不能替代发布验签
 - 8h可在本地运行；现有手动workflow设置150分钟timeout并保持2h fixture选项，不能直接承担8h任务。不把fixture导航或8h本地composition等同于原生Desktop/Minecraft运行验收。
 - OS commit、native/GPU、Sidecar/HTTP/cache/IO等未测指标明确列出；不存在指标时不得填0。
 - Foundation host新增共享CPU/disk/HTTP admission与Launch Quiet Mode；首批接入下载连接/分段、目录预取、图标获取与验证、更新/rollout查询和遥测上传，详见 [work-scheduling.md](work-scheduling.md)。失败/取消释放，确认窗口后15秒 grace 或提前终止释放；不支持窗口检测的fallback不称作稳定确认。XSR-733接入自动快照初始枚举、80 KiB来源处理与32项Idle blob回收；后台索引、Sidecar非关键工作及其余恢复IO尚待adapter，全局图片CPU/GPU预算、真实8h与OS/GPU测量仍待验收。签名、初始化、事务恢复与取消契约保持。
-- 主页提示改为仅当前提示卡片、活跃且未最小化窗口、非启动/quiet时唤醒；其他页面和卡片不再三秒更新。temporary motion suspension独立于用户Reduced Motion。生产组合不再启动已禁用schema-1在线模型的每小时HTTP refresh session。
+- 主页提示改为仅当前提示卡片、活跃且未最小化窗口、非启动/quiet时唤醒；其他页面和卡片不再三秒更新。启动/quiet不再关闭前台交互动画；temporary motion suspension仅由窗口非活跃/最小化状态驱动，独立于用户Reduced Motion。生产组合不再启动已禁用schema-1在线模型的每小时HTTP refresh session。
 
 ## 本轮验证
 

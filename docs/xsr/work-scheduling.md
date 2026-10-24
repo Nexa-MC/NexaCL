@@ -54,9 +54,12 @@ The optional icon pipeline retains at most four encoded responses while decode w
 Remaining adapters (indexing, Sidecar optional work and other recovery operations) are tracked separately;
 the existence of the scheduler does not prove that every subsystem participates.
 
-`runtime.work.quiet` is a typed host fact. Desktop reads it at frame preparation and sets a
-UI-owned motion-suspension flag; user Reduced Motion remains independent. Native animation
-callbacks read effective motion policy. Hint timers only run when their presentation is
+`runtime.work.quiet` is a typed host fact. Desktop reads it at frame preparation to pause
+optional hint rotation, not interactive motion. Starting Minecraft and the subsequent
+quiet grace must preserve foreground navigation, capsule, scrolling and progress animation.
+Only inactive/minimized window activity may temporarily suspend optional scene motion;
+the user's Reduced Motion preference remains independent. Native animation callbacks read
+that effective motion policy. Hint timers only run when their presentation is
 visible, the launcher is active and no quiet/launch work is active; publishers never inspect
 render-thread tree state. Native activation/minimization are UI-owned window facts, not services.
 
@@ -64,3 +67,11 @@ Acceptance covers bounded queues, cancellation/grant/disposal races, priority in
 restoration, fair admission, reference-counted quiet, early terminal release, timer retirement,
 paused optional work, critical file completion and UI thread ownership. Real game contention,
 8h native runs and OS/GPU measurements remain independent evidence.
+
+2026-10-24 foreground-motion regression: entering a real host quiet scope no longer
+snaps capsule progress or removes navigation transitions. Inactive-window suspension,
+explicit Reduced Motion and quiet hint-timer gating retain separate coverage. The
+new regression fails before the policy change and passes afterwards; the full Desktop
+suite passes 369/0, architecture checks pass for 72 projects, and touched sources pass
+format verification. Windows x64 NativeAOT publication and the actual published
+`--validate-shell` process pass (exit 0), retaining the existing Jint `IL2098` warning.

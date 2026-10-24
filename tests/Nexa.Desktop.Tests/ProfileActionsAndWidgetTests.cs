@@ -98,7 +98,7 @@ internal static partial class Program
         AssertFalse(fixture.Shell.Renderer.EffectiveReducedMotion);
         using (fixture.Foundation.Host.Work.EnterQuiet())
         {
-            fixture.Shell.Render(AccountTestSize); AssertTrue(fixture.Shell.Renderer.OptionalMotionSuspended);
+            fixture.Shell.Render(AccountTestSize); AssertFalse(fixture.Shell.Renderer.OptionalMotionSuspended);
             clock.Advance(TimeSpan.FromMinutes(1)); AssertEqual(hint, ReadCell(fixture.Store, LaunchPageState.WidgetHintKey));
             fixture.Shell.Renderer.ReducedMotion = true;
         }
