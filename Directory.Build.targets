@@ -1,0 +1,15 @@
+<Project>
+  <!-- A build dependency only: no compiler/Mono.Cecil assembly enters the product closure. -->
+  <PropertyGroup>
+    <NexaAutomaticFunctionPatches Condition="'$(NexaAutomaticFunctionPatches)' == '' and Exists('$(MSBuildProjectDirectory)/../NexaCL.slnx') and '$(IsRoslynComponent)' != 'true'">true</NexaAutomaticFunctionPatches>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(NexaAutomaticFunctionPatches)' == 'true' or '@(NexaFunctionPatchSource)' != ''">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)tools/Nexa.Xsr.Patch.Compiler/Nexa.Xsr.Patch.Compiler.csproj"
+                      ReferenceOutputAssembly="false" Private="false"
+                      GlobalPropertiesToRemove="PublishAot;PublishTrimmed;PublishSingleFile;PublishReadyToRun;SelfContained;RuntimeIdentifier" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(NexaAutomaticFunctionPatches)' == 'true'">
+    <AssemblyMetadata Include="Nexa.AutomaticFunctionPatches" Value="1" />
+  </ItemGroup>
+  <Import Project="$(MSBuildThisFileDirectory)eng/xsr/Xsr.AutomaticFunctionPatches.targets" Condition="'$(NexaAutomaticFunctionPatches)' == 'true'" />
+</Project>

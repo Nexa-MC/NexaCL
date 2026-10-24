@@ -285,7 +285,8 @@ internal static partial class Program
         { failures.Add("Explicit Function Patch compiler project is missing."); return; }
         var compiler = XDocument.Load(compilerPath);
         var desktop = XDocument.Load(projects["Nexa.Desktop"]);
-        var reference = Elements(desktop, "ProjectReference").SingleOrDefault(item =>
+        var common = XDocument.Load(Path.Combine(root, "Directory.Build.targets"));
+        var reference = Elements(common, "ProjectReference").SingleOrDefault(item =>
             item.Attribute("Include")?.Value.Replace('\\', '/').EndsWith("Nexa.Xsr.Patch.Compiler.csproj", StringComparison.Ordinal) == true);
         if (reference?.Attribute("ReferenceOutputAssembly")?.Value != "false"
             || reference.Attribute("Private")?.Value != "false"
@@ -294,6 +295,7 @@ internal static partial class Program
             failures.Add("Function Patch compiler must be an isolated, non-shipped managed build tool.");
         if (Property(desktop, "ValidateExecutableReferencesMatchSelfContained") == "false")
             failures.Add("Desktop must retain product executable-reference validation.");
+        ValidateAutomaticFunctionPatches(root, projects, common, compiler, failures);
         var targets = XDocument.Load(Path.Combine(root, "eng/xsr/Xsr.FunctionPatches.targets"));
         if (!Elements(targets, "MSBuild").Any(task => task.Attribute("Targets")?.Value == "GetTargetPath"
             && task.Attribute("Projects")?.Value == "$(_NexaPatchCompilerProject)"

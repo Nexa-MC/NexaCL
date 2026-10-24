@@ -2,4 +2,7 @@
   <PropertyGroup>
     <Description>Versioned, extensible binary protocol contracts for XSR Sidecar Fabric v2.</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Nexa.Core/Nexa.Core.csproj" />
+  </ItemGroup>
 </Project>

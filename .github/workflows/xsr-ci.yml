@@ -330,6 +330,15 @@ jobs:
       - name: Test compile-time Function Patch rewriting
         run: dotnet run --project tools/Nexa.Xsr.Patch.Compiler --configuration Release --no-build -- --self-test
 
+      - name: Test automatic function signatures and phases
+        run: dotnet run --project tools/Nexa.Xsr.Patch.Compiler --configuration Release --no-build -- --self-test-automatic --core Nexa.Core/bin/Release/net10.0/Nexa.Core.dll
+
+      - name: Measure automatic function fast path
+        run: dotnet run --project tools/Nexa.Xsr.Patch.Compiler --configuration Release --no-build -- --benchmark-automatic --core Nexa.Core/bin/Release/net10.0/Nexa.Core.dll
+
+      - name: Verify automatic product function coverage
+        run: dotnet run --project tools/Nexa.Xsr.Patch.Compiler --configuration Release --no-build -- --verify-automatic Nexa.Desktop/bin/Release/net10.0
+
       - name: Test Function Patch compile-item path identity
         run: dotnet msbuild eng/xsr/Test.FunctionPatchItems.proj -nologo
 

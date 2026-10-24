@@ -15,7 +15,6 @@
     "Nexa.Sidecar.Transport",
     "Nexa.Xsr.Renderer",
     "Nexa.Xsr.Renderer.Backend.Avalonia",
-    "Nexa.Xsr.Patch.Compiler",
     "Nexa.Xsr.Runtime"
   ],
   "Nexa.Desktop.Tests": [
@@ -524,7 +523,9 @@
     "Nexa.Xsr.Abstractions",
     "Nexa.Xsr.State"
   ],
-  "Nexa.Sidecar.Protocol": [],
+  "Nexa.Sidecar.Protocol": [
+    "Nexa.Core"
+  ],
   "Nexa.Sidecar.Tests": [
     "Nexa.Sidecar.Protocol",
     "Nexa.Sidecar.Transport"

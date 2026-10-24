@@ -31,10 +31,6 @@
     <ProjectReference Include="../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
     <ProjectReference Include="../Nexa.Xsr.Renderer.Backend.Avalonia/Nexa.Xsr.Renderer.Backend.Avalonia.csproj" />
     <ProjectReference Include="../Nexa.Xsr.Runtime/Nexa.Xsr.Runtime.csproj" />
-    <ProjectReference Include="../tools/Nexa.Xsr.Patch.Compiler/Nexa.Xsr.Patch.Compiler.csproj"
-                      ReferenceOutputAssembly="false"
-                      Private="false"
-                      GlobalPropertiesToRemove="PublishAot;PublishTrimmed;PublishSingleFile;PublishReadyToRun;SelfContained;RuntimeIdentifier" />
     <NexaFunctionPatchSource Include="Ui/ResourceCaptions.cs" />
     <ProjectReference Include="../Nexa.Services.Themes.Contracts/Nexa.Services.Themes.Contracts.csproj" />
   </ItemGroup>

@@ -1,0 +1,40 @@
+<Project>
+  <PropertyGroup>
+    <_NexaAutomaticCompilerProject>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'tools', 'Nexa.Xsr.Patch.Compiler', 'Nexa.Xsr.Patch.Compiler.csproj'))</_NexaAutomaticCompilerProject>
+    <_NexaAutomaticDotnet Condition="'$(DOTNET_HOST_PATH)' != ''">$(DOTNET_HOST_PATH)</_NexaAutomaticDotnet>
+    <_NexaAutomaticDotnet Condition="'$(_NexaAutomaticDotnet)' == ''">dotnet</_NexaAutomaticDotnet>
+  </PropertyGroup>
+  <Target Name="DeclareNexaAutomaticCatalog" BeforeTargets="AssignTargetPaths" Condition="'$(DesignTimeBuild)' != 'true'">
+    <ItemGroup>
+      <Content Include="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(TargetFileName).nfp'))"
+               TargetPath="$(AssemblyName).nfp" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+  <Target Name="InitializeNexaAutomaticPatches" DependsOnTargets="ResolveProjectReferences" Condition="'$(DesignTimeBuild)' != 'true'">
+    <MSBuild Projects="$(_NexaAutomaticCompilerProject)" Targets="GetTargetPath"
+             RemoveProperties="PublishAot;PublishTrimmed;PublishSingleFile;PublishReadyToRun;SelfContained;RuntimeIdentifier">
+      <Output TaskParameter="TargetOutputs" ItemName="_NexaAutomaticCompilerOutputs" />
+    </MSBuild>
+    <Error Condition="'@(_NexaAutomaticCompilerOutputs->Count())' != '1'" Text="NXRP: one managed automatic instrumentation compiler is required." />
+    <PropertyGroup>
+      <_NexaAutomaticCompiler>@(_NexaAutomaticCompilerOutputs->'%(FullPath)')</_NexaAutomaticCompiler>
+      <_NexaAutomaticAssembly>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(TargetFileName)'))</_NexaAutomaticAssembly>
+      <_NexaAutomaticCatalog>$(_NexaAutomaticAssembly).nfp</_NexaAutomaticCatalog>
+      <_NexaAutomaticReferences>$(_NexaAutomaticAssembly).patch-references</_NexaAutomaticReferences>
+      <_NexaAutomaticCore Condition="'$(MSBuildProjectName)' == 'Nexa.Core'">$(_NexaAutomaticAssembly)</_NexaAutomaticCore>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(MSBuildProjectName)' != 'Nexa.Core'">
+      <_NexaAutomaticCoreReference Include="@(ReferencePath)" Condition="'%(Filename)' == 'Nexa.Core'" />
+    </ItemGroup>
+    <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Nexa.Core'">
+      <_NexaAutomaticCore>@(_NexaAutomaticCoreReference->'%(FullPath)')</_NexaAutomaticCore>
+    </PropertyGroup>
+  </Target>
+  <Target Name="InstrumentNexaFunctions" AfterTargets="CoreCompile" DependsOnTargets="InitializeNexaAutomaticPatches"
+          Condition="'$(DesignTimeBuild)' != 'true' and '$(SkipCompilerExecution)' != 'true'">
+    <Error Condition="'$(_NexaAutomaticCore)' == ''" Text="NXRP: automatic interception requires the shared Core ABI." />
+    <WriteLinesToFile File="$(_NexaAutomaticReferences)" Lines="@(ReferencePath->'%(FullPath)')" Overwrite="true" />
+    <Exec Command="&quot;$(_NexaAutomaticDotnet)&quot; &quot;$(_NexaAutomaticCompiler)&quot; --instrument &quot;$(_NexaAutomaticAssembly)&quot; --core &quot;$(_NexaAutomaticCore)&quot; --catalog &quot;$(_NexaAutomaticCatalog)&quot; --references &quot;$(_NexaAutomaticReferences)&quot;" />
+    <ItemGroup><FileWrites Include="$(_NexaAutomaticCatalog);$(_NexaAutomaticReferences);$(_NexaAutomaticAssembly).unpatched.dll;$([System.IO.Path]::ChangeExtension('$(_NexaAutomaticAssembly).unpatched.dll', '.pdb'))" /></ItemGroup>
+  </Target>
+</Project>

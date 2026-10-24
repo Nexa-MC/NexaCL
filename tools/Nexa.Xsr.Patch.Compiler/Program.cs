@@ -9,6 +9,13 @@ internal static partial class Program
         try
         {
             if (args is ["--self-test"]) return SelfTest();
+            if (args is ["--self-test-automatic", "--core", var fixtureCore]) return AutomaticSelfTest(fixtureCore);
+            if (args is ["--verify-automatic", var directory]) return AssemblyInstrumenter.VerifyDirectory(directory);
+            if (args is ["--benchmark-automatic", "--core", var benchmarkCore]) return AutomaticBenchmark(benchmarkCore);
+            if (args is ["--instrument", var assembly, "--core", var core, "--catalog", var catalog])
+                return AssemblyInstrumenter.Run(assembly, core, catalog);
+            if (args is ["--instrument", var target, "--core", var abi, "--catalog", var inventory, "--references", var references])
+                return AssemblyInstrumenter.Run(target, abi, inventory, references);
             if (args is not ["--input", var input, "--output", var output])
                 throw new InvalidDataException("NXRP001: expected --input FILE --output FILE or --self-test.");
             var source = new FileInfo(input);

@@ -1,5 +1,11 @@
 # Function patches
 
+The product now defaults to [automatic instrumentation](automatic-function-instrumentation.md)
+for every owned managed implementation. `NFP3` addresses the generated function
+catalog without per-method attributes or feature adapters. The following NFP1/NFP2
+sections describe the retained explicit-point compatibility ABI; their allowlist
+and signature restrictions do not limit the automatic catalog.
+
 ## First executable ABI
 
 FunctionPatch kind 12 keeps its existing registration envelope and SHA-256 ownership.
@@ -67,7 +73,7 @@ presentation-only host point; a source generator alone is insufficient.
 ## Compile-before-CoreCompile contract
 
 `tools/Nexa.Xsr.Patch.Compiler` is an independent managed Roslyn build tool, not a shipped
-runtime dependency or source generator. The Desktop build references it with
+runtime dependency or source generator. The common product build references it with
 ReferenceOutputAssembly=false/Private=false and removes RID/AOT/single-file/trim globals. It rewrites one
 explicit opt-in source file under obj, removes the original file from Compile and always
 adds the rewritten file, including incremental builds. CLI and source rewriting are tested
