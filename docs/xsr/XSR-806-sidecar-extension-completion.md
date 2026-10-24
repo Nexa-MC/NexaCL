@@ -1,5 +1,12 @@
 # XSR-806 — Sidecar extension completion
 
+The UI exposure policy in this historical note is superseded by
+[shared NXML schema 3](sidecar-ui-modules.md) and the
+[2026-10-24 migration](migrations/shared-nxml-sidecar-ui.md). Legacy schema 1/2
+adapters remain compatible; new UI extensions do not require feature adapters.
+Automatic instrumentation of every product function remains a separate, undelivered
+requirement in [universal extensions](universal-sidecar-extensions.md).
+
 2026-10-08（Asia/Shanghai）。范围为 PCL-N Host；独立 Nexa.Plugin SDK/执行引擎和实机插件长期验收不属于仓库内实现。
 
 ## Boundary lock

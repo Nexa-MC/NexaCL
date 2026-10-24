@@ -5,8 +5,11 @@ public sealed class NxmlDynamicTemplate
 {
     private readonly NxmlDocument _document;
     public NxmlDynamicTemplate(string source)
+        : this(NxmlParser.Parse(source)) { }
+
+    public NxmlDynamicTemplate(NxmlDocument document)
     {
-        _document = NxmlParser.Parse(source);
+        _document = document ?? throw new ArgumentNullException(nameof(document));
         if (_document.Root.Name != "nxml-dynamic" || _document.Root.Attributes.Count != 0 || _document.Root.Children.Count != 1)
             throw new NxmlCompileException("A dynamic template requires one root inside nxml-dynamic.");
     }

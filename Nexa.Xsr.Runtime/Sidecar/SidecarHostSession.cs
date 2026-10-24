@@ -37,6 +37,11 @@ public sealed partial class SidecarHostSession : IDisposable
     private XsrPreparedModule[] _uiModules = [];
     private XsrUiModuleRuntime.ModuleLease? _uiModuleLease;
     public XsrUiModuleAdmission? UiModuleAdmission { get; init; }
+    public XsrNxmlModuleRuntime? NxmlModules { get; init; }
+    private SidecarNxmlDocument[] _nxmlDocuments = [];
+    private XsrNxmlCompiledDocument[] _nxmlCompiled = [];
+    private XsrNxmlModuleRuntime.Lease? _nxmlLease;
+    private bool _nxmlActivated;
     public SidecarExtensionRegistry Extensions { get; private set; } = new();
 
     public SidecarHostSession(
@@ -267,6 +272,9 @@ public sealed partial class SidecarHostSession : IDisposable
         var signals = SignalAdmission?.Prepare(extensions.Entries) ?? [];
         var uiPatches = UiPatchAdmission?.Prepare(extensions.Entries) ?? [];
         var uiModules = UiModuleAdmission?.Prepare(declarations.Values, registration, mirror, cache, NegotiatedFeatures) ?? [];
+        var nxmlDocuments = XsrNxmlModuleRuntime.Prepare(declarations.Values, NegotiatedFeatures);
+        if (nxmlDocuments.Length != 0 && NxmlModules is null)
+            throw new SidecarProtocolException("The host has no NXML presentation compiler.");
         cancellationToken.ThrowIfCancellationRequested();
         lock (_gate)
         {
@@ -279,6 +287,7 @@ public sealed partial class SidecarHostSession : IDisposable
             _signals = signals;
             _uiPatches = uiPatches;
             _uiModules = uiModules;
+            _nxmlDocuments = nxmlDocuments;
         }
         return mirror;
     }
@@ -392,6 +401,7 @@ public sealed partial class SidecarHostSession : IDisposable
             _mirror.AdoptSnapshot(candidate);
         }
 
+        _nxmlCompiled = NxmlModules?.Compile(_nxmlDocuments, this) ?? [];
         await SendTrackedAsync(new SidecarFrame(
             SidecarProtocol.Version,
             SidecarMessageType.Ready,
@@ -429,6 +439,7 @@ public sealed partial class SidecarHostSession : IDisposable
         XsrUiModuleRuntime.ModuleLease? moduleLease = null;
         try
         {
+            if (_nxmlActivated) _nxmlCompiled = NxmlModules?.Compile(_nxmlDocuments, this) ?? [];
             await SendTrackedAsync(new SidecarFrame(
                 SidecarProtocol.Version, SidecarMessageType.Activate, SidecarFrameTraits.None,
                 SidecarCorrelationId.Create(), Array.Empty<byte>()), cancellationToken).ConfigureAwait(false);
@@ -442,6 +453,8 @@ public sealed partial class SidecarHostSession : IDisposable
                 _uiPatchLease = captionLease;
                 moduleLease = UiModuleAdmission?.Runtime.Activate(_uiModules, this);
                 _uiModuleLease = moduleLease;
+                _nxmlLease = _nxmlDocuments.Length == 0 ? null : NxmlModules?.Activate(_nxmlDocuments, _nxmlCompiled, this);
+                _nxmlActivated = true;
                 _state = SidecarSessionState.Active;
                 if (_signalLease is { } lease)
                     _ = Task.Run(() => lease.PumpAsync(SendHookSignalAsync, () => Fail("Sidecar signal delivery failed or overflowed.")), CancellationToken.None);
@@ -450,7 +463,7 @@ public sealed partial class SidecarHostSession : IDisposable
         }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
         { throw Fail("The Sidecar activation could not be published."); }
-        finally { captionLease?.Publish(); moduleLease?.Publish(); }
+        finally { captionLease?.Publish(); moduleLease?.Publish(); NxmlModules?.Publish(); }
         Transition(SidecarSessionState.Active);
     }
 

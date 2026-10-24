@@ -4,6 +4,8 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("NXML modules compile before ready and retire with their session", NxmlModulesCompileBeforeReadyAndRetire),
+        ("NXML modules reject unsupported or invalid documents before activation", NxmlModulesRejectUnsupportedAndInvalidDocuments),
         ("Host facade preserves admission cancellation and shutdown errors", HostFacadePreservesAdmissionCancellationAndShutdownErrors),
         ("Host facade returns stable catalog budget failure", HostFacadeReloadReturnsStableFailureForCatalogBudget),
         ("initial snapshot preserves store and owns candidate values", Sync(CoreInitialSnapshotPreservesStoreAndOwnsCandidateValues)),

@@ -63,6 +63,7 @@ internal static partial class Program
         ValidateNativeHostInterop(repositoryRoot, failures);
         ValidateProtectedDifferentialUpdates(repositoryRoot, failures);
         ValidateNxmlControlCatalog(repositoryRoot, projectPaths, failures);
+        ValidateUniversalNxmlExtensions(repositoryRoot, failures);
         ValidateFunctionPatchCompiler(repositoryRoot, projectPaths, failures);
         ValidateWave3Ci(repositoryRoot, failures);
         ValidateThemeArchitecture(repositoryRoot, projectPaths, failures);
@@ -81,6 +82,22 @@ internal static partial class Program
         }
 
         return 1;
+    }
+
+    private static void ValidateUniversalNxmlExtensions(string root, List<string> failures)
+    {
+        foreach (string file in Directory.EnumerateFiles(Path.Combine(root, "Nexa.Desktop", "Ui"), "*Controller*.cs", SearchOption.AllDirectories))
+        {
+            string source = File.ReadAllText(file);
+            if (source.Contains("SidecarNxmlDocument", StringComparison.Ordinal)
+                || source.Contains("XsrNxmlModuleRuntime", StringComparison.Ordinal)
+                || source.Contains("NxmlPresentationCoordinator", StringComparison.Ordinal)
+                || source.Contains("NxmlPresentationLayer", StringComparison.Ordinal))
+                failures.Add($"{Path.GetRelativePath(root, file)} adds a feature-specific NXML Sidecar adapter; use the global composition edge.");
+        }
+        string edge = File.ReadAllText(Path.Combine(root, "Nexa.Desktop", "DesktopSidecarNxml.cs"));
+        if (edge.Contains("SidecarUiNodeKind", StringComparison.Ordinal))
+            failures.Add("Shared NXML extensions must not translate into the legacy Sidecar control enum.");
     }
 
     private static void ValidateNativeHostInterop(string repositoryRoot, List<string> failures)

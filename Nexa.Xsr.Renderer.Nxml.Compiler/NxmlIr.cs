@@ -121,6 +121,8 @@ public sealed record NxmlIrNode
     /// Gets the validated semantic command ID, or null when the node carries no command.
     /// </summary>
     public XsrSemanticId? Command { get; init; }
+    public string? Argument { get; init; }
+    public string? ArgumentFrom { get; init; }
 
     public double Minimum { get; init; }
     public double Maximum { get; init; } = 100;

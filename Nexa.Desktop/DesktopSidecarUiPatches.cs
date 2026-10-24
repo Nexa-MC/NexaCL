@@ -8,10 +8,12 @@ internal static class SidecarUiPresentationState
 {
     internal static readonly XsrSemanticId Captions = XsrSemanticId.Parse("ui.sidecar.captions");
     internal static readonly XsrSemanticId Modules = XsrSemanticId.Parse("ui.sidecar.modules");
+    internal static readonly XsrSemanticId Nxml = XsrSemanticId.Parse("ui.sidecar.nxml");
     internal static void Declare(XsrStateStoreBuilder builder)
     {
         builder.Cell<XsrUiPatchSnapshot>(Captions, "Nexa.Desktop.Sidecar");
         builder.Cell<XsrUiModuleSnapshot>(Modules, "Nexa.Desktop.Sidecar");
+        builder.Cell<XsrNxmlModuleSnapshot>(Nxml, "Nexa.Desktop.Sidecar");
     }
 }
 

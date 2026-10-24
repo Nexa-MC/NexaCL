@@ -59,7 +59,7 @@ internal static partial class Program
     private static async Task<(SidecarHostSession Session, SidecarConnection Plugin)> ActivateCaptionPatch(DesktopFunctionPatches patches, string prefix,
         DesktopSidecarSignals? signals = null, SidecarRegistrationItem[]? declarations = null,
         DesktopSidecarUiPatches? uiPatches = null, SidecarFeatures features = SidecarFeatures.None,
-        (uint Id, byte[] Value)[]? initialState = null)
+        (uint Id, byte[] Value)[]? initialState = null, DesktopSidecarNxml? nxml = null)
     {
         byte[] text = Encoding.UTF8.GetBytes(prefix);
         byte[] payload = new byte[15 + text.Length]; "NFP1"u8.CopyTo(payload); payload[4] = 1; payload[5] = 4; payload[6] = 5;
@@ -67,7 +67,7 @@ internal static partial class Program
         new byte[] { 2, 4, 6, 8 }.CopyTo(payload, 11 + text.Length);
         var (host, peer) = SidecarLoopbackStream.CreatePair();
         SidecarHostSession session = new(new SidecarConnection(host), "CaptionFixture")
-        { FunctionPatchAdmission = patches.Admission, SignalAdmission = signals?.Admission, UiPatchAdmission = uiPatches?.Admission, UiModuleAdmission = uiPatches?.ModuleAdmission };
+        { FunctionPatchAdmission = patches.Admission, SignalAdmission = signals?.Admission, UiPatchAdmission = uiPatches?.Admission, UiModuleAdmission = uiPatches?.ModuleAdmission, NxmlModules = nxml?.Runtime };
         SidecarConnection plugin = new(peer);
         try
         {

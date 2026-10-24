@@ -35,6 +35,7 @@ public sealed class XsrUiModuleAdmission
             if (entry.Flags != 0 || entry.CodecId != 0)
                 throw new SidecarProtocolException("UI module flags and codec are not granted.");
             var payload = entry.Payload ?? [];
+            if (SidecarUiDocument.ReadSchema(payload) == SidecarNxmlDocument.Schema) continue;
             bool interactive = SidecarUiDocument.ReadSchema(payload) == 2;
             var document = interactive ? SidecarUiDocument.Decode(payload) : null;
             if (!interactive && !string.IsNullOrEmpty(entry.RequiredResources))

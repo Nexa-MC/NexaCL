@@ -19,6 +19,18 @@ public sealed class NxmlLoadException(string message) : InvalidOperationExceptio
 /// </summary>
 public sealed partial class NxmlUiLoader
 {
+    /// <summary>Checks state references without creating entities; shared by host and extension preparation.</summary>
+    public static void ValidateBindings(NxmlHostIr ir, XsrStateStore state)
+    {
+        ArgumentNullException.ThrowIfNull(ir); ArgumentNullException.ThrowIfNull(state);
+        Visit(ir.Root);
+        void Visit(NxmlIrNode node)
+        {
+            foreach (var binding in node.Bindings) _ = ResolveState(state, binding.State);
+            foreach (var child in node.Children) Visit(child);
+        }
+    }
+
     public static XsrUiEntityId LoadDetached(NxmlHostIr ir, XsrUiTree tree, XsrStateStore state)
     {
         var host = tree.Create("nxml-page-loader");
@@ -55,6 +67,7 @@ public sealed partial class NxmlUiLoader
         {
             PopulateNode(ir.Root, root, tree, state);
             ResolveSegments(ir.Root, root, tree);
+            ResolveArguments(ir.Root, root, tree);
             tree.Attach(root, parent);
             ResolveAnchors(ir.Root, root, tree);
             committed = true;
@@ -66,6 +79,22 @@ public sealed partial class NxmlUiLoader
             {
                 tree.Destroy(root);
             }
+        }
+    }
+
+    private static void ResolveArguments(NxmlIrNode root, XsrUiEntityId entity, XsrUiTree tree)
+    {
+        Dictionary<string, XsrUiEntityId> named = new(StringComparer.Ordinal);
+        List<(XsrUiEntityId Source, string Target)> references = [];
+        Visit(root, entity);
+        foreach (var reference in references)
+            tree.SetComponent(reference.Source, new XsrUiArgumentSource(named[reference.Target]));
+        void Visit(NxmlIrNode node, XsrUiEntityId current)
+        {
+            if (node.Key is { } key) named.Add(key, current);
+            if (node.ArgumentFrom is { } target) references.Add((current, target));
+            var children = tree.Children(current);
+            for (int index = 0; index < node.Children.Count; index++) Visit(node.Children[index], children[index]);
         }
     }
 
@@ -314,6 +343,7 @@ public sealed partial class NxmlUiLoader
 
         if (node.Selected is { } selected) tree.SetComponent(entity, new XsrUiSelection { IsSelected = selected });
         if (node.Checked is { } isChecked) tree.SetComponent(entity, new XsrUiToggle(isChecked));
+        if (node.Argument is { } argument) tree.SetComponent(entity, new XsrUiCommandArgument(argument));
         if (node.SelectionRequired is { } required) tree.SetComponent(entity, new XsrUiSelectionGroup(required));
         if (node.SegmentWidth is { } segmentWidth) tree.SetComponent(entity, new XsrUiSegmentReveal(segmentWidth));
 

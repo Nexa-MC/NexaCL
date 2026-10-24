@@ -33,6 +33,7 @@ public sealed partial class NxmlUiLoader
             IsVisible = after.IsVisible,
             Spacing = after.Spacing,
             Content = after.Content,
+            Argument = after.Argument,
             Placeholder = after.Placeholder,
             Label = after.Label,
             ImageSource = after.ImageSource,
@@ -128,6 +129,8 @@ public sealed partial class NxmlUiLoader
             else if (after.ImageSource is not null) tree.SetComponent(entity, new XsrUiImage(after.ImageSource));
             dirty |= XsrUiDirtyKinds.Paint;
         }
+        if (before.Argument != after.Argument)
+            tree.SetComponent(entity, after.Argument is { } argument ? new XsrUiCommandArgument(argument) : null);
         if (before.Command != after.Command)
         {
             if (after.Command is { } command)

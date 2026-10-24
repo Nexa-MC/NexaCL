@@ -55,6 +55,8 @@ internal enum NxmlIrPropertyTarget
     Value = 30,
     Localize = 31,
     Selected = 32,
+    Argument = 33,
+    ArgumentFrom = 34,
 }
 
 internal sealed class NxmlControlPropertyModel

@@ -18,6 +18,7 @@ internal static class DesktopMarkup
             : template.Compile(data, NxmlComponentLibrary.Default, Styles.Value);
     }
     private static readonly Lazy<NssStyleSheet> Styles = new(LoadStyles);
+    internal static NssStyleSheet SharedStyles => Styles.Value;
     private static NssStyleSheet LoadStyles()
     {
         string directory = Path.Combine(AppContext.BaseDirectory, "Ui", "Styles");

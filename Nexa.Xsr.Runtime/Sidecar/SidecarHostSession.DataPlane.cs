@@ -399,6 +399,7 @@ public sealed partial class SidecarHostSession
     {
         XsrUiPatchRuntime.CaptionLease? captions;
         XsrUiModuleRuntime.ModuleLease? modules;
+        XsrNxmlModuleRuntime.Lease? nxml;
         lock (_gate)
         {
             _stopped = true;
@@ -407,9 +408,10 @@ public sealed partial class SidecarHostSession
             _signalLease?.Dispose(); _signalLease = null; _signals = [];
             captions = _uiPatchLease; _uiPatchLease = null; _uiPatches = [];
             modules = _uiModuleLease; _uiModuleLease = null; _uiModules = [];
+            nxml = _nxmlLease; _nxmlLease = null; _nxmlDocuments = []; _nxmlCompiled = [];
             Extensions = new();
         }
-        captions?.Dispose(); modules?.Dispose();
+        captions?.Dispose(); modules?.Dispose(); nxml?.Dispose();
         OnDeactivated();
         EndLifecycleControls();
         _sessionEnded.Cancel();

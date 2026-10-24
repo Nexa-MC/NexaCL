@@ -10,13 +10,29 @@ namespace Nexa.Desktop.Ui;
 /// </summary>
 internal sealed class DesktopUiIntentSink : IXsrUiIntentSink
 {
+    private Func<DesktopUiIntent, bool>[] _routes = [];
+    public event EventHandler<DesktopUiIntentEventArgs>? IntentReceived;
     public event EventHandler<DesktopUiIntentEventArgs>? IntentEmitted;
+
+    internal IDisposable Route(Func<DesktopUiIntent, bool> handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        _routes = [.. _routes, handler];
+        return new RouteLease(this, handler);
+    }
 
     public void Emit(XsrSemanticId command, XsrUiEntityId source, XsrCorrelationId correlationId)
     {
-        IntentEmitted?.Invoke(
-            this,
-            new DesktopUiIntentEventArgs(new DesktopUiIntent(command, source, correlationId)));
+        var intent = new DesktopUiIntent(command, source, correlationId);
+        var args = new DesktopUiIntentEventArgs(intent);
+        IntentReceived?.Invoke(this, args);
+        foreach (var route in _routes) if (route(intent)) return;
+        IntentEmitted?.Invoke(this, args);
+    }
+
+    private sealed class RouteLease(DesktopUiIntentSink owner, Func<DesktopUiIntent, bool> handler) : IDisposable
+    {
+        public void Dispose() => owner._routes = owner._routes.Where(route => route != handler).ToArray();
     }
 }
 

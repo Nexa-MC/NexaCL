@@ -487,6 +487,7 @@ public sealed partial class XsrUiRenderer
                     if (_tree.GetComponent<XsrUiOverlayLayer>(sibling)?.IsModal == true) modalIndex = visibleIndex;
                     visibleIndex++;
                 }
+                if (entityIndex < 0) return false;
                 if (_tree.GetComponent<XsrUiPager>(parent) is { } pager
                     && (entityIndex < 0 || entityIndex != pager.PageIndex)) return false;
                 if (modalIndex >= 0 && entityIndex >= 0 && entityIndex < modalIndex)

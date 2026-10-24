@@ -13,6 +13,11 @@ public sealed class NssStyleSheet
     public static NssStyleSheet Default => Shared.Value;
     public static NssStyleSheet Empty { get; } = new([]);
     private NssStyleSheet(Rule[] rules) => _rules = rules;
+    public NssStyleSheet With(NssStyleSheet overlay)
+    {
+        ArgumentNullException.ThrowIfNull(overlay);
+        return new(_rules.Concat(overlay._rules).OrderBy(rule => rule.Specificity).ToArray());
+    }
 
     public static NssStyleSheet Parse(string source)
     {

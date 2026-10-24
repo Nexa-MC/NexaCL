@@ -10,6 +10,10 @@ namespace Nexa.Xsr.Renderer;
 /// </summary>
 public sealed class XsrUiTree
 {
+    public XsrUiPresentation Presentation { get; }
+
+    public XsrUiTree() => Presentation = new(this);
+
     private const XsrUiDirtyKinds LayoutRelevantKinds =
         XsrUiDirtyKinds.Structure | XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.State;
 
@@ -21,6 +25,7 @@ public sealed class XsrUiTree
     private readonly SortedSet<int> _dirtyEntities = [];
     private int _nextIndex = 1;
     internal long EntityLifetimeRevision { get; private set; }
+    public long StructureRevision { get; private set; }
 
     /// <summary>
     /// Raised when a renderable mutation marks the tree dirty. The event is notification-only:
@@ -54,6 +59,7 @@ public sealed class XsrUiTree
         }
 
         EntityLifetimeRevision++;
+        StructureRevision++;
         _entities[index] = new XsrUiEntity(name);
         return new XsrUiEntityId(index, _generations[index]);
     }
@@ -64,6 +70,7 @@ public sealed class XsrUiTree
     /// </summary>
     public void Destroy(XsrUiEntityId entity)
     {
+        StructureRevision++;
         XsrUiEntity destroyed = Require(entity);
         if (destroyed.Parent.IsAssigned)
         {
@@ -108,6 +115,7 @@ public sealed class XsrUiTree
 
         childEntity.Parent = parent;
         parentEntity.Children.Add(child.Index);
+        StructureRevision++;
         MarkDirty(parent, XsrUiDirtyKinds.Structure);
         MarkDirty(child, XsrUiDirtyKinds.Structure);
     }
@@ -123,6 +131,7 @@ public sealed class XsrUiTree
             throw new InvalidOperationException("Reordering requires a complete permutation of live direct children.");
         if (owner.Children.SequenceEqual(requested.Select(child => child.Index))) return;
         owner.Children.Clear(); owner.Children.AddRange(requested.Select(child => child.Index));
+        StructureRevision++;
         MarkDirty(parent, XsrUiDirtyKinds.Structure);
     }
 
@@ -141,6 +150,7 @@ public sealed class XsrUiTree
         _ = parent.Children.Remove(entity.Index);
         XsrUiEntityId previousParent = detached.Parent;
         detached.Parent = default;
+        StructureRevision++;
         MarkDirty(previousParent, XsrUiDirtyKinds.Structure);
         MarkDirty(entity, XsrUiDirtyKinds.Structure);
     }

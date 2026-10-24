@@ -15,6 +15,22 @@ public sealed class NxmlComponentLibrary
     public static NxmlComponentLibrary Default => Shared.Value;
     public IReadOnlyList<string> Names { get; }
 
+    private NxmlComponentLibrary(Dictionary<string, NxmlElement> components)
+    {
+        _components = new(components);
+        Names = Array.AsReadOnly(components.Keys.Order(StringComparer.Ordinal).ToArray());
+    }
+
+    /// <summary>Derives a session-local library; the shared host controls remain immutable.</summary>
+    public NxmlComponentLibrary WithComponents(IReadOnlyDictionary<string, string> sources)
+    {
+        var additions = new NxmlComponentLibrary(sources);
+        var combined = _components.ToDictionary(item => item.Key, item => item.Value, StringComparer.Ordinal);
+        foreach (var item in additions._components) combined[item.Key] = item.Value;
+        if (combined.Count > MaxComponents) throw new NxmlCompileException("Too many NXML components.");
+        return new(combined);
+    }
+
     public NxmlComponentLibrary(IReadOnlyDictionary<string, string> sources)
     {
         ArgumentNullException.ThrowIfNull(sources);

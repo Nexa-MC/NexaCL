@@ -356,7 +356,8 @@ internal static partial class Program
         DesktopFunctionPatches functionPatches = new();
         DesktopSidecarSignals sidecarSignals = new();
         DesktopSidecarUiPatches sidecarUi = new(host.StateStore);
-        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission);
+        DesktopSidecarNxml sidecarNxml = new(host.StateStore);
+        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime);
         SidecarHostApi sidecarApi = new(sidecars, dispatchObservation);
         await using var sidecarLifetime = SidecarStartup.StartLifetime(sidecars, host.Logging, !safeMode);
         // The session lifecycle narrates startup/shutdown milestones at Info: every subsystem
@@ -365,7 +366,7 @@ internal static partial class Program
         session.Enter(XsrLifecyclePhase.Starting);
         host.Logging.Info("Launcher", "Foundation composition completed; registering runtime routes.");
         setStage("compose_runtimes");
-        uiIntents.IntentEmitted += (_, e) => operationLog.WriteIntent(e.Intent.Command, e.Intent.CorrelationId);
+        uiIntents.IntentReceived += (_, e) => operationLog.WriteIntent(e.Intent.Command, e.Intent.CorrelationId);
         bool StorageIdleExcept(string? taskPrefix) => !host.Tasks.ReadEntries().Any(entry => !entry.IsTerminal
                     && (taskPrefix is null || !entry.TaskId.StartsWith(taskPrefix, StringComparison.Ordinal)))
                 && !host.StateStore.ReadCollection<Nexa.Services.Minecraft.Process.MinecraftProcessSnapshot>(
@@ -481,6 +482,7 @@ internal static partial class Program
             uiIntents);
 
         using var languageSession = new DesktopLanguageSession(shell, host.StateStore);
+        using var sidecarNxmlSession = sidecarNxml.Attach(shell, uiIntents, host.StateStore, message => host.Logging.Warn("Sidecar", message));
 
         using DesktopFeedbackService feedback = new();
         using DesktopFeedbackPresenter feedbackPresenter = new(

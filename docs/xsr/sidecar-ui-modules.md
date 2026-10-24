@@ -1,4 +1,64 @@
-# Host-owned New UI text cards
+# Sidecar UI documents
+
+## Shared NXML schema 3
+
+New UI is authored in the product's `.nxml`, `.c.nxml`, `.d.nxml` and `.nss`
+suite. Schema 3 supersedes the resource-card-only execution policy below; schemas
+1 and 2 remain wire-compatible legacy adapters. There is no second control enum
+for NXML and no feature-owned registration slot. The shared compiler, component
+library, styles, state bindings, layout, input, accessibility and dynamic reload
+implement both product UI and Sidecar UI.
+
+`SidecarNxmlDocument` contains a stable node selector, operation, entry point and
+immutable text files. `UiModule` transfers its encoded bytes and SHA-256 hash at
+registration. Both peers negotiate feature `Nxml` (bit 16). Sources are limited
+to 96 portable relative filenames and 512 KiB of actual UTF-8 source bytes;
+session source budget is 4 MiB/32 modules. Files never become filesystem paths.
+The shared compiler validates the entire initial projection and host state
+references before READY. Mirror-state changes compile on a coalesced background
+worker and publish a sealed immutable `XsrNxmlModuleSnapshot`. Rendering never
+parses source, compiles documents or performs IPC.
+
+Selectors address any named product node: `#VersionList`, or an ancestor path
+such as `#SettingsPage/#Toolbar`. They match every corresponding live host node,
+including retained and subsequently created pages/fragments. The generic
+coordinator runs after logical frame projection, so new nodes are covered before
+their first paint. It excludes module-owned nodes from target discovery. Future
+pages and shared components need no Sidecar adapter or registration changes.
+
+Operations are append/prepend/before/after, modify and replace. Modify overlays
+the root's ordinary renderer components, retaining its logical children;
+replace presents the new root/subtree. Latest live layers take precedence.
+Replacement inherits the host node's visibility. Logical nodes, controller
+handles, bindings, live values and controller-owned child permutations stay
+intact. Retirement restores earlier live layers or current product content,
+including changes made underneath a replacement. Stale entity generations and
+inactive exposure identities cannot submit commands. Failed mounts roll back
+without deleting host nodes or another provider's presentation.
+
+The entry document may contain `{data plugin.state.name}` values from the
+session's scalar state mirror; values remain literal data, never interpolated
+XML. Host `{state ...}` bindings use the ordinary shared binder. Bundle-local
+components extend an immutable copy of the current host library, and styles
+overlay the current host NSS stylesheet. A dynamic file `Rows/001.d.nxml` loads
+into local `<Dynamic Key="Rows"/>`; multiple files in that folder append in
+ordinal filename order. `Rows.d.nxml` addresses the same slot directly. Reload
+retains entity identities, focus, selection, caret, drafts and nested slot state.
+Expanded content is bounded to 16,384 nodes per document, including fragments.
+
+Commands are standard NXML `Command` bindings, with optional literal/data-bound
+`Argument`. `ArgumentFrom="Draft"` reads the current value of the local input
+named `Draft`, so form submission requires no page-specific controller. References
+are checked for missing keys, cycles and depth before load. Inputs, toggles and
+ranges expose their normal intent value through the shared renderer.
+The Desktop composition edge routes session-declared commands through the
+existing asynchronous numeric exchange, codecs, cancellation and timeouts.
+No Sidecar object, transport, service reference or callback enters the renderer.
+The global intent route consumes session-owned commands exactly once, allows
+ordinary host commands through, and drops retired-source commands before host
+handlers. Diagnostics observe intents before routing without collecting drafts.
+
+## Legacy text card schema 1
 
 The first executable New UI ABI is a versioned text card, not PXML source or the compiler's
 internal IR. `UiModule` continues to transfer hashed content at registration. With execution
@@ -63,9 +123,10 @@ navigation cancels its requests and retires its control entities before the page
 again. Command/query effects use the existing asynchronous numeric data plane, timeout,
 cancellation and backpressure; no child delegate or session object enters UI.Next.
 
-The existing resource extension slot is the production consumer for interactive documents.
+The existing resource extension slot is the legacy consumer for schema 2 documents.
 It supports plugin-authored finite forms and nested layouts while keeping product navigation,
 service execution, trust decisions, palette and viewport sizing under host ownership. Arbitrary
-scripts, host service bindings and replacing the product tree are outside this Host contract.
+scripts and direct host service bindings remain outside the NXML language; global presentation
+modification and replacement use schema 3 above.
 The independent Plugin SDK/compiler/package UI IR freeze and real-engine long-duration
 compatibility still require the external repository and physical evidence.

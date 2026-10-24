@@ -12,7 +12,8 @@ namespace Nexa.Xsr.Renderer;
 /// </summary>
 public sealed partial class XsrUiRenderer
 {
-    private readonly XsrUiTree _tree;
+    private readonly XsrUiPresentation _tree;
+    private long _presentationRevision;
     private readonly XsrStateStore _state;
     private readonly IXsrUiIntentSink? _sink;
     private readonly XsrUiStateBridge? _stateBridge;
@@ -40,7 +41,7 @@ public sealed partial class XsrUiRenderer
         XsrUiStateBridge? stateBridge = null,
         TimeProvider? timeProvider = null)
     {
-        _tree = tree ?? throw new ArgumentNullException(nameof(tree));
+        _tree = (tree ?? throw new ArgumentNullException(nameof(tree))).Presentation;
         _state = state ?? throw new ArgumentNullException(nameof(state));
         _sink = sink;
         _stateBridge = stateBridge;
@@ -82,6 +83,9 @@ public sealed partial class XsrUiRenderer
     /// state dirt is drained and before layout; publishers must never call this hook themselves.
     /// </summary>
     public event EventHandler? FramePreparing;
+
+    /// <summary>Runs after logical page projections so generic presentation layers see newly created nodes in the same frame.</summary>
+    public event EventHandler? PresentationPreparing;
 
     /// <summary>Finite composition hook for committing already prepared theme candidates before host data projection.</summary>
     public event EventHandler? ThemePreparing;
@@ -206,6 +210,14 @@ public sealed partial class XsrUiRenderer
         ThemePreparing?.Invoke(this, EventArgs.Empty);
         FramePreparing?.Invoke(this, EventArgs.Empty);
         _stateBridge?.DrainAndMark(_state);
+        PresentationPreparing?.Invoke(this, EventArgs.Empty);
+        _tree.PrepareFrame();
+        if (_presentationRevision != _tree.Revision)
+        {
+            _presentationRevision = _tree.Revision;
+            _desiredSizes.Clear(); _stackContentSizes.Clear(); _measureConstraints.Clear();
+            _widthSensitiveMeasures.Clear(); _paintRects.Clear(); _arrangedSlots.Clear();
+        }
         PrepareThemeFrame();
 
         if (_scene is not null && !_tree.HasDirtySubtree(_root))
@@ -256,6 +268,7 @@ public sealed partial class XsrUiRenderer
             return true;
         }, entity => _tree.HasDirtySubtree(entity));
 
+        _tree.FinishFrame(_root);
         return _scene;
     }
 
@@ -366,6 +379,8 @@ public sealed partial class XsrUiRenderer
 
     internal bool IsVisible(XsrUiEntityId entity)
     {
+        if (_tree.ReplacedHostElement(entity) is { } host && (!host.IsVisible
+            || host.BoundVisibility.IsAssigned && _state.ReadAppliedValue(host.BoundVisibility) is not true)) return false;
         XsrUiElement? element = _tree.GetComponent<XsrUiElement>(entity);
         if (element?.BoundVisibility is { } bound && bound.IsAssigned)
         {

@@ -113,6 +113,7 @@ public sealed partial class SidecarHostSession
         XsrSignalRuntime.SignalLease? signalLease;
         XsrUiPatchRuntime.CaptionLease? captionLease;
         XsrUiModuleRuntime.ModuleLease? moduleLease;
+        XsrNxmlModuleRuntime.Lease? nxmlLease;
         lock (_gate)
         {
             functionLease = _functionPatchLease;
@@ -123,12 +124,14 @@ public sealed partial class SidecarHostSession
             _uiPatchLease = null;
             moduleLease = _uiModuleLease;
             _uiModuleLease = null;
+            nxmlLease = _nxmlLease; _nxmlLease = null;
         }
         functionLease?.Dispose();
         if (cancelSignalWrites) signalLease?.Dispose();
         else signalLease?.Retire();
         captionLease?.Dispose();
         moduleLease?.Dispose();
+        nxmlLease?.Dispose();
         return signalLease;
     }
 

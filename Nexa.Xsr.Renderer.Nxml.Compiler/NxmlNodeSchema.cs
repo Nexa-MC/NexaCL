@@ -24,6 +24,8 @@ internal static class NxmlNodeSchema
         new("Content", NxmlControlValueKind.String, NxmlIrPropertyTarget.Content, XsrUiStateProperty.Text, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint, false, null),
         new("Icon", NxmlControlValueKind.String, NxmlIrPropertyTarget.ImageSource, null, XsrUiDirtyKinds.None, false, null),
         new("Command", NxmlControlValueKind.SemanticId, NxmlIrPropertyTarget.Command, null, XsrUiDirtyKinds.None, false, null),
+        new("Argument", NxmlControlValueKind.String, NxmlIrPropertyTarget.Argument, null, XsrUiDirtyKinds.None, false, null),
+        new("ArgumentFrom", NxmlControlValueKind.String, NxmlIrPropertyTarget.ArgumentFrom, null, XsrUiDirtyKinds.None, false, null),
         new("Focusable", NxmlControlValueKind.Boolean, NxmlIrPropertyTarget.Focusable, null, XsrUiDirtyKinds.None, false, null),
         new("Clickable", NxmlControlValueKind.Boolean, NxmlIrPropertyTarget.Clickable, XsrUiStateProperty.Enabled, XsrUiDirtyKinds.State, false, null),
         new("TransitionKey", NxmlControlValueKind.String, NxmlIrPropertyTarget.TransitionKey, XsrUiStateProperty.TransitionKey, XsrUiDirtyKinds.Paint, false, null),

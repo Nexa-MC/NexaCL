@@ -17,7 +17,30 @@ public static class NxmlCompiler
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(components);
         HashSet<string> keys = new(StringComparer.Ordinal);
-        return new NxmlHostIr(CompileNode(components.Expand(document).Root, keys, styles ?? NssStyleSheet.Empty));
+        var root = CompileNode(components.Expand(document).Root, keys, styles ?? NssStyleSheet.Empty);
+        ValidateArguments(root);
+        return new(root);
+    }
+
+    private static void ValidateArguments(NxmlIrNode root)
+    {
+        List<NxmlIrNode> nodes = [];
+        Collect(root);
+        var named = nodes.Where(node => node.Key is not null).ToDictionary(node => node.Key!, StringComparer.Ordinal);
+        foreach (var node in nodes)
+        {
+            if (node.Argument is not null && node.ArgumentFrom is not null)
+                throw new NxmlCompileException("Argument and ArgumentFrom are mutually exclusive.");
+            if (node.ArgumentFrom is null) continue;
+            HashSet<string> visited = new(StringComparer.Ordinal);
+            for (var key = node.ArgumentFrom; key is not null;)
+            {
+                if (!named.TryGetValue(key, out var target)) throw new NxmlCompileException("ArgumentFrom requires a key in the same document.");
+                if (!visited.Add(key) || visited.Count > 128) throw new NxmlCompileException("Command argument references are cyclic or too deep.");
+                key = target.ArgumentFrom;
+            }
+        }
+        void Collect(NxmlIrNode node) { nodes.Add(node); foreach (var child in node.Children) Collect(child); }
     }
 
     private static NxmlIrNode CompileNode(NxmlElement element, HashSet<string> keys, NssStyleSheet styles)
@@ -419,6 +442,8 @@ public static class NxmlCompiler
         private bool _focusable;
         private bool _clickable = recipe is NxmlRuntimeRecipe.CommandInput or NxmlRuntimeRecipe.RangeInput;
         private XsrSemanticId? _command;
+        private string? _argument;
+        private string? _argumentFrom;
         private string? _imageSource;
         private string? _placeholder;
         private bool _isPassword;
@@ -496,6 +521,12 @@ public static class NxmlCompiler
                 case NxmlIrPropertyTarget.Command:
                     _command = (XsrSemanticId)value;
                     break;
+                case NxmlIrPropertyTarget.Argument:
+                    _argument = (string)value;
+                    break;
+                case NxmlIrPropertyTarget.ArgumentFrom:
+                    _argumentFrom = (string)value;
+                    break;
                 case NxmlIrPropertyTarget.Focusable:
                     _focusable = (bool)value;
                     break;
@@ -569,6 +600,8 @@ public static class NxmlCompiler
                 Focusable = _focusable,
                 Clickable = _clickable,
                 Command = _command,
+                Argument = _argument,
+                ArgumentFrom = _argumentFrom,
                 ImageSource = _imageSource,
                 Placeholder = _placeholder,
                 IsPassword = _isPassword,

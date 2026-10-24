@@ -1,5 +1,10 @@
 # Host-owned UI caption patches
 
+This document describes legacy caption schema 1. The global modification and
+replacement mechanism now uses the shared NXML schema 3 in
+[Sidecar UI documents](sidecar-ui-modules.md). Its target discovery is automatic
+and is not restricted to the resource page's caption allowlist.
+
 UI Patch execution begins with a bounded caption ABI. The host grants named presentation
 targets, assigns numeric indices once, and publishes immutable caption snapshots into one
 sealed XSR State cell. UI.Next consumes the resulting normal UI components; it never reads

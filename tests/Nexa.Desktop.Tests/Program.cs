@@ -399,6 +399,7 @@ internal static partial class Program
         ("resources page downloads by identity and projects Chinese text", ResourcesPageDownloadsByIdentityAndProjectsChineseText),
         ("resource primitive function patch changes presentation only", ResourcePrimitiveFunctionPatchChangesPresentationOnly),
         ("resource interactive module presents live state and cancels retired source", ResourceInteractiveModulePresentsLiveStateAndCancelsRetiredSource),
+        ("Sidecar NXML replaces a future page without product adapters", SidecarNxmlPresentsFuturePagesAndRoutesActions),
         ("resource function patch rewrites actual list and detail captions", ResourceFunctionPatchRewritesActualListAndDetailCaptions),
         ("resources page uses service queries and preserves search", ResourcesPageUsesServiceQueriesAndPreservesSearch),
         ("resource icons arrive without rebuilding search or rows", ResourceIconsArriveWithoutRebuildingSearchOrRows),
