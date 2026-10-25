@@ -19,6 +19,11 @@ internal static partial class Program
 {
     public static void Main(string[] args)
     {
+        if (args is ["--native-sidecar-preview", var previewSidecar])
+        {
+            Environment.ExitCode = RunNativeSidecarPreview(previewSidecar).GetAwaiter().GetResult();
+            return;
+        }
         if (args is ["--sidecar-process-fixture", var executable])
         {
             SidecarProcessFixtureRegistersInertly(executable).GetAwaiter().GetResult();

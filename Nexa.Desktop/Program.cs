@@ -836,6 +836,7 @@ internal static partial class Program
             return 0;
         }
         var setupNxml = new DesktopSidecarNxml(store);
+        shell.Render(new XsrUiSize(1024, 600));
         using var setupExtensions = setupNxml.Attach(shell, intents, store, message => setupLog.Warn("Sidecar", message), controller.Page);
         var setupSidecars = SidecarStartup.Create(setupLog, nxmlModules: setupNxml.Runtime);
         using var setupSidecarLifetime = SidecarStartup.StartLifetime(setupSidecars, setupLog, !args.Contains("--safe-mode", StringComparer.Ordinal));

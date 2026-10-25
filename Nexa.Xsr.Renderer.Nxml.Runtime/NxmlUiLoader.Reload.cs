@@ -41,6 +41,7 @@ public sealed partial class NxmlUiLoader
             Enabled = after.Enabled,
             Localize = after.Localize,
             Selected = after.Selected,
+            TransitionKey = before.TransitionKey is not null && after.TransitionKey is not null ? after.TransitionKey : before.TransitionKey,
             Checked = before.Checked.HasValue && after.Checked.HasValue ? after.Checked : before.Checked,
             MaxLines = after.MaxLines,
             TrimOverflow = after.TrimOverflow,
@@ -162,6 +163,11 @@ public sealed partial class NxmlUiLoader
                 else tree.SetComponent(entity, new XsrUiSelection { IsSelected = selected });
             }
             else tree.SetComponent<XsrUiSelection>(entity, null);
+            dirty |= XsrUiDirtyKinds.Paint;
+        }
+        if (before.TransitionKey != after.TransitionKey && tree.GetComponent<XsrUiTransition>(entity) is { } transition)
+        {
+            transition.Key = after.TransitionKey;
             dirty |= XsrUiDirtyKinds.Paint;
         }
         if (before.Checked != after.Checked && tree.GetComponent<XsrUiToggle>(entity) is { } toggle)

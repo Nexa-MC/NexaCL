@@ -107,10 +107,15 @@ internal sealed partial class DesktopSidecarNxml
         }
     }
 
-    private sealed class PageInstance(XsrUiTree tree, XsrStateStore store, SidecarNxmlOperation operation, NxmlPreparedDocument document)
-        : NxmlDocumentInstance(tree, store, document)
+    private sealed class PageInstance : NxmlDocumentInstance
     {
-        internal SidecarNxmlOperation Operation { get; } = operation;
+        internal PageInstance(XsrUiTree tree, XsrStateStore store, SidecarNxmlOperation operation, NxmlPreparedDocument document)
+            : base(tree, store, document)
+        {
+            Operation = operation;
+            XsrUiTransition.ConfigureIndependent(tree, Root, "sidecar-page-" + Guid.NewGuid().ToString("N"), distance: 8);
+        }
+        internal SidecarNxmlOperation Operation { get; }
         internal CancellationTokenSource Stop { get; } = new();
     }
 }

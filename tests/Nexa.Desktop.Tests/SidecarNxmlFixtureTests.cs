@@ -59,6 +59,14 @@ internal static partial class Program
         }
         var declarations = Read(Path.Combine(directory, "declarations.bin")).Select(bytes => SidecarRegistration.DecodeItem(bytes)).ToArray();
         var states = Read(Path.Combine(directory, "states.bin")).Select(bytes => SidecarStateSnapshot.DecodeItem(bytes)).ToArray();
+        var stateValues = states.ToDictionary(item => item.ContractId, item => System.Text.Encoding.UTF8.GetString(item.EncodedValue));
+        var names = declarations.Where(item => item.Kind == SidecarRegistrationKind.State).Select((item, index) =>
+            new KeyValuePair<string, string>(item.SemanticId, stateValues[(uint)index + 1])).ToDictionary(StringComparer.Ordinal);
+        foreach (var declaration in declarations.Where(item => item.Kind == SidecarRegistrationKind.UiModule))
+        {
+            var source = SidecarNxmlDocument.Decode(declaration.Payload!);
+            _ = new Nexa.Xsr.Renderer.Nxml.NxmlExtensionProgram(source.EntryPoint, source.Files, styles: Nexa.Desktop.Ui.DesktopMarkup.SharedStyles).Compile(names);
+        }
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
         var adapter = new DesktopSidecarNxml(fixture.Store);
         var fallback = fixture.Shell.Stage.Navigation.Current;
@@ -73,6 +81,19 @@ internal static partial class Program
             Console.WriteLine("First-run extension: " + fixture.Shell.Tree.Name(fixture.Shell.Stage.Navigation.Current));
             var next = scene.Nodes.Single(node => fixture.Shell.Tree.GetComponent<XsrUiCommandBinding>(node.Entity)?.Command.Value == "ui.sidecar.onboarding.continue");
             AssertTrue(next.Rect.Y >= XsrUiShell.TitleBarHeight && next.Rect.Y + next.Rect.Height <= 600);
+            var card = FindByKey(fixture.Shell, scene, "NexaMcLoginCard");
+            var email = FindByKey(fixture.Shell, scene, "NexaMcEmail");
+            AssertEqual(28d, email.Rect.X - card.Rect.X);
+            AssertEqual(card.Rect.Width - 56d, email.Rect.Width);
+            fixture.Shell.Renderer.SetTextInputValue(email.Entity, "retained@example.test");
+            SwitchMode("HandleForm", false);
+            scene = fixture.Shell.Render(new(1024, 600));
+            AssertEqual("NexaMcLoginPage", fixture.Shell.Tree.Name(fixture.Shell.Stage.Navigation.Current));
+            AssertTrue(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "NexaMcHandle"));
+            SwitchMode("EmailForm", true);
+            scene = fixture.Shell.Render(new(1024, 600));
+            AssertEqual("retained@example.test", fixture.Shell.Tree.GetComponent<XsrUiTextInput>(email.Entity)!.ReadDraft());
+            next = FindByKey(fixture.Shell, scene, "NexaMcContinue");
             AssertTrue(fixture.Shell.Renderer.Activate(next.Entity));
             scene = fixture.Shell.Render(new(1024, 760));
             var open = scene.Nodes.Single(node => fixture.Shell.Tree.GetComponent<XsrUiCommandBinding>(node.Entity)?.Command.Value == "ui.sidecar.page.open");
@@ -84,11 +105,11 @@ internal static partial class Program
             AssertEqual("未登录", open.Text);
             AssertFalse(scene.Nodes.Any(node => node.Text == "市场"));
             AssertTrue(fixture.Shell.Renderer.Activate(open.Entity));
-            fixture.Shell.Render(new(1024, 760));
+            scene = fixture.Shell.Render(new(1024, 760));
             var root = fixture.Shell.Stage.Navigation.Current;
             Console.WriteLine("Registered page: " + fixture.Shell.Tree.Name(root));
-            AssertEqual(0, fixture.Shell.Tree.Children(root).Count);
-            AssertEqual(new XsrUiColor(255, 255, 255, 255), fixture.Shell.Tree.GetComponent<XsrUiVisualStyle>(root)!.Background);
+            AssertTrue(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "NexaMcLoginCard"));
+            AssertTrue(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "NexaMcEmail"));
             var refreshed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             fixture.Store.Changed += change =>
             {
@@ -99,6 +120,7 @@ internal static partial class Program
             };
             var mirror = session.Mirror!.Store;
             mirror.Publish(mirror.Resolve(XsrSemanticId.Parse("nsc.account.name")), "Fixture User");
+            mirror.Publish(mirror.Resolve(XsrSemanticId.Parse("nsc.account.background")), "#FFFFFF");
             mirror.Publish(mirror.Resolve(XsrSemanticId.Parse("nsc.account.signed_in")), "true");
             refreshed.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
             scene = fixture.Shell.Render(new(1024, 760));
@@ -106,12 +128,41 @@ internal static partial class Program
             var settings = scene.Nodes.Single(node => node.Entity == fixture.Shell.NavigationEntities[XsrSemanticId.Parse("navigation.settings")]);
             AssertTrue(market.Rect.Y + market.Rect.Height <= settings.Rect.Y);
             AssertTrue(scene.Nodes.Any(node => node.Text == "Fixture User"));
+            AssertFalse(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "NexaMcLoginCard"));
+            AssertEqual(new XsrUiColor(255, 255, 255, 255), fixture.Shell.Tree.GetComponent<XsrUiVisualStyle>(root)!.Background);
             AssertTrue(fixture.Shell.Renderer.Activate(market.Entity));
             fixture.Shell.Render(new(1024, 760));
             AssertEqual("NexaMcMarketPage", fixture.Shell.Tree.Name(fixture.Shell.Stage.Navigation.Current));
             Console.WriteLine("Authenticated market appears above Settings and opens its registered page.");
             session.Dispose(); fixture.Shell.Render(new(1024, 760));
             AssertFalse(fixture.Shell.Tree.IsAlive(root)); AssertEqual(0, warnings.Count);
+
+            void SwitchMode(string stage, bool useEmail)
+            {
+                var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                void Changed(Nexa.Xsr.State.XsrStateChange change)
+                {
+                    if (change.Id != adapter.State) return;
+                    if (fixture.Store.Read<XsrNxmlModuleSnapshot>(adapter.State).Value!.Modules.Any(module =>
+                        module.Presentation.Artifact is Nexa.Xsr.Renderer.Nxml.NxmlPreparedDocument prepared
+                        && FindIr(prepared.Root.Root, "NexaMcLoginFields")?.TransitionKey == stage))
+                    { fixture.Store.Changed -= Changed; ready.TrySetResult(); }
+                }
+                fixture.Store.Changed += Changed;
+                var local = session.Mirror!.Store;
+                local.Publish(local.Resolve(XsrSemanticId.Parse("nsc.auth.email.form")), useEmail ? "true" : "false");
+                local.Publish(local.Resolve(XsrSemanticId.Parse("nsc.auth.handle.form")), useEmail ? "false" : "true");
+                local.Publish(local.Resolve(XsrSemanticId.Parse("nsc.auth.email.tab.class")), useEmail ? "nsc-tab nsc-tab-selected" : "nsc-tab");
+                local.Publish(local.Resolve(XsrSemanticId.Parse("nsc.auth.password.tab.class")), useEmail ? "nsc-tab" : "nsc-tab nsc-tab-selected");
+                local.Publish(local.Resolve(XsrSemanticId.Parse("nsc.auth.stage")), stage);
+                ready.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+            }
+            static Nexa.Xsr.Renderer.Nxml.NxmlIrNode? FindIr(Nexa.Xsr.Renderer.Nxml.NxmlIrNode node, string key)
+            {
+                if (node.Key == key) return node;
+                foreach (var child in node.Children) if (FindIr(child, key) is { } found) return found;
+                return null;
+            }
         }
     }
 }

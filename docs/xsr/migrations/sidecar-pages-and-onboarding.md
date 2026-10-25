@@ -41,8 +41,10 @@ product version bump.
 - Protocol: 36 cases and the existing bounded-allocation/round-trip gates.
 - Renderer: 124 cases. Desktop: 373 cases, including external page open/return,
   retirement, onboarding continuation, draft destruction, and pending-call CANCEL.
-- NXML: 85 cases published and executed as a Windows x64 NativeAOT application;
+- NXML: 86 cases (85 previously published and executed as a Windows x64 NativeAOT application);
   standalone document reload retains focus/drafts and rejects changed structure.
+  Literal transition-key values can update while preserving motion and binding
+  contracts; form changes animate instead of retiring their entire page.
 - Architecture: all 72 projects pass the existing ownership/reference gates.
 - The external Sidecar binary fixture decodes actual declarations and snapshots,
   compiles five modules, checks a 1024x600 setup page, footer placement, blank page
@@ -54,3 +56,9 @@ product version bump.
 The production signature requirement is unchanged. Native binary contract tests
 are not release-signature or real-user login evidence. An unchanged presentation
 snapshot reuses compiled documents and performs no IPC or source parsing per frame.
+
+Nexa.Desktop.Tests --native-sidecar-preview <absolute .nsc path> opens an
+interactive development window against the actual binary and authentication
+service. It uses an isolated temporary Host workspace and the same bootstrap,
+NXML edge, mirror, and command loop. This explicit test entry point does not
+change production package admission or create a trusted release signature.

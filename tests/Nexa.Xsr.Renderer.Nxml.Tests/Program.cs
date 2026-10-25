@@ -10,6 +10,7 @@ internal static partial class Program
     [
         ("global NXML mounts target future pages without adapters", GlobalNxmlMountsTargetFuturePages),
         ("standalone documents reload without losing input and reject changed structure", StandaloneDocumentReloadPreservesInput),
+        ("standalone animation keys reload without retiring inputs", StandaloneTransitionKeysReloadWithoutRetiringInput),
         ("global NXML replacement preserves live host state and restores layers", GlobalNxmlReplacementRestoresLiveState),
         ("extensions share components styles dynamics and preserve input drafts", NxmlExtensionsShareTheHostSuite),
         ("NXML presentation follows logical projection and isolates invalid mounts", NxmlPresentationIsLateAndTransactional),

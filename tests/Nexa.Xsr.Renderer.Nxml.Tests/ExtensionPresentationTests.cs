@@ -24,6 +24,26 @@ internal static partial class Program
         document.Dispose(); AssertFalse(tree.IsAlive(input)); AssertFalse(document.Owns(input));
     }
 
+    private static void StandaloneTransitionKeysReloadWithoutRetiringInput()
+    {
+        var tree = new XsrUiTree(); var store = new XsrStateStoreBuilder().Build();
+        var program = new NxmlExtensionProgram("main.nxml", new Dictionary<string, string>
+        {
+            ["main.nxml"] = "<StackPanel Key=\"Fields\" TransitionKey=\"{data stage}\" TransitionOffsetX=\"18\"><TextInput Key=\"Draft\" Label=\"draft\" Height=\"32\" /></StackPanel>",
+        });
+        using var document = new NxmlDocumentInstance(tree, store, program.Compile(new Dictionary<string, string> { ["stage"] = "email" }));
+        var renderer = new XsrUiRenderer(tree, store); renderer.SetRoot(document.Root); var before = renderer.Render();
+        var input = tree.Children(document.Root).Single();
+        renderer.SetTextInputValue(input, "retained across modes");
+        document.Reload(program.Compile(new Dictionary<string, string> { ["stage"] = "password" }));
+        AssertEqual("password", tree.GetComponent<XsrUiTransition>(document.Root)!.Key);
+        AssertEqual("retained across modes", tree.GetComponent<XsrUiTextInput>(input)!.ReadDraft());
+        var scene = renderer.Render();
+        AssertEqual(18d, scene.Nodes.Single(node => node.Entity == document.Root).TransitionPresentedOffsetX);
+        AssertEqual(18d, scene.Nodes.Single(node => node.Entity == input).Rect.X - before.Nodes.Single(node => node.Entity == input).Rect.X);
+        AssertTrue(scene.Outgoing.Count > 0);
+    }
+
     private static readonly string[] ExtensionBefore = ["added", "original"];
     private static readonly string[] ExtensionAfter = ["original", "added"];
     private static readonly string[] ExtensionDynamicOrder = ["first", "middle", "last"];
