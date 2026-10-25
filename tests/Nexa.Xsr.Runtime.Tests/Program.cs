@@ -12,6 +12,7 @@ internal static partial class Program
         ("automatic constructors async and iterators retain semantics", AutomaticConstructorsAsyncAndIteratorsRetainSemantics),
         ("NXML modules compile before ready and retire with their session", NxmlModulesCompileBeforeReadyAndRetire),
         ("NXML modules reject unsupported or invalid documents before activation", NxmlModulesRejectUnsupportedAndInvalidDocuments),
+        ("Standalone pages require negotiation and resolve only within their session", NxmlPagesAreSessionScoped),
         ("Host facade preserves admission cancellation and shutdown errors", HostFacadePreservesAdmissionCancellationAndShutdownErrors),
         ("Host facade returns stable catalog budget failure", HostFacadeReloadReturnsStableFailureForCatalogBudget),
         ("initial snapshot preserves store and owns candidate values", Sync(CoreInitialSnapshotPreservesStoreAndOwnsCandidateValues)),

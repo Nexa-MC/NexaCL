@@ -41,6 +41,7 @@ public sealed class XsrNxmlModuleRuntime
     internal static SidecarNxmlDocument[] Prepare(IEnumerable<SidecarRegistrationItem> declarations, SidecarFeatures features)
     {
         List<SidecarNxmlDocument> documents = [];
+        HashSet<string> pages = new(StringComparer.Ordinal);
         long bytes = 0;
         foreach (var entry in declarations)
         {
@@ -49,7 +50,15 @@ public sealed class XsrNxmlModuleRuntime
                 throw new SidecarProtocolException("NXML modules require negotiated support and zero flags/codec.");
             bytes += entry.Payload!.Length;
             if (documents.Count >= 32 || bytes > 4 * 1024 * 1024) throw new SidecarProtocolException("Session NXML source budget exceeded.");
-            documents.Add(SidecarNxmlDocument.Decode(entry.Payload));
+            var document = SidecarNxmlDocument.Decode(entry.Payload);
+            if (document.Operation is SidecarNxmlOperation.Page or SidecarNxmlOperation.OnboardingPage)
+            {
+                if (!features.HasFlag(SidecarFeatures.Pages) || document.Target.Length < 2
+                    || document.Target[0] != '#' || document.Target.AsSpan(1).ContainsAny('#', '/', ' ')
+                    || !pages.Add(document.Target))
+                    throw new SidecarProtocolException("Pages require negotiated support and unique single-key targets.");
+            }
+            documents.Add(document);
         }
         return documents.ToArray();
     }
@@ -109,6 +118,24 @@ public sealed class XsrNxmlModuleRuntime
             if (!lease.Compiled[index].Commands.Contains(command)) return XsrNxmlCommandRoute.Inactive;
             return lease.Session.Registration?.TryResolve(SidecarRegistrationKind.Command, command) is not null
                 ? XsrNxmlCommandRoute.Sidecar : XsrNxmlCommandRoute.Host;
+        }
+    }
+
+    /// <summary>Resolves a standalone page only in the active invoking module's session.</summary>
+    public bool TryResolvePage(Guid exposure, string target, out XsrNxmlModuleView? page)
+    {
+        lock (_gate)
+        {
+            var lease = _leases.FirstOrDefault(item => !item.Retired && item.Exposures.Contains(exposure));
+            if (lease is not null)
+                for (int index = 0; index < lease.Documents.Length; index++)
+                    if (lease.Documents[index].Operation == SidecarNxmlOperation.Page && lease.Documents[index].Target == target)
+                    {
+                        page = new(lease.Exposures[index], lease.Documents[index], lease.Compiled[index]);
+                        return true;
+                    }
+            page = null;
+            return false;
         }
     }
 

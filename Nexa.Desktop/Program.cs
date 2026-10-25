@@ -792,7 +792,9 @@ internal static partial class Program
         XsrUiRuntimeContext context = new();
         XsrStateStoreBuilder builder = new();
         LaunchPageState.DeclareState(builder);
+        Nexa.Services.Logging.LogService.DeclareState(builder);
         var store = builder.Build(context.StateBridge);
+        using var setupLog = new Nexa.Services.Logging.LogService(store);
         DesktopUiIntentSink intents = new();
         var shell = NxmlShellComposer.Compose(store, context, new XsrUiShellOptions
         { Title = "NexaCL", Version = ResolveInformationalVersion() }, intents);
@@ -833,6 +835,12 @@ internal static partial class Program
             }
             return 0;
         }
+        var setupNxml = new DesktopSidecarNxml(store);
+        using var setupExtensions = setupNxml.Attach(shell, intents, store, message => setupLog.Warn("Sidecar", message), controller.Page);
+        var setupSidecars = SidecarStartup.Create(setupLog, nxmlModules: setupNxml.Runtime);
+        using var setupSidecarLifetime = SidecarStartup.StartLifetime(setupSidecars, setupLog, !args.Contains("--safe-mode", StringComparer.Ordinal));
+        try { setupSidecarLifetime.InitialReady.WaitAsync(TimeSpan.FromSeconds(15)).GetAwaiter().GetResult(); }
+        catch (TimeoutException) { setupLog.Warn("Sidecar", "First-run Sidecar discovery is continuing in the background."); }
         PrepareFirstRunStartupAsync(startup, shell, platform, setStage).GetAwaiter().GetResult();
         setStage("first_run_lifetime");
         int result = startup is not null

@@ -12,10 +12,10 @@
     </TitleBar>
     <StackPanel StretchLastChild="true" Class="layout-Shell-8">
       <Navigation IsVisible="{state setup.presentation.navigation_visible}" StretchLastChild="true" Class="layout-Shell-9">
-        <NavigationItem Label="启动" Content="启动" Icon="lucide/play" Command="ui.navigation.launch" />
-        <NavigationItem Label="安装" Content="安装" Icon="lucide/package-plus" Command="ui.navigation.download" IsVisible="{state launch.navigation.install-visible}" Enabled="{state launch.navigation.install-visible}" />
-        <NavigationItem Label="资源" Content="资源" Icon="lucide/blocks" Command="ui.navigation.community" />
-        <NavigationItem Label="设置" Content="设置" Icon="lucide/settings" Command="ui.navigation.settings" />
+        <NavigationItem Key="NavigationLaunch" Label="启动" Content="启动" Icon="lucide/play" Command="ui.navigation.launch" />
+        <NavigationItem Key="NavigationInstall" Label="安装" Content="安装" Icon="lucide/package-plus" Command="ui.navigation.download" IsVisible="{state launch.navigation.install-visible}" Enabled="{state launch.navigation.install-visible}" />
+        <NavigationItem Key="NavigationResources" Label="资源" Content="资源" Icon="lucide/blocks" Command="ui.navigation.community" />
+        <NavigationItem Key="NavigationSettings" Label="设置" Content="设置" Icon="lucide/settings" Command="ui.navigation.settings" />
       </Navigation>
       <ContentHost TransitionKey="navigation" Class="layout-Shell-14" />
     </StackPanel>

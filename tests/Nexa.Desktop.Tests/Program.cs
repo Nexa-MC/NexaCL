@@ -19,6 +19,18 @@ internal static partial class Program
 {
     public static void Main(string[] args)
     {
+        if (args is ["--sidecar-process-fixture", var executable])
+        {
+            SidecarProcessFixtureRegistersInertly(executable).GetAwaiter().GetResult();
+            Console.WriteLine("Renamed NSC executable completes the real Host bootstrap, handshake, registration and initial snapshot.");
+            return;
+        }
+        if (args is ["--sidecar-nxml-fixture", var fixtureDirectory])
+        {
+            SidecarNxmlFixtureCompilesAndNavigates(fixtureDirectory);
+            Console.WriteLine("Sidecar binary declarations and initial snapshot compile and navigate through the real Host.");
+            return;
+        }
         if (args is ["--desktop-instance-file-peer", var fileDirectory, var file])
         {
             var primary = Nexa.Desktop.DesktopSingleInstance.AcquireAsync(fileDirectory, Nexa.Desktop.DesktopDestination.Install, file).GetAwaiter().GetResult();
@@ -400,6 +412,8 @@ internal static partial class Program
         ("resource primitive function patch changes presentation only", ResourcePrimitiveFunctionPatchChangesPresentationOnly),
         ("resource interactive module presents live state and cancels retired source", ResourceInteractiveModulePresentsLiveStateAndCancelsRetiredSource),
         ("Sidecar NXML replaces a future page without product adapters", SidecarNxmlPresentsFuturePagesAndRoutesActions),
+        ("Sidecar standalone pages navigate, return and retire", SidecarStandalonePagesNavigateAndRetire),
+        ("Sidecar onboarding resumes Host setup and clears page drafts", SidecarOnboardingResumesSetup),
         ("resource function patch rewrites actual list and detail captions", ResourceFunctionPatchRewritesActualListAndDetailCaptions),
         ("resources page uses service queries and preserves search", ResourcesPageUsesServiceQueriesAndPreservesSearch),
         ("resource icons arrive without rebuilding search or rows", ResourceIconsArriveWithoutRebuildingSearchOrRows),

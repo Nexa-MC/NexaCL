@@ -7,6 +7,7 @@ namespace Nexa.Sidecar.Protocol;
 public enum SidecarNxmlOperation : uint
 {
     Append = 1, Prepend = 2, Before = 3, After = 4, Modify = 5, Replace = 6,
+    Page = 7, OnboardingPage = 8,
 }
 
 /// <summary>A source bundle for the shared NXML compiler, not a second UI control model.</summary>

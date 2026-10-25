@@ -60,6 +60,14 @@ public sealed partial class XsrUiShell
 
     private XsrUiEntityId CreateNavigationToggle()
     {
+        var footer = Tree.Create("navigation-footer");
+        Tree.SetComponent(footer, new XsrUiElement
+        {
+            VerticalAlignment = XsrUiAlignment.End,
+            Margin = new XsrUiThickness(0, 0, 0, RailBottomInset),
+        });
+        Tree.SetComponent(footer, new XsrUiStackPanel(XsrUiOrientation.Vertical));
+        Tree.Attach(footer, Navigation);
         XsrUiEntityId toggle = Tree.Create("navigation-toggle");
         Tree.SetComponent(toggle, new XsrUiElement
         {
@@ -68,7 +76,7 @@ public sealed partial class XsrUiShell
             // The rail stretches its last child over the leftover height; end alignment pins the
             // toggle to the bottom of the rail like the legacy hamburger.
             VerticalAlignment = XsrUiAlignment.End,
-            Margin = new XsrUiThickness(0, 6, 0, RailBottomInset),
+            Margin = new XsrUiThickness(0, 6, 0, 0),
             HorizontalAlignment = XsrUiAlignment.Stretch,
         });
         Tree.SetComponent(toggle, new XsrUiImage("lucide/menu"));
@@ -77,7 +85,7 @@ public sealed partial class XsrUiShell
         Tree.SetComponent(toggle, new XsrUiInput { Focusable = true, Clickable = true });
         Tree.SetComponent(toggle, new XsrUiCommandBinding(XsrUiShellIds.NavigationExpand));
         Tree.SetComponent(toggle, new XsrUiVisualStyle());
-        Tree.Attach(toggle, Navigation);
+        Tree.Attach(toggle, footer);
         return toggle;
     }
 
@@ -177,8 +185,9 @@ public sealed partial class XsrUiShell
 
         foreach (XsrUiShellNavigationItem item in NavigationItems)
         {
-            ApplyItemVisual(_navigationEntities[item.Id], item.Id == SelectedNavigationId);
+            ApplyItemVisual(_navigationEntities[item.Id], item.Id == SelectedNavigationId && !_auxiliaryNavigation.IsAssigned);
         }
+        if (Tree.IsAlive(_auxiliaryNavigation)) ApplyItemVisual(_auxiliaryNavigation, true);
 
         if (_navigationToggle != default)
         {

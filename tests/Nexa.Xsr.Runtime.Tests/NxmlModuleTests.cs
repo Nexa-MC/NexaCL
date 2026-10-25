@@ -72,4 +72,39 @@ internal static partial class Program
             AssertEqual(SidecarSessionState.Failed, invalid.State);
         }
     }
+
+    private static async ValueTask NxmlPagesAreSessionScoped()
+    {
+        static SidecarRegistrationItem Page(string key)
+        {
+            byte[] payload = SidecarNxmlDocument.Encode(new("#" + key, SidecarNxmlOperation.Page, "main.nxml",
+                new Dictionary<string, string> { ["main.nxml"] = "<Page />" }));
+            return new(SidecarRegistrationKind.UiModule, "plugin.page." + key, 0, 0, payload, SHA256.HashData(payload));
+        }
+        XsrStateStoreBuilder builder = new(); builder.Cell<XsrNxmlModuleSnapshot>(NxmlModuleState, "Test");
+        var store = builder.Build();
+        XsrNxmlModuleRuntime runtime = new(store, store.Resolve(NxmlModuleState), (source, _) => new(source.Target, []));
+        await AssertThrowsAsync<SidecarProtocolException>(async () =>
+        {
+            var (unsupported, peer) = await PatchSession(new(CaptionPoint), [Page("First")], features: SidecarFeatures.Nxml, nxml: runtime);
+            unsupported.Dispose(); peer.Dispose();
+        });
+        await AssertThrowsAsync<SidecarProtocolException>(async () =>
+        {
+            var (duplicate, peer) = await PatchSession(new(CaptionPoint), [Page("Same"), Page("Same")], features: SidecarFeatures.All, nxml: runtime);
+            duplicate.Dispose(); peer.Dispose();
+        });
+        var (first, firstPeer) = await PatchSession(new(CaptionPoint), [Page("First")], features: SidecarFeatures.All, nxml: runtime);
+        var (second, secondPeer) = await PatchSession(new(CaptionPoint), [Page("Second")], features: SidecarFeatures.All, nxml: runtime);
+        using (first) using (firstPeer) using (second) using (secondPeer)
+        {
+            await SnapshotAll(first, firstPeer); await first.ActivateAsync(); await DataPlaneReceiveAsync(firstPeer);
+            await SnapshotAll(second, secondPeer); await second.ActivateAsync(); await DataPlaneReceiveAsync(secondPeer);
+            var modules = store.Read<XsrNxmlModuleSnapshot>(store.Resolve(NxmlModuleState)).Value!.Modules;
+            var caller = modules.Single(module => module.Source.Target == "#First").Exposure;
+            AssertTrue(runtime.TryResolvePage(caller, "#First", out var own)); AssertEqual(caller, own!.Exposure);
+            AssertFalse(runtime.TryResolvePage(caller, "#Second", out _));
+            first.Dispose(); AssertFalse(runtime.TryResolvePage(caller, "#First", out _));
+        }
+    }
 }

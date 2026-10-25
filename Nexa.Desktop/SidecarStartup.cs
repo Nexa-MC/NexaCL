@@ -29,9 +29,10 @@ internal static class SidecarStartup
     public static Lifetime StartLifetime(SidecarSupervisor supervisor, LogService log, bool enabled = true) => new(supervisor, enabled ? StartAsync(supervisor, log) : Task.CompletedTask);
 
     /// <summary>Joins discovery diagnostics before the Desktop releases logging/state dependencies.</summary>
-    internal sealed class Lifetime(SidecarSupervisor supervisor, Task startup) : IAsyncDisposable
+    internal sealed class Lifetime(SidecarSupervisor supervisor, Task startup) : IAsyncDisposable, IDisposable
     {
         internal Task InitialReady => startup;
+        public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
         public async ValueTask DisposeAsync()
         {
             await supervisor.ShutdownAsync().ConfigureAwait(false);

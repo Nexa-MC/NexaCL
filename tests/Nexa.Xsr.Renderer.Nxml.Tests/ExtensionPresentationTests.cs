@@ -5,6 +5,25 @@ namespace Nexa.Xsr.Renderer.Nxml.Tests;
 
 internal static partial class Program
 {
+    private static void StandaloneDocumentReloadPreservesInput()
+    {
+        var tree = new XsrUiTree(); var store = new XsrStateStoreBuilder().Build();
+        var program = new NxmlExtensionProgram("main.nxml", new Dictionary<string, string>
+        {
+            ["main.nxml"] = "<Page Key=\"Standalone\"><StackPanel><TextInput Key=\"Draft\" Label=\"draft\" Height=\"32\" /><Text Content=\"{data title}\" /></StackPanel></Page>",
+        });
+        using var document = new NxmlDocumentInstance(tree, store, program.Compile(new Dictionary<string, string> { ["title"] = "first" }));
+        var input = tree.LiveEntities.Single(node => tree.Name(node) == "Draft");
+        var renderer = new XsrUiRenderer(tree, store); renderer.SetRoot(document.Root); renderer.Render();
+        AssertTrue(renderer.Focus(input)); AssertTrue(renderer.InsertText("retained"));
+        document.Reload(program.Compile(new Dictionary<string, string> { ["title"] = "second" }));
+        AssertTrue(document.Owns(input)); AssertEqual("retained", tree.GetComponent<XsrUiTextInput>(input)!.ReadDraft());
+        AssertTrue(renderer.Render().Nodes.Any(node => node.Text == "second"));
+        AssertThrows<NxmlLoadException>(() => document.Reload(Extension("<Page Key=\"Standalone\"><Text Content=\"changed shape\" /></Page>")));
+        AssertEqual("retained", tree.GetComponent<XsrUiTextInput>(input)!.ReadDraft());
+        document.Dispose(); AssertFalse(tree.IsAlive(input)); AssertFalse(document.Owns(input));
+    }
+
     private static readonly string[] ExtensionBefore = ["added", "original"];
     private static readonly string[] ExtensionAfter = ["original", "added"];
     private static readonly string[] ExtensionDynamicOrder = ["first", "middle", "last"];

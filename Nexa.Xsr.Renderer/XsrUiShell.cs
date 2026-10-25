@@ -262,6 +262,8 @@ public sealed partial class XsrUiShell
     private readonly Dictionary<XsrUiEntityId, XsrSemanticId> _navigationIds = [];
     private readonly IXsrUiIntentSink? _externalIntentSink;
     private XsrUiEntityId _navigationToggle;
+    private XsrUiEntityId _auxiliaryNavigation;
+    private static readonly XsrSemanticId AuxiliaryNavigationId = XsrSemanticId.Parse("navigation.sidecar");
     private XsrUiEntityId _titleBarSafeArea;
 
     private readonly XsrStateStore _windowStateStore;
@@ -378,7 +380,7 @@ public sealed partial class XsrUiShell
         }
 
         XsrSemanticId previous = SelectedNavigationId;
-        if (previous == id)
+        if (previous == id && !_auxiliaryNavigation.IsAssigned)
         {
             return true;
         }
@@ -387,6 +389,9 @@ public sealed partial class XsrUiShell
         {
             SetSelection(previousEntity, selected: false);
         }
+
+        if (Tree.IsAlive(_auxiliaryNavigation)) SetSelection(_auxiliaryNavigation, selected: false);
+        _auxiliaryNavigation = default;
 
         SetSelection(entity, selected: true);
         SelectedNavigationId = id;
@@ -401,6 +406,27 @@ public sealed partial class XsrUiShell
     /// </summary>
     public bool Select(XsrUiEntityId entity) =>
         _navigationIds.TryGetValue(entity, out XsrSemanticId id) && Select(id);
+
+    /// <summary>Selects a Host-admitted auxiliary destination without altering built-in IDs.</summary>
+    public void SelectAuxiliaryNavigation(XsrUiEntityId entity)
+    {
+        if (!Tree.IsAlive(entity)) throw new ArgumentException("The navigation source is not alive.", nameof(entity));
+        if (_navigationEntities.TryGetValue(SelectedNavigationId, out var previous)) SetSelection(previous, false);
+        if (Tree.IsAlive(_auxiliaryNavigation)) SetSelection(_auxiliaryNavigation, false);
+        _auxiliaryNavigation = entity;
+        SelectedNavigationId = AuxiliaryNavigationId;
+        if (Tree.GetComponent<XsrUiSelection>(entity) is null) Tree.SetComponent(entity, new XsrUiSelection());
+        SetSelection(entity, true);
+    }
+
+    /// <summary>Applies shell rail presentation to a Host-admitted auxiliary navigation item.</summary>
+    public void PrepareAuxiliaryNavigation(XsrUiEntityId entity)
+    {
+        if (Tree.GetComponent<XsrUiSemantic>(entity)?.Role != XsrUiSemanticRole.NavigationItem)
+            throw new ArgumentException("Auxiliary navigation requires a navigation item.", nameof(entity));
+        if (Tree.GetComponent<XsrUiSelection>(entity) is null) Tree.SetComponent(entity, new XsrUiSelection());
+        ApplyItemVisual(entity, entity == _auxiliaryNavigation);
+    }
 
     /// <summary>
     /// Expands or collapses the navigation rail. Expansion is ephemeral presentation mechanics

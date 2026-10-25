@@ -22,6 +22,13 @@ internal static class AvaloniaUiIcons
     {
         ["lucide/download"] = ["M12 3v12", "m7 10 5 5 5-5", "M5 16v4h14v-4"],
         ["lucide/star"] = ["m12 3 2.8 5.7 6.3.9-4.6 4.4 1.1 6.3-5.6-3-5.6 3 1.1-6.3L3 9.6l6.2-.9Z"],
+        // https://github.com/lucide-icons/lucide/blob/main/icons/store.svg (ISC).
+        ["lucide/store"] =
+        [
+            "M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5",
+            "M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244",
+            "M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05",
+        ],
         ["lucide/arrow-up-right"] = ["M7 17 17 7", "M7 7h10v10"],
         ["lucide/flask-conical"] = ["M9 3h6", "M10 3v6l-6 10a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2L14 9V3", "M7 15h10"],
         ["lucide/test-tube"] = ["m14 2 8 8", "m16 4-12 12a3 3 0 0 0 4 4L20 8", "M8 12h8"],

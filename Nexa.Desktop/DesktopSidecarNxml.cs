@@ -10,7 +10,7 @@ using Nexa.Xsr.State;
 namespace Nexa.Desktop;
 
 /// <summary>One composition edge for all current and future NXML pages, controls and components.</summary>
-internal sealed class DesktopSidecarNxml
+internal sealed partial class DesktopSidecarNxml
 {
     private readonly ConditionalWeakTable<SidecarNxmlDocument, NxmlExtensionProgram> _programs = new();
     internal XsrNxmlModuleRuntime Runtime { get; }
@@ -23,6 +23,9 @@ internal sealed class DesktopSidecarNxml
             NxmlPresentationCoordinator.ValidateTarget(source.Target);
             var program = _programs.GetValue(source, item => new(item.EntryPoint, item.Files, styles: DesktopMarkup.SharedStyles));
             var document = program.Compile(data);
+            if (source.Operation is SidecarNxmlOperation.Page or SidecarNxmlOperation.OnboardingPage
+                && (document.Root.Root.Role != XsrUiSemanticRole.Page || document.Root.Root.Key != source.Target[1..]))
+                throw new NxmlCompileException("Standalone pages require a Page root matching their target key.");
             NxmlUiLoader.ValidateBindings(document.Root, store);
             foreach (var fragment in document.Fragments) NxmlUiLoader.ValidateBindings(fragment.Content, store);
             return new(document, document.Commands);
@@ -30,9 +33,9 @@ internal sealed class DesktopSidecarNxml
     }
 
     internal IDisposable Attach(XsrUiShell shell, DesktopUiIntentSink intents, XsrStateStore store,
-        Action<string> warn) => new Session(this, shell, intents, store, warn);
+        Action<string> warn, XsrUiEntityId onboardingFallback = default) => new Session(this, shell, intents, store, warn, onboardingFallback);
 
-    private sealed class Session : IDisposable
+    private sealed partial class Session : IDisposable
     {
         private readonly DesktopSidecarNxml _owner;
         private readonly XsrUiShell _shell;
@@ -43,13 +46,16 @@ internal sealed class DesktopSidecarNxml
         private XsrNxmlModuleSnapshot? _snapshot;
         private IReadOnlyList<NxmlPresentationLayer> _layers = [];
         private readonly CancellationTokenSource _stop = new();
+        private long _styledStructure = -1;
 
         internal Session(DesktopSidecarNxml owner, XsrUiShell shell, DesktopUiIntentSink intents,
-            XsrStateStore store, Action<string> warn)
+            XsrStateStore store, Action<string> warn, XsrUiEntityId onboardingFallback)
         {
             _owner = owner; _shell = shell; _store = store; _warn = warn;
+            _onboardingFallback = onboardingFallback;
             _coordinator = new(shell.Tree, store);
             shell.Renderer.PresentationPreparing += Frame;
+            shell.StyleChanged += StyleChanged;
             _route = intents.Route(Intent);
         }
         private void Frame(object? sender, EventArgs args)
@@ -58,29 +64,46 @@ internal sealed class DesktopSidecarNxml
             if (read.IsAvailable && read.HasValue && !ReferenceEquals(_snapshot, read.Value))
             {
                 _snapshot = read.Value;
-                _layers = _snapshot!.Modules.Select(module => new NxmlPresentationLayer(module.Exposure,
+                _styledStructure = -1;
+                UpdatePages(_snapshot!.Modules);
+                _layers = _snapshot.Modules.Where(module => module.Source.Operation <= SidecarNxmlOperation.Replace).Select(module => new NxmlPresentationLayer(module.Exposure,
                     module.Source.Target, (XsrUiMountOperation)((int)module.Source.Operation - 1),
                     (NxmlPreparedDocument)module.Presentation.Artifact)).ToArray();
             }
-            try { _coordinator.Update(_layers); }
+            try
+            {
+                _coordinator.Update(_layers);
+                if (_styledStructure != _shell.Tree.StructureRevision)
+                {
+                    foreach (var node in _shell.Tree.LiveEntities)
+                        if (_shell.Tree.GetComponent<XsrUiSemantic>(node)?.Role == XsrUiSemanticRole.NavigationItem
+                            && _coordinator.TryGetExposure(node, out _)) _shell.PrepareAuxiliaryNavigation(node);
+                    _styledStructure = _shell.Tree.StructureRevision;
+                }
+            }
             catch (NxmlPresentationException error)
             { _owner.Runtime.RejectPresentation(error.Exposure); _warn("NXML presentation rejected: " + error.InnerException?.Message); }
             catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
             { _warn("NXML presentation could not be mounted: " + error.Message); }
+            AdvanceOnboarding();
         }
+        private void StyleChanged(object? sender, EventArgs args) => _styledStructure = -1;
         private bool Intent(DesktopUiIntent intent)
         {
-            if (!_coordinator.TryGetExposure(intent.Source, out var exposure)) return false;
+            if (!_coordinator.TryGetExposure(intent.Source, out var exposure) && !TryGetPageExposure(intent.Source, out exposure)) return false;
             var route = _owner.Runtime.ReadCommandRoute(exposure, intent.Command);
-            if (route == XsrNxmlCommandRoute.Host) return false;
             if (route == XsrNxmlCommandRoute.Inactive) return true;
+            if (PageIntent(exposure, intent)) return true;
+            if (route == XsrNxmlCommandRoute.Host) return false;
             string value = _shell.Renderer.ReadIntentArgument(intent.Source);
-            _ = Dispatch(exposure, intent.Command, value);
+            var pageStop = _pages.TryGetValue(exposure, out var page) ? page.Stop.Token : _stop.Token;
+            _ = Dispatch(exposure, intent.Command, value, pageStop);
             return true;
         }
-        private async Task Dispatch(Guid exposure, Nexa.Xsr.XsrSemanticId command, string value)
+        private async Task Dispatch(Guid exposure, Nexa.Xsr.XsrSemanticId command, string value, CancellationToken pageStop)
         {
-            try { await _owner.Runtime.DispatchAsync(exposure, command, value, _stop.Token).ConfigureAwait(false); }
+            using var stop = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token, pageStop);
+            try { await _owner.Runtime.DispatchAsync(exposure, command, value, stop.Token).ConfigureAwait(false); }
             catch (OperationCanceledException) { }
             catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
             { _warn("NXML action failed: " + error.Message); }
@@ -88,7 +111,9 @@ internal sealed class DesktopSidecarNxml
         public void Dispose()
         {
             _shell.Renderer.PresentationPreparing -= Frame; _route.Dispose();
+            _shell.StyleChanged -= StyleChanged;
             _stop.Cancel(); _coordinator.Dispose(); _stop.Dispose();
+            DisposePages();
         }
     }
 }
