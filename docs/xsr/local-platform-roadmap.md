@@ -175,3 +175,45 @@ passed. Desktop/Services Release builds had zero warnings/errors. NativeAOT publ
 retains the existing Jint IL2098 warning. The quota setting is machine-local/nonexportable.
 A real systemd user-session success run, memory/IO quotas and disk/network policies remain
 pending; this slice only adds explicit CPU bandwidth limits.
+
+### Fifth-slice CI follow-up
+GitHub XSR CI run 40290441575 confirmed native CPU quota admission (`CPU quota native
+adapter: ok`) against its systemd user session. This verifies Host scope membership and
+cpu.max, not CPU throughput benchmarking. That run subsequently exposed two stale catalog
+cardinality assertions (522 instead of 523). Both now include the new setting; the catalog
+contract also verifies its page, instance override and next-launch timing.
+
+Launcher Build run 40290441432 failed on Intel macOS while creating the DMG with hdiutil's
+`Resource busy`. Packaging now retries only this error, at most twice after the first attempt,
+using fresh temporary images. Each successful image must pass hdiutil verify before atomic
+publication. Other errors and verification failures still fail immediately. No mounted disks
+are forcibly detached and an existing final artifact is preserved on failure.
+
+## Remaining delivery batches (2026-10-26)
+The user requests continuous delivery across the remaining scope, not a confirmation after
+each small commit. Retain independently reviewable commits and acceptance records.
+
+1. Resource governance and hardware policy: explicit memory/IO quotas, measured disk
+   concurrency, metered-network behavior, topology-aware scheduling (heterogeneous cores,
+   X3D, NUMA), unified-memory budgets and power/thermal policies. Existing hardware probes
+   are observations, not implementation of automatic policy.
+2. Native integration and local storage: Windows taskbar progress and system share UI;
+   macOS indexing, App Intents/local Siri actions, Quick Look and APFS clone;
+   Linux GameMode, explicit Portals, Steam/Gamescope integration, Btrfs/ZFS snapshots.
+   Existing DesktopJumpList, OS account key protection (including macOS Keychain) and
+   native notification adapters are existing paths, not new work. Screenshot sharing
+   currently copies a file to the native clipboard; it is not a system share panel.
+3. Independent modules: local pairing, verified resumable LAN transfer, conflict-safe sync,
+   restart-based instance handoff, explicitly authorized streaming, local AI backends,
+   and actual HDR/VRR/OLED/multi-display/controller touch/gyro integration.
+
+Cloud/NexaMC-account requirements remain excluded. Minecraft memory analysis stays disabled
+and disconnected from startup preflight. Unsupported public APIs and absent physical
+hardware must be recorded as unavailable or unverified, never simulated as a completed
+integration. Remaining Windows GameBoost-style behavior requires confirming a supported
+public API; do not invent an OS-wide optimization switch.
+
+CI follow-up local acceptance: all 826 Services tests, all 88 release-tool tests,
+72-project architecture gates and source formatting verification passed. Services Release
+build reported zero warnings/errors. The DMG contention cases are deterministic tool fixtures;
+the next macOS CI packaging job is the native end-to-end verification.

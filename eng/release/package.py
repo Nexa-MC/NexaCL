@@ -6,6 +6,8 @@ import plistlib
 import shutil
 import subprocess
 import tarfile
+import tempfile
+import time
 from pathlib import Path
 from macos_bundle import bundle_info
 
@@ -86,6 +88,32 @@ def windows(payload, output, work, base, version, prefix, arch):
     archive(payload, output / f"{base}.portable.zip", "NexaCL")
 
 
+def create_dmg(source, destination):
+    """Retry only transient hdiutil contention; publish only a verified image."""
+    destination = Path(destination)
+    for attempt in range(3):
+        with tempfile.TemporaryDirectory(prefix="nexacl-dmg-", dir=destination.parent) as staging:
+            image = Path(staging) / "image.dmg"
+            try:
+                result = subprocess.run(
+                    ["hdiutil", "create", "-volname", "NexaCL", "-srcfolder", str(source),
+                     "-format", "UDZO", str(image)],
+                    check=True, capture_output=True, text=True,
+                    env={**os.environ, "LC_ALL": "C"})
+            except subprocess.CalledProcessError as error:
+                # Never retry permission, disk-space, input or verification failures.
+                if attempt == 2 or "Resource busy" not in (error.stderr or ""):
+                    print(error.stderr or "", flush=True)
+                    raise
+                print(f"hdiutil resource busy; retrying ({attempt + 1}/2)", flush=True)
+            else:
+                print(result.stdout or "", end="", flush=True)
+                run("hdiutil", "verify", image)
+                os.replace(image, destination)
+                return
+        time.sleep(2 ** (attempt + 1))
+
+
 def macos(payload, output, work, base, version, prefix, arch):
     app = work / "Nexa.app"
     contents = app / "Contents"
@@ -140,8 +168,7 @@ fi
         "--install-location", "/", "--ownership", "recommended", "--scripts", scripts, work / "Nexa-component.pkg")
     run("productbuild", "--distribution", ROOT / "eng/release/macos-distribution.xml",
         "--package-path", work, dmg_source / "NexaCL.pkg")
-    run("hdiutil", "create", "-volname", "NexaCL", "-srcfolder", dmg_source, "-format", "UDZO", output / f"{base}.dmg")
-    run("hdiutil", "verify", output / f"{base}.dmg")
+    create_dmg(dmg_source, output / f"{base}.dmg")
     archive(app, output / f"{base}.portable.tar.gz", app.name)
 
 
