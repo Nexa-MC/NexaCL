@@ -21,6 +21,7 @@ internal static partial class Program
         ("physical Sidecar Host API completes lifecycle", PhysicalSidecarHostApiCompletesLifecycle),
         ("physical Sidecar recovery is bounded and isolated", PhysicalSidecarRecoveryIsBoundedAndIsolated),
         ("physical Sidecar reload reverifies admitted packages", PhysicalSidecarReloadReverifiesAdmittedPackages),
+        ("Sidecar memory quiescence preserves ownership", PhysicalSidecarMemoryQuiescencePreservesOwnership),
         ("Sidecar disposal cancels unpublished startup", SupervisorDisposalCancelsUnpublishedStartup),
         ("Sidecar handshake owns deadline and terminal cleanup", SessionHandshakeOwnsDeadlineAndTerminalCleanup),
         ("Sidecar lifecycle serializes initial reader phases", SessionLifecycleSerializesInitialReaderPhases),

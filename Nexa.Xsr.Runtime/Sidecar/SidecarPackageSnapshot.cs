@@ -11,6 +11,7 @@ public enum SidecarPackageStatus
     Recovering = 6,
     Quarantined = 7,
     Removed = 8,
+    Quiescent = 9,
 }
 
 /// <summary>An immutable, payload-free snapshot of one top-level Sidecar package.</summary>

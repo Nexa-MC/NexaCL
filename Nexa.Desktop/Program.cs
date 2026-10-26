@@ -499,13 +499,17 @@ internal static partial class Program
         // pages inside the shell content host and dispatches the real launch command.
         setStage("attach_product_controllers");
         AvaloniaUiPlatformActions platformActions = new() { LocalizeContentPicker = shell.Renderer.LocalizeText };
-        platformActions.MemoryPressureObserved += observation => host.SharedStateCache.ApplyMemoryPressure(observation.Pressure switch
+        platformActions.MemoryPressureObserved += observation =>
         {
-            AvaloniaUiMemoryPressure.Normal => Nexa.Services.Caching.StateCacheMemoryPressure.Normal,
-            AvaloniaUiMemoryPressure.Elevated => Nexa.Services.Caching.StateCacheMemoryPressure.Elevated,
-            AvaloniaUiMemoryPressure.Critical => Nexa.Services.Caching.StateCacheMemoryPressure.Critical,
-            _ => Nexa.Services.Caching.StateCacheMemoryPressure.Unknown
-        });
+            var pressure = host.SharedStateCache.ApplyMemoryPressure(observation.Pressure switch
+            {
+                AvaloniaUiMemoryPressure.Normal => Nexa.Services.Caching.StateCacheMemoryPressure.Normal,
+                AvaloniaUiMemoryPressure.Elevated => Nexa.Services.Caching.StateCacheMemoryPressure.Elevated,
+                AvaloniaUiMemoryPressure.Critical => Nexa.Services.Caching.StateCacheMemoryPressure.Critical,
+                _ => Nexa.Services.Caching.StateCacheMemoryPressure.Unknown
+            });
+            sidecars.ReportMemoryConstraint(pressure.Pressure == Nexa.Services.Caching.StateCacheMemoryPressure.Critical);
+        };
         var effectiveAppearance = new DesktopEffectiveAppearanceSource();
         await using var themes = new DesktopThemeSession(runtime.Queries, runtime.Commands, host.StateStore,
             shell, platformActions, effectiveAppearance, message => host.Logging.Warn("Themes", message), safeMode);

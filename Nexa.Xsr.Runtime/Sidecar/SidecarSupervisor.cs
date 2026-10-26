@@ -5,7 +5,7 @@ using Nexa.Sidecar.Transport;
 namespace Nexa.Xsr.Runtime;
 
 /// <summary>Verifies and independently supervises admitted top-level native Sidecar packages.</summary>
-public sealed class SidecarSupervisor : IDisposable, IAsyncDisposable
+public sealed partial class SidecarSupervisor : IDisposable, IAsyncDisposable
 {
     private const int MaximumPackages = 64;
     private const int MaximumRecoveryAttempts = 3;
@@ -261,21 +261,21 @@ public sealed class SidecarSupervisor : IDisposable, IAsyncDisposable
             await session.HandshakeAsync(deadline.Token).ConfigureAwait(false);
             await session.AcceptRegistrationAsync(deadline.Token).ConfigureAwait(false);
             await session.AcceptStateSnapshotAsync(deadline.Token).ConfigureAwait(false);
-            await session.ActivateAsync(deadline.Token).ConfigureAwait(false);
+            if (!_memoryConstrained) await session.ActivateAsync(deadline.Token).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
-            var child = new Child(process, session);
+            var child = new Child(process, session) { MemoryQuiescent = _memoryConstrained };
             lock (_gate)
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
                 package.Child = child;
-                package.Status = SidecarPackageStatus.Active;
+                package.Status = _memoryConstrained ? SidecarPackageStatus.Quiescent : SidecarPackageStatus.Active;
                 package.FailureCode = null;
                 child.Monitor = Task.Run(() => MonitorAsync(package, child), CancellationToken.None);
                 Track(child.Monitor);
             }
             process = null;
             session = null;
-            Report(package.Name, "active");
+            Report(package.Name, _memoryConstrained ? "quiescent" : "active");
             return true;
         }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
@@ -511,6 +511,7 @@ public sealed class SidecarSupervisor : IDisposable, IAsyncDisposable
         public SidecarHostSession Session { get; } = session;
         public CancellationTokenSource Lifetime { get; } = new();
         public volatile bool IntentionalStop;
+        public bool MemoryQuiescent { get; set; }
         public Task Monitor { get; set; } = Task.CompletedTask;
         public Task StopAsync() { lock (_stopGate) return _stopTask ??= StopProcessAsync(Process); }
         public void CancelReceive() { lock (_receiveGate) if (!_receiveEnded) Lifetime.Cancel(); }

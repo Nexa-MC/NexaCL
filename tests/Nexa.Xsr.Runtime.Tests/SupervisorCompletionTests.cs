@@ -12,6 +12,48 @@ internal static partial class Program
     private static readonly XsrSemanticId CompleteCardTarget = XsrSemanticId.Parse("fixture.host.card");
     private static readonly XsrSemanticId CompleteIntentTarget = XsrSemanticId.Parse("fixture.host.intent");
 
+    private static async ValueTask PhysicalSidecarMemoryQuiescencePreservesOwnership()
+    {
+        using var fixture = new CompleteSupervisorFixture();
+        await fixture.AddPackageAsync("provider");
+        await fixture.AddPackageAsync("stopped");
+        await using var supervisor = new SidecarSupervisor(fixture.VerifyAsync);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        await supervisor.StartAsync(fixture.DirectoryPath, deadline.Token);
+        AssertTrue(supervisor.TryGetSession("provider", out var original));
+        supervisor.ReportMemoryConstraint(true);
+        await CompleteWaitUntil(() => supervisor.PackageSnapshots.All(p => p.Status == SidecarPackageStatus.Quiescent), deadline.Token);
+        AssertFalse(supervisor.TryGetSession("provider", out _));
+        AssertEqual(SidecarSessionState.Ready, original!.State);
+        AssertEqual(0, supervisor.Sessions.Count);
+        AssertTrue(await supervisor.StopAsync("stopped", deadline.Token));
+        supervisor.ReportMemoryConstraint(false);
+        await CompleteWaitUntil(() => supervisor.TryGetSession("provider", out _), deadline.Token);
+        AssertTrue(supervisor.TryGetSession("provider", out var resumed));
+        AssertTrue(ReferenceEquals(original, resumed));
+        AssertEqual(1, fixture.VerificationCount("provider"));
+        AssertEqual(SidecarPackageStatus.Stopped, supervisor.PackageSnapshots.Single(p => p.PackageName == "stopped").Status);
+        SidecarHostApi api = new(supervisor);
+        AssertEqual("ready", (await CompleteQuery<SidecarQueryCall, string>(api, SidecarHostRoutes.Query,
+            new("provider", XsrSemanticId.Parse("fixture.status")))).Value);
+        supervisor.ReportMemoryConstraint(true);
+        await CompleteWaitUntil(() => original.State == SidecarSessionState.Ready, deadline.Token);
+        AssertTrue(await supervisor.RestartAsync("provider", deadline.Token));
+        AssertEqual(SidecarPackageStatus.Quiescent, supervisor.PackageSnapshots.Single(p => p.PackageName == "provider").Status);
+        AssertFalse(supervisor.TryGetSession("provider", out _));
+        supervisor.ReportMemoryConstraint(false);
+        await CompleteWaitUntil(() => supervisor.TryGetSession("provider", out _), deadline.Token);
+        AssertTrue(supervisor.TryGetSession("provider", out var replacement));
+        AssertFalse(ReferenceEquals(original, replacement));
+        for (int i = 0; i < 100; i++) supervisor.ReportMemoryConstraint(i % 2 == 0);
+        supervisor.ReportMemoryConstraint(true);
+        await CompleteWaitUntil(() => supervisor.PackageSnapshots.Single(p => p.PackageName == "provider").Status == SidecarPackageStatus.Quiescent, deadline.Token);
+        await supervisor.ShutdownAsync(deadline.Token);
+        supervisor.ReportMemoryConstraint(false);
+        AssertEqual(0, supervisor.Sessions.Count);
+        AssertTrue(supervisor.PackageSnapshots.All(p => p.Status == SidecarPackageStatus.Stopped));
+    }
+
     private static async ValueTask PhysicalSidecarHostApiCompletesLifecycle()
     {
         using var fixture = new CompleteSupervisorFixture();

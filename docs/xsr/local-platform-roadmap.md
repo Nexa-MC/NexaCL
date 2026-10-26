@@ -122,3 +122,28 @@ attachment and detachment from the previous owner. Architecture checks passed fo
 NativeAOT publication retains the existing Jint IL2098 warning. These are cloud Linux tests,
 not physical Windows/macOS pressure measurements; payload estimates do not prove RSS savings.
 Sidecar quiescence and Linux resource quotas are still separate pending roadmap slices.
+
+## Fourth slice: cooperative Sidecar memory quiescence
+Desktop reuses the shared-cache pressure decision (including its recovery hysteresis) to
+request Sidecar quiescence only at Critical pressure. Runtime owns a single latest-value
+worker, serialized with discovery/restart/stop/reload; sampling never waits for IPC. Existing
+binary DEACTIVATE/ACTIVATE controls retire activation leases and restore the same registered
+session. In-flight exchanges/streams become unavailable under the existing deactivation
+contract. This is cooperative inactivity, not OS process suspension or a guarantee of RSS
+reduction. It does not invoke the Minecraft memory estimator.
+
+Only children deactivated by this policy may be automatically reactivated. Explicitly stopped
+packages remain stopped. Children discovered, restarted or recovered while constrained stay
+Ready without activation until recovery. A distinct Quiescent package status exposes this
+state. A failed transition closes that session and uses existing bounded recovery; shutdown
+cancels and joins the pressure worker. Late observations after disposal are ignored. No new
+wire messages, SDK changes, forced process freezing or cloud dependencies are introduced.
+
+### Fourth-slice acceptance
+All 183 Runtime regressions passed in managed and Linux x64 NativeAOT execution, with no
+skips. The new physical-child scenario verifies same-session recovery, preservation of manual
+stop, restart without activation under pressure, rapid observation replacement and shutdown
+while quiescent. Desktop Release build passed with zero warnings/errors; architecture gates
+passed for 72 projects. NativeAOT publication succeeded. These cloud Linux tests verify Host
+policy and protocol behavior, not third-party peers' actual memory reduction or physical
+Windows/macOS pressure behavior. Linux resource quotas remain pending.

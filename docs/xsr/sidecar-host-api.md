@@ -268,8 +268,26 @@ old recovery work from resurrecting a package.
 `SidecarPackageSnapshot` contains `PackageName`, `Status`, optional `SessionId`
 and `ProcessId`, `RecoveryAttempts` and stable `FailureCode`.
 `SidecarPackageStatus` values are Discovered, Starting, Active, Stopped, Failed,
-Recovering, Quarantined and Removed. Package process status and session Active
+Recovering, Quarantined, Removed and Quiescent. Package process status and session Active
 availability are distinct; `TryGetSession` supplies only Active sessions.
+
+Native critical-memory observations may request cooperative quiescence through
+`SidecarSupervisor.ReportMemoryConstraint(bool)`. This queues the latest decision;
+it does not synchronously finish a lifecycle transition. `Quiescent` (9) means a
+policy-owned Ready session, not a stopped OS process. Use catalog snapshots to
+observe completion. Desktop uses the shared-cache recovery hysteresis before
+reporting recovery; raw callers own their own hysteresis.
+
+An author must handle repeated DEACTIVATE / ACTIVATE cycles without requiring a
+new registration: stop background producers on DEACTIVATE, release temporary
+buffers where possible, and restart producers on ACTIVATE. Host activation leases
+are retired and rebuilt; outstanding calls and streams fail as unavailable. Do
+not assume a stream survives the pause. The connection and receive loop remain
+alive. No new wire capability or OS suspension is used, and the host cannot force
+a noncooperating peer to release memory. Packages explicitly stopped by the user
+are not resumed by pressure recovery. Restart/recovery while constrained creates
+a Ready session whose first ACTIVATE waits for recovery.
+
 
 Restart and recovery revalidate executable format/architecture and the pinned
 signature, bind a new endpoint, generate a new stdin challenge and accept a
