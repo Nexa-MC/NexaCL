@@ -85,3 +85,21 @@ This corrects the experimental local model; production admission remains suspend
 representative physical-machine and workload validation. Production inspection on 2026-10-26
 found 3 Windows x64 runs, 1 measured window, and 0 normal endings of at least 60 seconds in
 30 days, so no user-data-trained coefficients are published.
+
+
+#### CI execution evidence (2026-10-26)
+At the user's request, use GitHub-hosted CI instead of an unavailable personal test machine.
+[Run 40262534393](https://github.com/Nexa-MC/NexaCL/actions/runs/40262534393)
+executed commit `ffdcc051b84e2866fe2e932b38d040b6b2fa8ebd` successfully with the existing
+pinned Fabulously Optimized 6.5.0 pack (Minecraft 1.21.1/Fabric), Java 21, a 2048 MiB heap,
+two CPUs, a 6144 MiB container limit and software rendering on Ubuntu 24.04.
+The actual client produced three contiguous windows over 90,732 ms, containing 161 samples.
+Peak process working set was 1455.75 MiB; the final window's mean private memory was
+1806.56 MiB. These are OS process observations, not measured Java heap occupancy.
+The harness stopped the client at its time limit (`forcedStop=true`, `exitCode=-1`);
+this is neither a verified normal game exit nor proof that a world was entered.
+The normalized artifact is `modpack-pilot-unverified-client` (7-day CI retention).
+It explicitly records `scenario=unverified-client`, `trainingEligible=false` and the cloud
+runner/renderer/resource limits. Do not mix it into anonymous player cohorts or use this
+single startup run to publish memory recommendations. This closes the requested CI
+execution check while workload-representative model validation remains pending.
