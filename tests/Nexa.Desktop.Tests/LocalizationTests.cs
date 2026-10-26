@@ -124,7 +124,10 @@ internal static partial class Program
                     && key is not null && (key.StartsWith("action.", StringComparison.Ordinal) || key.EndsWith("Key", StringComparison.Ordinal))
                     && source.StartsWith("Management.", StringComparison.Ordinal);
                 if (!rawActionIdentity && source.Any(character => character is >= '\u4e00' and <= '\u9fff'))
-                    AssertFalse(catalog.Translate(source) == source);
+                {
+                    if (catalog.Translate(source) == source)
+                        throw new InvalidOperationException($"Missing English translation in {Path.GetFileName(resource)} ({key}): {source}");
+                }
             }
         }
     }

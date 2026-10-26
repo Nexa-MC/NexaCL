@@ -1,4 +1,13 @@
 [
+  {"source":"已读","en":"Mark as read","zh-Hant":"已讀"},
+  {"source":"稍后","en":"Later","zh-Hant":"稍後"},
+  {"source":"帮助改进 NexaCL","en":"Help improve NexaCL","zh-Hant":"協助改進 NexaCL"},
+  {"source":"愿意花一分钟分享本次使用体验吗？问卷自愿填写。","en":"Would you like to share your experience? The survey is optional.","zh-Hant":"願意花一分鐘分享本次使用體驗嗎？問卷自願填寫。"},
+  {"source":"填写问卷","en":"Take the survey","zh-Hant":"填寫問卷"},
+  {"source":"暂不填写","en":"Not now","zh-Hant":"暫不填寫"},
+  {"source":"安装整合包","en":"Install modpack","zh-Hant":"安裝整合包"},
+  {"source":"请先选择游戏目录，再安装整合包。","en":"Select a game directory before installing a modpack.","zh-Hant":"請先選擇遊戲目錄，再安裝整合包。"},
+  {"source":"整合包安装失败。","en":"Modpack installation failed.","zh-Hant":"整合包安裝失敗。"},
   {"source":"查看日志","en":"View log","zh-Hant":"檢視日誌"},
   {"source":"日志文件不可用","en":"Log file unavailable","zh-Hant":"日誌檔案無法使用"},
   {"source":"手柄模式","en":"Controller mode","zh-Hant":"手把模式"},
