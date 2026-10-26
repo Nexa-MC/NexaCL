@@ -12,6 +12,35 @@ namespace Nexa.Xsr.Renderer.Backend.Avalonia.Tests;
 
 internal static partial class Program
 {
+    private static bool _memoryPressureOwnerVerified;
+    private static void MemoryPressureObservationsFollowOnlyCurrentNativeOwner() => AssertTrue(_memoryPressureOwnerVerified);
+
+    private static void VerifyMemoryPressureObservationOwnership()
+    {
+        var first = new AvaloniaUiShellWindow(XsrUiShellComposer.Compose(new XsrStateStoreBuilder().Build()));
+        var second = new AvaloniaUiShellWindow(XsrUiShellComposer.Compose(new XsrStateStoreBuilder().Build()));
+        var actions = new AvaloniaUiPlatformActions();
+        int calls = 0; bool deliveredOnWorker = false;
+        actions.MemoryPressureObserved += sample =>
+        {
+            AssertEqual(AvaloniaUiMemoryPressure.Critical, sample.Pressure);
+            calls++; deliveredOnWorker = !Dispatcher.UIThread.CheckAccess();
+        };
+        var sample = new AvaloniaUiMemoryObservation(AvaloniaUiMemoryPressure.Critical, 1, 1024, null, "fixture");
+        try
+        {
+            actions.Attach(first); actions.Attach(first);
+            Task.Run(() => first.ReportMemoryPressure(sample)).GetAwaiter().GetResult();
+            AssertEqual(1, calls); AssertTrue(deliveredOnWorker);
+            actions.Attach(second);
+            first.ReportMemoryPressure(sample); AssertEqual(1, calls);
+            Task.Run(() => second.ReportMemoryPressure(sample)).GetAwaiter().GetResult();
+            AssertEqual(2, calls); AssertTrue(deliveredOnWorker);
+            _memoryPressureOwnerVerified = true;
+        }
+        finally { first.Close(); second.Close(); }
+    }
+
     private static void MemoryPressurePreservesVisibleLeasesAndDisposesIdle()
     {
         AssertEqual(AvaloniaUiMemoryPressure.Critical, AvaloniaUiResourcePressure.Create(32 * 1048576L, 1024 * 1048576L, null, "fixture").Pressure);

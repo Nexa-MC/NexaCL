@@ -19,7 +19,7 @@ public static class AvaloniaUiShellLifetime
     internal static AvaloniaUiShellWindow Prepare(XsrUiShell shell, Stream? windowIcon)
     {
         var window = new AvaloniaUiShellWindow(shell, windowIcon);
-        var pressure = new AvaloniaUiResourcePressureSession();
+        var pressure = new AvaloniaUiResourcePressureSession(window.ReportMemoryPressure);
         window.Closed += (_, _) => pressure.Dispose();
         return window;
     }

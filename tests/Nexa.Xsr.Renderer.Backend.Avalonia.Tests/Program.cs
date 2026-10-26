@@ -49,6 +49,7 @@ internal static partial class Program
         ("lifetime: splash never owns the process and main window close terminates", LifetimeSplashNeverOwnsProcessAndMainWindowCloseTerminates),
         ("window entrance preserves prepared input and retires motion", WindowEntrancePreservesPreparedInputAndRetiresMotion),
         ("tray visibility retargets retained content and retires lifetimes", TrayVisibilityRetargetsRetainedContentAndRetiresLifetimes),
+        ("memory pressure observations follow only current native owner", MemoryPressureObservationsFollowOnlyCurrentNativeOwner),
         ("memory pressure preserves visible leases and disposes idle resources", MemoryPressurePreservesVisibleLeasesAndDisposesIdle),
         ("VerifyBackgroundFitAndImageOpacityDrawing", VerifyBackgroundFitAndImageOpacityDrawing),
         ("RuntimeDiagnosticsObserveRealCommitsPaintAndAdmission", RuntimeDiagnosticsObserveRealCommitsPaintAndAdmission),

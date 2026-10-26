@@ -1,7 +1,7 @@
 namespace Nexa.Services.Caching;
 
 /// <summary>One application owner for immutable, non-secret query results; no background timers.</summary>
-public sealed class SharedStateCache : ISharedStateCache, IDisposable
+public sealed class SharedStateCache : ISharedStateCache, IStateCachePressureControl, IDisposable
 {
     private sealed record Entry(Type Type, object Value, DateTimeOffset StoredAt, StateCachePolicy Policy,
         LinkedListNode<StateCacheKey> Recency);
@@ -20,6 +20,11 @@ public sealed class SharedStateCache : ISharedStateCache, IDisposable
     private readonly int _maximumEntries;
     private readonly long _maximumBytes;
     private readonly int _maximumPending;
+    private int _entryBudget;
+    private long _byteBudget;
+    private StateCacheMemoryPressure _pressure = StateCacheMemoryPressure.Normal;
+    private StateCacheMemoryPressure _recoveryTarget;
+    private int _recoverySamples;
     private long _bytes;
     private int _pending;
     private bool _disposed;
@@ -32,6 +37,33 @@ public sealed class SharedStateCache : ISharedStateCache, IDisposable
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumPending);
         _maximumEntries = maximumEntries; _maximumBytes = maximumBytes; _maximumPending = maximumPending;
         _timeProvider = timeProvider ?? TimeProvider.System;
+        _entryBudget = maximumEntries; _byteBudget = maximumBytes;
+    }
+
+    public StateCachePressureSnapshot ApplyMemoryPressure(StateCacheMemoryPressure pressure)
+    {
+        if (!Enum.IsDefined(pressure)) throw new ArgumentOutOfRangeException(nameof(pressure));
+        lock (_gate)
+        {
+            if (!_disposed)
+            {
+                if (pressure == StateCacheMemoryPressure.Unknown || pressure >= _pressure)
+                {
+                    _recoverySamples = 0;
+                    if (pressure != StateCacheMemoryPressure.Unknown) _pressure = pressure;
+                }
+                else
+                {
+                    if (_recoveryTarget != pressure) { _recoveryTarget = pressure; _recoverySamples = 0; }
+                    if (++_recoverySamples >= 3) { _pressure = pressure; _recoverySamples = 0; }
+                }
+                int divisor = _pressure switch { StateCacheMemoryPressure.Critical => 4, StateCacheMemoryPressure.Elevated => 2, _ => 1 };
+                _entryBudget = Math.Max(1, _maximumEntries / divisor);
+                _byteBudget = Math.Max(1, _maximumBytes / divisor);
+                while (_entries.Count > _entryBudget || _bytes > _byteBudget) RemoveLocked(_recency.First!.Value);
+            }
+            return new(_pressure, _entries.Count, _bytes, _entryBudget, _byteBudget, _pending);
+        }
     }
 
     public bool TryGet<T>(StateCacheKey key,
@@ -156,8 +188,8 @@ public sealed class SharedStateCache : ISharedStateCache, IDisposable
     {
         if (_entries.TryGetValue(key, out Entry? current)) CheckType<T>(current.Type);
         RemoveLocked(key);
-        if (policy.SizeBytes > _maximumBytes || _timeProvider.GetUtcNow() - at >= policy.RetainFor) return;
-        while (_entries.Count >= _maximumEntries || _bytes > _maximumBytes - policy.SizeBytes)
+        if (policy.SizeBytes > _byteBudget || _timeProvider.GetUtcNow() - at >= policy.RetainFor) return;
+        while (_entries.Count >= _entryBudget || _bytes > _byteBudget - policy.SizeBytes)
             RemoveLocked(_recency.First!.Value);
         LinkedListNode<StateCacheKey> recency = _recency.AddLast(key);
         _entries.Add(key, new(typeof(T), value!, at, policy, recency)); _bytes += policy.SizeBytes;

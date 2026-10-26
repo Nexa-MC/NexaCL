@@ -148,6 +148,7 @@ internal static partial class Program
         try
         {
             await Task.Delay(30).ConfigureAwait(true);
+            VerifyMemoryPressureObservationOwnership();
             VerifyRawTouchInputAndPointerOwnership();
             VerifyNativeWindowPointerRouting(window, shell, surface);
             VerifyTypefaceRenderingAndInput();

@@ -28,7 +28,9 @@ public sealed partial class AvaloniaUiPlatformActions
     internal void CompleteStartup() => _startupHidden = false;
     internal void Attach(TopLevel owner)
     {
+        if (_owner is AvaloniaUiShellWindow previous) previous.MemoryPressureObserved -= OnMemoryPressure;
         _owner = owner;
+        if (owner is AvaloniaUiShellWindow pressureOwner) pressureOwner.MemoryPressureObserved += OnMemoryPressure;
         AttachAppearance(owner);
         AttachThemeAppearance(owner);
         AvaloniaUiMotion.SetFrameRate(_animationFrameRate);
@@ -67,6 +69,9 @@ public sealed partial class AvaloniaUiPlatformActions
     }
 
     public event Action<AvaloniaUiInputKind>? InputObserved;
+    /// <summary>Immutable native measurements delivered on the sampler worker, never the UI thread.</summary>
+    public event Action<AvaloniaUiMemoryObservation>? MemoryPressureObserved;
+    private void OnMemoryPressure(AvaloniaUiMemoryObservation observation) => MemoryPressureObserved?.Invoke(observation);
     public event Action<IReadOnlyList<string>>? FilesDropped;
 
     /// <summary>Dims native title controls to match a renderer-owned client scrim.</summary>

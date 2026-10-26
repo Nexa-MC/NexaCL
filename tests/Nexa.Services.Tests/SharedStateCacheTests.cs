@@ -4,6 +4,57 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static void SharedCachePressureTrimsLruAndRecoversWithoutRefetch()
+    {
+        using SharedStateCache cache = new(8, 80);
+        StateCachePolicy policy = new(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(2), 10);
+        StateCacheKey Key(int n) => new("pressure", n.ToString(System.Globalization.CultureInfo.InvariantCulture), "1");
+        for (int i = 0; i < 8; i++) cache.Store(Key(i), new object(), policy);
+        AssertTrue(cache.TryGet<object>(Key(0), out var retained));
+        object active = retained!.Value;
+        var reduced = cache.ApplyMemoryPressure(StateCacheMemoryPressure.Elevated);
+        AssertEqual(4, reduced.Entries); AssertEqual(40L, reduced.EstimatedBytes);
+        AssertTrue(cache.TryGet<object>(Key(0), out retained)); AssertTrue(ReferenceEquals(active, retained!.Value));
+        AssertFalse(cache.TryGet<object>(Key(1), out _));
+        reduced = cache.ApplyMemoryPressure(StateCacheMemoryPressure.Critical);
+        AssertEqual(2, reduced.Entries); AssertEqual(20L, reduced.EstimatedByteBudget);
+        cache.ApplyMemoryPressure(StateCacheMemoryPressure.Normal);
+        cache.ApplyMemoryPressure(StateCacheMemoryPressure.Normal);
+        AssertEqual(2, cache.ApplyMemoryPressure(StateCacheMemoryPressure.Unknown).EntryBudget);
+        cache.ApplyMemoryPressure(StateCacheMemoryPressure.Normal);
+        AssertEqual(2, cache.ApplyMemoryPressure(StateCacheMemoryPressure.Normal).EntryBudget);
+        var restored = cache.ApplyMemoryPressure(StateCacheMemoryPressure.Normal);
+        AssertEqual(8, restored.EntryBudget); AssertEqual(2, restored.Entries);
+        AssertFalse(cache.TryGet<object>(Key(1), out _));
+        cache.Store(Key(9), new object(), policy);
+        AssertTrue(cache.TryGet<object>(Key(9), out _));
+        cache.Dispose(); AssertEqual(0, cache.ApplyMemoryPressure(StateCacheMemoryPressure.Critical).Entries);
+    }
+
+    private static async ValueTask SharedCachePressurePreservesFlightsAndBoundsCompletionAdmission()
+    {
+        using SharedStateCache cache = new(8, 80);
+        StateCacheKey key = new("pressure", "flight", "1");
+        StateCachePolicy policy = new(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(2), 30);
+        TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int calls = 0;
+        async ValueTask<string> Produce(CancellationToken token)
+        { calls++; await release.Task; token.ThrowIfCancellationRequested(); return "complete"; }
+        var first = cache.GetOrCreateAsync(key, policy, Produce).AsTask();
+        var pressure = cache.ApplyMemoryPressure(StateCacheMemoryPressure.Critical);
+        AssertEqual(1, pressure.PendingProducers);
+        var second = cache.GetOrCreateAsync(key, policy, Produce).AsTask();
+        AssertEqual(1, calls);
+        release.SetResult(); AssertEqual("complete", await first); AssertEqual("complete", await second);
+        AssertFalse(cache.TryGet<string>(key, out _));
+        AssertEqual(0, cache.ApplyMemoryPressure(StateCacheMemoryPressure.Unknown).PendingProducers);
+        cache.ApplyMemoryPressure(StateCacheMemoryPressure.Elevated);
+        cache.ApplyMemoryPressure(StateCacheMemoryPressure.Elevated);
+        AssertEqual(40L, cache.ApplyMemoryPressure(StateCacheMemoryPressure.Elevated).EstimatedByteBudget);
+        AssertEqual("complete", await cache.GetOrCreateAsync(key, policy, Produce));
+        AssertTrue(cache.TryGet<string>(key, out _)); AssertEqual(2, calls);
+    }
+
     private sealed class SharedCacheClock : TimeProvider
     {
         internal DateTimeOffset Now { get; set; } = DateTimeOffset.Parse("2026-01-01T00:00:00Z", global::System.Globalization.CultureInfo.InvariantCulture);

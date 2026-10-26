@@ -146,6 +146,9 @@ public sealed partial class AvaloniaUiShellWindow : Window
     /// </summary>
     public event EventHandler? StartupRevealCompleted;
 
+    internal event Action<AvaloniaUiMemoryObservation>? MemoryPressureObserved;
+    internal void ReportMemoryPressure(AvaloniaUiMemoryObservation observation) => MemoryPressureObserved?.Invoke(observation);
+
     internal AvaloniaUiSceneSurface Surface => _surface;
 
     // Native hit testing owns title-bar double-click preferences, including macOS zoom/minimize.

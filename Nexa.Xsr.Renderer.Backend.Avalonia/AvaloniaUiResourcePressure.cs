@@ -157,8 +157,8 @@ public static class AvaloniaUiResourcePressure
 internal sealed class AvaloniaUiResourcePressureSession : IDisposable
 {
     private readonly CancellationTokenSource _stop = new();
-    internal AvaloniaUiResourcePressureSession() => _ = MonitorAsync(_stop.Token);
-    private static async Task MonitorAsync(CancellationToken token)
+    internal AvaloniaUiResourcePressureSession(Action<AvaloniaUiMemoryObservation>? observed = null) => _ = MonitorAsync(observed, _stop.Token);
+    private static async Task MonitorAsync(Action<AvaloniaUiMemoryObservation>? observed, CancellationToken token)
     {
         try
         {
@@ -167,6 +167,9 @@ internal sealed class AvaloniaUiResourcePressureSession : IDisposable
             {
                 var sample = await Task.Run(AvaloniaUiResourcePressure.Read, token).ConfigureAwait(false);
                 AvaloniaUiRasterPool.Shared.ApplyPressure(sample);
+                try { observed?.Invoke(sample); }
+                catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
+                { Trace.TraceError("Memory pressure observer failed: {0}", error.GetType().Name); }
             } while (await timer.WaitForNextTickAsync(token).ConfigureAwait(false));
         }
         catch (OperationCanceledException) { }

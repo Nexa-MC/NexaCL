@@ -95,3 +95,30 @@ when one ImportAsync completes. A committed settings revision can queue another 
 refresh. The test now waits for idle while retaining persistent-selection assertions; the
 previously failing case passed 20 consecutive executions without changing production theme
 behavior.
+
+## Third slice: shared cache pressure admission
+Use the existing native five-second OS memory-pressure sampler for both raster retention and
+shared query-cache admission. Desktop bridges immutable observations to the Services cache;
+neither Services nor the renderer resolves the other. This is not the disabled Minecraft
+memory estimator, and never controls heap sizing or startup admission.
+
+Shared cache Elevated/Critical budgets are one-half/one-quarter of configured entry and
+estimated-byte limits (minimum one). Shrinking removes least-recently-used cache references,
+never disposes values already held by readers, cancels producers, removes in-flight coalescing,
+or deletes disk records. Completion admission always uses the current budget. Three consecutive
+Normal observations restore normal admission without eagerly reloading anything; Unknown
+retains the existing budget and breaks recovery streaks. Critical-to-Elevated also requires
+three lower-pressure observations. Disposal makes late pressure reports harmless.
+The interface ISharedStateCache remains source-compatible; pressure management is a separate
+optional contract. Reported sizes remain caller-estimated payload sizes, not RSS or guaranteed
+reclaimed memory. Other independent caches and cooperative Sidecar quiescence remain pending.
+
+### Third-slice acceptance
+Desktop Release build passed with zero warnings/errors. Seven targeted Services tests passed
+in both managed and Linux x64 NativeAOT execution, including pressure recovery, coalesced
+producers, bounded completion admission and the suspended memory-analysis contract. All 45
+Avalonia backend tests passed, including worker-thread observation forwarding, repeated owner
+attachment and detachment from the previous owner. Architecture checks passed for 72 projects.
+NativeAOT publication retains the existing Jint IL2098 warning. These are cloud Linux tests,
+not physical Windows/macOS pressure measurements; payload estimates do not prove RSS savings.
+Sidecar quiescence and Linux resource quotas are still separate pending roadmap slices.

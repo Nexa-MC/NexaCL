@@ -11,6 +11,8 @@ internal static partial class Program
         ("LibrarySnapshotsAreDisplayOnlyUntilReconciled", LibrarySnapshotsAreDisplayOnlyUntilReconciled),
         ("LibraryOfflineRootRaceRetainsRealSnapshotAndAcceptsEmptyRoot", LibraryOfflineRootRaceRetainsRealSnapshotAndAcceptsEmptyRoot),
         ("atomic publication preserves originals and retires scratch", AtomicFilePublicationPreservesOriginalsAndRetiresScratchOnFailure),
+        ("SharedCachePressureTrimsLruAndRecoversWithoutRefetch", Sync(SharedCachePressureTrimsLruAndRecoversWithoutRefetch)),
+        ("SharedCachePressurePreservesFlightsAndBoundsCompletionAdmission", SharedCachePressurePreservesFlightsAndBoundsCompletionAdmission),
         ("SharedCacheCoalescesWaitersWithoutSharingCancellation", SharedCacheCoalescesWaitersWithoutSharingCancellation),
         ("SharedCacheInvalidationBlocksOlderPublication", SharedCacheInvalidationBlocksOlderPublication),
         ("SharedCacheStoreDuringFlightKeepsProducerSharedAndRefreshPublication", SharedCacheStoreDuringFlightKeepsProducerSharedAndRefreshPublication),
