@@ -81,6 +81,7 @@ public sealed class FoundationHost : IDisposable
         string? cacheDirectory = null)
     {
         Work = work ?? throw new ArgumentNullException(nameof(work));
+        _powerPressure = new(new Nexa.Platform.PlatformPowerPressureProbe(), Work);
         StateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
         SharedStateCache = new SharedStateCache();
         CacheDirectory = cacheDirectory is null ? null : Path.GetFullPath(cacheDirectory);
@@ -170,10 +171,13 @@ public sealed class FoundationHost : IDisposable
     public SharedStateCache SharedStateCache { get; }
     public string? CacheDirectory { get; }
     private readonly FoundationNetworkCost _networkCost = new(new Nexa.Platform.PlatformNetworkCostProbe());
+    private readonly FoundationPowerPressure _powerPressure;
+    public IAsyncDisposable PowerPressureLifetime => _powerPressure;
+    public Task StartPowerPressureMonitoringAsync() => _powerPressure.StartAsync();
     public IAsyncDisposable NetworkCostLifetime => _networkCost;
     public Task StartNetworkCostMonitoringAsync() => _networkCost.StartAsync();
 
-    public void Dispose() { _networkCost.Dispose(); Tasks.Dispose(); Downloads.Dispose(); SharedStateCache.Dispose(); _loggingSettings.Dispose(); NetworkHttp.Dispose(); Work.Dispose(); }
+    public void Dispose() { _powerPressure.Dispose(); _networkCost.Dispose(); Tasks.Dispose(); Downloads.Dispose(); SharedStateCache.Dispose(); _loggingSettings.Dispose(); NetworkHttp.Dispose(); Work.Dispose(); }
 
     public NetworkHttpClientPool NetworkHttp { get; }
     public IReadOnlyList<string> JavaManagedRuntimeRoots { get; }

@@ -53,7 +53,10 @@ internal static partial class Program
         AssertTrue(visible is not null && !blocked);
         pool.ApplyPressure(new(AvaloniaUiMemoryPressure.Critical, 1, 1024, null, "fixture"));
         var pressureFacts = pool.CaptureDiagnostics();
-        AssertEqual(charge / 4, pressureFacts.AdmissionBudget);
+        AssertEqual(0L, pressureFacts.AdmissionBudget);
+        AssertEqual(64L, AvaloniaUiRasterPool.CalculateAdmissionBudget(64, null, null));
+        AssertEqual(8L, AvaloniaUiRasterPool.CalculateAdmissionBudget(64, 128, null));
+        AssertEqual(4L, AvaloniaUiRasterPool.CalculateAdmissionBudget(64, 128, 16));
         AssertEqual(AvaloniaUiMemoryPressure.Critical, pressureFacts.Pressure.Pressure);
         AssertEqual(charge, pressureFacts.Bytes);
         AssertEqual(1, pool.Retained.Leases);

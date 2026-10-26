@@ -33,6 +33,9 @@ internal static partial class Program
             };
             var selected = MinecraftLaunchCoordinator.ApplySettings(request, policy.Read(new(instance)).Value!);
             AssertEqual(150, selected.CpuQuotaPercent);
+            AssertEqual("system", selected.CpuPolicy);
+            AssertTrue(policy.Set(new("game.cpu-policy", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "cache"), instance)).IsSuccess);
+            AssertEqual("cache", MinecraftLaunchCoordinator.ApplySettings(request, policy.Read(new(instance)).Value!).CpuPolicy);
             AssertTrue(selected.CpuSets.SequenceEqual([0, 2])); AssertEqual(MinecraftProcessQuality.Efficiency, selected.ProcessQuality);
             AssertTrue(policy.Set(new("game.cpu-quota-percent", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "0"), instance)).IsSuccess);
             AssertTrue(policy.Set(new("game.cpu-sets", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, ""), instance)).IsSuccess);

@@ -152,6 +152,12 @@ public sealed partial class MinecraftLaunchCoordinator
                 };
                 continue;
             }
+            if (setting.Key == "game.cpu-policy")
+            {
+                if (setting.ValidationError is not null) throw new InvalidDataException(setting.ValidationError);
+                request = request with { CpuPolicy = setting.Value.Value! };
+                continue;
+            }
             if (setting.Key == "game.cpu-quota-percent")
             {
                 if (setting.ValidationError is not null) throw new InvalidDataException(setting.ValidationError);

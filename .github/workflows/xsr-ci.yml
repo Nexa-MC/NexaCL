@@ -140,6 +140,12 @@ jobs:
           $binary = if ($IsWindows) { './native-account-tests/Nexa.Services.Tests.exe' } else { './native-account-tests/Nexa.Services.Tests' }
           & $binary "LauncherMigration"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify native resource policies and independent file clones
+        shell: pwsh
+        run: |
+          $binary = if ($IsWindows) { './native-account-tests/Nexa.Services.Tests.exe' } else { './native-account-tests/Nexa.Services.Tests' }
+          & $binary "topology" "power pressure" "native clones" "network cost"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Verify native session log ownership and Minecraft session retry
         shell: pwsh
         run: |

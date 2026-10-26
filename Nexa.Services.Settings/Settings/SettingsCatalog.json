@@ -456,6 +456,18 @@
     "availability": "Available"
   },
   {
+    "id": "global.game.cpu-policy",
+    "parent": "global.game.546d4a3ef466",
+    "scope": "global",
+    "page": "game",
+    "section": "进程资源配额",
+    "label": "自动处理器拓扑策略",
+    "kind": "Setting",
+    "key": "game.cpu-policy",
+    "developer": false,
+    "availability": "Available"
+  },
+  {
     "id": "global.game.cpu-quota-percent",
     "parent": "global.game.546d4a3ef466",
     "scope": "global",

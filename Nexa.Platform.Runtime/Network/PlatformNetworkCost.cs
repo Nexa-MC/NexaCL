@@ -49,7 +49,7 @@ public sealed partial class PlatformNetworkCostProbe : IPlatformNetworkCost
         _ => PlatformNetworkCost.Unknown
     };
 
-    private static async Task<string> RunAsync(string executable, string[] arguments, CancellationToken token)
+    internal static async Task<string> RunAsync(string executable, string[] arguments, CancellationToken token)
     {
         if (!File.Exists(executable)) return "unknown";
         ProcessStartInfo info = new(executable) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };

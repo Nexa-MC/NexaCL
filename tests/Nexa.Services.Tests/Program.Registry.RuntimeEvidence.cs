@@ -4,6 +4,10 @@ internal static partial class Program
 {
     private static (string Name, Func<ValueTask> Body)[] RegisterRuntimeEvidence() =>
     [
+        ("native clones preserve independent files and backup validation", NativeClonesPreserveIndependentFilesAndBackupValidation),
+        ("power pressure pauses only background admission", PowerPressurePausesOnlyBackgroundAdmission),
+        ("topology selection respects observed capabilities", Sync(TopologySelectionRespectsObservedCapabilities)),
+        ("topology admission precedes bootstrap", TopologyAdmissionPrecedesBootstrap),
         ("explicit scheduling native Linux uses only owned process", ExplicitSchedulingNativeLinuxUsesOnlyOwnedProcess),
         ("explicit scheduling validates settings and scoped overrides", Sync(ExplicitSchedulingValidatesSettingsAndScopedOverrides)),
         ("explicit scheduling applies and owns failed processes", ExplicitSchedulingAppliesAndOwnsFailedProcesses),

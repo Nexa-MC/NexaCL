@@ -141,6 +141,7 @@ public static class SettingsPolicySchema
         new("game.io-read-limit-mib", SettingsValueKind.Number, "0", true, false, null, SettingsApplyTiming.NextLaunch, Unit: "MiB/s", Minimum: 0, Maximum: 1048576, Exportable: false),
         new("game.io-write-limit-mib", SettingsValueKind.Number, "0", true, false, null, SettingsApplyTiming.NextLaunch, Unit: "MiB/s", Minimum: 0, Maximum: 1048576, Exportable: false),
         new("game.cpu-quota-percent", SettingsValueKind.Number, "0", true, false, null, SettingsApplyTiming.NextLaunch, Unit: "%", Minimum: 0, Maximum: 102400, Exportable: false),
+        new("game.cpu-policy", SettingsValueKind.Enum, "system", true, false, null, SettingsApplyTiming.NextLaunch, Choices: "system|performance|cache|numa", Exportable: false),
         new("game.cpu-sets", SettingsValueKind.Text, "", true, false, null, SettingsApplyTiming.NextLaunch, Exportable: false),
         new("game.process-quality", SettingsValueKind.Enum, "default", true, false, null, SettingsApplyTiming.NextLaunch,
             Choices: "default|efficiency|background"),

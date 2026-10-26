@@ -175,5 +175,9 @@
     <Text Key="catalog.metered.allow" Content="始终允许后台下载" Localize="false" />
     <Text Key="catalog.metered.restrict" Content="始终限制后台下载" Localize="false" />
     <Text Key="catalog.resource.quota" Content="进程资源配额" Localize="false" />
+    <Text Key="catalog.topology.system" Content="系统默认" Localize="false" />
+    <Text Key="catalog.topology.performance" Content="高性能核心" Localize="false" />
+    <Text Key="catalog.topology.cache" Content="最大缓存域" Localize="false" />
+    <Text Key="catalog.topology.numa" Content="单 NUMA 域" Localize="false" />
 </ContentHost>
 </nxml-page>

@@ -35,7 +35,7 @@ internal sealed partial class SettingsPageController
 
     private static string InstanceSettingGroup(SettingsCatalogEntry entry) => entry.SettingKey switch
     {
-        "game.cpu-quota-percent" or "game.process-memory-limit-mib" or "game.io-read-limit-mib" or "game.io-write-limit-mib" => CatalogCopy("catalog.resource.quota"),
+        "game.cpu-policy" or "game.cpu-quota-percent" or "game.process-memory-limit-mib" or "game.io-read-limit-mib" or "game.io-write-limit-mib" => CatalogCopy("catalog.resource.quota"),
         "game.memory" or "java.runtime" or "java.vendor" or "java.auto-install" => CatalogCopy("catalog.copy.2720b4221e5e4ca3"),
         "game.server" => CatalogCopy("catalog.copy.2388cbc6a486af9f"),
         "game.jvm" or "game.arguments" => CatalogCopy("catalog.copy.a42c8d6a892a2bb0"),

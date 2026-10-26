@@ -45,6 +45,7 @@ public sealed record MinecraftLaunchRequest
     public bool Fullscreen { get; init; }
     public ProcessPriorityClass? ProcessPriority { get; init; }
     public IReadOnlyList<int> CpuSets { get; init; } = [];
+    public string CpuPolicy { get; init; } = "system";
     public MinecraftProcessQuality ProcessQuality { get; init; }
     public int CpuQuotaPercent { get; init; }
     public long ProcessMemoryLimitMiB { get; init; }
@@ -202,6 +203,7 @@ public sealed record MinecraftLaunchPlan(
     /// <summary>Captured next-launch preference. Null preserves OS defaults for hand-built plans.</summary>
     public ProcessPriorityClass? ProcessPriority { get; init; }
     public IReadOnlyList<int> CpuSets { get; init; } = [];
+    public string CpuPolicy { get; init; } = "system";
     public MinecraftProcessQuality ProcessQuality { get; init; }
     public int CpuQuotaPercent { get; init; }
     public long ProcessMemoryLimitMiB { get; init; }

@@ -280,3 +280,72 @@ systemd quota is refused in this container; no native memory/IO enforcement is c
 Windows NLM and the bundled macOS Swift helper require the platform CI runs added with this
 tranche. Swift helper publish targets and workflow syntax were parsed locally. No Alpha
 release is authorized until the remaining batch 1 and batch 2 work has been completed.
+
+## Tenth slice: battery and thermal work admission
+Platform projects existing battery facts and the public macOS thermal state into a compact
+local observation. Foundation owns one cancellable sampling worker and a reversible quiet
+lease: known discharging battery at or below 20%, or serious/critical macOS thermal state,
+pauses new background/idle work. Interactive installs and running games are unaffected.
+Three healthy samples restore admission; unknown observations retain a constraint for at
+most three consecutive samples, then release it to prevent permanent starvation on a broken
+probe. This does not change system power plans, JVM nice/priority, Sidecar lifecycle, or the
+disabled memory estimator, and does not reintroduce a low-power-mode setting.
+
+## Eleventh slice: raster memory admission budgets
+Existing native pressure sampling also bounds new raster retention to one sixteenth of known
+physical/container headroom (including shared-memory Macs). Windows Platform enumerates
+up to 32 DXGI adapters and reports the minimum remaining local-segment budget among adapters
+with actual current-process allocations. Desktop supplies that optional value to raster
+admission; it is not labelled dedicated-memory capacity or texture residency. Unknown GPU
+budgets never invent a value. No active bitmap lease is invalidated, no Minecraft heap changes,
+and no GPU allocator or display policy is altered. Linux retains its measured DRM residency
+pressure signal where per-process dynamic budget is unavailable.
+
+## Native-integration slice: Windows taskbar progress
+Desktop projects the existing task-center summary into a neutral window progress state.
+The native backend uses ITaskbarList3 on the window dispatcher, with balanced COM ownership;
+active tasks show their aggregate progress and an empty queue clears the indicator. No new
+task execution or download state is introduced. Missing window handles retry on a later frame,
+and periodic refresh recovers Explorer restarts. Other platforms do not claim this API.
+
+## Native-storage slice: verified copy-on-write files
+The existing content-addressed backup/restore owner accepts an optional exclusive-create clone
+adapter. Platform uses APFS clonefile or Linux FICLONE; unsupported/cross-filesystem operations
+fall back to the existing streaming copy. Both capture and restore hash the resulting file
+before publication, retain existing size/change/session checks, and never share mutable hard
+links. A failed/cancelled attempt removes only the private staging file. This optimizes files
+inside existing logical world snapshots; it does not claim Btrfs subvolume or ZFS dataset
+snapshot management, which remains separate native integration work.
+
+Topology follow-up: Windows selection also intersects explicit inherited default CPU-set IDs,
+not only process group/affinity masks. Taskbar COM calls retry on a five-second refresh after
+native failure instead of retrying every frame. SDK ITaskbarList3 vtable order was checked
+against the public Windows SDK header before implementing the unmanaged calls.
+
+### Hardware-policy and native-integration checkpoint
+Managed acceptance: 833 Services cases, 45 renderer-backend cases and 41 Desktop settings
+cases passed; the solution built with zero warnings/errors and architecture checks covered
+72 projects. The subsequent native-copy tranche passed five focused clone/topology/power/
+catalog cases. Native Linux CoW is unavailable in this workspace; fallback was observed and
+native independence was tested only conditionally. Object-byte accounting remains logical
+file lengths, not a measurement of shared physical extents. NativeAOT is still being checked.
+
+Resource-policy commit 925cbe18 passed XSR CI 40306116753. Native launcher packaging for
+Linux x64/arm64, Windows arm64 and macOS arm64 passed at this checkpoint; other jobs remained
+running. The latest public version is still Alpha 13. No Alpha 14 release/tag was created.
+
+Batch 2 is not complete: actual Windows share UI; macOS Spotlight/App Intents/Siri and
+Quick Look integration; Linux GameMode, explicit Portal integration, Steam/Gamescope flows;
+and native Btrfs/ZFS snapshot management still need implementation/verification. APFS and
+Linux per-file CoW integrate existing logical snapshots and do not close the native
+subvolume/dataset snapshot item. Existing Keychain, Jump Lists and native notifications are
+retained. LAN/cloud/AI/display/input items remain postponed under batch 3.
+
+NativeAOT acceptance: Linux x64 publication succeeded and all five focused clone/topology/
+power/catalog regressions passed, including the explicit Windows CPU-set filter fixture.
+The existing Jint IL2098 trim warning remains. Source formatting completed successfully.
+The final Desktop build passed with zero warnings/errors. Cross-platform NativeAOT CI now
+runs topology/power/network/clone fixtures using its existing Windows, Linux and macOS jobs;
+this adds native CoW coverage on APFS-capable runners without a new publishing pipeline.
+Final architecture recheck passed for 72 projects. Resource-policy Launcher Build 40306116646
+has now completed successfully for all six target architectures, including both macOS helpers.

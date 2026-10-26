@@ -146,6 +146,7 @@ public static class MinecraftLaunchPlanner
             JavaMajorVersion = request.JavaMajorVersion,
             ProcessPriority = request.ProcessPriority,
             CpuSets = Array.AsReadOnly(request.CpuSets.ToArray()),
+            CpuPolicy = request.CpuPolicy,
             ProcessQuality = request.ProcessQuality,
             CpuQuotaPercent = request.CpuQuotaPercent,
             ProcessMemoryLimitMiB = request.ProcessMemoryLimitMiB,

@@ -14,6 +14,7 @@ internal sealed partial class AvaloniaUiRasterPool(long byteBudget, int entryBud
     private readonly long _byteBudget = byteBudget > 0 ? byteBudget : throw new ArgumentOutOfRangeException(nameof(byteBudget));
     private readonly int _entryBudget = entryBudget > 0 ? entryBudget : throw new ArgumentOutOfRangeException(nameof(entryBudget));
     private long _admissionBudget = byteBudget;
+    private long? _gpuAvailableBudget;
     private long _bytes;
     private long _revision;
     private long _decodeAttempts;
@@ -109,8 +110,25 @@ internal sealed partial class AvaloniaUiRasterPool(long byteBudget, int entryBud
             // This is a measured process-wide GPU threshold, not a claim that each bitmap is
             // a texture of this size. Unknown counters do not reduce or inflate a measurement.
             if (sample.GpuResidentBytes is > 128L * 1024 * 1024) divisor = Math.Max(divisor, 2);
-            _admissionBudget = _byteBudget / divisor;
+            _admissionBudget = CalculateAdmissionBudget(_byteBudget / divisor, sample.AvailableBytes, _gpuAvailableBudget);
             while (_idle.First is { } oldest && (divisor > 1 || _bytes > _admissionBudget)) Remove(oldest.Value);
+        }
+    }
+
+    internal static long CalculateAdmissionBudget(long configured, long? physicalAvailable, long? gpuAvailable)
+    {
+        long budget = configured;
+        if (physicalAvailable is >= 0) budget = Math.Min(budget, physicalAvailable.Value / 16);
+        if (gpuAvailable is >= 0) budget = Math.Min(budget, gpuAvailable.Value / 4);
+        return budget;
+    }
+
+    internal void SetGpuAvailableBudget(long? bytes)
+    {
+        lock (_gate)
+        {
+            _gpuAvailableBudget = bytes is >= 0 ? bytes : null;
+            ApplyPressure(_lastPressure);
         }
     }
 

@@ -1,3 +1,4 @@
+using Nexa.Services.Tasks;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
@@ -30,6 +31,8 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
     private readonly Task _registration;
     private readonly IDisposable? _nativeFiles;
     private bool _disposed;
+    private TaskCenterSummary? _taskbarSummary;
+    private long _taskbarRefresh;
     internal bool HasExplicitActivation { get; private set; }
     internal Task InitialReady => _registration;
 
@@ -126,7 +129,19 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
     }
     private void OnFrame(object? sender, EventArgs args)
     {
-        if (_disposed || _pendingFiles.Count == 0) return;
+        if (_disposed) return;
+        if (OperatingSystem.IsWindows() && _state.TryResolve(TaskCenterStateContract.SummaryKey, out var summaryId))
+        {
+            var summary = _state.Read<TaskCenterSummary>(summaryId).Value;
+            long now = Environment.TickCount64;
+            if (summary != _taskbarSummary || now >= _taskbarRefresh)
+            {
+                _platform.SetTaskbarProgress(summary?.ActiveCount > 0, summary?.Progress ?? 0);
+                _taskbarSummary = summary;
+                _taskbarRefresh = now + 5000;
+            }
+        }
+        if (_pendingFiles.Count == 0) return;
         _platform.RestoreWindow();
         if (_openFile is null) { _report(ProductPresentationText.Raw("native.desktop.no-file-receiver")); _pendingFiles.Clear(); return; }
         while (_pendingFiles.TryDequeue(out string? file)) _openFile(file);
@@ -140,6 +155,7 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
     {
         if (_disposed) return;
         _disposed = true; _nativeFiles?.Dispose();
+        _platform.SetTaskbarProgress(false, 0);
         _state.Changed -= OnChanged;
         _intents.IntentEmitted -= OnIntent;
         _shell.Renderer.FramePreparing -= OnFrame;

@@ -57,7 +57,7 @@ internal sealed class HardwarePowerCapabilityProvider : IMachineCapabilityProvid
 }
 
 /// <summary>GPU adapter memory through DXGI (available budget = budget - current usage).</summary>
-public static class GpuProbes
+public static partial class GpuProbes
 {
     public static List<ICapability> CollectGpu(DateTimeOffset timestamp)
     {

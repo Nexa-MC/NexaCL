@@ -68,6 +68,9 @@ public sealed partial class AvaloniaUiPlatformActions
         else Dispatcher.UIThread.Post(() => AvaloniaUiMotion.SetFrameRate(_animationFrameRate));
     }
 
+    /// <summary>Optional actual process GPU headroom supplied by desktop platform composition.</summary>
+    public static void SetGpuAvailableBudget(long? bytes) => AvaloniaUiRasterPool.Shared.SetGpuAvailableBudget(bytes);
+
     public event Action<AvaloniaUiInputKind>? InputObserved;
     /// <summary>Immutable native measurements delivered on the sampler worker, never the UI thread.</summary>
     public event Action<AvaloniaUiMemoryObservation>? MemoryPressureObserved;

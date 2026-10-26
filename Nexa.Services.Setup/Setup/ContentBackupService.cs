@@ -25,6 +25,8 @@ public sealed partial class ContentBackupService
         _clock = clock ?? TimeProvider.System; _isIdle = isIdle ?? (() => true);
     }
 
+    public Func<string, string, bool>? CloneFile { get; init; }
+
     public Task<ContentBackupManifest> CaptureAsync(string sourceDirectory, string label, CancellationToken token = default) =>
         CaptureAsync(sourceDirectory, label, new HashSet<string>(StringComparer.Ordinal), token);
 
@@ -55,9 +57,16 @@ public sealed partial class ContentBackupService
             try
             {
                 string hash;
-                await using (var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, true))
-                await using (var output = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true))
+                if (CloneFile?.Invoke(path, temporary) == true)
                 {
+                    await using var cloned = new FileStream(temporary, FileMode.Open, FileAccess.ReadWrite, FileShare.None, 81920, true);
+                    hash = await CopyHashAsync(cloned, Stream.Null, bytes, token).ConfigureAwait(false);
+                    cloned.Flush(true);
+                }
+                else
+                {
+                    await using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, true);
+                    await using var output = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true);
                     hash = await CopyHashAsync(input, output, bytes, token).ConfigureAwait(false);
                     await output.FlushAsync(token).ConfigureAwait(false); output.Flush(true);
                 }
@@ -167,10 +176,20 @@ public sealed partial class ContentBackupService
             {
                 EnsureIdle(); token.ThrowIfCancellationRequested(); string outputPath = SafePath(stage, file.RelativePath);
                 CheckLinks(outputPath); Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
-                await using var input = new FileStream(ObjectPath(file.Sha256), FileMode.Open, FileAccess.Read, FileShare.Read, 81920, true);
-                await using var output = new FileStream(outputPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true);
-                if (await CopyHashAsync(input, output, file.Bytes, token).ConfigureAwait(false) != file.Sha256) throw new IOException("备份对象校验失败。");
-                await output.FlushAsync(token).ConfigureAwait(false); output.Flush(true);
+                string sourcePath = ObjectPath(file.Sha256); CheckLinks(sourcePath);
+                if (CloneFile?.Invoke(sourcePath, outputPath) == true)
+                {
+                    await using var cloned = new FileStream(outputPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None, 81920, true);
+                    if (await CopyHashAsync(cloned, Stream.Null, file.Bytes, token).ConfigureAwait(false) != file.Sha256) throw new IOException("备份对象校验失败。");
+                    cloned.Flush(true);
+                }
+                else
+                {
+                    await using var input = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, true);
+                    await using var output = new FileStream(outputPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true);
+                    if (await CopyHashAsync(input, output, file.Bytes, token).ConfigureAwait(false) != file.Sha256) throw new IOException("备份对象校验失败。");
+                    await output.FlushAsync(token).ConfigureAwait(false); output.Flush(true);
+                }
             }
             EnsureIdle(); token.ThrowIfCancellationRequested(); CheckLinks(target); Directory.Move(stage, target);
         }

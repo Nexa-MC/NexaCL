@@ -256,6 +256,8 @@ public sealed partial class MinecraftProcessService : IAsyncDisposable
     public XsrStateStore? StateStore => _store;
 
     public Nexa.Platform.IPlatformJvmArchitectureValidator? ArchitectureValidator { get; init; }
+    public Nexa.Platform.IPlatformCpuTopology CpuTopology { get; init; } = new Nexa.Platform.PlatformCpuTopology();
+    public Nexa.Platform.IPlatformJvmRuntime SchedulingRuntime { get; init; } = new Nexa.Platform.PlatformJvmRuntime();
     public Nexa.Platform.IPlatformCpuQuota CpuQuota { get; init; } = new Nexa.Platform.PlatformCpuQuota();
 
     public async ValueTask<MinecraftProcessSession> StartAsync(Minecraft.Launch.MinecraftLaunchPlan plan, string instanceId, CancellationToken cancellationToken = default)
@@ -277,6 +279,14 @@ public sealed partial class MinecraftProcessService : IAsyncDisposable
             bool hasQuota = plan.CpuQuotaPercent > 0 || plan.ProcessMemoryLimitMiB > 0 || plan.IoReadLimitMiB > 0 || plan.IoWriteLimitMiB > 0;
             if (hasQuota && (bootstrap is null || wrapper.Count > 0))
                 throw new InvalidOperationException("CPU quota requires the direct bundled JVM Host transport.");
+            IReadOnlyList<int> selectedCpus = [];
+            if (plan.CpuPolicy != "system")
+            {
+                if (bootstrap is null || wrapper.Count > 0 || plan.CpuSets.Count > 0)
+                    throw new InvalidOperationException("自动拓扑策略需要直接使用内置 JVM Host，且不能同时指定逻辑处理器集合。");
+                selectedCpus = CpuTopology.ChooseProcessors(plan.CpuPolicy);
+                if (selectedCpus.Count == 0) throw new InvalidOperationException("未找到可用的处理器拓扑。");
+            }
             ProcessStartInfo startInfo = plan.ToStartInfo();
             if (bootstrap is not null)
             {
@@ -318,6 +328,11 @@ public sealed partial class MinecraftProcessService : IAsyncDisposable
             Publish(session.CreatedSnapshot);
             if (session.Snapshot.State != MinecraftProcessState.Created) OnSessionChanged(session.Snapshot);
             session.StartLifecycle();
+            if (selectedCpus.Count > 0)
+            {
+                var selection = SchedulingRuntime.SetCpuSets(process, selectedCpus);
+                if (!selection.Succeeded) throw new InvalidOperationException(selection.Message);
+            }
             if (hasQuota)
             {
                 var requestedQuota = new Nexa.Platform.PlatformProcessQuota(plan.CpuQuotaPercent, checked(plan.ProcessMemoryLimitMiB * 1048576),

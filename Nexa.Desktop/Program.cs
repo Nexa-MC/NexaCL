@@ -379,6 +379,7 @@ internal static partial class Program
         using var storagePreferences = new StoragePreferencesService(folders, LauncherStorageLocation.LocatorPath, locationLocked, StorageIdle, host.Tasks);
         var contentBackups = new ContentBackupService(Path.Combine(folders.Root, "content-backups"), StorageIdle)
         {
+            CloneFile = Nexa.Platform.PlatformFileClone.TryClone,
             ReadConfiguredKeepCount = () =>
             {
                 var policy = host.SettingsPolicy.Read(new());
@@ -497,13 +498,15 @@ internal static partial class Program
 
         // The launch page is the first product vertical slice: it routes navigation intents to
         // pages inside the shell content host and dispatches the real launch command.
+        await using var powerPressureLifetime = host.PowerPressureLifetime;
         await using var networkCostLifetime = host.NetworkCostLifetime;
         setStage("network_cost_loading");
-        await host.StartNetworkCostMonitoringAsync().WaitAsync(startup?.CancellationToken ?? default).ConfigureAwait(false);
+        await Task.WhenAll(host.StartNetworkCostMonitoringAsync(), host.StartPowerPressureMonitoringAsync()).WaitAsync(startup?.CancellationToken ?? default).ConfigureAwait(false);
         setStage("attach_product_controllers");
         AvaloniaUiPlatformActions platformActions = new() { LocalizeContentPicker = shell.Renderer.LocalizeText };
         platformActions.MemoryPressureObserved += observation =>
         {
+            if (OperatingSystem.IsWindows()) AvaloniaUiPlatformActions.SetGpuAvailableBudget(Nexa.Services.Capabilities.GpuProbes.ReadActiveGpuHeadroom());
             var pressure = host.SharedStateCache.ApplyMemoryPressure(observation.Pressure switch
             {
                 AvaloniaUiMemoryPressure.Normal => Nexa.Services.Caching.StateCacheMemoryPressure.Normal,
