@@ -19,6 +19,7 @@ internal static partial class Program
         try
         {
             string instance = Path.Combine(root, "instance"); Directory.CreateDirectory(instance);
+            AssertTrue(policy.Set(new("game.cpu-quota-percent", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "150"))).IsSuccess);
             AssertTrue(policy.Set(new("game.cpu-sets", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "0,2"))).IsSuccess);
             AssertTrue(policy.Set(new("game.process-quality", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "efficiency"))).IsSuccess);
             var request = new MinecraftLaunchRequest
@@ -31,10 +32,13 @@ internal static partial class Program
                 PlayerUuid = "fixture"
             };
             var selected = MinecraftLaunchCoordinator.ApplySettings(request, policy.Read(new(instance)).Value!);
+            AssertEqual(150, selected.CpuQuotaPercent);
             AssertTrue(selected.CpuSets.SequenceEqual([0, 2])); AssertEqual(MinecraftProcessQuality.Efficiency, selected.ProcessQuality);
+            AssertTrue(policy.Set(new("game.cpu-quota-percent", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "0"), instance)).IsSuccess);
             AssertTrue(policy.Set(new("game.cpu-sets", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, ""), instance)).IsSuccess);
             AssertTrue(policy.Set(new("game.process-quality", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "default"), instance)).IsSuccess);
             selected = MinecraftLaunchCoordinator.ApplySettings(request, policy.Read(new(instance)).Value!);
+            AssertEqual(0, selected.CpuQuotaPercent);
             AssertEqual(0, selected.CpuSets.Count); AssertEqual(MinecraftProcessQuality.Default, selected.ProcessQuality);
         }
         finally { Directory.Delete(root, true); }

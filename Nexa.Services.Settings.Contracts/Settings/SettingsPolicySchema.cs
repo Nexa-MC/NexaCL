@@ -137,6 +137,7 @@ public static class SettingsPolicySchema
         new("game.pre-launch-wait", SettingsValueKind.Boolean, "true", true, false, "LaunchAdvanceRunWait", SettingsApplyTiming.NextLaunch),
         new("game.auto-repair", SettingsValueKind.Boolean, "true", true, false, "LaunchAutoRepairGame", SettingsApplyTiming.NextLaunch),
         new("game.server", SettingsValueKind.Text, "", true, false, null, SettingsApplyTiming.NextLaunch),
+        new("game.cpu-quota-percent", SettingsValueKind.Number, "0", true, false, null, SettingsApplyTiming.NextLaunch, Unit: "%", Minimum: 0, Maximum: 102400, Exportable: false),
         new("game.cpu-sets", SettingsValueKind.Text, "", true, false, null, SettingsApplyTiming.NextLaunch, Exportable: false),
         new("game.process-quality", SettingsValueKind.Enum, "default", true, false, null, SettingsApplyTiming.NextLaunch,
             Choices: "default|efficiency|background"),

@@ -140,6 +140,12 @@ public sealed partial class MinecraftLaunchCoordinator
                 };
                 continue;
             }
+            if (setting.Key == "game.cpu-quota-percent")
+            {
+                if (setting.ValidationError is not null) throw new InvalidDataException(setting.ValidationError);
+                request = request with { CpuQuotaPercent = int.Parse(setting.Value.Value!, System.Globalization.CultureInfo.InvariantCulture) };
+                continue;
+            }
             if (setting.Key is "game.cpu-sets" or "game.process-quality")
             {
                 if (setting.ValidationError is not null) throw new InvalidDataException(setting.ValidationError);

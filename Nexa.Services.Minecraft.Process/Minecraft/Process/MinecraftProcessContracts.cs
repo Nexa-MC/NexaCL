@@ -256,6 +256,7 @@ public sealed partial class MinecraftProcessService : IAsyncDisposable
     public XsrStateStore? StateStore => _store;
 
     public Nexa.Platform.IPlatformJvmArchitectureValidator? ArchitectureValidator { get; init; }
+    public Nexa.Platform.IPlatformCpuQuota CpuQuota { get; init; } = new Nexa.Platform.PlatformCpuQuota();
 
     public async ValueTask<MinecraftProcessSession> StartAsync(Minecraft.Launch.MinecraftLaunchPlan plan, string instanceId, CancellationToken cancellationToken = default)
     {
@@ -270,6 +271,9 @@ public sealed partial class MinecraftProcessService : IAsyncDisposable
             if (_jvmHostExecutable is null && !_port.UsesPrivateArgumentTransport)
                 throw new InvalidOperationException("Missing private Minecraft argument transport. Repair the complete launcher installation before launching.");
             IReadOnlyList<string> wrapper = Minecraft.Launch.MinecraftLaunchHooks.ParseWrapper(plan.WrapperCommand);
+            if (plan.CpuQuotaPercent is < 0 or > 102400) throw new ArgumentOutOfRangeException(nameof(plan), "CPU quota must be from 0 to 102400 percent.");
+            if (plan.CpuQuotaPercent > 0 && (bootstrap is null || wrapper.Count > 0))
+                throw new InvalidOperationException("CPU quota requires the direct bundled JVM Host transport.");
             ProcessStartInfo startInfo = plan.ToStartInfo();
             if (bootstrap is not null)
             {
@@ -311,6 +315,11 @@ public sealed partial class MinecraftProcessService : IAsyncDisposable
             Publish(session.CreatedSnapshot);
             if (session.Snapshot.State != MinecraftProcessState.Created) OnSessionChanged(session.Snapshot);
             session.StartLifecycle();
+            if (plan.CpuQuotaPercent > 0)
+            {
+                var quota = await CpuQuota.ApplyAsync(process, plan.CpuQuotaPercent, cancellationToken).ConfigureAwait(false);
+                if (!quota.Succeeded) throw new InvalidOperationException(quota.Message);
+            }
             if (bootstrap is not null)
             {
                 using CancellationTokenSource transfer = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);

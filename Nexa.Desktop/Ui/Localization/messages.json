@@ -1,4 +1,5 @@
 [
+  {"source":"CPU 配额（0 不限制，100 为一个 CPU）","en":"CPU quota (0: unlimited, 100: one CPU)","zh-Hant":"CPU 配額（0 不限制，100 為一個 CPU）"},
   {"source":"系统默认调度","en":"System scheduling","zh-Hant":"系統預設排程"},
   {"source":"节能调度","en":"Efficiency scheduling","zh-Hant":"節能排程"},
   {"source":"后台调度","en":"Background scheduling","zh-Hant":"背景排程"},

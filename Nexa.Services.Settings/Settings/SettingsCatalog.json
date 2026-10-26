@@ -420,6 +420,18 @@
     "availability": "Available"
   },
   {
+    "id": "global.game.cpu-quota-percent",
+    "parent": "global.game.546d4a3ef466",
+    "scope": "global",
+    "page": "game",
+    "section": "资源与性能",
+    "label": "CPU 配额（0 不限制，100 为一个 CPU）",
+    "kind": "Setting",
+    "key": "game.cpu-quota-percent",
+    "developer": false,
+    "availability": "Available"
+  },
+  {
     "id": "global.game.cpu-sets",
     "parent": "global.game.546d4a3ef466",
     "scope": "global",

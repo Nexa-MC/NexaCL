@@ -147,6 +147,7 @@ public static class MinecraftLaunchPlanner
             ProcessPriority = request.ProcessPriority,
             CpuSets = Array.AsReadOnly(request.CpuSets.ToArray()),
             ProcessQuality = request.ProcessQuality,
+            CpuQuotaPercent = request.CpuQuotaPercent,
             WindowTitle = request.WindowTitle,
             LauncherVisibility = request.LauncherVisibility,
             WrapperCommand = request.WrapperCommand,

@@ -46,6 +46,7 @@ public sealed record MinecraftLaunchRequest
     public ProcessPriorityClass? ProcessPriority { get; init; }
     public IReadOnlyList<int> CpuSets { get; init; } = [];
     public MinecraftProcessQuality ProcessQuality { get; init; }
+    public int CpuQuotaPercent { get; init; }
     public string WindowTitle { get; init; } = string.Empty;
     public MinecraftLauncherVisibility LauncherVisibility { get; init; }
     public bool IsolatedGameDirectory { get; init; }
@@ -199,6 +200,7 @@ public sealed record MinecraftLaunchPlan(
     public ProcessPriorityClass? ProcessPriority { get; init; }
     public IReadOnlyList<int> CpuSets { get; init; } = [];
     public MinecraftProcessQuality ProcessQuality { get; init; }
+    public int CpuQuotaPercent { get; init; }
     public string WindowTitle { get; init; } = string.Empty;
     public MinecraftLauncherVisibility LauncherVisibility { get; init; }
 

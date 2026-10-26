@@ -51,6 +51,8 @@ internal static partial class Program
         ("estimator preflight and remediation remain layered", Sync(EstimatorPreflightAndRemediationRemainLayered)),
         ("remediation actions require exact handlers", RemediationActionsRequireExactHandlers),
         ("JVM host describes the process boundary", Sync(JvmHostDescribesTheProcessBoundary)),
+        ("CPU quota precedes bootstrap and failure reaps Host", CpuQuotaPrecedesBootstrapAndFailureReapsHost),
+        ("CPU quota validates kernel evidence and defaults", CpuQuotaValidatesKernelEvidenceAndDefaults),
         ("JVM host transport owns bootstrap and cancellation", JvmHostTransportOwnsBootstrapAndCancellation),
         ("Minecraft launch requires private argument transport", MinecraftLaunchRequiresPrivateArgumentTransport),
         ("JVM bootstrap preserves explicit boundaries and rejects malformed frames", JvmBootstrapPreservesBoundaryAndRejectsMalformedFrames),

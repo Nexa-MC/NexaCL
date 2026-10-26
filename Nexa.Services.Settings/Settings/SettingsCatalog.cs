@@ -31,6 +31,7 @@ public static partial class SettingsCatalog
     private static SettingsCapabilityAvailability ResolveAvailability(JsonElement row)
     {
         string? key = row.GetProperty("key").GetString();
+        if (key == "game.cpu-quota-percent" && !OperatingSystem.IsLinux()) return SettingsCapabilityAvailability.PlatformUnsupported;
         if (key == "game.cpu-sets" && !(OperatingSystem.IsLinux() || OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
             || key == "game.process-quality" && !(OperatingSystem.IsLinux() || OperatingSystem.IsWindowsVersionAtLeast(10, 0, 16299)))
             return SettingsCapabilityAvailability.PlatformUnsupported;

@@ -147,3 +147,31 @@ while quiescent. Desktop Release build passed with zero warnings/errors; archite
 passed for 72 projects. NativeAOT publication succeeded. These cloud Linux tests verify Host
 policy and protocol behavior, not third-party peers' actual memory reduction or physical
 Windows/macOS pressure behavior. Linux resource quotas remain pending.
+
+## Fifth slice: explicit Linux CPU quota
+A per-launch `game.cpu-quota-percent` setting (0 = disabled, 100 = one CPU,
+maximum 102400) uses a transient systemd user scope on cgroup v2. Platform owns
+busctl invocation and checks the actual Host cgroup membership and cpu.max before
+Services writes private JVM bootstrap bytes. The scope contains the Host and its
+future descendants; it is not a machine-wide policy. No root/system manager,
+automatic delegation, heap estimator or memory hard limit is introduced.
+
+Only the direct bundled JVM Host path supports this option; custom wrappers and
+unmanaged transports are rejected before spawn. Explicit quota failure cancels
+the newly owned Host, keeping launch cleanup ownership. The default does not call
+systemd. Unit names are random and arguments never pass through a shell. User
+manager/cgroup-v2/controller availability and access denial are reported as launch
+failures, not silently accepted. Empty scopes are collected by systemd. The cloud
+container lacks a user bus; native success must remain explicitly unverified here.
+
+### Fifth-slice acceptance
+Eight targeted Services regressions passed in managed and Linux x64 NativeAOT execution,
+covering scoped setting overrides, disabled defaults, private transport, failed-quota Host
+cleanup and unchanged suspended memory analysis. Actual busctl invocation against an owned
+waiting child returned quota_refused in this container, as expected without a user manager;
+positive kernel-limit parsing and successful admission sequencing use fixtures, not a claim
+of native systemd success. All 374 Desktop regressions and 72-project architecture checks
+passed. Desktop/Services Release builds had zero warnings/errors. NativeAOT publication
+retains the existing Jint IL2098 warning. The quota setting is machine-local/nonexportable.
+A real systemd user-session success run, memory/IO quotas and disk/network policies remain
+pending; this slice only adds explicit CPU bandwidth limits.
