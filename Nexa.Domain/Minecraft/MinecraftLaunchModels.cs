@@ -44,6 +44,8 @@ public sealed record MinecraftLaunchRequest
     public int Height { get; init; } = 480;
     public bool Fullscreen { get; init; }
     public ProcessPriorityClass? ProcessPriority { get; init; }
+    public IReadOnlyList<int> CpuSets { get; init; } = [];
+    public MinecraftProcessQuality ProcessQuality { get; init; }
     public string WindowTitle { get; init; } = string.Empty;
     public MinecraftLauncherVisibility LauncherVisibility { get; init; }
     public bool IsolatedGameDirectory { get; init; }
@@ -195,6 +197,8 @@ public sealed record MinecraftLaunchPlan(
     public int JavaMajorVersion { get; init; }
     /// <summary>Captured next-launch preference. Null preserves OS defaults for hand-built plans.</summary>
     public ProcessPriorityClass? ProcessPriority { get; init; }
+    public IReadOnlyList<int> CpuSets { get; init; } = [];
+    public MinecraftProcessQuality ProcessQuality { get; init; }
     public string WindowTitle { get; init; } = string.Empty;
     public MinecraftLauncherVisibility LauncherVisibility { get; init; }
 

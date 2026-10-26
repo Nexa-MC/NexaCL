@@ -68,7 +68,9 @@ public sealed class MinecraftLaunchExecutor
             cancellationToken.ThrowIfCancellationRequested();
             javaUse = await JavaRuntimeUseLease.AcquireAsync(plan.JavaExecutablePath, cancellationToken)
                 .ConfigureAwait(false);
-            _ = MinecraftLaunchHooks.ParseWrapper(plan.WrapperCommand);
+            var wrapper = MinecraftLaunchHooks.ParseWrapper(plan.WrapperCommand);
+            if (wrapper.Count > 0 && (plan.CpuSets.Count > 0 || plan.ProcessQuality != MinecraftProcessQuality.Default))
+                throw new InvalidOperationException("Explicit process scheduling requires a direct JVM Host launch. Disable the wrapper or use system scheduling.");
             MinecraftLaunchHooks.ValidatePreLaunch(plan.PreLaunchCommand);
             MinecraftLaunchHooks.ValidatePreLaunch(plan.PostExitCommand);
             if (plan.Overlay.IsRequired || !string.IsNullOrWhiteSpace(plan.PostExitCommand)
@@ -152,13 +154,6 @@ public sealed class MinecraftLaunchExecutor
                 javaUse = null;
             }
             cancellationToken.ThrowIfCancellationRequested();
-            // Before this handoff even nonwaiting hooks belong to launch preparation. A
-            // cancelled or failed JVM startup therefore cannot leave that shell behind.
-            if (hook is not null && !plan.WaitForPreLaunchCommand)
-                hook.Detach(exitCode =>
-                {
-                    if (exitCode != 0) _log?.Warn("Launch", $"Detached pre-launch command failed instance={instanceId} exit_code={exitCode}.");
-                });
             if (plan.ProcessPriority is { } priority)
             {
                 try
@@ -169,6 +164,31 @@ public sealed class MinecraftLaunchExecutor
                 catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
                 { _log?.Warn("Launch", $"Process priority failed session={session.Snapshot.SessionId} exception={error.GetType().Name}."); }
             }
+            if (plan.CpuSets.Count > 0)
+            {
+                operation?.Stage("apply_cpu_sets");
+                var applied = _jvmHost.SetCpuSets(session, plan.CpuSets);
+                if (!applied.Succeeded) throw new InvalidOperationException($"CPU selection could not be applied ({applied.Code}): {applied.Message}");
+            }
+            if (plan.ProcessQuality != MinecraftProcessQuality.Default)
+            {
+                operation?.Stage("apply_process_quality");
+                var quality = plan.ProcessQuality switch
+                {
+                    MinecraftProcessQuality.Efficiency => PlatformProcessQuality.Efficiency,
+                    MinecraftProcessQuality.Background => PlatformProcessQuality.Background,
+                    _ => throw new InvalidOperationException("Invalid process quality policy.")
+                };
+                var applied = _jvmHost.SetQuality(session, quality);
+                if (!applied.Succeeded) throw new InvalidOperationException($"Process quality could not be applied ({applied.Code}): {applied.Message}");
+            }
+            // Before this handoff even nonwaiting hooks belong to launch preparation. A
+            // cancelled or failed JVM startup therefore cannot leave that shell behind.
+            if (hook is not null && !plan.WaitForPreLaunchCommand)
+                hook.Detach(exitCode =>
+                {
+                    if (exitCode != 0) _log?.Warn("Launch", $"Detached pre-launch command failed instance={instanceId} exit_code={exitCode}.");
+                });
             operation?.Complete($"session={session.Snapshot.SessionId} pid={session.Snapshot.ProcessId}");
             completed = true;
             if (overlay is not null || !string.IsNullOrWhiteSpace(plan.PostExitCommand))

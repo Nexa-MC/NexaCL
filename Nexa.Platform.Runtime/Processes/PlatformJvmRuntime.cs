@@ -31,7 +31,7 @@ public sealed class PlatformJvmRuntime : IPlatformJvmRuntime
             {
                 byte[] mask = new byte[128];
                 foreach (int cpu in logicalProcessors) mask[cpu / 8] |= (byte)(1 << (cpu % 8));
-                return Result(sched_setaffinity(process.Id, (nuint)mask.Length, mask) == 0, "CPU 集合已更新。");
+                return ApplyLinuxThreads(process.Id, tid => sched_setaffinity(tid, (nuint)mask.Length, mask), "CPU 集合已更新。");
             }
             if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
             {
@@ -53,7 +53,7 @@ public sealed class PlatformJvmRuntime : IPlatformJvmRuntime
         try
         {
             if (OperatingSystem.IsLinux())
-                return Result(setpriority(0, process.Id, quality switch { PlatformProcessQuality.Background => 10, PlatformProcessQuality.Efficiency => 19, _ => 0 }) == 0,
+                return ApplyLinuxThreads(process.Id, tid => setpriority(0, tid, quality switch { PlatformProcessQuality.Background => 10, PlatformProcessQuality.Efficiency => 19, _ => 0 }),
                     "进程调度权重已更新。");
             if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 16299))
             {
@@ -65,6 +65,30 @@ public sealed class PlatformJvmRuntime : IPlatformJvmRuntime
             or DllNotFoundException or EntryPointNotFoundException)
         { return new(false, "control_unavailable", error.Message); }
         return new(false, "platform_unsupported", "当前系统不支持进程服务质量控制。");
+    }
+
+    private static PlatformProcessControlResult ApplyLinuxThreads(int pid, Func<int, int> apply, string message)
+    {
+        try
+        {
+            HashSet<int> applied = [];
+            for (int pass = 0; pass < 4; pass++)
+            {
+                int[] threads = Directory.EnumerateDirectories($"/proc/{pid}/task").Take(4097)
+                    .Select(path => int.Parse(Path.GetFileName(path), CultureInfo.InvariantCulture)).ToArray();
+                if (threads.Length is 0 or > 4096) return new(false, "thread_limit", "进程线程数量超出调度检查范围。");
+                if (threads.All(applied.Contains)) return new(true, "ok", message);
+                foreach (int tid in threads)
+                {
+                    if (apply(tid) == 0) applied.Add(tid);
+                    else if (Marshal.GetLastPInvokeError() != 3) // ESRCH: thread exited during enumeration.
+                        return new(false, "control_failed", "操作系统拒绝了线程调度请求。");
+                }
+            }
+            return new(false, "threads_changing", "进程线程仍在变化，无法确认调度已覆盖所有线程。");
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or FormatException)
+        { return new(false, "control_unavailable", "无法读取进程线程状态。"); }
     }
 
     public PlatformJvmSample ReadSample(Process process)

@@ -269,7 +269,13 @@ internal static partial class Program
     {
         var catalog = SettingsCatalog.Read(new(true));
         AssertEqual(10, catalog.GlobalPages.Count); AssertEqual(9, catalog.InstancePages.Count); AssertEqual(10, catalog.InstanceSettingsSections.Count);
-        AssertEqual(520, catalog.Entries.Count);
+        AssertEqual(522, catalog.Entries.Count);
+        foreach (string key in new[] { "game.cpu-sets", "game.process-quality" })
+        {
+            AssertEqual("game", catalog.Entries.Single(entry => entry.SettingKey == key).Page);
+            AssertTrue(SettingsPolicySchema.ByKey[key].InstanceOverride);
+            AssertEqual(SettingsApplyTiming.NextLaunch, SettingsPolicySchema.ByKey[key].Timing);
+        }
         var fixedAppearance = catalog.Entries.Where(entry => entry.Page == "appearance" && !entry.DeveloperOnly && entry.Kind == SettingsCatalogEntryKind.Setting)
             .Select(entry => entry.SettingKey).Order(StringComparer.Ordinal).ToArray();
         AssertEqual("appearance.animations-disabled|appearance.hardware-acceleration-disabled|appearance.launcher-icon-mode|appearance.reduced-motion|appearance.theme-mode|appearance.theme-pack-id", string.Join("|", fixedAppearance));
@@ -361,7 +367,7 @@ internal static partial class Program
             AssertEqual("1440", result.Value!.Values.Single(item => item.Key == "game.width").Value.Value);
             AssertEqual(1L, host.StateStore.Read<long>(host.StateStore.Resolve(SettingsPolicyContract.RevisionKey)).Value);
             var content = await runtime.Queries.QueryAsync<SettingsCatalogQuery, SettingsCatalogSnapshot>(catalog, new(true));
-            AssertTrue(content.IsSuccess); AssertEqual(520, content.Value!.Entries.Count);
+            AssertTrue(content.IsSuccess); AssertEqual(522, content.Value!.Entries.Count);
             AssertTrue(runtime.Queries.TryResolve(SettingsPolicyContract.ResetPreviewQuery, out var resetPreview));
             AssertTrue(runtime.Commands.TryResolve(SettingsPolicyContract.ResetCommand, out var reset));
             var proposal = await runtime.Queries.QueryAsync<SettingsResetQuery, SettingsResetPreview>(resetPreview, new());

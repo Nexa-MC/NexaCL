@@ -27,6 +27,11 @@ public sealed record SettingsPolicyDefinition(string Key, SettingsValueKind Kind
             try { _ = CultureInfo.GetCultureInfo(raw); }
             catch (CultureNotFoundException) { return "Unknown formatting culture."; }
         }
+        if (Key == "game.cpu-sets")
+        {
+            try { _ = Minecraft.Launch.MinecraftProcessScheduling.ParseCpuSets(raw); }
+            catch (ArgumentException error) { return error.Message; }
+        }
         if (Key == "game.server" && (raw.Length > 512 || raw.Any(char.IsWhiteSpace)
             || raw.Any(char.IsControl) || raw.Contains("://", StringComparison.Ordinal)))
             return "Expected a server host with an optional port, without spaces or a URI scheme.";
@@ -132,6 +137,9 @@ public static class SettingsPolicySchema
         new("game.pre-launch-wait", SettingsValueKind.Boolean, "true", true, false, "LaunchAdvanceRunWait", SettingsApplyTiming.NextLaunch),
         new("game.auto-repair", SettingsValueKind.Boolean, "true", true, false, "LaunchAutoRepairGame", SettingsApplyTiming.NextLaunch),
         new("game.server", SettingsValueKind.Text, "", true, false, null, SettingsApplyTiming.NextLaunch),
+        new("game.cpu-sets", SettingsValueKind.Text, "", true, false, null, SettingsApplyTiming.NextLaunch, Exportable: false),
+        new("game.process-quality", SettingsValueKind.Enum, "default", true, false, null, SettingsApplyTiming.NextLaunch,
+            Choices: "default|efficiency|background"),
         new("game.process-priority", SettingsValueKind.Enum, "normal", true, false, null, SettingsApplyTiming.NextLaunch,
             Choices: "normal|below-normal|above-normal|high|real-time"),
         new("network.proxy-mode", SettingsValueKind.Enum, "1", false, false, "SystemHttpProxyType", SettingsApplyTiming.NextTask, Choices: "0|1|2"),

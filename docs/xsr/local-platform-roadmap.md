@@ -56,3 +56,42 @@ checks passed for 72 projects. Linux x64 NativeAOT publication and three focused
 passed (PE fixtures exercise x86/x64/ARM64 headers without claiming Windows ARM hardware
 coverage). Publication reports the existing Jint ReflectionAccessor IL2098 trim warning;
 this slice does not change Jint. Windows ARM64 physical-device validation remains pending.
+
+## Second slice: explicit per-launch scheduling
+Settings `game.cpu-sets` (empty = OS default, decimal IDs/ranges, machine-local/nonexportable)
+and `game.process-quality` (default/efficiency/background) support instance overrides and
+apply only to the next launch. Domain owns immutable captured policy; platform owns native
+calls. Linux uses sched_setaffinity/nice; Windows uses supported CPU Sets/EcoQoS APIs.
+Unavailable OS versions hide the controls. No topology-based automatic selection is claimed.
+Default performs no native scheduling call. Explicit policy failures abort and cancel the
+newly owned JVM before detaching hooks; no unrelated processes or global policy are changed.
+CPU Sets apply after spawn, not before JVM initialization, and do not claim a tree quota.
+Memory analysis remains suspended. Process termination releases these process-local settings.
+
+Explicit scheduling currently requires direct JVM Host launch: custom wrappers can fork
+before the policy is applied, so they are rejected before starting when a nondefault policy
+is requested. This avoids claiming the wrapper's affinity necessarily governs the actual JVM.
+Windows background and efficiency both use EcoQoS; Linux maps them to nice 10 and 19.
+Priority is applied before QoS so it cannot immediately overwrite the Linux nice policy.
+
+Linux affinity/nice are per-thread. The adapter scans `/proc/<pid>/task` with a 4096-thread
+budget and up to four stabilization passes, applying to every observed thread. New threads
+inherit their creator's settings. Exiting threads are tolerated; denial or failure to stabilize
+is reported and the launch owner cancels the process. This is not ongoing enforcement against
+game code that later changes its own scheduling. Native regression uses an owned multithread
+child and inspects every thread, not only the process leader.
+
+### Second-slice acceptance
+Release build passed with no warnings/errors. 45 relevant Services regressions passed,
+including an actual owned Linux multithread child, instance override/reset behavior, wrapper
+rejection and process/hook cleanup after refused CPU/QoS requests. 41 Desktop settings
+tests and two localization tests passed; architecture checks cover 72 projects. Linux x64
+NativeAOT publication and four focused regressions passed, with the existing Jint IL2098
+warning. Windows native/hardware validation remains pending; no automatic topology,
+cgroup quota or memory-analysis activation is claimed.
+
+The previous CI failure was a theme test assuming global Busy becomes permanently false
+when one ImportAsync completes. A committed settings revision can queue another appearance
+refresh. The test now waits for idle while retaining persistent-selection assertions; the
+previously failing case passed 20 consecutive executions without changing production theme
+behavior.

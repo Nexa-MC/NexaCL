@@ -264,6 +264,11 @@ internal static partial class Program
     private sealed class HookFixtureHost(MinecraftProcessService processes, List<string> order) : IJvmHost
     {
         public bool FailStart { get; set; }
+        public bool RejectScheduling { get; set; }
+        public JvmHostControlResult SetCpuSets(MinecraftProcessSession session, IReadOnlyList<int> processors)
+        { order.Add("cpu:" + string.Join(',', processors)); return new(!RejectScheduling, "fixture", "fixture"); }
+        public JvmHostControlResult SetQuality(MinecraftProcessSession session, Nexa.Platform.PlatformProcessQuality quality)
+        { order.Add("quality:" + quality); return new(!RejectScheduling, "fixture", "fixture"); }
         public ValueTask<MinecraftProcessSession> StartAsync(MinecraftLaunchPlan plan, string instanceId, CancellationToken token = default)
         {
             order.Add("jvm_start");
@@ -273,7 +278,8 @@ internal static partial class Program
         public JvmHostEnvironment Describe(MinecraftLaunchPlan plan) => new JvmHostService(processes).Describe(plan);
         public JvmHostControlResult Suspend(MinecraftProcessSession session) => throw new NotSupportedException();
         public JvmHostControlResult ResumeProcess(MinecraftProcessSession session) => throw new NotSupportedException();
-        public JvmHostControlResult SetPriority(MinecraftProcessSession session, ProcessPriorityClass priority) => new(true, "fixture", "fixture");
+        public JvmHostControlResult SetPriority(MinecraftProcessSession session, ProcessPriorityClass priority)
+        { order.Add("priority"); return new(true, "fixture", "fixture"); }
         public JvmHostControlResult SetAffinity(MinecraftProcessSession session, nint affinityMask) => throw new NotSupportedException();
     }
 }

@@ -47,6 +47,7 @@ internal sealed partial class SettingsPageController
             { "auto" => CatalogCopy("catalog.copy.217cfe7db1e3d10a"), "secondary" => CatalogCopy("catalog.copy.08d99de9033a468b"), _ => value };
             if (entry.SettingKey == "game.renderer") label = value switch
             { "auto" => CatalogCopy("catalog.copy.217cfe7db1e3d10a"), "mesa-software" => CatalogCopy("catalog.copy.d52065e3b606194f"), _ => value };
+            if (entry.SettingKey == "game.process-quality") label = CatalogCopy("catalog.scheduling." + value);
             if (entry.SettingKey == "game.process-priority") label = value switch
             { "normal" => CatalogCopy("catalog.copy.296de0e31f8c22d9"), "below-normal" => CatalogCopy("catalog.copy.552f8f8b1402dc6d"), "above-normal" => CatalogCopy("catalog.copy.dfbad24e7f4a9cb8"), "high" => CatalogCopy("catalog.copy.b1c27820fec23edb"), "real-time" => CatalogCopy("catalog.copy.c69ec2ffb0db8ca4"), _ => value };
             if (entry.SettingKey == "game.launcher-visibility") label = value switch

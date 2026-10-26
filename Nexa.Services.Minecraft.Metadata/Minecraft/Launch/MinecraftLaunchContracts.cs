@@ -145,6 +145,8 @@ public static class MinecraftLaunchPlanner
             ClientJarPath = clientJar,
             JavaMajorVersion = request.JavaMajorVersion,
             ProcessPriority = request.ProcessPriority,
+            CpuSets = Array.AsReadOnly(request.CpuSets.ToArray()),
+            ProcessQuality = request.ProcessQuality,
             WindowTitle = request.WindowTitle,
             LauncherVisibility = request.LauncherVisibility,
             WrapperCommand = request.WrapperCommand,

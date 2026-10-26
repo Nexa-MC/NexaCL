@@ -4,6 +4,9 @@ internal static partial class Program
 {
     private static (string Name, Func<ValueTask> Body)[] RegisterRuntimeEvidence() =>
     [
+        ("explicit scheduling native Linux uses only owned process", ExplicitSchedulingNativeLinuxUsesOnlyOwnedProcess),
+        ("explicit scheduling validates settings and scoped overrides", Sync(ExplicitSchedulingValidatesSettingsAndScopedOverrides)),
+        ("explicit scheduling applies and owns failed processes", ExplicitSchedulingAppliesAndOwnsFailedProcesses),
         ("native architecture validates required binaries and mixed archives", Sync(NativeArchitectureValidatesRequiredBinariesAndMixedArchives)),
         ("native architecture failure prevents process creation", NativeArchitectureFailurePreventsProcessCreation),
         ("online modpack direct install publishes and reuses verified archive", OnlineModpackDirectInstallPublishesAndReusesVerifiedArchive),

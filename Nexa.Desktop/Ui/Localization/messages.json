@@ -1,4 +1,9 @@
 [
+  {"source":"系统默认调度","en":"System scheduling","zh-Hant":"系統預設排程"},
+  {"source":"节能调度","en":"Efficiency scheduling","zh-Hant":"節能排程"},
+  {"source":"后台调度","en":"Background scheduling","zh-Hant":"背景排程"},
+  {"source":"逻辑处理器集合（留空使用系统默认）","en":"Logical processors (empty for system default)","zh-Hant":"邏輯處理器集合（留空使用系統預設）"},
+  {"source":"进程调度模式","en":"Process scheduling mode","zh-Hant":"處理程序排程模式"},
   {"source":"已读","en":"Mark as read","zh-Hant":"已讀"},
   {"source":"稍后","en":"Later","zh-Hant":"稍後"},
   {"source":"帮助改进 NexaCL","en":"Help improve NexaCL","zh-Hant":"協助改進 NexaCL"},

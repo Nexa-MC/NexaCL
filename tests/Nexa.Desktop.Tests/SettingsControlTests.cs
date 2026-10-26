@@ -22,6 +22,10 @@ internal static partial class Program
         AssertTrue(toggle.IsFocusable && toggle.IsClickable);
         AssertEqual(XsrUiSemanticRole.RadioGroup, FindByKey(fixture.Shell, scene, "SettingsSelector.game.process-priority").Role);
         AssertEqual(XsrUiSemanticRole.RadioButton, FindByKey(fixture.Shell, scene, "SettingsOption.game.process-priority.high").Role);
+        if (OperatingSystem.IsLinux() || OperatingSystem.IsWindowsVersionAtLeast(10, 0, 16299))
+            AssertEqual("节能调度", FindByKey(fixture.Shell, scene, "SettingsOption.game.process-quality.efficiency").Text);
+        if (OperatingSystem.IsLinux() || OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+            AssertTrue(FindByKey(fixture.Shell, scene, "SettingsInput.game.cpu-sets").IsFocusable);
         AssertEqual(XsrUiSemanticRole.RadioButton, FindByKey(fixture.Shell, scene, "SettingsAuto.game.memory").Role);
         AssertTrue(scene.Nodes.Any(n => n.Text == "Java 与内存"));
         AssertTrue(scene.Nodes.Any(n => n.Text == "高级参数"));

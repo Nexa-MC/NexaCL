@@ -420,6 +420,30 @@
     "availability": "Available"
   },
   {
+    "id": "global.game.cpu-sets",
+    "parent": "global.game.546d4a3ef466",
+    "scope": "global",
+    "page": "game",
+    "section": "资源与性能",
+    "label": "逻辑处理器集合（留空使用系统默认）",
+    "kind": "Setting",
+    "key": "game.cpu-sets",
+    "developer": false,
+    "availability": "Available"
+  },
+  {
+    "id": "global.game.process-quality",
+    "parent": "global.game.546d4a3ef466",
+    "scope": "global",
+    "page": "game",
+    "section": "资源与性能",
+    "label": "进程调度模式",
+    "kind": "Setting",
+    "key": "game.process-quality",
+    "developer": false,
+    "availability": "Available"
+  },
+  {
     "id": "global.game.736cc8decfb4",
     "parent": "global.game.1cf65ca0a095",
     "scope": "global",

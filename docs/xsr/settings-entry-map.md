@@ -611,3 +611,12 @@ Effective availability follows `SettingsCatalog.ResolveAvailability`, including 
 | `appearance.hardware-acceleration-disabled` | Windows, Linux | 1 |
 
 The twelve positions declared `PlatformUnsupported` on every host comprise two native blur-parameter controls, two Force-X11 controls, two LWJGL unsafe-agent controls, three legacy JLW/RW/Log4j controls, and three compatibility/verification-bypass controls. They have no supported current execution contract. Platform-specific conditions add four unavailable positions on Linux, four on Windows and ten on macOS; they leave the 132 unavailable IA/planning positions unchanged.
+
+## 2026-10-26 explicit scheduling additions
+
+| ID | Location | Setting | Scope | Timing |
+| --- | --- | --- | --- | --- |
+| global.game.cpu-sets | game / 资源与性能 | game.cpu-sets | Global + instance override; not exported | Next launch |
+| global.game.process-quality | game / 资源与性能 | game.process-quality | Global + instance override | Next launch |
+
+See [local platform roadmap](local-platform-roadmap.md) for OS admission and failure semantics.

@@ -140,6 +140,23 @@ public sealed partial class MinecraftLaunchCoordinator
                 };
                 continue;
             }
+            if (setting.Key is "game.cpu-sets" or "game.process-quality")
+            {
+                if (setting.ValidationError is not null) throw new InvalidDataException(setting.ValidationError);
+                request = setting.Key == "game.cpu-sets"
+                    ? request with { CpuSets = MinecraftProcessScheduling.ParseCpuSets(setting.Value.Value ?? "") }
+                    : request with
+                    {
+                        ProcessQuality = setting.Value.Value switch
+                        {
+                            "default" => MinecraftProcessQuality.Default,
+                            "efficiency" => MinecraftProcessQuality.Efficiency,
+                            "background" => MinecraftProcessQuality.Background,
+                            _ => throw new InvalidDataException("Invalid process quality setting.")
+                        }
+                    };
+                continue;
+            }
             if (setting.Key == "game.process-priority")
             {
                 if (setting.ValidationError is not null) throw new InvalidDataException("进程优先级设置无效。");

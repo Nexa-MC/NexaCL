@@ -168,5 +168,8 @@
     <Text Key="catalog.vendor.semeru" Content="IBM Semeru" Localize="false" />
     <Text Key="catalog.vendor.graalvm" Content="GraalVM" Localize="false" />
     <Text Key="catalog.vendor.openjdk" Content="OpenJDK" Localize="false" />
+    <Text Key="catalog.scheduling.default" Content="系统默认调度" Localize="false" />
+    <Text Key="catalog.scheduling.efficiency" Content="节能调度" Localize="false" />
+    <Text Key="catalog.scheduling.background" Content="后台调度" Localize="false" />
 </ContentHost>
 </nxml-page>

@@ -16,6 +16,12 @@ internal static partial class Program
 
     private static async Task<int> Main(string[] args)
     {
+        if (args is ["--scheduling-child"])
+        {
+            using var ready = new CountdownEvent(4);
+            for (int i = 0; i < 4; i++) new Thread(() => { ready.Signal(); Thread.Sleep(Timeout.Infinite); }) { IsBackground = true }.Start();
+            ready.Wait(); Console.WriteLine("ready"); Thread.Sleep(Timeout.Infinite); return 0;
+        }
         if (args is [Nexa.Services.Minecraft.Process.MinecraftLaunchHookWorker.WorkerArgument])
             return await Nexa.Services.Minecraft.Process.MinecraftLaunchHookWorker.RunWorkerAsync().ConfigureAwait(false);
         if (args is ["--delta-publisher-smoke", var deltaFixture]) return await RunPublisherDeltaFixture(deltaFixture);
