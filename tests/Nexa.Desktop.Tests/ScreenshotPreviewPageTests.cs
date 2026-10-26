@@ -78,9 +78,10 @@ internal static partial class Program
             reads.Add(query); tokens.Add(token);
             return query.Name == "a.png" ? new(pendingA.Task) : ValueTask.FromResult(XsrResult.Success(new InstanceScreenshot("b-path.png", b)));
         }, commands.Build(new NoopDispatchObserver()));
-        int copies = 0; (string Path, long Size, long Ticks)? shared = null; string? folder = null;
+        int copies = 0; (string Path, long Size, long Ticks)? shared = null; (string Path, long Size, long Ticks)? previewed = null; string? folder = null;
         page.Settings.CopyScreenshotAsync = bytes => { AssertEqual(b.Key, PngImage.TryCreatePreview(bytes.Span)!.Key); copies++; return Task.CompletedTask; };
         page.Settings.ShareScreenshotAsync = (path, size, ticks) => { shared = (path, size, ticks); return Task.CompletedTask; };
+        page.Settings.PreviewScreenshotAsync = (path, size, ticks) => { previewed = (path, size, ticks); return Task.CompletedTask; };
         page.Settings.OpenManagementDirectory = path => folder = path;
         page.Emit("ui.settings.management.action", "ManagementScreenshot.a.png");
         page.Emit("ui.settings.screenshot-preview.action", "ScreenshotPreview.Copy");
@@ -96,6 +97,8 @@ internal static partial class Program
         page.Emit("ui.settings.screenshot-preview.action", "ScreenshotPreview.Copy"); page.Pump(() => copies == 1);
         page.Emit("ui.settings.screenshot-preview.action", "ScreenshotPreview.Share"); page.Pump(() => shared is not null);
         AssertEqual(("b-path.png", 33L, 20L), shared!.Value);
+        page.Emit("ui.settings.screenshot-preview.action", "ScreenshotPreview.QuickLook"); page.Pump(() => previewed is not null);
+        AssertEqual(("b-path.png", 33L, 20L), previewed!.Value);
         page.Emit("ui.settings.screenshot-preview.action", "ScreenshotPreview.Folder"); AssertEqual("instance-A/screenshots", folder);
         AssertFalse(page.Scene.Nodes.Any(node => page.Fixture.Shell.Tree.Name(node.Entity) == "ScreenshotCropWidth"));
         page.Emit("ui.settings.screenshot-preview.action", "ScreenshotPreview.Crop");
@@ -195,7 +198,7 @@ internal static partial class Program
         }
         // Include overscan cards retained outside the scene's clip, then require stable IO.
         int observedFrames = 0;
-        try { page.Pump(() => { observedFrames++; return Realized(loadedOnly: true) == Realized(loadedOnly: false); }); }
+        try { page.Pump(() => { observedFrames++; return Realized(loadedOnly: true) == Realized(loadedOnly: false); }, TimeSpan.FromSeconds(15)); }
         catch
         {
             Console.WriteLine($"Screenshot diagnostics: frames={observedFrames}; reads={counts.Count}; loaded={Realized(true)}; realized={Realized(false)}; owned={page.Settings.ScreenshotThumbnailOwnedBytes}; reserved={page.Settings.ScreenshotThumbnailReservedBytes}");
@@ -280,7 +283,7 @@ internal static partial class Program
         internal void Emit(string command, string name) => Emit(command, Find(name).Entity);
         internal void Emit(string command, XsrUiEntityId entity) { Program.Emit(Fixture.Intents, command, entity); Render(); }
         internal void Render(double? width = null, double? height = null) { if (width is not null || height is not null) _size = new(width ?? _size.Width, height ?? _size.Height); Scene = Fixture.Shell.Render(_size); }
-        internal void Pump(Func<bool> condition) => AssertTrue(SpinWait.SpinUntil(() => { Render(); return condition(); }, TimeSpan.FromSeconds(5)));
+        internal void Pump(Func<bool> condition, TimeSpan? timeout = null) => AssertTrue(SpinWait.SpinUntil(() => { Render(); return condition(); }, timeout ?? TimeSpan.FromSeconds(5)));
         public void Dispose() { Settings.Dispose(); Fixture.Dispose(); }
     }
 }

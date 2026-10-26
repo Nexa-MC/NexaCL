@@ -147,6 +147,7 @@ public static class MinecraftLaunchPlanner
             ProcessPriority = request.ProcessPriority,
             CpuSets = Array.AsReadOnly(request.CpuSets.ToArray()),
             CpuPolicy = request.CpuPolicy,
+            GameMode = request.GameMode,
             ProcessQuality = request.ProcessQuality,
             CpuQuotaPercent = request.CpuQuotaPercent,
             ProcessMemoryLimitMiB = request.ProcessMemoryLimitMiB,

@@ -666,6 +666,7 @@ internal static partial class Program
         versionSettings.SelectDataPackFileAsync = () => platformActions.PickDataPackFileAsync();
         versionSettings.CopyScreenshotAsync = platformActions.CopyScreenshotAsync;
         versionSettings.ShareScreenshotAsync = platformActions.ShareScreenshotAsync;
+        if (OperatingSystem.IsMacOS()) versionSettings.PreviewScreenshotAsync = AvaloniaUiPlatformActions.PreviewScreenshotAsync;
         versionSettings.PickRemediationJava = platformActions.PickJavaFileAsync;
         settingsPage.PickRemediationJava = platformActions.PickJavaFileAsync;
         settingsPage.ConfigureSettingsTransfer(token => platformActions.ReadJsonDocumentAsync(1024 * 1024, () => shell.Renderer.LocalizeText(ProductPresentationText.Raw("program.copy.1a80d4a192698b02")), token),

@@ -1,4 +1,10 @@
 [
+  {"source": "系统默认", "en": "System default", "zh-Hant": "系統預設"},
+  {"source": "高性能核心", "en": "Performance cores", "zh-Hant": "高效能核心"},
+  {"source": "最大缓存域", "en": "Largest cache domain", "zh-Hant": "最大快取域"},
+  {"source": "单 NUMA 域", "en": "Single NUMA domain", "zh-Hant": "單一 NUMA 域"},
+  {"source": "自动处理器拓扑策略", "en": "Automatic CPU topology policy", "zh-Hant": "自動處理器拓撲策略"},
+  {"source": "使用 Linux GameMode（需要已安装服务）", "en": "Use Linux GameMode (service required)", "zh-Hant": "使用 Linux GameMode（需要已安裝服務）"},
   {"source":"进程资源配额","en":"Process resource limits","zh-Hant":"進程資源配額"},
   {"source": "计费网络后台下载策略", "en": "Metered network background downloads", "zh-Hant": "計費網路背景下載策略"},
   {"source": "始终允许后台下载", "en": "Always allow background downloads", "zh-Hant": "始終允許背景下載"},

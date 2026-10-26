@@ -8,6 +8,7 @@ namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 public sealed partial class AvaloniaUiPlatformActions
 {
     private Bitmap? _clipboardScreenshot;
+    private WindowsScreenshotShare? _windowsShare;
 
     public Task CopyScreenshotAsync(string path) => Dispatcher.UIThread.CheckAccess()
         ? CopyScreenshotOnUiAsync(path) : Dispatcher.UIThread.InvokeAsync(() => CopyScreenshotOnUiAsync(path));
@@ -59,6 +60,13 @@ public sealed partial class AvaloniaUiPlatformActions
         _ = ReadScreenshot(path);
         VerifyScreenshotIdentity(path, size, modified);
         var owner = _owner ?? throw new InvalidOperationException("The native window is not ready.");
+        if (OperatingSystem.IsWindows())
+        {
+            _windowsShare?.Dispose(); _windowsShare = null;
+            _windowsShare = new WindowsScreenshotShare(owner as global::Avalonia.Controls.Window
+                ?? throw new InvalidOperationException("The share window is unavailable."), path, size, modified);
+            return;
+        }
         var file = await owner.StorageProvider.TryGetFileFromPathAsync(new Uri(Path.GetFullPath(path))).ConfigureAwait(true)
             ?? throw new IOException("The screenshot is no longer available.");
         using (file)

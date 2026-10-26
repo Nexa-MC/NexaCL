@@ -46,6 +46,7 @@ public sealed record MinecraftLaunchRequest
     public ProcessPriorityClass? ProcessPriority { get; init; }
     public IReadOnlyList<int> CpuSets { get; init; } = [];
     public string CpuPolicy { get; init; } = "system";
+    public bool GameMode { get; init; }
     public MinecraftProcessQuality ProcessQuality { get; init; }
     public int CpuQuotaPercent { get; init; }
     public long ProcessMemoryLimitMiB { get; init; }
@@ -204,6 +205,7 @@ public sealed record MinecraftLaunchPlan(
     public ProcessPriorityClass? ProcessPriority { get; init; }
     public IReadOnlyList<int> CpuSets { get; init; } = [];
     public string CpuPolicy { get; init; } = "system";
+    public bool GameMode { get; init; }
     public MinecraftProcessQuality ProcessQuality { get; init; }
     public int CpuQuotaPercent { get; init; }
     public long ProcessMemoryLimitMiB { get; init; }

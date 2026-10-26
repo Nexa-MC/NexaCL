@@ -4,6 +4,7 @@ internal static partial class Program
 {
     private static (string Name, Func<ValueTask> Body)[] RegisterRuntimeEvidence() =>
     [
+        ("GameMode owns registration through process completion", GameModeOwnsRegistrationThroughProcessCompletion),
         ("native clones preserve independent files and backup validation", NativeClonesPreserveIndependentFilesAndBackupValidation),
         ("power pressure pauses only background admission", PowerPressurePausesOnlyBackgroundAdmission),
         ("topology selection respects observed capabilities", Sync(TopologySelectionRespectsObservedCapabilities)),

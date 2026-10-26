@@ -7,7 +7,9 @@ internal static partial class Program
 {
     private static async ValueTask NativeClonesPreserveIndependentFilesAndBackupValidation()
     {
-        string root = CreateTempDirectory();
+        // macOS /var and /tmp are aliases; backup roots deliberately reject linked ancestors.
+        string root = OperatingSystem.IsMacOS() ? Path.Combine("/private/tmp", "nexacl-clone-test-" + Guid.NewGuid().ToString("N")) : CreateTempDirectory();
+        Directory.CreateDirectory(root);
         try
         {
             string source = Path.Combine(root, "source"), copy = Path.Combine(root, "copy");

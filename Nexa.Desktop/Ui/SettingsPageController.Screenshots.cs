@@ -11,6 +11,7 @@ internal sealed partial class SettingsPageController
     private static readonly XsrSemanticId ScreenshotPreviewAction = XsrSemanticId.Parse("ui.settings.screenshot-preview.action");
     internal Func<ReadOnlyMemory<byte>, Task>? CopyScreenshotAsync { get; set; }
     internal Func<string, long, long, Task>? ShareScreenshotAsync { get; set; }
+    internal Func<string, long, long, Task>? PreviewScreenshotAsync { get; set; }
     private readonly Dictionary<XsrUiEntityId, Action> _screenshotPreviewActions = [];
     private XsrUiEntityId _screenshotPreview, _screenshotPreviewCard, _screenshotPreviewImage, _screenshotPreviewStatus, _screenshotPreviousFocus;
     private XsrUiEntityId _screenshotCropButton, _screenshotPreviewSlot;
@@ -76,6 +77,7 @@ internal sealed partial class SettingsPageController
             ["actionOrientation"] = width >= metric.MaxWidth!.Value ? "Horizontal" : "Vertical",
             ["canCopy"] = ContentFlag(CopyScreenshotAsync is not null),
             ["canShare"] = ContentFlag(ShareScreenshotAsync is not null),
+            ["canQuickLook"] = ContentFlag(PreviewScreenshotAsync is not null),
             ["readable"] = ContentFlag(readable),
             ["canFolder"] = ContentFlag(OpenManagementDirectory is not null && _management?.Pages.Any(page => page.Id == "screenshots" && page.Directory is not null) == true),
             ["canRemove"] = ContentFlag(_commands.TryResolve(InstanceManagementContract.RemoveContent, out _)),
@@ -93,6 +95,7 @@ internal sealed partial class SettingsPageController
         BindContentImage(_screenshotPreviewImage, item);
         void Bind(string key, Action action) { var entity = nodes["ScreenshotPreview." + key]; _screenshotPreviewActions[entity] = action; }
         Bind("Close", () => CloseScreenshotPreview()); Bind("Refresh", RefreshManagement); Bind("Copy", () => StartScreenshotOperation(copy: true)); Bind("Share", () => StartScreenshotOperation(copy: false));
+        Bind("QuickLook", () => StartScreenshotOperation(copy: false, preview: true));
         Bind("Folder", () => { var directory = _management?.Pages.FirstOrDefault(page => page.Id == "screenshots")?.Directory; if (directory is not null) OpenContentDirectory(directory); });
         Bind("Remove", () => { if (_screenshotPreviewItem is { } current) RemoveContent(current); });
         Bind("Crop", () => { _screenshotCropVisible = !_screenshotCropVisible; BuildScreenshotPreviewCard(); FocusScreenshotPreviewClose(); });
@@ -166,7 +169,7 @@ internal sealed partial class SettingsPageController
         _screenshotPreviewStatusOverride = literal ? content : _shell.Renderer.LocalizeText(content); ReloadContent(_screenshotPreview, ("status", _screenshotPreviewStatusOverride));
     }
 
-    private void StartScreenshotOperation(bool copy)
+    private void StartScreenshotOperation(bool copy, bool preview = false)
     {
         if (_screenshotOperation is not null || _managementWrite is not null || _screenshotPreviewQuery is not { } file
             || _screenshotPreviewStop is not { } stop || !_queries.TryResolve(InstanceScreenshotContract.Read, out var route)) return;
@@ -178,7 +181,12 @@ internal sealed partial class SettingsPageController
             token.ThrowIfCancellationRequested();
             if (!ScreenshotPreviewCurrent(file, generation)) return;
             if (!result.IsSuccess) throw new IOException(result.Error?.Message);
-            if (copy && CopyScreenshotAsync is { } copyAction) await copyAction(result.Value!.Image.Bytes).ConfigureAwait(false);
+            if (preview)
+            {
+                var previewAction = PreviewScreenshotAsync ?? throw new NotSupportedException("Quick Look is unavailable.");
+                await previewAction(result.Value!.Path, file.ExpectedSize, file.ExpectedModifiedUtcTicks).ConfigureAwait(false);
+            }
+            else if (copy && CopyScreenshotAsync is { } copyAction) await copyAction(result.Value!.Image.Bytes).ConfigureAwait(false);
             else if (!copy && ShareScreenshotAsync is { } shareAction) await shareAction(result.Value!.Path, file.ExpectedSize, file.ExpectedModifiedUtcTicks).ConfigureAwait(false);
         }
         _screenshotOperation = Apply(); ObserveTransfer(_screenshotOperation);

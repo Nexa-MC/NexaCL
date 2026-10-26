@@ -31,7 +31,7 @@ public static partial class SettingsCatalog
     private static SettingsCapabilityAvailability ResolveAvailability(JsonElement row)
     {
         string? key = row.GetProperty("key").GetString();
-        if ((key is "game.cpu-quota-percent" or "game.process-memory-limit-mib" or "game.io-read-limit-mib" or "game.io-write-limit-mib") && !OperatingSystem.IsLinux()) return SettingsCapabilityAvailability.PlatformUnsupported;
+        if ((key is "game.gamemode" or "game.cpu-quota-percent" or "game.process-memory-limit-mib" or "game.io-read-limit-mib" or "game.io-write-limit-mib") && !OperatingSystem.IsLinux()) return SettingsCapabilityAvailability.PlatformUnsupported;
         if (key is "game.cpu-sets" or "game.cpu-policy" && !(OperatingSystem.IsLinux() || OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
             || key == "game.process-quality" && !(OperatingSystem.IsLinux() || OperatingSystem.IsWindowsVersionAtLeast(10, 0, 16299)))
             return SettingsCapabilityAvailability.PlatformUnsupported;

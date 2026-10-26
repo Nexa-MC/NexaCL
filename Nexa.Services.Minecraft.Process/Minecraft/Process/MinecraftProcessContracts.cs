@@ -195,15 +195,20 @@ public sealed partial class MinecraftProcessSession : IAsyncDisposable
             _ = await Task.WhenAny(exited, Task.Delay(3_000)).ConfigureAwait(false);
         }
 
-        _drainLifetime.Cancel();
-        await Task.WhenAll(_outputDrain, _errorDrain).ConfigureAwait(false);
-        _drainLifetime.Dispose();
-        _process.Dispose();
+        try { await ReleaseNativeLeaseAsync().ConfigureAwait(false); }
+        finally
+        {
+            _drainLifetime.Cancel();
+            await Task.WhenAll(_outputDrain, _errorDrain).ConfigureAwait(false);
+            _drainLifetime.Dispose();
+            _process.Dispose();
+        }
     }
 
     private void OnExited(object? sender, EventArgs args)
     {
         CompleteExit();
+        _ = ReleaseNativeLeaseAsync();
     }
 
     private void CompleteExit()
@@ -256,6 +261,7 @@ public sealed partial class MinecraftProcessService : IAsyncDisposable
     public XsrStateStore? StateStore => _store;
 
     public Nexa.Platform.IPlatformJvmArchitectureValidator? ArchitectureValidator { get; init; }
+    public Nexa.Platform.IPlatformGameMode GameMode { get; init; } = new Nexa.Platform.PlatformGameMode();
     public Nexa.Platform.IPlatformCpuTopology CpuTopology { get; init; } = new Nexa.Platform.PlatformCpuTopology();
     public Nexa.Platform.IPlatformJvmRuntime SchedulingRuntime { get; init; } = new Nexa.Platform.PlatformJvmRuntime();
     public Nexa.Platform.IPlatformCpuQuota CpuQuota { get; init; } = new Nexa.Platform.PlatformCpuQuota();
@@ -279,6 +285,8 @@ public sealed partial class MinecraftProcessService : IAsyncDisposable
             bool hasQuota = plan.CpuQuotaPercent > 0 || plan.ProcessMemoryLimitMiB > 0 || plan.IoReadLimitMiB > 0 || plan.IoWriteLimitMiB > 0;
             if (hasQuota && (bootstrap is null || wrapper.Count > 0))
                 throw new InvalidOperationException("CPU quota requires the direct bundled JVM Host transport.");
+            if (plan.GameMode && (bootstrap is null || wrapper.Count > 0))
+                throw new InvalidOperationException("GameMode 需要直接使用内置 JVM Host。");
             IReadOnlyList<int> selectedCpus = [];
             if (plan.CpuPolicy != "system")
             {
@@ -340,6 +348,7 @@ public sealed partial class MinecraftProcessService : IAsyncDisposable
                 var quota = await CpuQuota.ApplyAsync(process, requestedQuota, cancellationToken).ConfigureAwait(false);
                 if (!quota.Succeeded) throw new InvalidOperationException(quota.Message);
             }
+            if (plan.GameMode) session.OwnNativeLease(await GameMode.StartAsync(process, cancellationToken).ConfigureAwait(false));
             if (bootstrap is not null)
             {
                 using CancellationTokenSource transfer = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);

@@ -349,3 +349,68 @@ runs topology/power/network/clone fixtures using its existing Windows, Linux and
 this adds native CoW coverage on APFS-capable runners without a new publishing pipeline.
 Final architecture recheck passed for 72 projects. Resource-policy Launcher Build 40306116646
 has now completed successfully for all six target architectures, including both macOS helpers.
+
+## Native-integration slice: opt-in Linux GameMode
+A per-launch machine-local GameMode preference registers the directly owned JVM Host before
+private bootstrap. Platform uses GameMode's public RegisterGameByPID/UnregisterGameByPID
+D-Bus methods with the game PID and this launcher as requester, bounded by busctl timeouts.
+The launcher does not install the daemon or edit GameMode/system configuration. An explicit
+request may activate the performance adjustments already configured in the user's GameMode daemon.
+Session ownership unregisters on cancellation, exit and disposal. A timed-out registration
+also attempts cleanup because the server might have accepted it before the response was lost.
+Missing/refused services fail an explicitly requested launch rather than claim optimization.
+Default performs no calls; wrappers cannot claim control over the eventual JVM and are rejected.
+The public client protocol was checked against FeralInteractive/gamemode client_impl.c and
+its daemon D-Bus method definitions; no upstream implementation is copied.
+
+## Native-integration slice: macOS Quick Look and Portal ownership
+Screenshot preview exposes an explicit macOS Quick Look action. The existing screenshot
+query/identity checks precede a bundled helper's QLPreviewPanel; a bounded ready handshake
+must succeed before the UI reports completion. The panel is user-owned after opening and
+closes through native controls, without changing or exporting the image. The native helper
+uses public AppKit/QuickLookUI APIs, not AppleScript automation permissions. Linux file
+selection/save already goes through Avalonia's DBus-enabled storage provider and document
+streams; preserve that portal boundary rather than replacing portal results with guessed paths.
+
+## Native-integration slice: Windows screenshot share panel
+The screenshot Share intent uses the owning HWND's public DataTransferManager interop.
+An AOT-safe COM delegate supplies a bitmap package from an exclusive-read native random
+access stream only after checking the selected screenshot identity again. WinRT owns the
+stream reference after package construction. Delegate/event/manager references are balanced
+when another share replaces the session or its window closes; failures stay explicit.
+No uploaded image, external helper window, shell verb guessing or hidden cloud transfer is
+introduced. ABI slots/IIDs are checked against the public SDK ShObjIdl_core.h and generated
+Windows Runtime metadata; the typed-event IID follows the standard WinRT signature hash.
+Screenshot regression note: the overscan test made steady progress (76/78 images loaded)
+but exhausted its five-second fixture deadline while other builds consumed CPU; isolated
+rerun passed. Only this high-card-count test now allows 15 seconds. Its no-repeat-read,
+complete-load and unchanged-IO assertions remain intact. Quick Look routing tests verify the
+exact selected file identity. Windows CI exercises real WinRT bitmap package construction
+and native stream release in addition to the cross-platform delegate ownership regression.
+
+## Added Alpha 14 task: launched-version and measured-runtime telemetry
+User added collection of the launched version's data and actual runtime observations.
+Existing diagnostic.run/diagnostic.mods events already carry bounded loader/version/mod
+inventory and windowed process samples. Extend these existing state/telemetry contracts;
+do not create a second sampler or invent measured values from configured limits (especially
+MaxFps versus observed FPS, or heap limit versus actual memory). Preserve the existing
+consent/prerelease policy and redaction boundary. Include safe version/component/Java/mod
+metadata, captured launch policy and actual available process counters/exit outcomes, with
+explicit completeness/unknown information. Credentials, account identities, raw JVM/game
+argument strings, absolute user paths, save contents and raw unredacted logs are excluded.
+The website/ingress validation and regression fixtures must accept the same versioned schema.
+This task remains pending and does not reactivate Minecraft memory analysis or startup gating.
+
+CI follow-up: topology display terms lacked English/Traditional Chinese entries; those and
+the GameMode label now have explicit translations. The macOS CoW probe itself succeeded,
+but its backup fixture used /var's linked temporary root, rejected correctly by CheckLinks.
+That fixture now uses a unique directory under /private/tmp. Production link protections
+remain unchanged. NativeAOT renderer publication and all 46 backend tests passed locally.
+
+Native-integration local acceptance: the solution built with zero warnings/errors; GameMode
+ownership/catalog cases passed, all 11 screenshot regressions passed, and 46 backend cases
+passed in both managed and Linux NativeAOT execution. Seven language regressions passed after
+the CI translation correction. GameMode's real daemon, WinRT share UI and the new Swift
+Quick Look branch remain subject to platform CI/device availability; no positive native
+claim is made from Linux fixtures. Launcher Build 40310302202 succeeded on all six targets
+for preceding commit 7ed10738; its XSR CI failures are addressed above.

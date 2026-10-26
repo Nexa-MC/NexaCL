@@ -50,6 +50,7 @@ internal static partial class Program
         ("window entrance preserves prepared input and retires motion", WindowEntrancePreservesPreparedInputAndRetiresMotion),
         ("tray visibility retargets retained content and retires lifetimes", TrayVisibilityRetargetsRetainedContentAndRetiresLifetimes),
         ("memory pressure observations follow only current native owner", MemoryPressureObservationsFollowOnlyCurrentNativeOwner),
+        ("native share delegates balance their unmanaged references", () => AssertTrue(WindowsScreenshotShare.VerifyDelegateOwnership())),
         ("memory pressure preserves visible leases and disposes idle resources", MemoryPressurePreservesVisibleLeasesAndDisposesIdle),
         ("VerifyBackgroundFitAndImageOpacityDrawing", VerifyBackgroundFitAndImageOpacityDrawing),
         ("RuntimeDiagnosticsObserveRealCommitsPaintAndAdmission", RuntimeDiagnosticsObserveRealCommitsPaintAndAdmission),
@@ -72,6 +73,19 @@ internal static partial class Program
     private static int Main(string[] args)
     {
         if (args is ["--native-macos-render-probe", var mode, var directory]) return RunMacOSRenderProbe(mode, directory);
+        if (args.Contains("--native-share-package-smoke"))
+        {
+            if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
+            string image = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".png");
+            try
+            {
+                File.WriteAllBytes(image, Convert.FromBase64String(TinyPngBase64));
+                WindowsScreenshotShare.VerifyNativePackage(image);
+                Console.WriteLine("PASS: native Windows share bitmap package and stream ownership");
+            }
+            finally { File.Delete(image); }
+            return 0;
+        }
         if (args.Contains("--native-startup-smoke")) return RunNativeStartupSmoke();
         if (args.Contains("--native-startup-cancel-smoke")) return RunNativeStartupCancelSmoke();
         if (args.Contains("--native-corner-smoke")) return RunNativeCornerSmoke();

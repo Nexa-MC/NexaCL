@@ -28,6 +28,8 @@ jobs:
           Get-CimInstance Win32_VideoController | Select-Object Name, DriverVersion
       - name: Build native window probe
         run: dotnet build tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release
+      - name: Verify native WinRT share package and stream ownership
+        run: dotnet tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll --native-share-package-smoke
       - name: Exercise actual Win32 decorations and tray restoration
         shell: pwsh
         run: |
@@ -144,7 +146,7 @@ jobs:
         shell: pwsh
         run: |
           $binary = if ($IsWindows) { './native-account-tests/Nexa.Services.Tests.exe' } else { './native-account-tests/Nexa.Services.Tests' }
-          & $binary "topology" "power pressure" "native clones" "network cost"
+          & $binary "topology" "power pressure" "native clones" "network cost" "GameMode"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Verify native session log ownership and Minecraft session retry
         shell: pwsh
