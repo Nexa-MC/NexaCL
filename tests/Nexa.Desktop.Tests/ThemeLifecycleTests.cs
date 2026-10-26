@@ -69,7 +69,9 @@ internal static partial class Program
         AssertEqual("builtin", fixture.Current().Selection!.SourceIdentity);
         var latest = fixture.Session.ImportAsync(second, ThemeSourceKind.Directory, false, CancellationToken.None);
         AssertFalse(fixture.Run(pending).IsSuccess); AssertTrue(fixture.Run(latest).IsSuccess);
-        AssertFalse(fixture.Session.Snapshot.Busy);
+        // Committing the selection publishes a settings revision. Its queued appearance
+        // refresh can start after ImportAsync completes; Busy belongs to that operation too.
+        fixture.Pump(() => !fixture.Session.Snapshot.Busy);
         AssertEqual("fixture.second", fixture.Current().Selection!.ThemeId);
         AssertEqual(fixture.Current().Selection!.SourceIdentity, fixture.Session.Snapshot.PresentedSourceIdentity);
     }
