@@ -217,3 +217,66 @@ CI follow-up local acceptance: all 826 Services tests, all 88 release-tool tests
 72-project architecture gates and source formatting verification passed. Services Release
 build reported zero warnings/errors. The DMG contention cases are deterministic tool fixtures;
 the next macOS CI packaging job is the native end-to-end verification.
+
+## Sixth slice: explicit process memory and device IO limits
+Extend the existing pre-bootstrap user scope with optional MemoryMax and device bandwidth
+limits. All defaults are zero/unlimited, machine-local, per-instance and next-launch. Memory
+is a hard process-tree cgroup limit (the kernel may terminate an over-limit game), not JVM
+heap sizing or the suspended memory estimator. IO bandwidth applies to the block device
+hosting the game's working directory, not every device a mod might access. Unsupported
+filesystems/controllers must fail explicit requests. Verify memory.max and io.max before
+sending bootstrap. Existing CPU-only adapters retain compatibility through a default overload.
+
+### Active release objective
+User explicitly approved completing batches 1 then 2 before publishing the next Alpha;
+batch 3 is postponed. Current latest GitHub release is v2.0.0.alpha.13, so target Alpha 14
+unless another release appears before publication. Do not publish early or treat the local
+AI/LAN/display/controller batch as part of this release. Existing memory-analysis exclusion
+remains binding. CI fix commit 2621ffa5 precedes these additions.
+
+## Seventh slice: measured disk admission
+Shared work admission consumes measured successful download-write latency. Writes under
+32 KiB are ignored; latency is normalized per 64 KiB. A slow sample (40 ms or more) lowers
+new disk admission to one without cancelling existing leases. Sixteen consecutive healthy
+samples (10 ms or less), at least ten seconds after the latest slow write, restore the
+configured maximum. Recovery never exceeds configured concurrency. This is application
+write-latency feedback, including filesystem/cache effects, not a physical SSD/HDD benchmark
+or per-device classification. HTTP and CPU budgets are unchanged. Old scheduler adapters
+need not implement the optional feedback contract; no synthetic benchmark runs at startup.
+
+## Eighth slice: metered-network policy
+Platform observes Windows NLM cost, Linux NetworkManager cost for default-route devices,
+and macOS NWPath expensive/constrained state through a bundled Swift helper using public
+APIs. Unknown stays Unknown; Wi-Fi is not assumed unlimited. Foundation owns one cached
+observation worker, bounded initial sampling and 60-second refresh; it joins cancellation
+before dependencies retire. Auto policy prevents new background/idle download connections
+on known costly networks; allow overrides cost, restrict blocks optional background work.
+Explicit foreground installs remain permitted. Admission is rechecked after scheduler waits.
+The helper is built on macOS during publish and included in the signed update payload;
+missing development helpers report Unknown. No cloud account or remote discovery is used.
+
+CI follow-up confirmation: Launcher Build 40299741593 completed both osx-x64 and osx-arm64
+packaging successfully; XSR CI 40299741757 passed. Windows packaging jobs were still running
+at observation time. This validates the DMG fix on native runners before the new resource
+policy/helper changes.
+
+## Ninth slice: opt-in topology selection
+Default remains OS scheduling. Performance, largest-cache-domain and single-NUMA-domain
+preferences select only observed eligible logical processors before JVM bootstrap, through
+existing CPU Sets/affinity adapters. Manual CPU indices and automatic preferences cannot be
+combined. Wrappers and non-private Host transports are rejected for automatic selection.
+Windows reads bounded SDK CPU-set/cache records; Linux reads current affinity plus bounded
+sysfs capacity/CPPC, cache and NUMA facts. Missing required facts cause an explicit unavailable
+result, never a model-name heuristic. Cache preference is topology-based, not an AMD-only
+brand switch. NUMA preference selects CPUs, not an allocator/memory-placement guarantee.
+No Minecraft memory estimator or automatic heap allocation is involved.
+
+### Resource-policy tranche acceptance (slices 6–8)
+All 830 Services regressions passed; 41 Desktop settings regressions passed after keeping
+advanced quotas in a trailing dedicated group. Architecture gates passed for 72 projects.
+Linux x64 NativeAOT publication and seven focused quota/disk/network/catalog regressions
+passed. The existing Jint IL2098 trim warning remains. Native network cost is Unknown and
+systemd quota is refused in this container; no native memory/IO enforcement is claimed here.
+Windows NLM and the bundled macOS Swift helper require the platform CI runs added with this
+tranche. Swift helper publish targets and workflow syntax were parsed locally. No Alpha
+release is authorized until the remaining batch 1 and batch 2 work has been completed.

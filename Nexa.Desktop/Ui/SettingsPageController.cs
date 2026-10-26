@@ -367,7 +367,7 @@ internal sealed partial class SettingsPageController : IDisposable
         var groups = available.GroupBy(item => (Section: item.DeveloperOnly ? CatalogCopy("catalog.copy.38084d301e3f1a31")
                 : _instanceDirectory is not null ? InstanceSettingGroup(item)
                 : item.Section, item.DeveloperOnly))
-            .OrderBy(group => _instanceDirectory is null ? 0 : group.Key.Section switch { var copy when copy == CatalogCopy("catalog.copy.8cdf1da0d4c7e55e") => 0, var copy when copy == CatalogCopy("catalog.copy.2720b4221e5e4ca3") => 1, var copy when copy == CatalogCopy("catalog.copy.2388cbc6a486af9f") => 2, _ => 3 }).ToArray();
+            .OrderBy(group => _instanceDirectory is null ? group.Key.Section == CatalogCopy("catalog.resource.quota") ? 1 : 0 : group.Key.Section switch { var copy when copy == CatalogCopy("catalog.copy.8cdf1da0d4c7e55e") => 0, var copy when copy == CatalogCopy("catalog.copy.2720b4221e5e4ca3") => 1, var copy when copy == CatalogCopy("catalog.copy.2388cbc6a486af9f") => 2, _ => 3 }).ToArray();
         foreach (var section in groups)
         {
             var cardContent = AppendSettingGroup(section, section.Key.Section);

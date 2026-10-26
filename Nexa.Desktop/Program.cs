@@ -208,7 +208,7 @@ internal static partial class Program
                                 "startup_local_recovery" => ProductPresentationText.Raw("program.copy.23e6560bf2f0d85d"),
                                 "startup_sidecar_discovery" => ProductPresentationText.Raw("program.copy.01e941901cfd7290"),
                                 "startup_settings_metadata" => ProductPresentationText.Raw("program.copy.32a162050e8284cc"),
-                                "startup_initial_policies" => ProductPresentationText.Raw("program.copy.2d8b46a92c6064d6"),
+                                "startup_initial_policies" or "network_cost_loading" => ProductPresentationText.Raw("program.copy.2d8b46a92c6064d6"),
                                 "startup_hidden_native_shell" or "startup_first_run_native_shell" => ProductPresentationText.Raw("program.copy.a091eff3f907eb94"),
                                 "startup_controller_projection" or "startup_final_layout" => ProductPresentationText.Raw("program.copy.97445695454f73be"),
                                 "startup_destination_facts" => ProductPresentationText.Raw("program.copy.abff81701ef3aae3"),
@@ -497,6 +497,9 @@ internal static partial class Program
 
         // The launch page is the first product vertical slice: it routes navigation intents to
         // pages inside the shell content host and dispatches the real launch command.
+        await using var networkCostLifetime = host.NetworkCostLifetime;
+        setStage("network_cost_loading");
+        await host.StartNetworkCostMonitoringAsync().WaitAsync(startup?.CancellationToken ?? default).ConfigureAwait(false);
         setStage("attach_product_controllers");
         AvaloniaUiPlatformActions platformActions = new() { LocalizeContentPicker = shell.Renderer.LocalizeText };
         platformActions.MemoryPressureObserved += observation =>

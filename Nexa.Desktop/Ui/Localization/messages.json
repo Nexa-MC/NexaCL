@@ -1,4 +1,14 @@
 [
+  {"source":"进程资源配额","en":"Process resource limits","zh-Hant":"進程資源配額"},
+  {"source": "计费网络后台下载策略", "en": "Metered network background downloads", "zh-Hant": "計費網路背景下載策略"},
+  {"source": "始终允许后台下载", "en": "Always allow background downloads", "zh-Hant": "始終允許背景下載"},
+  {"source": "始终限制后台下载", "en": "Always restrict background downloads", "zh-Hant": "始終限制背景下載"},
+  {"source": "跟随系统计费网络状态", "en": "Follow system network cost", "zh-Hant": "跟隨系統計費網路狀態"},
+
+  {"source": "进程树内存硬上限（0 不限制，超限可能终止游戏）", "en": "Process tree memory limit (0: unlimited; exceeding may terminate the game)", "zh-Hant": "進程樹記憶體硬上限（0 不限制，超限可能終止遊戲）"},
+  {"source": "游戏磁盘读取限速（0 不限制）", "en": "Game disk read limit (0: unlimited)", "zh-Hant": "遊戲磁碟讀取限速（0 不限制）"},
+  {"source": "游戏磁盘写入限速（0 不限制）", "en": "Game disk write limit (0: unlimited)", "zh-Hant": "遊戲磁碟寫入限速（0 不限制）"},
+
   {"source":"CPU 配额（0 不限制，100 为一个 CPU）","en":"CPU quota (0: unlimited, 100: one CPU)","zh-Hant":"CPU 配額（0 不限制，100 為一個 CPU）"},
   {"source":"系统默认调度","en":"System scheduling","zh-Hant":"系統預設排程"},
   {"source":"节能调度","en":"Efficiency scheduling","zh-Hant":"節能排程"},

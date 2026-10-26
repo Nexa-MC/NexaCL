@@ -420,11 +420,47 @@
     "availability": "Available"
   },
   {
+    "id": "global.game.process-memory-limit-mib",
+    "parent": "global.game.546d4a3ef466",
+    "scope": "global",
+    "page": "game",
+    "section": "进程资源配额",
+    "label": "进程树内存硬上限（0 不限制，超限可能终止游戏）",
+    "kind": "Setting",
+    "key": "game.process-memory-limit-mib",
+    "developer": false,
+    "availability": "Available"
+  },
+  {
+    "id": "global.game.io-read-limit-mib",
+    "parent": "global.game.546d4a3ef466",
+    "scope": "global",
+    "page": "game",
+    "section": "进程资源配额",
+    "label": "游戏磁盘读取限速（0 不限制）",
+    "kind": "Setting",
+    "key": "game.io-read-limit-mib",
+    "developer": false,
+    "availability": "Available"
+  },
+  {
+    "id": "global.game.io-write-limit-mib",
+    "parent": "global.game.546d4a3ef466",
+    "scope": "global",
+    "page": "game",
+    "section": "进程资源配额",
+    "label": "游戏磁盘写入限速（0 不限制）",
+    "kind": "Setting",
+    "key": "game.io-write-limit-mib",
+    "developer": false,
+    "availability": "Available"
+  },
+  {
     "id": "global.game.cpu-quota-percent",
     "parent": "global.game.546d4a3ef466",
     "scope": "global",
     "page": "game",
-    "section": "资源与性能",
+    "section": "进程资源配额",
     "label": "CPU 配额（0 不限制，100 为一个 CPU）",
     "kind": "Setting",
     "key": "game.cpu-quota-percent",
@@ -1328,6 +1364,18 @@
     "label": "下载速度限制",
     "kind": "Setting",
     "key": "network.bandwidth-kib",
+    "developer": false,
+    "availability": "Available"
+  },
+  {
+    "id": "global.network.metered-download",
+    "parent": "global.network.4ca4fbf70bee",
+    "scope": "global",
+    "page": "network",
+    "section": "下载与重试",
+    "label": "计费网络后台下载策略",
+    "kind": "Setting",
+    "key": "network.metered-download",
     "developer": false,
     "availability": "Available"
   },

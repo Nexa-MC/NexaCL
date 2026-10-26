@@ -7,6 +7,11 @@ public enum WorkPriority { Critical, Interactive, Background, Idle }
 [Flags]
 public enum WorkResource { Cpu = 1, Disk = 2, Http = 4 }
 
+public interface IWorkResourceFeedback
+{
+    void ObserveDiskWrite(int bytes, TimeSpan elapsed);
+}
+
 public interface IWorkQuietLease : IDisposable
 {
     void ReleaseAfter(TimeSpan gracePeriod);

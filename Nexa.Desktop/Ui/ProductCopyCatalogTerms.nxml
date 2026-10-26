@@ -171,5 +171,9 @@
     <Text Key="catalog.scheduling.default" Content="系统默认调度" Localize="false" />
     <Text Key="catalog.scheduling.efficiency" Content="节能调度" Localize="false" />
     <Text Key="catalog.scheduling.background" Content="后台调度" Localize="false" />
+    <Text Key="catalog.metered.auto" Content="跟随系统计费网络状态" Localize="false" />
+    <Text Key="catalog.metered.allow" Content="始终允许后台下载" Localize="false" />
+    <Text Key="catalog.metered.restrict" Content="始终限制后台下载" Localize="false" />
+    <Text Key="catalog.resource.quota" Content="进程资源配额" Localize="false" />
 </ContentHost>
 </nxml-page>

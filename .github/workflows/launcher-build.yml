@@ -164,6 +164,21 @@ jobs:
             if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
             "$binary" --validate-resource-credentials
           fi
+      - name: Smoke macOS platform helper
+        if: startsWith(matrix.rid, 'osx-')
+        shell: bash
+        run: |
+          python - "$RUNNER_TEMP/launcher/Nexa.Platform.Helper" <<'PYHELPER'
+          import subprocess, sys
+          for operation, accepted in {
+              "network-cost": {"unknown", "unmetered", "metered"},
+              "thermal-state": {"unknown", "normal", "fair", "serious", "critical"},
+          }.items():
+              result = subprocess.run([sys.argv[1], operation], check=True, capture_output=True, text=True, timeout=10)
+              if result.stdout.strip() not in accepted:
+                  raise SystemExit(f"Invalid platform helper result for {operation}: {result.stdout!r}")
+              print(f"{operation}: {result.stdout.strip()}")
+          PYHELPER
       - name: Publish isolated NativeAOT JVM host
         shell: bash
         run: |

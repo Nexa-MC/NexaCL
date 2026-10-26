@@ -107,9 +107,7 @@ public sealed partial class DownloadService
                         if (request.ExpectedSize is { } expectedSize && read > expectedSize - totalRead)
                             throw new InvalidDataException("Download response exceeds the artifact size.");
 
-                        await writeStream
-                            .WriteAsync(buffer.AsMemory(0, read), cancellationToken)
-                            .ConfigureAwait(false);
+                        await WriteMeasuredAsync(writeStream, buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
                         totalRead += read;
                         sessionRead += read;
                         long now = ProgressClock.GetTimestamp();

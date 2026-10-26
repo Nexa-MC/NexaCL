@@ -92,7 +92,13 @@ public sealed class FoundationHost : IDisposable
         SettingsPolicy = new SettingsPolicyService(Settings);
         NetworkHttp = new(CaptureNetworkPreferences, RegionalPolicy.Current.IsMainlandChina);
         Downloads.BandwidthLimiter = new(CaptureBandwidthLimit);
-        Downloads.BackgroundDownloadsEnabled = () => SettingsPolicy.Read(new()).Value?.Values.FirstOrDefault(item => item.Key == "network.background-download")?.Value.Value != "false";
+        Downloads.BackgroundDownloadsEnabled = () =>
+        {
+            var values = SettingsPolicy.Read(new()).Value?.Values;
+            return values?.FirstOrDefault(item => item.Key == "network.background-download")?.Value.Value != "false"
+                && FoundationNetworkCost.AllowsBackground(_networkCost.Current,
+                    values?.FirstOrDefault(item => item.Key == "network.metered-download")?.Value.Value ?? "auto");
+        };
         _loggingSettings = new(Settings, SettingsPolicy, Logging);
         InputUsage = new InputUsageTracker();
         ObservationHistory = new ResourceObservationHistory();
@@ -163,7 +169,11 @@ public sealed class FoundationHost : IDisposable
     public WorkScheduler Work { get; }
     public SharedStateCache SharedStateCache { get; }
     public string? CacheDirectory { get; }
-    public void Dispose() { Tasks.Dispose(); Downloads.Dispose(); SharedStateCache.Dispose(); _loggingSettings.Dispose(); NetworkHttp.Dispose(); Work.Dispose(); }
+    private readonly FoundationNetworkCost _networkCost = new(new Nexa.Platform.PlatformNetworkCostProbe());
+    public IAsyncDisposable NetworkCostLifetime => _networkCost;
+    public Task StartNetworkCostMonitoringAsync() => _networkCost.StartAsync();
+
+    public void Dispose() { _networkCost.Dispose(); Tasks.Dispose(); Downloads.Dispose(); SharedStateCache.Dispose(); _loggingSettings.Dispose(); NetworkHttp.Dispose(); Work.Dispose(); }
 
     public NetworkHttpClientPool NetworkHttp { get; }
     public IReadOnlyList<string> JavaManagedRuntimeRoots { get; }

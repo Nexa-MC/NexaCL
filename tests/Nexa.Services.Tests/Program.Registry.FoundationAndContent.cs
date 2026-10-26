@@ -277,6 +277,7 @@ internal static partial class Program
         ("scheduler downloads inherit critical and release failure cancellation", ScheduledDownloadsInheritCriticalAndReleaseAfterFailure),
         ("scheduler icons release HTTP before paused CPU decode", ResourceIconsReleaseHttpBeforePausedDecode),
         ("scheduler resource admission is atomic bounded cancellable", WorkAdmissionIsAtomicBoundedAndCancellable),
+        ("disk admission uses measured latency without cancelling leases", DiskAdmissionUsesMeasuredLatencyWithoutCancellingLeases),
         ("scheduler optional admission never queues or partially reserves", OptionalWorkAdmissionNeverQueuesOrPartiallyReserves),
         ("recovery capture admission preserves baseline across quiet cancellation", RecoveryCaptureAdmissionPreservesBaselineAcrossQuietCancellation),
         ("recovery maintenance chunks defer and retain journal objects", RecoveryMaintenanceChunksDeferAndRetainJournalObjects),

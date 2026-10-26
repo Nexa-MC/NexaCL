@@ -1,0 +1,15 @@
+<Project>
+  <Target Name="PublishNexaMacPlatformHelper" AfterTargets="ComputeFilesToPublish"
+          Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <PropertyGroup>
+      <_NexaMacHelperDirectory>$(IntermediateOutputPath)native-platform</_NexaMacHelperDirectory>
+      <_NexaMacHelperTarget Condition="'$(RuntimeIdentifier)' == 'osx-x64'">-target x86_64-apple-macosx13.0</_NexaMacHelperTarget>
+      <_NexaMacHelperTarget Condition="'$(RuntimeIdentifier)' == 'osx-arm64'">-target arm64-apple-macosx13.0</_NexaMacHelperTarget>
+    </PropertyGroup>
+    <MakeDir Directories="$(_NexaMacHelperDirectory)" />
+    <Exec Command="xcrun swiftc -O $(_NexaMacHelperTarget) -framework Foundation -framework Network &quot;$(MSBuildThisFileDirectory)../../Nexa.Platform.Runtime/Native/macos/main.swift&quot; -o &quot;$(_NexaMacHelperDirectory)/Nexa.Platform.Helper&quot;" />
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(_NexaMacHelperDirectory)/Nexa.Platform.Helper" RelativePath="Nexa.Platform.Helper" CopyToPublishDirectory="Always" />
+    </ItemGroup>
+  </Target>
+</Project>

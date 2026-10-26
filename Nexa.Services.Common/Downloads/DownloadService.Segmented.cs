@@ -208,7 +208,7 @@ public sealed partial class DownloadService
                     if (request.BandwidthBudget is { } bandwidth)
                         await bandwidth.WaitAsync(read, cancellationToken).ConfigureAwait(false);
 
-                    await target.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+                    await WriteMeasuredAsync(target, buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
                     Interlocked.Add(ref segmentBytes[segmentIndex], read);
                     AggregateSegmentProgress(
                         segmentBytes,

@@ -3,7 +3,7 @@ using Nexa.Xsr.State;
 namespace Nexa.Services.Scheduling;
 
 /// <summary>Bounded admission without worker threads, polling or per-service timers.</summary>
-public sealed class WorkScheduler : IWorkScheduler, IDisposable
+public sealed class WorkScheduler : IWorkScheduler, IWorkResourceFeedback, IDisposable
 {
     private static readonly int[] Weights = [8, 4, 2, 1];
     private readonly object _gate = new();
@@ -22,10 +22,14 @@ public sealed class WorkScheduler : IWorkScheduler, IDisposable
     private long _revision;
     private long _publishedRevision = -1;
     private bool _disposed;
+    private readonly int _configuredDiskLimit;
+    private int _healthyWrites;
+    private long _lastSlowWrite;
 
     public WorkScheduler(WorkSchedulerOptions? options = null, XsrStateStore? store = null, TimeProvider? clock = null)
     {
         options ??= new();
+        _configuredDiskLimit = options.DiskConcurrency;
         foreach (int limit in new[] { options.CpuConcurrency, options.DiskConcurrency, options.HttpConcurrency })
             ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
         if (options.CpuConcurrency > 64 || options.DiskConcurrency > 64 || options.HttpConcurrency > 64
@@ -118,6 +122,32 @@ public sealed class WorkScheduler : IWorkScheduler, IDisposable
                     resources[r] = new(resource, _active[r], waiting);
                 }
                 return new(_disposed, _quiet.Count, Array.AsReadOnly(resources));
+            }
+        }
+    }
+
+    public void ObserveDiskWrite(int bytes, TimeSpan elapsed)
+    {
+        if (bytes < 32768 || elapsed < TimeSpan.Zero) return;
+        double milliseconds = elapsed.TotalMilliseconds * 65536 / bytes;
+        lock (_gate)
+        {
+            if (_disposed) return;
+            if (milliseconds >= 40)
+            {
+                _limits[1] = 1;
+                _healthyWrites = 0;
+                _lastSlowWrite = _clock.GetTimestamp();
+            }
+            else if (_limits[1] < _configuredDiskLimit)
+            {
+                _healthyWrites = milliseconds <= 10 ? Math.Min(16, _healthyWrites + 1) : 0;
+                if (_healthyWrites == 16 && _clock.GetElapsedTime(_lastSlowWrite) >= TimeSpan.FromSeconds(10))
+                {
+                    _limits[1] = _configuredDiskLimit;
+                    _healthyWrites = 0;
+                    Pump();
+                }
             }
         }
     }
@@ -268,6 +298,7 @@ public sealed class WorkScheduler : IWorkScheduler, IDisposable
         private readonly object _gate = new();
         private ITimer? _timer;
         private bool _disposed;
+
         public void ReleaseAfter(TimeSpan gracePeriod)
         {
             if (gracePeriod < TimeSpan.Zero || gracePeriod > TimeSpan.FromMinutes(2))

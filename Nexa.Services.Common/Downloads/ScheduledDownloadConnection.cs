@@ -4,13 +4,20 @@ namespace Nexa.Services.Downloads;
 
 /// <summary>Preserves provider capability while admitting each actual connection, including segments.</summary>
 internal class ScheduledDownloadConnection(IDownloadConnection inner, IWorkScheduler work,
-    WorkPriority priority, WorkResource resources) : IDownloadConnection, IAsyncDisposable
+    WorkPriority priority, WorkResource resources, Func<bool>? allowed = null) : IDownloadConnection, IAsyncDisposable
 {
     protected IDownloadConnection Inner { get; } = inner;
     private IDisposable? _admission;
     private int _stopped;
-    protected async ValueTask AdmitAsync(CancellationToken token) =>
+    protected async ValueTask AdmitAsync(CancellationToken token)
+    {
         _admission = await work.AcquireAsync(priority, resources, token).ConfigureAwait(false);
+        if (allowed?.Invoke() == false)
+        {
+            Interlocked.Exchange(ref _admission, null)?.Dispose();
+            throw new InvalidOperationException("Background downloads are disabled by the current network policy.");
+        }
+    }
     public async ValueTask<DownloadConnectionInfo> StartAsync(long beginOffset, CancellationToken cancellationToken = default)
     {
         await AdmitAsync(cancellationToken).ConfigureAwait(false);
@@ -37,7 +44,7 @@ internal class ScheduledDownloadConnection(IDownloadConnection inner, IWorkSched
 }
 
 internal sealed class ScheduledSegmentedDownloadConnection(ISegmentedDownloadConnection inner, IWorkScheduler work,
-    WorkPriority priority, WorkResource resources) : ScheduledDownloadConnection(inner, work, priority, resources), ISegmentedDownloadConnection
+    WorkPriority priority, WorkResource resources, Func<bool>? allowed = null) : ScheduledDownloadConnection(inner, work, priority, resources, allowed), ISegmentedDownloadConnection
 {
     public async ValueTask<DownloadConnectionInfo> StartSegmentAsync(long beginOffset, long endOffset, CancellationToken cancellationToken = default)
     {

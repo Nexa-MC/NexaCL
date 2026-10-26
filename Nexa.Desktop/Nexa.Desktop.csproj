@@ -36,4 +36,5 @@
   </ItemGroup>
   <Import Project="../eng/xsr/Xsr.FunctionPatches.targets" />
   <Import Project="../eng/xsr/Xsr.Pac.targets" />
+  <Import Project="../eng/xsr/Xsr.PlatformHelper.targets" />
 </Project>

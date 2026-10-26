@@ -110,8 +110,8 @@ public sealed partial class DownloadService : IDisposable
         WorkResource resources = probe ? WorkResource.Http : WorkResource.Http | WorkResource.Disk;
         WorkPriority priority = WorkScheduler.CurrentPriority;
         return connection is ISegmentedDownloadConnection segmented
-            ? new ScheduledSegmentedDownloadConnection(segmented, WorkScheduler, priority, resources)
-            : new ScheduledDownloadConnection(connection, WorkScheduler, priority, resources);
+            ? new ScheduledSegmentedDownloadConnection(segmented, WorkScheduler, priority, resources, priority >= WorkPriority.Background ? () => BackgroundDownloadsEnabled?.Invoke() != false : null)
+            : new ScheduledDownloadConnection(connection, WorkScheduler, priority, resources, priority >= WorkPriority.Background ? () => BackgroundDownloadsEnabled?.Invoke() != false : null);
     }
 
     private async Task ExecuteAndCompleteAsync(string destinationPath, DownloadOperation operation)

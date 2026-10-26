@@ -269,8 +269,8 @@ internal static partial class Program
     {
         var catalog = SettingsCatalog.Read(new(true));
         AssertEqual(10, catalog.GlobalPages.Count); AssertEqual(9, catalog.InstancePages.Count); AssertEqual(10, catalog.InstanceSettingsSections.Count);
-        AssertEqual(523, catalog.Entries.Count);
-        foreach (string key in new[] { "game.cpu-sets", "game.process-quality", "game.cpu-quota-percent" })
+        AssertEqual(527, catalog.Entries.Count);
+        foreach (string key in new[] { "game.cpu-sets", "game.process-quality", "game.cpu-quota-percent", "game.process-memory-limit-mib", "game.io-read-limit-mib", "game.io-write-limit-mib" })
         {
             AssertEqual("game", catalog.Entries.Single(entry => entry.SettingKey == key).Page);
             AssertTrue(SettingsPolicySchema.ByKey[key].InstanceOverride);
@@ -367,7 +367,7 @@ internal static partial class Program
             AssertEqual("1440", result.Value!.Values.Single(item => item.Key == "game.width").Value.Value);
             AssertEqual(1L, host.StateStore.Read<long>(host.StateStore.Resolve(SettingsPolicyContract.RevisionKey)).Value);
             var content = await runtime.Queries.QueryAsync<SettingsCatalogQuery, SettingsCatalogSnapshot>(catalog, new(true));
-            AssertTrue(content.IsSuccess); AssertEqual(523, content.Value!.Entries.Count);
+            AssertTrue(content.IsSuccess); AssertEqual(527, content.Value!.Entries.Count);
             AssertTrue(runtime.Queries.TryResolve(SettingsPolicyContract.ResetPreviewQuery, out var resetPreview));
             AssertTrue(runtime.Commands.TryResolve(SettingsPolicyContract.ResetCommand, out var reset));
             var proposal = await runtime.Queries.QueryAsync<SettingsResetQuery, SettingsResetPreview>(resetPreview, new());

@@ -140,6 +140,18 @@ public sealed partial class MinecraftLaunchCoordinator
                 };
                 continue;
             }
+            if (setting.Key is "game.process-memory-limit-mib" or "game.io-read-limit-mib" or "game.io-write-limit-mib")
+            {
+                if (setting.ValidationError is not null) throw new InvalidDataException(setting.ValidationError);
+                long limit = long.Parse(setting.Value.Value!, System.Globalization.CultureInfo.InvariantCulture);
+                request = setting.Key switch
+                {
+                    "game.process-memory-limit-mib" => request with { ProcessMemoryLimitMiB = limit },
+                    "game.io-read-limit-mib" => request with { IoReadLimitMiB = limit },
+                    _ => request with { IoWriteLimitMiB = limit }
+                };
+                continue;
+            }
             if (setting.Key == "game.cpu-quota-percent")
             {
                 if (setting.ValidationError is not null) throw new InvalidDataException(setting.ValidationError);

@@ -10,6 +10,36 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask DiskAdmissionUsesMeasuredLatencyWithoutCancellingLeases()
+    {
+        var clock = new DiskFeedbackClock();
+        using var work = new WorkScheduler(new(2, 2, 2), clock: clock);
+        var first = await work.AcquireAsync(WorkPriority.Interactive, WorkResource.Disk);
+        var second = await work.AcquireAsync(WorkPriority.Interactive, WorkResource.Disk);
+        work.ObserveDiskWrite(65536, TimeSpan.FromMilliseconds(50));
+        AssertEqual(2, work.Snapshot.Resources.Single(r => r.Resource == WorkResource.Disk).Active);
+        Task<IDisposable> waiting = work.AcquireAsync(WorkPriority.Interactive, WorkResource.Disk).AsTask();
+        first.Dispose(); AssertFalse(waiting.IsCompleted);
+        using var http = await work.AcquireAsync(WorkPriority.Interactive, WorkResource.Http);
+        second.Dispose(); using var resumed = await waiting;
+        Task<IDisposable> recovery = work.AcquireAsync(WorkPriority.Interactive, WorkResource.Disk).AsTask();
+        for (int i = 0; i < 16; i++) work.ObserveDiskWrite(65536, TimeSpan.FromMilliseconds(1));
+        AssertFalse(recovery.IsCompleted);
+        clock.Now += TimeSpan.FromSeconds(10).Ticks;
+        work.ObserveDiskWrite(65536, TimeSpan.FromMilliseconds(1));
+        using var restored = await recovery;
+        AssertEqual(2, work.Snapshot.Resources.Single(r => r.Resource == WorkResource.Disk).Active);
+        AssertTrue(work.TryAcquire(WorkPriority.Interactive, WorkResource.Disk) is null);
+        work.Dispose(); work.ObserveDiskWrite(65536, TimeSpan.FromMilliseconds(50));
+    }
+
+    private sealed class DiskFeedbackClock : TimeProvider
+    {
+        public long Now;
+        public override long TimestampFrequency => TimeSpan.TicksPerSecond;
+        public override long GetTimestamp() => Now;
+    }
+
     private static async ValueTask OptionalWorkAdmissionNeverQueuesOrPartiallyReserves()
     {
         using WorkScheduler work = new(new(1, 1, 1));
