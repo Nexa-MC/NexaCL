@@ -399,7 +399,7 @@ metadata, captured launch policy and actual available process counters/exit outc
 explicit completeness/unknown information. Credentials, account identities, raw JVM/game
 argument strings, absolute user paths, save contents and raw unredacted logs are excluded.
 The website/ingress validation and regression fixtures must accept the same versioned schema.
-This task remains pending and does not reactivate Minecraft memory analysis or startup gating.
+Implementation and acceptance evidence are recorded below; Minecraft memory analysis and startup gating remain unchanged.
 
 CI follow-up: topology display terms lacked English/Traditional Chinese entries; those and
 the GameMode label now have explicit translations. The macOS CoW probe itself succeeded,
@@ -414,3 +414,39 @@ the CI translation correction. GameMode's real daemon, WinRT share UI and the ne
 Quick Look branch remain subject to platform CI/device availability; no positive native
 claim is made from Linux fixtures. Launcher Build 40310302202 succeeded on all six targets
 for preceding commit 7ed10738; its XSR CI failures are addressed above.
+
+### Runtime telemetry lifecycle contract (Alpha 14)
+Add diagnostic.launch and diagnostic.run-summary, schema=1. Both link only by the existing
+random per-run ID; the existing diagnostic.mods pages retain version/component inventory
+and diagnostic.run retains periodic samples. Launch carries a closed numeric projection of
+the captured plan (Java/counts/configured limits/policy enums), never serialized arguments
+or paths. Summary projects only already-collected counters, nullable native measurements,
+coverage flags, elapsed/launch timing and exit status. Unknown is -1; a real observed zero
+remains zero. GPU peaks are not summed into a fabricated simultaneous peak. Configured FPS
+remains an option, not a measured frame rate. No new sampler, JMX request, preflight or model
+activation is introduced. Ingress validates exact keys/schema and numeric bounds. Separate
+idempotent per-run lifecycle rows have the same 30-day retention as run samples. Admin detail
+returns launch and summary separately; old clients/events remain accepted unchanged.
+Inventory schema 2 adds SHA-256 (when available), nested-candidate flag and provided mod IDs.
+Legacy six-field inventory remains accepted. Per-mod dependency/provided maps are bounded
+and explicit completeness becomes false if entries are omitted; per-page 4096-character and
+129-page limits remain. These are installed metadata declarations, not proof of runtime loading.
+
+Telemetry acceptance checkpoint: launcher build completed without warnings/errors and all
+14 targeted telemetry/inventory regressions passed. The actual generated 18-event wire
+fixture is accepted by both active and legacy backend validators. Backend legacy tests (37),
+active API suite (100 before syncing unrelated remote billing changes), lifecycle/storage
+regressions and website tests/build passed. Server commit 983d9cb and website commit 780f7dc
+are pushed; production API deployment is queued in Actions 40325037259. Metadata timeout
+retains an incomplete inventory and captured launch profile instead of losing the run context.
+The previous platform integration commit 087cfa1e passed both XSR CI 40315792633 and all six
+Launcher Build targets in 40315792680. Alpha 14 has not been tagged or released.
+Production telemetry API deployment 40325037259 succeeded with migration 0034 and preserved
+bindings/schedules; website deployment 40325047890 also succeeded. Server CI and Nexa API CI
+passed on 983d9cb. The client reports an unknown terminal exit as unknown, retaining a separate
+exit_observed flag so a real exit code of -1 is distinguishable from missing evidence.
+Final client verification: zero-warning/error service test build, 14 targeted tests,
+72-project architecture gate and required formatting verification passed. Website follow-up
+marks missing inventory pages incomplete and includes telemetry paths in management deploy
+triggers (839bd46). NativeAOT/cross-platform verification continues in the normal client CI;
+no new public launcher version is claimed at this checkpoint.

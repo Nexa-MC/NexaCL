@@ -75,6 +75,7 @@ internal static partial class Program
         ("diagnostic revocation preserves necessary facts", DiagnosticRevocationPreservesNecessaryFacts),
         ("community startup cadence and announcement acknowledgement", CommunityStartupCadenceAndAnnouncementAcknowledgement),
         ("diagnostic metrics and errors respect consent and schema", DiagnosticMetricsAndErrorsRespectConsentAndSchema),
+        ("lifecycle telemetry preserves unknown and private evidence", Sync(LifecycleTelemetryPreservesUnknownAndPrivateEvidence)),
         ("whole run sampling retains history and private settings", () => { RunSamplingRetainsWholeRunAndPrivateSettings(); return ValueTask.CompletedTask; }),
         ("mod inventory uses metadata and marks partial evidence", () => { ModInventoryUsesMetadataAndMarksPartialEvidence(); return ValueTask.CompletedTask; }),
         ("preflight gate rejects stale and blocked continuation", PreflightGateRejectsStaleAndBlockedContinuation),

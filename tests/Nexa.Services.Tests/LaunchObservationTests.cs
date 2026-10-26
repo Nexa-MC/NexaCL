@@ -91,6 +91,45 @@ internal static partial class Program
         finally { Directory.Delete(root, recursive: true); }
     }
 
+    private static JvmHostObservation LifecycleObservation(Guid run) => new(run, "PRIVATE-INSTANCE",
+        DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(5), 4000,
+        100, 200, 10, 1000, 999, 999, 999, 999, 999, 300, 400,
+        "/private/crash.log", "/private/hs_err.log", 0, ["PRIVATE-OUTPUT"], ["PRIVATE-ERROR"])
+    {
+        CoreMetricsObserved = true,
+        IoObserved = true,
+        CpuPercentObserved = false,
+        MeasuredGpuLocalPeakBytes = 0,
+        MeasuredGpuSharedPeakBytes = 40,
+        MeasuredCombinedGpuPeakBytes = 35,
+        MeasuredRuntimeHeapP95Bytes = 50
+    };
+
+    private static void LifecycleTelemetryPreservesUnknownAndPrivateEvidence()
+    {
+        var observation = LifecycleObservation(Guid.NewGuid());
+        var props = new Dictionary<string, string>(RunLifecycleTelemetry.Summary(observation))
+        { ["version"] = "2.0.0.alpha.14", ["os"] = "windows", ["arch"] = "x64", ["result"] = "ok" };
+        AssertTrue(CloudflareTelemetryTransport.IsAllowed(new("diagnostic.run-summary", DateTimeOffset.UtcNow, props)));
+        AssertEqual("-1", props["heap_peak"]); // Legacy fallback 999 is not measured evidence.
+        AssertEqual("-1", props["cpu_peak"]);
+        AssertEqual("0", props["gpu_local_peak"]);
+        AssertEqual("35", props["gpu_combined_peak"]); // Not the sum of separate peaks.
+        AssertEqual("300000", props["elapsed_ms"]);
+        AssertEqual("300", props["io_read"]);
+        AssertEqual("0", RunLifecycleTelemetry.Summary(observation with { ExitCode = null })["exit_observed"]);
+        AssertEqual("1", RunLifecycleTelemetry.Summary(observation with { ExitCode = -1 })["exit_observed"]);
+        AssertFalse(string.Join(" ", props.Values).Contains("PRIVATE", StringComparison.OrdinalIgnoreCase));
+        var unknown = RunLifecycleTelemetry.Summary(observation with { IoObserved = false, CoreMetricsObserved = false });
+        AssertEqual("-1", unknown["io_read"]); AssertEqual("-1", unknown["working_peak"]);
+        props["raw"] = "private";
+        AssertFalse(CloudflareTelemetryTransport.IsAllowed(new("diagnostic.run-summary", DateTimeOffset.UtcNow, props)));
+        props.Remove("raw"); props["working_peak"] = "NaN";
+        AssertFalse(CloudflareTelemetryTransport.IsAllowed(new("diagnostic.run-summary", DateTimeOffset.UtcNow, props)));
+        props["working_peak"] = "0"; props["schema"] = "2";
+        AssertFalse(CloudflareTelemetryTransport.IsAllowed(new("diagnostic.run-summary", DateTimeOffset.UtcNow, props)));
+    }
+
     private static void RunSamplingRetainsWholeRunAndPrivateSettings()
     {
         RunResourceHistogram histogram = new();
@@ -123,6 +162,22 @@ internal static partial class Program
         { ["version"] = "2.0.0.alpha.5", ["os"] = "windows", ["arch"] = "x64", ["result"] = "ok" };
         AssertTrue(CloudflareTelemetryTransport.IsAllowed(new("diagnostic.mods", DateTimeOffset.UtcNow, properties)));
         AssertFalse(properties["mods"].Contains("private-name", StringComparison.Ordinal));
+        AssertEqual("2", properties["schema"]);
+        var large = mods[0] with
+        {
+            Dependencies = Enumerable.Range(0, 12).ToDictionary(i => "dep" + i, _ => new string('a', 192)),
+            ProvidedIds = Enumerable.Range(0, 10).ToDictionary(i => "alias" + i, _ => new string('b', 96)),
+            ContentSha256 = new string('a', 64),
+            NestedCandidate = true
+        };
+        var pages = RunDiagnosticTelemetry.Inventory(context with { Inventory = new(Enumerable.Repeat(large, 100).ToArray(), 0, true) }).ToArray();
+        foreach (var page in pages)
+        {
+            var full = new Dictionary<string, string>(page) { ["version"] = "2.0.0.alpha.14", ["os"] = "linux", ["arch"] = "x64", ["result"] = "ok" };
+            AssertTrue(page["mods"].Length <= 4096);
+            AssertTrue(CloudflareTelemetryTransport.IsAllowed(new("diagnostic.mods", DateTimeOffset.UtcNow, full)));
+            AssertTrue(page["mods"].Contains("\"complete\":false", StringComparison.Ordinal));
+        }
     }
     private static async ValueTask PreflightGateRejectsStaleAndBlockedContinuation()
     {

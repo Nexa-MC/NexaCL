@@ -29,6 +29,8 @@ internal static class RunDiagnosticTelemetry
         {
             JsonObject dependencies = [];
             foreach (var dependency in mod.Dependencies.Take(8)) dependencies[dependency.Key] = dependency.Value;
+            JsonObject provided = [];
+            foreach (var alias in mod.ProvidedIds.Take(4)) provided[alias.Key] = alias.Value;
             JsonObject item = new()
             {
                 ["id"] = mod.Id,
@@ -36,8 +38,14 @@ internal static class RunDiagnosticTelemetry
                 ["format"] = mod.Format,
                 ["enabled"] = mod.Enabled,
                 ["dependencies"] = dependencies,
-                ["complete"] = mod.DependenciesComplete && mod.Dependencies.Count <= 8
+                ["sha256"] = mod.ContentSha256,
+                ["nested"] = mod.NestedCandidate,
+                ["provided"] = provided,
+                ["complete"] = mod.DependenciesComplete && mod.Dependencies.Count <= 8 && mod.ProvidedIds.Count <= 4
             };
+            // Keep one pathological metadata item from invalidating an entire batch.
+            while (item.ToJsonString().Length + 2 > 4096 && dependencies.Count > 0)
+            { dependencies.Remove(dependencies.Last().Key); item["complete"] = false; }
             if ((page.Count >= 24 || page.ToJsonString().Length + item.ToJsonString().Length + 2 > 4096) && page.Count > 0)
             { pages.Add(page.ToJsonString()); page = []; }
             if (pages.Count >= 128) { complete = false; break; }
@@ -47,6 +55,7 @@ internal static class RunDiagnosticTelemetry
         for (int index = 0; index < pages.Count; index++)
             yield return new Dictionary<string, string>
             {
+                ["schema"] = "2",
                 ["run"] = context.SessionId.ToString("N"),
                 ["loader"] = context.Loader,
                 ["loader_version"] = context.LoaderVersion,
@@ -59,6 +68,14 @@ internal static class RunDiagnosticTelemetry
                 ["mods"] = pages[index]
             };
     }
+    private static bool ValidModDetails(JsonObject item) => item.ContainsKey("sha256")
+        && (item["sha256"] is null || item["sha256"] is JsonValue hash && hash.TryGetValue<string>(out string? digest)
+            && digest.Length == 64 && digest.All(char.IsAsciiHexDigit))
+        && item["nested"] is JsonValue nested && nested.TryGetValue<bool>(out _)
+        && item["provided"] is JsonObject provided && provided.Count <= 4
+        && provided.All(pair => LaunchModInventoryReader.SafeId(pair.Key) && pair.Value is JsonValue value
+            && value.TryGetValue<string>(out string? version) && LaunchModInventoryReader.SafeVersion(version));
+
     public static bool Valid(string name, IReadOnlyDictionary<string, string> p)
     {
         if (!p.TryGetValue("run", out string? run) || run.Length != 32 || !Guid.TryParseExact(run, "N", out _)
@@ -66,7 +83,9 @@ internal static class RunDiagnosticTelemetry
         if (name == "diagnostic.run") return p.Count == NumericFields.Length + 6
             && NumericFields.All(key => p.TryGetValue(key, out string? value) && double.TryParse(value, CultureInfo.InvariantCulture, out double n)
                 && double.IsFinite(n) && n >= -2147483648 && n <= 1e12);
-        if (p.Count != 14 || !p.TryGetValue("game", out string? game) || !LaunchModInventoryReader.SafeGameVersion(game)
+        bool extended = p.TryGetValue("schema", out string? schema);
+        if (extended && schema != "2") return false;
+        if (p.Count != (extended ? 15 : 14) || !p.TryGetValue("game", out string? game) || !LaunchModInventoryReader.SafeGameVersion(game)
             || !p.TryGetValue("components", out string? components) || components.Length > 2048
             || !p.TryGetValue("loader_version", out string? version) || !LaunchModInventoryReader.SafeVersion(version)
             || !p.TryGetValue("mods", out string? mods) || mods.Length > 4096
@@ -79,7 +98,8 @@ internal static class RunDiagnosticTelemetry
                 !Enum.TryParse<Nexa.Services.Minecraft.Install.InstallLoader>(pair.Key, out _) || pair.Value is not JsonValue build
                 || !build.TryGetValue<string>(out string? text) || !LaunchModInventoryReader.SafeVersion(text))) return false;
             return JsonNode.Parse(mods) is JsonArray items && items.Count <= 32 && items.All(node =>
-                node is JsonObject item && item.Count == 6
+                node is JsonObject item && item.Count == (extended ? 9 : 6)
+                && (!extended || ValidModDetails(item))
                 && item["id"] is JsonValue id && id.TryGetValue<string>(out string? idText) && LaunchModInventoryReader.SafeId(idText)
                 && item["version"] is JsonValue v && v.TryGetValue<string>(out string? vText) && LaunchModInventoryReader.SafeVersion(vText)
                 && item["format"]?.ToString() is "fabric.mod.json" or "quilt.mod.json" or "META-INF/mods.toml" or "META-INF/neoforge.mods.toml" or "mcmod.info"

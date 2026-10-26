@@ -110,7 +110,11 @@ public sealed partial class LauncherTelemetrySession
                 _observedContexts.RemoveWhere(key => !contexts.Items.Any(item => item.SessionId == key));
                 foreach (var context in contexts.Items)
                     if (_observedContexts.Add(context.SessionId) && _telemetry.Consent)
+                    {
+                        if (context.LaunchProfile is { } profile)
+                            RecordDetails("diagnostic.launch", "ok", RunLifecycleTelemetry.Launch(context.SessionId, profile));
                         foreach (var page in RunDiagnosticTelemetry.Inventory(context)) RecordDetails("diagnostic.mods", "ok", page);
+                    }
             }
         }
         if (!_telemetry.Consent) return;
@@ -123,6 +127,7 @@ public sealed partial class LauncherTelemetrySession
                 foreach (var item in snapshot.Items)
                 {
                     if (item.EndedAt is null || !_observedJvm.Add(item.SessionId)) continue;
+                    RecordDetails("diagnostic.run-summary", item.ExitCode is null ? "unknown" : item.ExitCode == 0 ? "ok" : "failed", RunLifecycleTelemetry.Summary(item));
                     RecordMetric("jvm.launch.ms", item.LaunchDurationMilliseconds);
                     RecordMetric("jvm.working_set.mib", item.PeakWorkingSetBytes / 1048576d);
                     if (item.ExitCode is not (null or 0)) RecordError("launch", "error", string.Join('\n', item.StderrTail.TakeLast(30)));

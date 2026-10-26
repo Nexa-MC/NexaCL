@@ -362,7 +362,9 @@ public sealed class JvmHostService : IJvmHost
         try
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-            var inventory = await Task.Run(() => LaunchModInventoryReader.ReadAsync(plan.GameDirectory, timeout.Token), timeout.Token).ConfigureAwait(false);
+            LaunchModInventory inventory;
+            try { inventory = await Task.Run(() => LaunchModInventoryReader.ReadAsync(plan.GameDirectory, timeout.Token), timeout.Token).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (timeout.IsCancellationRequested) { inventory = new([], 0, false); }
             string game = "unknown"; var components = new Dictionary<string, string>(StringComparer.Ordinal);
             if (plan.MinecraftRootDirectory is { } root)
             {
@@ -373,11 +375,20 @@ public sealed class JvmHostService : IJvmHost
                     foreach (var component in edit.Selection)
                         if (LaunchModInventoryReader.SafeVersion(component.Version)) components[component.Loader.ToString()] = component.Version;
                 }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException) { }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException or OperationCanceledException) { }
             }
             var context = new JvmRunContext(session.Snapshot.SessionId, plan.ModLoader.Kind.ToString(),
                 components.GetValueOrDefault(plan.ModLoader.Kind.ToString()) ?? "unknown", inventory)
-            { GameVersion = game, Components = components };
+            {
+                GameVersion = game,
+                Components = components,
+                LaunchProfile = new(plan.JavaMajorVersion, plan.ClasspathEntries.Count, plan.Libraries.Count,
+                    plan.NativeLibraries.Count, plan.HeapLimitMiB, plan.CpuSets.Count,
+                    plan.CpuPolicy switch { "system" => 0, "performance" => 1, "cache" => 2, "numa" => 3, _ => -1 },
+                    (int)plan.ProcessQuality, plan.CpuQuotaPercent, plan.ProcessMemoryLimitMiB,
+                    plan.IoReadLimitMiB, plan.IoWriteLimitMiB, plan.GameMode,
+                    !string.IsNullOrWhiteSpace(plan.WrapperCommand), plan.IsInheritedClientJar)
+            };
             if (_store is null) return context;
             var id = _store.Resolve(JvmHostStateContract.ContextsKey);
             for (int attempt = 0; attempt < 8; attempt++)
