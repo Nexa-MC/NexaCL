@@ -122,7 +122,8 @@ public static class MinecraftRuntimeComposer
         MinecraftInstanceDiscovery instanceDiscovery = new(host.SharedStateCache,
             host.CacheDirectory is null ? null : Path.Combine(host.CacheDirectory, "instances"), host.Logging, versionDiscovery);
         MinecraftProcessService processService = processes ?? new MinecraftProcessService(hostStore: host.StateStore, log: host.Logging,
-            jvmHostExecutable: jvmHostExecutable);
+            jvmHostExecutable: jvmHostExecutable)
+        { ArchitectureValidator = new Nexa.Platform.PlatformJvmArchitectureValidator() };
         if (!ReferenceEquals(host.StateStore, processService.StateStore))
         {
             throw new ArgumentException(

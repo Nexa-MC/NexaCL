@@ -96,7 +96,8 @@ internal static class Program
             Is64BitArchitecture = platform.Is64BitArchitecture,
             IsArm64Architecture = platform.IsArm64Architecture
         });
-        await using var processes = new MinecraftProcessService(hostStore: store, jvmHostExecutable: host);
+        await using var processes = new MinecraftProcessService(hostStore: store, jvmHostExecutable: host)
+        { ArchitectureValidator = new Nexa.Platform.PlatformJvmArchitectureValidator() };
         var executor = new MinecraftLaunchExecutor(new JvmHostService(processes));
         await using var samples = new StreamWriter(new FileStream(Path.Combine(output, "samples.csv"), FileMode.CreateNew, FileAccess.Write, FileShare.Read));
         await samples.WriteLineAsync("sequence,elapsed_ms,window_ms,epoch,samples,working_mean_mib,working_peak_mib,private_mean_mib,cpu_mean_percent,threads_peak,ended,exit_code").ConfigureAwait(false);

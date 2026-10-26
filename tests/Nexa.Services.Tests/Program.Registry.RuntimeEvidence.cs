@@ -4,6 +4,8 @@ internal static partial class Program
 {
     private static (string Name, Func<ValueTask> Body)[] RegisterRuntimeEvidence() =>
     [
+        ("native architecture validates required binaries and mixed archives", Sync(NativeArchitectureValidatesRequiredBinariesAndMixedArchives)),
+        ("native architecture failure prevents process creation", NativeArchitectureFailurePreventsProcessCreation),
         ("online modpack direct install publishes and reuses verified archive", OnlineModpackDirectInstallPublishesAndReusesVerifiedArchive),
         ("resource history missing metrics cannot increase calibration weight", Sync(ResourceHistoryMissingMetricsDoNotIncreaseCalibrationWeight)),
         ("resource history requires matching persisted settings", Sync(ResourceHistoryRequiresMatchingPersistedSettings)),

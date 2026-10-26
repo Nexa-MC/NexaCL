@@ -255,6 +255,8 @@ public sealed partial class MinecraftProcessService : IAsyncDisposable
     /// <summary>The host state store receiving process lifecycle snapshots, when composed.</summary>
     public XsrStateStore? StateStore => _store;
 
+    public Nexa.Platform.IPlatformJvmArchitectureValidator? ArchitectureValidator { get; init; }
+
     public async ValueTask<MinecraftProcessSession> StartAsync(Minecraft.Launch.MinecraftLaunchPlan plan, string instanceId, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(plan);
@@ -271,6 +273,14 @@ public sealed partial class MinecraftProcessService : IAsyncDisposable
             ProcessStartInfo startInfo = plan.ToStartInfo();
             if (bootstrap is not null)
             {
+                if (ArchitectureValidator is { } validator)
+                {
+                    operation?.Stage("validate_native_architecture");
+                    string nativeDirectory = string.IsNullOrWhiteSpace(plan.NativesDirectory)
+                        ? Path.Combine(plan.WorkingDirectory, "natives") : plan.NativesDirectory;
+                    foreach (string warning in validator.Validate(_jvmHostExecutable!, plan.JavaExecutablePath, nativeDirectory, cancellationToken))
+                        _log?.Warn("Process", warning);
+                }
                 await JvmHostBootstrap.WriteAsync(bootstrap, plan, cancellationToken).ConfigureAwait(false);
                 bootstrap.Position = 0;
                 startInfo.FileName = _jvmHostExecutable!;
