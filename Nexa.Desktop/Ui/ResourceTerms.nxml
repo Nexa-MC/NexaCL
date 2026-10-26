@@ -65,5 +65,8 @@
     <Node Recipe="Text" Kind="ResourceTerm" Key="downloads-k" Content="k" />
     <Node Recipe="Text" Kind="ResourceTerm" Key="downloads-single-format" Content="0" />
     <Node Recipe="Text" Kind="ResourceTerm" Key="downloads-scaled-format" Content="0.0" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="modpack.install" Content="安装整合包" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="modpack.select-root" Content="请先选择游戏目录，再安装整合包。" />
+    <Node Recipe="Text" Kind="ResourceTerm" Key="modpack.failed" Content="整合包安装失败。" />
   </Page>
 </nxml-page>

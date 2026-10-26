@@ -628,6 +628,7 @@ internal static partial class Program
             host.StateStore, platformActions.OpenHttpsUri, functionPatches, sidecarSignals, sidecarUi);
         launchPage.ResourcesPage = resourcesPage.Page;
         resourcesPage.ConfigureDownloads(resourcesRuntime.Commands!, platformActions.PickDownloadDirectoryAsync, feedback);
+        resourcesPage.ConfigureModpackRoot(() => ((MinecraftLibrarySnapshot?)host.StateStore.ReadAppliedValue(host.StateStore.Resolve(MinecraftLibraryService.StateKey)))?.RootDirectory);
         resourcesPage.ConfigureInstanceFilter(installCatalog.Queries, () =>
         {
             var selected = ((MinecraftLibrarySnapshot?)host.StateStore.ReadAppliedValue(host.StateStore.Resolve(MinecraftLibraryService.StateKey)))?.SelectedInstance;
@@ -745,6 +746,21 @@ internal static partial class Program
             await PrepareNormalStartupAsync(startup, shell, platformActions, launchPage, settingsPage, versionSettings,
                 resourcesPage, customAppearance, mediaSession, presentationSession, systemPreferences, setStage, host.Logging,
                 desktopIntegration, sidecarLifetime, host.StateStore, themes).ConfigureAwait(false);
+            using var communityHttp = host.CreateHttpClient(allowAutoRedirect: false);
+            await using var community = new Nexa.Services.Community.LauncherCommunityService(Path.Combine(folders.Root, "community-state.json"), communityHttp);
+            try
+            {
+                var messages = await community.StartAsync().ConfigureAwait(false);
+                foreach (var message in messages.Announcements)
+                    feedback.ShowDialog("community." + message.Id, message.Title, message.Body, ProductPresentationText.Raw("native.community.read"), ProductPresentationText.Raw("native.community.later"),
+                        accepted => { if (accepted) _ = AcknowledgeCommunityAsync(community, message, host.Logging); },
+                        localizeMessage: false, localizeTitle: false);
+                if (messages.SurveyDue)
+                    feedback.ShowDialog("community.survey", ProductPresentationText.Raw("native.community.survey-title"), ProductPresentationText.Raw("native.community.survey-message"), ProductPresentationText.Raw("native.community.survey-open"), ProductPresentationText.Raw("native.community.survey-skip"),
+                        accepted => { if (accepted) platformActions.OpenHttpsUri(new Uri("https://pcln.top/feedback?version=" + Uri.EscapeDataString(ResolveInformationalVersion().Split('+')[0]))); });
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            { host.Logging.Error("Community", "无法读取启动反馈状态。", ExceptionDiagnostics.Describe(error)); }
             setStage("gui_lifetime");
             host.Logging.Info("Launcher", "Entering Avalonia GUI lifetime.");
             exitCode = startup is not null
@@ -784,6 +800,14 @@ internal static partial class Program
         session.Enter(XsrLifecyclePhase.Stopped);
         if (restartAfterUpdate && exitCode == 0) _restartAfterExit = automaticUpdate.Restart;
         return exitCode;
+    }
+
+    private static async Task AcknowledgeCommunityAsync(Nexa.Services.Community.LauncherCommunityService service,
+        Nexa.Services.Community.LauncherAnnouncement message, LogService log)
+    {
+        try { await service.AcknowledgeAsync(message).ConfigureAwait(false); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        { log.Error("Community", "无法保存公告已读状态。", ExceptionDiagnostics.Describe(error)); }
     }
 
     private static int RunFirstRun(string[] args, FirstRunService service, bool validate, DesktopSingleInstance? instance,

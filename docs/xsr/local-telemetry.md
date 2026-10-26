@@ -38,3 +38,23 @@ Origin 代替。网络或 HTTP 失败仍保留批次，由既有周期重试，�
 
 遥测失败时检查当前端点、网络、HTTP 状态码和事件校验，不引导用户配置证书。
 只有服务端接受并在管理员聚合结果中出现，才算端到端验证通过。
+
+## Service diagnostics and feedback (2026-10-26)
+
+Service response timings distinguish the telemetry upload round trip from ordinary HTTP
+operations. Upload timing is sampled under the existing diagnostic budget, and never creates
+an unbounded self-reporting loop. A failed upload retains its original typed exception in the
+local session log. Diagnostic uploads contain curated operation names, stages and exception
+symbols only; arbitrary messages, URL paths, credentials and local log bodies remain local.
+
+Resource catalog modpack actions install into the selected game root through
+`resources.modpack.install`, downloading to the existing verified archive cache and delegating
+to `MinecraftInstallService`. The UI never extracts archives or bypasses the vanilla regional
+prerequisite check. Existing archive-download and installed-pack-update contracts stay available.
+
+Community messages are separate from telemetry. A local, atomically replaced community state
+counts primary UI startups and records acknowledged announcement revisions. Every 30th startup
+invites a voluntary web questionnaire; declining sends nothing. Announcement text is plain text,
+not executable NXML or HTML. Public reads are bounded and time-limited. Management requires the
+existing operations session, audited writes and revision checks; questionnaire replies have a
+180-day retention and a rate-limited, explicit-submit endpoint.

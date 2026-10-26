@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Nexa.Services.Logging;
 using Nexa.Services.Minecraft.Process;
@@ -77,7 +78,7 @@ public sealed partial class LauncherTelemetrySession : IDisposable, IAsyncDispos
         // Symbol-only diagnostic errors; free-form log bodies remain local.
         if (entry.Module == "Telemetry") return;
         if (entry.Level == LogLevel.Error) Record("app.failure", "failed");
-        if (entry.Level is LogLevel.Error or LogLevel.Warn) RecordError(entry.Module, entry.Level == LogLevel.Error ? "error" : "warning", entry.ExceptionText);
+        if (entry.Level is LogLevel.Error or LogLevel.Warn) RecordError(entry.Module, entry.Level == LogLevel.Error ? "error" : "warning", entry.ExceptionText ?? entry.Message, entry.Operation?.Name ?? "", entry.Operation?.Stage ?? "");
     }
 
     public void OnChanged(XsrStateChange change)
@@ -158,7 +159,23 @@ public sealed partial class LauncherTelemetrySession : IDisposable, IAsyncDispos
                     SampleResources();
                     for (int batch = 0; batch < 10; batch++)
                     {
-                        if (await _telemetry.FlushAsync(_transport, _stop.Token).ConfigureAwait(false) == 0) break;
+                        bool hadPending = _telemetry.PendingCount > 0;
+                        long started = Stopwatch.GetTimestamp();
+                        int sent;
+                        try
+                        {
+                            sent = await _telemetry.FlushAsync(_transport, _stop.Token).ConfigureAwait(false);
+                        }
+                        catch (Exception error) when (error is HttpRequestException or IOException or OperationCanceledException)
+                        {
+                            if (!_stop.IsCancellationRequested)
+                                RecordMetric("telemetry.response.ms", Stopwatch.GetElapsedTime(started).TotalMilliseconds, "failed");
+                            throw;
+                        }
+                        // Only successful nonempty uploads count. The per-period diagnostic budget
+                        // bounds feedback; measuring an empty queue must not manufacture traffic.
+                        if (hadPending) RecordMetric("telemetry.response.ms", Stopwatch.GetElapsedTime(started).TotalMilliseconds, sent > 0 ? "ok" : "failed");
+                        if (sent == 0) break;
                         if (!reportedUpload)
                         {
                             reportedUpload = true;
@@ -166,9 +183,11 @@ public sealed partial class LauncherTelemetrySession : IDisposable, IAsyncDispos
                         }
                     }
                 }
-                catch (OperationCanceledException) { }
+                catch (OperationCanceledException error) when (!_stop.IsCancellationRequested)
+                { _log.Error("Telemetry", "遥测上报超时，将在下个周期重试。", ExceptionDiagnostics.Describe(error)); }
+                catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
                 catch (Exception error) when (error is HttpRequestException or IOException)
-                { _log.Debug("Telemetry", "遥测暂未发送，将在下个周期重试。"); }
+                { _log.Error("Telemetry", "遥测暂未发送，将在下个周期重试。", ExceptionDiagnostics.Describe(error)); }
             } while (await timer.WaitForNextTickAsync(_stop.Token).ConfigureAwait(false));
         }
         catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }

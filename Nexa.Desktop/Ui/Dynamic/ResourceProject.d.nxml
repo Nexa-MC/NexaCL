@@ -12,7 +12,7 @@
       <StackPanel Class="resource-project-actions">
         <ContentHost Class="resource-project-action-fill" />
         <Button Key="{data details}" Content="详情" Command="ui.resources.action" Icon="lucide/info" Class="resource-base resource-button capsule resource-icon-button resource-project-action" Label="详情" />
-        <Button Key="{data download}" Content="下载" Command="ui.resources.action" Icon="lucide/download" Class="resource-base resource-button capsule resource-icon-button resource-project-action" Label="下载" />
+        <Button Key="{data download}" Content="{data downloadCaption}" Localize="false" Command="ui.resources.action" Icon="lucide/download" Class="resource-base resource-button capsule resource-icon-button resource-project-action" Label="{data downloadCaption}" />
       </StackPanel>
     </StackPanel>
   </StackPanel>

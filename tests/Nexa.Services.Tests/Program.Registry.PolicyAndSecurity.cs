@@ -73,6 +73,7 @@ internal static partial class Program
         ("prerelease telemetry cannot be disabled", PrereleaseTelemetryCannotBeDisabled),
         ("telemetry lifecycle records only bounded facts", TelemetryLifecycleRecordsOnlyBoundedFacts),
         ("diagnostic revocation preserves necessary facts", DiagnosticRevocationPreservesNecessaryFacts),
+        ("community startup cadence and announcement acknowledgement", CommunityStartupCadenceAndAnnouncementAcknowledgement),
         ("diagnostic metrics and errors respect consent and schema", DiagnosticMetricsAndErrorsRespectConsentAndSchema),
         ("whole run sampling retains history and private settings", () => { RunSamplingRetainsWholeRunAndPrivateSettings(); return ValueTask.CompletedTask; }),
         ("mod inventory uses metadata and marks partial evidence", () => { ModInventoryUsesMetadataAndMarksPartialEvidence(); return ValueTask.CompletedTask; }),

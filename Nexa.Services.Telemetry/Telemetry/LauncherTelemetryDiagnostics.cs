@@ -49,17 +49,20 @@ public sealed partial class LauncherTelemetrySession
         lock (_gate) if (_features.Add(feature)) RecordDetails("feature.used", "ok", details);
         if (TryDiagnostic()) RecordDetails("feature.invoked", "ok", details);
     }
-    public void RecordError(string category, string severity, string? detail)
+    public void RecordError(string category, string severity, string? detail) => RecordError(category, severity, detail, "", "");
+    public void RecordError(string category, string severity, string? detail, string operation, string stage)
     {
         if (_disposed || !_telemetry.Consent) return;
         var symbols = DiagnosticTelemetry.ErrorSymbols(detail);
-        lock (_gate) { if (_errorSamples.Count >= 16 || !_errorSamples.Add(category + symbols.Code + symbols.Stack)) return; }
+        lock (_gate) { if (_errorSamples.Count >= 16 || !_errorSamples.Add(category + symbols.Code + symbols.Stack + operation + stage)) return; }
         RecordDetails("diagnostic.error", "failed", new Dictionary<string, string>
         {
             ["category"] = DiagnosticTelemetry.Category(category),
             ["severity"] = severity,
             ["code"] = symbols.Code,
-            ["stack"] = symbols.Stack
+            ["stack"] = symbols.Stack,
+            ["operation"] = DiagnosticTelemetry.SafeOperation(operation),
+            ["stage"] = DiagnosticTelemetry.SafeOperation(stage)
         });
     }
     public void RecordOperation(string semantic, TimeSpan duration, bool succeeded, string? fault)

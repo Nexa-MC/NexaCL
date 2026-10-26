@@ -8,6 +8,23 @@ public sealed class ResourceModpackOnlineService(MinecraftInstallService install
     IResourceCatalogSource catalog, ResourceDownloadService downloader, ResourceOnlineInformationCache information, string archiveDirectory)
 {
 
+    public async Task<Nexa.Xsr.XsrResult<MinecraftInstallResult>> InstallAsync(ResourceModpackInstallCommand command, CancellationToken token = default)
+    {
+        var detail = await catalog.DetailAsync(new(command.Source.ProjectId)
+        { Sources = [command.Source], MirrorFirst = command.MirrorFirst, Refresh = true, WaitForRefresh = true }, token).ConfigureAwait(false);
+        if (detail.IsStale || detail.Project.Kind != ResourceKind.Modpack || !detail.Project.Sources.Contains(command.Source))
+            throw new InvalidDataException("无法确认整合包来源，请刷新后重试。");
+        var version = detail.Versions.FirstOrDefault(v => v.Id == command.VersionId && v.Provider == command.Source.Provider && v.ProjectId == command.Source.ProjectId && v.File is not null)
+            ?? throw new InvalidDataException("整合包版本不可用，请刷新后重试。");
+        string archive = await DownloadArchiveAsync(version, command.MirrorFirst, token, async (ready, cancellation) =>
+        {
+            var retriedPreview = await MinecraftModpackArchive.InspectAsync(ready, cancellation).ConfigureAwait(false);
+            await installer.InstallModpackAsync(new(retriedPreview, command.RootDirectory), cancellation).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+        var preview = await MinecraftModpackArchive.InspectAsync(archive, token).ConfigureAwait(false);
+        return await installer.InstallModpackAsync(new(preview, command.RootDirectory), token).ConfigureAwait(false);
+    }
+
     public async Task<ResourceModpackOnline> ReadAsync(ResourceModpackOnlineQuery query, CancellationToken token = default)
     {
         var identity = await ReadIdentityAsync(query, token).ConfigureAwait(false);
@@ -118,22 +135,27 @@ public sealed class ResourceModpackOnlineService(MinecraftInstallService install
         return Nexa.Core.PathIdentity.Contained(Path.GetFullPath(archiveDirectory), key + "/" + version.File.Name);
     }
 
-    private async Task<string> DownloadArchiveAsync(ResourceVersion version, bool mirror, CancellationToken token)
+    private async Task<string> DownloadArchiveAsync(ResourceVersion version, bool mirror, CancellationToken token,
+        Func<string, CancellationToken, Task>? onRetryReady = null)
     {
         var result = await information.ReadAsync("modpack-archive", ArchivePath(version), ResourceOnlineInformationCache.CatalogFresh,
             ResourceOnlineInformationCache.CatalogRetain, 2048, ResourceMetadataJsonContext.Default.ResourceMetadataEnvelopeResourceModpackArchiveMetadata,
-            async ct => new ResourceModpackArchiveMetadata(await DownloadArchiveCoreAsync(version, mirror, ct).ConfigureAwait(false)),
+            async ct => new ResourceModpackArchiveMetadata(await DownloadArchiveCoreAsync(version, mirror, ct, onRetryReady: onRetryReady).ConfigureAwait(false)),
             value => value.Path == ArchivePath(version), value => value, value => value, refresh: true, persistent: false,
             allowStale: false, token: token).ConfigureAwait(false);
         return result.Path;
     }
     private async Task<string> DownloadArchiveCoreAsync(ResourceVersion version, bool mirror, CancellationToken token,
-        Nexa.Services.Tasks.ITaskCenterTask? retryTask = null)
+        Nexa.Services.Tasks.ITaskCenterTask? retryTask = null, Func<string, CancellationToken, Task>? onRetryReady = null)
     {
         string destination = ArchivePath(version); ResourceOnlineInformationCache.CheckLinks(destination);
         bool cached = await VerifiedAsync(destination, version.File!, token).ConfigureAwait(false);
         if (cached && retryTask is null) return destination;
-        using var task = retryTask ?? downloader.BeginArchiveTask((retry, cancellation) => DownloadArchiveCoreAsync(version, mirror, cancellation, retry));
+        using var task = retryTask ?? downloader.BeginArchiveTask(async (retry, cancellation) =>
+        {
+            string ready = await DownloadArchiveCoreAsync(version, mirror, cancellation, retry).ConfigureAwait(false);
+            if (onRetryReady is not null) await onRetryReady(ready, cancellation).ConfigureAwait(false);
+        });
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken);
         token = linked.Token;
         string? temporary = null;

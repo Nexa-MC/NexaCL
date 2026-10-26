@@ -43,6 +43,8 @@ internal sealed partial class ResourcesPageController : IDisposable
     private CancellationTokenSource _translationStop = new();
     private XsrCommandRouter? _commands;
     private Func<Task<string?>>? _pickDownload;
+    private Func<string?>? _modpackRoot;
+    internal void ConfigureModpackRoot(Func<string?> root) => _modpackRoot = root;
     private DesktopFeedbackService? _feedback;
     private readonly CancellationTokenSource _downloadsStop = new();
     private CancellationTokenSource _planStop = new();
@@ -341,7 +343,7 @@ internal sealed partial class ResourcesPageController : IDisposable
                 ["metadata"] = ResourceFormat("Version", ("provider", version.Provider.ToString()), ("channel", version.Channel),
                     ("loaders", string.Join(" / ", version.Loaders)), ("games", string.Join(", ", version.Games))),
                 ["download"] = "ResourceDownload." + id,
-                ["downloadCaption"] = L(version.File is null ? DesktopResourcesText.Raw("copy.55c561dc5546") : DesktopResourcesText.Raw("copy.4673a2306165")),
+                ["downloadCaption"] = L(version.File is not null && detail.Project.Kind == ResourceKind.Modpack ? DesktopResourcesText.Raw("modpack.install") : version.File is null ? DesktopResourcesText.Raw("copy.55c561dc5546") : DesktopResourcesText.Raw("copy.4673a2306165")),
                 ["downloadIcon"] = version.File is null ? DesktopResourcesText.Raw("icon-link") : DesktopResourcesText.Raw("icon-download")
             });
             BindResource("ResourceDownload." + id, () =>
@@ -387,6 +389,24 @@ internal sealed partial class ResourcesPageController : IDisposable
         if (_picking || _commands is null || _pickDownload is null || !_commands.TryResolve(ResourceCatalogContract.Download, out var route)) return;
         if ((kind ?? _detailProject?.Kind ?? _filter.Kind) == ResourceKind.Mod && _commands.TryResolve(ResourceCatalogContract.InstallMod, out var installRoute))
         { await InstallModAsync(new(version.Provider, version.ProjectId), version.Id, installRoute); return; }
+        if ((kind ?? _detailProject?.Kind ?? _filter.Kind) == ResourceKind.Modpack)
+        {
+            if (!_commands.TryResolve(ResourceModpackContract.Install, out var packRoute)) return;
+            string? root = _modpackRoot?.Invoke();
+            if (string.IsNullOrWhiteSpace(root)) { _feedback?.Error(DesktopResourcesText.Raw("modpack.select-root")); return; }
+            _picking = true;
+            try
+            {
+                var result = await _commands.Dispatch(packRoute, new ResourceModpackInstallCommand(new(version.Provider, version.ProjectId), version.Id, root, _filter.MirrorFirst), cancellationToken: _downloadsStop.Token).Completion;
+                if (!_disposed && !result.IsSuccess && result.Error?.Code != XsrRuntimeErrors.Cancelled().Code)
+                    _feedback?.Error(result.Error?.Message ?? DesktopResourcesText.Raw("modpack.failed"));
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
+            { if (!_disposed) _feedback?.Error(error.Message); }
+            finally { _picking = false; }
+            return;
+        }
         _picking = true;
         try
         {

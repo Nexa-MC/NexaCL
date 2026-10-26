@@ -222,6 +222,7 @@ internal sealed partial class ResourcesPageController
             ["metadata"] = "",
             ["icon"] = project.Kind switch { ResourceKind.Mod => DesktopResourcesText.Raw("icon-mod"), ResourceKind.Shader => DesktopResourcesText.Raw("icon-shader"), _ => DesktopResourcesText.Raw("icon-package") },
             ["details"] = "ResourceDetails." + name,
+            ["downloadCaption"] = L(project.Kind == ResourceKind.Modpack ? DesktopResourcesText.Raw("modpack.install") : DesktopResourcesText.Raw("copy.4673a2306165")),
             ["download"] = "ResourceQuickDownload." + name
         });
         _shell.Renderer.ProtectVirtualGeometry(row);
@@ -245,7 +246,7 @@ internal sealed partial class ResourcesPageController
         if (row.Language == language && CatalogFactsEqual(row.Project, project)) return;
         DeactivateRowMedia(row); row.Project = project; row.Language = language;
         string count = FormatDownloads(Math.Max(0, ResourceCaptions.DownloadCount(_functionPatches.Runtime, _functionPatches.DownloadCount, project.Downloads)));
-        ReloadResource(row.Row, ("title", ProjectTitle(DesktopResourceText.Name(project, _store))), ("description", DesktopResourceText.Description(project, _store)),
+        ReloadResource(row.Row, ("downloadCaption", L(project.Kind == ResourceKind.Modpack ? DesktopResourcesText.Raw("modpack.install") : DesktopResourcesText.Raw("copy.4673a2306165"))), ("title", ProjectTitle(DesktopResourceText.Name(project, _store))), ("description", DesktopResourceText.Description(project, _store)),
             ("metadata", ResourceFormat("ProjectMetadata", ("source", project.SourceLabel), ("author", project.Author), ("downloads", count))));
     }
 

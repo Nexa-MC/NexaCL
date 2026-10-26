@@ -5,6 +5,7 @@ namespace Nexa.Services.Resources;
 
 public static class ResourceModpackContract
 {
+    public static readonly XsrSemanticId Install = XsrSemanticId.Parse("resources.modpack.install");
     public static readonly XsrSemanticId Online = XsrSemanticId.Parse("resources.modpack.online");
     public static readonly XsrSemanticId Preview = XsrSemanticId.Parse("resources.modpack.preview");
     public static readonly XsrSemanticId Update = XsrSemanticId.Parse("resources.modpack.update");
@@ -23,3 +24,5 @@ public sealed record ResourceModpackPreviewQuery(ResourceModpackOnlineQuery Inst
 public sealed record ResourceModpackPreview(ResourceModpackPreviewQuery Request, ResourceVersion Version,
     MinecraftModpackUpdatePreview Installation);
 public sealed record ResourceModpackUpdateCommand(ResourceModpackPreview Preview);
+
+public sealed record ResourceModpackInstallCommand(ResourceReference Source, string VersionId, string RootDirectory, bool MirrorFirst = true);

@@ -95,6 +95,16 @@ public static class ResourceCatalogRuntimeComposer
             {
                 var packs = new ResourceModpackOnlineService(installer, instances, source, downloader, information,
                     Path.Combine(host.CacheDirectory ?? Path.Combine(Path.GetTempPath(), "NexaCL"), "modpack-archives"));
+                commands.Register<ResourceModpackInstallCommand>(ResourceModpackContract.Install, async (command, token) =>
+                {
+                    try
+                    {
+                        var result = await packs.InstallAsync(command, token).ConfigureAwait(false);
+                        return result.IsSuccess ? XsrResult.Success() : XsrResult.Failure(result.Error!);
+                    }
+                    catch (Exception error) when (!token.IsCancellationRequested && (ResourceOnlineInformationCache.Recoverable(error) || error is ArgumentException))
+                    { return XsrResult.Failure(MinecraftErrors.InvalidRequest(error.Message)); }
+                });
                 queries.Register<ResourceModpackOnlineQuery, ResourceModpackOnline>(ResourceModpackContract.Online, async (query, token) =>
                 {
                     try { return XsrResult.Success(await packs.ReadAsync(query, token).ConfigureAwait(false)); }

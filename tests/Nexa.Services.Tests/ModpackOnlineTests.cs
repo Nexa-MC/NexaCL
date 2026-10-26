@@ -39,6 +39,37 @@ internal static partial class Program
         { Reads++; token.ThrowIfCancellationRequested(); if (Offline) throw new IOException("offline fixture"); return Task.FromResult<ResourceVersion?>(Version(command.VersionId == Next)); }
     }
 
+    private static async ValueTask OnlineModpackDirectInstallPublishesAndReusesVerifiedArchive()
+    {
+        string temporary = CreateTempDirectory();
+        try
+        {
+            string archive = Path.Combine(temporary, "pack.mrpack");
+            WriteUpdatePack(archive, "1.0", false);
+            byte[] bytes = await File.ReadAllBytesAsync(archive);
+            using var fingerprintStream = new MemoryStream(bytes);
+            var fingerprint = await ContentFingerprintReader.ReadAsync(fingerprintStream, 1024 * 1024);
+            var source = new OnlinePackCatalog(ResourceProvider.Modrinth, fingerprint, fingerprint);
+            using var fixture = new InstallFixture(PackMetadata());
+            int transfers = 0;
+            using var http = new HttpClient(new ResourceHttp(_ => { transfers++; return new(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) }; }));
+            using var information = new ResourceOnlineInformationCache();
+            using var identities = new ResourceInstanceService(new ResourceProviderHttp(http, "fixture") { CountryPolicy = new("US") }, information);
+            var service = new ResourceModpackOnlineService(fixture.Install, identities, source,
+                new ResourceDownloadService(source, new DownloadService(fixture.Store), fixture.Tasks, http) { CountryPolicy = new("US") },
+                information, Path.Combine(temporary, "cache"));
+            for (int i = 0; i < 2; i++)
+            {
+                string root = Path.Combine(temporary, "game" + i); Directory.CreateDirectory(root);
+                var result = await service.InstallAsync(new(new(ResourceProvider.Modrinth, source.Project), source.Next, root));
+                AssertTrue(result.IsSuccess, result.Error?.Message ?? "install failed");
+                AssertTrue(File.Exists(Path.Combine(result.Value!.InstanceDirectory, "Nexa", "ModpackManaged.json")));
+            }
+            AssertEqual(1, transfers);
+        }
+        finally { Directory.Delete(temporary, true); }
+    }
+
     private static async ValueTask OnlineModpackUpdatesIdentifyDownloadPreviewAndPublish()
     {
         foreach (var provider in new[] { ResourceProvider.Modrinth, ResourceProvider.CurseForge })

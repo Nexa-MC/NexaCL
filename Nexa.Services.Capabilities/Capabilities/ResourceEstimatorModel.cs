@@ -114,24 +114,27 @@ internal static class ResourceEstimateModel
         double resourceSimilarity = samples.Length == 0 ? 0 : samples.Average(item => Similarity(resourceHeap, item.ResourceWeight));
         double javaSimilarity = samples.Length == 0 ? 0 : samples.Average(item => item.JavaMajor == ReadLong(values, "java.runtime.major") ? 1d : 0.5d);
         double totalSimilarity = (loaderSimilarity + modSimilarity + resourceSimilarity + javaSimilarity) / 4;
-        double historyWeight = Math.Clamp(samples.Length / 12d * totalSimilarity, 0, 0.75);
+        int measuredSamples = samples.Count(item => item.HeapPeakMiB > 0 || item.NativePeakMiB > 0 || item.PhysicalPeakMiB > 0 || item.CommitPeakMiB > 0 || item.GpuPeakMiB > 0);
+        double historyWeight = Math.Clamp(measuredSamples / 12d * totalSimilarity, 0, 0.75);
+        double MetricWeight(Func<ResourceObservationSample, long> metric) =>
+            Math.Clamp(samples.Count(item => metric(item) > 0) / 12d * totalSimilarity, 0, 0.75);
         long heapP95 = Percentile(samples.Select(static item => item.HeapPeakMiB), profile.QuantileTarget);
         long nativeP95 = Percentile(samples.Select(static item => item.NativePeakMiB), profile.QuantileTarget);
         long physicalP95 = Percentile(samples.Select(static item => item.PhysicalPeakMiB), profile.QuantileTarget);
         long gpuP95 = Percentile(samples.Select(static item => item.GpuPeakMiB), profile.QuantileTarget);
         long durationP95 = Percentile(samples.Select(static item => item.LaunchDurationMilliseconds), profile.QuantileTarget);
-        long calibratedHeap = Blend(heapRuntime, heapP95, historyWeight);
-        long calibratedNative = Blend(nativeRuntime, nativeP95, historyWeight);
-        long calibratedGraphics = Blend(graphicsTotal, gpuP95, historyWeight);
-        long calibratedPhysical = Blend(physicalRuntime, physicalP95, historyWeight);
+        long calibratedHeap = Blend(heapRuntime, heapP95, MetricWeight(static item => item.HeapPeakMiB));
+        long calibratedNative = Blend(nativeRuntime, nativeP95, MetricWeight(static item => item.NativePeakMiB));
+        long calibratedGraphics = Blend(graphicsTotal, gpuP95, MetricWeight(static item => item.GpuPeakMiB));
+        long calibratedPhysical = Blend(physicalRuntime, physicalP95, MetricWeight(static item => item.PhysicalPeakMiB));
         long calibratedCommit = Blend(commitRuntime,
-            Percentile(samples.Select(static item => item.CommitPeakMiB), profile.QuantileTarget), historyWeight);
+            Percentile(samples.Select(static item => item.CommitPeakMiB), profile.QuantileTarget), MetricWeight(static item => item.CommitPeakMiB));
 
         bool unknownMods = !Available(values, "mod.runtime_profile.known") || modCount > 0 && !ReadBool(values, "mod.runtime_profile.known");
         bool modifiedCore = ReadBool(values, "minecraft.core.modified");
         bool unreadableSettings = !Available(values, "minecraft.settings.readable") || !ReadBool(values, "minecraft.settings.readable");
         bool missingHardware = !Available(values, "memory.physical.available") || !Available(values, "gpu.memory.dedicated.available_budget");
-        bool insufficientHistory = samples.Length < 5;
+        bool insufficientHistory = measuredSamples < 5;
         int penalties = new[] { unknownMods, modifiedCore, unreadableSettings, missingHardware, insufficientHistory }.Count(static value => value);
         double confidenceScore = Math.Clamp(1 - penalties * 0.16 + historyWeight * 0.3, 0.1, 1);
         CapabilityConfidence confidence = confidenceScore >= 0.8 ? CapabilityConfidence.High

@@ -4,6 +4,8 @@ internal static partial class Program
 {
     private static (string Name, Func<ValueTask> Body)[] RegisterRuntimeEvidence() =>
     [
+        ("online modpack direct install publishes and reuses verified archive", OnlineModpackDirectInstallPublishesAndReusesVerifiedArchive),
+        ("resource history missing metrics cannot increase calibration weight", Sync(ResourceHistoryMissingMetricsDoNotIncreaseCalibrationWeight)),
         ("resource history requires matching persisted settings", Sync(ResourceHistoryRequiresMatchingPersistedSettings)),
         ("resource history requires matching mod identities", Sync(ResourceHistoryRequiresMatchingModIdentity)),
         ("host history rejects unsuitable runs and preserves peak semantics", Sync(HostHistoryAdmissionPreservesPeakSemantics)),

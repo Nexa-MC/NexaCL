@@ -1,3 +1,4 @@
+using Nexa.Services.Logging;
 using Nexa.Services.Settings;
 using Nexa.Services.Telemetry;
 using Nexa.Xsr.State;
@@ -34,10 +35,21 @@ internal static partial class Program
         AssertEqual(2, facts.Count(item => item.Properties.GetValueOrDefault("metric") == "scheduler.duration.ms"));
         AssertEqual(1, facts.Count(item => item.Properties.GetValueOrDefault("metric") == "network.request.ms"));
         AssertTrue(facts.All(CloudflareTelemetryTransport.IsAllowed));
+        AssertTrue(DiagnosticTelemetry.IsMetric("telemetry.response.ms"));
+        AssertEqual("", DiagnosticTelemetry.SafeOperation("private/path?token=value"));
+        var frames = string.Join('\n', Enumerable.Range(0, 20).Select(i => $" at Nexa.Service.Frame{i}()"));
+        AssertEqual(20, DiagnosticTelemetry.ErrorSymbols(frames).Stack.Split('\n').Length);
         var error = facts.Single(item => item.Name == "diagnostic.error");
         AssertEqual("System.InvalidOperationException", error.Properties["code"]);
         AssertEqual("Nexa.Desktop.Program.Run", error.Properties["stack"]);
         foreach (string secret in new[] { "private-token", "private-path", "private-name", "privateArg" }) AssertFalse(TelemetryService.SerializeBatch(facts).Contains(secret, StringComparison.Ordinal));
+        session.Write(new LogEntry(1, DateTimeOffset.UtcNow, LogLevel.Error, "accounts",
+            "System.Net.Http.HttpRequestException: private-token\n at Nexa.Login.Run(String privateArg)", null), "unused");
+        await telemetry.FlushAsync(transport);
+        var embedded = transport.Batches.SelectMany(batch => batch).Single(item => item.Name == "diagnostic.error" && item.Properties["category"] == "accounts");
+        AssertEqual("System.Net.Http.HttpRequestException", embedded.Properties["code"]);
+        AssertEqual("Nexa.Login.Run", embedded.Properties["stack"]);
+        AssertFalse(TelemetryService.SerializeBatch([embedded]).Contains("private-token", StringComparison.Ordinal));
         settings.SetValue("TelemetryExperienceProgram", false);
         session.RecordMetric("launcher.working_set.mib", 100);
         AssertEqual(0, telemetry.PendingCount);

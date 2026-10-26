@@ -5,6 +5,29 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static void ResourceHistoryMissingMetricsDoNotIncreaseCalibrationWeight()
+    {
+        var now = DateTimeOffset.UtcNow;
+        string directory = Path.Combine(Path.GetTempPath(), "nexa-metric-support");
+        var history = new ResourceObservationHistory();
+        var sample = new ResourceObservationSample(directory, "Fabric", 21, 1, 0, 1024, 256, 2048, 0, 0, 1000, now)
+        { ModFingerprint = "mods", SettingsFingerprint = "settings" };
+        history.Record(sample);
+        var projection = new ResourceEstimatorProjection(history: history);
+        Dictionary<string, ICapability> facts = new()
+        {
+            [ModCatalog.ModMetadataFingerprint.Id] = ModCatalog.ModMetadataFingerprint.Observe("mods", now, "fixture"),
+            [ResourceHistoryCatalog.SettingsFingerprint.Id] = ResourceHistoryCatalog.SettingsFingerprint.Observe("settings", now, "fixture")
+        };
+        long Read() => ((Capability<long>)projection.Project(facts, now, new(directory)).Single(item => item.Id == "estimate.calibrated.heap")).Value;
+        long before = Read();
+        for (int i = 0; i < 20; i++) history.Record(sample with { HeapPeakMiB = 0, NativePeakMiB = 0, PhysicalPeakMiB = 0 });
+        AssertEqual(before, Read());
+        // Plenty of working-set observations still do not supply missing JVM heap measurements.
+        for (int i = 0; i < 20; i++) history.Record(sample with { HeapPeakMiB = 0 });
+        AssertEqual(before, Read());
+    }
+
     private static void ResourceHistoryRequiresMatchingPersistedSettings()
     {
         string directory = Path.Combine(Path.GetTempPath(), "nexa-options-history-" + Guid.NewGuid().ToString("N"));

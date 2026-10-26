@@ -53,4 +53,10 @@
   <Text Key="native.install.exit.stop-route-missing" Content="安装停止路由未注册。" />
   <Text Key="native.launch.exit.wait" Content="等待游戏退出、临时文件恢复和退出钩子完成后关闭启动器。" />
   <Text Key="native.launch.exit.failure" Content="启动清理未能完成，请检查运行日志后重试退出。" />
+  <Text Key="native.community.read" Content="已读" />
+  <Text Key="native.community.later" Content="稍后" />
+  <Text Key="native.community.survey-title" Content="帮助改进 NexaCL" />
+  <Text Key="native.community.survey-message" Content="愿意花一分钟分享本次使用体验吗？问卷自愿填写。" />
+  <Text Key="native.community.survey-open" Content="填写问卷" />
+  <Text Key="native.community.survey-skip" Content="暂不填写" />
 </StackPanel>

@@ -72,3 +72,16 @@ not complete from this slice alone.
 ### Audit correction: estimate semantics
 The legacy estimate.heap.hard_minimum key is an empirical advisory floor, never a verified hard constraint. Its preflight issue remains bypassable and Estimated regardless of confidence. Resource steady heap belongs to heapRuntime exactly once; physical and commit aggregates do not add it again, and nonheap excludes it.
 
+
+### 2026-10-26 evidence pass
+The production memory projection is also currently suspended (`UnavailableResourceEstimatorProjection`).
+Improvement work must first report actual sample quality and retain explicit missing measurements;
+neither cloud benchmarks nor metadata candidates establish a physical-machine workload baseline.
+
+Calibration now weights each memory metric by its own nonmissing observation count.
+Previously a single measured heap peak could receive the weight of many windows that only
+measured working set, or measured no memory at all. Missing metrics do not increase confidence.
+This corrects the experimental local model; production admission remains suspended pending
+representative physical-machine and workload validation. Production inspection on 2026-10-26
+found 3 Windows x64 runs, 1 measured window, and 0 normal endings of at least 60 seconds in
+30 days, so no user-data-trained coefficients are published.

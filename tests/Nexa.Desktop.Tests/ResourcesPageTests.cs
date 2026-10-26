@@ -11,6 +11,31 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static void ResourceModpackActionInstallsWithoutDownloadPicker()
+    {
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
+        using var feedback = new DesktopFeedbackService();
+        var project = new ResourceProject("Pack", "Pack", "Description", "Author", 1, "https://modrinth.com/modpack/Pack")
+        { Kind = ResourceKind.Modpack, Sources = [new(ResourceProvider.Modrinth, "Pack")] };
+        var version = new ResourceVersion("Version", "Version", "1", "release", [], [], "", project.Website)
+        { Provider = ResourceProvider.Modrinth, ProjectId = "Pack", File = new("pack.mrpack", "https://cdn.modrinth.com/pack.mrpack", 3, null, null) };
+        var queries = new XsrQueryRouterBuilder();
+        queries.Register<ResourceSearchQuery, ResourceSearchResult>(ResourceCatalogContract.Search, (_, _) => ValueTask.FromResult(XsrResult.Success(new ResourceSearchResult([project], 1, 0))));
+        queries.Register<ResourceDetailQuery, ResourceDetail>(ResourceCatalogContract.Detail, (_, _) => ValueTask.FromResult(XsrResult.Success(new ResourceDetail(project, "MIT", [version]))));
+        ResourceModpackInstallCommand? installed = null;
+        var commands = new XsrCommandRouterBuilder();
+        commands.Register<ResourceDownloadCommand>(ResourceCatalogContract.Download, (_, _) => throw new InvalidOperationException("Must install, not save archive."));
+        commands.Register<ResourceModpackInstallCommand>(ResourceModpackContract.Install, (command, _) => { installed = command; return ValueTask.FromResult(XsrResult.Success()); });
+        using var page = new ResourcesPageController(fixture.Shell, fixture.Intents, queries.Build(new NoopDispatchObserver()), fixture.Store, _ => { });
+        page.ConfigureDownloads(commands.Build(new NoopDispatchObserver()), () => throw new InvalidOperationException("Must not open download picker."), feedback);
+        page.ConfigureModpackRoot(() => "selected-game-root");
+        fixture.Shell.Stage.Navigation.Replace(page.Page); fixture.Shell.Renderer.ReducedMotion = true;
+        AssertTrue(SpinWait.SpinUntil(() => fixture.Shell.Render(new(1000, 800)).Nodes.Any(node => node.Text == "Pack"), TimeSpan.FromSeconds(5)));
+        Emit(fixture.Intents, "ui.resources.action", page.Find("ResourceQuickDownload.Pack"));
+        AssertTrue(SpinWait.SpinUntil(() => { fixture.Shell.Render(new(1000, 800)); return installed is not null; }, TimeSpan.FromSeconds(5)));
+        AssertEqual("selected-game-root", installed!.RootDirectory); AssertEqual("Version", installed.VersionId);
+    }
+
     private static void ResourceLanguageUsesOriginalMetadataAndRejectsLateChineseTranslations()
     {
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));

@@ -16,7 +16,7 @@ public static partial class DiagnosticTelemetry
         }
         return "other";
     }
-    public static bool IsMetric(string key) => key is "network.request.ms" or "launcher.working_set.mib" or "launcher.private.mib" or "launcher.managed.mib" or "launcher.cpu.percent"
+    public static bool IsMetric(string key) => key is "telemetry.response.ms" or "network.request.ms" or "launcher.working_set.mib" or "launcher.private.mib" or "launcher.managed.mib" or "launcher.cpu.percent"
         or "jvm.launch.ms" or "jvm.working_set.mib" or "catalog.results.count" or "catalog.normalize.ms" or "catalog.input.count" or "catalog.cache.hit" or "scheduler.duration.ms"
         || Features.Any(feature => key == $"dispatch.{feature}.ms");
     public static bool ValidExtras(TelemetryEvent item)
@@ -28,20 +28,22 @@ public static partial class DiagnosticTelemetry
             "diagnostic.metric" => p.Count == 6 && p.TryGetValue("metric", out string? metric) && IsMetric(metric)
                 && p.TryGetValue("value", out string? value) && double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double n) && double.IsFinite(n) && n >= 0 && n <= 1e12,
             "feature.used" or "feature.invoked" => p.Count == 5 && p.TryGetValue("feature", out string? feature) && Features.Contains(feature),
-            "diagnostic.error" => p.Count == 8 && p.TryGetValue("category", out string? category) && Features.Contains(category)
+            "diagnostic.error" => (p.Count == 8 || p.Count == 10 && p.TryGetValue("operation", out var operation) && SafeOperation(operation) == operation
+                && p.TryGetValue("stage", out var stage) && SafeOperation(stage) == stage) && p.TryGetValue("category", out string? category) && Features.Contains(category)
                 && p.TryGetValue("severity", out string? severity) && severity is "warning" or "error"
                 && p.TryGetValue("code", out string? code) && CodePattern().IsMatch(code)
-                && p.TryGetValue("stack", out string? stack) && stack.Length <= 2048 && stack.Split('\n').Length <= 8
+                && p.TryGetValue("stack", out string? stack) && stack.Length <= 8192 && stack.Split('\n').Length <= 32
                 && stack.Split('\n').All(frame => frame.Length == 0 || FramePattern().IsMatch(frame)),
             _ => p.Count == 4
         };
     }
+    public static string SafeOperation(string value) => value.Length <= 96 && value.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-') ? value : "";
     public static (string Code, string Stack) ErrorSymbols(string? text)
     {
         text = text?[..Math.Min(text.Length, 16384)] ?? "";
         string code = ExtractCode().Match(text).Value;
-        string stack = string.Join('\n', ExtractFrame().Matches(text).Select(match => match.Groups[1].Value).Distinct(StringComparer.Ordinal).Take(8));
-        return (code.Length > 0 && code.Length <= 160 ? code : "Unknown", stack.Length <= 2048 ? stack : "");
+        string stack = string.Join('\n', ExtractFrame().Matches(text).Select(match => match.Groups[1].Value).Distinct(StringComparer.Ordinal).Take(32));
+        return (code.Length > 0 && code.Length <= 160 ? code : "Unknown", stack.Length <= 8192 ? stack : "");
     }
     [GeneratedRegex(@"^(?:Unknown|(?:System|Nexa|Avalonia|java|net|cpw)\.[A-Za-z0-9_.]{1,140}(?:Exception|Error))$")]
     private static partial Regex CodePattern();

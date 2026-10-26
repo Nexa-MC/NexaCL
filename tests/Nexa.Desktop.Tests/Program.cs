@@ -376,6 +376,7 @@ internal static partial class Program
         ("content refresh publishes small batches and combines update checks", ContentRefreshPublishesSmallBatchesAndCombinesUpdateChecks),
         ("updates check outside settings and retire old channels", UpdatePreferencesCheckOutsideSettingsAndRetireOldChannels),
         ("disabled startup updates keep manual check", DisabledStartupUpdatesKeepManualCheck),
+        ("resource modpack action installs without download picker", ResourceModpackActionInstallsWithoutDownloadPicker),
         ("resource language uses original metadata and rejects late Chinese translations", ResourceLanguageUsesOriginalMetadataAndRejectsLateChineseTranslations),
         ("Java registration picker retires on navigation and dispatches captured revision", JavaRegistrationPickerRetiresOnNavigationAndDispatchesCapturedRevision),
         ("Presentation settings apply outside navigation and preserve activity policy", PresentationSettingsApplyWithoutNavigation),
