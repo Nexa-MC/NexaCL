@@ -1,0 +1,31 @@
+name: Native platform integrations
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - Nexa.Platform.Runtime/Native/macos/Actions.swift
+      - eng/release/build_macos_actions.py
+      - .github/workflows/native-platform.yml
+permissions:
+  contents: read
+jobs:
+  mac-actions:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            arch: arm64
+          - os: macos-15-intel
+            arch: x64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Compile and extract App Intents metadata
+        run: python3 eng/release/build_macos_actions.py --output "$RUNNER_TEMP/actions" --arch ${{ matrix.arch }}
+      - name: Verify signed native actions and execute native route smoke
+        run: |
+          codesign --verify --deep --strict "$RUNNER_TEMP/actions/NexaCL Actions.app"
+          "$RUNNER_TEMP/actions/NexaCL Actions.app/Contents/MacOS/NexaCL.Actions" --self-test
