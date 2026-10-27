@@ -25,7 +25,12 @@ def build(output, arch):
                            CFBundlePackageType='APPL', CFBundleVersion='1', CFBundleShortVersionString='1.0',
                            LSMinimumSystemVersion='13.0', LSUIElement=True, NSPrincipalClass='NSApplication',
                            NSUserActivityTypes=['com.apple.corespotlightitem']), stream)
+    xcode_version = subprocess.check_output(['xcodebuild', '-version'], text=True).splitlines()[-1].split()[-1]
+    toolchain = str(pathlib.Path(subprocess.check_output(['xcrun', '-f', 'swiftc'], text=True).strip()).parent)
     subprocess.run(['xcrun', 'appintentsmetadataprocessor', '--module-name', 'NexaActions',
+                    '--xcode-version', xcode_version, '--toolchain-dir', toolchain,
+                    '--platform-family', 'macOS', '--deployment-target', '13.0',
+                    '--bundle-identifier', 'org.nexacl.launcher.actions',
                     '--sdk-root', sdk, '--target-triple', target, '--binary-file', str(binary),
                     '--source-files', str(source), '--output', str(resources)], check=True)
     if not any(resources.rglob('*.actionsdata')):
