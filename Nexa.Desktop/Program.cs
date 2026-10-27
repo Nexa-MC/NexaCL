@@ -640,7 +640,8 @@ internal static partial class Program
         var automaticUpdate = CreateUpdateControl(updateHttp, buildInfo.ProductVersion, updateRid);
         bool restartAfterUpdate = false;
         settingsPage.ConfigureUpdates(updateQueries, new(buildInfo.ProductVersion, updateRid, updateChannel), platformActions.OpenHttpsUri,
-            automaticUpdate, () => { restartAfterUpdate = true; platformActions.RequestClose(); });
+            automaticUpdate, () => { restartAfterUpdate = true; platformActions.RequestClose(); },
+            error => host.Logging.Error("Update", "自动更新失败。", ExceptionDiagnostics.Describe(error)));
         launchPage.SettingsPage = settingsPage.Page;
         using var resourcesRuntime = ResourceCatalogRuntimeComposer.Compose(source: null, observer: dispatchObservation, host: host,
             favoritesPath: Path.Combine(settingsFolder, "resources-favorites.json"), installer: installRun.Service,

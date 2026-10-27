@@ -309,6 +309,7 @@ internal static partial class Program
         ("mainland modpacks prompt for missing or corrupt base before transfers", MainlandModpacksPromptForMissingOrCorruptBaseBeforeTransfers),
         ("mainland completion uses local game and rejects every missing base kind", MainlandCompletionUsesLocalGameAndRejectsEveryMissingBaseKind),
         ("mainland pack update reuses verified local base without transfers", MainlandPackUpdateReusesVerifiedLocalBaseWithoutTransfers),
+        ("publisher assets follow bounded redirects without automatic transport redirects", PublisherAssetsFollowBoundedRedirects),
         ("publisher downloads use new repository and only pinned not-found fallbacks", PublisherDownloadsUseNewRepositoryAndOnlyPinnedNotFoundFallbacks),
         ("language settings are immediate validated and durable", Sync(LanguageSettingIsImmediateValidatedAndDurable)),
         ("region formatting settings validate persist and preserve legacy aliases", Sync(RegionFormattingSettingIsValidatedAndDurable)),

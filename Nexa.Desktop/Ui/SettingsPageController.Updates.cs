@@ -42,11 +42,13 @@ internal sealed partial class SettingsPageController
     private readonly Dictionary<string, XsrUiEntityId> _updateActionViews = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _updateStop = new();
 
+    private Action<Exception>? _updateFailure;
+
     internal void ConfigureUpdates(XsrQueryRouter queries, NexaUpdateQuery query, Action<Uri> open,
-        IAutomaticUpdateControl? automatic = null, Action? restart = null)
+        IAutomaticUpdateControl? automatic = null, Action? restart = null, Action<Exception>? failure = null)
     {
         _updateQueries = queries; _updateQuery = _buildUpdateQuery = query; _openUpdateLink = open;
-        _automaticUpdates = automatic; _restartForUpdate = restart;
+        _automaticUpdates = automatic; _restartForUpdate = restart; _updateFailure = failure;
         if (automatic is not null) { _automaticReading = automatic.ReadAsync(_updateStop.Token); WakeOnPlatformCompletion(_automaticReading); }
     }
 
@@ -163,7 +165,11 @@ internal sealed partial class SettingsPageController
                 _updateStatus = CustomCopy(_automaticStatus.Phase == "rolledback" ? "update.rolledBack" : "update.complete");
                 if (UpdateNeedsRestart) _updateStatus = CustomFormat("UpdateRestart", new() { ["status"] = _updateStatus });
             }
-            else { _ = operation.Exception; _updateStatus = CustomCopy("update.incomplete"); }
+            else
+            {
+                if (operation.Exception is { } error) _updateFailure?.Invoke(error.InnerException ?? error);
+                _updateStatus = CustomCopy("update.incomplete");
+            }
             changed = true;
         }
         if (_automaticReading is { IsCompleted: true } reading)

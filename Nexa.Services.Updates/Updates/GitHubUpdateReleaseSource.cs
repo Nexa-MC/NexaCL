@@ -31,15 +31,36 @@ public sealed class GitHubUpdateReleaseSource(HttpClient client) : IUpdateReleas
         foreach (string repository in Repositories)
             foreach (string tag in new[] { version, "v" + version })
             {
-                using var request = new HttpRequestMessage(HttpMethod.Get, repository + "/releases/download/" + tag + "/" + name);
-                request.Headers.UserAgent.ParseAdd("NexaCL-Update/1.0");
-                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
+                HttpResponseMessage response = await SendAssetAsync(new Uri(repository + "/releases/download/" + tag + "/" + name), token).ConfigureAwait(false);
                 if (response.StatusCode == HttpStatusCode.NotFound) { response.Dispose(); continue; }
                 try { response.EnsureSuccessStatusCode(); return new ResponseStream(await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false), response); }
                 catch { response.Dispose(); throw; }
             }
         throw new FileNotFoundException("GitHub 发布缺少更新文件。");
     }
+    private async Task<HttpResponseMessage> SendAssetAsync(Uri uri, CancellationToken token)
+    {
+        for (int redirects = 0; ; redirects++)
+        {
+            token.ThrowIfCancellationRequested();
+            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            request.Headers.UserAgent.ParseAdd("NexaCL-Update/1.0");
+            var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
+            if ((int)response.StatusCode is not (301 or 302 or 303 or 307 or 308)) return response;
+            try
+            {
+                if (redirects >= 5 || response.Headers.Location is not { } location
+                    || !Uri.TryCreate(uri, location, out var next) || next.Scheme != Uri.UriSchemeHttps
+                    || next.Port != 443 || next.UserInfo.Length != 0 || next.Fragment.Length != 0
+                    || next.IdnHost is not ("github.com" or "release-assets.githubusercontent.com"
+                        or "objects.githubusercontent.com" or "github-releases.githubusercontent.com"))
+                    throw new HttpRequestException("更新发布文件的重定向地址无效或次数超限。", null, response.StatusCode);
+                uri = next;
+            }
+            finally { response.Dispose(); }
+        }
+    }
+
     private async Task<byte[]> ReadBoundedAsync(string version, string name, CancellationToken token)
     {
         using Stream input = await OpenAsync(version, name, token).ConfigureAwait(false);

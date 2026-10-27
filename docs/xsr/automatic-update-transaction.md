@@ -122,3 +122,13 @@ Differential reconstruction and its independent publisher envelope are specified
 [XSR-755](migrations/XSR-755-protected-differential-update.md). Optional differential failure
 falls back to the signed full package in a separate fresh slot; it cannot relax admission,
 replay protection or activation rules.
+
+## Portable publisher redirects (2026-10-27)
+
+The shared launcher HTTP client deliberately disables automatic redirects. Publisher
+assets must therefore follow bounded redirects inside GitHubUpdateReleaseSource, for
+both envelopes and full/delta payloads. Follow at most five hops to HTTPS on port 443,
+without userinfo or fragments, and only github.com or its fixed asset CDN hosts.
+Create a new GET per hop, dispose intermediate responses, preserve cancellation,
+and keep manifest/signature/hash validation unchanged. A 404 can still try the next
+pinned tag/repository; other failures must not be hidden as missing assets.
