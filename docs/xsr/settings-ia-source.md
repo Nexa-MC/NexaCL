@@ -1,5 +1,8 @@
 # PCL Nexa 2.x 设置系统最终 IA
 
+> Alpha 14：下文日期、数量和 IA 表是迁移记录，不是当前可见设置清单。当前资源策略键见[平台手册](../platform-integration.md)，完整键以 `SettingsPolicySchema.cs` 为准。无实际设置功能的条目及信息面板不会因此恢复。
+
+
 ## 0. IA 固定原则
 
 ### 设置系统原则

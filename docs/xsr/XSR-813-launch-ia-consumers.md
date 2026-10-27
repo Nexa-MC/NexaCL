@@ -99,7 +99,7 @@ Launching 路径。dev 的 DataVersion 用于选择存档解析器/编辑器和�
 没有读取客户端 `world_version` 与世界 DataVersion 的启动前比较，也没有升降级
 阻断或启动自动快照 producer。原子编辑的 level.dat_old 备份不等于启动保护快照。
 XSR 锁文档 `settings-ia-source.md:691` 明确写“未来 World Guardian 继续填入这里”，
-`settings-next-development-plan.md:135` 亦列为依赖边界完成后开放的独立能力包。
+`current-status.md:135` 亦列为依赖边界完成后开放的独立能力包。
 因此 `instance-settings.security.88ba1be4830d`、
 `instance-settings.security.0f7c5e74b592`、
 `instance-settings.security.89e2cc2879c7` 是规划能力，不能冒充已迁移 dev 行为；

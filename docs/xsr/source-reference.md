@@ -2,13 +2,13 @@
 
 ## Separate worktrees
 
-`refactor/xsr` is a clean-slate implementation branch. The legacy product stays in a separate worktree on `dev` and is read only when a migration task needs behavioral evidence.
+`main` is a clean-slate implementation branch. The legacy product stays in a separate worktree on `dev` and is read only when a migration task needs behavioral evidence.
 
 Use `git worktree list` to locate the current `dev` checkout. A local example is:
 
 ```text
 D:\PCL-F\Nexa-F       dev reference
-D:\PCL-F\Nexa-F-XSR   refactor/xsr implementation
+D:\PCL-F\Nexa-F-XSR   main implementation
 ```
 
 Paths are workstation-specific and must not be embedded in product code, project files, tests, or CI.
@@ -25,7 +25,7 @@ Paths are workstation-specific and must not be embedded in product code, project
 
 ## Forbidden reuse
 
-- merging `dev` into `refactor/xsr`;
+- merging `dev` into `main`;
 - project or assembly references to the legacy worktree;
 - copying a legacy project, layer, ViewModel, service locator, or UI runtime wholesale;
 - adding the legacy implementation as a submodule, package, generated source, or build input;
@@ -37,7 +37,7 @@ Paths are workstation-specific and must not be embedded in product code, project
 ```text
 identify behavior in dev
   -> capture inputs, outputs, invariants, and failure semantics
-  -> write a migration note or parity corpus in refactor/xsr
+  -> write a migration note or parity corpus in main
   -> implement against XSR boundaries from scratch
   -> run parity, architecture, AOT/trim, and integration gates
 ```

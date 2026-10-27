@@ -17,7 +17,7 @@ ledger validation fail.
 The original audit found zero fully accepted workstreams. The current ledger was refreshed
 on 2026-10-05 against `565e5143`: protected updates, server editing/Join, MRPack export and
 the complete Sidecar Host API are delivered implementation slices, while remaining product,
-physical and credential-dependent work stays open. See [XSR-795](../XSR-795-unimplemented-inventory.md)
+physical and credential-dependent work stays open. See [XSR-795](../current-status.md)
 for the deduplicated inventory; the ledger does not equate raw catalog markers with missing
 features. In particular,
 the 126 Minecraft candidates remain a queue rather than a support declaration;

@@ -16,7 +16,7 @@ The legacy system is a source of behavior, algorithms, data formats, protocol kn
 
 ## Clean-slate repository rule
 
-`refactor/xsr` contains no legacy source projects, solution graph, native bootstrap, installer, release pipeline, or implementation submodule. The separate `dev` worktree is the reference corpus. XSR code may reproduce verified behavior or algorithms only after ownership and contracts are documented; it must not reference or copy the legacy project graph.
+`main` contains no legacy source projects, solution graph, native bootstrap, installer, release pipeline, or implementation submodule. The separate `dev` worktree is the reference corpus. XSR code may reproduce verified behavior or algorithms only after ownership and contracts are documented; it must not reference or copy the legacy project graph.
 
 The first project in each family is created only when a closed migration unit needs it. Empty placeholder projects and broad compatibility assemblies are not architecture progress.
 

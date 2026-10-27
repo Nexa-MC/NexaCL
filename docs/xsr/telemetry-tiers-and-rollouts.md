@@ -16,7 +16,7 @@ storage. Legacy v1 ingestion remains separate and classified as legacy, not nece
 Queues are bounded separately. Revoking diagnostics removes pending diagnostic events
 and cancels in-flight batches containing them; necessary facts remain eligible. Upload
 failure never blocks launcher work. Data already accepted by the server cannot be recalled.
-Counters represent events, not users; retries can duplicate counts. No raw payload storage.
+Counters represent events, not users; retries can duplicate counts. No arbitrary raw payload storage; validated per-run lifecycle fields have the bounded retention described below.
 
 Rollouts use a local random seed, never a hardware/account identifier. The seed is not
 uploaded. A stable hash of seed and rule ID determines a bucket; increasing the percentage
@@ -82,7 +82,10 @@ counters. It stores one validated symbol-only sample per fingerprint, with admin
 access. P50/P95 are explicitly histogram bucket bounds, not exact percentiles. Metric and
 error requests remain bounded; resource sampling is every 30 seconds, never on the UI path.
 
-GitHub linkage reads the fixed PCL-N-Edition/PCL-N repository. Exact diagnostic fingerprint
+The current server implementation still pins GitHub issue linkage to `PCL-N-Edition/PCL-N`
+(`nexa/telemetry/launcher-diagnostic-issues.mjs`). This is a legacy integration, not the
+current `Nexa-MC/NexaCL` source repository; do not describe those issue matches as current-repository
+coverage. Changing that service integration is separate from this documentation update. Exact diagnostic fingerprint
 markers or an exception type plus two matching frames may link existing issues; multiple
 matches remain ambiguous. It never opens issues or sends comments automatically. A periodic
 bounded sync and administrator refresh update links/status; failure retains prior information
@@ -98,3 +101,5 @@ The allowlisted schema, retention, partial metadata semantics and launch gate ar
 `launch-observation-and-preflight.md`. This extends the previous daily-only storage model: admins
 can now inspect bounded per-run windows and metadata pages, while necessary telemetry remains
 aggregate-only. No stable device, account or instance identity is introduced.
+
+`diagnostic.launch` / `diagnostic.run-summary` schema 1 and `diagnostic.mods` schema 2 complete the Alpha 14 lifecycle. Per-run retention is 30 days; daily aggregate retention remains distinct. See [runtime diagnostics](../runtime-diagnostics.md).

@@ -119,22 +119,14 @@ Release events retain the tag ref and commit, so the existing metadata and publi
 build the tagged version and attach assets to that Release. Same-tag builds use the existing
 non-canceling concurrency group; uploading assets does not publish the Release again.
 
-The optional dispatch input does not replace an existing Release body. Default branch `dev`
-has no `launcher-build.yml`, so its Actions-page manual input cannot be assumed available.
-Once registered by a previous run, the workflow can nevertheless be dispatched against an
-existing tag through the GitHub API or CLI, without copying it into `dev` or moving the tag:
+The default branch is `Nexa-MC/NexaCL:main`. For current tagged releases, a read-only
+metadata token may not see a private draft: supply the human-written notes through the
+existing workflow input. The write-enabled distribution job uploads to the draft without
+publishing it. See [build and release](../build-and-release.md) for the exact command.
 
-```sh
-gh workflow run launcher-build.yml --repo Nexa-MC/PCL-N --ref v2.0.0.alpha.7
-```
-
-This is also the recovery path for older tags whose workflow predates `release.published`.
-Dispatching a branch still creates CI artifacts, not a tagged release. Recovery preserves the
-Release title, non-empty manual notes and publication state; only verified assets are attached.
-
-The human-written-notes changes above apply only to refs containing the new workflow/scripts.
-Re-running an older tag uses its older implementation. Those notes changes do not move existing
-tags or alter the separate historical-package lookup described below.
+Publishing a draft that already contains `SHA256SUMS.asc` skips rebuilding immutable assets.
+An empty published Release still starts its initial build. Older tags retain their own
+workflow behavior; do not move tags or assume current code changes historical workflows.
 
 ## Five-release window for differential updates
 

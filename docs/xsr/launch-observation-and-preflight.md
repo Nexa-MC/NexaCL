@@ -1,5 +1,7 @@
 # Launch observations and product preflight
 
+Current Alpha 14 lifecycle/schema and availability are documented in [runtime diagnostics](../runtime-diagnostics.md). Memory estimation remains suspended; the historical model rules below do not enable it.
+
 Design sources: `PCL Nexa Machine Capability Registry 1.0.md` (§35–56), the
 resource-estimation supplement supplied on 2026-09-19, and XSR-725.
 
@@ -48,8 +50,8 @@ Configuration epochs delimit windows when persisted allowlisted game options cha
 are observed persisted settings, not proof the game applied them; comparisons are descriptive,
 not causal. No settings change may trigger a full capability scan or block rendering.
 
-The first implementation samples the root JVM process every 500 ms and publishes 30-second
-windows plus a final window. It does not measure child processes, FPS, JVM heap/native, or GPU.
+The historical first implementation sampled the root JVM process every 500 ms and publishes 30-second
+windows plus a final window. Current available counters also include process-tree, GPU and platform I/O observations; availability flags distinguish missing values. FPS and JVM heap/native are not inferred from private bytes.
 P95 uses a bounded whole-run histogram (16 MiB bins, overflow returns measured peak), and
 idle CPU samples remain part of its distribution. Settings are read from the effective game
 directory, including non-isolated instances. Sequence gaps remain visible; offline queue loss
@@ -66,8 +68,8 @@ compatibility. Metadata is inspected after spawning on a bounded background task
 the directory at inspection, not proof of the exact set the JVM loaded.
 
 Worker stores `diagnostic.run` by `(run, sequence)` and `diagnostic.mods` by `(run, page)` with
-idempotent insert, 90-day retention, administrator-only queries and bounded pagination.
-The administrator dashboard consumes server-side aggregates, not per-run sample lists.
+idempotent insert, 30-day retention, administrator-only queries and bounded pagination.
+The administrator dashboard consumes aggregates and also offers bounded administrator-only per-run detail with launch, summary, sample and metadata-page coverage.
 It groups peak working-set observations by launcher version, OS and loader, and presents
 sample-weighted resource means by settings. Mod/version prevalence counts distinct runs.
 Settings and mod groups require five runs; bounded top groups are labelled as such.
@@ -113,6 +115,6 @@ remain lower-level execution APIs; Desktop launches through the product start ro
 
 1. Whole-run observations, configuration epochs, privacy/schema tests and remote inspection.
 2. Actual launch gate, single aggregated UI, cancellation/stale-attempt tests.
-3. Continue `alpha5-gap-status.md` with explicit implementation versus real-device validation.
+3. Continue `current-status.md` with explicit implementation versus real-device validation.
    Window composition, Patch compiler rewriting and privileged update transactions remain
    separate incomplete deliverables until their own acceptance checks pass.

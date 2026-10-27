@@ -8,6 +8,8 @@ portable wire libraries; the independently owned Plugin SDK is outside this deli
 
 Shared NXML UI documents negotiate feature bit 16 and retain protocol version 1.
 Their source bundle is schema 3, documented in [Sidecar UI documents](sidecar-ui-modules.md).
+AutomaticFunctions=32 negotiates NFP3; Pages=64 additionally permits Page/OnboardingPage
+with Nxml. Protocol version remains 1; feature bits must be negotiated independently.
 REGISTER_ITEM keeps its original encoding for content up to 65,535 bytes.
 Larger content places the first 60 KiB in field 5 and consecutive continuation
 chunks in fields 1024 onward, after existing metadata. Decoders require ordered,

@@ -2,7 +2,7 @@
 
 对照源文档 `PCL Nexa Machine Capability Registry 1.0.md`（正文 1.1，2026-09-19）。
 本表保留首批 Registry 差距矩阵及依赖顺序。2026-10-05 对 `565e5143` 的当前复核见
-[XSR-795](XSR-795-unimplemented-inventory.md)；环境/Java/账户/模组/options 投影、嵌套候选
+[XSR-795](current-status.md)；环境/Java/账户/模组/options 投影、嵌套候选
 与指纹、typed remediation 及 Sidecar Host 等后续消费者不能再按下表的早期 ❌/待接
 判定未实现。Linux 显示/macOS 电源与无等价公开通道的 GPU/温度状态订正另见
 [XSR-792](XSR-792-platform-capability-completion.md)，该切片仍需单独验证与实机证据。

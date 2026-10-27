@@ -1,6 +1,6 @@
 # Settings catalog and inheritance contract
 
-Stages 1–2 of `settings-next-development-plan.md` extend XSR-501/503.
+Stages 1–2 of `current-status.md` extend XSR-501/503.
 
 - Product IA and value schema are separate contracts. The catalog preserves the attachment's global nine pages, instance nine pages and ten instance-settings sections, including developer sections. Actions, facts, groups and choices are not persisted settings. Stable IDs must not change when labels change.
 - A catalog entry may reserve an unavailable capability without inventing a working value contract. Its schema reference is absent until that capability's type/default/validation contract is defined; its availability remains NotImplemented. This is distinct from platform, dependency and transient availability. No UI may enable such an entry merely because a legacy key exists.

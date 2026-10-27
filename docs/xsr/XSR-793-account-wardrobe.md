@@ -124,7 +124,7 @@ Architecture and AOT validation are performed with the repository's normal check
 NativeAOT, the 70-project architecture gate, and NativeAOT/trimmed Desktop
 `--validate-shell` and `--validate-setup` all passed. The complete execution
 record and platform/acceptance limits are in
-[XSR-795](XSR-795-unimplemented-inventory.md#本轮集成交付与验证).
+[XSR-795](current-status.md#本轮集成交付与验证).
 
 The later dev-parity rewrite and its validation are tracked separately in
 [XSR-797](XSR-797-wardrobe-dev-parity.md).

@@ -58,6 +58,22 @@ The global intent route consumes session-owned commands exactly once, allows
 ordinary host commands through, and drops retired-source commands before host
 handlers. Diagnostics observe intents before routing without collecting drafts.
 
+## Standalone pages, onboarding and pressure retirement
+
+`Page=7` and `OnboardingPage=8` require both Nxml and Pages (bit 64). Targets are
+unique single-key `#PageKey` identities within the session. `ui.sidecar.page.open`
+resolves only within the active invoking module's session. The onboarding continue
+intent is `ui.sidecar.onboarding.continue`; it cancels pending exchanges, clears
+retired page/draft state and resumes the product onboarding flow. A registered page
+is cached locally; opening it does not fetch its source again.
+
+Current runtime permits at most 128 active schema-3 documents globally. The legacy
+64-module limit below describes the separate schema-1/2 adapter, not schema 3.
+Registration splits large payloads into 60 KiB blocks (field 5 then continuation IDs
+from 1024); source budgets and complete payload SHA-256 validation still apply.
+Critical OS memory pressure may cooperatively DEACTIVATE the existing session;
+recovery ACTIVATE reuses its registration. Manual stops are never automatically revived.
+
 ## Legacy text card schema 1
 
 The first executable New UI ABI is a versioned text card, not PXML source or the compiler's

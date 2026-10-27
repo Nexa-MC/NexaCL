@@ -5,7 +5,7 @@ Source: user-provided `PCL Nexa Machine Capability Registry 1.0.md` (body versio
 The first-slice and 2026-09-19 records below retain their original delivery scope. Current
 platform contracts are updated for the `565e5143` audit and the XSR-792 worktree; see
 [XSR-792](../XSR-792-platform-capability-completion.md) and
-[XSR-795](../XSR-795-unimplemented-inventory.md). Implemented providers, an unsupported
+[XSR-795](../current-status.md). Implemented providers, an unsupported
 platform contract and missing physical acceptance are separate outcomes.
 
 ## Boundary

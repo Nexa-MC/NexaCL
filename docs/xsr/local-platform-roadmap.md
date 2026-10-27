@@ -504,6 +504,9 @@ Local solution build succeeded with no warnings/errors. All 838 Services tests, 
 composition tests and 88 release-tool tests passed. Architecture checks passed for 72 projects.
 Native platform CI 40430197927 passed on Intel macOS and Apple Silicon: Xcode emits all three
 App Intents, signed companion verification succeeds and native launch smoke exits cleanly.
-The final integrated six-target packaging and isolated Btrfs native fixture remain release
-gates, not assertions of physical-device testing. Batch 3 stays postponed, and the Minecraft
+XSR CI 40431462367 and six-target candidate build 40431462462 passed, including the isolated
+Btrfs fixture. The first Windows ARM64 runner stalled; a fresh-runner retry passed.
+Tagged build 40434372674 passed all six platforms, differential round trips, independent signing verification
+and complete asset upload to the Alpha 14 draft. Public promotion and update-source publication remain distinct actions.
+These results are not assertions of physical-device testing. Batch 3 stays postponed, and the Minecraft
 memory estimator remains disabled. Runtime telemetry API/UI are already deployed.

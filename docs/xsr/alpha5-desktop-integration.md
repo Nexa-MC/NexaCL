@@ -1,8 +1,8 @@
 # Alpha 4 后续：桌面集成与首次运行
 
 状态：历史交付与验收清单。2026-10-05 按 `565e5143` 复核：本文件保留各首批单元
-当时的范围；当前已交付/剩余项见 [Alpha 5 核对](alpha5-gap-status.md) 和
-[XSR-795 库存](XSR-795-unimplemented-inventory.md)，不代表整份验收已完成。
+当时的范围；当前已交付/剩余项见 [Alpha 5 核对](current-status.md) 和
+[XSR-795 库存](current-status.md)，不代表整份验收已完成。
 
 ## 交付顺序
 

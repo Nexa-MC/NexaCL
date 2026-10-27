@@ -34,7 +34,7 @@ Windows Schannel 使用 `UserKeySet` 导入，不设置 `PersistKeySet`；其他
 若收到 `cf-mitigated: challenge`，日志会明确指出边缘挑战，不能通过伪造浏览器
 Origin 代替。网络或 HTTP 失败仍保留批次，由既有周期重试，不绕过 TLS 校验。
 服务器接受第一批事件后记录一次 Info 日志。未覆盖版本属性的本地构建目前为
-`2.0.0.alpha.1`，管理员版本筛选需与实际构建一致。
+`2.0.0.alpha.14`，管理员版本筛选需与实际构建一致。
 
 遥测失败时检查当前端点、网络、HTTP 状态码和事件校验，不引导用户配置证书。
 只有服务端接受并在管理员聚合结果中出现，才算端到端验证通过。
@@ -58,3 +58,5 @@ invites a voluntary web questionnaire; declining sends nothing. Announcement tex
 not executable NXML or HTML. Public reads are bounded and time-limited. Management requires the
 existing operations session, audited writes and revision checks; questionnaire replies have a
 180-day retention and a rate-limited, explicit-submit endpoint.
+
+完整运行生命周期与采集限制见[运行诊断](../runtime-diagnostics.md)。

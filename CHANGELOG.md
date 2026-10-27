@@ -1,5 +1,17 @@
 # 更新日志
 
+## 2.0.0.alpha.14 · Firefly Alpha 14
+
+本地平台与资源治理、原生快照／Steam／macOS 动作、完整运行遥测。详见 [Alpha 14](docs/releases/2.0.0.alpha.14.md)，公开状态以 Releases 为准。
+
+## 2.0.0.alpha.13 · Firefly Alpha 13
+
+详见 [Alpha 13](docs/releases/2.0.0.alpha.13.md)。
+
+## 2.0.0.alpha.12 · Firefly Alpha 12
+
+详见 [Alpha 12](docs/releases/2.0.0.alpha.12.md)。
+
 ## 2.0.0.alpha.11 · Firefly Alpha 11（2026-10-22）
 
 - 便携版支持应用内签名差分更新、完整包回退、中断恢复及回滚；持久化原始安装版本，重启后正确选择更新版本。

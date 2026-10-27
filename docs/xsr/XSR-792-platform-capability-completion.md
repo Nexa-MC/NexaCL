@@ -75,4 +75,4 @@ NativeAOT/trim 检查由本轮统一运行，不以本说明代替运行结果�
 NativeAOT, the 70-project architecture gate, and NativeAOT/trimmed Desktop
 `--validate-shell` and `--validate-setup` all passed. The complete execution
 record and platform/acceptance limits are in
-[XSR-795](XSR-795-unimplemented-inventory.md#本轮集成交付与验证).
+[XSR-795](current-status.md#本轮集成交付与验证).

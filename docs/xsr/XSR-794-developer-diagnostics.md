@@ -64,4 +64,4 @@ results are reported separately after those checks run.
 NativeAOT, the 70-project architecture gate, and NativeAOT/trimmed Desktop
 `--validate-shell` and `--validate-setup` all passed. The complete execution
 record and platform/acceptance limits are in
-[XSR-795](XSR-795-unimplemented-inventory.md#本轮集成交付与验证).
+[XSR-795](current-status.md#本轮集成交付与验证).

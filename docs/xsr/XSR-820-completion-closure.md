@@ -3,7 +3,7 @@
 2026-10-08. Scope: PCL-N on `refactor/xsr`; external Nexa.Plugin SDK/executor and Cloud are excluded.
 Completion closes existing behavior contracts and migration gaps. Name-only future capabilities
 remain explicitly reserved roadmap positions.
-The baseline audit is [XSR-799](XSR-799-remaining-work-audit.md). This document records its
+The baseline audit is [XSR-799](current-status.md). This document records its
 implementation follow-up rather than rewriting historical audit results.
 
 Catalog availability must follow a concrete consumer. Persisted preferences retain `Setting`

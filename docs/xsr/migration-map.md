@@ -237,7 +237,7 @@ SDK, package/manifest or stable Plugin UI IR freeze.
 
 ## Cutover gate
 
-[XSR-795](XSR-795-unimplemented-inventory.md) inventories all current unimplemented
+[XSR-795](current-status.md) inventories all current unimplemented
 markers and distinguishes reachable placeholders, historical consumer mappings, roadmap
 contracts and external acceptance. XSR-791–794 and XSR-796 replace the reachable process
 log, wardrobe, platform-probe, developer-diagnostics and Bedrock handoff placeholders;

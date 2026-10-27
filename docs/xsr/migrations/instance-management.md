@@ -2,7 +2,7 @@
 
 2026-10-05 按基准 `565e5143` 复核。下文保留首个迁移单元的行为与验收记录，
 早期只读阶段的缺口不代表当前产品状态。当前补齐见本文末尾与
-[未实现库存](../XSR-795-unimplemented-inventory.md)。
+[未实现库存](../current-status.md)。
 
 行为参考：`dev` 的 `4755faee0a10686917213afe57cb772ade83d77f`，只读检查
 `Features/Instances/Views/InstancePageRegistry`、`PageInstanceLeft`、

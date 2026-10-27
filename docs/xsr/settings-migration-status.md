@@ -1,5 +1,8 @@
 # Settings migration status
 
+> Alpha 14：下文日期、数量和 IA 表是迁移记录，不是当前可见设置清单。当前资源策略键见[平台手册](../platform-integration.md)，完整键以 `SettingsPolicySchema.cs` 为准。无实际设置功能的条目及信息面板不会因此恢复。
+
+
 This ledger records working consumers, rather than the number of stored legacy keys.
 The read-only dev checkout supplies behavior requirements. The active catalog has ten
 global navigation categories (eight currently populated in the entry map), nine instance
@@ -32,9 +35,9 @@ with 83 available entries and 457 raw `NotImplemented` entries at that slice. XS
 subsequently enables four desktop policies: at that slice the raw counts were 87 Available
 and 453 `NotImplemented`. These include structural
 and duplicated positions and independent roadmap contracts; the complete inventory is
-[XSR-795](XSR-795-unimplemented-inventory.md). XSR-794 introduced no additional persistent value;
+[XSR-795](current-status.md). XSR-794 introduced no additional persistent value;
 XSR-798 adds four. Those counts are historical snapshots. The source audit is
-[XSR-799](XSR-799-remaining-work-audit.md); its implementation follow-up is
+[XSR-799](current-status.md); its implementation follow-up is
 [XSR-820](XSR-820-completion-closure.md).
 
 ## Completion follow-up: XSR-800–822
