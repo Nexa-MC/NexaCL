@@ -24,6 +24,7 @@ internal static partial class Program
             (document, _) => { exported = document; return Task.FromResult(true); });
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
         var scene = fixture.Shell.Render(new(1000, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         scene = ShowSettingsTransferAction(fixture, settings, "SettingsExport");
         Emit(fixture.Intents, "ui.settings.data.export", FindByKey(fixture.Shell, scene, "SettingsExport").Entity);

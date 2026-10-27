@@ -61,6 +61,7 @@ internal static partial class Program
             fixture.Foundation.Commands, fixture.Store, fixture.Feedback, () => current);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
         var scene = fixture.Shell.Render(new(1000, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         scene = fixture.Shell.Render(new(1000, 650));
         void Preview()
@@ -82,6 +83,7 @@ internal static partial class Program
         AssertEqual("1500", policy.Read(new(second)).Value!.Values.Single(value => value.Key == "game.width").Value.Value);
         // Restoring a cleared selection starts at overview; its retired reset confirmation cannot act.
         AssertEqual("overview", settings.SelectedSection);
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         scene = fixture.Shell.Render(new(1000, 650));
         AssertEqual("game", settings.SelectedSection);

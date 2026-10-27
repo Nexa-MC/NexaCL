@@ -14,6 +14,7 @@ internal static partial class Program
             fixture.Foundation.Commands, fixture.Store, fixture.Feedback, () => instance);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
         var scene = fixture.Shell.Render(new(900, 3200));
+        scene = WaitForSettingsGameNavigation(fixture, new(900, 3200));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         scene = fixture.Shell.Render(new(900, 3200));
         var toggle = FindByKey(fixture.Shell, scene, "SettingsOption.game.auto-repair.false");

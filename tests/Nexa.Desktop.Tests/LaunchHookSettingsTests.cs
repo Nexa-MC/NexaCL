@@ -15,6 +15,7 @@ internal static partial class Program
             fixture.Foundation.Queries, fixture.Foundation.Commands, fixture.Store, fixture.Feedback);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
         var scene = fixture.Shell.Render(new(1000, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         fixture.Shell.Render(new(1000, 650));
         var wrapper = Find("SettingsInput.game.wrapper");
@@ -55,6 +56,7 @@ internal static partial class Program
             fixture.Foundation.Queries, fixture.Foundation.Commands, fixture.Store, fixture.Feedback);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
         var scene = fixture.Shell.Render(new(1000, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         AssertTrue(SpinWait.SpinUntil(() => { fixture.Shell.Render(new(1000, 650)); return Find("SettingsHookLine.game.pre-launch.4", false).IsAssigned; }, TimeSpan.FromSeconds(5)));
         AssertEqual("\tprintf second", Draft(1)); AssertEqual("", Draft(2)); AssertEqual("", Draft(4));
@@ -119,6 +121,7 @@ internal static partial class Program
             fixture.Foundation.Queries, fixture.Foundation.Commands, fixture.Store, fixture.Feedback);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
         var scene = fixture.Shell.Render(new(1000, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         fixture.Shell.Render(new(1000, 650));
         XsrUiEntityId input = default, apply = default;
@@ -154,6 +157,7 @@ internal static partial class Program
             fixture.Foundation.Queries, commands.Build(new NoopDispatchObserver()), fixture.Store, fixture.Feedback);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
         var scene = fixture.Shell.Render(new(1000, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         fixture.Shell.Render(new(1000, 650));
         fixture.Shell.Renderer.SetTextInputValue(Find("SettingsHookLine.game.pre-launch.0"), "\techo pending");
@@ -194,6 +198,7 @@ internal static partial class Program
             fixture.Foundation.Queries, commands.Build(new NoopDispatchObserver()), fixture.Store, fixture.Feedback, () => instance);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
         var scene = fixture.Shell.Render(new(1000, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         AssertTrue(SpinWait.SpinUntil(() => { fixture.Shell.Render(new(1000, 650)); return Find("SettingsHookLine.game.pre-launch.0", false).IsAssigned; }, TimeSpan.FromSeconds(5)));
         var input = Find("SettingsHookLine.game.pre-launch.0");

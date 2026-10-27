@@ -78,9 +78,10 @@ internal static partial class Program
             VerifyCompositedViewport(window, 960, 600);
             await VerifyNativeWindowPointerHitTestingAsync(shell, window);
             AssertEqual(1, openings()); AssertEqual(1, reveals());
-            window.Width += 100; window.Height += 50;
-            await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 1060, 650));
-            VerifyCompositedViewport(window, 1060, 650);
+            // Keep the resize within the 1024 px virtual desktop used by Windows CI.
+            window.Width -= 100; window.Height -= 50;
+            await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
+            VerifyCompositedViewport(window, 860, 550);
 
             // A normal hidden window can reopen without any size or state notification.
             // Force the stale DWM policy so this cannot pass merely because it stayed off.
@@ -90,14 +91,14 @@ internal static partial class Program
                 ForceNativeCornerStaleFrame(window);
                 window.Show(); window.Activate();
                 VerifyNativeCornerRestoration(window, handle, WindowState.Normal, reveals);
-                VerifyCompositedViewport(window, 1060, 650);
+                VerifyCompositedViewport(window, 860, 550);
             }
             AssertEqual(3, openings());
             actions.HideWindow();
             ForceNativeCornerStaleFrame(window);
             actions.RestoreWindow();
             VerifyNativeCornerRestoration(window, handle, WindowState.Normal, reveals);
-            VerifyCompositedViewport(window, 1060, 650);
+            VerifyCompositedViewport(window, 860, 550);
             AssertEqual(4, openings());
             await VerifyNativeWindowPointerHitTestingAsync(shell, window);
 
@@ -116,26 +117,26 @@ internal static partial class Program
             await VerifyNativeWindowPointerHitTestingAsync(shell, window);
 
             window.WindowState = WindowState.Normal;
-            await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 1060, 650));
-            VerifyCompositedViewport(window, 1060, 650);
+            await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
+            VerifyCompositedViewport(window, 860, 550);
             await VerifyAnimatedNativeTrayAsync(shell, window, actions, handle, reveals);
             await VerifyNativeWindowPointerHitTestingAsync(shell, window);
             window.WindowState = WindowState.Minimized;
             await WaitForNativeCornerLayoutAsync(() => window.WindowState == WindowState.Minimized);
             window.WindowState = WindowState.Normal;
-            await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 1060, 650));
-            VerifyCompositedViewport(window, 1060, 650);
+            await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
+            VerifyCompositedViewport(window, 860, 550);
             window.TransparencyLevelHint = [WindowTransparencyLevel.None];
             await WaitForNativeCornerLayoutAsync(() => !window.UsesCompositedEdges
                 && ((Control)window.Content!).Bounds.Size == window.Surface.Bounds.Size);
             AssertFalse(window.UsesCompositedEdges);
             AssertEqual(((Control)window.Content!).Bounds.Size, window.Surface.Bounds.Size);
-            AssertTrue(Math.Abs(window.Surface.Bounds.Width - 1060) <= 1 / window.RenderScaling);
+            AssertTrue(Math.Abs(window.Surface.Bounds.Width - 860) <= 1 / window.RenderScaling);
             AssertTrue(window.Background is LinearGradientBrush fallback && fallback.GradientStops.All(stop => stop.Color.A == 255));
             window.TransparencyLevelHint = [WindowTransparencyLevel.Transparent, WindowTransparencyLevel.None];
             await WaitForNativeCornerLayoutAsync(() => window.UsesCompositedEdges
-                && NativeCornerViewportMatches(window, 1060, 650));
-            VerifyCompositedViewport(window, 1060, 650);
+                && NativeCornerViewportMatches(window, 860, 550));
+            VerifyCompositedViewport(window, 860, 550);
             AssertEqual(handle, window.TryGetPlatformHandle()!.Handle);
             AssertEqual(1, reveals());
             Console.WriteLine("PASS: empty managed decorations before show; immediate DWM suppression on every opening; same HWND, viewport and input origin through repeated normal/maximized and animated reversible tray restores; once-only entrance, native composition and opaque fallback; optional DWM attributes checked where readable");
@@ -153,7 +154,7 @@ internal static partial class Program
         AssertTrue(window.IsVisible && window.IsHidingToTray);
         await WaitForNativeCornerLayoutAsync(() => content.Opacity is > 0 and < 1);
         double presented = content.Opacity;
-        VerifyCompositedViewport(window, 1060, 650);
+        VerifyCompositedViewport(window, 860, 550);
         actions.RestoreWindow();
         AssertEqual(presented, content.Opacity);
         await WaitForNativeCornerLayoutAsync(() => content.Opacity == 1);
@@ -171,7 +172,7 @@ internal static partial class Program
         VerifyNativeCornerRestoration(window, handle, WindowState.Normal, reveals);
         await WaitForNativeCornerLayoutAsync(() => content.Opacity is > 0 and < 1);
         AssertEqual(1d, window.Opacity);
-        VerifyCompositedViewport(window, 1060, 650);
+        VerifyCompositedViewport(window, 860, 550);
         presented = content.Opacity;
         actions.HideWindow();
         AssertEqual(presented, content.Opacity);
@@ -179,7 +180,7 @@ internal static partial class Program
         actions.RestoreWindow();
         await WaitForNativeCornerLayoutAsync(() => content.Opacity == 1);
         VerifyNativeCornerRestoration(window, handle, WindowState.Normal, reveals);
-        VerifyCompositedViewport(window, 1060, 650);
+        VerifyCompositedViewport(window, 860, 550);
         AssertTrue(content.Clip is null && content.RenderTransform is null);
         AssertEqual(1d, window.Opacity);
         shell.Renderer.OptionalMotionSuspended = false;

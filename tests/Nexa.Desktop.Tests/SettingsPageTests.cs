@@ -207,6 +207,7 @@ internal static partial class Program
         using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, fixture.Foundation.Queries, fixture.Foundation.Commands, fixture.Store, fixture.Feedback, () => instance);
         fixture.Shell.Stage.Navigation.Replace(settings.Page);
         var scene = fixture.Shell.Render(new(1000, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         scene = fixture.Shell.Render(new(1000, 650));
         var input = ShowSettingsFixtureControl(fixture, settings, ref scene, "SettingsInput.game.width");
@@ -242,6 +243,7 @@ internal static partial class Program
             fixture.Foundation.Host.SettingsPolicy.Read(new(instance)).Value!.Values.Single(item => item.Key == "game.width").Source);
         instance = Path.GetFullPath("other-root/test-instance-settings");
         scene = fixture.Shell.Render(new(1000, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         scene = fixture.Shell.Render(new(1000, 650));
         input = ShowSettingsFixtureControl(fixture, settings, ref scene, "SettingsInput.game.width");
@@ -256,6 +258,7 @@ internal static partial class Program
         fixture.Controller.SettingsPage = settings.Page;
         Emit(fixture.Intents, "ui.navigation.settings");
         var scene = fixture.Shell.Render(new(1000, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         scene = fixture.Shell.Render(new(1000, 650));
         var scroll = FindByKey(fixture.Shell, scene, "SettingsSections").Entity;
@@ -290,6 +293,7 @@ internal static partial class Program
             fixture.Foundation.Commands, fixture.Store, fixture.Feedback);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
         var scene = fixture.Shell.Render(new(1000, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         scene = fixture.Shell.Render(new(1000, 650));
         var input = ShowFormControl("SettingsInput.game.memory").Entity;
@@ -380,6 +384,7 @@ internal static partial class Program
         fixture.Controller.SettingsPage = settings.Page;
         Emit(fixture.Intents, "ui.navigation.settings");
         var scene = fixture.Shell.Render(new(1000, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         fixture.Shell.Render(new(1000, 650));
         Nexa.Xsr.Renderer.XsrUiEntityId Find(string name)
@@ -475,6 +480,7 @@ internal static partial class Program
         fixture.Controller.SettingsPage = settings.Page;
         Emit(fixture.Intents, "ui.navigation.settings");
         var scene = fixture.Shell.Render(new(1000, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         scene = fixture.Shell.Render(new(1000, 650));
         var list = FindByKey(fixture.Shell, scene, "SettingsSections").Entity;

@@ -14,6 +14,7 @@ internal static partial class Program
             fixture.Foundation.Commands, fixture.Store, fixture.Feedback, () => instance);
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
         var scene = fixture.Shell.Render(new(900, 650));
+        scene = WaitForSettingsGameNavigation(fixture, new(900, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         var selector = ShowSettingsFixtureControl(fixture, settings, ref scene,
             "SettingsSelector.game.process-priority", new(900, 650)).Entity;

@@ -17,6 +17,17 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static XsrUiScene WaitForSettingsGameNavigation(LaunchPageFixture fixture, XsrUiSize size)
+    {
+        XsrUiScene scene = fixture.Shell.Render(size);
+        AssertTrue(SpinWait.SpinUntil(() =>
+        {
+            scene = fixture.Shell.Render(size);
+            return HasKey(fixture.Shell, scene, "SettingsNav.game");
+        }, TimeSpan.FromSeconds(5)));
+        return scene;
+    }
+
 
     private static int ReadCellInt(XsrStateStore store, XsrSemanticId key) =>
         (int?)store.ReadAppliedValue(store.Resolve(key)) ?? -1;

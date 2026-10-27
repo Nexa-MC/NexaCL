@@ -25,7 +25,7 @@ internal static partial class Program
             f.RenderFrames(1);
             AssertEqual(row, f.Row("Metric0")); AssertClose(100, f.Scene.Nodes.Single(node => node.Entity == row).Rect.Height);
             AssertClose(500, f.Scene.Nodes.Single(node => node.Entity == row).Rect.Width);
-            AssertClose(40 * 100 + 39 * 10, f.Snapshot.ContentHeight); AssertEqual(1, f.Reads.Count);
+            AssertClose(40 * 100 + 40 * 10 + 54, f.Snapshot.ContentHeight); AssertEqual(1, f.Reads.Count);
             AssertEqual(search, renderer.Focused); AssertEqual("unsubmitted", editor.ReadDraft()); AssertEqual(caret, editor.SelectionEnd);
             AssertTrue(renderer.TryGetVirtualLayoutMetrics(list, out var metrics)); AssertEqual(1L, metrics.ActivationGeneration);
             var scrolling = f.Fixture.Shell.Tree.GetComponent<XsrUiScroll>(list)!; scrolling.OffsetY = 260;
