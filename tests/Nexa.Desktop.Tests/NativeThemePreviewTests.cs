@@ -532,7 +532,7 @@ internal static partial class Program
                 await startup.InvokeAsync(() => { f.Shell.Stage.Navigation.Replace(controller.Page); surface!.CommitScene(); }, timeout.Token);
                 await Eventually(() => Has("SettingsNav." + section));
                 await startup.InvokeAsync(() => { Emit(f.Intents, "ui.settings.section", Find("SettingsNav." + section).Entity); surface!.CommitScene(); }, timeout.Token);
-                await Eventually(() => controller.SelectedSection == section && (section != "appearance" || Has("Theme.ImportDirectory")));
+                await Eventually(() => controller.SelectedSection == section && (section != "appearance" || Exists("Theme.ImportDirectory")));
                 await startup.InvokeAsync(() =>
                 {
                     var sections = Sections();

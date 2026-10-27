@@ -76,7 +76,7 @@
         "docs/xsr/migrations/XSR-748-sidecar-ui-caption-state.md",
         "docs/xsr/migrations/XSR-749-sidecar-ui-card-state.md",
         "docs/xsr/XSR-790-sidecar-host-completion.md",
-        "docs/xsr/XSR-795-unimplemented-inventory.md",
+        "docs/xsr/current-status.md",
         "docs/xsr/XSR-806-sidecar-extension-completion.md",
         "docs/xsr/XSR-820-completion-closure.md"
       ],
@@ -96,7 +96,7 @@
         "docs/xsr/migrations/XSR-759-instance-servers.md",
         "docs/xsr/migrations/XSR-760-modpack-export.md",
         "docs/xsr/migrations/XSR-774-installed-resource-association-and-updates.md",
-        "docs/xsr/XSR-795-unimplemented-inventory.md",
+        "docs/xsr/current-status.md",
         "docs/xsr/XSR-801-content-completion.md",
         "docs/xsr/XSR-818-instance-operation-history-and-protocol.md",
         "docs/xsr/XSR-820-completion-closure.md"
