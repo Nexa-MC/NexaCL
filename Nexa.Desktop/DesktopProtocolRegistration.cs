@@ -72,8 +72,13 @@ internal static class DesktopProtocolRegistration
                 string? bundle = AppContext.BaseDirectory;
                 while (bundle is not null && !bundle.EndsWith(".app", StringComparison.OrdinalIgnoreCase)) bundle = Path.GetDirectoryName(bundle.TrimEnd(Path.DirectorySeparatorChar));
                 if (bundle is null) return ProductPresentationText.Raw("native.protocol.bundleRequired");
-                return await RunAsync("/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister",
-                    ["-f", bundle], cancellationToken).ConfigureAwait(false);
+                const string register = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister";
+                string? error = await RunAsync(register, ["-f", bundle], cancellationToken).ConfigureAwait(false);
+                if (error is not null) return error;
+                string actions = Path.Combine(bundle, "Contents", "Helpers", "NexaCL Actions.app");
+                if (!OperatingSystem.IsMacOSVersionAtLeast(13) || !Directory.Exists(actions)) return null; // Development/unpackaged builds have no indexed companion.
+                error = await RunAsync(register, ["-f", actions], cancellationToken).ConfigureAwait(false);
+                return error ?? await RunAsync(Path.Combine(actions, "Contents", "MacOS", "NexaCL.Actions"), ["--index"], cancellationToken).ConfigureAwait(false);
             }
             return ProductPresentationText.Raw("native.protocol.unsupported");
         }

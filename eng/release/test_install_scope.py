@@ -137,10 +137,15 @@ class InstallScopeTests(unittest.TestCase):
                 folder.mkdir()
             (payload / "Nexa.Desktop").write_bytes(b"runtime")
             (payload / "Nexa.Update.Helper").write_bytes(b"helper")
+            actions = payload / "NativeActions/NexaCL Actions.app/Contents/MacOS/NexaCL.Actions"
+            actions.parent.mkdir(parents=True)
+            actions.write_bytes(b"native actions")
             with patch.object(package, "run") as run, patch.object(package, "archive"), \
                     patch.object(package, "create_dmg") as dmg:
                 package.macos(payload, output, work, "Nexa-test", "2.0.0.alpha.1", "2.0.0", "arm64")
             dmg.assert_called_once_with(work / "dmg", output / "Nexa-test.dmg")
+            self.assertTrue((work / "Nexa.app/Contents/Helpers/NexaCL Actions.app/Contents/MacOS/NexaCL.Actions").is_file())
+            self.assertFalse((work / "Nexa.app/Contents/MacOS/NativeActions").exists())
             commands = [[str(arg) for arg in call.args] for call in run.call_args_list]
             build = next(command for command in commands if command[0] == "pkgbuild")
             self.assertEqual("/", build[build.index("--install-location") + 1])

@@ -380,6 +380,11 @@ internal static partial class Program
         var contentBackups = new ContentBackupService(Path.Combine(folders.Root, "content-backups"), StorageIdle)
         {
             CloneFile = Nexa.Platform.PlatformFileClone.TryClone,
+            CaptureSnapshot = async (source, storage, token) =>
+            {
+                var snapshot = await Nexa.Platform.PlatformDirectorySnapshot.TryCaptureAsync(source, storage, token).ConfigureAwait(false);
+                return snapshot is null ? null : new ContentCaptureSnapshot(snapshot.SourceDirectory, snapshot);
+            },
             ReadConfiguredKeepCount = () =>
             {
                 var policy = host.SettingsPolicy.Read(new());
@@ -743,7 +748,7 @@ internal static partial class Program
             minecraft.LaunchCoordinator!.WaitForFinalizationAsync, platformActions.PostToWindow, platformActions.RequestClose, feedback);
         platformActions.CloseRequested = () => installExit.CanClose() && launchExit.CanClose();
         await using var desktopIntegration = new DesktopIntegrationSession(shell, uiIntents, host.StateStore, platformActions, instance, args,
-            message => { host.Logging.Warn("Desktop", message); feedback.Warn(message); }, openFile: dropController.OpenFile, registerProtocol: !safeMode);
+            message => { host.Logging.Warn("Desktop", message); feedback.Warn(message); }, openFile: dropController.OpenFile, registerProtocol: !safeMode, notify: message => feedback.Info(message));
         using var commandPalette = new DesktopCommandPalette(shell, uiIntents, host.StateStore, platformActions,
             route => desktopIntegration.ActivateProtocol("nexacl://" + route.Id));
         using var gamepadEntry = new GamepadEntrySession(shell, uiIntents, host.StateStore, platformActions);

@@ -1,4 +1,6 @@
 [
+  {"source":"添加到 Steam","en":"Add to Steam","zh-Hant":"新增至 Steam"},
+  {"source":"添加 Steam / Gamescope 入口","en":"Add Steam / Gamescope entry","zh-Hant":"新增 Steam / Gamescope 入口"},
   {"source": "系统默认", "en": "System default", "zh-Hant": "系統預設"},
   {"source": "高性能核心", "en": "Performance cores", "zh-Hant": "高效能核心"},
   {"source": "最大缓存域", "en": "Largest cache domain", "zh-Hant": "最大快取域"},

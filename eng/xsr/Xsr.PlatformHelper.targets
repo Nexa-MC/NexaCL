@@ -8,7 +8,14 @@
     </PropertyGroup>
     <MakeDir Directories="$(_NexaMacHelperDirectory)" />
     <Exec Command="xcrun swiftc -O $(_NexaMacHelperTarget) -framework Foundation -framework Network -framework AppKit -framework QuickLookUI &quot;$(MSBuildThisFileDirectory)../../Nexa.Platform.Runtime/Native/macos/main.swift&quot; -o &quot;$(_NexaMacHelperDirectory)/Nexa.Platform.Helper&quot;" />
+    <PropertyGroup>
+      <_NexaActionsArch Condition="'$(RuntimeIdentifier)' == 'osx-x64'">x64</_NexaActionsArch>
+      <_NexaActionsArch Condition="'$(RuntimeIdentifier)' != 'osx-x64'">arm64</_NexaActionsArch>
+    </PropertyGroup>
+    <Exec Command="python3 &quot;$(MSBuildThisFileDirectory)../release/build_macos_actions.py&quot; --arch $(_NexaActionsArch) --output &quot;$(_NexaMacHelperDirectory)/actions&quot;" />
     <ItemGroup>
+      <_NexaActionsFiles Include="$(_NexaMacHelperDirectory)/actions/**/*" />
+      <ResolvedFileToPublish Include="@(_NexaActionsFiles)" RelativePath="NativeActions/%(RecursiveDir)%(Filename)%(Extension)" CopyToPublishDirectory="Always" />
       <ResolvedFileToPublish Include="$(_NexaMacHelperDirectory)/Nexa.Platform.Helper" RelativePath="Nexa.Platform.Helper" CopyToPublishDirectory="Always" />
     </ItemGroup>
   </Target>

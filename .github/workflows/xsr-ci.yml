@@ -146,8 +146,22 @@ jobs:
         shell: pwsh
         run: |
           $binary = if ($IsWindows) { './native-account-tests/Nexa.Services.Tests.exe' } else { './native-account-tests/Nexa.Services.Tests' }
-          & $binary "topology" "power pressure" "native clones" "network cost" "GameMode"
+          & $binary "topology" "power pressure" "native clones" "network cost" "GameMode" "native snapshot capture" "Steam shortcuts"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify real Btrfs snapshot isolation and cleanup
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y btrfs-progs
+          truncate -s 512M "$RUNNER_TEMP/nexa-snapshot.img"
+          mkfs.btrfs -f "$RUNNER_TEMP/nexa-snapshot.img"
+          mkdir "$RUNNER_TEMP/nexa-snapshot-mount"
+          sudo mount -o loop "$RUNNER_TEMP/nexa-snapshot.img" "$RUNNER_TEMP/nexa-snapshot-mount"
+          trap 'sudo umount "$RUNNER_TEMP/nexa-snapshot-mount"' EXIT
+          sudo btrfs subvolume create "$RUNNER_TEMP/nexa-snapshot-mount/source"
+          sudo ./native-account-tests/Nexa.Services.Tests --native-directory-snapshot "$RUNNER_TEMP/nexa-snapshot-mount"
       - name: Verify native session log ownership and Minecraft session retry
         shell: pwsh
         run: |

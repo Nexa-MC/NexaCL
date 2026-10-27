@@ -118,6 +118,10 @@ def macos(payload, output, work, base, version, prefix, arch):
     app = work / "Nexa.app"
     contents = app / "Contents"
     copy_runtime_payload(payload, contents / "MacOS")
+    native_actions = contents / "MacOS/NativeActions"
+    if not (native_actions / "NexaCL Actions.app/Contents/MacOS/NexaCL.Actions").is_file():
+        raise ValueError("Missing macOS native actions companion")
+    native_actions.rename(contents / "Helpers")
     resources = contents / "Resources"
     resources.mkdir()
     iconset = work / "Launcher.iconset"

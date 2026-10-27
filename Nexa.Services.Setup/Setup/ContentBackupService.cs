@@ -26,6 +26,7 @@ public sealed partial class ContentBackupService
     }
 
     public Func<string, string, bool>? CloneFile { get; init; }
+    public Func<string, string, CancellationToken, Task<ContentCaptureSnapshot?>>? CaptureSnapshot { get; init; }
 
     public Task<ContentBackupManifest> CaptureAsync(string sourceDirectory, string label, CancellationToken token = default) =>
         CaptureAsync(sourceDirectory, label, new HashSet<string>(StringComparer.Ordinal), token);
@@ -43,6 +44,9 @@ public sealed partial class ContentBackupService
         EnsureIdle();
         if ((await ReadAllAsync(token).ConfigureAwait(false)).Count >= MaximumManifests) throw new IOException("请先清理旧备份。");
         CheckLinks(source);
+        await using var snapshot = CaptureSnapshot is null ? null
+            : await CaptureSnapshot(source, Path.Combine(_root, "native-snapshots"), token).ConfigureAwait(false);
+        if (snapshot is not null) { source = Absolute(snapshot.SourceDirectory); CheckLinks(source); }
         string[] CapturePaths() => Enumerate(source, token).Where(path => !excluded.Contains(Relative(source, path))).ToArray();
         var paths = CapturePaths();
         Dictionary<string, (long Bytes, long Modified)> stamps = new(Nexa.Core.PathIdentity.Comparer);

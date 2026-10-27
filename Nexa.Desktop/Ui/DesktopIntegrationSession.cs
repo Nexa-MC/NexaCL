@@ -17,11 +17,16 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
         new(ProductPresentationText.Raw("native.desktop.minimize"), XsrSemanticId.Parse("ui.desktop.minimize")),
         new(ProductPresentationText.Raw("native.desktop.exit"), XsrSemanticId.Parse("ui.desktop.exit")),
     ];
+    private readonly XsrUiContextMenuItem[] _menuItems = OperatingSystem.IsLinux()
+        ? [.. DesktopMenuItems, new(ProductPresentationText.Raw("native.desktop.steam"), XsrSemanticId.Parse("ui.desktop.steam")), new(ProductPresentationText.Raw("native.desktop.gamescope"), XsrSemanticId.Parse("ui.desktop.gamescope"))]
+        : DesktopMenuItems;
+    private Task? _steamRegistration;
     private readonly XsrStateStore _state;
     private readonly AvaloniaUiPlatformActions _platform;
     private readonly DesktopSingleInstance? _instance;
     private readonly Action<DesktopDestination> _activate;
     private readonly Action<string> _report;
+    private readonly Action<string> _notify;
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrUiShell _shell;
     private readonly Action<string>? _openFile;
@@ -38,13 +43,13 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
 
     internal DesktopIntegrationSession(XsrUiShell shell, DesktopUiIntentSink intents, XsrStateStore state,
         AvaloniaUiPlatformActions platform, DesktopSingleInstance? instance, string[] args, Action<string> report,
-        Action<string>? openFile = null, bool registerProtocol = true)
+        Action<string>? openFile = null, bool registerProtocol = true, Action<string>? notify = null)
     {
         _state = state; _platform = platform; _instance = instance; _report = report; _intents = intents; _shell = shell;
-        _openFile = openFile;
+        _openFile = openFile; _notify = notify ?? report;
         shell.Renderer.FramePreparing += OnFrame;
         var existingMenu = shell.Tree.GetComponent<XsrUiContextMenu>(shell.Root)?.Items ?? [];
-        shell.Tree.SetComponent(shell.Root, new XsrUiContextMenu(DesktopMenuItems.Concat(existingMenu)
+        shell.Tree.SetComponent(shell.Root, new XsrUiContextMenu(_menuItems.Concat(existingMenu)
             .DistinctBy(item => item.Command)));
         intents.IntentEmitted += OnIntent;
         _activate = destination =>
@@ -109,7 +114,26 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
         if (args.Intent.Source != _shell.Root) return;
         if (args.Intent.Command.Value == "ui.desktop.minimize") _platform.MinimizeWindow();
         else if (args.Intent.Command.Value == "ui.desktop.exit") _platform.RequestClose();
+        else if (OperatingSystem.IsLinux() && args.Intent.Command.Value is "ui.desktop.steam" or "ui.desktop.gamescope"
+            && _steamRegistration is not { IsCompleted: false })
+            _steamRegistration = RegisterSteamAsync(args.Intent.Command.Value == "ui.desktop.gamescope");
     }
+    private async Task RegisterSteamAsync(bool gamescope)
+    {
+        try
+        {
+            string? selected = await _platform.PickDirectoryAsync("Steam userdata/<id>/config").WaitAsync(_stop.Token).ConfigureAwait(false);
+            if (selected is null || _disposed) return;
+            string executable = Environment.ProcessPath ?? throw new IOException("无法定位启动器。");
+            if (Path.GetFileNameWithoutExtension(executable) == "dotnet") throw new IOException("请使用已发布的 NexaCL 注册 Steam。");
+            await Task.Run(() => Nexa.Platform.PlatformSteamShortcut.RegisterAsync(selected, executable, gamescope, _stop.Token), _stop.Token).ConfigureAwait(false);
+            if (!_disposed) _notify(gamescope ? "Steam: NexaCL (Gamescope)" : "Steam: NexaCL");
+        }
+        catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException)
+        { if (!_disposed) _report(error.Message); }
+    }
+
     private void Wake() => _platform.PostToWindow(() =>
     {
         if (_disposed || _instance is null) return;
@@ -161,7 +185,7 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
         _shell.Renderer.FramePreparing -= OnFrame;
         _pendingFiles.Clear();
         var remainingMenu = _shell.Tree.GetComponent<XsrUiContextMenu>(_shell.Root)?.Items
-            .Where(item => !DesktopMenuItems.Any(owned => owned.Command == item.Command)).ToArray() ?? [];
+            .Where(item => !_menuItems.Any(owned => owned.Command == item.Command)).ToArray() ?? [];
         _shell.Tree.SetComponent<XsrUiContextMenu>(_shell.Root,
             remainingMenu.Length == 0 ? null : new XsrUiContextMenu(remainingMenu));
         _platform.ProtocolActivated -= OnProtocol;
@@ -170,6 +194,7 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
         if (_instance is not null) { _platform.WindowClosed -= _instance.BeginShutdown; _instance.Wake = null; }
         await _stop.CancelAsync().ConfigureAwait(false);
         await _registration.ConfigureAwait(false);
+        if (_steamRegistration is { } steam) await steam.ConfigureAwait(false);
         _stop.Dispose();
     }
 }

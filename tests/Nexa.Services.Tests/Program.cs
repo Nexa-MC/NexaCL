@@ -5,6 +5,8 @@ internal static partial class Program
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
         ..RegisterFoundationAndContent(),
+        ("Steam shortcuts preserve entries and reject corruption", Sync(SteamShortcutsPreserveEntriesAndRejectCorruption)),
+        ("native snapshot capture keeps immutable view and releases", NativeSnapshotCaptureKeepsImmutableViewAndReleases),
         ..RegisterProxy(),
         ("unavailable memory analysis retains other preflight checks", Sync(UnavailableMemoryAnalysisRetainsOtherPreflightChecks)),
         ("instance development mode is local and recovery independent", InstanceDevelopmentModeIsLocalAndRecoveryIndependent),
@@ -16,6 +18,7 @@ internal static partial class Program
 
     private static async Task<int> Main(string[] args)
     {
+        if (args is ["--native-directory-snapshot", var snapshotRoot]) { await NativeDirectorySnapshotSmoke(snapshotRoot); return 0; }
         if (args is ["--scheduling-child"])
         {
             using var ready = new CountdownEvent(4);

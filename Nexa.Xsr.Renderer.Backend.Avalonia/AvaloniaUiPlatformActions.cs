@@ -327,6 +327,9 @@ public sealed partial class AvaloniaUiPlatformActions
         return true;
     }
 
+    public Task<string?> PickDirectoryAsync(string title) => Dispatcher.UIThread.CheckAccess()
+        ? PickDirectoryCoreAsync(title) : Dispatcher.UIThread.InvokeAsync(() => PickDirectoryCoreAsync(title));
+
     public Task<string?> PickDirectoryAsync() => Dispatcher.UIThread.CheckAccess()
         ? PickDirectoryCoreAsync("选择游戏目录") : Dispatcher.UIThread.InvokeAsync(() => PickDirectoryCoreAsync("选择游戏目录"));
 

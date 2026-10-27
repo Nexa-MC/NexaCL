@@ -450,3 +450,60 @@ Final client verification: zero-warning/error service test build, 14 targeted te
 marks missing inventory pages incomplete and includes telemetry paths in management deploy
 triggers (839bd46). NativeAOT/cross-platform verification continues in the normal client CI;
 no new public launcher version is claimed at this checkpoint.
+
+## Completion batch: native snapshot capture
+Native Btrfs/ZFS snapshots are capture leases behind the existing content-backup boundary.
+Only an exact Btrfs subvolume or exact mounted ZFS filesystem, without descendant datasets/
+subvolumes, is eligible. No sudo, mount, dataset creation, writable rollback or recursive
+snapshot deletion occurs in the product. Platform owns bounded tool invocation and native
+lease cleanup; Setup consumes a read-only source and still hashes every object. Existing
+logical backup list, retention, restore-to-new-directory and corruption verification remain
+canonical. Unsupported filesystems, missing tools or undelegated privileges fall back to
+existing checked capture; an acquired lease must be released after success/cancellation.
+
+## Completion batch: Steam and Gamescope entry points
+Linux offers explicit Steam registration through a user-selected userdata/<id>/config
+folder while Steam is stopped. Preserve unrelated binary VDF entries, reject unknown/corrupt
+formats, retain a backup and atomically replace only after rechecking original bytes. Managed
+entries launch NexaCL (optionally inside installed Gamescope), not a wrapper masquerading as
+the owned JVM. Steam supplies Steam Input through its ordinary non-Steam game entry; existing
+controller recognition remains authoritative. No Steam account credentials are read, no
+settings are applied to other profiles, and no compositor/system package is installed.
+
+## Completion batch: macOS local actions
+A bundled accessory application owns Core Spotlight indexing and native App Intents metadata,
+so the NativeAOT launcher does not impersonate a Swift runtime. Its fixed Launch/Resources/
+Settings actions open only existing nexacl:// routes; Spotlight continuation uses the same
+allowlist. The helper is registered locally with LaunchServices and has no network, account,
+file-content indexing or arbitrary command execution. Shortcuts/Siri discovery is supplied
+by macOS; voice recognition availability remains an OS/device setting, not a cloud service
+implemented by NexaCL. Compile/extract metadata for both architectures and package the helper
+inside Contents/Helpers before signing. Startup indexing is bounded and failures are explicit.
+Native capture writes a bounded ownership marker before snapshot creation under the existing
+content-store lock. A later capture reaps only matching managed read-only Btrfs snapshots or
+exact named ZFS snapshots. Uncertain permissions/identity leave the marker intact and fall
+back instead of guessing absence or deleting unrelated data. Native temporary snapshots are
+not retained as an alternative backup catalog; verified CAS manifests remain the recovery UI.
+Release closure: publishing a prebuilt signed draft no longer triggers a second build that
+could overwrite the same-version source assets. Empty published releases retain the initial
+build trigger, and tag/manual builds remain available. This preserves the update repository's
+immutable-byte contract when Alpha 14 is promoted after verification.
+
+## Alpha 14 candidate closure (2026-10-27 Asia/Shanghai)
+The implementation of approved batches 1 and 2 is now wired through production entry points.
+Windows includes architecture checks, CPU Sets/QoS, taskbar progress and native share;
+macOS includes native local Spotlight/App Intents, Quick Look, APFS clone, network/thermal
+probes; Linux includes quotas, GameMode, portal pickers, selected-profile Steam/Gamescope
+registration and native Btrfs/ZFS capture leases. Shared policies cover pressure reclamation,
+cooperative Sidecar admission, topology, GPU budget, disk feedback and metered/background work.
+No unsupported OS-wide GameBoost switch is invented. ZFS requires an exact dataset mount and
+existing delegation; absent capabilities use the verified fallback. Voice control and Steam
+Input remain dependent on the user's OS/client/device configuration, not cloud accounts.
+
+Local solution build succeeded with no warnings/errors. All 838 Services tests, 374 Desktop
+composition tests and 88 release-tool tests passed. Architecture checks passed for 72 projects.
+Native platform CI 40430197927 passed on Intel macOS and Apple Silicon: Xcode emits all three
+App Intents, signed companion verification succeeds and native launch smoke exits cleanly.
+The final integrated six-target packaging and isolated Btrfs native fixture remain release
+gates, not assertions of physical-device testing. Batch 3 stays postponed, and the Minecraft
+memory estimator remains disabled. Runtime telemetry API/UI are already deployed.

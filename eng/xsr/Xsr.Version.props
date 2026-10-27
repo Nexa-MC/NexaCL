@@ -4,7 +4,7 @@
     <XsrDevelopmentCodename>Firefly</XsrDevelopmentCodename>
     <XsrVersionPrefix Condition="'$(XsrVersionPrefix)' == ''">2.0.0</XsrVersionPrefix>
     <XsrVersionChannel Condition="'$(XsrVersionChannel)' == ''">alpha</XsrVersionChannel>
-    <XsrVersionSequence Condition="'$(XsrVersionSequence)' == ''">13</XsrVersionSequence>
+    <XsrVersionSequence Condition="'$(XsrVersionSequence)' == ''">14</XsrVersionSequence>
     <XsrCommitShort Condition="'$(XsrCommitShort)' == '' and $([System.String]::Copy('$(GITHUB_SHA)').Length) &gt;= 6">$([System.String]::Copy('$(GITHUB_SHA)').Substring(0, 6).ToLowerInvariant())</XsrCommitShort>
 
     <XsrProductVersion Condition="'$(XsrVersionChannel)' == 'stable'">$(XsrVersionPrefix)</XsrProductVersion>
