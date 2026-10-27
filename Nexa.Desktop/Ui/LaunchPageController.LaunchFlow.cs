@@ -75,7 +75,7 @@ internal sealed partial class LaunchPageController
             // The window confirmation (or its platform fallback) already passed: success
             // closes the page immediately so the user is back at the library while the game
             // warms up, instead of parking on a 游戏已启动 card until the session ends.
-            _feedback.Info(HomeCopy("launch.started"));
+            _feedback.Success(HomeCopy("launch.started"));
             RequestCloseLaunchingPage();
             return;
         }

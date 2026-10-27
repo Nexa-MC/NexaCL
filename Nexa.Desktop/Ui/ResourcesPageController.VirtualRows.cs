@@ -209,6 +209,11 @@ internal sealed partial class ResourcesPageController
                 if (remaining > 0)
                 { ReloadResource(_catalogBottomSpacer, ("height", Number(remaining * EffectiveCatalogPitch - EffectiveCatalogSpacing))); _resourceDynamic.Move(_catalogBottomSpacer, list); }
             }
+            if (!_listHasMore && _listFailure is null && _searching is null && _projectProjection.Count > 0)
+            {
+                SetCatalogText(_catalogEmpty, DesktopResourcesText.Raw("list-end"), localize: true);
+                _resourceDynamic.Move(_catalogEmpty, list);
+            }
             _windowStart = start; _windowEnd = end; _windowDirty = false;
             _shell.Tree.MarkDirty(list, XsrUiDirtyKinds.Layout);
         }

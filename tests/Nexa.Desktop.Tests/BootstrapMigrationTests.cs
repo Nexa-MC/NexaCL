@@ -17,6 +17,7 @@ internal static partial class Program
         try
         {
             using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]), imports: new LegacyProfileImport(() => [path]));
+            SeedFixtureOwner(fixture);
             var shell = fixture.Shell; shell.Renderer.ReducedMotion = true;
             var language = new UiLocalizationCatalog(); language.SetLanguage("zh-Hans"); shell.Renderer.TextLocalizer = language.Translate;
             Emit(fixture.Intents, "ui.account.import"); var scene = shell.Render(new(1000, 650));

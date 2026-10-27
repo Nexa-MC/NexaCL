@@ -179,6 +179,7 @@ internal sealed partial class ResourcesPageController
 
     private void UpdateContinuousStatus()
     {
+        _windowDirty = true;
         bool refreshing = _retainedPages.Values.Any(page => page.Renewal is not null);
         string status = _searching is not null ? _result is null ? L(DesktopResourcesText.Raw("copy.da0d228992f9")) : L(DesktopResourcesText.Raw("copy.4d050d55d8aa"))
             : _listFailure is { } failure ? _shell.Renderer.LocalizeText(failure)

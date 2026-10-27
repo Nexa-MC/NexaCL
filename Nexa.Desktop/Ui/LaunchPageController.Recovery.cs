@@ -105,7 +105,7 @@ internal sealed partial class LaunchPageController
         if (_disposed) return;
         if (result.IsSuccess)
         {
-            _feedback.Info(ProductPresentationText.Raw("crash.restored"));
+            _feedback.Success(ProductPresentationText.Raw("crash.restored"));
             if (_libraryCommands.TryResolve(Nexa.Services.Minecraft.MinecraftLibraryRoutes.Refresh, out var refresh))
                 _ = _libraryCommands.Dispatch(refresh, new Nexa.Services.Minecraft.MinecraftLibraryRefreshCommand());
         }

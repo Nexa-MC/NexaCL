@@ -226,6 +226,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
         _progressRingAttached = false;
         StopCaret();
         _progressRingAnimation?.Stop();
+        _outcomeAnimation?.Stop();
         AvaloniaUiMotion.CancelAll(this);
     }
 

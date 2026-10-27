@@ -7,10 +7,18 @@ namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 internal sealed partial class AvaloniaUiSceneNodeControl
 {
     private bool _progressRingAttached;
+    private AvaloniaUiOutcomeAnimation? _outcomeAnimation;
     private AvaloniaUiProgressRingAnimation? _progressRingAnimation;
 
     private void UpdateProgressRing()
     {
+        if (AvaloniaUiOutcomeAnimation.IsOutcome(_node.ImageSource))
+        {
+            _outcomeAnimation ??= new(InvalidateVisual);
+            _outcomeAnimation.Update(_node.ImageSource,
+                !_presentationReleased && _rasterPresentationEnabled && _progressRingAttached && RasterVisible(_node, _rasterViewport), _reducedMotion());
+        }
+        else _outcomeAnimation?.Update(null, false, _reducedMotion());
         if (_node.ProgressRing is null) { _progressRingAnimation?.Stop(); return; }
         _progressRingAnimation ??= new(() => _node.ProgressRing is { Indeterminate: true }
             && !_presentationReleased && _rasterPresentationEnabled && !_reducedMotion()

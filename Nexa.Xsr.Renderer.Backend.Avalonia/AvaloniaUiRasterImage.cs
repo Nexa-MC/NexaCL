@@ -149,6 +149,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
     {
         StopCaret();
         SetThemeResources(null); _textKey = null; _formattedText = null; _inputCaretKey = null; _inputCarets = null;
+        _outcomeAnimation?.Stop();
         AvaloniaUiMotion.CancelAll(this);
         _presentationReleased = true;
         _progressRingAnimation?.Stop();

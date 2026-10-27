@@ -107,6 +107,36 @@ internal static partial class Program
         void Wait(Func<bool> condition) => AssertTrue(SpinWait.SpinUntil(() => { fixture.Shell.Render(new(1400, 8000)); return condition(); }, TimeSpan.FromSeconds(5)));
     }
 
+    private static void VersionContentLoadingHidesPlaceholderNavigation()
+    {
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
+        string instance = Path.Combine(fixture.TemporaryDirectory, "versions", "fixture");
+        var queries = new XsrQueryRouterBuilder();
+        fixture.Foundation.Queries.TryResolve(SettingsPolicyContract.CatalogQuery, out var catalog);
+        fixture.Foundation.Queries.TryResolve(SettingsPolicyContract.EffectiveQuery, out var effective);
+        queries.Register<SettingsCatalogQuery, SettingsCatalogSnapshot>(SettingsPolicyContract.CatalogQuery,
+            (q, ct) => fixture.Foundation.Queries.QueryAsync<SettingsCatalogQuery, SettingsCatalogSnapshot>(catalog, q, cancellationToken: ct));
+        queries.Register<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(SettingsPolicyContract.EffectiveQuery,
+            (q, ct) => fixture.Foundation.Queries.QueryAsync<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(effective, q, cancellationToken: ct));
+        var pending = new TaskCompletionSource<XsrResult<InstanceManagementSnapshot>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        bool requested = false;
+        queries.Register<InstanceManagementQuery, InstanceManagementSnapshot>(InstanceManagementContract.Query,
+            (q, ct) => { requested = true; return new(pending.Task); });
+        using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, queries.Build(new NoopDispatchObserver()),
+            fixture.Foundation.Commands, fixture.Store, fixture.Feedback, () => instance);
+        fixture.Shell.Renderer.ReducedMotion = true;
+        fixture.Shell.Stage.Navigation.Replace(settings.Page);
+        XsrUiScene scene = default!;
+        AssertTrue(SpinWait.SpinUntil(() => { scene = fixture.Shell.Render(new(1000, 650)); return requested; }, TimeSpan.FromSeconds(5)));
+        AssertTrue(scene.Nodes.Any(node => node.ProgressRing is not null));
+        AssertFalse(HasKey(fixture.Shell, scene, "SettingsToolbar"));
+        AssertFalse(HasKey(fixture.Shell, scene, "InstanceDevelopmentMode"));
+        pending.SetResult(XsrResult.Success(new InstanceManagementSnapshot(instance, instance, "1.21.1", [],
+            [new("overview", "总览"), new("game", "游戏设置")], true, "")));
+        AssertTrue(SpinWait.SpinUntil(() => { scene = fixture.Shell.Render(new(1000, 650)); return HasKey(fixture.Shell, scene, "SettingsToolbar"); }, TimeSpan.FromSeconds(5)));
+        AssertTrue(HasKey(fixture.Shell, scene, "SettingsNav.game"));
+    }
+
     private static void OfflineReadinessCoalescesRetiresScopesAndInvalidatesSettingsRevision()
     {
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));

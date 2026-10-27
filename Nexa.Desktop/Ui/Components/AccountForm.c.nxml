@@ -32,6 +32,10 @@
       <Button Key="CopyUserCode" Label="复制授权码" Content="复制授权码" Command="ui.account.copy-code" Class="layout-AccountForm-CopyUserCode account-base account-button" MaxLines="1" TrimOverflow="true" />
     </StackPanel>
     <Dynamic Key="CharacterChoices" IsVisible="{state account.form.characters}" Class="layout-AccountForm-CharacterChoices account-base account-base" />
+    <StackPanel Key="AccountFailure" IsVisible="{state account.form.failed}" Weight="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" Padding="24">
+      <Image Source="lucide/circle-x" Width="48" Height="48" HorizontalAlignment="Center" Foreground="#E45C70" Label="未能添加档案" />
+      <Text Key="AccountFailureMessage" Content="{state account.form.status}" Class="loading-hint" Localize="false" LiveSetting="Assertive" />
+    </StackPanel>
     <Text Key="FormStatus" Content="{state account.form.status}" IsVisible="{state account.form.status-visible}" Class="layout-AccountForm-FormStatus account-base account-help" Localize="false" MaxLines="0" TrimOverflow="true" />
     <Button Key="FormSubmit" Label="{state account.form.submit-label}" Content="{state account.form.submit-label}" Command="ui.account.submit" IsVisible="{state account.form.submit}" Class="layout-AccountForm-FormSubmit account-base account-button account-primary" MaxLines="1" TrimOverflow="true" Localize="false" />
     <Button Key="FormCancel" Label="取消登录" Content="取消" Command="ui.account.cancel" IsVisible="{state account.form.busy}" Class="layout-AccountForm-FormCancel account-base account-button" MaxLines="1" TrimOverflow="true" />

@@ -105,7 +105,13 @@ internal sealed class AccountFormController : IDisposable
         {
             _returnFocus = e.Intent.Source;
             _keyboardFocus = IsKeyboard(e.Intent.Source);
-            Open(command == "ui.account.add" ? "providers" : "import");
+            if (command == "ui.account.add" && !HasMicrosoftProfile)
+            {
+                _provider = AccountLoginProvider.Microsoft;
+                Open("device");
+                Submit();
+            }
+            else Open(command == "ui.account.add" ? "providers" : "import");
         }
         else if (command.StartsWith("ui.navigation.", StringComparison.Ordinal) && command != "ui.navigation.expand")
         {
@@ -114,7 +120,7 @@ internal sealed class AccountFormController : IDisposable
         else if (command == "ui.account.back")
         {
             if (!ReadBool("open")) _intents.Emit(XsrSemanticId.Parse("ui.account.dismiss"), e.Intent.Source, XsrCorrelationId.Create());
-            else if (ReadText("mode") is "providers" or "import") Close();
+            else if (ReadText("mode") is "providers" or "import" || !HasMicrosoftProfile) Close();
             else Open("providers");
         }
         else if (!ReadBool("open")) return;
@@ -134,7 +140,11 @@ internal sealed class AccountFormController : IDisposable
                 : _provider == AccountLoginProvider.Offline ? "offline" : "third-party");
             if (_provider is AccountLoginProvider.Microsoft or AccountLoginProvider.LittleSkin) Submit();
         }
-        else if (command == "ui.account.submit") Submit();
+        else if (command == "ui.account.submit")
+        {
+            if (ReadBool("failed") && ReadText("mode") != "device") Open(ReadText("mode"));
+            else Submit();
+        }
         else if (command == "ui.account.browse") _ = PickProfiles();
         else if (command == "ui.account.authorize")
         {
@@ -195,7 +205,7 @@ internal sealed class AccountFormController : IDisposable
         if (open && snapshot.Generation > _seenCompletion && snapshot.Phase == AccountLoginPhase.Completed)
         {
             _seenCompletion = snapshot.Generation;
-            _feedback.Info(snapshot.Message);
+            _feedback.Success(snapshot.Message);
             Publish("open", false);
             _store.Publish(_store.Resolve(LaunchPageState.AccountAddVisibleKey), true);
             _store.Publish(_store.Resolve(LaunchPageState.AccountPickerKey), false);
@@ -203,11 +213,14 @@ internal sealed class AccountFormController : IDisposable
             RestoreFocus();
             open = false;
         }
+        bool failed = open && snapshot.Generation > _seenCompletion
+            && snapshot.Phase is AccountLoginPhase.Failed or AccountLoginPhase.Cancelled;
+        Publish("failed", failed);
         bool preparing = snapshot.Phase is AccountLoginPhase.Starting or AccountLoginPhase.Saving;
         Publish("loading", open && preparing);
         string mode = ReadText("mode");
         foreach (string name in new[] { "providers", "offline", "third-party", "import", "device" })
-            Publish(name, open && mode == name && !snapshot.IsBusy);
+            Publish(name, open && mode == name && !snapshot.IsBusy && !failed);
         Publish("title", mode switch
         {
             "offline" => Copy("account.title.offline"),
@@ -218,7 +231,7 @@ internal sealed class AccountFormController : IDisposable
             _ => Copy("account.title.providers"),
         });
         Publish("status", mode == "providers" || snapshot.Generation <= _seenCompletion ? string.Empty : snapshot.Message);
-        Publish("status-visible", !preparing && !string.IsNullOrWhiteSpace(ReadText("status")));
+        Publish("status-visible", !preparing && !failed && !string.IsNullOrWhiteSpace(ReadText("status")));
         Publish("user-code", snapshot.UserCode);
         Publish("busy", open && snapshot.IsBusy);
         Publish("code", open && snapshot.Phase == AccountLoginPhase.AwaitingAuthorization);
@@ -341,7 +354,7 @@ internal sealed class AccountFormController : IDisposable
             await RequireEffects().CopyCode(code).ConfigureAwait(false);
             _log?.Info("AccountOnboarding",
                 $"Device authorization code copied provider={_provider} mode={(showSuccess ? "manual" : "automatic")}");
-            if (showSuccess && !_disposed) _feedback.Info(Copy("account.code.copied"));
+            if (showSuccess && !_disposed) _feedback.Success(Copy("account.code.copied"));
         }
         catch (Exception error)
         {
@@ -354,6 +367,8 @@ internal sealed class AccountFormController : IDisposable
     }
 
     private IAccountUiEffects RequireEffects() => _effects ?? throw new InvalidOperationException("Native actions unavailable.");
+    private bool HasMicrosoftProfile => _store.ReadCollection<LaunchProfileView>(
+        _store.Resolve(AccountStateContract.ProfilesKey)).Items.Any(profile => profile.Kind == LaunchProfileKind.Microsoft);
     private AccountLoginSnapshot Snapshot => _store.Read<AccountLoginSnapshot>(_store.Resolve(AccountOnboardingState.Login)).Value
         ?? new(0, AccountLoginPhase.Idle, "");
     private string Draft(string key) => _shell.Tree.GetComponent<XsrUiTextInput>(_entities[key])!.ReadDraft();

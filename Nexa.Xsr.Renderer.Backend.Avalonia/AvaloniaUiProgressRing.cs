@@ -84,6 +84,8 @@ internal sealed class AvaloniaUiProgressRingAnimation(Func<bool> enabled, Action
 internal sealed class AvaloniaUiProgressRing : Control, IDisposable
 {
     private readonly AvaloniaUiProgressRingAnimation _animation;
+    private readonly AvaloniaUiOutcomeAnimation _outcome;
+    internal bool Failed { get; set; }
     private bool _disposed, _attached;
     internal IBrush Ink { get; set; } = Brushes.DodgerBlue;
     internal bool ReducedMotion { get; set; }
@@ -92,18 +94,26 @@ internal sealed class AvaloniaUiProgressRing : Control, IDisposable
     {
         Width = Height = 40;
         IsHitTestVisible = false;
-        _animation = new(() => !_disposed && !ReducedMotion && IsVisible && _attached,
+        _outcome = new(InvalidateVisual);
+        _animation = new(() => !Failed && !_disposed && !ReducedMotion && IsVisible && _attached,
             InvalidateVisual);
     }
 
-    internal void UpdateMotion() => _animation?.Update();
-    public override void Render(DrawingContext context) =>
-        AvaloniaUiProgressRingDrawing.Draw(context, new Rect(Bounds.Size), Ink, _animation.Phase, true, 0);
+    internal void UpdateMotion()
+    {
+        _animation?.Update();
+        _outcome?.Update(Failed ? "failure" : null, !_disposed && IsVisible && _attached, ReducedMotion);
+    }
+    public override void Render(DrawingContext context)
+    {
+        if (Failed) AvaloniaUiOutcomeAnimation.Draw(context, new Rect(Bounds.Size), Ink, false, _outcome.Progress);
+        else AvaloniaUiProgressRingDrawing.Draw(context, new Rect(Bounds.Size), Ink, _animation.Phase, true, 0);
+    }
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     { base.OnAttachedToVisualTree(e); _attached = true; UpdateMotion(); }
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
-    { _attached = false; _animation.Stop(); base.OnDetachedFromVisualTree(e); }
+    { _attached = false; _animation.Stop(); _outcome.Stop(); base.OnDetachedFromVisualTree(e); }
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     { base.OnPropertyChanged(change); if (change.Property == IsVisibleProperty) UpdateMotion(); }
-    public void Dispose() { _disposed = true; _animation.Stop(); }
+    public void Dispose() { _disposed = true; _animation.Stop(); _outcome.Stop(); }
 }

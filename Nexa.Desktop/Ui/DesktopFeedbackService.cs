@@ -12,7 +12,10 @@ internal enum DesktopNotificationLevel
 }
 
 /// <summary>One immutable notification request owned by the Desktop feedback service.</summary>
-internal sealed record DesktopNotification(Guid Id, DesktopNotificationLevel Level, string Message, bool LocalizeMessage = true);
+internal sealed record DesktopNotification(Guid Id, DesktopNotificationLevel Level, string Message, bool LocalizeMessage = true)
+{
+    public bool IsSuccess { get; init; }
+}
 
 /// <summary>One immutable modal decision request. The callback never runs under the service lock.</summary>
 internal sealed record DesktopDialog(
@@ -67,6 +70,8 @@ internal sealed class DesktopFeedbackService : IDisposable
     /// <summary>Raised after a snapshot changes. The callback may run on any thread.</summary>
     public event EventHandler? Changed;
 
+    public Guid Success(string message, bool localizeMessage = true) => Notify(DesktopNotificationLevel.Info, message, localizeMessage, success: true);
+
     public Guid Info(string message) => Notify(DesktopNotificationLevel.Info, message);
     public Guid Info(string message, bool localizeMessage) => Notify(DesktopNotificationLevel.Info, message, localizeMessage);
 
@@ -78,7 +83,7 @@ internal sealed class DesktopFeedbackService : IDisposable
 
     public Guid Notify(DesktopNotificationLevel level, string message) => Notify(level, message, true);
 
-    public Guid Notify(DesktopNotificationLevel level, string message, bool localizeMessage)
+    public Guid Notify(DesktopNotificationLevel level, string message, bool localizeMessage, bool success = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         if (!Enum.IsDefined(level))
@@ -87,7 +92,7 @@ internal sealed class DesktopFeedbackService : IDisposable
         }
 
         Guid id = Guid.NewGuid();
-        NotificationEntry entry = new(new DesktopNotification(id, level, message, localizeMessage));
+        NotificationEntry entry = new(new DesktopNotification(id, level, message, localizeMessage) { IsSuccess = success });
         List<ITimer> evicted = [];
         lock (_gate)
         {
@@ -97,7 +102,7 @@ internal sealed class DesktopFeedbackService : IDisposable
             // entry is evicted — display scroll limits visibility, never memory.
             NotificationEntry? duplicate = _notifications.FirstOrDefault(candidate =>
                 candidate.Notification.Level == level && candidate.Notification.Message == message
-                && candidate.Notification.LocalizeMessage == localizeMessage);
+                && candidate.Notification.LocalizeMessage == localizeMessage && candidate.Notification.IsSuccess == success);
             if (duplicate is not null)
             {
                 duplicate.Timer?.Dispose();

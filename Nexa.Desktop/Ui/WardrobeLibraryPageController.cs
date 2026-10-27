@@ -231,7 +231,7 @@ internal sealed class WardrobeLibraryPageController : IDisposable
             _writing = null; _dirty = true;
             _notice = writing.IsCompletedSuccessfully && writing.Result.IsSuccess ? Raw("copy.9fa5be79e728")
                 : writing.IsCompletedSuccessfully ? writing.Result.Error?.Message ?? Raw("copy.0a69a3749a9e") : Raw("copy.d3ff07c74807");
-            if (writing.IsCompletedSuccessfully && writing.Result.IsSuccess) _feedback.Info(_notice);
+            if (writing.IsCompletedSuccessfully && writing.Result.IsSuccess) _feedback.Success(_notice);
             // Always refresh admission before a retry, including provider failure after token rotation.
             _account = null; _accountLoaded = false; _seenRosterEvents = Volatile.Read(ref _rosterEvents);
             ClearImages();

@@ -205,12 +205,12 @@ internal sealed partial class SettingsPageController
         _contentWorkspaceInstance = _instance; _contentWorkspacePage = _selected;
         if (_contentDetail is { } detail) { BuildContentDetail(detail); return; }
         _shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY = _scrollPositions.GetValueOrDefault(_selected);
-        if (_selected == "overview") BuildInstanceDevelopmentMode();
         if (_management is not { } snapshot)
         {
             var loading = AppendContent(_sections, "SettingsContentLoading.d.nxml", new() { ["loading"] = ContentFlag(_managementError is null), ["enabled"] = ContentFlag(_managementWrite is null), ["message"] = _managementError ?? ContentTerm("loading") });
             BindContentAction(ContentNodes(loading), ContentKey("refresh"), RefreshManagement); return;
         }
+        if (_selected == "overview") BuildInstanceDevelopmentMode();
         var page = snapshot.Pages.First(item => item.Id == _selected);
         if (page.Directory is { } directory)
         {

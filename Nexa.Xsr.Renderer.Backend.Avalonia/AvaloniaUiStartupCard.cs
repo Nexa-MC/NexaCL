@@ -246,7 +246,7 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
         string display = _localize(stage);
         _stage.Text = display.Length <= 1024 ? display : display[..1024];
         _stageViewport.Height = failed ? 108 : 42;
-        _status.ColumnDefinitions[0].Width = new GridLength(failed ? 0 : 40);
+        _status.ColumnDefinitions[0].Width = new GridLength(40);
         _stageViewport.Offset = default;
         _retry.IsVisible = canRetry;
         _retry.IsEnabled = canRetry;
@@ -269,7 +269,9 @@ internal sealed class AvaloniaUiStartupCard : Border, IDisposable
             : _dark ? Color.FromRgb(179, 206, 219) : Color.FromRgb(74, 101, 121);
         _stage.Foreground = new SolidColorBrush(ink);
         _statusRing.Ink = _edition.Foreground ?? Brushes.DodgerBlue;
-        _statusRing.IsVisible = !_failed;
+        _statusRing.Failed = _failed;
+        _statusRing.Ink = _failed ? new SolidColorBrush(ink) : _statusRing.Ink;
+        _statusRing.IsVisible = true;
         _statusRing.UpdateMotion();
     }
 

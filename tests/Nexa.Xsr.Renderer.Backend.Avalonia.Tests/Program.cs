@@ -72,6 +72,15 @@ internal static partial class Program
 
     private static int Main(string[] args)
     {
+        if (args is ["--outcome-smoke"])
+        {
+            AppBuilder.Configure<Application>().UseSkia()
+                .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
+            ProgressRingSharesClockStopsAndDrawsHollowArc();
+            StartupFailureLogLinkFollowsStageAndNeedsExplicitClick();
+            Console.WriteLine("PASS: outcome animation, raster geometry, reduced motion, lifetime and startup log link");
+            return 0;
+        }
         if (args is ["--native-macos-render-probe", var mode, var directory]) return RunMacOSRenderProbe(mode, directory);
         if (args.Contains("--native-share-package-smoke"))
         {

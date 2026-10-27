@@ -88,6 +88,9 @@ internal static partial class Program
         f.Click(retained); f.RenderFrames(3);
         f.Fixture.Shell.Stage.Navigation.Pop(); f.RenderFrames(3);
         AssertClose(returnOffset, f.Snapshot.OffsetY);
+        f.ScrollToBottom(); f.RenderFrames(3);
+        AssertTrue(f.Scene.Nodes.Any(node => node.Text == "没有啦~"));
+        AssertEqual(2, f.Reads.Count);
     }
 
     private static void ResourceContinuousListPreservesRowsAndExplicitlyRetriesTheSamePage()
@@ -258,7 +261,8 @@ internal static partial class Program
         // A final item can fill an existing partial grid row without growing its extent.
         fallback.Pump(() => !fallback.NextEnabled);
         int finalRows = (41 + columns - 1) / columns;
-        AssertClose(finalRows * metrics.ItemHeight + (finalRows - 1) * metrics.Spacing, fallback.Snapshot.ContentHeight);
+        // The terminal footer is part of the extent even when it is outside the realized window.
+        AssertClose(finalRows * metrics.ItemHeight + finalRows * metrics.Spacing + 54, fallback.Snapshot.ContentHeight);
         AssertEqual(finalBatchAnchor, fallback.Row("TotalB19"));
         AssertClose(finalBatchOffset, fallback.Snapshot.OffsetY);
         if (fallback.Snapshot.MaximumOffsetY - fallback.Snapshot.OffsetY > .01) fallback.ScrollToBottom();

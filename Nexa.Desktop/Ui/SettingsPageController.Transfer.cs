@@ -165,13 +165,13 @@ internal sealed partial class SettingsPageController
         if (_settingsImportApply is { IsCompleted: true } applying)
         {
             _settingsImportApply = null; changed = true;
-            if (PendingQuery.Succeeded(applying)) _feedback.Info(ProductPresentationText.Raw(_settingsResetApplying ? "settings.transfer.resetComplete" : "settings.transfer.importComplete"));
+            if (PendingQuery.Succeeded(applying)) _feedback.Success(ProductPresentationText.Raw(_settingsResetApplying ? "settings.transfer.resetComplete" : "settings.transfer.importComplete"));
             else if (!applying.IsCanceled) _feedback.Error(ProductPresentationText.Raw(_settingsResetApplying ? "settings.transfer.resetFailed" : "settings.transfer.importFailed"));
         }
         if (_settingsExportWrite is { IsCompleted: true } exporting)
         {
             _settingsExportWrite = null; changed = true;
-            if (exporting.IsCompletedSuccessfully && exporting.Result) _feedback.Info(ProductPresentationText.Raw("settings.transfer.exportComplete"));
+            if (exporting.IsCompletedSuccessfully && exporting.Result) _feedback.Success(ProductPresentationText.Raw("settings.transfer.exportComplete"));
             else if (exporting.IsFaulted) _feedback.Error(ProductPresentationText.Raw("settings.transfer.exportFailed"));
         }
         if (changed) RefreshSettingsTransferPresentation();

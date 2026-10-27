@@ -158,7 +158,7 @@ internal sealed partial class SettingsPageController
         if (_screenshotOperation is { IsCompleted: true } operation)
         {
             _screenshotOperation = null;
-            if (operation.IsCompletedSuccessfully) _feedback.Info(ContentTerm("copy.b5faedfb762e"));
+            if (operation.IsCompletedSuccessfully) _feedback.Success(ContentTerm("copy.b5faedfb762e"));
             else if (!operation.IsCanceled) { _ = operation.Exception; _feedback.Error(ContentTerm("copy.f4fd63d7464d")); }
         }
         if (_screenshotPreviewViewport != _shell.Renderer.Viewport) BuildScreenshotPreviewCard();

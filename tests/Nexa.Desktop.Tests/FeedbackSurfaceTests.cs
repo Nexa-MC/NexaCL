@@ -112,7 +112,7 @@ internal static partial class Program
         fixture.Shell.SetRailPresentationProgress(0);
         fixture.Shell.Renderer.ReducedMotion = true;
         XsrUiSize size = new(810, 470);
-        fixture.Feedback.Info("information");
+        fixture.Feedback.Success("information");
         fixture.Feedback.Warn("warning content that wraps onto a second line without forcing every notice to be tall");
         fixture.Feedback.Error("failure");
 
@@ -120,6 +120,8 @@ internal static partial class Program
         XsrUiSceneNode host = FindByKey(fixture.Shell, scene, "notification-host");
         XsrUiSceneNode[] notifications = [.. scene.Nodes.Where(node => node.Role == XsrUiSemanticRole.Status)];
         AssertEqual(3, notifications.Length);
+        AssertTrue(scene.Nodes.Any(node => node.ImageSource == "lucide/circle-check"));
+        AssertTrue(scene.Nodes.Any(node => node.ImageSource == "lucide/circle-x"));
         double expectedX = XsrUiShell.CollapsedRailWidth + 18;
         AssertClose(expectedX, host.Rect.X);
         AssertClose(size.Height - 18, host.Rect.Y + host.Rect.Height);

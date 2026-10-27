@@ -219,7 +219,7 @@ internal sealed class ProcessLogPageController : IDisposable
         {
             if (_copy is null) throw new InvalidOperationException(DesktopPresentationText.Raw("log.clipboard"));
             await _copy(text).ConfigureAwait(false);
-            if (!_disposed && generation == Interlocked.Read(ref _generation)) _feedback.Info(LogTerm("log.copied"));
+            if (!_disposed && generation == Interlocked.Read(ref _generation)) _feedback.Success(LogTerm("log.copied"));
         }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
         {

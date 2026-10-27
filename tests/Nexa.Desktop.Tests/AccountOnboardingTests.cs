@@ -23,12 +23,13 @@ internal static partial class Program
         {
             using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
             fixture.Service.ConfigureRegionalPolicy(new(country));
-            AccountClick(fixture, "AccountAdd"); AccountClick(fixture, "ProviderOffline");
-            AccountFill(fixture, "OfflineName", "New_Player"); AccountClick(fixture, "FormSubmit");
-            fixture.Onboarding.Service.WhenIdle.GetAwaiter().GetResult();
-            AssertEqual(AccountLoginPhase.Failed, AccountSnapshot(fixture).Phase);
-            AssertEqual(0, fixture.Service.GetViews().Count);
-            AssertTrue(AccountSnapshot(fixture).Message.Contains("请先登录并验证", StringComparison.Ordinal));
+            AccountClick(fixture, "AccountAdd");
+            XsrUiScene scene = fixture.Shell.Render(AccountTestSize);
+            AssertFalse(HasKey(fixture.Shell, scene, "ProviderOffline"));
+            AssertFalse(HasKey(fixture.Shell, scene, "ProviderMicrosoft"));
+            AssertEqual("Microsoft 账户", FindByKey(fixture.Shell, scene, "AccountHeader").Text);
+            AccountClick(fixture, "AccountBack");
+            AssertFalse(HasKey(fixture.Shell, fixture.Shell.Render(AccountTestSize), "AccountForm"));
         }
     }
 
@@ -74,7 +75,7 @@ internal static partial class Program
         AccountEffects effects = new();
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), microsoft: microsoft, accountEffects: effects);
         fixture.Service.ConfigureRegionalPolicy(new("US"));
-        AccountClick(fixture, "AccountAdd"); AccountClick(fixture, "ProviderMicrosoft");
+        AccountClick(fixture, "AccountAdd");
         AwaitAccountPhase(fixture, AccountLoginPhase.AwaitingAuthorization);
         XsrUiScene scene = fixture.Shell.Render(AccountTestSize);
         AssertEqual("PUBLIC-CODE", FindByKey(fixture.Shell, scene, "UserCode").Text);
@@ -113,6 +114,9 @@ internal static partial class Program
         Task cancelled = fixture.Onboarding.Service.WhenIdle;
         AccountClick(fixture, "FormCancel");
         AssertEqual(AccountLoginPhase.Cancelled, AccountSnapshot(fixture).Phase);
+        scene = fixture.Shell.Render(AccountTestSize);
+        AssertTrue(HasKey(fixture.Shell, scene, "AccountFailure"));
+        AssertTrue(FindByKey(fixture.Shell, scene, "FormSubmit").Rect.Y >= FindByKey(fixture.Shell, scene, "AccountFailure").Rect.Y + FindByKey(fixture.Shell, scene, "AccountFailure").Rect.Height);
         AccountClick(fixture, "AccountBack"); AccountClick(fixture, "ProviderOffline");
         AccountFill(fixture, "OfflineName", "NewerPlayer"); AccountClick(fixture, "FormSubmit");
         fixture.Onboarding.Service.WhenIdle.GetAwaiter().GetResult();
@@ -205,6 +209,7 @@ internal static partial class Program
         AccountEffects effects = new();
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]), accountEffects: effects,
             microsoft: microsoft, accountOptions: new("", null));
+        SeedFixtureOwner(fixture);
         AccountClick(fixture, "AccountAdd"); AccountClick(fixture, "ProviderMicrosoft");
         fixture.Onboarding.Service.WhenIdle.GetAwaiter().GetResult();
         AssertEqual(AccountLoginPhase.Failed, AccountSnapshot(fixture).Phase);
@@ -213,14 +218,15 @@ internal static partial class Program
         AccountClick(fixture, "AccountBack"); AccountClick(fixture, "ProviderLittleSkin");
         fixture.Onboarding.Service.WhenIdle.GetAwaiter().GetResult();
         AssertEqual(AccountLoginPhase.Failed, AccountSnapshot(fixture).Phase);
-        AccountClick(fixture, "AccountBack"); AccountClick(fixture, "AccountBack"); AccountClick(fixture, "AccountImport");
+        AccountClick(fixture, "AccountBack"); AccountClick(fixture, "AccountBack");
+        Emit(fixture.Intents, "ui.account.import"); fixture.Shell.Render(AccountTestSize);
         AccountClick(fixture, "BrowseProfiles");
         AccountClick(fixture, "AccountBack"); AccountClick(fixture, "AccountAdd");
         effects.File.SetResult("stale-path");
         AssertTrue(SpinWait.SpinUntil(() => effects.Returned, TimeSpan.FromSeconds(2)));
         AssertEqual("", ReadCell(fixture.Store, AccountFormState.ImportPath));
         AssertTrue(HasKey(fixture.Shell, fixture.Shell.Render(AccountTestSize), "ProviderMicrosoft"));
-        AssertEqual(0, fixture.Service.GetViews().Count);
+        AssertEqual(1, fixture.Service.GetViews().Count);
     }
 
     private static void AccountPreparationTimeoutsAreFailuresAndLeaveRetryAvailable()
@@ -243,7 +249,7 @@ internal static partial class Program
             fixture.Onboarding.Service.WhenIdle.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
             AssertEqual(AccountLoginPhase.Failed, AccountSnapshot(fixture).Phase);
             XsrUiScene scene = fixture.Shell.Render(AccountTestSize);
-            AssertTrue(FindByKey(fixture.Shell, scene, "FormStatus").Text!.Contains("超时", StringComparison.Ordinal));
+            AssertTrue(FindByKey(fixture.Shell, scene, "AccountFailureMessage").Text!.Contains("超时", StringComparison.Ordinal));
             AssertTrue(HasKey(fixture.Shell, scene, "FormSubmit"));
             AssertFalse(HasKey(fixture.Shell, scene, "FormCancel"));
             AssertSceneHides(fixture, "PRIVATE-PASSWORD", "PRIVATE-TRANSPORT");

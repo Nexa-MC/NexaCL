@@ -267,7 +267,7 @@ internal sealed class WardrobePageController : IDisposable
             }
             else if (writing.IsCompletedSuccessfully && writing.Result.IsSuccess)
             {
-                _operationNotice = null; _feedback.Info(Raw("copy.9fa5be79e728")); _loaded = false; _snapshot = null; _preview = null; _localOpen = false;
+                _operationNotice = null; _feedback.Success(Raw("copy.9fa5be79e728")); _loaded = false; _snapshot = null; _preview = null; _localOpen = false;
                 _shell.Renderer.SetTextInputValue(_nodes["WardrobeSkinPath"], ""); _status = Raw("copy.1d165a5566db");
             }
             else

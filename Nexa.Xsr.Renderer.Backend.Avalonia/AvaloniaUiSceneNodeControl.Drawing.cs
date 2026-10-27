@@ -116,6 +116,15 @@ internal sealed partial class AvaloniaUiSceneNodeControl
         {
             if (textVisible) DrawText(context, style, 0);
         }
+        else if (AvaloniaUiOutcomeAnimation.IsOutcome(_node.ImageSource))
+        {
+            double size = _node.Role == XsrUiSemanticRole.Image ? Math.Min(Bounds.Width, Bounds.Height) : NavigationIconSize;
+            double x = railRow ? RailRowIconOffset : textVisible ? 0 : Math.Max(0, (Bounds.Width - size) / 2);
+            var outcomeBounds = new Rect(x, Math.Max(0, (Bounds.Height - size) / 2), size, size);
+            AvaloniaUiOutcomeAnimation.Draw(context, outcomeBounds, ForegroundBrush(style),
+                _node.ImageSource == "lucide/circle-check", _outcomeAnimation?.Progress ?? 1);
+            if (textVisible) DrawText(context, style, NavigationIconSize + NavigationIconTextGap);
+        }
         else if (_node.ImageSource is { Length: > 0 } iconSource
             && AvaloniaUiIcons.TryGetGeometry(iconSource, out IReadOnlyList<Geometry> iconPaths))
         {

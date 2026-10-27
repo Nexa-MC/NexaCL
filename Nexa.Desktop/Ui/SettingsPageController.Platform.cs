@@ -319,7 +319,7 @@ internal sealed partial class SettingsPageController
             if (!CurrentRemediationContext(snapshot, scope, generation)) return;
             var result = await _commands.Dispatch(route, new RemediationRequest(id, arguments, Confirmed: true)).Completion.ConfigureAwait(false);
             if (_disposed) return;
-            if (result.IsSuccess) _feedback.Info(ProductPresentationText.Raw("settings.platform.remediationComplete"));
+            if (result.IsSuccess) _feedback.Success(ProductPresentationText.Raw("settings.platform.remediationComplete"));
             else _feedback.Error(result.Error?.Message ?? ProductPresentationText.Raw("settings.platform.remediationIncomplete"));
         }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)

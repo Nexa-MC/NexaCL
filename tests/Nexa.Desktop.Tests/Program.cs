@@ -440,6 +440,7 @@ internal static partial class Program
         ("first run owned workspace retains transitions and retires picker", FirstRunOwnedWorkspaceRetainsTransitionsAndRetiresPicker),
         ("product PXML shell accepts native window metrics", ProductNxmlShellAcceptsNativeWindowMetrics),
         ("Version settings isolate overrides and restore inheritance", VersionSettingsAreScopedAndRestoreInheritance),
+        ("VersionContentLoadingHidesPlaceholderNavigation", VersionContentLoadingHidesPlaceholderNavigation),
         ("Instance management projects content with bounded realized rows", InstanceManagementShowsContentAndBoundsRealizedRows),
         ("Instance content graph bounds relations and retires stale instances", ContentGraphPageBoundsRelationsAndRetiresOldInstances),
         ("Modpack export preserves fields and dispatches selected scope", ModpackExportPagePreservesFieldsAndDispatchesSelectedScope),

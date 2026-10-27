@@ -1,6 +1,6 @@
 <nxml-dynamic>
   <StackPanel Key="SettingsLayout" Class="layout-SettingsPage-SettingsLayout">
-    <StackPanel Key="SettingsToolbar" Class="layout-SettingsPage-SettingsToolbar">
+    <StackPanel Key="SettingsToolbar" IsVisible="{data !loading}" Class="layout-SettingsPage-SettingsToolbar">
       <ContentHost Key="SettingsNavigationSurface" Class="settings-navigation-surface">
         <ContentHost Key="SettingsThumb" TransitionKey="settings-navigation" IsVisible="false" Class="settings-navigation-thumb" />
         <SettingsChoiceSlot SegmentThumb="SettingsThumb" ScrollGesture="true" Key="SettingsNavigation" Label="版本设置分类" Scroll="true" Class="layout-SettingsPage-SettingsNavigation" />

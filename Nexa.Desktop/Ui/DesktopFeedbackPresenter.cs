@@ -221,7 +221,7 @@ internal sealed class DesktopFeedbackPresenter : IDisposable
             ["key"] = "notification:" + notification.Id.ToString("N"),
             ["level"] = level,
             ["message"] = message,
-            ["icon"] = DesktopOverlayText.Raw("notification.icon." + style),
+            ["icon"] = notification.IsSuccess ? "lucide/circle-check" : DesktopOverlayText.Raw("notification.icon." + style),
             ["enabled"] = Flag(enabled),
             ["urgency"] = notification.Level == DesktopNotificationLevel.Info ? "Polite" : "Assertive",
             ["label"] = DesktopOverlayText.Format("NotificationLabel", new() { ["level"] = level, ["message"] = message }, _shell.Renderer.LocalizeText),

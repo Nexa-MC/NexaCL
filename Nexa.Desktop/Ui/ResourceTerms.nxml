@@ -1,5 +1,6 @@
 <nxml-page>
   <Page>
+    <Node Recipe="Text" Kind="ResourceTerm" Key="list-end" Content="没有啦~" />
     <Node Recipe="Text" Kind="ResourceTerm" Key="alpha-style" Content="resource-base resource-version-type resource-version-alpha" />
     <Node Recipe="Text" Kind="ResourceTerm" Key="beta-style" Content="resource-base resource-version-type resource-version-beta" />
     <Node Recipe="Text" Kind="ResourceTerm" Key="checked-marker" Content="✓" />

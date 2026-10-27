@@ -289,7 +289,7 @@ internal sealed partial class SettingsPageController
             _identityWrite = null;
             if (_identityWriteInstance != _instance) { _ = written.Exception; return; }
             if (written.IsCompletedSuccessfully && written.Result.IsSuccess)
-            { _feedback.Info(CustomCopy("identity.saved")); _identity = null; _identityRead = null; StartIdentityRead(); RefreshManagement(); ManagementChanged?.Invoke(); }
+            { _feedback.Success(CustomCopy("identity.saved")); _identity = null; _identityRead = null; StartIdentityRead(); RefreshManagement(); ManagementChanged?.Invoke(); }
             else _feedback.Error(CustomFormat("IdentitySaveFailure", new() { ["error"] = written.IsCompletedSuccessfully ? written.Result.Error?.Message ?? "" : CustomCopy("identity.permissions") }), localizeMessage: false);
         }
         if (_identity is null && _identityRead is null && !_identityFailed) StartIdentityRead();

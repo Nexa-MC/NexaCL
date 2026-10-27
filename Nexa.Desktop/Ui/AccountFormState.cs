@@ -6,7 +6,7 @@ namespace Nexa.Desktop.Ui;
 internal static class AccountFormState
 {
     private const string Owner = "Nexa.Desktop.AccountForm";
-    private static readonly string[] BoolNames = ["open", "providers", "offline", "third-party", "import", "device", "busy", "loading", "submit", "code", "characters", "status-visible"];
+    private static readonly string[] BoolNames = ["open", "providers", "offline", "third-party", "import", "device", "busy", "loading", "submit", "code", "characters", "status-visible", "failed"];
     private static readonly string[] TextNames = ["mode", "title", "status", "user-code", "import-path", "submit-label"];
     private static readonly Dictionary<string, XsrSemanticId> Keys = BoolNames.Concat(TextNames)
         .ToDictionary(name => name, name => XsrSemanticId.Parse("account.form." + name), StringComparer.Ordinal);

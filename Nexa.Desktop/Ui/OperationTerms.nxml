@@ -52,7 +52,7 @@
 <Text Key="crash.unknown" Content="尚无法确定具体原因。以下是本次运行记录中的错误信息。" />
 <Text Key="task.icon.finished" Content="lucide/circle-check" />
 <Text Key="task.icon.failed" Content="lucide/circle-x" />
-<Text Key="task.icon.canceled" Content="lucide/circle-minus" />
+<Text Key="task.icon.canceled" Content="lucide/circle-x" />
 <Text Key="task.icon.paused" Content="lucide/pause" />
 <Text Key="task.icon.running" Content="lucide/loader-circle" />
 </StackPanel>

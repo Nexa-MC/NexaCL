@@ -20,11 +20,41 @@ internal static partial class Program
         AssertEqual(0, invalidations); // A stop may be called from the startup render pass.
         enabled = true; motion.Update(); motion.Stop();
         AssertEqual(baseline, AvaloniaUiMotion.CaptureDiagnostics().ActiveTracks);
+        var outcome = new AvaloniaUiOutcomeAnimation(() => invalidations++);
+        outcome.Update("success", true, false);
+        AssertEqual(baseline + 1, AvaloniaUiMotion.CaptureDiagnostics().ActiveTracks);
+        outcome.Update("success", true, false);
+        AssertEqual(baseline + 1, AvaloniaUiMotion.CaptureDiagnostics().ActiveTracks);
+        outcome.Update("success", false, false);
+        AssertEqual(1d, outcome.Progress);
+        AssertEqual(baseline, AvaloniaUiMotion.CaptureDiagnostics().ActiveTracks);
+        outcome.Update("success", true, false); // A retained result does not re-enter.
+        AssertEqual(baseline, AvaloniaUiMotion.CaptureDiagnostics().ActiveTracks);
+        outcome.Update("failure", true, true);
+        AssertEqual(1d, outcome.Progress);
+        AssertEqual(baseline, AvaloniaUiMotion.CaptureDiagnostics().ActiveTracks);
         var start = AvaloniaUiProgressRingDrawing.Sample(0, true, 0);
         var expanded = AvaloniaUiProgressRingDrawing.Sample(.5, true, 0);
         AssertTrue(expanded.Sweep > start.Sweep);
         AssertEqual(start, AvaloniaUiProgressRingDrawing.Sample(1, true, 0));
         AssertEqual(90d, AvaloniaUiProgressRingDrawing.Sample(0, false, .25).Sweep);
+        foreach (bool success in new[] { false, true })
+        {
+            int previousPainted = -1;
+            foreach (double phase in new[] { 0d, .55, 1d })
+            {
+                using var outcomeFrame = new RenderTargetBitmap(new PixelSize(48, 48), new Vector(96, 96));
+                using (var context = outcomeFrame.CreateDrawingContext())
+                    AvaloniaUiOutcomeAnimation.Draw(context, new Rect(0, 0, 48, 48), global::Avalonia.Media.Brushes.White, success, phase);
+                using var outcomePixels = ReadBrandPixels(outcomeFrame);
+                int count = 0;
+                for (int y = 0; y < 48; y++)
+                    for (int x = 0; x < 48; x++) if (outcomePixels.GetPixel(x, y).Alpha > 0) count++;
+                AssertTrue(count > previousPainted);
+                AssertTrue(count < 1100); // Stroke geometry, never a filled status disk.
+                previousPainted = count;
+            }
+        }
         using var card = new AvaloniaUiStartupCard(text => text, cancel: () => { });
         card.Measure(new Size(AvaloniaUiStartupCard.WindowWidth, double.PositiveInfinity));
         AssertTrue(card.DesiredSize.Height <= AvaloniaUiStartupCard.LoadingHeight);

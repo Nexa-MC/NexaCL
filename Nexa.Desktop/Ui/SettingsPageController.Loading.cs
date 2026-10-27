@@ -7,7 +7,9 @@ internal sealed partial class SettingsPageController
     private void UpdatePageLoading()
     {
         string? message = _catalog is null && _catalogReading is not null
-            ? ProductPresentationText.Raw("loading.settings") : null;
+            ? ProductPresentationText.Raw("loading.settings")
+            : _instanceDirectory is not null && _management is null && _managementRead is not null && _selected != "game"
+                ? ContentTerm("loading") : null;
         bool loading = message is not null;
         if (_pageLoading == loading && _pageLoadingMessage == (message ?? "")) return;
         _pageLoading = loading; _pageLoadingMessage = message ?? "";

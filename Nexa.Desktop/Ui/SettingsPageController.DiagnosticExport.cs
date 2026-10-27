@@ -52,7 +52,7 @@ internal sealed partial class SettingsPageController
         {
             if (_disposed) { stop.Cancel(); return; }
             bool saved = await export(stop.Token).ConfigureAwait(false);
-            if (!_disposed && !stop.IsCancellationRequested && saved) _feedback.Info(ProductPresentationText.Raw("settings.diagnostics.exportComplete"));
+            if (!_disposed && !stop.IsCancellationRequested && saved) _feedback.Success(ProductPresentationText.Raw("settings.diagnostics.exportComplete"));
         }
         catch (OperationCanceledException) { }
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
