@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Nexa.Services.Resources;
 using Nexa.Xsr.Renderer;
 
@@ -23,6 +23,7 @@ internal sealed partial class ResourcesPageController
     private double _catalogMetricPinOffset;
     private int _catalogColumns = 1;
     private double _catalogCardWidth;
+    private double _catalogViewportWidth, _catalogViewportHeight;
     private double EffectiveCatalogHeight => _catalogVirtualMetrics.ItemHeight > 0 ? _catalogVirtualMetrics.ItemHeight : CatalogRowHeight;
     private double EffectiveCatalogSpacing => _catalogVirtualMetrics.ItemHeight > 0 ? _catalogVirtualMetrics.Spacing : CatalogRowSpacing;
     private double EffectiveCatalogPitch => EffectiveCatalogHeight + EffectiveCatalogSpacing;
@@ -42,7 +43,16 @@ internal sealed partial class ResourcesPageController
         double width = Math.Max(1, _shell.Renderer.Viewport.Width - XsrUiShell.CollapsedRailWidth);
         double viewportHeight = DesktopResourcesText.Metric("virtual").MaxHeight!.Value;
         if (_shell.Renderer.TryGetScrollSnapshot(list, out var snapshot))
-        { width = Math.Max(1, snapshot.ViewportWidth); viewportHeight = Math.Max(1, snapshot.ViewportHeight); }
+        {
+            width = _catalogViewportWidth = Math.Max(1, snapshot.ViewportWidth);
+            viewportHeight = _catalogViewportHeight = Math.Max(1, snapshot.ViewportHeight);
+        }
+        else if (_catalogViewportWidth > 0)
+        {
+            // Returning from details has no list snapshot until the first layout.
+            // Keep the last measured viewport instead of temporarily guessing extra columns.
+            width = _catalogViewportWidth; viewportHeight = _catalogViewportHeight;
+        }
         int limit = next.RealizationLimit;
         int visibleLines = Math.Max(1, (int)Math.Ceiling(viewportHeight / (next.ItemHeight + next.Spacing)) + 1);
         int maximumColumns = Math.Clamp(limit / visibleLines, 1, 12);

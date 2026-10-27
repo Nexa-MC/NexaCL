@@ -256,9 +256,9 @@ internal static partial class Program
         var listBounds = FindByKey(fixture.Shell, scene, "ResourceList").Rect;
         var layoutBounds = FindByKey(fixture.Shell, scene, "ResourcesLayout").Rect;
         var footerBounds = FindByKey(fixture.Shell, scene, "ResourcePagination").Rect;
-        AssertTrue(listBounds.Y - layoutBounds.Y <= 128);
+        AssertTrue(listBounds.Y - layoutBounds.Y <= 152);
         AssertTrue(footerBounds.Height <= 34);
-        AssertClose(8, footerBounds.Y - listBounds.Y - listBounds.Height);
+        AssertClose(12, footerBounds.Y - listBounds.Y - listBounds.Height);
         AssertTrue(layoutBounds.Y + layoutBounds.Height - footerBounds.Y - footerBounds.Height <= 1);
         fixture.Shell.Renderer.SetTextInputValue(input, "Sodium");
         Emit(fixture.Intents, "ui.resources.action", page.Find("ResourceSearchButton"));
@@ -270,7 +270,7 @@ internal static partial class Program
         var body = FindByKey(fixture.Shell, scene, "ResourceProject.Valid123.Body");
         AssertTrue(body.Rect.X > card.Rect.X);
         AssertTrue(body.Rect.X + body.Rect.Width < card.Rect.X + card.Rect.Width);
-        AssertClose(148, card.Rect.Height);
+        AssertClose(168, card.Rect.Height);
         Emit(fixture.Intents, "ui.resources.action", page.Find("ResourceCurrentInstance"));
         scene = fixture.Shell.Render(new(1000, 650));
         AssertEqual("1.21.1", source.Last!.GameVersion);

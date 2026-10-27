@@ -77,6 +77,17 @@ internal static partial class Program
         AssertEqual(anchor, f.Row("First19"));
         AssertClose(offset, f.Snapshot.OffsetY);
         AssertEqual("unsubmitted draft", f.Fixture.Shell.Tree.GetComponent<XsrUiTextInput>(search)!.ReadDraft());
+
+        // The window could fit three guessed columns, but its measured list only fits two.
+        f.Size = new(960, 600); f.RenderFrames(3);
+        var list = f.Page.Find("ResourceList");
+        f.Fixture.Shell.Tree.GetComponent<XsrUiScroll>(list)!.OffsetY = 1320;
+        f.Fixture.Shell.Tree.MarkDirty(list, XsrUiDirtyKinds.Layout); f.RenderFrames(3);
+        double returnOffset = f.Snapshot.OffsetY;
+        string retained = f.Fixture.Shell.Tree.Name(f.Rows.Last()).Replace("ResourceProject.", "ResourceDetails.", StringComparison.Ordinal);
+        f.Click(retained); f.RenderFrames(3);
+        f.Fixture.Shell.Stage.Navigation.Pop(); f.RenderFrames(3);
+        AssertClose(returnOffset, f.Snapshot.OffsetY);
     }
 
     private static void ResourceContinuousListPreservesRowsAndExplicitlyRetriesTheSamePage()

@@ -1,9 +1,9 @@
 /* Launcher import is an explicit, retained settings workspace. */
 .settings-launcher-migration-body { Orientation: Vertical; Spacing: 10; Padding: 16; }
 .settings-launcher-migration-field { Orientation: Horizontal; Spacing: 10; MinHeight: 40; }
-.settings-launcher-migration-label { Width: 72; Height: 36; FontSize: 12; Foreground: #717c8c; }
+.settings-launcher-migration-label { Width: 72; Height: 36; FontSize: 12; Foreground: #5e6e82; }
 .settings-launcher-migration-value { Weight: 1; MinHeight: 36; FontSize: 12; Foreground: #2b3340; WrapText: true; }
-.settings-launcher-migration-note { MinHeight: 28; FontSize: 12; Foreground: #717c8c; WrapText: true; }
+.settings-launcher-migration-note { MinHeight: 28; FontSize: 12; Foreground: #5e6e82; WrapText: true; }
 .settings-launcher-migration-actions { Orientation: Horizontal; Spacing: 8; }
 .settings-launcher-migration-action { Width: 112; }
 .settings-launcher-migration-wide { Width: 144; }

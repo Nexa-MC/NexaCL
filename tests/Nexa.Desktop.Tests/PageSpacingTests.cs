@@ -26,13 +26,13 @@ internal static partial class Program
             {
                 var scene = shell.Render(new(1000, 650));
                 var padding = shell.Tree.GetComponent<XsrUiElement>(shell.Content)!.Padding;
-                AssertEqual(new XsrUiThickness(20, 16, 20, 16), padding);
+                AssertEqual(new XsrUiThickness(24, 20, 24, 20), padding);
                 if (page == home)
                 {
                     var content = scene.Nodes.Single(node => node.Entity == shell.Content).Rect;
                     var card = FindByKey(shell, scene, "CardAccount").Rect;
-                    AssertClose(140, card.X);
-                    AssertClose(68, card.Y);
+                    AssertClose(144, card.X);
+                    AssertClose(72, card.Y);
                 }
             }
         }

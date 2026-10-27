@@ -55,8 +55,8 @@ public sealed partial class AvaloniaUiShellWindow : Window
         _shell = shell;
         Title = shell.Title;
         _restoredFrameInset = OperatingSystem.IsMacOS() ? 0 : ChromeMargin;
-        Width = 850 + _restoredFrameInset * 2;
-        Height = 500 + _restoredFrameInset * 2;
+        Width = 960 + _restoredFrameInset * 2;
+        Height = 600 + _restoredFrameInset * 2;
         MinWidth = 810 + _restoredFrameInset * 2;
         MinHeight = 470 + _restoredFrameInset * 2;
         CanResize = true;

@@ -21,8 +21,8 @@
 .launch-install-catalog-check { Foreground: transparent; FontSize: 14; }
 .launch-install-catalog-check-selected { Foreground: #0b5bcb; }
 .launch-install-catalog-name { Foreground: #343d4a; FontSize: 14; }
-.launch-install-catalog-detail { Foreground: #7a8a99; FontSize: 14; }
-.launch-install-catalog-status { Height: 40; Foreground: #7a8a99; FontSize: 13; WrapText: true; }
+.launch-install-catalog-detail { Foreground: #606c7c; FontSize: 14; }
+.launch-install-catalog-status { Height: 40; Foreground: #606c7c; FontSize: 13; WrapText: true; }
 .launch-install-virtual-metrics { Height: 48; Spacing: 2; Width: 10; Padding: 4; MinHeight: 240; MaxHeight: 64; MaxWidth: 100000; }
 
 .launch-install-title-motion { Width: 12; }

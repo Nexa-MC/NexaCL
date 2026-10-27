@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Media.Imaging;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
@@ -26,6 +26,7 @@ internal static partial class Program
             foreach (bool dark in WardrobePreviewThemes)
             {
                 fixture.Shell.Renderer.ColorScheme = new(dark); string theme = dark ? "dark" : "light";
+                await Capture(fixture.Shell, "launch-default-" + theme, 960, 600);
                 Emit(fixture.Intents, "ui.account.add"); fixture.Shell.Render(new(1000, 640));
                 await Capture(fixture.Shell, "account-providers-" + theme);
                 Emit(fixture.Intents, "ui.account.third-party"); fixture.Shell.Render(new(1000, 640));

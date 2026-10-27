@@ -11,14 +11,14 @@
 .process-log-source-track { Orientation: Horizontal; Spacing: 0; Padding: 3; Height: 36; Background: #f1f5fa; Foreground: #2b3340; CornerRadius: 9; Surface: Solid; }
 .process-log-source-thumb { Background: #ffffff; Foreground: #2b3340; CornerRadius: 7; Surface: Solid; }
 .process-log-source { Height: 30; FontSize: 12; TextAlignment: Center; CornerRadius: 7; }
-.process-log-output { Orientation: Vertical; Weight: 1; Spacing: 0; Background: #ffffff; Border: #717c8c30; BorderWidth: 1; CornerRadius: 10; Surface: Solid; }
+.process-log-output { Orientation: Vertical; Weight: 1; Spacing: 0; Background: #ffffff; Border: #5e6e8230; BorderWidth: 1; CornerRadius: 10; Surface: Solid; }
 .process-log-reading { Weight: 1; }
 .process-log-rows { Orientation: Vertical; Weight: 1; Spacing: 2; Padding: 12,8,12,8; }
 .process-log-row { MinHeight: 22; FontSize: 12; WrapText: true; Background: #00000000; Foreground: #2b3340; CornerRadius: 2; Surface: Solid; Hover: #739edc14; }
 .process-log-row-selected { Background: #e7f0ff; }
-.process-log-empty { MaxWidth: 440; HorizontalAlignment: Center; VerticalAlignment: Center; Foreground: #717c8c; FontSize: 13; TextAlignment: Center; WrapText: true; Margin: 24; }
+.process-log-empty { MaxWidth: 440; HorizontalAlignment: Center; VerticalAlignment: Center; Foreground: #5e6e82; FontSize: 13; TextAlignment: Center; WrapText: true; Margin: 24; }
 .process-log-footer { Orientation: Horizontal; Height: 30; Spacing: 6; }
-.process-log-status { Weight: 1; Height: 28; FontSize: 12; Foreground: #717c8c; VerticalAlignment: Center; }
+.process-log-status { Weight: 1; Height: 28; FontSize: 12; Foreground: #5e6e82; VerticalAlignment: Center; }
 .process-log-page-arrow { Width: 26; Height: 26; FontSize: 20; Background: #00000000; }
-.process-log-page-number { Width: 48; Height: 26; Foreground: #717c8c; FontSize: 12; TextAlignment: Center; VerticalAlignment: Center; }
+.process-log-page-number { Width: 48; Height: 26; Foreground: #5e6e82; FontSize: 12; TextAlignment: Center; VerticalAlignment: Center; }
 .process-log-copy { Width: 100; Height: 28; FontSize: 12; }

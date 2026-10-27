@@ -1,8 +1,8 @@
 /* Existing product visual rules. Layout/behavior remain state driven. */
 .capsule { Background: #e0eafd; Foreground: #0b5bcb; Hover: #cfe1fe; }
-#CardAccount, #CardVersion, #CardAbout { Background: #fffffff1; Foreground: #343d4a; Border: #e0eafd; BorderWidth: 1; CornerRadius: 16; Surface: Solid; }
+#CardAccount, #CardVersion, #CardAbout { Background: #fffffff1; Foreground: #343d4a; Border: #e4e9f0; BorderWidth: 1; CornerRadius: 16; Surface: Solid; }
 #AccountHeader { Foreground: #343d4a; FontSize: 18; FontWeight: 600; }
-#VersionHeader, #AboutTitle, #TriviaTitle, #EchoTitle { Foreground: #7a8a99; FontSize: 12; FontWeight: 600; }
+#VersionHeader, #AboutTitle, #TriviaTitle, #EchoTitle { Foreground: #606c7c; FontSize: 12; FontWeight: 600; }
 #AboutMessage, #TriviaMessage, #EchoMessage { Foreground: #343d4a; FontSize: 14; FontWeight: 600; WrapText: true; }
 #WidgetAboutIndicator, #WidgetTriviaIndicator, #WidgetEchoIndicator { Background: transparent; Foreground: #343d4a; CornerRadius: 3; Hover: #e0eafd; Surface: Solid; }
 #WidgetAboutDot, #WidgetTriviaDot, #WidgetEchoDot { Background: #0b5bcb; Foreground: #343d4a; CornerRadius: 3; Surface: Solid; }
@@ -14,18 +14,18 @@
 #AccountImport { Background: #f4f6fa; Foreground: #0b5bcb; CornerRadius: 17; Hover: #e0eafd; FontSize: 13; FontWeight: 600; TextAlignment: Center; Surface: Solid; }
 #AccountAvatar { Foreground: #0b5bcb; FontSize: 14; }
 #AccountSwitch, #AccountWardrobe { Background: #e0eafd; Foreground: #0b5bcb; CornerRadius: 18; Hover: #cfe1fe; HoverExpand: true; FontSize: 13; FontWeight: 600; Surface: Solid; }
-#VersionAction { Foreground: #7a8a99; FontSize: 11; }
+#VersionAction { Foreground: #606c7c; FontSize: 11; }
 #AccountName { Foreground: #343d4a; FontSize: 22; FontWeight: 600; TextAlignment: Center; }
-#VersionName { Foreground: #343d4a; FontSize: 20; FontWeight: 600; }
+#VersionName { Foreground: #343d4a; FontSize: 18; FontWeight: 600; WrapText: true; }
 #InstanceRow { Background: #eef2f7; Foreground: #343d4a; CornerRadius: 12; Surface: Solid; }
 #InstanceListButton, #InstanceSettings, #InstanceModify { Background: #eef2f7; Foreground: #343d4a; CornerRadius: 18; Border: #e0eafd; BorderWidth: 1; HoverExpand: true; FontSize: 13; FontWeight: 600; TextAlignment: Center; Surface: Solid; }
-#LaunchButton { Background: #0b5bcb; Foreground: #ffffff; CornerRadius: 22; Hover: #1370f3; FontSize: 13; FontWeight: 600; TextAlignment: Center; Surface: Solid; }
+#LaunchButton { Background: #0b5bcb; Foreground: #ffffff; CornerRadius: 12; Hover: #1370f3; FontSize: 15; FontWeight: 600; TextAlignment: Center; Surface: Solid; }
 
 .launch-card-background { Foreground: #fffffff1; }
 .launch-card-border { Foreground: #e0eafd; }
 .launch-picker-background { Foreground: #eef2f7; }
 .launch-primary-text { Foreground: #343d4a; }
-.launch-secondary-text { Foreground: #7a8a99; }
+.launch-secondary-text { Foreground: #606c7c; }
 .launch-badge-background { Foreground: #e0eafd; }
 .launch-badge-text { Foreground: #0b5bcb; }
 .launch-launch-button-background { Foreground: #0b5bcb; }

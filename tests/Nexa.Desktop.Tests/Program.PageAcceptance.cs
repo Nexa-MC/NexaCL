@@ -1,4 +1,4 @@
-﻿using Nexa.Desktop.Ui;
+using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
 using Nexa.Services.Composition;
 using Nexa.Services.Foundation;
@@ -41,7 +41,7 @@ internal static partial class Program
         AssertEqual(18, header.VisualStyle.FontSize);
         AssertEqual(600, header.VisualStyle.FontWeight);
         XsrUiSceneNode versionName = FindByKey(fixture.Shell, scene, "VersionName");
-        AssertEqual(20, versionName.VisualStyle.FontSize);
+        AssertEqual(18, versionName.VisualStyle.FontSize);
         AssertEqual(600, versionName.VisualStyle.FontWeight);
         AssertEqual(
             XsrUiTextAlignment.Center,
@@ -62,9 +62,9 @@ internal static partial class Program
         using LaunchPageFixture fixture = new(new ImmediateInstanceSource([]));
         fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();
 
-        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(1280, 800)), contentWidth: 1120, contentHeight: 716);
-        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(850, 500)), contentWidth: 690, contentHeight: 416);
-        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(810, 470)), contentWidth: 650, contentHeight: 386);
+        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(1280, 800)), contentWidth: 1112, contentHeight: 708);
+        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(850, 500)), contentWidth: 682, contentHeight: 408);
+        AssertCompactLaunchGeometry(fixture.Shell, fixture.Shell.Render(new XsrUiSize(810, 470)), contentWidth: 642, contentHeight: 378);
     }
 
     private static void AssertCompactLaunchGeometry(
@@ -73,11 +73,11 @@ internal static partial class Program
         double contentWidth,
         double contentHeight)
     {
-        const double contentX = 140;
-        const double contentY = 68;
-        const double columnGap = 16;
+        const double contentX = 144;
+        const double contentY = 72;
+        const double columnGap = 20;
         const double rightCardGap = 12;
-        const double versionCardHeight = 184;
+        const double versionCardHeight = 212;
         double distributableWidth = contentWidth - columnGap;
         double expectedAccountWidth = Math.Min(360, distributableWidth * 0.92 / (0.92 + 1.35));
         double expectedRightWidth = distributableWidth - expectedAccountWidth;
@@ -163,7 +163,7 @@ internal static partial class Program
         AssertClose(javaChoice.Rect.Width, bedrockChoice.Rect.Width);
         AssertClose(javaChoice.Rect.Height, bedrockChoice.Rect.Height);
         AssertClose(javaChoice.Rect.Y, bedrockChoice.Rect.Y);
-        AssertClose(12, bedrockChoice.Rect.X - javaChoice.Rect.X - javaChoice.Rect.Width);
+        AssertClose(20, bedrockChoice.Rect.X - javaChoice.Rect.X - javaChoice.Rect.Width);
         AssertTrue(javaChoice.Rect.Width > 450 && javaChoice.Rect.Height > 500);
         AssertFalse(HasKey(fixture.Shell, root, "InstallTitle"));
         AssertFalse(HasKey(fixture.Shell, root, "InstallDescription"));

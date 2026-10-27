@@ -259,8 +259,8 @@ internal static partial class Program
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         scene = fixture.Shell.Render(new(1000, 650));
         var scroll = FindByKey(fixture.Shell, scene, "SettingsSections").Entity;
-        // Editable window settings are now visible without scrolling past reserved rows.
-        fixture.Shell.Tree.GetComponent<XsrUiScroll>(scroll)!.OffsetY = 0;
+        // Scroll to the window group before checking retained draft and focus behavior.
+        fixture.Shell.Tree.GetComponent<XsrUiScroll>(scroll)!.OffsetY = 200;
         fixture.Shell.Tree.MarkDirty(scroll, XsrUiDirtyKinds.Layout);
         scene = fixture.Shell.Render(new(1000, 650));
         var input = FindByKey(fixture.Shell, scene, "SettingsInput.game.width");
@@ -460,10 +460,10 @@ internal static partial class Program
             scene = fixture.Shell.Render(new(width, 650));
             var card = FindByKey(fixture.Shell, scene, "SettingsUpdateCard");
             var body = FindByKey(fixture.Shell, scene, "SettingsUpdateCard.Body");
-            AssertTrue(Math.Abs(body.Rect.X - card.Rect.X - 20) < .01);
-            AssertTrue(Math.Abs(card.Rect.Width - body.Rect.Width - 40) < .01);
-            AssertTrue(Math.Abs(body.Rect.Y - card.Rect.Y - 18) < .01);
-            AssertTrue(Math.Abs(card.Rect.Height - body.Rect.Height - 36) < .01);
+            AssertTrue(Math.Abs(body.Rect.X - card.Rect.X - 24) < .01);
+            AssertTrue(Math.Abs(card.Rect.Width - body.Rect.Width - 48) < .01);
+            AssertTrue(Math.Abs(body.Rect.Y - card.Rect.Y - 20) < .01);
+            AssertTrue(Math.Abs(card.Rect.Height - body.Rect.Height - 40) < .01);
         }
     }
 

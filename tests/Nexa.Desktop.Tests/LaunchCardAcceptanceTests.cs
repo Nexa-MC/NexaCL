@@ -88,7 +88,7 @@ internal static partial class Program
                         AssertEqual(1, source.Count);
                         AssertEqual("Player", FindByKey(fixture.Shell, scene, "AccountName").Text);
                         XsrUiRect version = FindByKey(fixture.Shell, scene, "CardVersion").Rect;
-                        AssertClose(184, version.Height);
+                        AssertClose(212, version.Height);
                         foreach (string key in new[] { "VersionContent", "VersionHeaderRow", "InstanceListButton",
                     "InstanceRow", "InstanceRowContent", "VersionName", "InstanceModify", "InstanceSettings", "LaunchButton" })
                             AssertContains(version, FindByKey(fixture.Shell, scene, key).Rect);

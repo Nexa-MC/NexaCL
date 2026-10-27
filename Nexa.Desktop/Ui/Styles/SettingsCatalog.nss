@@ -1,6 +1,6 @@
-﻿/* Settings catalogue rows and editable values. */
-.settings-catalog-row { Orientation: Horizontal; Spacing: 16; MinHeight: 40; Padding: 0,3,0,3; VerticalAlignment: Center; }
-.settings-catalog-labels { Orientation: Vertical; Spacing: 3; Width: 176; VerticalAlignment: Center; }
+/* Settings catalogue rows and editable values. */
+.settings-catalog-row { Orientation: Horizontal; Spacing: 16; MinHeight: 44; Padding: 0,6,0,6; VerticalAlignment: Center; }
+.settings-catalog-labels { Orientation: Vertical; Spacing: 3; Width: 184; VerticalAlignment: Center; }
 .settings-catalog-labels-top { VerticalAlignment: Start; }
 .settings-catalog-label { Height: 22; FontSize: 14; FontWeight: 500; Foreground: #2b3340; VerticalAlignment: Center; }
 .settings-catalog-controls { Orientation: Vertical; Spacing: 0; Weight: 1; VerticalAlignment: Center; }
@@ -27,6 +27,6 @@
 .settings-hook-apply { Width: 44; VerticalAlignment: Start; }
 .settings-hook-add { Width: 72; }
 .settings-hook-page { Width: 72; }
-.settings-hook-counter { Height: 30; Foreground: #717c8c; FontSize: 12; VerticalAlignment: Center; }
+.settings-hook-counter { Height: 30; Foreground: #5e6e82; FontSize: 12; VerticalAlignment: Center; }
 
 .settings-inherit-slot { Width: 64; VerticalAlignment: Center; }

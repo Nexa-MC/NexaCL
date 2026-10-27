@@ -1,7 +1,7 @@
 /* WardrobePage layout. */
 .layout-WardrobePage-WardrobeRoot { Orientation: Horizontal; Weight: 1; }
 .layout-WardrobePage-WardrobeRailSurface { Width: 300; }
-.layout-WardrobePage-WardrobeProfileRail { Orientation: Vertical; Width: 300; Padding: 22,18,22,22; Spacing: 8; }
+.layout-WardrobePage-WardrobeProfileRail { Orientation: Vertical; Width: 300; Padding: 24,20,24,24; Spacing: 8; }
 .layout-WardrobePage-WardrobeCurrentTitle { Height: 32; }
 .layout-WardrobePage-WardrobeCurrentSubtitle { Height: 24; }
 .layout-WardrobePage-WardrobeCurrentCard { Orientation: Vertical; Weight: 1; MinHeight: 160; Padding: 16,12,16,16; Spacing: 6; }
@@ -14,7 +14,7 @@
 .layout-WardrobePage-WardrobeLibrary { Height: 42; }
 .layout-WardrobePage-WardrobeManage { Height: 38; }
 .layout-WardrobePage-WardrobeCancel { Height: 34; }
-.layout-WardrobePage-WardrobeContent { Orientation: Vertical; Weight: 1; Padding: 26,20,26,24; Spacing: 8; }
+.layout-WardrobePage-WardrobeContent { Orientation: Vertical; Weight: 1; Padding: 24,20,24,24; Spacing: 8; }
 .layout-WardrobePage-WardrobeMainHeader { Orientation: Horizontal; Spacing: 10; Height: 34; }
 .layout-WardrobePage-WardrobePageTitle { Weight: 1; }
 .layout-WardrobePage-WardrobeStatus { Height: 30; }
