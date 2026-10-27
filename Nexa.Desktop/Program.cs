@@ -488,7 +488,6 @@ internal static partial class Program
             uiIntents);
 
         using var languageSession = new DesktopLanguageSession(shell, host.StateStore);
-        using var sidecarNxmlSession = sidecarNxml.Attach(shell, uiIntents, host.StateStore, message => host.Logging.Warn("Sidecar", message));
 
         using DesktopFeedbackService feedback = new();
         using DesktopFeedbackPresenter feedbackPresenter = new(
@@ -509,6 +508,7 @@ internal static partial class Program
         await Task.WhenAll(host.StartNetworkCostMonitoringAsync(), host.StartPowerPressureMonitoringAsync()).WaitAsync(startup?.CancellationToken ?? default).ConfigureAwait(false);
         setStage("attach_product_controllers");
         AvaloniaUiPlatformActions platformActions = new() { LocalizeContentPicker = shell.Renderer.LocalizeText };
+        using var sidecarNxmlSession = sidecarNxml.Attach(shell, uiIntents, host.StateStore, message => host.Logging.Warn("Sidecar", message), openLink: platformActions.OpenHttpsUri);
         platformActions.MemoryPressureObserved += observation =>
         {
             if (OperatingSystem.IsWindows()) AvaloniaUiPlatformActions.SetGpuAvailableBudget(Nexa.Services.Capabilities.GpuProbes.ReadActiveGpuHeadroom());

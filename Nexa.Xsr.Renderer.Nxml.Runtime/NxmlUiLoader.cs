@@ -312,6 +312,7 @@ public sealed partial class NxmlUiLoader
         }
         if (node.OverlayMotion is { } motion) tree.SetComponent(entity, new XsrUiOverlayMotion(motion));
         if (node.LiveSetting is { } live) tree.SetComponent(entity, new XsrUiLiveRegion(live));
+        if (node.ScrollCommand is { } scrollCommand) tree.SetComponent(entity, new NxmlScrollObservation(scrollCommand));
         if (node.DismissCommand is { } dismiss) tree.SetComponent(entity, new XsrUiDismissBinding(dismiss));
 
         NxmlIrBinding? transitionBinding = node.Bindings.FirstOrDefault(binding => binding.Property == XsrUiStateProperty.TransitionKey);

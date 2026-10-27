@@ -11,6 +11,47 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static void SidecarLinksAllowOnlyUserFacingHttps()
+    {
+        foreach (var invalid in new[] { "file:///etc/passwd", "javascript:alert(1)", "http://example.com", "https://user:password@example.com", "https://example.com/\n" })
+            AssertTrue(!DesktopSidecarNxml.TryHttpsLink(invalid, out _));
+        AssertTrue(DesktopSidecarNxml.TryHttpsLink("https://example.com/settings", out var link));
+        AssertEqual("example.com", link!.Host);
+    }
+
+    private static void SidecarScrollDispatchesOnlyActivePage()
+    {
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
+        var adapter = new DesktopSidecarNxml(fixture.Store);
+        List<string> warnings = []; int opened = 0;
+        using var presentation = adapter.Attach(fixture.Shell, fixture.Intents, fixture.Store, warnings.Add, openLink: _ => opened++);
+        var (session, peer) = ActivateCaptionPatch(new(), "", declarations:
+            [new(SidecarRegistrationKind.Command, "test.scroll", 0, 0),
+             PageDeclaration("test.nav", "#navigation-toggle", SidecarNxmlOperation.Before,
+                 """<NavigationItem Key="ScrollNav" Label="Browse" Content="Browse" Command="ui.sidecar.page.open" Argument="#ScrollPage" />"""),
+             PageDeclaration("test.page", "#ScrollPage", SidecarNxmlOperation.Page,
+                 """<Page Key="ScrollPage"><StackPanel><Button Key="WebLink" Content="Website" Height="44" Command="ui.sidecar.link.open" Argument="https://example.com/help" /><StackPanel Key="Observed" Scroll="true" ScrollCommand="test.scroll" Height="200"><Text Content="rows" Height="1000" /></StackPanel></StackPanel></Page>""")],
+            features: SidecarFeatures.All, nxml: adapter).GetAwaiter().GetResult();
+        using (session) using (peer)
+        {
+            var loop = session.RunReceiveLoopAsync().AsTask();
+            fixture.Shell.Renderer.ReducedMotion = true;
+            var scene = fixture.Shell.Render(new(1000, 650));
+            AssertTrue(fixture.Shell.Renderer.Activate(FindByKey(fixture.Shell, scene, "ScrollNav").Entity));
+            scene = fixture.Shell.Render(new(1000, 650));
+            scene = fixture.Shell.Render(new(1000, 650));
+            var request = peer.ReceiveAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+            AssertEqual(SidecarMessageType.CommandRequest, request.MessageType);
+            var call = SidecarDataMessages.DecodeBinaryRequest(request.Payload.Span);
+            AssertEqual(1u, call.ContractId); AssertEqual("0|200|1000", Encoding.UTF8.GetString(call.Value.Span));
+            peer.SendAsync(new(SidecarProtocol.Version, SidecarMessageType.CommandResult, SidecarFrameTraits.Final,
+                request.CorrelationId, SidecarDataMessages.EncodeBinaryResult(true, new(0, []), null))).AsTask().GetAwaiter().GetResult();
+            AssertTrue(fixture.Shell.Renderer.Activate(FindByKey(fixture.Shell, scene, "WebLink").Entity));
+            AssertEqual(1, opened); AssertEqual(0, warnings.Count);
+            session.Dispose(); loop.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+        }
+    }
+
     private static SidecarRegistrationItem PageDeclaration(string id, string target, SidecarNxmlOperation operation, string markup)
     {
         byte[] payload = SidecarNxmlDocument.Encode(new(target, operation, "main.nxml", new Dictionary<string, string> { ["main.nxml"] = markup }));

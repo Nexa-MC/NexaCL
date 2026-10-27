@@ -7,7 +7,8 @@ public sealed record NxmlPreparedDocument(NxmlHostIr Root, IReadOnlyList<NxmlPre
 {
     public IReadOnlyList<XsrSemanticId> Commands => Enumerate(Root.Root)
         .Concat(Fragments.SelectMany(fragment => Enumerate(fragment.Content.Root)))
-        .Where(node => node.Command is not null).Select(node => node.Command!.Value).Distinct().ToArray();
+        .SelectMany(node => new XsrSemanticId?[] { node.Command, node.ScrollCommand }).Where(command => command is not null)
+        .Select(command => command!.Value).Distinct().ToArray();
 
     private static IEnumerable<NxmlIrNode> Enumerate(NxmlIrNode root)
     {

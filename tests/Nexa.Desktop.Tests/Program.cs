@@ -418,6 +418,8 @@ internal static partial class Program
         ("resource primitive function patch changes presentation only", ResourcePrimitiveFunctionPatchChangesPresentationOnly),
         ("resource interactive module presents live state and cancels retired source", ResourceInteractiveModulePresentsLiveStateAndCancelsRetiredSource),
         ("Sidecar NXML replaces a future page without product adapters", SidecarNxmlPresentsFuturePagesAndRoutesActions),
+        ("Sidecar scroll dispatches active-page observations and user links", SidecarScrollDispatchesOnlyActivePage),
+        ("Sidecar links accept only bounded HTTPS destinations", SidecarLinksAllowOnlyUserFacingHttps),
         ("Sidecar standalone pages navigate, return and retire", SidecarStandalonePagesNavigateAndRetire),
         ("Sidecar onboarding resumes Host setup and clears page drafts", SidecarOnboardingResumesSetup),
         ("resource function patch rewrites actual list and detail captions", ResourceFunctionPatchRewritesActualListAndDetailCaptions),

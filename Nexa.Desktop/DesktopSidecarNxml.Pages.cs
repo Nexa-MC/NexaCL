@@ -10,8 +10,16 @@ namespace Nexa.Desktop;
 
 internal sealed partial class DesktopSidecarNxml
 {
+    internal static bool TryHttpsLink(string value, out Uri? uri)
+    {
+        uri = null;
+        return value.Length is > 0 and <= 2048 && !value.Any(char.IsControl)
+            && Uri.TryCreate(value, UriKind.Absolute, out uri) && uri.Scheme == Uri.UriSchemeHttps
+            && uri.UserInfo.Length == 0 && uri.Host.Length > 0;
+    }
     private sealed partial class Session
     {
+        private static readonly XsrSemanticId OpenLink = XsrSemanticId.Parse("ui.sidecar.link.open");
         private static readonly XsrSemanticId OpenPage = XsrSemanticId.Parse("ui.sidecar.page.open");
         private static readonly XsrSemanticId ContinueOnboarding = XsrSemanticId.Parse("ui.sidecar.onboarding.continue");
         private readonly Dictionary<Guid, PageInstance> _pages = [];
@@ -50,6 +58,17 @@ internal sealed partial class DesktopSidecarNxml
 
         private bool PageIntent(Guid exposure, DesktopUiIntent intent)
         {
+            if (intent.Command == OpenLink)
+            {
+                string value = _shell.Renderer.ReadIntentArgument(intent.Source);
+                if (TryHttpsLink(value, out var uri) && _openLink is not null)
+                {
+                    try { _openLink(uri!); }
+                    catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception)
+                    { _warn("Unable to open Sidecar browser link."); }
+                }
+                return true;
+            }
             if (intent.Command == OpenPage)
             {
                 string target = _shell.Renderer.ReadIntentArgument(intent.Source);
@@ -113,9 +132,13 @@ internal sealed partial class DesktopSidecarNxml
             : base(tree, store, document)
         {
             Operation = operation;
+            List<XsrUiEntityId> observers = [];
+            tree.Walk(Root, node => { if (tree.GetComponent<NxmlScrollObservation>(node) is not null) observers.Add(node); return true; });
+            ScrollObservers = observers.ToArray();
             XsrUiTransition.ConfigureIndependent(tree, Root, "sidecar-page-" + Guid.NewGuid().ToString("N"), distance: 8);
         }
         internal SidecarNxmlOperation Operation { get; }
+        internal IReadOnlyList<XsrUiEntityId> ScrollObservers { get; }
         internal CancellationTokenSource Stop { get; } = new();
     }
 }

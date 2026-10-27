@@ -33,7 +33,7 @@ internal sealed partial class DesktopSidecarNxml
     }
 
     internal IDisposable Attach(XsrUiShell shell, DesktopUiIntentSink intents, XsrStateStore store,
-        Action<string> warn, XsrUiEntityId onboardingFallback = default) => new Session(this, shell, intents, store, warn, onboardingFallback);
+        Action<string> warn, XsrUiEntityId onboardingFallback = default, Action<Uri>? openLink = null) => new Session(this, shell, intents, store, warn, onboardingFallback, openLink);
 
     private sealed partial class Session : IDisposable
     {
@@ -42,6 +42,7 @@ internal sealed partial class DesktopSidecarNxml
         private readonly IDisposable _route;
         private readonly XsrStateStore _store;
         private readonly Action<string> _warn;
+        private readonly Action<Uri>? _openLink;
         private readonly NxmlPresentationCoordinator _coordinator;
         private XsrNxmlModuleSnapshot? _snapshot;
         private IReadOnlyList<NxmlPresentationLayer> _layers = [];
@@ -49,9 +50,9 @@ internal sealed partial class DesktopSidecarNxml
         private long _styledStructure = -1;
 
         internal Session(DesktopSidecarNxml owner, XsrUiShell shell, DesktopUiIntentSink intents,
-            XsrStateStore store, Action<string> warn, XsrUiEntityId onboardingFallback)
+            XsrStateStore store, Action<string> warn, XsrUiEntityId onboardingFallback, Action<Uri>? openLink)
         {
-            _owner = owner; _shell = shell; _store = store; _warn = warn;
+            _owner = owner; _shell = shell; _store = store; _warn = warn; _openLink = openLink;
             _onboardingFallback = onboardingFallback;
             _coordinator = new(shell.Tree, store);
             shell.Renderer.PresentationPreparing += Frame;
@@ -86,6 +87,7 @@ internal sealed partial class DesktopSidecarNxml
             catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
             { _warn("NXML presentation could not be mounted: " + error.Message); }
             AdvanceOnboarding();
+            ObserveScroll();
         }
         private void StyleChanged(object? sender, EventArgs args) => _styledStructure = -1;
         private bool Intent(DesktopUiIntent intent)

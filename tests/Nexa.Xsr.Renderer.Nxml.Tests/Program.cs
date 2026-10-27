@@ -8,6 +8,7 @@ internal static partial class Program
 {
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("scroll observations admit commands and retain bounded lifecycle", ScrollObservationsAreAdmittedBoundedAndRetained),
         ("global NXML mounts target future pages without adapters", GlobalNxmlMountsTargetFuturePages),
         ("standalone documents reload without losing input and reject changed structure", StandaloneDocumentReloadPreservesInput),
         ("standalone animation keys reload without retiring inputs", StandaloneTransitionKeysReloadWithoutRetiringInput),

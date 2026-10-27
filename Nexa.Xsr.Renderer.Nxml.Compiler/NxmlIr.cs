@@ -89,6 +89,7 @@ public sealed record NxmlIrNode
     public bool StretchLastChild { get; init; }
 
     public bool Scrollable { get; init; }
+    public XsrSemanticId? ScrollCommand { get; init; }
     public bool ShowsVerticalIndicator { get; init; }
     public bool ShowsHorizontalIndicator { get; init; }
     public bool UseVerticalWheelForHorizontalScroll { get; init; }
