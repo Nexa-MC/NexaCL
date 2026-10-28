@@ -74,6 +74,37 @@ internal static partial class Program
         AssertEqual(0, intents.Count);
     }
 
+    private static void MountedPresentationRefreshesChildrenBeforeImmediateFocus()
+    {
+        XsrUiTree tree = new();
+        var root = tree.Create("root");
+        var old = tree.Create("old input");
+        tree.SetComponent(old, new XsrUiElement { Width = 100, Height = 40 });
+        tree.SetComponent(old, new XsrUiInput { Focusable = true });
+        tree.Attach(old, root);
+        var extension = tree.Create("extension");
+        tree.SetComponent(extension, new XsrUiElement { Width = 100, Height = 40 });
+        tree.SetComponent(extension, new XsrUiInput { Focusable = true });
+        using var mount = tree.Presentation.MountContent(root, extension, XsrUiMountOperation.Append);
+        XsrUiRenderer renderer = new(tree, new XsrStateStoreBuilder().Build());
+        renderer.SetRoot(root); renderer.Render();
+        AssertTrue(renderer.Focus(old));
+        tree.Destroy(old);
+        var replacement = tree.Create("replacement input");
+        tree.SetComponent(replacement, new XsrUiElement { Width = 100, Height = 40 });
+        tree.SetComponent(replacement, new XsrUiInput { Focusable = true });
+        tree.Attach(replacement, root);
+        // Controllers rebuild and focus rows during FramePreparing, before the next
+        // presentation pass. Focus must see the current tree, not its cached siblings.
+        AssertTrue(renderer.Focus(replacement));
+        AssertEqual(replacement, renderer.Focused);
+        tree.Create("unrelated detached node");
+        AssertTrue(renderer.Focus(extension));
+        AssertTrue(renderer.Focus(replacement));
+        renderer.Render();
+        AssertEqual(replacement, renderer.Focused);
+    }
+
     private static void PointerBlurToleratesDestroyedFocus()
     {
         XsrUiTree tree = new();

@@ -50,8 +50,7 @@ public sealed class XsrUiPresentation
 
     internal void PrepareFrame()
     {
-        if (_structure != _source.StructureRevision)
-        { _structure = _source.StructureRevision; _children.Clear(); _parents.Clear(); }
+        RefreshStructure();
         for (int index = _mounts.Count - 1; index >= 0; index--)
         {
             var mount = _mounts[index];
@@ -66,6 +65,16 @@ public sealed class XsrUiPresentation
         _source.Walk(root, entity => { _source.ClearDirty(entity); return true; });
         foreach (var mount in _mounts)
             _source.Walk(mount.Content, entity => { _source.ClearDirty(entity); return true; });
+    }
+
+    private void RefreshStructure()
+    {
+        // Controllers can rebuild and focus controls between presentation frames.
+        // Cached relationships must follow those mutations immediately, too.
+        if (_structure == _source.StructureRevision) return;
+        _structure = _source.StructureRevision;
+        _children.Clear();
+        _parents.Clear();
     }
 
     private void Changed(XsrUiEntityId target)
@@ -143,6 +152,7 @@ public sealed class XsrUiPresentation
     internal IReadOnlyList<XsrUiEntityId> Children(XsrUiEntityId entity)
     {
         if (_mounts.Count == 0) return _source.Children(entity);
+        RefreshStructure();
         if (_children.TryGetValue(entity, out var cached)) return cached;
         _byTarget.TryGetValue(entity, out var own);
         var replacement = own?.LastOrDefault(mount => mount.Operation == XsrUiMountOperation.Replace && _source.IsAlive(mount.Content));

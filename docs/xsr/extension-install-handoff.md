@@ -14,3 +14,5 @@ require an owned opt-in command and prove theme import occurs only on an
 explicit user action. The actual Cloud Market binary declarations compile and
 navigate in Host; its linux-x64 NativeAOT executable completes real authenticated
 bootstrap/registration. Architecture checks pass for all 72 Host projects.
+
+Production signed-bundle validation found that mounted presentation child caches could outlive controller row reconstruction between frames. Child reads now invalidate the cached graph on source structure revision changes; regression coverage destroys/recreates a focused row with an extension mounted, focuses it before rendering, and retains extension focus after an unrelated mutation.
