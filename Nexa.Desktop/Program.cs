@@ -704,6 +704,13 @@ internal static partial class Program
         bool validateThemes = args.Contains("--validate-themes", StringComparer.OrdinalIgnoreCase);
         if (validateThemes || args.Contains("--validate-shell", StringComparer.OrdinalIgnoreCase))
         {
+            if (args.FirstOrDefault(argument => argument.StartsWith("--require-sidecar=", StringComparison.Ordinal)) is { } requiredSidecar)
+            {
+                await sidecarLifetime.InitialReady.WaitAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
+                if (!sidecars.TryGetSession(requiredSidecar[18..], out _))
+                    throw new InvalidDataException("Required signed Sidecar did not reach an active production session.");
+                Console.WriteLine("Required Sidecar passed production signature verification and authenticated activation.");
+            }
             await themes.PrepareStartupAsync(CancellationToken.None).ConfigureAwait(false);
             setStage("validate_shell");
             host.Logging.Info("Launcher", "Headless shell validation started viewport=1280x800");

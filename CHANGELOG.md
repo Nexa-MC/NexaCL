@@ -1,5 +1,13 @@
 # 更新日志
 
+## 2.0.0.alpha.16 · Firefly Alpha 16
+
+内置正式签名的 Market Sidecar，设备码登录与网站唤起主题安装。详见 [Alpha 16](docs/releases/2.0.0.alpha.16.md)。
+
+## 2.0.0.alpha.15 · Firefly Alpha 15
+
+统一界面层级、圆环结果反馈及连续资源列表。详见 [Alpha 15](docs/releases/2.0.0.alpha.15.md)。
+
 ## 2.0.0.alpha.14 · Firefly Alpha 14
 
 本地平台与资源治理、原生快照／Steam／macOS 动作、完整运行遥测。详见 [Alpha 14](docs/releases/2.0.0.alpha.14.md)，公开状态以 Releases 为准。

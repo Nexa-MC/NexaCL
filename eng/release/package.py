@@ -114,6 +114,25 @@ def create_dmg(source, destination):
         time.sleep(2 ** (attempt + 1))
 
 
+def seal_macos_bundle(app, work):
+    # Preserve independently publisher-signed Sidecar bytes. Deep force-signing
+    # would rewrite its Mach-O signature and invalidate the detached GPG signature.
+    sidecar = app / "Contents/MacOS/Nexa.Cloud.Market.Sidecar.nsc"
+    held = work / "publisher-signed-sidecar.nsc"
+    if sidecar.exists():
+        sidecar.rename(held)
+    try:
+        run("codesign", "--force", "--deep", "--sign", "-", app)
+    finally:
+        if held.exists():
+            held.rename(sidecar)
+    if sidecar.exists():
+        # The Sidecar already has its NativeAOT ad-hoc signature. Reseal only
+        # the outer application after restoring it, without rewriting nested code.
+        run("codesign", "--force", "--sign", "-", app)
+    run("codesign", "--verify", "--deep", "--strict", app)
+
+
 def macos(payload, output, work, base, version, prefix, arch):
     app = work / "Nexa.app"
     contents = app / "Contents"
@@ -134,9 +153,7 @@ def macos(payload, output, work, base, version, prefix, arch):
     run("iconutil", "-c", "icns", iconset, "-o", resources / "Launcher.icns")
     with (contents / "Info.plist").open("wb") as stream:
         plistlib.dump(bundle_info(version, prefix), stream)
-    # Ad-hoc signing seals the complete bundle, including all NativeAOT/Skia libraries.
-    run("codesign", "--force", "--deep", "--sign", "-", app)
-    run("codesign", "--verify", "--deep", "--strict", app)
+    seal_macos_bundle(app, work)
     run(contents / "MacOS/Nexa.Desktop", "--validate-shell")
     dmg_source = work / "dmg"
     dmg_source.mkdir()

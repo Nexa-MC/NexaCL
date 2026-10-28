@@ -10,10 +10,31 @@ import package
 
 
 class RuntimePayloadTests(unittest.TestCase):
+    def test_macos_sealing_preserves_detached_signed_sidecar_bytes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); app = root / "Nexa.app"
+            binary = app / "Contents/MacOS/Nexa.Cloud.Market.Sidecar.nsc"
+            binary.parent.mkdir(parents=True); binary.write_bytes(b"publisher signed Mach-O")
+            calls = []
+            def sign(*args):
+                calls.append(args)
+                if "--deep" in args and "--force" in args:
+                    self.assertFalse(binary.exists())
+                if "--force" in args and "--deep" not in args:
+                    self.assertEqual(b"publisher signed Mach-O", binary.read_bytes())
+            with patch.object(package, "run", side_effect=sign):
+                package.seal_macos_bundle(app, root)
+            self.assertEqual(3, len(calls))
+            self.assertEqual(b"publisher signed Mach-O", binary.read_bytes())
+            with patch.object(package, "run", side_effect=RuntimeError("signing failed")):
+                with self.assertRaises(RuntimeError): package.seal_macos_bundle(app, root)
+            self.assertEqual(b"publisher signed Mach-O", binary.read_bytes())
+
     def seed(self, source, platform):
         suffix = ".exe" if platform == "win" else ""
         keep = ["Nexa.Desktop" + suffix, "Nexa.Jvm.Host" + suffix, "Nexa.Update.Helper" + suffix,
-                "runtime/SkiaSharp.dll", "runtime/libSkiaSharp.so", "runtime/libHarfBuzzSharp.dylib",
+                "Nexa.Cloud.Market.Sidecar.nsc", "Nexa.Cloud.Market.Sidecar.nsc.asc",
+                "Nexa.Cloud.Market.Sidecar.json", "runtime/SkiaSharp.dll", "runtime/libSkiaSharp.so", "runtime/libHarfBuzzSharp.dylib",
                 "Nexa.Desktop.runtimeconfig.json", "Nexa.Desktop.deps.json",
                 "resources/zh-CN/Nexa.resources.dll", "assets/test.png", "licenses/library.xml"]
         excluded = ["Nexa.Desktop.pdb", "Nexa.Jvm.Host.PDB", "runtime/native.dbg",

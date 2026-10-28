@@ -85,6 +85,14 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
+      - name: Fetch pinned independent Market Sidecar binary
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag=$(python -c 'import json; print(json.load(open("eng/release/market-sidecar.lock.json"))["inputRelease"])')
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'Nexa.Cloud.Market.Sidecar-${{ matrix.rid }}.nsc' --dir "$RUNNER_TEMP/market-input"
       - name: Install Linux packaging tools
         if: runner.os == 'Linux'
         shell: bash
@@ -218,6 +226,26 @@ jobs:
             -r '${{ matrix.rid }}' --self-contained true -m:1 -nodeReuse:false \
             -p:PublishAot=true -p:StripSymbols=true --output "$RUNNER_TEMP/window-integration"
           "$RUNNER_TEMP/window-integration/Nexa.Desktop.Tests.exe" --window-integration-smoke
+      - name: Ensure GnuPG for embedded Sidecar signatures
+        shell: bash
+        run: |
+          if ! command -v gpg >/dev/null; then
+            if [[ "$RUNNER_OS" == macOS ]]; then brew install gnupg; else exit 1; fi
+          fi
+          gpg --version
+      - name: Sign and verify bundled Market Sidecar with the official publisher key
+        shell: bash
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          python eng/release/market_sidecar.py stage "$RUNNER_TEMP/launcher" --rid '${{ matrix.rid }}' --source "$RUNNER_TEMP/market-input/Nexa.Cloud.Market.Sidecar-${{ matrix.rid }}.nsc"
+      - name: Verify signed Sidecar through the production NativeAOT Host
+        shell: bash
+        run: |
+          binary="$RUNNER_TEMP/launcher/Nexa.Desktop"
+          if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
+          "$binary" --validate-shell --require-sidecar=Nexa.Cloud.Market.Sidecar
       - name: Build native installers and portable archive
         shell: bash
         run: python eng/release/package.py --payload "$RUNNER_TEMP/launcher" --output artifacts --rid '${{ matrix.rid }}' --version "$PRODUCT_VERSION"
@@ -288,6 +316,8 @@ jobs:
           python3 eng/release/delta_history.py "$RUNNER_TEMP/update-history" "$PRODUCT_VERSION"
           python3 eng/release/delta.py artifacts "$PRODUCT_VERSION" "$RUNNER_TEMP/update-history"
           python3 eng/release/verify.py artifacts "$PRODUCT_VERSION"
+      - name: Verify embedded Sidecar signatures and provenance in all six portable packages
+        run: python3 eng/release/market_sidecar.py verify artifacts --version "$PRODUCT_VERSION"
       - name: Sign and independently verify the complete distribution
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
