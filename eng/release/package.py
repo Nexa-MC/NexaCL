@@ -91,13 +91,19 @@ def windows(payload, output, work, base, version, prefix, arch):
 def create_dmg(source, destination):
     """Retry only transient hdiutil contention; publish only a verified image."""
     destination = Path(destination)
+    # hdiutil's automatic APFS sizing can leave too little room for filesystem
+    # metadata. Reserve explicit headroom independently of UDZO compression.
+    payload_bytes = sum(path.stat().st_size for path in Path(source).rglob("*") if path.is_file())
+    capacity_mib = max(128, (payload_bytes * 5 // 4 + (1 << 20) - 1) // (1 << 20) + 64)
+    print(f"DMG payload={payload_bytes} bytes capacity={capacity_mib} MiB "
+          f"host_free={shutil.disk_usage(destination.parent).free} bytes", flush=True)
     for attempt in range(3):
         with tempfile.TemporaryDirectory(prefix="nexacl-dmg-", dir=destination.parent) as staging:
             image = Path(staging) / "image.dmg"
             try:
                 result = subprocess.run(
                     ["hdiutil", "create", "-volname", "NexaCL", "-srcfolder", str(source),
-                     "-format", "UDZO", str(image)],
+                     "-size", f"{capacity_mib}m", "-format", "UDZO", str(image)],
                     check=True, capture_output=True, text=True,
                     env={**os.environ, "LC_ALL": "C"})
             except subprocess.CalledProcessError as error:

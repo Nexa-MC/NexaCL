@@ -15,6 +15,7 @@ class DmgTests(unittest.TestCase):
             images = []
 
             def create(args, **kwargs):
+                self.assertEqual("128m", args[args.index("-size") + 1])
                 image = Path(args[-1])
                 images.append(image)
                 image.write_bytes(b"partial" if len(images) == 1 else b"complete")
@@ -66,3 +67,16 @@ class DmgTests(unittest.TestCase):
             self.assertEqual(1, command.call_count)
             sleep.assert_not_called()
             self.assertEqual(b"previous", target.read_bytes())
+
+    def test_image_capacity_includes_payload_and_filesystem_headroom(self):
+        with tempfile.TemporaryDirectory() as root:
+            source = Path(root) / "source"; source.mkdir()
+            with (source / "NexaCL.pkg").open("wb") as stream:
+                stream.truncate(100 * (1 << 20))
+            target = Path(root) / "result.dmg"
+            def create(args, **kwargs):
+                self.assertEqual("189m", args[args.index("-size") + 1])
+                Path(args[-1]).write_bytes(b"image")
+                return subprocess.CompletedProcess(args, 0, stdout="")
+            with patch.object(package.subprocess, "run", side_effect=create), patch.object(package, "run"):
+                package.create_dmg(source, target)
