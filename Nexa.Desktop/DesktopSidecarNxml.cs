@@ -39,8 +39,8 @@ internal sealed partial class DesktopSidecarNxml
     }
 
     internal IDisposable Attach(XsrUiShell shell, DesktopUiIntentSink intents, XsrStateStore store,
-        Action<string> warn, XsrUiEntityId onboardingFallback = default, Action<Uri>? openLink = null, Func<string, CancellationToken, Task<XsrResult>>? importTheme = null, Action? imported = null)
-        => new Session(this, shell, intents, store, warn, onboardingFallback, openLink, importTheme, imported);
+        Action<string> warn, XsrUiEntityId onboardingFallback = default, Action<Uri>? openLink = null, Func<string, CancellationToken, Task<XsrResult>>? importTheme = null, Action? imported = null, Func<string, Task>? copyText = null)
+        => new Session(this, shell, intents, store, warn, onboardingFallback, openLink, importTheme, imported, copyText);
 
     private sealed partial class Session : IDisposable
     {
@@ -50,6 +50,7 @@ internal sealed partial class DesktopSidecarNxml
         private readonly XsrStateStore _store;
         private readonly Action<string> _warn;
         private readonly Action<Uri>? _openLink;
+        private readonly Func<string, Task>? _copyText;
         private readonly Func<string, CancellationToken, Task<XsrResult>>? _importTheme;
         private readonly Action? _imported;
         private bool _importing;
@@ -60,9 +61,9 @@ internal sealed partial class DesktopSidecarNxml
         private long _styledStructure = -1;
 
         internal Session(DesktopSidecarNxml owner, XsrUiShell shell, DesktopUiIntentSink intents,
-            XsrStateStore store, Action<string> warn, XsrUiEntityId onboardingFallback, Action<Uri>? openLink, Func<string, CancellationToken, Task<XsrResult>>? importTheme, Action? imported)
+            XsrStateStore store, Action<string> warn, XsrUiEntityId onboardingFallback, Action<Uri>? openLink, Func<string, CancellationToken, Task<XsrResult>>? importTheme, Action? imported, Func<string, Task>? copyText)
         {
-            _importTheme = importTheme; _imported = imported; _owner = owner; _shell = shell; _store = store; _warn = warn; _openLink = openLink;
+            _copyText = copyText; _importTheme = importTheme; _imported = imported; _owner = owner; _shell = shell; _store = store; _warn = warn; _openLink = openLink;
             _onboardingFallback = onboardingFallback;
             _coordinator = new(shell.Tree, store);
             shell.Renderer.PresentationPreparing += Frame;

@@ -19,6 +19,8 @@ internal static partial class Program
 {
     public static void Main(string[] args)
     {
+        if (args is ["--sidecar-ui-preview", var uiSource, var uiOutput])
+        { SidecarUiPreview(uiSource, uiOutput).GetAwaiter().GetResult(); return; }
         if (args is ["--native-sidecar-preview", var previewSidecar])
         {
             Environment.ExitCode = RunNativeSidecarPreview(previewSidecar).GetAwaiter().GetResult();

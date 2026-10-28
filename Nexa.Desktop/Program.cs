@@ -531,7 +531,13 @@ internal static partial class Program
         using var sidecarNxmlSession = sidecarNxml.Attach(shell, uiIntents, host.StateStore,
             message => { host.Logging.Warn("Sidecar", message); feedback.Warn(message); }, openLink: platformActions.OpenHttpsUri,
             importTheme: (path, token) => themes.ImportAsync(path, Nexa.Services.Themes.ThemeSourceKind.Package, false, token),
-            imported: () => feedback.Success(ProductPresentationText.Raw("program.theme.imported")));
+            imported: () => feedback.Success(ProductPresentationText.Raw("program.theme.imported")),
+            copyText: async text =>
+            {
+                try { await platformActions.CopyTextAsync(text); feedback.Success(ProductPresentationText.Raw("native.clipboard.copied")); }
+                catch (Exception error) when (error is InvalidOperationException or IOException or System.Runtime.InteropServices.ExternalException)
+                { feedback.Warn(ProductPresentationText.Raw("native.clipboard.copy-failed")); }
+            });
         themes.SaveCommittedStartup = (identity, snapshot) => SaveThemeStartupCacheAsync(folders.Root, identity, snapshot);
         using var appearanceSession = new DesktopAppearanceSession(shell, host.StateStore, platformActions, effectiveAppearance: effectiveAppearance);
         await using var customAppearance = safeMode ? null : new CustomAppearanceSession(runtime.Queries, host.StateStore, shell, platformActions, message => host.Logging.Warn("Appearance", message), effectiveAppearance);
@@ -900,7 +906,8 @@ internal static partial class Program
         }
         var setupNxml = new DesktopSidecarNxml(store);
         shell.Render(new XsrUiSize(1024, 600));
-        using var setupExtensions = setupNxml.Attach(shell, intents, store, message => setupLog.Warn("Sidecar", message), controller.Page);
+        using var setupExtensions = setupNxml.Attach(shell, intents, store, message => setupLog.Warn("Sidecar", message), controller.Page,
+            openLink: platform.OpenHttpsUri, copyText: platform.CopyTextAsync);
         var setupSidecars = SidecarStartup.Create(setupLog, nxmlModules: setupNxml.Runtime);
         using var setupSidecarLifetime = SidecarStartup.StartLifetime(setupSidecars, setupLog, !args.Contains("--safe-mode", StringComparer.Ordinal));
         try { setupSidecarLifetime.InitialReady.WaitAsync(TimeSpan.FromSeconds(15)).GetAwaiter().GetResult(); }

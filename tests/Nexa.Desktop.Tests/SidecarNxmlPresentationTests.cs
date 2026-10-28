@@ -17,20 +17,26 @@ internal static partial class Program
             AssertTrue(!DesktopSidecarNxml.TryHttpsLink(invalid, out _));
         AssertTrue(DesktopSidecarNxml.TryHttpsLink("https://example.com/settings", out var link));
         AssertEqual("example.com", link!.Host);
+        AssertTrue(DesktopSidecarNxml.CanCopyText("ABCD-EFGH"));
+        AssertFalse(DesktopSidecarNxml.CanCopyText(""));
+        AssertFalse(DesktopSidecarNxml.CanCopyText("code\nsecret"));
+        AssertFalse(DesktopSidecarNxml.CanCopyText(new string('x', 4097)));
     }
 
     private static void SidecarScrollDispatchesOnlyActivePage()
     {
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
         var adapter = new DesktopSidecarNxml(fixture.Store);
-        List<string> warnings = []; int opened = 0;
-        using var presentation = adapter.Attach(fixture.Shell, fixture.Intents, fixture.Store, warnings.Add, openLink: _ => opened++);
+        List<string> warnings = []; int opened = 0; string? copied = null;
+        var fallback = fixture.Shell.Stage.Navigation.Current;
+        using var presentation = adapter.Attach(fixture.Shell, fixture.Intents, fixture.Store, warnings.Add, openLink: _ => opened++,
+            copyText: text => { copied = text; return Task.CompletedTask; });
         var (session, peer) = ActivateCaptionPatch(new(), "", declarations:
             [new(SidecarRegistrationKind.Command, "test.scroll", 0, 0),
              PageDeclaration("test.nav", "#navigation-toggle", SidecarNxmlOperation.Before,
                  """<NavigationItem Key="ScrollNav" Label="Browse" Content="Browse" Command="ui.sidecar.page.open" Argument="#ScrollPage" />"""),
              PageDeclaration("test.page", "#ScrollPage", SidecarNxmlOperation.Page,
-                 """<Page Key="ScrollPage"><StackPanel><Button Key="WebLink" Content="Website" Height="44" Command="ui.sidecar.link.open" Argument="https://example.com/help" /><StackPanel Key="Observed" Scroll="true" ScrollCommand="test.scroll" Height="200"><Text Content="rows" Height="1000" /></StackPanel></StackPanel></Page>""")],
+                 """<Page Key="ScrollPage"><StackPanel><Button Key="WebLink" Content="Website" Height="44" Command="ui.sidecar.link.open" Argument="https://example.com/help" /><Button Key="CopyCode" Content="Copy" Height="44" Command="ui.sidecar.clipboard.copy" Argument="ABCD-EFGH" /><StackPanel Key="Observed" Scroll="true" ScrollCommand="test.scroll" Height="200"><Text Content="rows" Height="1000" /></StackPanel></StackPanel></Page>""")],
             features: SidecarFeatures.All, nxml: adapter).GetAwaiter().GetResult();
         using (session) using (peer)
         {
@@ -48,6 +54,14 @@ internal static partial class Program
                 request.CorrelationId, SidecarDataMessages.EncodeBinaryResult(true, new(0, []), null))).AsTask().GetAwaiter().GetResult();
             AssertTrue(fixture.Shell.Renderer.Activate(FindByKey(fixture.Shell, scene, "WebLink").Entity));
             AssertEqual(1, opened); AssertEqual(0, warnings.Count);
+            AssertTrue(copied is null);
+            var copyNode = FindByKey(fixture.Shell, scene, "CopyCode");
+            AssertTrue(fixture.Shell.Renderer.Activate(copyNode.Entity));
+            AssertEqual("ABCD-EFGH", copied!);
+            copied = null;
+            fixture.Shell.Stage.Navigation.Replace(fallback);
+            fixture.Intents.Emit(XsrSemanticId.Parse("ui.sidecar.clipboard.copy"), copyNode.Entity, XsrCorrelationId.Create());
+            AssertTrue(copied is null);
             session.Dispose(); loop.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
         }
     }

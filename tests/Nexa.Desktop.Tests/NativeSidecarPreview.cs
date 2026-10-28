@@ -38,7 +38,8 @@ internal static partial class Program
                 appearance = new(f.Shell, f.Store, actions, XsrUiThemeMode.Light);
                 f.Shell.Render(new(1024, 700));
                 adapter = new(f.Store);
-                edge = adapter.Attach(f.Shell, f.Intents, f.Store, Console.Error.WriteLine, f.Shell.Stage.Navigation.Current);
+                edge = adapter.Attach(f.Shell, f.Intents, f.Store, Console.Error.WriteLine, f.Shell.Stage.Navigation.Current,
+                    openLink: actions.OpenHttpsUri, copyText: actions.CopyTextAsync);
                 f.Store.Publish(f.Store.Resolve(FirstRunState.NavigationVisible), false);
                 f.Intents.IntentReceived += (_, args) =>
                 {

@@ -26,3 +26,19 @@ Extension NXML compilation scopes data to referenced parameters (including expan
 components and mixed text). The 256-parameter / 1 MiB per-template budget remains;
 unrelated registered Sidecar state no longer exhausts an individual page budget.
 The direct dynamic-template API retains its existing full-input budget checks.
+
+## User-triggered clipboard action
+
+Registered extension pages can bind `ui.sidecar.clipboard.copy` to a button. Host
+copies its current rendered argument (1–4096 characters, no control characters)
+through the existing platform clipboard callback only when that page emits an
+active user intent. This is write-only, never a clipboard read or background RPC.
+This presentation action is independent of the authenticated network exchange.
+
+Both normal-shell and first-run composition supply the browser and clipboard
+callbacks. `--sidecar-ui-preview <export-directory> <output-directory>` in the
+Desktop test runner mounts exported binary declarations through the real Host,
+renders light/dark at two widths, and injects raw native touch events for copy,
+explicit browser navigation and scrolling. Data is synthetic; this test entry
+does not alter production package signature checks. The active-page tests also
+reject clipboard actions emitted from an inactive page.

@@ -61,4 +61,6 @@
   <Text Key="native.community.survey-message" Content="愿意花一分钟分享本次使用体验吗？问卷自愿填写。" />
   <Text Key="native.community.survey-open" Content="填写问卷" />
   <Text Key="native.community.survey-skip" Content="暂不填写" />
+  <Text Key="native.clipboard.copied" Content="已复制到剪贴板。" />
+  <Text Key="native.clipboard.copy-failed" Content="无法复制，请手动选择文本。" />
 </StackPanel>

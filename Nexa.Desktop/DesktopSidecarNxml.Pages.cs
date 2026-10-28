@@ -17,6 +17,8 @@ internal sealed partial class DesktopSidecarNxml
             && Uri.TryCreate(value, UriKind.Absolute, out uri) && uri.Scheme == Uri.UriSchemeHttps
             && uri.UserInfo.Length == 0 && uri.Host.Length > 0;
     }
+    internal static bool CanCopyText(string value) => value.Length is > 0 and <= 4096 && !value.Any(char.IsControl);
+
     private sealed partial class Session
     {
         private static readonly XsrSemanticId OpenLink = XsrSemanticId.Parse("ui.sidecar.link.open");
@@ -67,6 +69,12 @@ internal sealed partial class DesktopSidecarNxml
                     _ = ImportTheme(path, importPage.Stop.Token);
                 return true;
             }
+            if (intent.Command.Value == "ui.sidecar.clipboard.copy")
+            {
+                string text = _shell.Renderer.ReadIntentArgument(intent.Source);
+                if (CanCopyText(text) && _copyText is not null) _ = CopyText(text);
+                return true;
+            }
             if (intent.Command == OpenLink)
             {
                 string value = _shell.Renderer.ReadIntentArgument(intent.Source);
@@ -103,6 +111,13 @@ internal sealed partial class DesktopSidecarNxml
                 return true;
             }
             return false;
+        }
+
+        private async Task CopyText(string text)
+        {
+            try { await _copyText!(text).ConfigureAwait(false); }
+            catch (Exception error) when (error is InvalidOperationException or IOException or System.Runtime.InteropServices.ExternalException)
+            { _warn("Unable to copy extension text to the clipboard."); }
         }
 
         private async Task ImportTheme(string path, CancellationToken pageStop)
