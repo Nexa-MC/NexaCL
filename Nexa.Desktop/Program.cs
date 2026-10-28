@@ -360,6 +360,7 @@ internal static partial class Program
         DesktopSidecarUiPatches sidecarUi = new(host.StateStore);
         DesktopSidecarNxml sidecarNxml = new(host.StateStore);
         await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime);
+        await using var sidecarNetwork = new DesktopSidecarNetwork(sidecars, host.StateStore);
         SidecarHostApi sidecarApi = new(sidecars, dispatchObservation);
         await using var sidecarLifetime = SidecarStartup.StartLifetime(sidecars, host.Logging, !safeMode);
         // The session lifecycle narrates startup/shutdown milestones at Info: every subsystem

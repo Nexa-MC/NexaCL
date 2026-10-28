@@ -162,6 +162,7 @@ internal static partial class Program
 
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("Sidecar network grants reject untrusted requests", SidecarNetworkGrantRejectsUntrustedRequests),
         ("gamepad entry requires neutral same-device gesture and restores", GamepadEntryRequiresNeutralSameDeviceGestureAndRestores),
         ("gamepad entry cinematic timeline and stable lockup", GamepadEntryCinematicTimelineAndStableLockup),
         ("gamepad entry camera starts gently anchors the rim and respects frame rate", GamepadEntryCameraStartsGentlyAnchorsTheRimAndRespectsFrameRate),

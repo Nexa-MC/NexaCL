@@ -44,9 +44,9 @@ public sealed class NxmlExtensionProgram
 
     public NxmlPreparedDocument Compile(IReadOnlyDictionary<string, string> data)
     {
-        var root = _root.Compile(data, _components, _styles);
+        var root = _root.CompileScoped(data, _components, _styles);
         var fragments = _fragments.Select(fragment => new NxmlPreparedFragment(fragment.Slot,
-            fragment.Template.Compile(data, _components, _styles))).ToArray();
+            fragment.Template.CompileScoped(data, _components, _styles))).ToArray();
         Dictionary<string, int> slots = new(StringComparer.Ordinal);
         int count = 0;
         Visit(root.Root);

@@ -34,9 +34,23 @@ internal static partial class Program
             AssertEqual(SidecarSessionState.Ready, session.State);
             AssertTrue(session.NegotiatedFeatures.HasFlag(SidecarFeatures.Pages));
             AssertTrue(session.Registration!.Entries.Count(entry => entry.Kind == SidecarRegistrationKind.UiModule) >= 3);
+            Task? receiving = null;
+            if (session.Registration.TryResolve(SidecarRegistrationKind.Query, Nexa.Services.Composition.SidecarAuthenticatedNetworkPump.Exchange) is { } exchange)
+            {
+                AssertEqual(6u, exchange.CodecId); AssertEqual(6u, exchange.ResultCodecId);
+                await session.ActivateAsync(stop.Token);
+                receiving = session.RunReceiveLoopAsync(stop.Token).AsTask();
+                using var facts = new SidecarPayloadWriter(); facts.WriteUInt32(1, 0); facts.WriteUInt32(2, 0);
+                using var sample = new SidecarPayloadWriter(); sample.WriteBytes(1, facts.ToArray()); sample.WriteString(2, "");
+                sample.WriteUInt32(3, 0); sample.WriteBytes(4, []); sample.WriteUInt32(5, 0);
+                var result = await session.SendBinaryQueryAsync(exchange.SemanticId, new(6, sample.ToArray()), cancellationToken: stop.Token);
+                AssertTrue(result.IsSuccess); AssertEqual(0, result.Value.Length);
+            }
             await connection.SendAsync(new(SidecarProtocol.Version, SidecarMessageType.Shutdown, SidecarFrameTraits.None, SidecarCorrelationId.Create(), ReadOnlyMemory<byte>.Empty), stop.Token);
             await process.WaitForExitAsync(stop.Token).ConfigureAwait(false);
             AssertEqual(0, process.ExitCode);
+            session.Dispose();
+            if (receiving is not null) await receiving.WaitAsync(stop.Token).ConfigureAwait(false);
         }
         finally { if (!process.HasExited) { process.Kill(entireProcessTree: true); await process.WaitForExitAsync().ConfigureAwait(false); } }
     }

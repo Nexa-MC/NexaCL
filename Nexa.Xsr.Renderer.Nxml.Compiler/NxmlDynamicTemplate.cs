@@ -25,14 +25,40 @@ public sealed class NxmlDynamicTemplate
         return CompileCore(data, components, styles, localize);
     }
 
+    /// <summary>Compiles one extension template against only the session values it references.</summary>
+    public NxmlHostIr CompileScoped(IReadOnlyDictionary<string, string> data, NxmlComponentLibrary components, NssStyleSheet? styles = null)
+        => CompileCore(data, components, styles, null, scoped: true);
+
     private NxmlHostIr CompileCore(IReadOnlyDictionary<string, string> data, NxmlComponentLibrary components,
-        NssStyleSheet? styles, Func<string, string>? localize)
+        NssStyleSheet? styles, Func<string, string>? localize, bool scoped = false)
     {
         ArgumentNullException.ThrowIfNull(data);
+        var expanded = components.Expand(new NxmlDocument(_document.Root.Children[0]));
+        if (scoped)
+        {
+            Dictionary<string, string> selected = new(StringComparer.Ordinal);
+            Select(expanded.Root);
+            data = selected;
+            void Select(NxmlElement node)
+            {
+                foreach (var attribute in node.Attributes)
+                {
+                    if (attribute.Value.Kind == NxmlValueKind.DataBinding)
+                        Add(attribute.Name == "IsVisible" ? attribute.Value.Text.TrimStart('!') : attribute.Value.Text);
+                    else if (attribute.Value.Kind == NxmlValueKind.DataText)
+                        foreach (var part in NxmlTextFormat.Parse(attribute.Value.Text))
+                            if (part.Parameter) Add(part.Value);
+                }
+                foreach (var child in node.Children) Select(child);
+            }
+            void Add(string name)
+            {
+                if (data.TryGetValue(name, out var value)) selected[name] = value;
+            }
+        }
         if (data.Count > 256 || data.Sum(pair => (long)pair.Value.Length) > 1024 * 1024)
             throw new NxmlCompileException("Dynamic data exceeds its budget.");
         long remaining = 1024 * 1024;
-        var expanded = components.Expand(new NxmlDocument(_document.Root.Children[0]));
         var document = new NxmlDocument(Bind(expanded.Root, data, localize, ref remaining));
         var compiled = NxmlCompiler.Compile(document, components, styles);
         return new(compiled.Root) { IsDynamic = true };

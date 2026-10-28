@@ -8,6 +8,7 @@ internal static partial class Program
 {
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("extension data scopes references while retaining per-template budgets", ExtensionDataScopesReferencesWithoutRelaxingBudgets),
         ("scroll observations admit commands and retain bounded lifecycle", ScrollObservationsAreAdmittedBoundedAndRetained),
         ("global NXML mounts target future pages without adapters", GlobalNxmlMountsTargetFuturePages),
         ("standalone documents reload without losing input and reject changed structure", StandaloneDocumentReloadPreservesInput),
