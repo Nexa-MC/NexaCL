@@ -147,7 +147,9 @@ internal static partial class Program
             }
             if (!validation && (commandLine.SafeMode || SingleInstanceEnabled(folders.Root)))
             {
-                string? activationFile = args.FirstOrDefault(argument => DesktopActivation.TryFile(argument, out _));
+                string? activationFile = destination == DesktopDestination.Extension
+                    ? args.First(argument => DesktopActivation.TryExtension(argument, out _, out _))
+                    : args.FirstOrDefault(argument => DesktopActivation.TryFile(argument, out _));
                 instance = await DesktopSingleInstance.AcquireAsync(Path.GetDirectoryName(LauncherStorageLocation.LocatorPath)!, destination, activationFile, forwardActivation: !commandLine.SafeMode).ConfigureAwait(false);
                 if (instance is null)
                 {
@@ -508,7 +510,7 @@ internal static partial class Program
         await Task.WhenAll(host.StartNetworkCostMonitoringAsync(), host.StartPowerPressureMonitoringAsync()).WaitAsync(startup?.CancellationToken ?? default).ConfigureAwait(false);
         setStage("attach_product_controllers");
         AvaloniaUiPlatformActions platformActions = new() { LocalizeContentPicker = shell.Renderer.LocalizeText };
-        using var sidecarNxmlSession = sidecarNxml.Attach(shell, uiIntents, host.StateStore, message => host.Logging.Warn("Sidecar", message), openLink: platformActions.OpenHttpsUri);
+
         platformActions.MemoryPressureObserved += observation =>
         {
             if (OperatingSystem.IsWindows()) AvaloniaUiPlatformActions.SetGpuAvailableBudget(Nexa.Services.Capabilities.GpuProbes.ReadActiveGpuHeadroom());
@@ -525,6 +527,10 @@ internal static partial class Program
         await using var themes = new DesktopThemeSession(runtime.Queries, runtime.Commands, host.StateStore,
             shell, platformActions, effectiveAppearance, message => host.Logging.Warn("Themes", message), safeMode);
         watchedThemes = themes;
+        using var sidecarNxmlSession = sidecarNxml.Attach(shell, uiIntents, host.StateStore,
+            message => { host.Logging.Warn("Sidecar", message); feedback.Warn(message); }, openLink: platformActions.OpenHttpsUri,
+            importTheme: (path, token) => themes.ImportAsync(path, Nexa.Services.Themes.ThemeSourceKind.Package, false, token),
+            imported: () => feedback.Success(ProductPresentationText.Raw("program.theme.imported")));
         themes.SaveCommittedStartup = (identity, snapshot) => SaveThemeStartupCacheAsync(folders.Root, identity, snapshot);
         using var appearanceSession = new DesktopAppearanceSession(shell, host.StateStore, platformActions, effectiveAppearance: effectiveAppearance);
         await using var customAppearance = safeMode ? null : new CustomAppearanceSession(runtime.Queries, host.StateStore, shell, platformActions, message => host.Logging.Warn("Appearance", message), effectiveAppearance);
@@ -749,7 +755,7 @@ internal static partial class Program
             minecraft.LaunchCoordinator!.WaitForFinalizationAsync, platformActions.PostToWindow, platformActions.RequestClose, feedback);
         platformActions.CloseRequested = () => installExit.CanClose() && launchExit.CanClose();
         await using var desktopIntegration = new DesktopIntegrationSession(shell, uiIntents, host.StateStore, platformActions, instance, args,
-            message => { host.Logging.Warn("Desktop", message); feedback.Warn(message); }, openFile: dropController.OpenFile, registerProtocol: !safeMode, notify: message => feedback.Info(message));
+            message => { host.Logging.Warn("Desktop", message); feedback.Warn(message); }, openFile: dropController.OpenFile, registerProtocol: !safeMode, notify: message => feedback.Info(message), openExtension: sidecarNxml.EnqueueExternal);
         using var commandPalette = new DesktopCommandPalette(shell, uiIntents, host.StateStore, platformActions,
             route => desktopIntegration.ActivateProtocol("nexacl://" + route.Id));
         using var gamepadEntry = new GamepadEntrySession(shell, uiIntents, host.StateStore, platformActions);
@@ -862,7 +868,8 @@ internal static partial class Program
         {
             if (DesktopActivation.TryParse(uri, out DesktopDestination requested))
             {
-                if (instance is not null) instance.QueueActivation(requested);
+                if (instance is not null) instance.QueueActivation(requested, requested == DesktopDestination.Extension ? uri : null);
+                else if (requested == DesktopDestination.Extension) { if (nativeFiles.Count < 16) nativeFiles.Add(uri); }
                 else _setupDestination = requested;
                 platform.RestoreWindow();
             }
@@ -908,14 +915,14 @@ internal static partial class Program
             {
                 while (instance.TryTakeActivation(out DesktopInstanceActivation requested))
                 {
-                    if (requested.Destination != DesktopDestination.Activate) nextDestination = requested.Destination;
+                    if (requested.Destination is not (DesktopDestination.Activate or DesktopDestination.Extension)) nextDestination = requested.Destination;
                     if (requested.File is { } file && !args.Contains(file, StringComparer.Ordinal)) start.ArgumentList.Add(file);
                 }
             }
             foreach (string file in nativeFiles.Distinct(Nexa.Core.PathIdentity.Comparer))
                 if (!args.Contains(file, Nexa.Core.PathIdentity.Comparer)) start.ArgumentList.Add(file);
             foreach (string argument in args)
-                if (nextDestination == DesktopDestination.Activate || !argument.StartsWith("nexacl:", StringComparison.OrdinalIgnoreCase)) start.ArgumentList.Add(argument);
+                if (nextDestination == DesktopDestination.Activate || DesktopActivation.TryExtension(argument, out _, out _) || !argument.StartsWith("nexacl:", StringComparison.OrdinalIgnoreCase)) start.ArgumentList.Add(argument);
             if (nextDestination != DesktopDestination.Activate) start.ArgumentList.Add("nexacl://" + nextDestination.ToString().ToLowerInvariant());
             _restartAfterExit = () => System.Diagnostics.Process.Start(start)?.Dispose();
         }

@@ -53,7 +53,7 @@ internal static partial class Program
                 if (length is < 1 or > 1024 * 1024 || length > reader.BaseStream.Length - reader.BaseStream.Position)
                     throw new InvalidDataException("Invalid Sidecar fixture record.");
                 records.Add(reader.ReadBytes(length));
-                if (records.Count > 256) throw new InvalidDataException("Fixture exceeds declaration budget.");
+                if (records.Count > 512) throw new InvalidDataException("Fixture exceeds declaration budget.");
             }
             return records.ToArray();
         }
@@ -82,17 +82,27 @@ internal static partial class Program
             var next = scene.Nodes.Single(node => fixture.Shell.Tree.GetComponent<XsrUiCommandBinding>(node.Entity)?.Command.Value == "ui.sidecar.onboarding.continue");
             AssertTrue(next.Rect.Y >= XsrUiShell.TitleBarHeight && next.Rect.Y + next.Rect.Height <= 600);
             var card = FindByKey(fixture.Shell, scene, "NexaMcLoginCard");
-            var email = FindByKey(fixture.Shell, scene, "NexaMcEmail");
-            AssertEqual(28d, email.Rect.X - card.Rect.X);
-            AssertEqual(card.Rect.Width - 56d, email.Rect.Width);
-            fixture.Shell.Renderer.SetTextInputValue(email.Entity, "retained@example.test");
-            SwitchMode("HandleForm", false);
-            scene = fixture.Shell.Render(new(1024, 600));
-            AssertEqual("NexaMcLoginPage", fixture.Shell.Tree.Name(fixture.Shell.Stage.Navigation.Current));
-            AssertTrue(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "NexaMcHandle"));
-            SwitchMode("EmailForm", true);
-            scene = fixture.Shell.Render(new(1024, 600));
-            AssertEqual("retained@example.test", fixture.Shell.Tree.GetComponent<XsrUiTextInput>(email.Entity)!.ReadDraft());
+            bool deviceLogin = declarations.Any(item => item.SemanticId == "nsc.device.start");
+            if (deviceLogin)
+            {
+                var device = scene.Nodes.Single(node => fixture.Shell.Tree.GetComponent<XsrUiCommandBinding>(node.Entity)?.Command.Value == "nsc.device.start");
+                AssertTrue(device.Rect.X >= card.Rect.X && device.Rect.X + device.Rect.Width <= card.Rect.X + card.Rect.Width);
+                AssertFalse(scene.Nodes.Any(node => fixture.Shell.Tree.GetComponent<XsrUiTextInput>(node.Entity) is not null));
+            }
+            else
+            {
+                var email = FindByKey(fixture.Shell, scene, "NexaMcEmail");
+                AssertEqual(28d, email.Rect.X - card.Rect.X);
+                AssertEqual(card.Rect.Width - 56d, email.Rect.Width);
+                fixture.Shell.Renderer.SetTextInputValue(email.Entity, "retained@example.test");
+                SwitchMode("HandleForm", false);
+                scene = fixture.Shell.Render(new(1024, 600));
+                AssertEqual("NexaMcLoginPage", fixture.Shell.Tree.Name(fixture.Shell.Stage.Navigation.Current));
+                AssertTrue(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "NexaMcHandle"));
+                SwitchMode("EmailForm", true);
+                scene = fixture.Shell.Render(new(1024, 600));
+                AssertEqual("retained@example.test", fixture.Shell.Tree.GetComponent<XsrUiTextInput>(email.Entity)!.ReadDraft());
+            }
             next = FindByKey(fixture.Shell, scene, "NexaMcContinue");
             AssertTrue(fixture.Shell.Renderer.Activate(next.Entity));
             scene = fixture.Shell.Render(new(1024, 760));
@@ -109,7 +119,9 @@ internal static partial class Program
             var root = fixture.Shell.Stage.Navigation.Current;
             Console.WriteLine("Registered page: " + fixture.Shell.Tree.Name(root));
             AssertTrue(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "NexaMcLoginCard"));
-            AssertTrue(scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "NexaMcEmail"));
+            AssertTrue(scene.Nodes.Any(node => deviceLogin
+                ? fixture.Shell.Tree.GetComponent<XsrUiCommandBinding>(node.Entity)?.Command.Value == "nsc.device.start"
+                : fixture.Shell.Tree.Name(node.Entity) == "NexaMcEmail"));
             var refreshed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             fixture.Store.Changed += change =>
             {

@@ -99,6 +99,15 @@ internal static partial class Program
         string maximum = prefix + new string('a', DesktopActivation.MaximumFileBytes - System.Text.Encoding.UTF8.GetByteCount(prefix) - 7) + ".mrpack";
         AssertTrue(DesktopActivation.TryFile(maximum, out _));
         AssertTrue(!DesktopActivation.TryFile(maximum.Insert(prefix.Length, "a"), out _));
+        const string extension = "nexacl://extension/NexaMcMarketPage?argument=theme-123";
+        AssertTrue(DesktopActivation.TryParse(extension, out var extensionDestination));
+        AssertEqual(DesktopDestination.Extension, extensionDestination);
+        AssertTrue(DesktopActivation.TryExtension(extension, out string page, out string item));
+        AssertEqual("NexaMcMarketPage", page); AssertEqual("theme-123", item);
+        foreach (string invalid in new[] { extension + "&command=run", extension + "#x", extension.Replace("theme-123", "https://evil.test/a"),
+            extension.Replace("theme-123", "%2fetc%2fpasswd"), extension.Replace("/NexaMcMarketPage", "//NexaMcMarketPage"),
+            extension.Replace("theme-123", ""), extension.Replace("theme-123", new string('x', 129)), extension.Replace("extension/", "extension:123/") })
+            AssertTrue(!DesktopActivation.TryParse(invalid, out _));
         DesktopFilesWaitForRendererFrame();
         DesktopJumpListPreservesBoundedLauncherArguments();
     }
@@ -135,6 +144,10 @@ internal static partial class Program
                 SendMalformedDesktopActivation(directory, [2, (byte)DesktopDestination.Activate, 1, 32]);
                 SendMalformedDesktopActivation(directory, [7, (byte)DesktopDestination.Activate]);
                 AssertTrue(!primary.TryTakeActivation(out _));
+                const string external = "nexacl://extension/NexaMcMarketPage?argument=theme-123";
+                AssertTrue(DesktopSingleInstance.AcquireAsync(directory, DesktopDestination.Extension, external).GetAwaiter().GetResult() is null);
+                AssertTrue(primary.TryTakeActivation(out var forwardedExtension));
+                AssertEqual(DesktopDestination.Extension, forwardedExtension.Destination); AssertEqual(external, forwardedExtension.File!);
                 // Fill the bounded queue, then reject without replacing the primary lease.
                 for (int index = 0; index < 16; index++)
                     AssertTrue(DesktopSingleInstance.AcquireAsync(directory, DesktopDestination.Activate).GetAwaiter().GetResult() is null);

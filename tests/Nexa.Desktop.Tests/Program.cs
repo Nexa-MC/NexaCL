@@ -316,6 +316,7 @@ internal static partial class Program
         ("SystemAutostartIsOwnedReversibleAndLocal", SystemAutostartIsOwnedReversibleAndLocal),
         ("single instance waits for closing owner before reopening", DesktopSingleInstanceWaitsForClosingOwner),
         ("desktop branding and safe default single-instance bootstrap", DesktopBrandAndBootstrapDefaults),
+        ("sidecar external activation requires owned opt-in", SidecarExternalActivationRequiresOwnedOptIn),
         ("desktop protocol routes and registration preserve arguments", DesktopProtocolRoutesAndRegistrationCommands),
         ("single instance forwards across processes bounds queue and releases", DesktopSingleInstanceForwardsAcrossProcessesAndReleases),
         ("wardrobe locale captions preserve dynamic arguments", WardrobeLocalesTranslateDynamicCaptionsAndPreserveArguments),

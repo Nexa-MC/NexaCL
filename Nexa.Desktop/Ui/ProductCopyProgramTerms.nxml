@@ -1,5 +1,6 @@
 <nxml-page>
   <ContentHost>
+    <Text Key="program.theme.imported" Content="主题已安装并应用。" Localize="false" />
     <Text Key="program.copy.0037a8119d3414e3" Content="无法打开本地设置文件。请检查文件是否存在及系统编辑器关联。" Localize="false" />
     <Text Key="program.copy.01e941901cfd7290" Content="发现插件接口" Localize="false" />
     <Text Key="program.copy.03c8857c0a71ff98" Content="准备界面" Localize="false" />

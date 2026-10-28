@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Nexa.Desktop;
 
-internal enum DesktopDestination : byte { Launch, Install, Resources, Settings, Activate, Tasks, Java, Storage, About }
+internal enum DesktopDestination : byte { Launch, Install, Resources, Settings, Activate, Tasks, Java, Storage, About, Extension }
 internal readonly record struct DesktopInstanceActivation(DesktopDestination Destination, string? File);
 
 internal static class DesktopActivation
@@ -27,9 +27,26 @@ internal static class DesktopActivation
         catch (Exception error) when (error is ArgumentException or NotSupportedException or PathTooLongException)
         { file = string.Empty; return false; }
     }
+    internal static bool TryExtension(string value, out string page, out string argument)
+    {
+        page = argument = "";
+        if (value.Length > 512 || value.Any(char.IsControl) || value != value.Trim() || !Uri.TryCreate(value, UriKind.Absolute, out var uri)
+            || uri.Scheme != "nexacl" || uri.Host != "extension" || uri.UserInfo.Length != 0
+            || !uri.IsDefaultPort || uri.Fragment.Length != 0 || !uri.Query.StartsWith("?argument=", StringComparison.Ordinal)) return false;
+        page = uri.AbsolutePath.StartsWith('/') ? uri.AbsolutePath[1..] : uri.AbsolutePath; argument = uri.Query[10..];
+        return Valid(page) && Valid(argument);
+        static bool Valid(string part) => part.Length is > 0 and <= 128
+            && part.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
+    }
+    internal static bool TryPayload(DesktopDestination destination, string value, out string payload)
+    {
+        if (destination != DesktopDestination.Extension) return TryFile(value, out payload);
+        payload = value; return TryExtension(value, out _, out _);
+    }
     internal static bool TryParse(string value, out DesktopDestination destination)
     {
         destination = DesktopDestination.Launch;
+        if (TryExtension(value, out _, out _)) { destination = DesktopDestination.Extension; return true; }
         if (value.Equals("nexacl://", StringComparison.OrdinalIgnoreCase) || value.Equals("nexacl:", StringComparison.OrdinalIgnoreCase))
         { destination = DesktopDestination.Activate; return true; }
         if (value.Length > 2048 || !Uri.TryCreate(value, UriKind.Absolute, out Uri? uri)
@@ -78,9 +95,10 @@ internal sealed class DesktopSingleInstance : IAsyncDisposable
     internal static async Task<DesktopSingleInstance?> AcquireAsync(string directory, DesktopDestination destination, string? file = null, bool forwardActivation = true)
     {
         if (!Enum.IsDefined(destination)) throw new ArgumentOutOfRangeException(nameof(destination));
+        if (destination == DesktopDestination.Extension && file is null) throw new ArgumentException("Extension activation requires a payload.", nameof(file));
         if (file is not null)
         {
-            if (!DesktopActivation.TryFile(file, out string admitted)) throw new ArgumentException("不支持的本地整合包路径。", nameof(file));
+            if (!DesktopActivation.TryPayload(destination, file, out string admitted)) throw new ArgumentException("不支持的本地整合包路径。", nameof(file));
             file = admitted;
         }
         Directory.CreateDirectory(directory);
@@ -161,7 +179,7 @@ internal sealed class DesktopSingleInstance : IAsyncDisposable
     internal bool TryTakeActivation(out DesktopInstanceActivation activation) { lock (_gate) return _pending.TryDequeue(out activation); }
     internal bool QueueActivation(DesktopDestination destination, string? file = null)
     {
-        if (!Enum.IsDefined(destination) || file is not null && !DesktopActivation.TryFile(file, out _)) return false;
+        if (!Enum.IsDefined(destination) || destination == DesktopDestination.Extension && file is null || file is not null && !DesktopActivation.TryPayload(destination, file, out _)) return false;
         return Enqueue(new(destination, file));
     }
     internal void BeginShutdown() { lock (_gate) { _closing = true; _wake = null; } }
@@ -191,11 +209,11 @@ internal sealed class DesktopSingleInstance : IAsyncDisposable
                         {
                             byte[] encoded = new byte[length];
                             await server.ReadExactlyAsync(encoded, deadline.Token).ConfigureAwait(false);
-                            try { valid = DesktopActivation.TryFile(new UTF8Encoding(false, true).GetString(encoded), out file); }
+                            try { valid = DesktopActivation.TryPayload((DesktopDestination)packet[1], new UTF8Encoding(false, true).GetString(encoded), out file); }
                             catch (DecoderFallbackException) { valid = false; }
                         }
                     }
-                    bool accepted = valid && Enum.IsDefined((DesktopDestination)packet[1])
+                    bool accepted = valid && ((DesktopDestination)packet[1] != DesktopDestination.Extension || file is not null) && Enum.IsDefined((DesktopDestination)packet[1])
                         && Enqueue(new((DesktopDestination)packet[1], file));
                     await server.WriteAsync(new byte[] { accepted ? (byte)1 : _closing ? (byte)2 : (byte)0 }, deadline.Token).ConfigureAwait(false);
                     await server.FlushAsync(deadline.Token).ConfigureAwait(false);

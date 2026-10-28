@@ -30,6 +30,7 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrUiShell _shell;
     private readonly Action<string>? _openFile;
+    private readonly Action<string>? _openExtension;
     private readonly Queue<string> _pendingFiles = new(16);
     private readonly HashSet<XsrStateId> _keys = [];
     private readonly CancellationTokenSource _stop = new();
@@ -43,10 +44,10 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
 
     internal DesktopIntegrationSession(XsrUiShell shell, DesktopUiIntentSink intents, XsrStateStore state,
         AvaloniaUiPlatformActions platform, DesktopSingleInstance? instance, string[] args, Action<string> report,
-        Action<string>? openFile = null, bool registerProtocol = true, Action<string>? notify = null)
+        Action<string>? openFile = null, bool registerProtocol = true, Action<string>? notify = null, Action<string>? openExtension = null)
     {
         _state = state; _platform = platform; _instance = instance; _report = report; _intents = intents; _shell = shell;
-        _openFile = openFile; _notify = notify ?? report;
+        _openExtension = openExtension; _openFile = openFile; _notify = notify ?? report;
         shell.Renderer.FramePreparing += OnFrame;
         var existingMenu = shell.Tree.GetComponent<XsrUiContextMenu>(shell.Root)?.Items ?? [];
         shell.Tree.SetComponent(shell.Root, new XsrUiContextMenu(_menuItems.Concat(existingMenu)
@@ -101,7 +102,11 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
 
     private void OnProtocol(string uri)
     {
-        if (DesktopActivation.TryParse(uri, out DesktopDestination destination))
+        if (DesktopActivation.TryExtension(uri, out _, out _))
+        {
+            _platform.PostToWindow(() => { if (!_disposed) { HasExplicitActivation = true; _platform.RestoreWindow(); _openExtension?.Invoke(uri); } });
+        }
+        else if (DesktopActivation.TryParse(uri, out DesktopDestination destination))
             _platform.PostToWindow(() => { if (!_disposed) _activate(destination); });
         else _report(ProductPresentationText.Raw("native.desktop.unsupported-protocol"));
     }
@@ -139,6 +144,7 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
         if (_disposed || _instance is null) return;
         while (_instance.TryTakeActivation(out DesktopInstanceActivation activation))
         {
+            if (activation.Destination == DesktopDestination.Extension && activation.File is { } external) { OnProtocol(external); continue; }
             _activate(activation.Destination);
             if (activation.File is { } file) ScheduleFile(file);
         }

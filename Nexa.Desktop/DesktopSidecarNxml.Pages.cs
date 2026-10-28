@@ -58,6 +58,15 @@ internal sealed partial class DesktopSidecarNxml
 
         private bool PageIntent(Guid exposure, DesktopUiIntent intent)
         {
+            if (intent.Command.Value == "ui.sidecar.theme.import")
+            {
+                string path = _shell.Renderer.ReadIntentArgument(intent.Source);
+                if (!_importing && _importTheme is not null && path.Length is > 0 and <= 8192
+                    && !path.Any(char.IsControl) && Path.IsPathFullyQualified(path) && !path.StartsWith("\\\\", StringComparison.Ordinal)
+                    && _pages.TryGetValue(exposure, out var importPage))
+                    _ = ImportTheme(path, importPage.Stop.Token);
+                return true;
+            }
             if (intent.Command == OpenLink)
             {
                 string value = _shell.Renderer.ReadIntentArgument(intent.Source);
@@ -94,6 +103,52 @@ internal sealed partial class DesktopSidecarNxml
                 return true;
             }
             return false;
+        }
+
+        private async Task ImportTheme(string path, CancellationToken pageStop)
+        {
+            _importing = true;
+            using var stop = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token, pageStop);
+            try
+            {
+                var result = await _importTheme!(path, stop.Token).ConfigureAwait(false);
+                if (!stop.IsCancellationRequested)
+                {
+                    if (result.IsSuccess) _imported?.Invoke();
+                    else _warn(result.Error?.Message ?? "Theme import failed.");
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException)
+            { if (!stop.IsCancellationRequested) _warn(error.Message); }
+            finally { _importing = false; }
+        }
+        private void OpenExternal()
+        {
+            if (!_owner._external.TryPeek(out var request)) return;
+            if (Environment.TickCount64 >= request.Expires)
+            {
+                _owner._external.TryDequeue(out _); _warn("Extension page is not available. Install or enable its Sidecar first."); return;
+            }
+            var matches = _snapshot?.Modules.Where(module => module.Source.Operation == SidecarNxmlOperation.Page
+                && module.Source.Target == "#" + request.Page && _pages.ContainsKey(module.Exposure)).ToArray() ?? [];
+            if (matches.Length == 0) return;
+            _owner._external.TryDequeue(out _);
+            if (matches.Length != 1) { _warn("Ambiguous extension page."); return; }
+            var module = matches[0]; var page = _pages[module.Exposure];
+            XsrUiCommandBinding? binding = null;
+            int count = 0;
+            _shell.Tree.Walk(page.Root, entity =>
+            {
+                if (_shell.Tree.Name(entity) == "ExternalActivation") { binding = _shell.Tree.GetComponent<XsrUiCommandBinding>(entity); count++; }
+                return true;
+            });
+            if (count != 1 || binding is null || _owner.Runtime.ReadCommandRoute(module.Exposure, binding.Command) != XsrNxmlCommandRoute.Sidecar)
+            { _warn("Extension page does not accept external activation."); return; }
+            if (_shell.Stage.Navigation.Current != page.Root)
+            { _returnPage = _shell.Stage.Navigation.Current; _returnNavigation = _shell.SelectedNavigationId; }
+            _opened = module.Exposure; _shell.Stage.Navigation.Replace(page.Root);
+            _ = Dispatch(module.Exposure, binding.Command, request.Argument, page.Stop.Token);
         }
 
         private void AdvanceOnboarding()

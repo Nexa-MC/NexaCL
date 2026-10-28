@@ -52,6 +52,44 @@ internal static partial class Program
         }
     }
 
+    private static void SidecarExternalActivationRequiresOwnedOptIn()
+    {
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
+        var adapter = new DesktopSidecarNxml(fixture.Store);
+        List<string> warnings = []; int imports = 0;
+        using var presentation = adapter.Attach(fixture.Shell, fixture.Intents, fixture.Store, warnings.Add, importTheme: (path, token) =>
+        { AssertEqual(Path.GetFullPath("theme.zip"), path); token.ThrowIfCancellationRequested(); imports++; return Task.FromResult(XsrResult.Success()); });
+        var (session, peer) = ActivateCaptionPatch(new(), "", declarations:
+            [new(SidecarRegistrationKind.Command, "test.external", 0, 0),
+             PageDeclaration("test.page", "#MarketPage", SidecarNxmlOperation.Page,
+                 $$"""<Page Key="MarketPage"><Button Key="ExternalActivation" IsVisible="false" Command="test.external" /><Button Key="ApplyTheme" Content="Apply" Height="44" Command="ui.sidecar.theme.import" Argument="{{Path.GetFullPath("theme.zip")}}" /></Page>"""),
+             PageDeclaration("test.closed", "#ClosedPage", SidecarNxmlOperation.Page,
+                 """<Page Key="ClosedPage"><Text Content="No external activation" /></Page>""")],
+            features: SidecarFeatures.All, nxml: adapter).GetAwaiter().GetResult();
+        using (session) using (peer)
+        {
+            var loop = session.RunReceiveLoopAsync().AsTask();
+            fixture.Shell.Renderer.ReducedMotion = true;
+            adapter.EnqueueExternal("nexacl://extension/MarketPage?argument=theme-123");
+            fixture.Shell.Render(new(1000, 650));
+            var request = peer.ReceiveAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+            var call = SidecarDataMessages.DecodeBinaryRequest(request.Payload.Span);
+            AssertEqual(1u, call.ContractId); AssertEqual("theme-123", Encoding.UTF8.GetString(call.Value.Span));
+            AssertEqual("MarketPage", fixture.Shell.Tree.Name(fixture.Shell.Stage.Navigation.Current));
+            peer.SendAsync(new(SidecarProtocol.Version, SidecarMessageType.CommandResult, SidecarFrameTraits.Final,
+                request.CorrelationId, SidecarDataMessages.EncodeBinaryResult(true, new(0, []), null))).AsTask().GetAwaiter().GetResult();
+            adapter.EnqueueExternal("nexacl://extension/ClosedPage?argument=theme-123");
+            fixture.Shell.Render(new(1000, 650));
+            AssertEqual("MarketPage", fixture.Shell.Tree.Name(fixture.Shell.Stage.Navigation.Current));
+            AssertEqual(1, warnings.Count);
+            AssertEqual(0, imports);
+            var scene = fixture.Shell.Render(new(1000, 650));
+            AssertTrue(fixture.Shell.Renderer.Activate(FindByKey(fixture.Shell, scene, "ApplyTheme").Entity));
+            AssertEqual(1, imports);
+            session.Dispose(); loop.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+        }
+    }
+
     private static SidecarRegistrationItem PageDeclaration(string id, string target, SidecarNxmlOperation operation, string markup)
     {
         byte[] payload = SidecarNxmlDocument.Encode(new(target, operation, "main.nxml", new Dictionary<string, string> { ["main.nxml"] = markup }));

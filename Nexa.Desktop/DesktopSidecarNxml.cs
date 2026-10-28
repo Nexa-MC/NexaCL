@@ -13,6 +13,12 @@ namespace Nexa.Desktop;
 internal sealed partial class DesktopSidecarNxml
 {
     private readonly ConditionalWeakTable<SidecarNxmlDocument, NxmlExtensionProgram> _programs = new();
+    private readonly System.Collections.Concurrent.ConcurrentQueue<(string Page, string Argument, long Expires)> _external = new();
+    internal void EnqueueExternal(string uri)
+    {
+        if (DesktopActivation.TryExtension(uri, out var page, out var argument) && _external.Count < 16)
+            _external.Enqueue((page, argument, Environment.TickCount64 + 30000));
+    }
     internal XsrNxmlModuleRuntime Runtime { get; }
     internal XsrStateId State { get; }
     internal DesktopSidecarNxml(XsrStateStore store)
@@ -33,7 +39,8 @@ internal sealed partial class DesktopSidecarNxml
     }
 
     internal IDisposable Attach(XsrUiShell shell, DesktopUiIntentSink intents, XsrStateStore store,
-        Action<string> warn, XsrUiEntityId onboardingFallback = default, Action<Uri>? openLink = null) => new Session(this, shell, intents, store, warn, onboardingFallback, openLink);
+        Action<string> warn, XsrUiEntityId onboardingFallback = default, Action<Uri>? openLink = null, Func<string, CancellationToken, Task<XsrResult>>? importTheme = null, Action? imported = null)
+        => new Session(this, shell, intents, store, warn, onboardingFallback, openLink, importTheme, imported);
 
     private sealed partial class Session : IDisposable
     {
@@ -43,6 +50,9 @@ internal sealed partial class DesktopSidecarNxml
         private readonly XsrStateStore _store;
         private readonly Action<string> _warn;
         private readonly Action<Uri>? _openLink;
+        private readonly Func<string, CancellationToken, Task<XsrResult>>? _importTheme;
+        private readonly Action? _imported;
+        private bool _importing;
         private readonly NxmlPresentationCoordinator _coordinator;
         private XsrNxmlModuleSnapshot? _snapshot;
         private IReadOnlyList<NxmlPresentationLayer> _layers = [];
@@ -50,9 +60,9 @@ internal sealed partial class DesktopSidecarNxml
         private long _styledStructure = -1;
 
         internal Session(DesktopSidecarNxml owner, XsrUiShell shell, DesktopUiIntentSink intents,
-            XsrStateStore store, Action<string> warn, XsrUiEntityId onboardingFallback, Action<Uri>? openLink)
+            XsrStateStore store, Action<string> warn, XsrUiEntityId onboardingFallback, Action<Uri>? openLink, Func<string, CancellationToken, Task<XsrResult>>? importTheme, Action? imported)
         {
-            _owner = owner; _shell = shell; _store = store; _warn = warn; _openLink = openLink;
+            _importTheme = importTheme; _imported = imported; _owner = owner; _shell = shell; _store = store; _warn = warn; _openLink = openLink;
             _onboardingFallback = onboardingFallback;
             _coordinator = new(shell.Tree, store);
             shell.Renderer.PresentationPreparing += Frame;
@@ -88,6 +98,7 @@ internal sealed partial class DesktopSidecarNxml
             { _warn("NXML presentation could not be mounted: " + error.Message); }
             AdvanceOnboarding();
             ObserveScroll();
+            OpenExternal();
         }
         private void StyleChanged(object? sender, EventArgs args) => _styledStructure = -1;
         private bool Intent(DesktopUiIntent intent)
