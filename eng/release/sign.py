@@ -2,7 +2,7 @@
 import argparse
 from contextlib import contextmanager
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import shutil
 import subprocess
 import tempfile
@@ -14,12 +14,24 @@ from delta import validate_index
 FINGERPRINT = "5701218D69B531E1A7ED35BB6E31F5974A273AEE"
 
 
+def tool_path(value, executable):
+    """Git's MSYS GnuPG needs POSIX paths when called by native Python."""
+    resolved = shutil.which(executable)
+    if os.name == "nt" and resolved:
+        directory = Path(resolved).parent
+        if (directory / "msys-2.0.dll").exists() and PureWindowsPath(value).is_absolute():
+            return subprocess.check_output([str(directory / "cygpath.exe"), "-u", str(value)],
+                                           text=True, timeout=10).strip()
+    return str(value)
+
+
 def gpg(home, *arguments, data=None):
     # Do not inherit signing secrets into GnuPG, or print potentially sensitive stderr.
     environment = {k: v for k, v in os.environ.items()
                    if k not in ("GPG_PRIVATE_KEY", "GPG_PASSPHRASE")}
-    result = subprocess.run(["gpg", "--no-options", "--homedir", str(home),
-                             "--batch", "--no-tty", *arguments],
+    result = subprocess.run(["gpg", "--no-options", "--homedir", tool_path(home, "gpg"),
+                             "--batch", "--no-tty",
+                             *(tool_path(arg, "gpg") for arg in arguments)],
                             input=data, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             env=environment, timeout=120)
     if result.returncode:
@@ -38,7 +50,7 @@ def keyring():
             # Shut down only the agent belonging to this temporary home.
             executable = shutil.which("gpgconf")
             if executable:
-                subprocess.run([executable, "--homedir", str(home), "--kill", "gpg-agent"],
+                subprocess.run([executable, "--homedir", tool_path(home, executable), "--kill", "gpg-agent"],
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                timeout=30, check=False)
 

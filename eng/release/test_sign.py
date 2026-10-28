@@ -2,8 +2,10 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
-from sign import FINGERPRINT, gpg, import_public, keyring, sign_distribution, verify_signatures
+from sign import tool_path, FINGERPRINT, gpg, import_public, keyring, sign_distribution, verify_signatures
 from verify import expected_names
 
 
@@ -102,3 +104,20 @@ class SigningTests(unittest.TestCase):
             (root / (INDEX_NAME + ".asc")).write_bytes(b"wrong signature")
             with self.assertRaises(ValueError):
                 verify_signatures(root, version, self.public, self.fingerprint)
+
+
+class GpgPathTests(unittest.TestCase):
+    def test_msys_tool_converts_absolute_windows_paths(self):
+        with patch("sign.os", SimpleNamespace(name="nt")), \
+             patch("sign.shutil.which", return_value="/git/usr/bin/gpg.exe"), \
+             patch("sign.Path.exists", return_value=True), \
+             patch("sign.subprocess.check_output", return_value="/c/temp/key ring\n") as convert:
+            self.assertEqual("/c/temp/key ring", tool_path(r"C:\temp\key ring", "gpg"))
+            self.assertEqual("--import", tool_path("--import", "gpg"))
+            convert.assert_called_once()
+
+    def test_native_tool_preserves_windows_paths(self):
+        with patch("sign.os", SimpleNamespace(name="nt")), \
+             patch("sign.shutil.which", return_value="/gnupg/gpg.exe"), \
+             patch("sign.Path.exists", return_value=False):
+            self.assertEqual(r"C:\temp\key ring", tool_path(r"C:\temp\key ring", "gpg"))

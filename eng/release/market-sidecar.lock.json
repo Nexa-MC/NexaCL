@@ -1,34 +1,34 @@
 {
   "repository": "Nexa-MC/Nexa-Cloud-Market-Sidecar",
-  "commit": "59de46ac1c275eb5c61c94ac31e39bc8309e4386",
-  "buildRun": 40635311000,
+  "commit": "951efb54d375d911fbdf8267eca8cd4412d98d64",
+  "buildRun": 40642940688,
   "runtimeVersion": "1.0.0",
   "hostReference": "09addd2dbcc6d3ad50bd877390fe20341044d28e",
-  "inputRelease": "market-inputs-59de46ac1c27",
+  "inputRelease": "market-inputs-951efb54d375",
   "artifacts": {
     "linux-arm64": {
       "size": 7211360,
-      "sha256": "a9fb003b321a7adb0e33c3e97b9cac41fe8c848409d91c07d5451d9475dbcc89"
+      "sha256": "7224e3c70a58125f0fa1c9b78e5ae8fb509552bf51a74cb4a6c7f1f5ebfcbaaa"
     },
     "linux-x64": {
       "size": 6936952,
-      "sha256": "7f836adcf7fb954edb642371c00714467311d380bdfe06b0182230efb279fa3d"
+      "sha256": "b4de5f1941852976351b080fbac8b6a160f056ef644892504ed423fa87ea40e0"
     },
     "osx-arm64": {
-      "size": 6198824,
-      "sha256": "28a405473e75cb639188fe510f77263a729491f81603b365cead1d6037b470cd"
+      "size": 6216928,
+      "sha256": "949f64f44794c89371e7130eb468abfaca209ffe92bea2b4e451d8fcec12f5ee"
     },
     "osx-x64": {
-      "size": 6360072,
-      "sha256": "58fc3b557ba6f70bd3521b23de97c548aae3fba488880954ebb8d5447278d18b"
+      "size": 6428016,
+      "sha256": "405ef7da8088fe56b255ad835a7d5a90edbd7a7ec5ffc429ced76cf6c6d6aabd"
     },
     "win-arm64": {
       "size": 6211584,
-      "sha256": "6fa36aa3d95de3a5759cef17b0fe3c787aa2565f1516671d29d0e1659b0ea3d1"
+      "sha256": "ccb67bc52cda04ff73c0c4fbcf086b5b38d0c357f0b8713aabfa805697dad270"
     },
     "win-x64": {
       "size": 6010368,
-      "sha256": "8588992d4c79e127da2b82ba58eb37b28c396f442b00716c646d7742453f75f5"
+      "sha256": "871c8aa9aaa69d561f69f6447de499542d576864542ddba6abf54bd868c8e882"
     }
   }
 }
