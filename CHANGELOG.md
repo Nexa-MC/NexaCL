@@ -1,5 +1,13 @@
 # 更新日志
 
+## 2.0.0.alpha.18 · Firefly Alpha 18
+
+修复主题循环动画卡死、新版 Minecraft 原生库加载与账户刷新，并更新 Market Sidecar。详见 [Alpha 18](docs/releases/2.0.0.alpha.18.md)。
+
+## 2.0.0.alpha.17 · Firefly Alpha 17
+
+账户与市场、统一引导流程及独立 Sidecar 更新。详见 [Alpha 17](docs/releases/2.0.0.alpha.17.md)。
+
 ## 2.0.0.alpha.16 · Firefly Alpha 16
 
 内置正式签名的 Market Sidecar，设备码登录与网站唤起主题安装。详见 [Alpha 16](docs/releases/2.0.0.alpha.16.md)。

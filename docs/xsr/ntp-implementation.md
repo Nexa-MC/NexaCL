@@ -219,3 +219,19 @@ details, exact-version file metadata, icons and translation responses succeeded;
 the native resource-wheel probe passed append, retained identity/offset, explicit
 same-page retry and clean native shutdown. These are local Linux results; the
 main-thread Cocoa path and four actual Windows JDK variants require their CI jobs.
+
+### 2026-10-29: animation scheduling starvation regression
+
+A theme keyframe tick may invalidate the scene and schedule one UI commit. A commit
+must not itself advance/invalidate the animation: `MarkDirty` raises
+`RenderInvalidated`, which otherwise posts another normal-priority commit forever
+and starves input. The existing bounded animation timer now owns advancement; its
+invalidation schedules the commit without an additional synchronous commit.
+
+The AuroraGlass package loaded successfully and rendered four viewport widths in
+0–11 ms in the reproduction. Its default infinite opacity animation exposed this
+backend scheduling loop. A minimal native/headless fixture reproduced one extra
+render request per commit and processed input only after the animation was forcibly
+stopped at frame 40. The regression verifies zero self-generated requests, an active
+animation clock, one request per explicit tick, and input completion before the
+bounded escape. No resource checks or theme admission rules were weakened.

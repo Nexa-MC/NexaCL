@@ -159,7 +159,7 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
             return;
         }
 
-        _shell.Renderer.AdvanceThemeAnimations();
+        // Animation ticks request frames; rendering must not request its own successor.
         DriveThemeAnimationClock();
         XsrUiSize presentedViewport = ThemeRenderViewport();
         XsrUiScene next = _shell.Render(presentedViewport);

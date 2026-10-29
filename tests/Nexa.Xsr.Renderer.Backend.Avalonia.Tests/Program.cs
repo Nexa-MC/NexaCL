@@ -72,6 +72,14 @@ internal static partial class Program
 
     private static int Main(string[] args)
     {
+        if (args is ["--theme-animation-smoke"])
+        {
+            AppBuilder.Configure<Application>().UseSkia()
+                .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
+            ThemeAnimationFramesDoNotScheduleTheirOwnSuccessors();
+            Console.WriteLine("PASS: theme animation frames yield to input and do not self-schedule");
+            return 0;
+        }
         if (args is ["--outcome-smoke"])
         {
             AppBuilder.Configure<Application>().UseSkia()

@@ -383,6 +383,9 @@ jobs:
       - name: Test Avalonia scene backend
         run: dotnet run --project tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.csproj --configuration Release --no-build
 
+      - name: Verify theme animations yield to input
+        run: dotnet run --project tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release --no-build -- --theme-animation-smoke
+
       - name: Publish and run NativeAOT renderer tests
         run: |
           dotnet publish tests/Nexa.Xsr.Renderer.Tests/Nexa.Xsr.Renderer.Tests.csproj \

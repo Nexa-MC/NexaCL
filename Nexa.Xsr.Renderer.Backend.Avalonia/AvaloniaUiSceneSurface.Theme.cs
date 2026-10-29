@@ -19,7 +19,6 @@ public sealed partial class AvaloniaUiSceneSurface
         {
             if (_disposed || !_rasterPresentationEnabled) { _themeAnimationTimer?.Stop(); return; }
             _shell.Renderer.AdvanceThemeAnimations();
-            CommitScene();
             if (!_shell.Renderer.HasThemeAnimations) _themeAnimationTimer?.Stop();
         });
         _themeAnimationTimer.Interval = AvaloniaUiMotion.FrameInterval;
