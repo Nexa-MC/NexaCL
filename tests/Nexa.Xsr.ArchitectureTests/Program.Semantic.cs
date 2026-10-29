@@ -10,6 +10,12 @@ internal static partial class Program
         || (name.StartsWith("Nexa.Services.", StringComparison.Ordinal)
             && !name.EndsWith(".Contracts", StringComparison.Ordinal) && name != "Nexa.Services.Composition");
 
+    private static bool RequiresSemanticValidation(string name) =>
+        !name.EndsWith(".Tests", StringComparison.Ordinal)
+        && (name.StartsWith("Nexa.Services", StringComparison.Ordinal)
+            || name.StartsWith("Nexa.Xsr.Renderer", StringComparison.Ordinal)
+            || name is "Nexa.Desktop" or "Nexa.Update.Helper");
+
     private static void ValidateSemanticBoundaries(string root, Dictionary<string, string> projects, List<string> failures)
     {
         // Resolve the compiler's assembly owners, including aliases and type forwards.
@@ -17,10 +23,23 @@ internal static partial class Program
         var libraries = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator)
             .Concat(projects.Values.SelectMany(p => Directory.Exists(Path.Combine(Path.GetDirectoryName(p)!, "bin")) ? Directory.EnumerateFiles(Path.Combine(Path.GetDirectoryName(p)!, "bin"), "*.dll", SearchOption.AllDirectories) : []))
             .GroupBy(Path.GetFileName, StringComparer.Ordinal).Select(g => g.First()).ToArray();
+        // This pass resolves ownership from compiled dependencies. Missing metadata makes
+        // logging/term adapters unresolved and turns their keys into false copy violations.
+        // Fail the gate explicitly instead of interpreting an incomplete semantic model.
+        var available = libraries.Select(Path.GetFileNameWithoutExtension).ToHashSet(StringComparer.Ordinal);
+        var missing = projects.Keys.Where(RequiresSemanticValidation)
+            .SelectMany(name => AllowedReferences.GetValueOrDefault(name) ?? [])
+            .Where(name => !available.Contains(name)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+        if (missing.Length > 0)
+        {
+            failures.Add("Semantic architecture checks require compiled project dependencies. "
+                + "Build NexaCL.slnx in Release before running this check; missing assemblies: " + string.Join(", ", missing) + ".");
+            return;
+        }
         foreach ((string projectName, string projectPath) in projects)
         {
             bool renderer = projectName.StartsWith("Nexa.Xsr.Renderer", StringComparison.Ordinal);
-            if (projectName.EndsWith(".Tests", StringComparison.Ordinal) || (!projectName.StartsWith("Nexa.Services", StringComparison.Ordinal) && projectName is not ("Nexa.Desktop" or "Nexa.Update.Helper") && !renderer)) continue;
+            if (!RequiresSemanticValidation(projectName)) continue;
             string directory = Path.GetDirectoryName(projectPath)!;
             var trees = Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories).Where(p => !IsBuildOutput(p))
                 .Select(p => CSharpSyntaxTree.ParseText(File.ReadAllText(p), path: p)).ToList();

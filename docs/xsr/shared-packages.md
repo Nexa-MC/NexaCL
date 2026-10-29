@@ -64,12 +64,26 @@ The shared target change preserves the repository path: all 183 Runtime executab
 tests passed, with no skips. The package-only managed/AOT probe passed patch
 install/retire and catalog/output checks using a fresh NuGet cache.
 
-The full architecture executable reports 84 existing Product NXML closure wording
-violations in untouched Desktop sources. Running with the original HEAD target
-restored produced byte-identical diagnostics; this change does not repair or waive
-that unrelated baseline. The shared-package CI is separate, not a claim that every
-NexaCL pipeline is green. An initial parallel architecture run encountered an
-assembly being written by the runtime build; the recorded comparison was rerun
-sequentially after builds completed.
+The initial package-focused workspace reported 84 Product NXML closure wording
+violations; restoring the original build target produced identical diagnostics.
+That comparison establishes target independence, not a confirmed Desktop baseline.
+The semantic checker also needs compiled project dependencies from `bin`; without
+them it cannot reliably resolve logging calls and external text adapters.
+
+Follow-up validation on main `a22f4687` with the compiled dependencies passed all
+72 project checks. The same source in a clean archive without build outputs produced
+85 wording diagnostics, including external-template calls and log messages. The
+checker now fails explicitly with missing-assembly/build instructions in that case,
+instead of reporting ungrounded wording violations. The wording rules are unchanged.
+Run the full solution build before the architecture executable:
+
+```sh
+dotnet build NexaCL.slnx -c Release -m:1
+dotnet run --project tests/Nexa.Xsr.ArchitectureTests -c Release --no-build -- --repo-root .
+```
+
+Do not build concurrently with the architecture check: an initial parallel run
+encountered an assembly being written by another build. Shared-package checks remain
+separate from full NexaCL CI.
 
 Shared packages omit debug symbols and SourceLink (no PDBs are shipped); builds disable both so checkout paths and temporary instrumentation symbol paths cannot change package bytes. Source provenance remains pinned in package repository metadata.
