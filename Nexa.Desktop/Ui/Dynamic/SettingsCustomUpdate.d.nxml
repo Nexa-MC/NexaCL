@@ -10,12 +10,12 @@
         <ProgressRing Width="52" Height="52" IsVisible="{data busy}" />
         <StackPanel Weight="1" Spacing="8">
           <Text Key="SettingsUpdateStatus" Content="{data status}" Localize="false" Class="settings-custom-update-result" />
-          <Text Content="上次检查：{data lastCheck}" Localize="false" Class="settings-custom-update-note" />
+          <Text Content="上次检查：{data lastCheck}" Class="settings-custom-update-note" />
         </StackPanel>
       </StackPanel>
-      <Text Content="当前版本 · NexaCL Firefly v{data version}" Localize="false" Class="settings-custom-update-note" />
-      <Text Content="更新通道 · {data channel}" Localize="false" Class="settings-custom-update-note" />
-      <Text Content="可用版本 · {data offered}" Localize="false" IsVisible="{data hasOffer}" Class="settings-custom-update-result" />
+      <Text Content="当前版本 · NexaCL Firefly v{data version}" Class="settings-custom-update-note" />
+      <Text Content="更新通道 · {data channel}" Class="settings-custom-update-note" />
+      <Text Content="可用版本 · {data offered}" IsVisible="{data hasOffer}" Class="settings-custom-update-result" />
       <Dynamic Key="SettingsUpdateActions" Class="settings-custom-update-actions" />
       <Text Content="Sidecar 更新" Class="settings-custom-update-result" Margin="0,12,0,0" />
       <Text Content="{data sidecarStatus}" Localize="false" Class="settings-custom-update-note" />

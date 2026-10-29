@@ -21,6 +21,6 @@
 .settings-custom-update-action { Width: 112; }
 .settings-custom-update-action-wide { Width: 144; }
 
-.settings-custom-update-body { Orientation: Vertical; Spacing: 16; Margin: 24; }
+.settings-custom-update-body { Orientation: Vertical; Spacing: 16; Margin: 24,20,24,20; }
 
 .settings-custom-update-result { FontSize: 18; FontWeight: 600; Foreground: #343D4A; WrapText: true; }

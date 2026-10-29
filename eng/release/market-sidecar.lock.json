@@ -1,35 +1,36 @@
 {
   "repository": "Nexa-MC/Nexa-Cloud-Market-Sidecar",
-  "commit": "951efb54d375d911fbdf8267eca8cd4412d98d64",
-  "buildRun": 40642940688,
+  "commit": "a296a6d7c85138388f3a9eaf1a6640192c867c31",
+  "buildRun": 40799183987,
   "runtimeVersion": "1.0.0",
-  "minimumHostVersion": "2.0.0.alpha.16",
+  "minimumHostVersion": "2.0.0.alpha.17",
   "hostReference": "09addd2dbcc6d3ad50bd877390fe20341044d28e",
-  "inputRelease": "market-inputs-951efb54d375",
+  "inputRelease": "market-inputs-a296a6d7c851",
   "artifacts": {
     "linux-arm64": {
-      "size": 7211360,
-      "sha256": "7224e3c70a58125f0fa1c9b78e5ae8fb509552bf51a74cb4a6c7f1f5ebfcbaaa"
+      "size": 7343064,
+      "sha256": "6ed66347bea3e78b19874b2f644a246f4c4207c315ff51f2312f013b78264669"
     },
     "linux-x64": {
-      "size": 6936952,
-      "sha256": "b4de5f1941852976351b080fbac8b6a160f056ef644892504ed423fa87ea40e0"
+      "size": 7039992,
+      "sha256": "33ad37f22aa707b18ed3ba152704f2e2d415c8908569f36f241be99c062fc3ad"
     },
     "osx-arm64": {
-      "size": 6216928,
-      "sha256": "949f64f44794c89371e7130eb468abfaca209ffe92bea2b4e451d8fcec12f5ee"
+      "size": 6316192,
+      "sha256": "f76eba3f0870112711caf5050122a0f7c224445e3364eea782e42278812823b2"
     },
     "osx-x64": {
-      "size": 6428016,
-      "sha256": "405ef7da8088fe56b255ad835a7d5a90edbd7a7ec5ffc429ced76cf6c6d6aabd"
+      "size": 6527264,
+      "sha256": "ddc86b96e072a62058e5606de12c191942fef3e7a2fc1e68482619f9b3cb010f"
     },
     "win-arm64": {
-      "size": 6211584,
-      "sha256": "ccb67bc52cda04ff73c0c4fbcf086b5b38d0c357f0b8713aabfa805697dad270"
+      "size": 6318080,
+      "sha256": "1cf2ef9b79ad14b5377056964baa0775c4326579e10c0934335939cc32773f9d"
     },
     "win-x64": {
-      "size": 6010368,
-      "sha256": "871c8aa9aaa69d561f69f6447de499542d576864542ddba6abf54bd868c8e882"
+      "size": 6116864,
+      "sha256": "04cc1db060366c350f3527492471912bbc83ee4b52f68014c570035016b39d4f"
     }
-  }
+  },
+  "inputRepository": "Nexa-MC/Nexa-Cloud-Market-Sidecar"
 }

@@ -354,10 +354,13 @@ internal static partial class Program
         var list = listNode.Entity;
         AssertTrue(fixture.Shell.Renderer.TryGetScrollSnapshot(list, out var snapshot));
         bool overflows = snapshot.ContentHeight > snapshot.ViewportHeight;
-        AssertEqual(overflows, fixture.Shell.Renderer.PointerScroll(new(listNode.Rect.X + 30, listNode.Rect.Y + 30), 24));
+        // Revealing the toggle can already place the list at its lower boundary.
+        double previousOffset = fixture.Shell.Tree.GetComponent<XsrUiScroll>(list)!.OffsetY;
+        double delta = previousOffset > 0 ? -24 : 24;
+        AssertEqual(overflows, fixture.Shell.Renderer.PointerScroll(new(listNode.Rect.X + 30, listNode.Rect.Y + 30), delta));
         scene = fixture.Shell.Render(new(1000, 650));
         double offset = fixture.Shell.Tree.GetComponent<XsrUiScroll>(list)!.OffsetY;
-        AssertEqual(overflows, offset > 0);
+        AssertEqual(overflows, Math.Abs(offset - previousOffset) > .01);
         AssertTrue(fixture.Shell.Renderer.Focus(toggle));
         Emit(fixture.Intents, "ui.settings.choice", toggle);
         fixture.Shell.Render(new(1000, 650));

@@ -20,7 +20,7 @@ jobs:
   metadata:
     # Publishing an already signed draft must not rebuild and overwrite immutable assets.
     # An empty release created in GitHub still starts its initial build normally.
-    if: github.event_name != 'release' || !contains(github.event.release.assets.*.name, 'SHA256SUMS.asc')
+    if: github.event_name != 'release' || (!startsWith(github.event.release.tag_name, 'market-inputs-') && !contains(github.event.release.assets.*.name, 'SHA256SUMS.asc'))
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -92,7 +92,8 @@ jobs:
         run: |
           set -euo pipefail
           tag=$(python -c 'import json; print(json.load(open("eng/release/market-sidecar.lock.json"))["inputRelease"])')
-          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'Nexa.Cloud.Market.Sidecar-${{ matrix.rid }}.nsc' --dir "$RUNNER_TEMP/market-input"
+          input_repository=$(python -c 'import json; print(json.load(open("eng/release/market-sidecar.lock.json")).get("inputRepository", "Nexa-MC/NexaCL"))')
+          gh release download "$tag" --repo "$input_repository" --pattern 'Nexa.Cloud.Market.Sidecar-${{ matrix.rid }}.nsc' --dir "$RUNNER_TEMP/market-input"
       - name: Install Linux packaging tools
         if: runner.os == 'Linux'
         shell: bash

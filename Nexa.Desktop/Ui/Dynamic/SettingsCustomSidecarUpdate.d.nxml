@@ -2,8 +2,8 @@
   <StackPanel Background="#F4F6FA" Surface="Solid" CornerRadius="12">
     <StackPanel Margin="16" Spacing="10">
       <Text Content="{data id}" Localize="false" Class="settings-custom-update-result" />
-      <Text Content="已安装 · {data current}" Localize="false" Class="settings-custom-update-note" />
-      <Text Content="可用更新 · {data available}" IsVisible="{data hasOffer}" Localize="false" Class="settings-custom-update-note" />
+      <Text Content="已安装 · {data current}" Class="settings-custom-update-note" />
+      <Text Content="可用更新 · {data available}" IsVisible="{data hasOffer}" Class="settings-custom-update-note" />
       <StackPanel Orientation="Horizontal" Spacing="12">
         <ProgressRing Width="20" Height="20" IsVisible="{data busy}" />
         <Text Content="{data status}" Localize="false" Weight="1" Class="settings-custom-update-note" />

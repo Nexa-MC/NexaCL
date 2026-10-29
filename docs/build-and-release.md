@@ -1,6 +1,6 @@
 # 构建、验证与发布
 
-源码：`Nexa-MC/NexaCL:main`。SDK 以 `global.json` 为准，版本由 `eng/xsr/Xsr.Version.props` 和 CI 元数据决定。默认源码版本为 `2.0.0.alpha.15`；产品版本、NuGet 版本、Sidecar 协议版本与主题 style API 是不同版本轴。
+源码：`Nexa-MC/NexaCL:main`。SDK 以 `global.json` 为准，版本由 `eng/xsr/Xsr.Version.props` 和 CI 元数据决定。默认源码版本为 `2.0.0.alpha.17`；产品版本、NuGet 版本、Sidecar 协议版本与主题 style API 是不同版本轴。
 
 ## 本地检查
 
@@ -24,8 +24,8 @@ python3 -m unittest discover -s eng/release -p 'test_*.py'
 3. 创建 `v2.0.0.alpha.N` 标签并推送。工作流令牌若读不到草稿，使用已有 `release_notes` 参数传入同一份文件：
 
    ```sh
-   gh workflow run launcher-build.yml --ref v2.0.0.alpha.15 \
-     -F release_notes=@docs/releases/2.0.0.alpha.15.md
+   gh workflow run launcher-build.yml --ref v2.0.0.alpha.17 \
+     -F release_notes=@docs/releases/2.0.0.alpha.17.md
    ```
 
 4. 工作流验证全部安装包，读取最多五个受信兼容历史版本，生成并往返验证差分包，然后签名并独立验签整个构件集合。
