@@ -150,6 +150,94 @@ internal static partial class Program
         }
     }
 
+    private static void FirstRunAndSidecarShareOneOnboardingSequence()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "nexa-integrated-setup-" + Guid.NewGuid().ToString("N"));
+        string initial = Path.Combine(directory, "initial"), selected = Path.Combine(directory, "selected");
+        try
+        {
+            using (var fixture = new LaunchPageFixture(new ImmediateInstanceSource([])))
+            {
+                fixture.Shell.Renderer.ReducedMotion = true;
+                var service = new Nexa.Services.Setup.FirstRunService(initial, Path.Combine(directory, "storage.json"));
+                bool closed = false;
+                using var host = new FirstRunController(fixture.Shell, fixture.Intents, fixture.Store,
+                    Nexa.Services.Composition.FirstRunRuntimeComposer.Compose(service), service.Read(),
+                    () => Task.FromResult<string?>(selected), () => closed = true);
+                var discovery = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                host.ConfigureExtensions(discovery.Task);
+                var adapter = new DesktopSidecarNxml(fixture.Store);
+                List<string> warnings = [];
+                using var presentation = adapter.Attach(fixture.Shell, fixture.Intents, fixture.Store, warnings.Add, host.Page, firstRun: host);
+                var (session, peer) = ActivateCaptionPatch(new(), "", declarations: Declarations(),
+                    features: SidecarFeatures.All, nxml: adapter).GetAwaiter().GetResult();
+                using (session) using (peer)
+                {
+                    var scene = fixture.Shell.Render(new(1000, 650));
+                    AssertEqual(host.Page, fixture.Shell.Stage.Navigation.Current);
+                    AssertEqual(0, host.Step);
+                    // A receipt in the initial directory must not filter a page from a different chosen root.
+                    var snapshot = fixture.Store.Read<XsrNxmlModuleSnapshot>(adapter.State).Value!;
+                    var module = snapshot.Modules.First(m => m.Source.Target == "#ExtensionOne");
+                    new DesktopOnboardingHistory(Path.Combine(initial, "onboarding")).Complete(DesktopOnboardingHistory.Identity(module.PackageName, module.Source.Target, "1"));
+                    Host("next"); Host("browse"); fixture.Shell.Render(new(1000, 650));
+                    Host("next"); AssertEqual(2, host.Step);
+                    Host("next");
+                    scene = fixture.Shell.Render(new(1000, 650));
+                    AssertEqual(host.Page, fixture.Shell.Stage.Navigation.Current);
+                    AssertTrue(host.ExtensionsRequested);
+                    AssertTrue(scene.Nodes.Any(n => fixture.Shell.Tree.Name(n.Entity) == "SetupExtensionsPending"));
+                    AssertFalse(scene.Nodes.Any(n => fixture.Shell.Tree.Name(n.Entity) == "SetupSummary"));
+                    discovery.SetResult();
+                    fixture.Shell.Render(new(1000, 650));
+                    AssertEqual("ExtensionOne", fixture.Shell.Tree.Name(fixture.Shell.Stage.Navigation.Current));
+                    Continue();
+                    AssertEqual("ExtensionTwo", fixture.Shell.Tree.Name(fixture.Shell.Stage.Navigation.Current));
+                    Continue();
+                    AssertEqual(host.Page, fixture.Shell.Stage.Navigation.Current);
+                    AssertEqual(3, host.Step);
+                    AssertFalse(closed);
+                    AssertTrue(host.OnboardingHistory.HasPendingBatch);
+                    AssertFalse(Directory.Exists(selected));
+                    Host("next");
+                    AssertTrue(SpinWait.SpinUntil(() => { fixture.Shell.Render(new(1000, 650)); return host.Completed; }, TimeSpan.FromSeconds(5)));
+                    AssertTrue(closed);
+                    AssertEqual(2, Directory.GetFiles(Path.Combine(selected, "onboarding"), "*.done").Length);
+                    AssertFalse(host.OnboardingHistory.HasPendingBatch);
+                    AssertEqual(0, warnings.Count);
+                }
+                void Host(string command)
+                { Emit(fixture.Intents, "ui.setup." + command); fixture.Shell.Render(new(1000, 650)); }
+                void Continue()
+                {
+                    var scene = fixture.Shell.Render(new(1000, 650));
+                    AssertTrue(fixture.Shell.Renderer.Activate(FindByKey(fixture.Shell, scene, "ContinueExtension").Entity));
+                    fixture.Shell.Render(new(1000, 650));
+                }
+            }
+            // Bootstrap restarts the process: completed content must not become a second OOBE.
+            using var restarted = new LaunchPageFixture(new ImmediateInstanceSource([]));
+            var fallback = restarted.Shell.Stage.Navigation.Current;
+            var next = new DesktopSidecarNxml(restarted.Store);
+            using var edge = next.Attach(restarted.Shell, restarted.Intents, restarted.Store, _ => { }, fallback,
+                onboarding: new DesktopOnboardingHistory(Path.Combine(selected, "onboarding")));
+            var (second, connection) = ActivateCaptionPatch(new(), "", declarations: Declarations(), features: SidecarFeatures.All, nxml: next).GetAwaiter().GetResult();
+            using (second) using (connection)
+            {
+                restarted.Shell.Render(new(1000, 650));
+                AssertEqual(fallback, restarted.Shell.Stage.Navigation.Current);
+            }
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+        static SidecarRegistrationItem[] Declarations() =>
+        [
+            PageDeclaration("test.first", "#ExtensionOne", SidecarNxmlOperation.OnboardingPage,
+                "<nxml-page><Page Key=\"ExtensionOne\"><Button Key=\"ContinueExtension\" Content=\"Continue\" Height=\"44\" Command=\"ui.sidecar.onboarding.continue\" /></Page></nxml-page>"),
+            PageDeclaration("test.second", "#ExtensionTwo", SidecarNxmlOperation.OnboardingPage,
+                "<nxml-page><Page Key=\"ExtensionTwo\"><Button Key=\"ContinueExtension\" Content=\"Skip\" Height=\"44\" Command=\"ui.sidecar.onboarding.continue\" /></Page></nxml-page>")
+        ];
+    }
+
     private static void VersionedOnboardingFramesPendingPages()
     {
         string directory = Path.Combine(Path.GetTempPath(), "nexa-onboarding-" + Guid.NewGuid().ToString("N"));
@@ -212,6 +300,26 @@ internal static partial class Program
         }
     }
 
+    private static void FirstRunWithoutSidecarReachesSummary()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "nexa-empty-setup-" + Guid.NewGuid().ToString("N"));
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
+        var service = new Nexa.Services.Setup.FirstRunService(directory, Path.Combine(directory, "storage.json"));
+        using var host = new FirstRunController(fixture.Shell, fixture.Intents, fixture.Store,
+            Nexa.Services.Composition.FirstRunRuntimeComposer.Compose(service), service.Read(),
+            () => Task.FromResult<string?>(null), () => { });
+        host.ConfigureExtensions(Task.CompletedTask);
+        var adapter = new DesktopSidecarNxml(fixture.Store);
+        using var presentation = adapter.Attach(fixture.Shell, fixture.Intents, fixture.Store, _ => { }, host.Page, firstRun: host);
+        for (int step = 0; step < 3; step++)
+        { Emit(fixture.Intents, "ui.setup.next"); fixture.Shell.Render(new(1000, 650)); }
+        AssertEqual(3, host.Step);
+        AssertEqual(host.Page, fixture.Shell.Stage.Navigation.Current);
+        AssertFalse(host.ExtensionsRequested);
+        AssertFalse(host.Completed);
+        AssertFalse(Directory.Exists(directory));
+    }
+
     private static void OnboardingReceiptsAreScopedAndDurable()
     {
         string directory = Path.Combine(Path.GetTempPath(), "nexa-onboarding-" + Guid.NewGuid().ToString("N"));
@@ -226,6 +334,22 @@ internal static partial class Program
             AssertFalse(next.IsComplete(DesktopOnboardingHistory.Identity("other", "#Page", "1")));
             AssertFalse(next.IsComplete(DesktopOnboardingHistory.Identity("package", "#Other", "1")));
             AssertFalse(next.IsComplete(DesktopOnboardingHistory.Identity("package", "#Page", "2")));
+            string staged = Path.Combine(directory, "staged"), moved = Path.Combine(directory, "moved");
+            var deferred = new DesktopOnboardingHistory(staged, deferred: true);
+            deferred.BeginBatch(); deferred.Complete(key);
+            AssertTrue(deferred.IsComplete(key));
+            AssertFalse(Directory.Exists(staged));
+            deferred.ChangeDeferredDirectory(moved);
+            AssertTrue(deferred.IsComplete(key));
+            File.WriteAllText(moved, "obstacle");
+            bool failed = false;
+            try { deferred.Flush(); } catch (IOException) { failed = true; }
+            AssertTrue(failed);
+            File.Delete(moved);
+            deferred.FinishBatch(); deferred.Flush();
+            AssertTrue(new DesktopOnboardingHistory(moved).IsComplete(key));
+            AssertFalse(new DesktopOnboardingHistory(moved).HasPendingBatch);
+            AssertFalse(Directory.Exists(staged));
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }

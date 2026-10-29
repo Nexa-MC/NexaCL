@@ -39,7 +39,7 @@ internal sealed partial class DesktopSidecarNxml
             foreach (var module in modules.Where(module => module.Source.Operation is SidecarNxmlOperation.Page or SidecarNxmlOperation.OnboardingPage))
             {
                 string historyKey = DesktopOnboardingHistory.Identity(module.PackageName, module.Source.Target, module.Source.OnboardingRevision);
-                if (_completed.Contains(module.Exposure) || module.Source.Operation == SidecarNxmlOperation.OnboardingPage && _onboardingHistory?.IsComplete(historyKey) == true) continue;
+                if (_completed.Contains(module.Exposure)) continue;
                 keep.Add(module.Exposure);
                 try
                 {
@@ -109,7 +109,7 @@ internal sealed partial class DesktopSidecarNxml
                 if (_onboarding == exposure && _pages.TryGetValue(exposure, out var page)
                     && _shell.Stage.Navigation.Current == page.Root)
                 {
-                    try { _onboardingHistory?.Complete(page.HistoryKey); }
+                    try { OnboardingHistory?.Complete(page.HistoryKey); }
                     catch (Exception error) when (error is IOException or UnauthorizedAccessException)
                     { _warn("Unable to save onboarding completion."); return true; }
                     _completed.Add(exposure); RetirePage(exposure); AdvanceOnboarding();
@@ -185,13 +185,13 @@ internal sealed partial class DesktopSidecarNxml
             {
                 if (begin)
                 {
-                    _onboardingHistory?.BeginBatch();
+                    OnboardingHistory?.BeginBatch();
                     _guideBegan = _guideHasPages = true;
                     AdvanceOnboarding();
                 }
                 else
                 {
-                    _onboardingHistory?.FinishBatch();
+                    OnboardingHistory?.FinishBatch();
                     _guideBegan = _guideHasPages = false;
                     _shell.Stage.Navigation.Replace(_onboardingFallback);
                 }
@@ -204,8 +204,21 @@ internal sealed partial class DesktopSidecarNxml
         private void AdvanceOnboarding()
         {
             if (!_shell.Tree.IsAlive(_onboardingFallback) || _onboarding != default) return;
-            var pending = _pages.FirstOrDefault(page => page.Value.Operation == SidecarNxmlOperation.OnboardingPage && !_completed.Contains(page.Key));
-            if (_onboardingHistory is not null && !_guideBegan && (pending.Value is not null || _onboardingHistory.HasPendingBatch))
+            if (_firstRun is not null && (!_firstRun.ExtensionsRequested || !_firstRun.ExtensionsReady)) return;
+            var pending = _pages.FirstOrDefault(page => page.Value.Operation == SidecarNxmlOperation.OnboardingPage
+                && !_completed.Contains(page.Key) && OnboardingHistory?.IsComplete(page.Value.HistoryKey) != true);
+            if (_firstRun is not null)
+            {
+                if (pending.Value is not null)
+                { _onboarding = pending.Key; _shell.Stage.Navigation.Replace(pending.Value.Root); }
+                else
+                {
+                    _firstRun.CompleteExtensions();
+                    if (_shell.Stage.Navigation.Current != _onboardingFallback) _shell.Stage.Navigation.Replace(_onboardingFallback);
+                }
+                return;
+            }
+            if (OnboardingHistory is not null && !_guideBegan && (pending.Value is not null || OnboardingHistory.HasPendingBatch))
             {
                 if (!_shell.Tree.IsAlive(_guideStart)) _guideStart = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("SidecarOnboardingStart.nxml"), _shell.Tree, _store);
                 if (_shell.Stage.Navigation.Current != _guideStart) _shell.Stage.Navigation.Replace(_guideStart);
@@ -217,7 +230,7 @@ internal sealed partial class DesktopSidecarNxml
                 _shell.Stage.Navigation.Replace(pending.Value.Root);
                 return;
             }
-            if (_onboardingHistory is not null && _guideBegan && _guideHasPages)
+            if (OnboardingHistory is not null && _guideBegan && _guideHasPages)
             {
                 if (!_shell.Tree.IsAlive(_guideEnd)) _guideEnd = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("SidecarOnboardingEnd.nxml"), _shell.Tree, _store);
                 if (_shell.Stage.Navigation.Current != _guideEnd) _shell.Stage.Navigation.Replace(_guideEnd);

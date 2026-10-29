@@ -39,8 +39,8 @@ internal sealed partial class DesktopSidecarNxml
     }
 
     internal IDisposable Attach(XsrUiShell shell, DesktopUiIntentSink intents, XsrStateStore store,
-        Action<string> warn, XsrUiEntityId onboardingFallback = default, Action<Uri>? openLink = null, Func<string, CancellationToken, Task<XsrResult>>? importTheme = null, Action? imported = null, Func<string, Task>? copyText = null, DesktopOnboardingHistory? onboarding = null)
-        => new Session(this, shell, intents, store, warn, onboardingFallback, openLink, importTheme, imported, copyText, onboarding);
+        Action<string> warn, XsrUiEntityId onboardingFallback = default, Action<Uri>? openLink = null, Func<string, CancellationToken, Task<XsrResult>>? importTheme = null, Action? imported = null, Func<string, Task>? copyText = null, DesktopOnboardingHistory? onboarding = null, FirstRunController? firstRun = null)
+        => new Session(this, shell, intents, store, warn, onboardingFallback, openLink, importTheme, imported, copyText, onboarding, firstRun);
 
     private sealed partial class Session : IDisposable
     {
@@ -52,6 +52,8 @@ internal sealed partial class DesktopSidecarNxml
         private readonly Action<Uri>? _openLink;
         private readonly Func<string, Task>? _copyText;
         private readonly DesktopOnboardingHistory? _onboardingHistory;
+        private readonly FirstRunController? _firstRun;
+        private DesktopOnboardingHistory? OnboardingHistory => _firstRun?.OnboardingHistory ?? _onboardingHistory;
         private readonly Func<string, CancellationToken, Task<XsrResult>>? _importTheme;
         private readonly Action? _imported;
         private bool _importing;
@@ -62,9 +64,9 @@ internal sealed partial class DesktopSidecarNxml
         private long _styledStructure = -1;
 
         internal Session(DesktopSidecarNxml owner, XsrUiShell shell, DesktopUiIntentSink intents,
-            XsrStateStore store, Action<string> warn, XsrUiEntityId onboardingFallback, Action<Uri>? openLink, Func<string, CancellationToken, Task<XsrResult>>? importTheme, Action? imported, Func<string, Task>? copyText, DesktopOnboardingHistory? onboarding)
+            XsrStateStore store, Action<string> warn, XsrUiEntityId onboardingFallback, Action<Uri>? openLink, Func<string, CancellationToken, Task<XsrResult>>? importTheme, Action? imported, Func<string, Task>? copyText, DesktopOnboardingHistory? onboarding, FirstRunController? firstRun)
         {
-            _onboardingHistory = onboarding; _copyText = copyText; _importTheme = importTheme; _imported = imported; _owner = owner; _shell = shell; _store = store; _warn = warn; _openLink = openLink;
+            _firstRun = firstRun; _onboardingHistory = onboarding; _copyText = copyText; _importTheme = importTheme; _imported = imported; _owner = owner; _shell = shell; _store = store; _warn = warn; _openLink = openLink;
             _onboardingFallback = onboardingFallback;
             _coordinator = new(shell.Tree, store);
             shell.Renderer.PresentationPreparing += Frame;

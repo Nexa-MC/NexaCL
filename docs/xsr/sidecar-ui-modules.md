@@ -170,3 +170,12 @@ by revision. An interrupted batch begins with welcome again, resumes unfinished
 pages, and ends with completion. The batch is closed only by its final button,
 including when all content pages were already completed before an interruption.
 With no pending pages or interrupted batch, nothing is shown.
+
+On a fresh installation these pages participate in the Host's first-run flow:
+Host welcome → storage → privacy → pending Sidecar pages → Host summary. Do not
+add another welcome/end pair in the Sidecar. Initial discovery must settle before
+the content stage advances. First-run receipts stay in memory until settings are
+saved, then persist under the selected data directory; cancelling first-run may
+repeat its pages. This preserves the empty-directory validation for a new location.
+Configured installations continue to use the standalone versioned batch described
+above, including its welcome/end pages and durable per-page receipts.

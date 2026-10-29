@@ -1,9 +1,13 @@
 <nxml-dynamic>
   <StackPanel Key="SetupFrame" Class="layout-FirstRunPage-SetupFrame setup-base" Width="{data frameWidth}">
-    <Node Recipe="Element" ModalLayer="false" Class="layout-FirstRunPage-SetupStep setup-base setup-step-layer">
+    <Node IsVisible="{data !extensionsPending}" Recipe="Element" ModalLayer="false" Class="layout-FirstRunPage-SetupStep setup-base setup-step-layer">
       <Text Key="SetupStep" Content="{data progress}" Class="layout-FirstRunPage-SetupStep setup-base setup-progress" Localize="false" MaxLines="0" TrimOverflow="true" />
     </Node>
-    <StackPanel Key="SetupBody" Class="{data bodyStyle}">
+    <StackPanel Key="SetupExtensionsPending" IsVisible="{data extensionsPending}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+      <ProgressRing Width="48" Height="48" />
+      <Text Content="正在准备扩展引导…" FontSize="16" TextAlignment="Center" />
+    </StackPanel>
+    <StackPanel Key="SetupBody" Class="{data bodyStyle}" IsVisible="{data !extensionsPending}">
       <Image Key="SetupHero" Source="lucide/box" Label="NexaCL" Class="{data heroStyle}" />
       <StackPanel Key="SetupForm" Scroll="true" Class="{data formStyle}" ScrollGesture="true">
         <Text Key="SetupTitle" Content="{data title}" TransitionKey="{state setup.presentation.step}" Localize="false" MaxLines="0" TrimOverflow="true" Class="setup-base setup-title" />

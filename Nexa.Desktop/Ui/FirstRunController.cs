@@ -1,4 +1,4 @@
-﻿using Nexa.Services.Composition;
+using Nexa.Services.Composition;
 using Nexa.Services.Setup;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
@@ -32,6 +32,20 @@ internal sealed class FirstRunController : IDisposable
     private readonly CancellationTokenSource _stop = new();
     private Task<string?>? _picking;
     private Task<XsrResult>? _saving;
+    private Task? _extensionDiscovery;
+    private bool _extensionsRequested;
+    private bool _settingsSaved;
+    internal DesktopOnboardingHistory OnboardingHistory { get; private set; } = null!;
+    internal bool ExtensionsRequested => _extensionsRequested;
+    internal bool ExtensionsReady => _extensionDiscovery?.IsCompleted == true;
+    internal void ConfigureExtensions(Task discovery)
+    { _extensionDiscovery = discovery; WakeWhenCompleted(discovery); }
+    internal void CompleteExtensions()
+    {
+        if (_disposed || !_extensionsRequested) return;
+        _extensionsRequested = false; Step = 3; _viewEpoch++; Update();
+        _store.Publish(_store.Resolve(FirstRunState.Wake), Interlocked.Increment(ref _wake));
+    }
     private int _pickStep;
     private long _viewEpoch, _pickEpoch;
     private bool _active = true;
@@ -54,6 +68,7 @@ internal sealed class FirstRunController : IDisposable
         _shell = shell; _intents = intents; _runtime = runtime; _status = status;
         _store = store;
         _pickDirectory = pickDirectory; _close = close; _directory = status.DataDirectory;
+        OnboardingHistory = new(Path.Combine(_directory, "onboarding"), deferred: true);
         _consent = status.TelemetryRequired;
         _dynamic = new(shell.Tree, store);
         Page = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("FirstRunPage.nxml"), shell.Tree, store);
@@ -90,7 +105,11 @@ internal sealed class FirstRunController : IDisposable
             _picking = null;
             if (Step == _pickStep && _pickEpoch == _viewEpoch)
             {
-                if (picked.IsCompletedSuccessfully && picked.Result is { } directory) _directory = directory;
+                if (picked.IsCompletedSuccessfully && picked.Result is { } directory)
+                {
+                    _directory = directory;
+                    OnboardingHistory.ChangeDeferredDirectory(Path.Combine(_directory, "onboarding"));
+                }
                 else if (picked.IsFaulted) Error(Copy("setup.error.picker"));
                 Update();
             }
@@ -99,20 +118,29 @@ internal sealed class FirstRunController : IDisposable
         {
             _saving = null;
             if (PendingQuery.Succeeded(saved))
-            { Completed = true; _close(); return; }
+            { _settingsSaved = true; Finish(); return; }
             Error(saved.IsCompletedSuccessfully ? saved.Result.Error?.Message ?? Copy("setup.error.save") : Copy("setup.error.retry"));
             Update();
         }
         while (_pending.TryDequeue(out string? command))
         {
-            if (_saving is not null || _picking is not null) continue;
+            if (_saving is not null || _picking is not null || _extensionsRequested) continue;
             Error("");
             int previous = Step;
             switch (command)
             {
-                case "ui.setup.back" when Step > 0: Step--; break;
+                case "ui.setup.back" when Step > 0 && !_settingsSaved: Step--; break;
+                case "ui.setup.next" when Step == 2 && _extensionDiscovery is not null:
+                    try { OnboardingHistory.BeginBatch(); _extensionsRequested = true; }
+                    catch (Exception error) when (error is IOException or UnauthorizedAccessException) { Error(Copy("setup.error.save")); }
+                    break;
                 case "ui.setup.next" when Step < 3: Step++; break;
+                case "ui.setup.next" when _settingsSaved:
+                    Finish(); break;
                 case "ui.setup.next":
+                    try { if (_extensionDiscovery is not null) OnboardingHistory.FinishBatch(); }
+                    catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                    { Error(Copy("setup.error.save")); break; }
                     if (_runtime.Commands.TryResolve(FirstRunContract.Complete, out var route))
                     {
                         _saving = _runtime.Commands.Dispatch(route, new FirstRunCompleteCommand(_directory, _consent), cancellationToken: _stop.Token).Completion;
@@ -131,6 +159,17 @@ internal sealed class FirstRunController : IDisposable
         Update();
     }
 
+    private void Finish()
+    {
+        try
+        {
+            OnboardingHistory.Flush();
+            Completed = true; _close();
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        { Error(Copy("setup.error.save")); Update(); }
+    }
+
     private async Task<string?> PickAsync() => await _pickDirectory().ConfigureAwait(false);
     private void WakeWhenCompleted(Task task) => _ = task.ContinueWith(_ =>
     {
@@ -138,9 +177,9 @@ internal sealed class FirstRunController : IDisposable
     }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     private string Copy(string key) => _shell.Renderer.LocalizeText(DesktopBootstrapText.Raw(key));
     private static string Flag(bool value) => value ? "true" : "false";
-    private Dictionary<string, string> Projection() => Project(_shell, _status, _directory, _consent, Step, _saving is not null, _picking is not null, _error);
+    private Dictionary<string, string> Projection() => Project(_shell, _status, _directory, _consent, Step, _saving is not null, _picking is not null, _error, _extensionsRequested);
     internal static Dictionary<string, string> Project(XsrUiShell shell, FirstRunStatus status, string directory,
-        bool consent, int step, bool saving, bool picking, string error)
+        bool consent, int step, bool saving, bool picking, string error, bool extensionsPending = false)
     {
         if (step is < 0 or > 3 || status.TelemetryRequired && !consent) throw new ArgumentException("Invalid setup projection.");
         string Copy(string key) => shell.Renderer.LocalizeText(DesktopBootstrapText.Raw(key));
@@ -149,7 +188,7 @@ internal sealed class FirstRunController : IDisposable
         if (metrics.MinWidth is not > 0 || metrics.MaxWidth is not > 0) throw new NxmlCompileException("First-run viewport metrics are incomplete.");
         double width = Math.Min(metrics.MaxWidth.Value, Math.Max(metrics.MinWidth.Value,
             shell.Renderer.Viewport.Width - metrics.Padding.Left - metrics.Padding.Right));
-        bool welcome = step == 0, enabled = !saving && !picking;
+        bool welcome = step == 0, enabled = !saving && !picking && !extensionsPending;
         string stepKey = step.ToString(System.Globalization.CultureInfo.InvariantCulture);
         string title = Copy(step == 2 && status.TelemetryRequired ? "setup.title.required" : "setup.title." + stepKey);
         string description = Copy(step == 1 && status.LocationLocked ? "setup.description.locked"
@@ -167,7 +206,8 @@ internal sealed class FirstRunController : IDisposable
             ["directory"] = directory,
             ["summary"] = Format("Summary", new() { ["directory"] = directory, ["diagnostic"] = Copy(consent ? "setup.enabled" : "setup.disabled") }),
             ["welcome"] = Flag(welcome),
-            ["flow"] = Flag(!welcome),
+            ["flow"] = Flag(!welcome && !extensionsPending),
+            ["extensionsPending"] = Flag(extensionsPending),
             ["directoryVisible"] = Flag(step == 1),
             ["consentVisible"] = Flag(step == 2),
             ["summaryVisible"] = Flag(step == 3),

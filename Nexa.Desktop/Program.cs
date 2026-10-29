@@ -919,12 +919,13 @@ internal static partial class Program
         shell.Render(new XsrUiSize(1024, 600));
         using var setupExtensions = setupNxml.Attach(shell, intents, store, message => setupLog.Warn("Sidecar", message), controller.Page,
             openLink: platform.OpenHttpsUri, copyText: platform.CopyTextAsync,
-            onboarding: new DesktopOnboardingHistory(Path.Combine(status.Value!.DataDirectory, "onboarding")));
+            firstRun: controller);
         using var setupSidecarHttp = new HttpClient();
         using var setupSidecarUpdates = SidecarStartup.CreateUpdater(setupSidecarHttp, status.Value!.DataDirectory, ResolveBuildInfo().ProductVersion);
         var setupOverrides = SidecarStartup.ResolveUpdatesAsync(setupSidecarUpdates, setupLog).GetAwaiter().GetResult();
         var setupSidecars = SidecarStartup.Create(setupLog, nxmlModules: setupNxml.Runtime, packageOverrides: setupOverrides);
         using var setupSidecarLifetime = SidecarStartup.StartLifetime(setupSidecars, setupLog, !args.Contains("--safe-mode", StringComparer.Ordinal));
+        controller.ConfigureExtensions(setupSidecarLifetime.InitialReady);
         try { setupSidecarLifetime.InitialReady.WaitAsync(TimeSpan.FromSeconds(15)).GetAwaiter().GetResult(); }
         catch (TimeoutException) { setupLog.Warn("Sidecar", "First-run Sidecar discovery is continuing in the background."); }
         PrepareFirstRunStartupAsync(startup, shell, platform, setStage).GetAwaiter().GetResult();

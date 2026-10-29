@@ -428,6 +428,8 @@ internal static partial class Program
         ("Sidecar links accept only bounded HTTPS destinations", SidecarLinksAllowOnlyUserFacingHttps),
         ("Sidecar standalone pages navigate, return and retire", SidecarStandalonePagesNavigateAndRetire),
         ("Sidecar updates publish only verified complete packages", SidecarUpdatesPublishOnlyVerifiedCompletePackages),
+        ("Host and Sidecar share one onboarding sequence and persist selected root", FirstRunAndSidecarShareOneOnboardingSequence),
+            ("First-run onboarding without Sidecar reaches Host summary", FirstRunWithoutSidecarReachesSummary),
         ("versioned onboarding frames pending pages and resumes interruptions", VersionedOnboardingFramesPendingPages),
         ("onboarding receipts are package page revision scoped and durable", OnboardingReceiptsAreScopedAndDurable),
         ("Sidecar onboarding resumes Host setup and clears page drafts", SidecarOnboardingResumesSetup),

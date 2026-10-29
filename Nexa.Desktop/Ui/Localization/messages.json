@@ -1,4 +1,5 @@
 [
+  {"source":"正在准备扩展引导…","en":"Preparing extension setup…","zh-Hant":"正在準備擴充功能引導…"},
   {"source":"NexaCL 更新","en":"NexaCL Update","zh-Hant":"NexaCL 更新"},
   {"source":"Sidecar 更新","en":"Sidecar updates","zh-Hant":"Sidecar 更新"},
   {"source":"Sidecar 更新检查失败，请重试。","en":"Could not check for Sidecar updates. Try again.","zh-Hant":"Sidecar 更新檢查失敗，請重試。"},

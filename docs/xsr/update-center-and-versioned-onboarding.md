@@ -55,3 +55,30 @@ release or a newer active package is not a downgrade offer. Replacing the host
 with a newer bundled release retires older per-user overrides.
 
 See [native previews and regression evidence](evidence/update-onboarding-2026-10-29/README.md).
+
+## One first-run sequence
+
+When Host bootstrap setup is active, FirstRunController owns the sequence and
+its welcome/completion pages. Sidecar onboarding is an inserted content stage
+after storage/privacy choices and before the Host summary. The presentation
+session must not auto-start its standalone wrappers in this mode. It waits for
+the initial Sidecar discovery task, consumes pending page revisions, then returns
+to the Host summary. Only the Host finish action closes the batch and commits
+bootstrap settings. Navigation remains hidden for the entire sequence.
+
+Receipts are resolved against the selected data directory, including changes made
+by the Host directory picker. Filtering happens when selecting pending content,
+not when registrations first arrive, because registrations can precede the final
+storage choice. Completed content is not replayed after the bootstrap restart.
+Previously configured installations keep the standalone versioned batch path.
+
+First-run completion receipts are deferred until setup settings save successfully.
+Writing them beforehand would violate the service's empty destination guarantee.
+A failed receipt flush keeps the final page open; retry flushes without repeating
+the settings commit. Cancelling an unfinished first run may repeat its content.
+
+Regression coverage exercises registration before Host welcome, delayed discovery,
+a changed storage root, two continue/skip pages, one Host finish, and a fresh
+process with no duplicate batch. A no-Sidecar run reaches the Host summary without
+writing a directory. Receipt tests cover deferred writes, relocation, and retry
+after a filesystem write failure. The full Desktop suite passes 384 tests.
