@@ -34,6 +34,7 @@ public sealed record MinecraftLibraryToken
     public string? Sha1 { get; init; }
     public long Size { get; init; }
     public bool IsNatives { get; init; }
+    public bool IncludeOnClasspath { get; init; }
     public bool IsLocal { get; init; }
 }
 

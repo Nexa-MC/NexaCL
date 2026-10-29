@@ -261,7 +261,14 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
             return;
         }
 
-        CountryPolicy.EnsureMinecraftDownloadsAllowed();
+        if (!CountryPolicy.AllowMinecraftDownloads)
+        {
+            string reason = $"本地资源索引{(File.Exists(indexDiskPath) ? "校验未通过" : "缺失")}：assets/indexes/{Path.GetFileName(indexDiskPath)}。"
+                + "请先使用 Microsoft Launcher 完整安装并启动对应原版，或导入完整的本地版本后重试。"
+                + RegionalPolicy.MinecraftDownloadUnavailable;
+            _log?.Warn("Launch", reason);
+            throw new InvalidDataException(reason);
+        }
         Directory.CreateDirectory(Path.GetDirectoryName(indexDiskPath)!);
         string[] sources = downloadPolicy.SelectSources(plan.Url!, MinecraftDownloadSourcePlanner.GetLauncherOrMetaSources(plan.Url!, true, plan.Sha1));
         int attempts = downloadPolicy.Retry ? 2 : 1;

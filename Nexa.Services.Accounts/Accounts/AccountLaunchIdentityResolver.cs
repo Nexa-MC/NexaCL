@@ -180,6 +180,14 @@ public sealed class AccountLaunchIdentityResolver(
             {
                 throw;
             }
+            catch (Exception exception) when (exception is HttpRequestException { StatusCode: null or System.Net.HttpStatusCode.RequestTimeout or System.Net.HttpStatusCode.TooManyRequests or System.Net.HttpStatusCode.InternalServerError or System.Net.HttpStatusCode.BadGateway or System.Net.HttpStatusCode.ServiceUnavailable or System.Net.HttpStatusCode.GatewayTimeout } or TaskCanceledException)
+            {
+                log?.Warn("Account", "Microsoft refresh unavailable; keeping the saved profile for retry.");
+                string reason = MicrosoftAuthenticationFailure.IsCertificateFailure(exception)
+                    ? "Microsoft 认证服务的 TLS 证书校验失败。请检查系统时间、系统证书和代理设置后重试；已保留账户。"
+                    : "暂时无法连接 Microsoft 认证服务。请检查网络或代理后重试；已保留账户，无需重新添加。";
+                return XsrResult.Failure<MinecraftLaunchIdentity>(new XsrError(XsrErrorKind.Unavailable, AccountErrors.LaunchNotSupportedCode, reason));
+            }
             catch (Exception exception) when (exception is InvalidOperationException or HttpRequestException)
             {
                 log?.Warn("Account", $"Microsoft refresh failed: {exception.Message}");

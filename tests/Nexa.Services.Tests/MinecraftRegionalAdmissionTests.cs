@@ -222,7 +222,15 @@ internal static partial class Program
             File.Delete(missing);
             bool rejected = false;
             try { await Complete(); }
-            catch (InvalidDataException error) { rejected = error.Message == RegionalPolicy.MinecraftDownloadUnavailable; }
+            catch (InvalidDataException error)
+            {
+                rejected = error.Message.Contains(RegionalPolicy.MinecraftDownloadUnavailable, StringComparison.Ordinal);
+                if (missing == indexPath)
+                {
+                    AssertTrue(error.Message.Contains("assets/indexes/5.json", StringComparison.Ordinal));
+                    AssertTrue(error.Message.Contains("Microsoft Launcher", StringComparison.Ordinal));
+                }
+            }
             AssertTrue(rejected);
             AssertEqual(0, fixture.RequestedUrls.Count);
             AssertFalse(File.Exists(missing));

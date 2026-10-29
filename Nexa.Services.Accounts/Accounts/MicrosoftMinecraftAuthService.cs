@@ -210,7 +210,9 @@ public sealed class MicrosoftMinecraftAuthService : IMicrosoftMinecraftAuthServi
         Dictionary<string, string> form,
         CancellationToken cancellationToken)
     {
-        using HttpResponseMessage response = await PostFormAsync(TokenEndpoint, form, cancellationToken).ConfigureAwait(false);
+        using HttpResponseMessage response = await PostTokenAsync(form, cancellationToken).ConfigureAwait(false);
+        if (form.GetValueOrDefault("grant_type") == "refresh_token" && IsTransientMinecraftServiceFailure(response.StatusCode))
+            response.EnsureSuccessStatusCode();
         string body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         using JsonDocument document = JsonDocument.Parse(body);
         JsonElement root = document.RootElement;
@@ -404,6 +406,27 @@ public sealed class MicrosoftMinecraftAuthService : IMicrosoftMinecraftAuthServi
         }
 
         return false;
+    }
+
+    private async Task<HttpResponseMessage> PostTokenAsync(Dictionary<string, string> form, CancellationToken token)
+    {
+        int attempts = form.GetValueOrDefault("grant_type") == "refresh_token" ? 3 : 1;
+        for (int attempt = 1; ; attempt++)
+        {
+            TimeSpan delay = TimeSpan.FromMilliseconds(300 * attempt * attempt);
+            try
+            {
+                var response = await PostFormAsync(TokenEndpoint, form, token).ConfigureAwait(false);
+                if (attempt == attempts || !IsTransientMinecraftServiceFailure(response.StatusCode)) return response;
+                delay = ResolveRetryDelay(response, attempt);
+                response.Dispose();
+            }
+            catch (HttpRequestException error) when (attempt < attempts && error.StatusCode is null && !MicrosoftAuthenticationFailure.IsCertificateFailure(error))
+            { token.ThrowIfCancellationRequested(); }
+            catch (OperationCanceledException) when (attempt < attempts && !token.IsCancellationRequested) { }
+            _log?.Warn("MicrosoftAuth", $"Microsoft refresh transport will retry attempt={attempt}/{attempts}");
+            await _delay(delay, token).ConfigureAwait(false);
+        }
     }
 
     private Task<HttpResponseMessage> PostFormAsync(

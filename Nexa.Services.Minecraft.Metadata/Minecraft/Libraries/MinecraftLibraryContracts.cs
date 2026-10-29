@@ -124,7 +124,12 @@ public static class MinecraftLibraryResolver
                         artifact?["sha1"]?.ToString(),
                         ParseSize(artifact?["size"]),
                         isNatives: IsNativeClassifier(declaredClassifier),
-                        local);
+                        local) with
+                    {
+                        // Explicit artifacts are classpath dependencies even when their
+                        // classifier contains native resources (modern LWJGL self-extracts).
+                        IncludeOnClasspath = artifact is not null,
+                    };
                     MinecraftLibraryToken? resolvedArtifact = ResolveArchitectureSpecificArtifact(artifactToken, root, request);
                     if (resolvedArtifact is not null) result.Add(resolvedArtifact);
                 }
@@ -412,7 +417,7 @@ public static class MinecraftClasspathPlanner
         string? optiFine = null;
         foreach (MinecraftLibraryToken library in request.Libraries)
         {
-            if (library.IsNatives || string.IsNullOrWhiteSpace(library.LocalPath)) continue;
+            if ((library.IsNatives && !library.IncludeOnClasspath) || string.IsNullOrWhiteSpace(library.LocalPath)) continue;
             if (request.HasCleanroom && library.OriginalName is { } original && MinecraftClasspathRuleRegistry.CleanroomExcludedLibraryFragments.Any(fragment => fragment.Matches(original))) continue;
             if (string.Equals(library.NameWithoutVersion, "optifine:OptiFine", StringComparison.Ordinal)) { optiFine = library.LocalPath; continue; }
             entries.Add(library.LocalPath);

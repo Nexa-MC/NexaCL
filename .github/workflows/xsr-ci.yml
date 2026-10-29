@@ -162,11 +162,11 @@ jobs:
           trap 'sudo umount "$RUNNER_TEMP/nexa-snapshot-mount"' EXIT
           sudo btrfs subvolume create "$RUNNER_TEMP/nexa-snapshot-mount/source"
           sudo ./native-account-tests/Nexa.Services.Tests --native-directory-snapshot "$RUNNER_TEMP/nexa-snapshot-mount"
-      - name: Verify native session log ownership and Minecraft session retry
+      - name: Verify native session logs and Minecraft launch recovery
         shell: pwsh
         run: |
           $binary = if ($IsWindows) { './native-account-tests/Nexa.Services.Tests.exe' } else { './native-account-tests/Nexa.Services.Tests' }
-          & $binary "session logs" "Microsoft Minecraft"
+          & $binary "session logs" "Microsoft Minecraft" "Microsoft refresh" "modern native artifacts" "arm64 native" "mainland completion"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Exercise native input discovery without hooks
         shell: pwsh

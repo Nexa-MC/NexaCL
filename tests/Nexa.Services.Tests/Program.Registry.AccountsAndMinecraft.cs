@@ -5,6 +5,7 @@ internal static partial class Program
     private static (string Name, Func<ValueTask> Body)[] RegisterAccountsAndMinecraft() =>
     [
         ("the microsoft device login runs the full chain", MicrosoftDeviceLoginRunsTheFullChain),
+        ("Microsoft refresh retries transport and preserves profiles", MicrosoftRefreshRetriesTransientTransportAndPreservesProfiles),
         ("Microsoft Minecraft handshake retries preserve browser authorization", MicrosoftMinecraftHandshakeRetriesWithoutRepeatingAuthorization),
         ("Microsoft Minecraft retries are bounded and preserve certificate validation", MicrosoftMinecraftRetriesAreBoundedAndRespectCertificateFailure),
         ("Microsoft Minecraft retry cancellation stops the exchange", MicrosoftMinecraftRetryCancellationStopsTheExchange),
@@ -59,6 +60,7 @@ internal static partial class Program
         ("system GLFW keeps the ordinary artifact", Sync(SystemGlfwKeepsOrdinaryArtifact)),
         ("system GLFW drops the native classifier", Sync(SystemGlfwDropsNativeClassifier)),
         ("arm64 native is not on classpath", Arm64NativeIsNotOnClasspath),
+        ("modern native artifacts remain on classpath", Sync(ModernNativeArtifactsRemainOnClasspath)),
         ("natives are extracted before launch", NativesAreExtractedBeforeLaunch),
         ("mojang rule order matches manifest semantics", Sync(MojangRuleOrderMatchesManifestSemantics)),
         ("os version uses regex", Sync(OsVersionUsesRegex)),

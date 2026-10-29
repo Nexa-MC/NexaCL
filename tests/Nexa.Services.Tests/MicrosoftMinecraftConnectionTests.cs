@@ -29,6 +29,74 @@ internal static partial class Program
     private static HttpRequestException InterruptedMicrosoftTls() => new(HttpRequestError.SecureConnectionError,
         "handshake ended", new IOException("remote connection closed"));
 
+    private static async ValueTask MicrosoftRefreshRetriesTransientTransportAndPreservesProfiles()
+    {
+        const string endpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
+        foreach (bool certificate in new[] { false, true })
+        {
+            using var handler = MicrosoftConnectionFixture();
+            handler.Fail(endpoint, certificate ? new HttpRequestException(HttpRequestError.SecureConnectionError, "untrusted", new AuthenticationException()) : InterruptedMicrosoftTls());
+            using var http = new HttpClient(handler);
+            int delays = 0;
+            var auth = new MicrosoftMinecraftAuthService(http, (_, _) => { delays++; return Task.CompletedTask; });
+            try
+            {
+                var result = await auth.RefreshAsync("client", "refresh");
+                AssertFalse(certificate); AssertTrue(result.OwnsMinecraft);
+            }
+            catch (HttpRequestException) { AssertTrue(certificate); }
+            AssertEqual(certificate ? 1 : 2, handler.Requests.Count(r => r.EndsWith(endpoint, StringComparison.Ordinal)));
+            AssertEqual(certificate ? 0 : 1, delays);
+        }
+        foreach (bool httpFailure in new[] { false, true })
+        {
+            using var handler = new ScriptedHandler();
+            for (int i = 0; i < 3; i++)
+            {
+                if (httpFailure) handler.Serve(endpoint, "upstream unavailable", HttpStatusCode.ServiceUnavailable);
+                else handler.Fail(endpoint, InterruptedMicrosoftTls());
+            }
+            using var http = new HttpClient(handler);
+            int delays = 0;
+            var auth = new MicrosoftMinecraftAuthService(http, (_, _) => { delays++; return Task.CompletedTask; });
+            bool failed = false;
+            try { await auth.RefreshAsync("client", "refresh"); }
+            catch (HttpRequestException) { failed = true; }
+            AssertTrue(failed);
+            AssertEqual(3, handler.Requests.Count);
+            AssertEqual(2, delays);
+        }
+        using (var handler = new ScriptedHandler())
+        using (var http = new HttpClient(handler))
+        using (var cancellation = new CancellationTokenSource())
+        {
+            handler.Fail(endpoint, InterruptedMicrosoftTls());
+            var auth = new MicrosoftMinecraftAuthService(http, (_, _) =>
+            {
+                cancellation.Cancel();
+                return Task.FromCanceled(cancellation.Token);
+            });
+            bool cancelled = false;
+            try { await auth.RefreshAsync("client", "refresh", cancellation.Token); }
+            catch (OperationCanceledException) { cancelled = true; }
+            AssertTrue(cancelled);
+            AssertEqual(1, handler.Requests.Count);
+        }
+        foreach (Exception failure in new Exception[] { InterruptedMicrosoftTls(), new TaskCanceledException("timeout") })
+        {
+            var accounts = CreatePreparationAccounts();
+            var profile = SampleProfile("Alice", "access") with { Kind = LaunchProfileKind.Microsoft, RefreshToken = "refresh" };
+            AssertTrue(accounts.AddProfile(profile).IsSuccess);
+            var auth = new PausedMicrosoftRefresh();
+            auth.Completion.SetException(failure);
+            var result = await new AccountLaunchIdentityResolver(accounts, auth, "client").ResolveAsync(0, profile);
+            AssertFalse(result.IsSuccess);
+            AssertEqual(Nexa.Xsr.XsrErrorKind.Unavailable, result.Error!.Kind);
+            AssertTrue(result.Error.Message.Contains("已保留账户", StringComparison.Ordinal));
+            AssertEqual(profile, accounts.GetProfile(0).Value);
+        }
+    }
+
     private static async ValueTask MicrosoftMinecraftHandshakeRetriesWithoutRepeatingAuthorization()
     {
         using var handler = MicrosoftConnectionFixture();

@@ -81,6 +81,46 @@ internal static partial class Program
         await Task.CompletedTask;
     }
 
+    internal static void ModernNativeArtifactsRemainOnClasspath()
+    {
+        string directory = CreateTempDirectory();
+        try
+        {
+            foreach (var (os, classifier) in new[]
+            {
+                (MinecraftLibraryOperatingSystem.Win32, "natives-windows"),
+                (MinecraftLibraryOperatingSystem.Linux, "natives-linux"),
+                (MinecraftLibraryOperatingSystem.MacOs, "natives-macos"),
+            })
+            {
+                string relative = $"org/lwjgl/lwjgl/3.4.3/lwjgl-3.4.3-{classifier}.jar";
+                JsonObject manifest = new()
+                {
+                    ["libraries"] = new JsonArray(new JsonObject
+                    {
+                        ["name"] = $"org.lwjgl:lwjgl:3.4.3:{classifier}",
+                        ["downloads"] = new JsonObject
+                        {
+                            ["artifact"] = new JsonObject { ["path"] = relative },
+                        },
+                    }),
+                };
+                var libraries = MinecraftLibraryResolver.Resolve(new MinecraftLibraryResolutionRequest
+                {
+                    VersionJson = manifest,
+                    MinecraftRootDirectory = directory,
+                    OperatingSystem = os,
+                    Is64BitArchitecture = true,
+                });
+                AssertEqual(1, libraries.Count);
+                AssertTrue(libraries[0].IsNatives);
+                var classpath = MinecraftClasspathPlanner.CreatePlan(new MinecraftClasspathPlanRequest { Libraries = libraries });
+                AssertTrue(classpath.Entries.Contains(libraries[0].LocalPath));
+            }
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
     internal static async ValueTask NativesAreExtractedBeforeLaunch()
     {
         string directory = CreateTempDirectory();
