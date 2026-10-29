@@ -1,0 +1,50 @@
+name: Stage Alpha 17 reviewed inputs
+on:
+  workflow_dispatch:
+    inputs:
+      download_urls:
+        required: true
+        type: string
+permissions:
+  contents: write
+jobs:
+  stage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: v2.0.0.alpha.17
+      - name: Download only the six pinned binary inputs
+        env:
+          DOWNLOAD_URLS: ${{ inputs.download_urls }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,urllib.parse,urllib.request
+          from pathlib import Path
+          lock=json.loads(Path('eng/release/market-sidecar.lock.json').read_text())
+          urls=json.loads(os.environ['DOWNLOAD_URLS'])
+          expected={f'Nexa.Cloud.Market.Sidecar-{rid}.nsc':item for rid,item in lock['artifacts'].items()}
+          if urls.keys()!=expected.keys(): raise SystemExit('Unexpected input set')
+          Path('inputs').mkdir()
+          for name,item in expected.items():
+              url=urls[name]
+              print('::add-mask::'+url)
+              parsed=urllib.parse.urlsplit(url)
+              if parsed.scheme!='https' or parsed.hostname!='release-assets.githubusercontent.com' or parsed.username:
+                  raise SystemExit('Unexpected download origin')
+              with urllib.request.urlopen(url,timeout=60) as stream:
+                  data=stream.read(item['size']+1)
+              if len(data)!=item['size'] or hashlib.sha256(data).hexdigest()!=item['sha256']:
+                  raise SystemExit('Pinned input verification failed')
+              Path('inputs',name).write_bytes(data)
+          PY
+      - name: Publish verified inputs for repository-scoped release builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create market-inputs-a296a6d7c851 inputs/*.nsc \
+            --target v2.0.0.alpha.17 --prerelease --latest=false \
+            --title 'Market Sidecar inputs for Alpha 17' \
+            --notes 'Verified six-runtime inputs from Nexa-MC/Nexa-Cloud-Market-Sidecar commit a296a6d7c85138388f3a9eaf1a6640192c867c31, build 40799183987. Formal publisher signatures are added by the launcher distribution workflow.'

@@ -1,0 +1,347 @@
+name: Alpha 17 release recovery
+on:
+  workflow_dispatch:
+    inputs:
+      release_notes:
+        required: true
+        type: string
+env:
+  RELEASE_SOURCE_REF: refs/tags/v2.0.0.alpha.17
+  RELEASE_SOURCE_TAG: v2.0.0.alpha.17
+permissions:
+  contents: read
+concurrency:
+  group: launcher-refs/tags/v2.0.0.alpha.17
+  cancel-in-progress: false
+jobs:
+  metadata:
+    # Publishing an already signed draft must not rebuild and overwrite immutable assets.
+    # An empty release created in GitHub still starts its initial build normally.
+    if: github.event_name != 'release' || (!startsWith(github.event.release.tag_name, 'market-inputs-') && !contains(github.event.release.assets.*.name, 'SHA256SUMS.asc'))
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prefix: ${{ steps.version.outputs.prefix }}
+      channel: ${{ steps.version.outputs.channel }}
+      sequence: ${{ steps.version.outputs.sequence }}
+      commit: ${{ steps.version.outputs.commit }}
+      release: ${{ steps.version.outputs.release }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: e430ede77297e5a648721365a7d59fcea06a48c8
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s eng/release -p 'test_*.py'
+      - name: Require human-written notes before building a tagged release
+        if: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MANUAL_RELEASE_NOTES: ${{ inputs.release_notes }}
+        run: |
+          python eng/release/release_notes.py prepare --repository "$GITHUB_REPOSITORY" \
+            --tag "$RELEASE_SOURCE_TAG" --output release-metadata/RELEASE.md
+      - id: version
+        run: |
+          args=()
+          if [[ "$RELEASE_SOURCE_REF" == refs/tags/* ]]; then
+            args+=(--release-notes-file release-metadata/RELEASE.md)
+          fi
+          python eng/release/metadata.py --ref "$RELEASE_SOURCE_REF" --sha "$(git rev-parse HEAD)" --output release-metadata "${args[@]}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-metadata
+          path: release-metadata/*
+  launcher:
+    needs: metadata
+    name: Launcher ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {rid: win-x64, os: windows-2025}
+          - {rid: win-arm64, os: windows-11-arm}
+          - {rid: linux-x64, os: ubuntu-24.04}
+          - {rid: linux-arm64, os: ubuntu-24.04-arm}
+          - {rid: osx-x64, os: macos-15-intel}
+          - {rid: osx-arm64, os: macos-15}
+    env:
+      PRODUCT_VERSION: ${{ needs.metadata.outputs.version }}
+      VERSION_PREFIX: ${{ needs.metadata.outputs.prefix }}
+      VERSION_CHANNEL: ${{ needs.metadata.outputs.channel }}
+      VERSION_SEQUENCE: ${{ needs.metadata.outputs.sequence }}
+      COMMIT_SHORT: ${{ needs.metadata.outputs.commit }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: e430ede77297e5a648721365a7d59fcea06a48c8
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Fetch pinned independent Market Sidecar binary
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag=$(python -c 'import json; print(json.load(open("eng/release/market-sidecar.lock.json"))["inputRelease"])')
+          input_repository=Nexa-MC/NexaCL
+          gh release download "$tag" --repo "$input_repository" --pattern 'Nexa.Cloud.Market.Sidecar-${{ matrix.rid }}.nsc' --dir "$RUNNER_TEMP/market-input"
+      - name: Install Linux packaging tools
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y clang zlib1g-dev libfontconfig1-dev libx11-dev libice6 libsm6 rpm ruby-dev build-essential desktop-file-utils squashfs-tools
+          sudo gem install fpm -v 1.16.0 --no-document
+          arch=x86_64
+          if [[ '${{ matrix.rid }}' == linux-arm64 ]]; then arch=aarch64; fi
+          python eng/release/fetch_tool.py "appimagetool-${arch}" "$RUNNER_TEMP/appimagetool"
+          python eng/release/fetch_tool.py "runtime-${arch}" "$RUNNER_TEMP/appimage-runtime"
+          echo "APPIMAGE_RUNTIME=$RUNNER_TEMP/appimage-runtime" >> "$GITHUB_ENV"
+          chmod +x "$RUNNER_TEMP/appimagetool"
+          echo "APPIMAGETOOL=$RUNNER_TEMP/appimagetool" >> "$GITHUB_ENV"
+      - name: Install Windows packaging tools
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 6.0.2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python eng/release/fetch_tool.py innosetup "$env:RUNNER_TEMP\innosetup.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $innoDirectory = Join-Path $env:RUNNER_TEMP 'nexa-inno'
+          $install = Start-Process -FilePath "$env:RUNNER_TEMP\innosetup.exe" -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', ('/DIR="' + $innoDirectory + '"') -Wait -PassThru -WindowStyle Hidden
+          if ($install.ExitCode -ne 0) { exit $install.ExitCode }
+          "NEXA_ISCC=$innoDirectory\ISCC.exe" >> $env:GITHUB_ENV
+      - name: Resolve public OAuth client ids
+        shell: bash
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+          NEXA_MS_CLIENT_ID: ${{ secrets.PCL_MS_CLIENT_ID }}
+          LITTLESKIN_CLIENT_ID: ${{ secrets.LITTLESKIN_CLIENT_ID }}
+          NEXA_LITTLESKIN_CLIENT_ID: ${{ secrets.PCL_LITTLESKIN_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          microsoft="${NEXA_MS_CLIENT_ID:-${MS_CLIENT_ID:-${CLIENT_ID:-}}}"
+          little_skin="${NEXA_LITTLESKIN_CLIENT_ID:-${LITTLESKIN_CLIENT_ID:-}}"
+          if [[ "$RELEASE_SOURCE_REF" == refs/tags/* && -z "$microsoft" ]]; then
+            echo 'A Microsoft OAuth client ID is required for official release account entitlement verification' >&2
+            exit 1
+          fi
+          if [[ -n "$microsoft" ]]; then echo "::add-mask::$microsoft"; fi
+          if [[ -n "$little_skin" ]]; then echo "::add-mask::$little_skin"; fi
+          echo "NEXA_MS_CLIENT_ID=$microsoft" >> "$GITHUB_ENV"
+          echo "NEXA_LITTLESKIN_CLIENT_ID=$little_skin" >> "$GITHUB_ENV"
+      - name: Restore Cloudflare API identity
+        shell: bash
+        env:
+          API_CLIENT_PFX: ${{ secrets.PCLN_API_CLIENT_PFX_BASE64 }}
+        run: |
+          python - <<'PY'
+          import base64, os, pathlib
+          encoded = os.environ.get("API_CLIENT_PFX", "")
+          if encoded:
+              pathlib.Path("Nexa.Desktop/Assets/api-client.pfx").write_bytes(base64.b64decode(encoded, validate=True))
+          elif os.environ.get("RELEASE_SOURCE_REF", "").startswith("refs/tags/"):
+              raise SystemExit("Cloudflare API identity is required for release builds")
+          PY
+      - name: Publish NativeAOT launcher
+        shell: bash
+        env:
+          NexaCurseForgeApiKey: ${{ secrets.CURSEFORGE_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$NexaCurseForgeApiKey" && ( "$GITHUB_REPOSITORY" == Nexa-MC/PCL-N || "$GITHUB_REPOSITORY" == Nexa-MC/NexaCL || "$RELEASE_SOURCE_REF" == refs/tags/* ) ]]; then
+            echo 'CURSEFORGE_API_KEY is required for official launcher artifacts' >&2
+            exit 1
+          fi
+          dotnet publish Nexa.Desktop/Nexa.Desktop.csproj --configuration Release \
+            -r '${{ matrix.rid }}' --self-contained true -m:1 -nodeReuse:false \
+            -p:PublishAot=true -p:StripSymbols=true \
+            -p:XsrVersionPrefix="$VERSION_PREFIX" -p:XsrVersionChannel="$VERSION_CHANNEL" \
+            -p:XsrVersionSequence="$VERSION_SEQUENCE" -p:XsrCommitShort="$COMMIT_SHORT" \
+            -p:NexaMicrosoftClientId="$NEXA_MS_CLIENT_ID" -p:NexaLittleSkinClientId="$NEXA_LITTLESKIN_CLIENT_ID" \
+            --output "$RUNNER_TEMP/launcher"
+          if [[ -n "$NexaCurseForgeApiKey" ]]; then
+            binary="$RUNNER_TEMP/launcher/Nexa.Desktop"
+            if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
+            "$binary" --validate-resource-credentials
+          fi
+      - name: Smoke macOS platform helper
+        if: startsWith(matrix.rid, 'osx-')
+        shell: bash
+        run: |
+          python - "$RUNNER_TEMP/launcher/Nexa.Platform.Helper" <<'PYHELPER'
+          import subprocess, sys
+          for operation, accepted in {
+              "network-cost": {"unknown", "unmetered", "metered"},
+              "thermal-state": {"unknown", "normal", "fair", "serious", "critical"},
+          }.items():
+              result = subprocess.run([sys.argv[1], operation], check=True, capture_output=True, text=True, timeout=10)
+              if result.stdout.strip() not in accepted:
+                  raise SystemExit(f"Invalid platform helper result for {operation}: {result.stdout!r}")
+              print(f"{operation}: {result.stdout.strip()}")
+          PYHELPER
+      - name: Publish isolated NativeAOT JVM host
+        shell: bash
+        run: |
+          dotnet publish Nexa.Jvm.Host/Nexa.Jvm.Host.csproj --configuration Release \
+            -r '${{ matrix.rid }}' --self-contained true -m:1 -nodeReuse:false \
+            -p:PublishAot=true -p:StripSymbols=true \
+            -p:XsrVersionPrefix="$VERSION_PREFIX" -p:XsrVersionChannel="$VERSION_CHANNEL" \
+            -p:XsrVersionSequence="$VERSION_SEQUENCE" -p:XsrCommitShort="$COMMIT_SHORT" \
+            --output "$RUNNER_TEMP/launcher"
+      - name: Smoke-run published executable
+        shell: bash
+        run: |
+          dotnet publish Nexa.Update.Helper/Nexa.Update.Helper.csproj --configuration Release \
+            -r '${{ matrix.rid }}' --self-contained true -m:1 -nodeReuse:false \
+            -p:PublishAot=true -p:StripSymbols=true \
+            -p:XsrVersionPrefix="$VERSION_PREFIX" -p:XsrVersionChannel="$VERSION_CHANNEL" \
+            -p:XsrVersionSequence="$VERSION_SEQUENCE" -p:XsrCommitShort="$COMMIT_SHORT" \
+            --output "$RUNNER_TEMP/launcher"
+          helper="$RUNNER_TEMP/launcher/Nexa.Update.Helper"
+          if [[ '${{ matrix.rid }}' == win-* ]]; then helper="${helper}.exe"; fi
+          "$helper" --validate-helper
+      - name: Smoke-run published launcher
+        shell: bash
+        run: |
+          binary="$RUNNER_TEMP/launcher/Nexa.Desktop"
+          if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
+          "$binary" --validate-shell
+          "$binary" --validate-setup
+      - name: Verify Windows game window integration under NativeAOT
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          dotnet publish tests/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj -c Release \
+            -r '${{ matrix.rid }}' --self-contained true -m:1 -nodeReuse:false \
+            -p:PublishAot=true -p:StripSymbols=true --output "$RUNNER_TEMP/window-integration"
+          "$RUNNER_TEMP/window-integration/Nexa.Desktop.Tests.exe" --window-integration-smoke
+      - name: Ensure GnuPG for embedded Sidecar signatures
+        shell: bash
+        run: |
+          if ! command -v gpg >/dev/null; then
+            if [[ "$RUNNER_OS" == macOS ]]; then brew install gnupg; else exit 1; fi
+          fi
+          gpg --version
+      - name: Sign and verify bundled Market Sidecar with the official publisher key
+        shell: bash
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          python eng/release/market_sidecar.py stage "$RUNNER_TEMP/launcher" --rid '${{ matrix.rid }}' --source "$RUNNER_TEMP/market-input/Nexa.Cloud.Market.Sidecar-${{ matrix.rid }}.nsc"
+      - name: Verify signed Sidecar through the production NativeAOT Host
+        shell: bash
+        run: |
+          binary="$RUNNER_TEMP/launcher/Nexa.Desktop"
+          if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
+          "$binary" --validate-shell --require-sidecar=Nexa.Cloud.Market.Sidecar
+      - name: Build native installers and portable archive
+        shell: bash
+        run: python eng/release/package.py --payload "$RUNNER_TEMP/launcher" --output artifacts --rid '${{ matrix.rid }}' --version "$PRODUCT_VERSION"
+      - name: Verify machine-wide installation on disposable runner
+        shell: bash
+        run: python eng/release/smoke_install.py artifacts "$PRODUCT_VERSION" '${{ matrix.rid }}'
+      - name: Publish native update transaction regression
+        shell: bash
+        run: |
+          dotnet publish tests/Nexa.Services.Tests -c Release -r '${{ matrix.rid }}' \
+            --self-contained true -p:PublishAot=true -p:StripSymbols=true \
+            -m:1 -nodeReuse:false --output "$RUNNER_TEMP/update-transaction-tests"
+      - name: Execute protected native update and offline recovery
+        shell: bash
+        run: |
+          binary="$RUNNER_TEMP/update-transaction-tests/Nexa.Services.Tests"
+          if [[ '${{ matrix.rid }}' == win-* ]]; then
+            NEXA_TEST_PROTECTED_TRANSACTION=1 "${binary}.exe" 'automatic update native'
+          else
+            sudo env NEXA_TEST_PROTECTED_TRANSACTION=1 "$binary" 'automatic update native'
+          fi
+      - name: Consume publisher-generated differential bundles under NativeAOT
+        shell: bash
+        run: |
+          python eng/release/delta_smoke_fixture.py "$RUNNER_TEMP/publisher-delta-fixture"
+          binary="$RUNNER_TEMP/update-transaction-tests/Nexa.Services.Tests"
+          if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
+          "$binary" 'portable update'
+          "$binary" --delta-publisher-smoke "$RUNNER_TEMP/publisher-delta-fixture"
+      - name: Preserve installer diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: install-diagnostics-${{ matrix.rid }}
+          path: install-diagnostics/*
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Nexa-${{ matrix.rid }}
+          path: artifacts/*
+          if-no-files-found: error
+  distribution:
+    needs: [metadata, launcher]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      PRODUCT_VERSION: ${{ needs.metadata.outputs.version }}
+      VERSION_CHANNEL: ${{ needs.metadata.outputs.channel }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: e430ede77297e5a648721365a7d59fcea06a48c8
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: Nexa-*
+          path: artifacts
+          merge-multiple: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-metadata
+          path: release-metadata
+      - name: Require every package and calculate checksums
+        run: |
+          python3 eng/release/market_sidecar.py export artifacts --version "$PRODUCT_VERSION"
+          python3 eng/release/verify.py artifacts "$PRODUCT_VERSION"
+      - name: Generate and round-trip publisher-authenticated differential packages
+        if: needs.metadata.outputs.release == 'true' && needs.metadata.outputs.channel != 'ci'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 eng/release/delta_history.py "$RUNNER_TEMP/update-history" "$PRODUCT_VERSION"
+          python3 eng/release/delta.py artifacts "$PRODUCT_VERSION" "$RUNNER_TEMP/update-history"
+          python3 eng/release/verify.py artifacts "$PRODUCT_VERSION"
+      - name: Verify embedded Sidecar signatures and provenance in all six portable packages
+        run: python3 eng/release/market_sidecar.py verify artifacts --version "$PRODUCT_VERSION"
+      - name: Sign and independently verify the complete distribution
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: python3 eng/release/sign.py artifacts "$PRODUCT_VERSION"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Complete-Nexa-distribution
+          overwrite: true
+          path: |
+            artifacts/*
+            release-metadata/CHANGELOG.md
+      - name: Publish tagged release
+        if: needs.metadata.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python3 eng/release/release_notes.py publish --repository "$GITHUB_REPOSITORY" \
+            --tag "$RELEASE_SOURCE_TAG" --version "$PRODUCT_VERSION" --channel "$VERSION_CHANNEL" \
+            --notes-file release-metadata/RELEASE.md --assets-directory artifacts
+
