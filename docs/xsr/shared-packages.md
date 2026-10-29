@@ -71,3 +71,5 @@ that unrelated baseline. The shared-package CI is separate, not a claim that eve
 NexaCL pipeline is green. An initial parallel architecture run encountered an
 assembly being written by the runtime build; the recorded comparison was rerun
 sequentially after builds completed.
+
+Shared packages omit debug symbols and SourceLink (no PDBs are shipped); builds disable both so checkout paths and temporary instrumentation symbol paths cannot change package bytes. Source provenance remains pinned in package repository metadata.

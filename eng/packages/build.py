@@ -62,6 +62,7 @@ def build(output):
         raise SystemExit(f"Shared package build requires SDK {SPEC['sdk']}; got {sdk}")
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     run('dotnet', 'build', 'Nexa.Xsr.Runtime/Nexa.Xsr.Runtime.csproj', '-c', 'Release', '-t:Rebuild', '-m:2',
+        '-p:DebugType=None', '-p:DebugSymbols=false', '-p:EnableSourceLink=false',
         '-p:PathMap=' + str(ROOT) + '=/_/nexacl', '-p:RestorePackagesWithLockFile=true', '-p:RestoreLockedMode=true')
     output.mkdir(parents=True, exist_ok=True)
     result = {'source_commit': commit, 'version': SPEC['version'], 'sdk': sdk, 'packages': []}
