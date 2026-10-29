@@ -1,4 +1,5 @@
 """Sign the complete distribution with the pinned publisher key, then verify it."""
+from sidecar_catalog import catalog_names
 import argparse
 from contextlib import contextmanager
 import os
@@ -65,7 +66,7 @@ def import_public(home, public_key, fingerprint):
 
 
 def verify_signatures(directory, version, public_key, fingerprint=FINGERPRINT):
-    names = expected_names(version) | {"SHA256SUMS", MANIFEST_NAME} | validate_index(directory, version)
+    names = expected_names(version) | catalog_names(directory, version) | {"SHA256SUMS", MANIFEST_NAME} | validate_index(directory, version)
     expected = names | {name + ".asc" for name in names}
     if {path.name for path in directory.iterdir()} != expected:
         raise ValueError("Signed distribution is incomplete or contains unexpected files")
@@ -118,7 +119,7 @@ def sign_distribution(directory, version, public_key, private_key, passphrase,
     if "\n" in passphrase or "\r" in passphrase:
         raise ValueError("Signing passphrase cannot contain line breaks")
     directory = directory.resolve()
-    names = expected_names(version) | {"SHA256SUMS", MANIFEST_NAME} | validate_index(directory, version)
+    names = expected_names(version) | catalog_names(directory, version) | {"SHA256SUMS", MANIFEST_NAME} | validate_index(directory, version)
     # Only remove known signature outputs when re-running; unknown assets still fail.
     for name in names:
         (directory / (name + ".asc")).unlink(missing_ok=True)

@@ -3,6 +3,7 @@
   "commit": "951efb54d375d911fbdf8267eca8cd4412d98d64",
   "buildRun": 40642940688,
   "runtimeVersion": "1.0.0",
+  "minimumHostVersion": "2.0.0.alpha.16",
   "hostReference": "09addd2dbcc6d3ad50bd877390fe20341044d28e",
   "inputRelease": "market-inputs-951efb54d375",
   "artifacts": {

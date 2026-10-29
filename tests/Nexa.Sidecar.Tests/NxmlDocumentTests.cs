@@ -18,6 +18,12 @@ internal static partial class Program
         files["main.nxml"] = "changed after registration";
         byte[] encoded = SidecarNxmlDocument.Encode(document);
         var copy = SidecarNxmlDocument.Decode(encoded);
+        AssertEqual("1", copy.OnboardingRevision);
+        var revision = new SidecarNxmlDocument("#FuturePage", SidecarNxmlOperation.OnboardingPage, "main.nxml", document.Files) { OnboardingRevision = "2.0.alpha.17" };
+        AssertEqual("2.0.alpha.17", SidecarNxmlDocument.Decode(SidecarNxmlDocument.Encode(revision)).OnboardingRevision);
+        foreach (string invalid in new[] { "", "../page", "revision with spaces", new string('x', 65) })
+            AssertThrows<SidecarProtocolException>(() => SidecarNxmlDocument.Encode(
+                new("#FuturePage", SidecarNxmlOperation.OnboardingPage, "main.nxml", document.Files) { OnboardingRevision = invalid }));
         var registration = new SidecarRegistrationItem(SidecarRegistrationKind.UiModule,
             "test.future.nxml", 0, 0, encoded, SHA256.HashData(encoded));
         var transported = SidecarRegistration.DecodeItem(SidecarRegistration.EncodeItem(registration));

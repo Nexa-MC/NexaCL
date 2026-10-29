@@ -307,7 +307,9 @@ jobs:
           name: release-metadata
           path: release-metadata
       - name: Require every package and calculate checksums
-        run: python3 eng/release/verify.py artifacts "$PRODUCT_VERSION"
+        run: |
+          python3 eng/release/market_sidecar.py export artifacts --version "$PRODUCT_VERSION"
+          python3 eng/release/verify.py artifacts "$PRODUCT_VERSION"
       - name: Generate and round-trip publisher-authenticated differential packages
         if: needs.metadata.outputs.release == 'true' && needs.metadata.outputs.channel != 'ci'
         env:

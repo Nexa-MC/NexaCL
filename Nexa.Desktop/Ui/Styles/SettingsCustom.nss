@@ -14,11 +14,13 @@
 .settings-custom-icon { Width: 64; Height: 64; }
 .settings-custom-update { Orientation: Vertical; Spacing: 0; Padding: 0; Background: #ffffff; Foreground: #2b3340; CornerRadius: 16; Surface: Solid; }
 .settings-custom-update-header { Orientation: Horizontal; Spacing: 12; }
-.settings-custom-update-title { Weight: 1; Height: 28; FontSize: 19; FontWeight: 600; Foreground: #2b3340; }
-.settings-custom-update-check { Width: 34; Height: 34; Padding: 7; Background: #f2f5f9; Foreground: #0b5bcb; CornerRadius: 9; Hover: #cfe1fe; Surface: Solid; }
-.settings-custom-update-note { Height: 22; FontSize: 13; Foreground: #5e6e82; }
-.settings-custom-update-actions { Orientation: Horizontal; Spacing: 10; }
+.settings-custom-update-title { Weight: 1; FontSize: 26; FontWeight: 600; Foreground: #2b3340; }
+.settings-custom-update-check { Width: 144; Height: 44; TextAlignment: Center; Background: #f2f5f9; Foreground: #0b5bcb; CornerRadius: 9; Hover: #cfe1fe; Surface: Solid; }
+.settings-custom-update-note { WrapText: true; FontSize: 14; Foreground: #5e6e82; }
+.settings-custom-update-actions { Orientation: Vertical; Spacing: 10; }
 .settings-custom-update-action { Width: 112; }
 .settings-custom-update-action-wide { Width: 144; }
 
-.settings-custom-update-body { Orientation: Vertical; Spacing: 10; Padding: 24,20,24,20; }
+.settings-custom-update-body { Orientation: Vertical; Spacing: 16; Margin: 24; }
+
+.settings-custom-update-result { FontSize: 18; FontWeight: 600; Foreground: #343D4A; WrapText: true; }

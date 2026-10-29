@@ -26,7 +26,7 @@
 <Text Key="profile.readFailed" Content="无法读取启动配置，请重试。" />
 <Text Key="profile.refreshPending" Content="启动配置正在更新，请稍后重试。" />
 <Text Key="profile.routeUnavailable" Content="Settings route is unavailable." />
-<Text Key="update.initial" Content="通过 Cloudflare 检查当前平台的新版本。" />
+<Text Key="update.initial" Content="检查启动器与 Sidecar 的可用更新。" />
 <Text Key="update.installing" Content="正在更新…" />
 <Text Key="update.openFailed" Content="无法打开下载页面，请稍后重试。" />
 <Text Key="update.checkFailed" Content="暂时无法检查更新，请重试。" />
@@ -66,4 +66,27 @@
 <Text Key="network.proxyFailed" Content="代理配置未保存。" />
 <Text Key="network.unknown" Content="—" />
 <Text Key="network.candidateSeparator" Content=" → " />
+<Text Key="update.unknown" Content="未知" />
+<Text Key="update.unconfigured" Content="尚未配置" />
+<Text Key="update.notChecked" Content="尚未检查" />
+<Text Key="update.phase.downloading" Content="正在下载更新…" />
+<Text Key="update.phase.preparing" Content="正在准备安装…" />
+<Text Key="update.phase.activating" Content="正在应用更新…" />
+<Text Key="update.phase.verifying" Content="正在验证更新签名…" />
+<Text Key="sidecarUpdate.initial" Content="检查更新以获取 Sidecar 新版本。" />
+<Text Key="sidecarUpdate.none" Content="当前没有已安装的 Sidecar。" />
+<Text Key="sidecarUpdate.checking" Content="正在检查 Sidecar 更新…" />
+<Text Key="sidecarUpdate.checked" Content="Sidecar 更新检查完成。" />
+<Text Key="sidecarUpdate.unpublished" Content="更新源尚未发布独立 Sidecar 更新。" />
+<Text Key="sidecarUpdate.failed" Content="Sidecar 更新检查失败，请重试。" />
+<Text Key="sidecarUpdate.retry" Content="重试" />
+<Text Key="sidecarUpdate.install" Content="下载并安装" />
+<Text Key="sidecarUpdate.item.installed" Content="已安装" />
+<Text Key="sidecarUpdate.item.current" Content="已是最新版本" />
+<Text Key="sidecarUpdate.item.available" Content="可安装更新" />
+<Text Key="sidecarUpdate.item.host-required" Content="请先更新启动器，再安装此 Sidecar。" />
+<Text Key="sidecarUpdate.item.downloading" Content="正在下载…" />
+<Text Key="sidecarUpdate.item.verifying" Content="正在验证签名…" />
+<Text Key="sidecarUpdate.item.restart" Content="已准备好，重新启动后生效。" />
+<Text Key="sidecarUpdate.item.failed" Content="更新失败，可重试；原版本仍保留。" />
 </StackPanel>

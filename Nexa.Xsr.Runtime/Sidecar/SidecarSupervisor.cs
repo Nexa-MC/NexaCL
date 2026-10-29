@@ -21,6 +21,7 @@ public sealed partial class SidecarSupervisor : IDisposable, IAsyncDisposable
     private Task? _shutdown;
     private string? _directory;
     private bool _started, _disposed;
+    public IReadOnlyDictionary<string, string> PackageOverrides { get; init; } = new Dictionary<string, string>();
     public XsrFunctionPatchAdmission? FunctionPatchAdmission { get; init; }
     public XsrSignalAdmission? SignalAdmission { get; init; }
     public XsrUiPatchAdmission? UiPatchAdmission { get; init; }
@@ -167,7 +168,9 @@ public sealed partial class SidecarSupervisor : IDisposable, IAsyncDisposable
                 continue;
             }
             identities.Add(name);
-            admittedPaths.Add(group.Single());
+            string selected = PackageOverrides.GetValueOrDefault(name) ?? group.Single();
+            if (Path.GetFileName(selected) != name + ".nsc") throw new InvalidDataException("Invalid Sidecar override identity.");
+            admittedPaths.Add(selected);
         }
         candidates = admittedPaths.ToArray();
         Package[] prior;

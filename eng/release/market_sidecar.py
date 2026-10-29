@@ -51,7 +51,7 @@ def stage(source, payload, rid, lock, public, private, passphrase, fingerprint=F
         raise
 
 
-def verify_archives(directory, version, lock, public, fingerprint=FINGERPRINT):
+def verify_archives(directory, version, lock, public, fingerprint=FINGERPRINT, export=False):
     for rid in RIDS:
         extension = '.portable.zip' if rid.startswith('win-') else '.portable.tar.gz'
         archive = directory / f'Nexa-{version}-{rid}{extension}'
@@ -82,11 +82,19 @@ def verify_archives(directory, version, lock, public, fingerprint=FINGERPRINT):
                     or info['signingFingerprint'] != fingerprint):
                 raise ValueError('Bundled Market Sidecar provenance mismatch')
             verify_pair(target, public, fingerprint)
+            if export:
+                package_id = NAME.removesuffix('.nsc')
+                shutil.copyfile(target / NAME, directory / f'{package_id}-{rid}.nsc')
+                catalog = dict(schema=1, rid=rid, release=version, packages=[
+                    dict(id=package_id, version=lock['runtimeVersion'], sha256=digest,
+                         size=(target / NAME).stat().st_size, minimumHostVersion=lock.get('minimumHostVersion', version))])
+                (directory / f'Nexa-Sidecars-{rid}.json').write_text(
+                    json.dumps(catalog, indent=2) + '\n', encoding='utf-8')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('mode', choices=['stage', 'verify'])
+    parser.add_argument('mode', choices=['stage', 'verify', 'export'])
     parser.add_argument('directory', type=Path)
     parser.add_argument('--source', type=Path)
     parser.add_argument('--rid', choices=RIDS)
@@ -98,4 +106,4 @@ if __name__ == '__main__':
         stage(args.source, args.directory, args.rid, lock, public,
               os.environ.get('GPG_PRIVATE_KEY', ''), os.environ.get('GPG_PASSPHRASE', ''))
     else:
-        verify_archives(args.directory, args.version, lock, public)
+        verify_archives(args.directory, args.version, lock, public, export=args.mode == "export")

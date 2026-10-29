@@ -1,4 +1,5 @@
 """Reject incomplete release sets before anything is attached to a GitHub release."""
+from sidecar_catalog import catalog_names
 import argparse
 import hashlib
 from pathlib import Path
@@ -17,7 +18,7 @@ def verify(directory, version):
     from manifest import MANIFEST_NAME, release_channel, write_manifest
     from delta import validate_index
     release_channel(version)
-    expected = expected_names(version) | validate_index(directory, version)
+    expected = expected_names(version) | catalog_names(directory, version) | validate_index(directory, version)
     if any(not path.is_file() for path in directory.iterdir()):
         raise ValueError("Distribution contains a non-file entry")
     actual = {path.name for path in directory.iterdir() if path.name not in ("SHA256SUMS", MANIFEST_NAME)}

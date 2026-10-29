@@ -19,6 +19,8 @@ internal static partial class Program
 {
     public static void Main(string[] args)
     {
+        if (args is ["--update-onboarding-preview", var previewOutput])
+        { UpdateOnboardingPreview(previewOutput).GetAwaiter().GetResult(); return; }
         if (args is ["--sidecar-ui-preview", var uiSource, var uiOutput])
         { SidecarUiPreview(uiSource, uiOutput).GetAwaiter().GetResult(); return; }
         if (args is ["--native-sidecar-preview", var previewSidecar])
@@ -425,6 +427,9 @@ internal static partial class Program
         ("Sidecar scroll dispatches active-page observations and user links", SidecarScrollDispatchesOnlyActivePage),
         ("Sidecar links accept only bounded HTTPS destinations", SidecarLinksAllowOnlyUserFacingHttps),
         ("Sidecar standalone pages navigate, return and retire", SidecarStandalonePagesNavigateAndRetire),
+        ("Sidecar updates publish only verified complete packages", SidecarUpdatesPublishOnlyVerifiedCompletePackages),
+        ("versioned onboarding frames pending pages and resumes interruptions", VersionedOnboardingFramesPendingPages),
+        ("onboarding receipts are package page revision scoped and durable", OnboardingReceiptsAreScopedAndDurable),
         ("Sidecar onboarding resumes Host setup and clears page drafts", SidecarOnboardingResumesSetup),
         ("resource function patch rewrites actual list and detail captions", ResourceFunctionPatchRewritesActualListAndDetailCaptions),
         ("resources page uses service queries and preserves search", ResourcesPageUsesServiceQueriesAndPreservesSearch),

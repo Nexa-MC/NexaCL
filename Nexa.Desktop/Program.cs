@@ -359,7 +359,10 @@ internal static partial class Program
         DesktopSidecarSignals sidecarSignals = new();
         DesktopSidecarUiPatches sidecarUi = new(host.StateStore);
         DesktopSidecarNxml sidecarNxml = new(host.StateStore);
-        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime);
+        using var sidecarUpdateHttp = host.CreateHttpClient();
+        using var sidecarUpdates = SidecarStartup.CreateUpdater(sidecarUpdateHttp, folders.Root, buildInfo.ProductVersion);
+        var sidecarOverrides = await SidecarStartup.ResolveUpdatesAsync(sidecarUpdates, host.Logging).ConfigureAwait(false);
+        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides);
         await using var sidecarNetwork = new DesktopSidecarNetwork(sidecars, host.StateStore);
         SidecarHostApi sidecarApi = new(sidecars, dispatchObservation);
         await using var sidecarLifetime = SidecarStartup.StartLifetime(sidecars, host.Logging, !safeMode);
@@ -529,7 +532,8 @@ internal static partial class Program
             shell, platformActions, effectiveAppearance, message => host.Logging.Warn("Themes", message), safeMode);
         watchedThemes = themes;
         using var sidecarNxmlSession = sidecarNxml.Attach(shell, uiIntents, host.StateStore,
-            message => { host.Logging.Warn("Sidecar", message); feedback.Warn(message); }, openLink: platformActions.OpenHttpsUri,
+            message => { host.Logging.Warn("Sidecar", message); feedback.Warn(message); },
+            onboardingFallback: shell.Stage.Navigation.Current, onboarding: new DesktopOnboardingHistory(Path.Combine(folders.Root, "onboarding")), openLink: platformActions.OpenHttpsUri,
             importTheme: (path, token) => themes.ImportAsync(path, Nexa.Services.Themes.ThemeSourceKind.Package, false, token),
             imported: () => feedback.Success(ProductPresentationText.Raw("program.theme.imported")),
             copyText: async text =>
@@ -655,6 +659,13 @@ internal static partial class Program
         settingsPage.ConfigureUpdates(updateQueries, new(buildInfo.ProductVersion, updateRid, updateChannel), platformActions.OpenHttpsUri,
             automaticUpdate, () => { restartAfterUpdate = true; platformActions.RequestClose(); },
             error => host.Logging.Error("Update", "自动更新失败。", ExceptionDiagnostics.Describe(error)));
+        settingsPage.ConfigureSidecarUpdates(sidecarUpdates, () =>
+        {
+            var start = new System.Diagnostics.ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false };
+            if (Path.GetFileNameWithoutExtension(start.FileName).Equals("dotnet", StringComparison.OrdinalIgnoreCase)) start.ArgumentList.Add(Environment.GetCommandLineArgs()[0]);
+            _restartAfterExit = () => System.Diagnostics.Process.Start(start)?.Dispose();
+            platformActions.RequestClose();
+        });
         launchPage.SettingsPage = settingsPage.Page;
         using var resourcesRuntime = ResourceCatalogRuntimeComposer.Compose(source: null, observer: dispatchObservation, host: host,
             favoritesPath: Path.Combine(settingsFolder, "resources-favorites.json"), installer: installRun.Service,
@@ -907,8 +918,12 @@ internal static partial class Program
         var setupNxml = new DesktopSidecarNxml(store);
         shell.Render(new XsrUiSize(1024, 600));
         using var setupExtensions = setupNxml.Attach(shell, intents, store, message => setupLog.Warn("Sidecar", message), controller.Page,
-            openLink: platform.OpenHttpsUri, copyText: platform.CopyTextAsync);
-        var setupSidecars = SidecarStartup.Create(setupLog, nxmlModules: setupNxml.Runtime);
+            openLink: platform.OpenHttpsUri, copyText: platform.CopyTextAsync,
+            onboarding: new DesktopOnboardingHistory(Path.Combine(status.Value!.DataDirectory, "onboarding")));
+        using var setupSidecarHttp = new HttpClient();
+        using var setupSidecarUpdates = SidecarStartup.CreateUpdater(setupSidecarHttp, status.Value!.DataDirectory, ResolveBuildInfo().ProductVersion);
+        var setupOverrides = SidecarStartup.ResolveUpdatesAsync(setupSidecarUpdates, setupLog).GetAwaiter().GetResult();
+        var setupSidecars = SidecarStartup.Create(setupLog, nxmlModules: setupNxml.Runtime, packageOverrides: setupOverrides);
         using var setupSidecarLifetime = SidecarStartup.StartLifetime(setupSidecars, setupLog, !args.Contains("--safe-mode", StringComparer.Ordinal));
         try { setupSidecarLifetime.InitialReady.WaitAsync(TimeSpan.FromSeconds(15)).GetAwaiter().GetResult(); }
         catch (TimeoutException) { setupLog.Warn("Sidecar", "First-run Sidecar discovery is continuing in the background."); }

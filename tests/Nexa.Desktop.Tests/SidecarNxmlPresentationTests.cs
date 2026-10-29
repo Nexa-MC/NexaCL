@@ -104,9 +104,9 @@ internal static partial class Program
         }
     }
 
-    private static SidecarRegistrationItem PageDeclaration(string id, string target, SidecarNxmlOperation operation, string markup)
+    private static SidecarRegistrationItem PageDeclaration(string id, string target, SidecarNxmlOperation operation, string markup, string revision = "1")
     {
-        byte[] payload = SidecarNxmlDocument.Encode(new(target, operation, "main.nxml", new Dictionary<string, string> { ["main.nxml"] = markup }));
+        byte[] payload = SidecarNxmlDocument.Encode(new(target, operation, "main.nxml", new Dictionary<string, string> { ["main.nxml"] = markup }) { OnboardingRevision = revision });
         return new(SidecarRegistrationKind.UiModule, id, 0, 0, payload, SHA256.HashData(payload));
     }
 
@@ -148,6 +148,86 @@ internal static partial class Program
             AssertFalse(fixture.Shell.Renderer.Activate(button));
             AssertEqual(0, warnings.Count);
         }
+    }
+
+    private static void VersionedOnboardingFramesPendingPages()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "nexa-onboarding-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Run("1", expected: true, interrupt: true);
+            Run("1", expected: true);
+            Run("1", expected: false);
+            Run("2", expected: true);
+            Run("2", expected: false);
+            // A crash after the last middle page must not lose the completion screen.
+            new DesktopOnboardingHistory(directory).BeginBatch();
+            Run("2", expected: true, onlyOutro: true);
+            Run("2", expected: false);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+
+        void Run(string revision, bool expected, bool interrupt = false, bool onlyOutro = false)
+        {
+            using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
+            fixture.Shell.Renderer.ReducedMotion = true;
+            var fallback = fixture.Shell.Stage.Navigation.Current;
+            var adapter = new DesktopSidecarNxml(fixture.Store);
+            List<string> warnings = [];
+            using var presentation = adapter.Attach(fixture.Shell, fixture.Intents, fixture.Store, warnings.Add, fallback,
+                onboarding: new DesktopOnboardingHistory(directory));
+            var (session, peer) = ActivateCaptionPatch(new(), "", declarations:
+                [PageDeclaration("test.onboarding", "#AccountSetup", SidecarNxmlOperation.OnboardingPage,
+                    "<nxml-page><Page Key=\"AccountSetup\"><Button Key=\"ContinueSetup\" Content=\"Continue\" Height=\"44\" Command=\"ui.sidecar.onboarding.continue\" /></Page></nxml-page>", revision)],
+                features: SidecarFeatures.All, nxml: adapter).GetAwaiter().GetResult();
+            using (session) using (peer)
+            {
+                fixture.Shell.Render(new(1000, 650));
+                if (!expected) { AssertEqual(fallback, fixture.Shell.Stage.Navigation.Current); return; }
+                AssertEqual("VersionedOnboardingStart", fixture.Shell.Tree.Name(fixture.Shell.Stage.Navigation.Current));
+                var welcome = fixture.Shell.Stage.Navigation.Current;
+                fixture.Shell.Render(new(1000, 650));
+                AssertEqual(welcome, fixture.Shell.Stage.Navigation.Current);
+                Click("VersionedOnboardingBegin");
+                if (interrupt) return;
+                if (!onlyOutro)
+                {
+                    AssertEqual("AccountSetup", fixture.Shell.Tree.Name(fixture.Shell.Stage.Navigation.Current));
+                    Click("ContinueSetup");
+                }
+                AssertEqual("VersionedOnboardingEnd", fixture.Shell.Tree.Name(fixture.Shell.Stage.Navigation.Current));
+                fixture.Shell.Render(new(1000, 650));
+                AssertEqual("VersionedOnboardingEnd", fixture.Shell.Tree.Name(fixture.Shell.Stage.Navigation.Current));
+                Click("VersionedOnboardingFinish");
+                fixture.Shell.Render(new(1000, 650));
+                AssertEqual(fallback, fixture.Shell.Stage.Navigation.Current);
+                AssertEqual(0, warnings.Count);
+            }
+            void Click(string key)
+            {
+                var scene = fixture.Shell.Render(new(1000, 650));
+                AssertTrue(fixture.Shell.Renderer.Activate(FindByKey(fixture.Shell, scene, key).Entity));
+                fixture.Shell.Render(new(1000, 650));
+            }
+        }
+    }
+
+    private static void OnboardingReceiptsAreScopedAndDurable()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "nexa-onboarding-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var history = new DesktopOnboardingHistory(directory);
+            string key = DesktopOnboardingHistory.Identity("package", "#Page", "1");
+            AssertFalse(history.IsComplete(key));
+            history.Complete(key);
+            var next = new DesktopOnboardingHistory(directory);
+            AssertTrue(next.IsComplete(key));
+            AssertFalse(next.IsComplete(DesktopOnboardingHistory.Identity("other", "#Page", "1")));
+            AssertFalse(next.IsComplete(DesktopOnboardingHistory.Identity("package", "#Other", "1")));
+            AssertFalse(next.IsComplete(DesktopOnboardingHistory.Identity("package", "#Page", "2")));
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }
 
     private static void SidecarOnboardingResumesSetup()

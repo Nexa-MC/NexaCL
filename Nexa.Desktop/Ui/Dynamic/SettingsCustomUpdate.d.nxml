@@ -1,15 +1,25 @@
 <nxml-dynamic>
   <StackPanel Key="SettingsUpdateCard" Class="settings-custom-update">
     <StackPanel Key="SettingsUpdateCard.Body" Class="settings-custom-update-body">
-      <LoadingView IsVisible="{data busy}">
-        <Text Content="{data status}" Class="loading-hint" LiveSetting="Polite" Localize="false" />
-      </LoadingView>
-      <StackPanel Key="SettingsUpdateHeader" Class="settings-custom-update-header" IsVisible="{data !busy}">
-        <Text Content="NexaCL Firefly v{data version}" Localize="false" Class="settings-custom-update-title" />
-        <Button Key="SettingsCheckUpdate" Label="检查更新" Icon="pcl/refresh" Command="ui.settings.update.check" Enabled="{data canCheck}" Class="settings-custom-update-check" />
+      <StackPanel Key="SettingsUpdateHeader" Class="settings-custom-update-header">
+        <Text Content="NexaCL 更新" Class="settings-custom-update-title" />
+        <Button Key="SettingsCheckUpdate" Label="检查更新" Content="检查更新" Command="ui.settings.update.check" Enabled="{data canCheck}" Class="settings-custom-update-check" />
       </StackPanel>
-      <Text Key="SettingsUpdateStatus" Content="{data status}" Localize="false" Class="settings-custom-update-note" IsVisible="{data !busy}" />
+      <StackPanel Orientation="Horizontal" Spacing="20">
+        <Image Source="{data icon}" Width="52" Height="52" Foreground="#0B5BCB" IsVisible="{data !busy}" />
+        <ProgressRing Width="52" Height="52" IsVisible="{data busy}" />
+        <StackPanel Weight="1" Spacing="8">
+          <Text Key="SettingsUpdateStatus" Content="{data status}" Localize="false" Class="settings-custom-update-result" />
+          <Text Content="上次检查：{data lastCheck}" Localize="false" Class="settings-custom-update-note" />
+        </StackPanel>
+      </StackPanel>
+      <Text Content="当前版本 · NexaCL Firefly v{data version}" Localize="false" Class="settings-custom-update-note" />
+      <Text Content="更新通道 · {data channel}" Localize="false" Class="settings-custom-update-note" />
+      <Text Content="可用版本 · {data offered}" Localize="false" IsVisible="{data hasOffer}" Class="settings-custom-update-result" />
       <Dynamic Key="SettingsUpdateActions" Class="settings-custom-update-actions" />
+      <Text Content="Sidecar 更新" Class="settings-custom-update-result" Margin="0,12,0,0" />
+      <Text Content="{data sidecarStatus}" Localize="false" Class="settings-custom-update-note" />
+      <Dynamic Key="SettingsSidecarUpdates" Class="settings-custom-column" />
     </StackPanel>
   </StackPanel>
 </nxml-dynamic>

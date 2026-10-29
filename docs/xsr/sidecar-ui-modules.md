@@ -146,3 +146,27 @@ scripts and direct host service bindings remain outside the NXML language; globa
 modification and replacement use schema 3 above.
 The independent Plugin SDK/compiler/package UI IR freeze and real-engine long-duration
 compatibility still require the external repository and physical evidence.
+
+### Versioned onboarding receipts
+
+An onboarding declaration may set `SidecarNxmlDocument.OnboardingRevision`
+(default `"1"`). Its optional string TLV field is 64; fields 5–63 still carry
+source chunks. Use 1–64 ASCII letters/digits, dots, hyphens or underscores.
+Existing bundles that omit it remain revision 1.
+
+Completion is stored locally by authenticated package identity, page target,
+and revision. Session restarts, language/style changes and ordinary launcher
+updates do not repeat completed pages. Increment the revision when a page adds
+a new decision users must see; new page targets are independently pending.
+For example, `new SidecarNxmlDocument("#CloudSetup", OnboardingPage, "main.nxml",
+files) { OnboardingRevision = "2" }` introduces the second setup revision.
+The SDK's enum is `SidecarNxmlOperation.OnboardingPage`.
+
+Keep the continue/skip button bound to `ui.sidecar.onboarding.continue`.
+Merely rendering a page does not complete it. Failed receipt writes keep the
+page visible. The Host wraps every pending batch in its welcome and completion
+screens, even when only one page is pending. These two screens are never filtered
+by revision. An interrupted batch begins with welcome again, resumes unfinished
+pages, and ends with completion. The batch is closed only by its final button,
+including when all content pages were already completed before an interruption.
+With no pending pages or interrupted batch, nothing is shown.

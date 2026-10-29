@@ -1,0 +1,16 @@
+<nxml-dynamic>
+  <StackPanel Background="#F4F6FA" Surface="Solid" CornerRadius="12">
+    <StackPanel Margin="16" Spacing="10">
+      <Text Content="{data id}" Localize="false" Class="settings-custom-update-result" />
+      <Text Content="已安装 · {data current}" Localize="false" Class="settings-custom-update-note" />
+      <Text Content="可用更新 · {data available}" IsVisible="{data hasOffer}" Localize="false" Class="settings-custom-update-note" />
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <ProgressRing Width="20" Height="20" IsVisible="{data busy}" />
+        <Text Content="{data status}" Localize="false" Weight="1" Class="settings-custom-update-note" />
+        <Text Content="{data progress}" IsVisible="{data busy}" Localize="false" Class="settings-custom-update-note" />
+      </StackPanel>
+      <Button Key="SidecarInstall" Content="{data action}" Label="安装 Sidecar 更新" Argument="{data id}" IsVisible="{data install}" Enabled="{data canInstall}" Command="ui.settings.sidecar.install" Class="settings-catalog-action" Width="160" Height="44" />
+      <Button Key="SidecarRestart" Content="重新启动" Label="重新启动以应用 Sidecar 更新" Argument="{data id}" IsVisible="{data restart}" Command="ui.settings.sidecar.restart" Class="settings-catalog-action" Width="160" Height="44" />
+    </StackPanel>
+  </StackPanel>
+</nxml-dynamic>

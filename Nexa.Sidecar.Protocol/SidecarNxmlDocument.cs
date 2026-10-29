@@ -19,6 +19,7 @@ public sealed class SidecarNxmlDocument
     private static readonly UTF8Encoding Utf8 = new(false, true);
     private readonly ReadOnlyDictionary<string, string> _files;
 
+    public string OnboardingRevision { get; init; } = "1";
     public string Target { get; }
     public SidecarNxmlOperation Operation { get; }
     public string EntryPoint { get; }
@@ -80,6 +81,8 @@ public sealed class SidecarNxmlDocument
         const int chunkSize = 60 * 1024;
         for (int offset = 0, chunk = 0; offset < packed.Length; offset += chunkSize, chunk++)
             writer.WriteBytes((ushort)(5 + chunk), packed.AsSpan(offset, Math.Min(chunkSize, packed.Length - offset)));
+        ValidateRevision(document.OnboardingRevision);
+        if (document.OnboardingRevision != "1") writer.WriteString(64, document.OnboardingRevision);
         return writer.ToArray();
     }
 
@@ -89,6 +92,7 @@ public sealed class SidecarNxmlDocument
         var reader = new SidecarPayloadReader(payload);
         uint schema = 0;
         string? target = null, entry = null;
+        string revision = "1";
         SidecarNxmlOperation operation = 0;
         using var sources = new MemoryStream();
         int chunks = 0;
@@ -104,6 +108,7 @@ public sealed class SidecarNxmlDocument
                 case 2: target = field.ReadString(); break;
                 case 3: operation = (SidecarNxmlOperation)field.ReadUInt32(); break;
                 case 4: entry = field.ReadString(); break;
+                case 64: revision = field.ReadString(); ValidateRevision(revision); break;
                 case >= 5 and < 64:
                     if (field.Id != 5 + chunks++) throw new SidecarProtocolException("NXML source chunks must be consecutive.");
                     var chunk = field.ReadBytes();
@@ -133,13 +138,19 @@ public sealed class SidecarNxmlDocument
         }
         catch (DecoderFallbackException) { throw new SidecarProtocolException("NXML source is not strict UTF-8."); }
         if (cursor != source.Length) throw new SidecarProtocolException("Trailing NXML source bytes.");
-        return new(target, operation, entry, files);
+        return new(target, operation, entry, files) { OnboardingRevision = revision };
     }
 
     private static ReadOnlySpan<byte> Take(ReadOnlySpan<byte> source, ref int cursor, int count)
     {
         if (count < 0 || count > source.Length - cursor) throw new SidecarProtocolException("Truncated NXML source.");
         var result = source.Slice(cursor, count); cursor += count; return result;
+    }
+
+    private static void ValidateRevision(string revision)
+    {
+        if (revision.Length is < 1 or > 64 || revision.Any(c => !char.IsAsciiLetterOrDigit(c) && c is not ('.' or '-' or '_')))
+            throw new SidecarProtocolException("Invalid onboarding revision.");
     }
 
     private static void ValidateName(string name)

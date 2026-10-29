@@ -28,6 +28,8 @@ internal sealed partial class DesktopSidecarNxml
         private readonly HashSet<Guid> _completed = [];
         private readonly XsrUiEntityId _onboardingFallback;
         private Guid _onboarding, _opened;
+        private XsrUiEntityId _guideStart, _guideEnd;
+        private bool _guideBegan, _guideHasPages;
         private XsrUiEntityId _returnPage;
         private XsrSemanticId _returnNavigation;
 
@@ -36,13 +38,14 @@ internal sealed partial class DesktopSidecarNxml
             HashSet<Guid> keep = [];
             foreach (var module in modules.Where(module => module.Source.Operation is SidecarNxmlOperation.Page or SidecarNxmlOperation.OnboardingPage))
             {
-                if (_completed.Contains(module.Exposure)) continue;
+                string historyKey = DesktopOnboardingHistory.Identity(module.PackageName, module.Source.Target, module.Source.OnboardingRevision);
+                if (_completed.Contains(module.Exposure) || module.Source.Operation == SidecarNxmlOperation.OnboardingPage && _onboardingHistory?.IsComplete(historyKey) == true) continue;
                 keep.Add(module.Exposure);
                 try
                 {
                     var document = (NxmlPreparedDocument)module.Presentation.Artifact;
                     if (_pages.TryGetValue(module.Exposure, out var existing)) existing.Reload(document);
-                    else _pages.Add(module.Exposure, new(_shell.Tree, _store, module.Source.Operation, document));
+                    else _pages.Add(module.Exposure, new(_shell.Tree, _store, module.Source.Operation, document, historyKey));
                 }
                 catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
                 { _owner.Runtime.RejectPresentation(module.Exposure); _warn("NXML page rejected: " + error.Message); }
@@ -106,6 +109,9 @@ internal sealed partial class DesktopSidecarNxml
                 if (_onboarding == exposure && _pages.TryGetValue(exposure, out var page)
                     && _shell.Stage.Navigation.Current == page.Root)
                 {
+                    try { _onboardingHistory?.Complete(page.HistoryKey); }
+                    catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                    { _warn("Unable to save onboarding completion."); return true; }
                     _completed.Add(exposure); RetirePage(exposure); AdvanceOnboarding();
                 }
                 return true;
@@ -166,12 +172,56 @@ internal sealed partial class DesktopSidecarNxml
             _ = Dispatch(module.Exposure, binding.Command, request.Argument, page.Stop.Token);
         }
 
+        private bool GuideIntent(DesktopUiIntent intent)
+        {
+            bool begin = intent.Command.Value == "ui.onboarding.begin" && _shell.Stage.Navigation.Current == _guideStart;
+            bool finish = intent.Command.Value == "ui.onboarding.finish" && _shell.Stage.Navigation.Current == _guideEnd;
+            if ((!begin && !finish) || !_shell.Tree.IsAlive(intent.Source)
+                || _shell.Tree.GetComponent<XsrUiCommandBinding>(intent.Source)?.Command != intent.Command) return false;
+            bool owns = false;
+            _shell.Tree.Walk(begin ? _guideStart : _guideEnd, node => { if (node == intent.Source) owns = true; return true; });
+            if (!owns) return false;
+            try
+            {
+                if (begin)
+                {
+                    _onboardingHistory?.BeginBatch();
+                    _guideBegan = _guideHasPages = true;
+                    AdvanceOnboarding();
+                }
+                else
+                {
+                    _onboardingHistory?.FinishBatch();
+                    _guideBegan = _guideHasPages = false;
+                    _shell.Stage.Navigation.Replace(_onboardingFallback);
+                }
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            { _warn("Unable to save onboarding progress."); }
+            return true;
+        }
+
         private void AdvanceOnboarding()
         {
             if (!_shell.Tree.IsAlive(_onboardingFallback) || _onboarding != default) return;
-            foreach (var page in _pages)
-                if (page.Value.Operation == SidecarNxmlOperation.OnboardingPage && !_completed.Contains(page.Key))
-                { _onboarding = page.Key; _shell.Stage.Navigation.Replace(page.Value.Root); return; }
+            var pending = _pages.FirstOrDefault(page => page.Value.Operation == SidecarNxmlOperation.OnboardingPage && !_completed.Contains(page.Key));
+            if (_onboardingHistory is not null && !_guideBegan && (pending.Value is not null || _onboardingHistory.HasPendingBatch))
+            {
+                if (!_shell.Tree.IsAlive(_guideStart)) _guideStart = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("SidecarOnboardingStart.nxml"), _shell.Tree, _store);
+                if (_shell.Stage.Navigation.Current != _guideStart) _shell.Stage.Navigation.Replace(_guideStart);
+                return;
+            }
+            if (pending.Value is not null)
+            {
+                _guideHasPages = true; _onboarding = pending.Key;
+                _shell.Stage.Navigation.Replace(pending.Value.Root);
+                return;
+            }
+            if (_onboardingHistory is not null && _guideBegan && _guideHasPages)
+            {
+                if (!_shell.Tree.IsAlive(_guideEnd)) _guideEnd = NxmlUiLoader.LoadDetached(DesktopMarkup.Load("SidecarOnboardingEnd.nxml"), _shell.Tree, _store);
+                if (_shell.Stage.Navigation.Current != _guideEnd) _shell.Stage.Navigation.Replace(_guideEnd);
+            }
         }
 
         private void RetirePage(Guid exposure)
@@ -193,20 +243,23 @@ internal sealed partial class DesktopSidecarNxml
         private void DisposePages()
         {
             foreach (var key in _pages.Keys.ToArray()) RetirePage(key);
+            if (_shell.Tree.IsAlive(_guideStart)) _shell.Tree.Destroy(_guideStart);
+            if (_shell.Tree.IsAlive(_guideEnd)) _shell.Tree.Destroy(_guideEnd);
         }
     }
 
     private sealed class PageInstance : NxmlDocumentInstance
     {
-        internal PageInstance(XsrUiTree tree, XsrStateStore store, SidecarNxmlOperation operation, NxmlPreparedDocument document)
+        internal PageInstance(XsrUiTree tree, XsrStateStore store, SidecarNxmlOperation operation, NxmlPreparedDocument document, string historyKey)
             : base(tree, store, document)
         {
-            Operation = operation;
+            HistoryKey = historyKey; Operation = operation;
             List<XsrUiEntityId> observers = [];
             tree.Walk(Root, node => { if (tree.GetComponent<NxmlScrollObservation>(node) is not null) observers.Add(node); return true; });
             ScrollObservers = observers.ToArray();
             XsrUiTransition.ConfigureIndependent(tree, Root, "sidecar-page-" + Guid.NewGuid().ToString("N"), distance: 8);
         }
+        internal string HistoryKey { get; }
         internal SidecarNxmlOperation Operation { get; }
         internal IReadOnlyList<XsrUiEntityId> ScrollObservers { get; }
         internal CancellationTokenSource Stop { get; } = new();

@@ -38,6 +38,8 @@ internal sealed partial class SettingsPageController
     private Task<XsrResult<NexaUpdateStatus>>? _updateReading;
     private NexaUpdateOffer? _updateOffer;
     private string _updateStatus = "";
+    private DateTimeOffset? _updateLastChecked;
+    private bool _updateCheckFailed;
     private XsrUiEntityId _updateCard;
     private readonly Dictionary<string, XsrUiEntityId> _updateActionViews = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _updateStop = new();
@@ -53,9 +55,10 @@ internal sealed partial class SettingsPageController
     }
 
     private static bool IsUpdateIntent(XsrSemanticId id) => id == CheckUpdate || id == DownloadUpdate || id == PortableUpdate || id == UpdateNotes
-        || id == InstallUpdate || id == RestartUpdate || id == RollbackUpdate;
+        || id == InstallUpdate || id == RestartUpdate || id == RollbackUpdate || id.Value is "ui.settings.sidecar.install" or "ui.settings.sidecar.restart";
     private void HandleUpdateIntent(DesktopUiIntent intent)
     {
+        if (HandleSidecarUpdateIntent(intent)) return;
         if (!_visible || _selected != "advanced" || !_shell.Tree.IsAlive(intent.Source)
             || _shell.Tree.GetComponent<XsrUiInput>(intent.Source)?.Enabled != true
             || _shell.Tree.GetComponent<XsrUiCommandBinding>(intent.Source)?.Command != intent.Command
@@ -75,6 +78,7 @@ internal sealed partial class SettingsPageController
         }
         if (id == RollbackUpdate && !AutomaticUpdateInProgress && _automaticStatus?.CanRollback == true && _automaticUpdates is not null)
         { _automaticRecoveryAttempted = true; _automaticInstalling = _automaticUpdates.RollbackAsync(_updateStop.Token); WakeOnPlatformCompletion(_automaticInstalling); return; }
+        if (id == CheckUpdate) CheckSidecarUpdates();
         if (id == CheckUpdate && _updateReading is null && StartUpdateCheck())
         {
             RefreshUpdateCard();
@@ -90,12 +94,14 @@ internal sealed partial class SettingsPageController
 
     private void UpdateReleaseCheck()
     {
+        UpdateSidecarUpdates();
         UpdateDiscoveryPreferences();
         UpdateAutomaticState();
         if (_updateReading is not { IsCompleted: true } task) return;
         _updateReading = null;
         _updateCheckStop?.Dispose(); _updateCheckStop = null;
         if (_updateReadingQuery != _updateQuery) { _ = task.Exception; return; }
+        _updateLastChecked = DateTimeOffset.Now; _updateCheckFailed = !PendingQuery.Succeeded(task);
         _updateOffer = PendingQuery.Succeeded(task) ? task.Result.Value!.Offer : null;
         _updateOfferChannel = _updateOffer is null ? null : _updateReadingQuery?.Channel;
         _updateStatus = !PendingQuery.Succeeded(task) ? CustomCopy("update.checkFailed")
@@ -210,10 +216,17 @@ internal sealed partial class SettingsPageController
         string? phase = AutomaticUpdateInProgress ? _automaticStatus?.Phase : null;
         return new()
         {
-            ["version"] = _updateQuery?.CurrentVersion ?? "",
+            ["version"] = _updateQuery?.CurrentVersion ?? CustomCopy("update.unknown"),
+            ["channel"] = _updateQuery?.Channel ?? CustomCopy("update.unconfigured"),
+            ["lastCheck"] = _updateLastChecked?.ToString("g", System.Globalization.CultureInfo.CurrentCulture) ?? CustomCopy("update.notChecked"),
+            ["offered"] = _updateOffer?.Version ?? "",
+            ["hasOffer"] = Flag(_updateOffer is not null),
+            ["icon"] = _updateCheckFailed ? "lucide/circle-x" : _updateLastChecked is not null && _updateOffer is null ? "lucide/circle-check" : "lucide/download",
+            ["sidecarStatus"] = SidecarUpdateStatusText(),
             ["busy"] = Flag(AutomaticUpdateInProgress || _updateReading is not null),
-            ["canCheck"] = Flag(_updateReading is null),
-            ["status"] = _updateStatus.Length == 0 ? CustomCopy("update.initial") : _updateStatus,
+            ["canCheck"] = Flag(_updateReading is null && !AutomaticUpdateInProgress && _updateQuery is not null),
+            ["status"] = AutomaticUpdateInProgress ? CustomCopy("update.phase." + (phase is "downloading" or "preparing" or "activating" ? phase : "verifying"))
+                : _updateStatus.Length == 0 ? CustomCopy("update.initial") : _updateStatus,
             ["downloading"] = Flag(phase == "downloading"),
             ["preparing"] = Flag(phase == "preparing"),
             ["activating"] = Flag(phase == "activating"),
@@ -223,8 +236,7 @@ internal sealed partial class SettingsPageController
 
     private void BuildUpdateCard()
     {
-        _updateActionViews.Clear(); _updateCard = default;
-        if (_updateQuery is null) return;
+        _updateActionViews.Clear(); _sidecarUpdateRows.Clear(); _updateCard = default;
         _updateCard = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsCustomUpdate.d.nxml", UpdateCardProjection(), _shell.Renderer.LocalizeText));
         RefreshUpdateCard();
     }
@@ -250,5 +262,6 @@ internal sealed partial class SettingsPageController
         foreach (string name in actions)
             if (!_updateActionViews.ContainsKey(name)) _updateActionViews[name] = _dynamic.Append(slot, DesktopMarkup.Dynamic("SettingsCustomUpdate" + name + ".d.nxml"));
         _dynamic.Reorder(slot, actions.Select(name => _updateActionViews[name]).ToArray());
+        RefreshSidecarUpdateRows(nodes["SettingsSidecarUpdates"]);
     }
 }

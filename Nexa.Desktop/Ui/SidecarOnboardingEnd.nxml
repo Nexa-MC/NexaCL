@@ -1,0 +1,8 @@
+<Page Key="VersionedOnboardingEnd" Label="准备就绪">
+  <StackPanel Margin="40" Spacing="24" MaxWidth="680" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <Image Source="lucide/circle-check" Width="56" Height="56" Foreground="#0B5BCB" />
+    <Text Content="一切准备就绪" FontSize="30" FontWeight="600" Foreground="#343D4A" />
+    <Text Content="本轮引导已完成，现在可以继续使用 NexaCL。" FontSize="16" Foreground="#606C7C" WrapText="true" />
+    <Button Key="VersionedOnboardingFinish" Content="继续" Label="完成引导" Command="ui.onboarding.finish" Width="160" Height="44" Background="#0B5BCB" Foreground="#FFFFFF" CornerRadius="12" TextAlignment="Center" />
+  </StackPanel>
+</Page>

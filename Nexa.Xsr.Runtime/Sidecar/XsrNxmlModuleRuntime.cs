@@ -8,7 +8,8 @@ namespace Nexa.Xsr.Runtime;
 /// <summary>The artifact is local compiled presentation data; it never crosses the process boundary.</summary>
 public sealed record XsrNxmlCompiledDocument(object Artifact, IReadOnlyList<XsrSemanticId> Commands);
 public enum XsrNxmlCommandRoute { Inactive, Host, Sidecar }
-public sealed record XsrNxmlModuleView(Guid Exposure, SidecarNxmlDocument Source, XsrNxmlCompiledDocument Presentation);
+public sealed record XsrNxmlModuleView(Guid Exposure, SidecarNxmlDocument Source, XsrNxmlCompiledDocument Presentation)
+{ public string PackageName { get; init; } = ""; }
 public sealed class XsrNxmlModuleSnapshot
 {
     public IReadOnlyList<XsrNxmlModuleView> Modules { get; }
@@ -84,7 +85,7 @@ public sealed class XsrNxmlModuleRuntime
     }
 
     private void QueueLocked() => _pending = new(_leases.SelectMany(lease => lease.Documents.Select((document, index) =>
-        new XsrNxmlModuleView(lease.Exposures[index], document, lease.Compiled[index]))).ToArray());
+        new XsrNxmlModuleView(lease.Exposures[index], document, lease.Compiled[index]) { PackageName = lease.Session.PluginName })).ToArray());
 
     internal void Publish()
     {
@@ -131,7 +132,7 @@ public sealed class XsrNxmlModuleRuntime
                 for (int index = 0; index < lease.Documents.Length; index++)
                     if (lease.Documents[index].Operation == SidecarNxmlOperation.Page && lease.Documents[index].Target == target)
                     {
-                        page = new(lease.Exposures[index], lease.Documents[index], lease.Compiled[index]);
+                        page = new(lease.Exposures[index], lease.Documents[index], lease.Compiled[index]) { PackageName = lease.Session.PluginName };
                         return true;
                     }
             page = null;

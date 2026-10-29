@@ -7,6 +7,7 @@ import tempfile
 import unittest
 import zipfile
 import test_sign
+from sidecar_catalog import catalog_names
 from market_sidecar import INFO, NAME, RIDS, stage, verify_archives
 
 
@@ -23,7 +24,7 @@ class MarketSidecarTests(unittest.TestCase):
             lock = dict(runtimeVersion='1.0.0', commit='a' * 40, hostReference='b' * 40, artifacts={})
             for rid in RIDS:
                 source = root / f'Nexa.Cloud.Market.Sidecar-{rid}.nsc'
-                source.write_bytes(('native fixture ' + rid).encode())
+                source.write_bytes(('native fixture ' + rid).encode() * 8)
                 lock['artifacts'][rid] = dict(sha256=hashlib.sha256(source.read_bytes()).hexdigest(), size=source.stat().st_size)
                 payload = root / rid
                 stage(source, payload, rid, lock, self.keys.public, self.keys.private, '', self.keys.fingerprint)
@@ -37,6 +38,16 @@ class MarketSidecarTests(unittest.TestCase):
                     with tarfile.open(str(stem) + '.portable.tar.gz', 'w:gz') as archive:
                         archive.add(payload, arcname='NexaCL')
             verify_archives(root, '2.0.0.alpha.16', lock, self.keys.public, self.keys.fingerprint)
+            verify_archives(root, '2.0.0.alpha.16', lock, self.keys.public, self.keys.fingerprint, export=True)
+            self.assertEqual(12, len(catalog_names(root, '2.0.0.alpha.16')))
+            catalog_path = root / 'Nexa-Sidecars-linux-x64.json'
+            original = catalog_path.read_bytes()
+            catalog = json.loads(original)
+            catalog['packages'][0]['sha256'] = '0' * 64
+            catalog_path.write_text(json.dumps(catalog))
+            with self.assertRaisesRegex(ValueError, 'digest'):
+                catalog_names(root, '2.0.0.alpha.16')
+            catalog_path.write_bytes(original)
             lock['artifacts']['linux-x64']['sha256'] = 'f' * 64
             with self.assertRaisesRegex(ValueError, 'provenance'):
                 verify_archives(root, '2.0.0.alpha.16', lock, self.keys.public, self.keys.fingerprint)
