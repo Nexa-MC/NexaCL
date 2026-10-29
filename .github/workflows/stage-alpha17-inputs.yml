@@ -45,6 +45,6 @@ jobs:
         run: |
           set -euo pipefail
           gh release create market-inputs-a296a6d7c851 inputs/*.nsc \
-            --target v2.0.0.alpha.17 --prerelease --latest=false \
+            --target "$(git rev-parse HEAD)" --prerelease --latest=false \
             --title 'Market Sidecar inputs for Alpha 17' \
             --notes 'Verified six-runtime inputs from Nexa-MC/Nexa-Cloud-Market-Sidecar commit a296a6d7c85138388f3a9eaf1a6640192c867c31, build 40799183987. Formal publisher signatures are added by the launcher distribution workflow.'
