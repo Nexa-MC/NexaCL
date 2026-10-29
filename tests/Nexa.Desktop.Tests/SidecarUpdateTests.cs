@@ -4,6 +4,7 @@ using System.Text;
 using Nexa.Services.Updates;
 
 namespace Nexa.Desktop.Tests;
+
 internal static partial class Program
 {
     private static void SidecarUpdatesPublishOnlyVerifiedCompletePackages() => RunSidecarUpdateRegression().GetAwaiter().GetResult();

@@ -1,17 +1,18 @@
+using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Raw;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
-using System.Runtime.CompilerServices;
-using Avalonia.Media.Imaging;
 using Nexa.Sidecar.Protocol;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
 
 namespace Nexa.Desktop.Tests;
+
 internal static partial class Program
 {
     private static readonly int[] SidecarPreviewWidths = [1040, 800];
@@ -101,50 +102,50 @@ internal static partial class Program
                     }
                     await Task.Delay(250);
                     foreach (int width in SidecarPreviewWidths)
-                    foreach (bool dark in WardrobePreviewThemes)
-                    {
-                        shell.Renderer.ColorScheme = new(dark);
-                        using var surface = new AvaloniaUiSceneSurface(shell) { Width = width, Height = 700 };
-                        window.Content = surface;
-                        surface.Measure(new Size(width, 700)); surface.Arrange(new Rect(0, 0, width, 700));
-                        for (int frame = 0; frame < 4; frame++) surface.CommitScene();
-                        window.UpdateLayout(); surface.UpdateLayout();
-                        await Task.Delay(100); // Allow the native compositor hit-test tree to observe the attached surface.
-                        using var bitmap = new RenderTargetBitmap(new PixelSize(width, 700), new Vector(96, 96));
-                        bitmap.Render(surface);
-                        string stem = $"{name}-{width}-{(dark ? "dark" : "light")}";
-                        bitmap.Save(Path.Combine(output, stem + ".png"), PngBitmapEncoderOptions.Default);
-                        File.WriteAllLines(Path.Combine(output, stem + ".txt"), surface.Scene!.Nodes.Select(n => $"{shell.Tree.Name(n.Entity)} | {n.Rect} | {n.Text}"));
-                        if (name is "account-device-code" or "onboarding-device-code")
+                        foreach (bool dark in WardrobePreviewThemes)
                         {
-                            var code = surface.Scene!.Nodes.Single(n => shell.Tree.Name(n.Entity) == "NexaMcDeviceCode");
-                            AssertEqual("ABCD-EFGH", code.Text!);
-                            AssertTrue(shell.Tree.GetComponent<XsrUiVisualStyle>(code.Entity)!.Foreground.Alpha > 0);
-                            using var touch = new SidecarPreviewTouch(window, surface);
-                            var button = surface.Scene.Nodes.Single(n => shell.Tree.Name(n.Entity) == "NexaMcCopyDeviceCode");
-                            AssertTrue(copied is null);
-                            touch.Tap(new(button.Rect.X + button.Rect.Width / 2, button.Rect.Y + button.Rect.Height / 2));
-                            AssertEqual("ABCD-EFGH", copied!); copied = null;
-                            AssertTrue(opened is null); // Obtaining/copying a code never launches a browser.
-                            var link = surface.Scene.Nodes.Single(n => shell.Tree.GetComponent<XsrUiCommandBinding>(n.Entity)?.Command.Value == "ui.sidecar.link.open");
-                            touch.Tap(new(link.Rect.X + link.Rect.Width / 2, link.Rect.Y + link.Rect.Height / 2));
-                            AssertEqual("https://pcln.top/device", opened!.AbsoluteUri); opened = null;
+                            shell.Renderer.ColorScheme = new(dark);
+                            using var surface = new AvaloniaUiSceneSurface(shell) { Width = width, Height = 700 };
+                            window.Content = surface;
+                            surface.Measure(new Size(width, 700)); surface.Arrange(new Rect(0, 0, width, 700));
+                            for (int frame = 0; frame < 4; frame++) surface.CommitScene();
+                            window.UpdateLayout(); surface.UpdateLayout();
+                            await Task.Delay(100); // Allow the native compositor hit-test tree to observe the attached surface.
+                            using var bitmap = new RenderTargetBitmap(new PixelSize(width, 700), new Vector(96, 96));
+                            bitmap.Render(surface);
+                            string stem = $"{name}-{width}-{(dark ? "dark" : "light")}";
+                            bitmap.Save(Path.Combine(output, stem + ".png"), PngBitmapEncoderOptions.Default);
+                            File.WriteAllLines(Path.Combine(output, stem + ".txt"), surface.Scene!.Nodes.Select(n => $"{shell.Tree.Name(n.Entity)} | {n.Rect} | {n.Text}"));
+                            if (name is "account-device-code" or "onboarding-device-code")
+                            {
+                                var code = surface.Scene!.Nodes.Single(n => shell.Tree.Name(n.Entity) == "NexaMcDeviceCode");
+                                AssertEqual("ABCD-EFGH", code.Text!);
+                                AssertTrue(shell.Tree.GetComponent<XsrUiVisualStyle>(code.Entity)!.Foreground.Alpha > 0);
+                                using var touch = new SidecarPreviewTouch(window, surface);
+                                var button = surface.Scene.Nodes.Single(n => shell.Tree.Name(n.Entity) == "NexaMcCopyDeviceCode");
+                                AssertTrue(copied is null);
+                                touch.Tap(new(button.Rect.X + button.Rect.Width / 2, button.Rect.Y + button.Rect.Height / 2));
+                                AssertEqual("ABCD-EFGH", copied!); copied = null;
+                                AssertTrue(opened is null); // Obtaining/copying a code never launches a browser.
+                                var link = surface.Scene.Nodes.Single(n => shell.Tree.GetComponent<XsrUiCommandBinding>(n.Entity)?.Command.Value == "ui.sidecar.link.open");
+                                touch.Tap(new(link.Rect.X + link.Rect.Width / 2, link.Rect.Y + link.Rect.Height / 2));
+                                AssertEqual("https://pcln.top/device", opened!.AbsoluteUri); opened = null;
+                            }
+                            if (name is "account-overview" or "market-list")
+                            {
+                                string key = name == "account-overview" ? "NexaMcAccountSectionScroll" : "NscMarketList";
+                                var viewport = surface.Scene!.Nodes.Single(n => shell.Tree.Name(n.Entity) == key);
+                                var scroll = shell.Tree.GetComponent<XsrUiScroll>(viewport.Entity)!;
+                                AssertTrue(shell.Tree.GetComponent<XsrUiScrollGesture>(viewport.Entity) is not null);
+                                double before = scroll.OffsetY;
+                                using var touch = new SidecarPreviewTouch(window, surface);
+                                touch.Drag(new(viewport.Rect.X + viewport.Rect.Width / 2, viewport.Rect.Y + viewport.Rect.Height * .8));
+                                AssertTrue(scroll.OffsetY > before + 30);
+                                scroll.OffsetY = 0;
+                                shell.Tree.MarkDirty(viewport.Entity, XsrUiDirtyKinds.Layout);
+                            }
+                            window.Content = null;
                         }
-                        if (name is "account-overview" or "market-list")
-                        {
-                            string key = name == "account-overview" ? "NexaMcAccountSectionScroll" : "NscMarketList";
-                            var viewport = surface.Scene!.Nodes.Single(n => shell.Tree.Name(n.Entity) == key);
-                            var scroll = shell.Tree.GetComponent<XsrUiScroll>(viewport.Entity)!;
-                            AssertTrue(shell.Tree.GetComponent<XsrUiScrollGesture>(viewport.Entity) is not null);
-                            double before = scroll.OffsetY;
-                            using var touch = new SidecarPreviewTouch(window, surface);
-                            touch.Drag(new(viewport.Rect.X + viewport.Rect.Width / 2, viewport.Rect.Y + viewport.Rect.Height * .8));
-                            AssertTrue(scroll.OffsetY > before + 30);
-                            scroll.OffsetY = 0;
-                            shell.Tree.MarkDirty(viewport.Entity, XsrUiDirtyKinds.Layout);
-                        }
-                        window.Content = null;
-                    }
                 }
             }
         });

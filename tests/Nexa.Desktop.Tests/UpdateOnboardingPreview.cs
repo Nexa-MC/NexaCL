@@ -9,6 +9,7 @@ using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr.Renderer.Nxml;
 
 namespace Nexa.Desktop.Tests;
+
 internal static partial class Program
 {
     private static readonly string[] UpdatePreviewPhases = ["downloading", "failed", "restart"];
@@ -51,20 +52,20 @@ internal static partial class Program
             async Task Capture(string name)
             {
                 foreach (int width in SidecarPreviewWidths)
-                foreach (bool dark in WardrobePreviewThemes)
-                {
-                    shell.Renderer.ColorScheme = new(dark);
-                    using var surface = new AvaloniaUiSceneSurface(shell) { Width = width, Height = 700 };
-                    window.Content = surface;
-                    surface.Measure(new Size(width, 700)); surface.Arrange(new Rect(0, 0, width, 700));
-                    for (int frame = 0; frame < 4; frame++) surface.CommitScene();
-                    window.UpdateLayout(); surface.UpdateLayout(); await Task.Delay(100);
-                    using var bitmap = new RenderTargetBitmap(new PixelSize(width, 700), new Vector(96, 96));
-                    bitmap.Render(surface);
-                    string stem = $"{name}-{width}-{(dark ? "dark" : "light")}";
-                    bitmap.Save(Path.Combine(output, stem + ".png"), PngBitmapEncoderOptions.Default);
-                    File.WriteAllLines(Path.Combine(output, stem + ".txt"), surface.Scene!.Nodes.Select(n => $"{shell.Tree.Name(n.Entity)} | {n.Rect} | {n.Text}"));
-                }
+                    foreach (bool dark in WardrobePreviewThemes)
+                    {
+                        shell.Renderer.ColorScheme = new(dark);
+                        using var surface = new AvaloniaUiSceneSurface(shell) { Width = width, Height = 700 };
+                        window.Content = surface;
+                        surface.Measure(new Size(width, 700)); surface.Arrange(new Rect(0, 0, width, 700));
+                        for (int frame = 0; frame < 4; frame++) surface.CommitScene();
+                        window.UpdateLayout(); surface.UpdateLayout(); await Task.Delay(100);
+                        using var bitmap = new RenderTargetBitmap(new PixelSize(width, 700), new Vector(96, 96));
+                        bitmap.Render(surface);
+                        string stem = $"{name}-{width}-{(dark ? "dark" : "light")}";
+                        bitmap.Save(Path.Combine(output, stem + ".png"), PngBitmapEncoderOptions.Default);
+                        File.WriteAllLines(Path.Combine(output, stem + ".txt"), surface.Scene!.Nodes.Select(n => $"{shell.Tree.Name(n.Entity)} | {n.Rect} | {n.Text}"));
+                    }
             }
         });
     }

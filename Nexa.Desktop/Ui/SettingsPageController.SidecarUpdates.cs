@@ -4,6 +4,7 @@ using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 
 namespace Nexa.Desktop.Ui;
+
 internal sealed partial class SettingsPageController
 {
     private ISidecarUpdateControl? _sidecarUpdates;
@@ -63,13 +64,16 @@ internal sealed partial class SettingsPageController
         {
             var data = new Dictionary<string, string>
             {
-                ["id"] = item.Id, ["current"] = item.CurrentVersion.Length == 0 ? CustomCopy("update.unknown") : item.CurrentVersion,
-                ["available"] = item.AvailableVersion ?? "", ["hasOffer"] = Flag(item.AvailableVersion is not null),
+                ["id"] = item.Id,
+                ["current"] = item.CurrentVersion.Length == 0 ? CustomCopy("update.unknown") : item.CurrentVersion,
+                ["available"] = item.AvailableVersion ?? "",
+                ["hasOffer"] = Flag(item.AvailableVersion is not null),
                 ["status"] = CustomCopy("sidecarUpdate.item." + item.Phase),
                 ["busy"] = Flag(item.Phase is "downloading" or "verifying"),
                 ["progress"] = item.Progress.ToString("P0", CultureInfo.CurrentCulture),
                 ["canInstall"] = Flag(item.CanInstall && _sidecarUpdateWork is null),
-                ["install"] = Flag(item.CanInstall), ["restart"] = Flag(item.Phase == "restart"),
+                ["install"] = Flag(item.CanInstall),
+                ["restart"] = Flag(item.Phase == "restart"),
                 ["action"] = CustomCopy(item.Phase == "failed" ? "sidecarUpdate.retry" : "sidecarUpdate.install"),
             };
             var document = DesktopMarkup.Dynamic("SettingsCustomSidecarUpdate.d.nxml", data, _shell.Renderer.LocalizeText);

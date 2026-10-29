@@ -1,4 +1,5 @@
 namespace Nexa.Xsr.Renderer.Nxml.Tests;
+
 internal static partial class Program
 {
     private static void ExtensionDataScopesReferencesWithoutRelaxingBudgets()

@@ -2,6 +2,7 @@ using Nexa.Services.Composition;
 using Nexa.Sidecar.Protocol;
 
 namespace Nexa.Desktop.Tests;
+
 internal static partial class Program
 {
     private static void SidecarNetworkGrantRejectsUntrustedRequests()
