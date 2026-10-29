@@ -4,6 +4,7 @@ using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr.State;
 namespace Nexa.Xsr.Renderer.Backend.Avalonia.Tests;
+
 internal static partial class Program
 {
     private sealed class BreathingTheme : IXsrUiThemeStyleProgram
