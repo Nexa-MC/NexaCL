@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0": {
+      "Microsoft.NET.ILLink.Tasks": {
+        "type": "Direct",
+        "requested": "[10.0.14, )",
+        "resolved": "10.0.14",
+        "contentHash": "YlTamXppEQls6DYWt7RdUuwWDb0lyw/vXCaGeQpLCpsLmfwGuCkOz/vIGgMTV7ECsJcavkCOkxZXv9s8rdAHkQ=="
+      },
+      "nexa.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "Nexa.Core": "[2.0.0-alpha.17, )"
+        }
+      },
+      "nexa.core": {
+        "type": "Project"
+      },
+      "nexa.sidecar.protocol": {
+        "type": "Project",
+        "dependencies": {
+          "Nexa.Core": "[2.0.0-alpha.17, )"
+        }
+      },
+      "nexa.sidecar.transport": {
+        "type": "Project",
+        "dependencies": {
+          "Nexa.Sidecar.Protocol": "[2.0.0-alpha.17, )"
+        }
+      },
+      "nexa.xsr.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "Nexa.Contracts": "[2.0.0-alpha.17, )",
+          "Nexa.Core": "[2.0.0-alpha.17, )"
+        }
+      },
+      "nexa.xsr.diagnostics": {
+        "type": "Project",
+        "dependencies": {
+          "Nexa.Core": "[2.0.0-alpha.17, )",
+          "Nexa.Xsr.Abstractions": "[2.0.0-alpha.17, )"
+        }
+      },
+      "nexa.xsr.state": {
+        "type": "Project",
+        "dependencies": {
+          "Nexa.Core": "[2.0.0-alpha.17, )",
+          "Nexa.Xsr.Abstractions": "[2.0.0-alpha.17, )"
+        }
+      }
+    }
+  }
+}

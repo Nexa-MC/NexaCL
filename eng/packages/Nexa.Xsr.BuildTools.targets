@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup Condition="'$(NexaAutomaticFunctionPatches)' == 'true'">
+    <_NexaAutomaticCompiler>$(MSBuildThisFileDirectory)../tools/net10.0/Nexa.Xsr.Patch.Compiler.dll</_NexaAutomaticCompiler>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(NexaAutomaticFunctionPatches)' == 'true'">
+    <AssemblyMetadata Include="Nexa.AutomaticFunctionPatches" Value="1" />
+  </ItemGroup>
+  <Import Project="$(MSBuildThisFileDirectory)../tools/targets/Xsr.AutomaticFunctionPatches.targets"
+          Condition="'$(NexaAutomaticFunctionPatches)' == 'true'" />
+</Project>

@@ -11,13 +11,13 @@
     </ItemGroup>
   </Target>
   <Target Name="InitializeNexaAutomaticPatches" DependsOnTargets="ResolveProjectReferences" Condition="'$(DesignTimeBuild)' != 'true'">
-    <MSBuild Projects="$(_NexaAutomaticCompilerProject)" Targets="GetTargetPath"
+    <MSBuild Condition="'$(_NexaAutomaticCompiler)' == ''" Projects="$(_NexaAutomaticCompilerProject)" Targets="GetTargetPath"
              RemoveProperties="PublishAot;PublishTrimmed;PublishSingleFile;PublishReadyToRun;SelfContained;RuntimeIdentifier">
       <Output TaskParameter="TargetOutputs" ItemName="_NexaAutomaticCompilerOutputs" />
     </MSBuild>
-    <Error Condition="'@(_NexaAutomaticCompilerOutputs->Count())' != '1'" Text="NXRP: one managed automatic instrumentation compiler is required." />
+    <Error Condition="'$(_NexaAutomaticCompiler)' == '' and '@(_NexaAutomaticCompilerOutputs->Count())' != '1'" Text="NXRP: one managed automatic instrumentation compiler is required." />
     <PropertyGroup>
-      <_NexaAutomaticCompiler>@(_NexaAutomaticCompilerOutputs->'%(FullPath)')</_NexaAutomaticCompiler>
+      <_NexaAutomaticCompiler Condition="'$(_NexaAutomaticCompiler)' == ''">@(_NexaAutomaticCompilerOutputs->'%(FullPath)')</_NexaAutomaticCompiler>
       <_NexaAutomaticAssembly>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(TargetFileName)'))</_NexaAutomaticAssembly>
       <_NexaAutomaticCatalog>$(_NexaAutomaticAssembly).nfp</_NexaAutomaticCatalog>
       <_NexaAutomaticReferences>$(_NexaAutomaticAssembly).patch-references</_NexaAutomaticReferences>

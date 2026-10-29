@@ -1,0 +1,37 @@
+{
+  "version": "0.1.0-alpha.1",
+  "projects": {
+    "Nexa.Core": [],
+    "Nexa.Contracts": [
+      "Nexa.Core"
+    ],
+    "Nexa.Sidecar.Protocol": [
+      "Nexa.Core"
+    ],
+    "Nexa.Sidecar.Transport": [
+      "Nexa.Sidecar.Protocol"
+    ],
+    "Nexa.Xsr.Abstractions": [
+      "Nexa.Contracts",
+      "Nexa.Core"
+    ],
+    "Nexa.Xsr.Diagnostics": [
+      "Nexa.Core",
+      "Nexa.Xsr.Abstractions"
+    ],
+    "Nexa.Xsr.State": [
+      "Nexa.Core",
+      "Nexa.Xsr.Abstractions"
+    ],
+    "Nexa.Xsr.Runtime": [
+      "Nexa.Contracts",
+      "Nexa.Core",
+      "Nexa.Sidecar.Protocol",
+      "Nexa.Sidecar.Transport",
+      "Nexa.Xsr.Abstractions",
+      "Nexa.Xsr.Diagnostics",
+      "Nexa.Xsr.State"
+    ]
+  },
+  "sdk": "10.0.403"
+}

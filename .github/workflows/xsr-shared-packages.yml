@@ -1,0 +1,45 @@
+name: XSR shared packages
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Nexa.Core/**'
+      - 'Nexa.Contracts/**'
+      - 'Nexa.Sidecar.*/**'
+      - 'Nexa.Xsr.*/**'
+      - 'eng/packages/**'
+      - 'eng/xsr/**'
+      - 'tools/Nexa.Xsr.Patch.Compiler/**'
+      - 'Directory.Build.*'
+      - 'docs/xsr/shared-packages.md'
+      - '.github/workflows/xsr-shared-packages.yml'
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  packages:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: '10.0.403'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python eng/packages/build.py --output artifacts/shared-feed
+      - if: runner.os == 'Linux'
+        run: python eng/packages/verify.py --feed artifacts/shared-feed --aot
+      - if: runner.os != 'Linux'
+        run: python eng/packages/verify.py --feed artifacts/shared-feed
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: xsr-shared-feed-${{ matrix.os }}
+          path: artifacts/shared-feed
+          if-no-files-found: error

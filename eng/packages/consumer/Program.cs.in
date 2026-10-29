@@ -1,0 +1,48 @@
+using System.Runtime.CompilerServices;
+using Nexa.Core.Patching;
+using Nexa.Xsr;
+using Nexa.Xsr.Runtime;
+using Nexa.Xsr.State;
+
+await Check.Run();
+Console.WriteLine("PASS: package consumer routes/state/catalogs/automatic-patch install-retire");
+
+static class Check
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Add(int a, int b) => a + b;
+    public static async Task Run()
+    {
+        if (Add(1, 2) != 3) throw new Exception("original");
+        var target = Patch.Catalog.Single(x => x.Signature.Contains("Check::Add``", StringComparison.Ordinal));
+        if (target.Status != PatchTargetStatus.Instrumented) throw new Exception("not instrumented");
+        using (Patch.Install(target, PatchPhase.Return, frame => frame.Result = 99))
+            if (Add(1, 2) != 99) throw new Exception("patch not applied");
+        if (Add(1, 2) != 3) throw new Exception("patch not retired");
+
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var builder = new XsrCommandRouterBuilder();
+        var name = XsrSemanticId.Parse("packages.probe.command");
+        var states = new XsrStateStoreBuilder();
+        states.Cell<int>(name, "Probe");
+        var store = states.Build();
+        var state = store.Resolve(name);
+        builder.Register<int>(name, async (value, ct) =>
+        {
+            await gate.Task.WaitAsync(ct);
+            store.Publish(state, value);
+            return XsrResult.Success();
+        });
+        var router = builder.Build(new Observer());
+        if (!router.TryResolve(name, out var id)) throw new Exception("route missing");
+        var pending = router.Dispatch(id, 42);
+        if (!pending.Acceptance.IsSuccess || pending.Completion.IsCompleted || store.Read<int>(state).HasValue)
+            throw new Exception("acceptance not separate");
+        gate.SetResult();
+        if (!(await pending.Completion.WaitAsync(TimeSpan.FromSeconds(10))).IsSuccess) throw new Exception("completion");
+        store.MarkAvailability(state, XsrStateAvailability.Stale);
+        if (store.Read<int>(state).Value != 42 || store.Read<int>(state).Availability != XsrStateAvailability.Stale)
+            throw new Exception("stale semantics");
+    }
+}
+sealed class Observer : IXsrDispatchObserver { public void OnCompleted(XsrDispatchObservation observation) { } }
