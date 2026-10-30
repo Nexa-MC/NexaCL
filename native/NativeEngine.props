@@ -25,10 +25,17 @@
     <AssemblyMetadata Include="Nexa.NativeEngineAbi" Value="1" />
     <SourceRoot Include="$(NexaEngineSourceRoot)" MappedPath="/_/" />
   </ItemGroup>
-  <Target Name="ConfigureDeterministicNativeEngineLink" BeforeTargets="LinkNative" Condition="'$(PublishAot)' == 'true' and '$(_targetOS)' == 'win'">
+  <Target Name="ConfigureDeterministicNativeEngineLink" BeforeTargets="LinkNative" Condition="'$(PublishAot)' == 'true'">
     <ItemGroup>
-      <LinkerArg Include="/Brepro" />
-      <LinkerArg Include="/PDBALTPATH:%_PDB%" />
+      <LinkerArg Include="/Brepro" Condition="'$(_targetOS)' == 'win'" />
+      <LinkerArg Include="/PDBALTPATH:%_PDB%" Condition="'$(_targetOS)' == 'win'" />
+      <LinkerArg Include="-Wl,-reproducible" Condition="'$(_targetOS)' == 'osx'" />
     </ItemGroup>
+  </Target>
+  <!-- Match LinkNative's incremental condition: do not delete symbols when linking is skipped. -->
+  <Target Name="ResetNativeEnginePdbBeforeRelink" BeforeTargets="LinkNative"
+          Inputs="$(NativeObject);@(NativeLibrary)" Outputs="$(NativeBinary)"
+          Condition="'$(PublishAot)' == 'true' and '$(_targetOS)' == 'win'">
+    <Delete Files="$([System.IO.Path]::ChangeExtension('$(NativeBinary)', '.pdb'))" />
   </Target>
 </Project>

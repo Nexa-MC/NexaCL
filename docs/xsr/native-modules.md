@@ -223,3 +223,14 @@ because its implementation fingerprint is embedded into the instrumented modules
 Windows links engines with `/Brepro` and a basename-only PDB reference: captured
 failed binaries contained wall-clock PE/debug timestamps and an incrementing PDB
 age despite unchanged source. Native debug symbols remain enabled.
+
+The Windows linker retains and increments an existing native PDB age even with
+`/Brepro`. Before an actual relink, delete only that engine's generated native PDB;
+use the same input/output freshness condition as `LinkNative`, so an incremental
+publish that skips linking retains its symbols. A clean rebuild must then produce
+identical managed input, native object, DLL and debug identity.
+
+macOS likewise produced identical managed and object inputs while the final UUID
+and its ad-hoc code-signature hash changed. Use ld64's `-reproducible` mode to zero
+object modification times in the debug map before UUID generation. Keep UUIDs,
+dSYM generation and code signing enabled; do not patch signed output bytes.
