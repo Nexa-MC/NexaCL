@@ -249,7 +249,7 @@ Managed same-runtime connections retain the normal `Socket.ConnectAsync` path.
 The macOS network engine additionally exposed ld64's duplicate `objc_msgSend` GOT
 slots: identical object files linked to two equivalent pointer slots in different
 orders, changing three ARM64 stub instruction bytes, UUID and code signatures.
-Use `-objc_stubs_small` to reuse the ordinary message-send stub instead of emitting
+On ARM64, use `-objc_stubs_small` to reuse the ordinary message-send stub instead of emitting
 that second GOT slot. This is a linker-supported stub form, not binary rewriting.
 The focused macOS CI gate performs three independent clean rebuilds to catch
 intermittent identity changes, then executes the NativeAOT socket/mTLS fixtures.
