@@ -1,0 +1,61 @@
+name: Native engine contracts
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'native/**'
+      - 'Nexa.Core/Patching/**'
+      - 'tools/Nexa.Xsr.Patch.Compiler/**'
+      - 'eng/xsr/Xsr.AutomaticFunctionPatches.targets'
+      - 'eng/release/verify_engine_reproducibility.py'
+      - '.github/workflows/native-engines.yml'
+permissions:
+  contents: read
+concurrency:
+  group: native-engines-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            rid: linux-x64
+          - os: windows-2025
+            rid: win-x64
+          - os: macos-15
+            rid: osx-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Publish isolated native engines
+        shell: bash
+        run: |
+          python - '${{ matrix.rid }}' "$RUNNER_TEMP/engines" <<'PY'
+          import pathlib, shutil, subprocess, sys
+          sys.path.insert(0, 'eng/release')
+          from publish_launcher import module_name
+          rid, output = sys.argv[1], pathlib.Path(sys.argv[2])
+          output.mkdir(parents=True, exist_ok=True)
+          for engine in ('Pac', 'Crypto', 'Network'):
+              stage = output / engine
+              subprocess.run(['dotnet', 'publish', f'native/Nexa.Native.{engine}', '-c', 'Release', '-r', rid,
+                              '--self-contained', 'true', '-m:1', '-nr:false', '-p:PublishAot=true',
+                              '-p:StripSymbols=true', '-p:XsrVersionChannel=stable', '-p:XsrVersionPrefix=1.0.0',
+                              '-o', str(stage)], check=True)
+              suffix = pathlib.Path(module_name(rid)).suffix
+              shutil.copy2(stage / (f'Nexa.Native.{engine}' + suffix), output / ('nexa-' + engine.lower() + suffix))
+          PY
+      - name: Verify reproducibility
+        shell: bash
+        run: python eng/release/verify_engine_reproducibility.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/engines"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: native-repro-${{ matrix.rid }}
+          path: install-diagnostics/**

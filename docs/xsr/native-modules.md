@@ -186,3 +186,26 @@ checks fresh compilation rather than an incremental cache hit.
 The measured network library is approximately 5.8 MiB; independent AOT runtimes add
 full-payload overhead. The remaining Host is still approximately 79.7 MiB. Connection
 extraction and reproducibility fixes do not satisfy the business-module target above.
+
+## Module-local automatic instrumentation
+
+Standalone engines compile the shared patch runtime source into their own runtime,
+under `Nexa.Native.Instrumentation`, without referencing Host assemblies. Their IL
+is woven before NativeAOT compilation and verified with the same catalog/body checks
+as Host assemblies. Runtime infrastructure is inventoried but never recursively
+instrumented. The native ABI marker is a boundary assertion, not a coverage exemption.
+Managed objects, delegates and patch frames remain module-local. Native diagnostic
+exports may copy bounded data into caller buffers; they must not expose CLR objects.
+Host patch activation does not automatically activate engine-local hooks.
+
+The module exports `nexa_instrumentation_target_v1(index, buffer, capacity)`,
+`nexa_instrumentation_probe_v1(index, enabled)` and
+`nexa_instrumentation_hits_v1(index)`, all cdecl. Index -1 queries catalog size;
+other indices enumerate UTF-8 `id<TAB>status<TAB>signature` records. The returned
+size excludes a terminator; short buffers are not modified. Enabling a probe is
+idempotent, disabling retires its local hook, and re-enabling resets the count.
+Invalid indices, infrastructure targets and invalid enable values return -1.
+A probe observes entry only; it does not export arguments, credentials, pointers,
+or arbitrary Host callbacks. There is no cross-runtime replacement-patch API yet.
+The NativeAOT caller regression verifies all three engines, actual entry hits,
+short-buffer behavior, infrastructure rejection and retirement.

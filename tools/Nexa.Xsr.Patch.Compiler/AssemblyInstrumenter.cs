@@ -88,7 +88,7 @@ internal sealed partial class AssemblyInstrumenter
         return 0;
     }
 
-    private TypeDefinition CoreType(string name) => _core.GetType("Nexa.Core.Patching." + name);
+    private TypeDefinition CoreType(string name) => _core.GetType(RuntimeNamespace(_core) + "." + name);
     private TypeReference ImportType(string name) => _module.ImportReference(CoreType(name));
     private MethodReference ImportMethod(string type, string name) => _module.ImportReference(CoreType(type).Methods.Single(method => method.Name == name));
 
@@ -143,11 +143,16 @@ internal sealed partial class AssemblyInstrumenter
     private static bool ByReference(TypeReference type) => Unmodified(type) is ByReferenceType;
     private static TypeReference ValueType(TypeReference type) => Unmodified(type) is ByReferenceType reference ? Unmodified(reference.ElementType) : Unmodified(type);
     private static string ShapeKey(TypeReference type) => Unmodified(type) is ByReferenceType reference ? ShapeKey(reference.ElementType) + "&" : Key(Unmodified(type));
+    private static string RuntimeNamespace(ModuleDefinition module) =>
+        module.Assembly.Name.Name.StartsWith("Nexa.Native.", StringComparison.Ordinal)
+            ? "Nexa.Native.Instrumentation" : "Nexa.Core.Patching";
+
     private static bool Infrastructure(TypeDefinition type)
     {
-        if (type.Module.Assembly.Name.Name != "Nexa.Core") return false;
+        if (type.Module.Assembly.Name.Name != "Nexa.Core" && !type.Module.Assembly.Name.Name.StartsWith("Nexa.Native.", StringComparison.Ordinal)) return false;
+        string runtimeNamespace = RuntimeNamespace(type.Module);
         for (var current = type; current is not null; current = current.DeclaringType)
-            if (current.Namespace == "Nexa.Core.Patching" || current.Namespace.StartsWith("Nexa.Core.Patching.", StringComparison.Ordinal)) return true;
+            if (current.Namespace == runtimeNamespace || current.Namespace.StartsWith(runtimeNamespace + ".", StringComparison.Ordinal)) return true;
         return false;
     }
     private static bool StackOnly(TypeReference type)

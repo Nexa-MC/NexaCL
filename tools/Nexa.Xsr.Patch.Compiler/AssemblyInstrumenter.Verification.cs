@@ -9,16 +9,44 @@ internal sealed partial class AssemblyInstrumenter
 {
     internal static int VerifyDirectory(string directory)
     {
-        int assemblies = 0, methods = 0;
+        int assemblies = 0, methods = 0, engines = 0;
         foreach (string path in Directory.EnumerateFiles(directory, "Nexa.*.dll").Order(StringComparer.Ordinal))
         {
             if (Path.GetFileName(path) == "Nexa.Xsr.Patch.Compiler.dll")
                 throw new InvalidDataException("The build compiler must not ship in the product runtime closure.");
+            if (IsStandaloneNativeEngine(path)) engines++;
             methods += Verify(path); assemblies++;
         }
         if (assemblies == 0) throw new InvalidDataException("No owned product assemblies were found for coverage verification.");
-        Console.WriteLine($"Automatic coverage verified: {assemblies} assemblies; {methods} executable bodies.");
+        Console.WriteLine($"Automatic coverage verified: {assemblies} assemblies; {methods} executable bodies; {engines} standalone native engines verified.");
         return 0;
+    }
+
+    internal static bool IsStandaloneNativeEngine(string path)
+    {
+        using var module = ModuleDefinition.ReadModule(path, new ReaderParameters { InMemory = true });
+        bool marked = module.Assembly.CustomAttributes.Any(attribute =>
+            attribute.AttributeType.FullName == "System.Reflection.AssemblyMetadataAttribute"
+            && attribute.ConstructorArguments.Count == 2
+            && attribute.ConstructorArguments[0].Value is "Nexa.NativeEngineAbi"
+            && attribute.ConstructorArguments[1].Value is "1");
+        if (!marked) return false;
+        string? prefix = module.Assembly.Name.Name switch
+        {
+            "Nexa.Native.Pac" => "nexa_pac_",
+            "Nexa.Native.Crypto" => "nexa_crypto_",
+            "Nexa.Native.Network" => "nexa_network_",
+            _ => null,
+        };
+        if (prefix is null
+            || module.AssemblyReferences.Any(reference => reference.Name.StartsWith("Nexa.", StringComparison.Ordinal))
+            || !module.GetTypes().SelectMany(type => type.Methods).Any(method => method.IsStatic
+                && method.CustomAttributes.Any(attribute =>
+                    attribute.AttributeType.FullName == "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"
+                    && attribute.Fields.Any(field => field.Name == "EntryPoint" && field.Argument.Value is string entry
+                        && entry.StartsWith(prefix, StringComparison.Ordinal) && entry.EndsWith("_v1", StringComparison.Ordinal)))))
+            throw new InvalidDataException("Invalid standalone native engine boundary: " + path);
+        return true;
     }
 
     internal static int Verify(string path)
@@ -68,9 +96,9 @@ internal sealed partial class AssemblyInstrumenter
             }
             if (entry.Status != 0 || entry.Slot < 0
                 || !method.Body.Instructions.Any(item => item.OpCode == OpCodes.Ldfld && item.Operand is FieldReference field
-                    && field.DeclaringType.FullName == "Nexa.Core.Patching.PatchAssembly" && field.Name == "Enabled")
+                    && field.DeclaringType.FullName == RuntimeNamespace(module) + ".PatchAssembly" && field.Name == "Enabled")
                 || !method.Body.Instructions.Any(item => item.OpCode == OpCodes.Call && item.Operand is MethodReference called
-                    && called.DeclaringType.FullName == "Nexa.Core.Patching.Patch" && called.Name == "Enter"))
+                    && called.DeclaringType.FullName == RuntimeNamespace(module) + ".Patch" && called.Name == "Enter"))
                 throw new InvalidDataException("Function is cataloged without its automatic entry: " + signature);
             bodies++;
         }

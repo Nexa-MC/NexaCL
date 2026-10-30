@@ -15,6 +15,7 @@ internal static partial class Program
             corePath = Path.GetFullPath(corePath);
             var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator)
                 .Select(path => MetadataReference.CreateFromFile(path)).Append(MetadataReference.CreateFromFile(corePath));
+            NativeEngineBoundarySelfTest(directory, references);
             string dependency = Path.Combine(directory, "Nexa.AutomaticDependency.dll");
             var dependencyCompilation = CSharpCompilation.Create("Nexa.AutomaticDependency",
                 [CSharpSyntaxTree.ParseText("public static class Unloaded { public static int Value() => 7; }")], references,

@@ -3,7 +3,11 @@ using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+#if NEXA_NATIVE_ENGINE
+namespace Nexa.Native.Instrumentation;
+#else
 namespace Nexa.Core.Patching;
+#endif
 
 public enum PatchPhase : byte { Head = 1, Args = 2, Tail = 3, Return = 4, Replace = 5 }
 public enum PatchTargetStatus : byte { Instrumented, Abstract, RuntimeProvided, Infrastructure }

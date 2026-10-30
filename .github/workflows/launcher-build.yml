@@ -177,9 +177,6 @@ jobs:
       - name: Verify native Host module boundary
         shell: bash
         run: python eng/release/smoke_native_modules.py --payload "$RUNNER_TEMP/launcher"
-      - name: Verify native engine reproducibility across release stamps
-        shell: bash
-        run: python eng/release/verify_engine_reproducibility.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/launcher"
       - name: Verify external engines against service regressions
         shell: bash
         run: |
@@ -213,6 +210,9 @@ jobs:
           suffix = ".exe" if sys.argv[3].startswith("win-") else ""
           subprocess.run([str(pathlib.Path(sys.argv[2]) / ("Nexa.Native.Network.Tests" + suffix))], check=True, timeout=90)
           PYNETWORK
+      - name: Verify native engine reproducibility across release stamps
+        shell: bash
+        run: python eng/release/verify_engine_reproducibility.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/launcher"
       - name: Smoke macOS platform helper
         if: startsWith(matrix.rid, 'osx-')
         shell: bash

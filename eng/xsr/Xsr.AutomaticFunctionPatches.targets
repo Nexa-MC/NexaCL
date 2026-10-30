@@ -21,12 +21,12 @@
       <_NexaAutomaticAssembly>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(TargetFileName)'))</_NexaAutomaticAssembly>
       <_NexaAutomaticCatalog>$(_NexaAutomaticAssembly).nfp</_NexaAutomaticCatalog>
       <_NexaAutomaticReferences>$(_NexaAutomaticAssembly).patch-references</_NexaAutomaticReferences>
-      <_NexaAutomaticCore Condition="'$(MSBuildProjectName)' == 'Nexa.Core'">$(_NexaAutomaticAssembly)</_NexaAutomaticCore>
+      <_NexaAutomaticCore Condition="'$(MSBuildProjectName)' == 'Nexa.Core' or '$(NexaLocalPatchRuntime)' == 'true'">$(_NexaAutomaticAssembly)</_NexaAutomaticCore>
     </PropertyGroup>
-    <ItemGroup Condition="'$(MSBuildProjectName)' != 'Nexa.Core'">
+    <ItemGroup Condition="'$(MSBuildProjectName)' != 'Nexa.Core' and '$(NexaLocalPatchRuntime)' != 'true'">
       <_NexaAutomaticCoreReference Include="@(ReferencePath)" Condition="'%(Filename)' == 'Nexa.Core'" />
     </ItemGroup>
-    <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Nexa.Core'">
+    <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Nexa.Core' and '$(NexaLocalPatchRuntime)' != 'true'">
       <_NexaAutomaticCore>@(_NexaAutomaticCoreReference->'%(FullPath)')</_NexaAutomaticCore>
     </PropertyGroup>
   </Target>
