@@ -15,6 +15,7 @@ internal static partial class SocketTransfer
             if (descriptor < 0) throw new IOException("Could not transfer the connected socket.", new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError()));
             return new SafeSocketHandle(descriptor, ownsHandle: true);
         }
+        // The Windows connection must never have been IOCP-bound in this runtime; duplication cannot detach it.
         // WSAPROTOCOL_INFOW contains no pointer-sized fields and is 628 bytes on x64 and ARM64.
         byte* info = stackalloc byte[628];
         if (DuplicateWindows(socket.SafeHandle, (uint)Environment.ProcessId, info) != 0)

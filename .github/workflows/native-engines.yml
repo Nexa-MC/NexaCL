@@ -9,6 +9,9 @@ on:
       - 'tools/Nexa.Xsr.Patch.Compiler/**'
       - 'eng/xsr/Xsr.AutomaticFunctionPatches.targets'
       - 'eng/release/verify_engine_reproducibility.py'
+      - 'eng/release/verify_native_engine_contracts.py'
+      - 'tests/Nexa.Native.Network.Tests/**'
+      - 'tests/Nexa.Services.Tests/NativeNetworkTests.cs'
       - '.github/workflows/native-engines.yml'
 permissions:
   contents: read
@@ -54,6 +57,9 @@ jobs:
       - name: Verify reproducibility
         shell: bash
         run: python eng/release/verify_engine_reproducibility.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/engines"
+      - name: Verify NativeAOT caller instrumentation, socket ownership and mTLS
+        shell: bash
+        run: python eng/release/verify_native_engine_contracts.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/engines" --output "$RUNNER_TEMP/native-network-caller"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
         with:

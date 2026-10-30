@@ -104,7 +104,7 @@ internal static class Exports
         Socket? socket = null;
         try
         {
-            socket = await operation.Transport.Connector.ConnectAsync(operation.Host, operation.Port, operation.Destination, operation.Stop.Token).ConfigureAwait(false);
+            socket = await operation.Transport.Connector.ConnectTransferableAsync(operation.Host, operation.Port, operation.Destination, operation.Stop.Token).ConfigureAwait(false);
             operation.Stop.Token.ThrowIfCancellationRequested();
             Transfer(operation, socket);
         }

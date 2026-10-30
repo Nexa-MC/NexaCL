@@ -234,3 +234,14 @@ macOS likewise produced identical managed and object inputs while the final UUID
 and its ad-hoc code-signature hash changed. Use ld64's `-reproducible` mode to zero
 object modification times in the debug map before UUID generation. Keep UUIDs,
 dSYM generation and code signing enabled; do not patch signed output bytes.
+
+### Windows transferable connection ownership
+
+Windows duplicates retain the underlying socket's IOCP association. A socket
+connected with the engine runtime's `ConnectAsync` therefore cannot subsequently
+be bound to the Host runtime's completion port. For native transfers only, perform
+nonblocking connect and zero-timeout `Poll` before duplicating the handle.
+No IOCP association is created in the engine. Pending connects yield via cancellable
+25 ms timer delays rather than occupying a worker or the UI thread, and preserve the existing four-second per-address deadline. Restore blocking
+mode before transfer; the receiving Host owns the first asynchronous I/O binding.
+Managed same-runtime connections retain the normal `Socket.ConnectAsync` path.
