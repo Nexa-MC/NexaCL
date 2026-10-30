@@ -1,5 +1,6 @@
 ﻿using Nexa.Core;
 using Nexa.Services.Minecraft.Management;
+using Nexa.Services.Capabilities;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 
@@ -8,6 +9,8 @@ namespace Nexa.Desktop.Ui;
 internal sealed partial class SettingsPageController
 {
     private Task<XsrResult<InstanceOfflineReadinessReport>>? _offlineRead;
+    private Task<XsrResult>? _offlinePrepare;
+    private string? _offlinePrepareInstance;
     private CancellationTokenSource? _offlineStop;
     private InstanceOfflineReadinessReport? _offlineReport;
     private string? _offlineInstance;
@@ -30,6 +33,7 @@ internal sealed partial class SettingsPageController
             _offlineRoot = AppendInstanceTool(_sections, "SettingsInstanceOffline.d.nxml", OfflineReadinessData());
         }
         BindInstanceToolAction(CatalogNodes(_offlineRoot), "InstanceOfflineReadiness.Check", BeginOfflineReadiness);
+        BindInstanceToolAction(CatalogNodes(_offlineRoot), "InstanceOfflineReadiness.Prepare", BeginOfflinePreparation);
         ProjectOfflineReadiness();
     }
     private Dictionary<string, string> OfflineReadinessData()
@@ -37,7 +41,10 @@ internal sealed partial class SettingsPageController
         var report = _offlineReport;
         return new()
         {
-            ["canCheck"] = Flag(_offlineRead is null),
+            ["canCheck"] = Flag(_offlineRead is null && _offlinePrepare is null),
+            ["canPrepare"] = Flag(_offlineRead is null && _offlinePrepare is null && report is { Ready: false }
+                && _commands.TryResolve(MachineCapabilityStateContract.RemediationCommand, out _)),
+            ["preparing"] = Flag(_offlinePrepare is not null),
             ["pending"] = Flag(_offlineRead is not null),
             ["hasError"] = Flag(_offlineError is not null),
             ["error"] = _offlineError is null ? "" : InstanceToolTerm(_offlineError),
@@ -104,22 +111,58 @@ internal sealed partial class SettingsPageController
     }
     private void BeginOfflineReadiness()
     {
-        if (_instance is not { } instance || _selected is not ("overview" or "recovery") || _offlineRead is not null
+        if (_instance is not { } instance || _selected is not ("overview" or "recovery") || _offlineRead is not null || _offlinePrepare is not null
             || !_queries.TryResolve(InstanceOfflineReadinessContract.Query, out var route)) return;
         CancelOfflineReadiness(); _offlineInstance = instance; _offlineError = null; _offlineReport = null; _offlineStop = new();
         _offlineSettingsRevision = _store.Read<long>(_revisionId).Value;
         _offlineRead = _queries.QueryAsync<InstanceOfflineReadinessQuery, InstanceOfflineReadinessReport>(route, new(instance), cancellationToken: _offlineStop.Token).AsTask();
         WakeOnPlatformCompletion(_offlineRead); ProjectOfflineReadiness();
     }
+    private void BeginOfflinePreparation()
+    {
+        if (_instance is not { } instance || _selected is not ("overview" or "recovery")
+            || _offlineRead is not null || _offlinePrepare is not null || _offlineReport is not { Ready: false } report
+            || !PathIdentity.Comparer.Equals(report.InstanceDirectory, instance)
+            || !_commands.TryResolve(MachineCapabilityStateContract.RemediationCommand, out var route)) return;
+        _offlineError = null;
+        _offlinePrepareInstance = instance;
+        _offlinePrepare = PrepareOfflineAsync(instance, report.JavaCompatible != true, route);
+        WakeOnPlatformCompletion(_offlinePrepare);
+        ProjectOfflineReadiness();
+    }
+    private async Task<XsrResult> PrepareOfflineAsync(string instance, bool needsJava, XsrCommandId route)
+    {
+        var arguments = new Dictionary<string, string> { ["instanceDirectory"] = instance };
+        var result = await _commands.Dispatch(route,
+            new RemediationRequest("remediation.game.repair_files", arguments, Confirmed: true)).Completion.ConfigureAwait(false);
+        if (!result.IsSuccess || !needsJava) return result;
+        return await _commands.Dispatch(route,
+            new RemediationRequest("remediation.java.download", arguments, Confirmed: true)).Completion.ConfigureAwait(false);
+    }
     private void UpdateOfflineReadiness()
     {
+        if (_offlinePrepare is { IsCompleted: true } prepared)
+        {
+            _offlinePrepare = null;
+            if (_visible && _selected is "overview" or "recovery" && PathIdentity.Comparer.Equals(_instance, _offlinePrepareInstance))
+            {
+                if (prepared.IsCompletedSuccessfully && prepared.Result.IsSuccess) BeginOfflineReadiness();
+                else
+                {
+                    _offlineError = "offline.prepare-failed";
+                    if (prepared.IsCompletedSuccessfully && prepared.Result.Error is { } error) _feedback.Error(error.Message);
+                    ProjectOfflineReadiness();
+                }
+            }
+            _ = prepared.Exception;
+        }
         if (!_visible || _selected is not ("overview" or "recovery") || !PathIdentity.Comparer.Equals(_instance, _offlineInstance))
         { CancelOfflineReadiness(); return; }
         if (_offlinePresentationLanguage != DesktopResourceText.Language(_store)
             || !ReferenceEquals(_offlinePresentationLocalizer, _shell.Renderer.TextLocalizer)) ProjectOfflineReadiness();
         if (_offlineRead is not { IsCompleted: true } completed)
         {
-            if (_offlineReport is not null && _store.Read<long>(_revisionId).Value != _offlineSettingsRevision)
+            if (_offlinePrepare is null && _offlineReport is not null && _store.Read<long>(_revisionId).Value != _offlineSettingsRevision)
             { _offlineReport = null; _offlineError = "offline.stale"; ProjectOfflineReadiness(); }
             return;
         }
@@ -132,6 +175,7 @@ internal sealed partial class SettingsPageController
     }
     private void CancelOfflineReadiness()
     {
+        ObserveRetiredInstanceToolRead(_offlinePrepare);
         _offlineStop?.Cancel(); _offlineStop?.Dispose(); _offlineStop = null;
         ObserveRetiredInstanceToolRead(_offlineRead); _offlineRead = null;
     }

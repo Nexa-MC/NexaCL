@@ -621,12 +621,27 @@ internal static partial class Program
 
         XsrUiEntityId first = BuildPage(tree, "first-page");
         XsrUiEntityId second = BuildPage(tree, "second-page");
+        var transition = new XsrUiTransition { Key = "navigation", OffsetX = 16 };
+        tree.SetComponent(stage.ContentHost, transition);
         stage.Navigation.Push(first);
         AssertEqual("first-page", stage.Renderer.Render()[2].Text);
+        string? firstKey = transition.Key;
 
         stage.Navigation.Push(second);
         XsrUiScene scene = stage.Renderer.Render();
         AssertEqual("second-page", scene[2].Text);
+        AssertTrue(firstKey != transition.Key);
+        AssertEqual(16d, stage.Renderer.GetTransitionOffset(stage.ContentHost));
+        stage.Renderer.SetTransitionOffset(stage.ContentHost, 0);
+        stage.Renderer.Render();
+        AssertEqual(0d, stage.Renderer.GetTransitionOffset(stage.ContentHost));
+        AssertTrue(stage.Navigation.Pop());
+        stage.Renderer.Render();
+        AssertEqual(16d, stage.Renderer.GetTransitionOffset(stage.ContentHost));
+        stage.Renderer.ReducedMotion = true;
+        stage.Navigation.Replace(second);
+        stage.Renderer.Render();
+        AssertEqual(0d, stage.Renderer.GetTransitionOffset(stage.ContentHost));
     }
 
     private static void ReducedMotionIsAPresentationContractFlag()

@@ -1,6 +1,7 @@
 <StackPanel>
 <Text Key="offline.stale" Content="设置在检查期间改变，请重新检查。" />
 <Text Key="offline.failed" Content="无法完成本地离线检查，请检查目录权限后重试。" />
+<Text Key="offline.prepare-failed" Content="离线准备未完成，请检查错误信息后重试。" />
 <Text Key="offline.ready" Content="本地离线依赖校验通过" />
 <Text Key="offline.not-ready" Content="尚未离线就绪" />
 <Text Key="offline.incomplete" Content="检查不完整" />

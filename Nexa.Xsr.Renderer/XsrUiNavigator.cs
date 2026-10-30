@@ -38,6 +38,7 @@ public sealed class XsrUiNavigator
     private readonly XsrUiEntityId _host;
     private readonly Stack<XsrUiEntityId> _back = [];
     private XsrUiEntityId _current;
+    private long _presentationRevision;
 
     public XsrUiNavigator(XsrUiTree tree, XsrUiEntityId host, IXsrUiNavigatorObserver? observer = null)
     {
@@ -128,6 +129,12 @@ public sealed class XsrUiNavigator
 
     private void Notify(XsrUiNavigationRecord args)
     {
+        if (args.From != args.To && _tree.GetComponent<XsrUiTransition>(_host) is { } transition
+            && !transition.BoundKey.IsAssigned)
+        {
+            transition.Key = "navigation-" + (++_presentationRevision).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            _tree.MarkDirty(_host, XsrUiDirtyKinds.Paint);
+        }
         _observer?.OnNavigated(args);
     }
 }

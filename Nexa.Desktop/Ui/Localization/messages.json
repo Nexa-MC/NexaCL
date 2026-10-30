@@ -1,5 +1,8 @@
 [
   {"source":"正在准备扩展引导…","en":"Preparing extension setup…","zh-Hant":"正在準備擴充功能引導…"},
+  {"source":"一键准备离线就绪","en":"Prepare for offline use","zh-Hant":"一鍵準備離線就緒"},
+  {"source":"正在补齐文件与 Java…","en":"Preparing files and Java…","zh-Hant":"正在補齊檔案與 Java…"},
+  {"source":"离线准备未完成，请检查错误信息后重试。","en":"Offline preparation did not finish. Check the error and try again.","zh-Hant":"離線準備未完成，請檢查錯誤資訊後重試。"},
   {"source":"NexaCL 更新","en":"NexaCL Update","zh-Hant":"NexaCL 更新"},
   {"source":"Sidecar 更新","en":"Sidecar updates","zh-Hant":"Sidecar 更新"},
   {"source":"Sidecar 更新检查失败，请重试。","en":"Could not check for Sidecar updates. Try again.","zh-Hant":"Sidecar 更新檢查失敗，請重試。"},

@@ -270,6 +270,7 @@ internal static partial class Program
         ("ResourceContinuousListRenewsOverlappingPagesWithoutLosingSourceFacts", ResourceContinuousListRenewsOverlappingPagesWithoutLosingSourceFacts),
         ("ResourceCardsReflowAcrossWidthsAndKeepVisibleAnchorFocusAndAppendIdentity", ResourceCardsReflowAcrossWidthsAndKeepVisibleAnchorFocusAndAppendIdentity),
         ("InstanceIdentityDraftSurvivesScopedFactRebuildsAndRetiresOnNavigation", InstanceIdentityDraftSurvivesScopedFactRebuildsAndRetiresOnNavigation),
+        ("OfflinePreparationRepairsThenRechecksTheSelectedInstance", OfflinePreparationRepairsThenRechecksTheSelectedInstance),
         ("DialogLiteralBodiesPreserveCatalogMatchesAndRefreshTranslationPolicy", DialogLiteralBodiesPreserveCatalogMatchesAndRefreshTranslationPolicy),
         ("ContentIntegrityDetailsShowActualFactsAndRetireScopedReads", ContentIntegrityDetailsShowActualFactsAndRetireScopedReads),
         ("LaunchNavigationRejectsUnknownAndUnboundWithoutChangingPage", LaunchNavigationRejectsUnknownAndUnboundWithoutChangingPage),
