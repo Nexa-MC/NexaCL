@@ -148,6 +148,15 @@ internal static partial class Program
     {
         var scene = fixture.Shell.Render(new(1000, 650));
         _ = ShowSettingsFixtureControl(fixture, settings, ref scene, key);
+        // A durable setting changes before command completion is consumed by the controller.
+        // Match real input admission instead of emitting a synthetic click on a disabled button.
+        bool enabled = SpinWait.SpinUntil(() =>
+        {
+            scene = fixture.Shell.Render(new(1000, 650));
+            var action = scene.Nodes.FirstOrDefault(node => fixture.Shell.Tree.Name(node.Entity) == key);
+            return action.Entity.IsAssigned && fixture.Shell.Tree.GetComponent<XsrUiInput>(action.Entity)?.Enabled == true;
+        }, TimeSpan.FromSeconds(5));
+        if (!enabled) throw new InvalidOperationException("Settings transfer action remained disabled: " + key);
         return scene;
     }
 }
