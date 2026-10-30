@@ -63,5 +63,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--rid", required=True)
     parser.add_argument("--payload", required=True, type=Path)
+    parser.add_argument("--rebuilds", type=int, choices=(1, 2, 3), default=1)
     args = parser.parse_args()
-    verify(args.rid, args.payload.resolve())
+    for iteration in range(args.rebuilds):
+        print(f"Clean reproducibility round {iteration + 1}/{args.rebuilds}", flush=True)
+        verify(args.rid, args.payload.resolve())

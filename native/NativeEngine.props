@@ -30,6 +30,8 @@
       <LinkerArg Include="/Brepro" Condition="'$(_targetOS)' == 'win'" />
       <LinkerArg Include="/PDBALTPATH:%_PDB%" Condition="'$(_targetOS)' == 'win'" />
       <LinkerArg Include="-Wl,-reproducible" Condition="'$(_targetOS)' == 'osx'" />
+      <!-- Reuse the ordinary objc_msgSend stub instead of emitting a duplicate, tie-ordered GOT entry. -->
+      <LinkerArg Include="-Wl,-objc_stubs_small" Condition="'$(_targetOS)' == 'osx'" />
     </ItemGroup>
   </Target>
   <!-- Match LinkNative's incremental condition: do not delete symbols when linking is skipped. -->

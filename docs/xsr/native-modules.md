@@ -245,3 +245,11 @@ No IOCP association is created in the engine. Pending connects yield via cancell
 25 ms timer delays rather than occupying a worker or the UI thread, and preserve the existing four-second per-address deadline. Restore blocking
 mode before transfer; the receiving Host owns the first asynchronous I/O binding.
 Managed same-runtime connections retain the normal `Socket.ConnectAsync` path.
+
+The macOS network engine additionally exposed ld64's duplicate `objc_msgSend` GOT
+slots: identical object files linked to two equivalent pointer slots in different
+orders, changing three ARM64 stub instruction bytes, UUID and code signatures.
+Use `-objc_stubs_small` to reuse the ordinary message-send stub instead of emitting
+that second GOT slot. This is a linker-supported stub form, not binary rewriting.
+The focused macOS CI gate performs three independent clean rebuilds to catch
+intermittent identity changes, then executes the NativeAOT socket/mTLS fixtures.
