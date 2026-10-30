@@ -5,8 +5,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Nexa.Services</RootNamespace>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(NexaExternalModules)' == 'true'">
+    <DefineConstants>$(DefineConstants);NEXA_EXTERNAL_MODULES</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Jint" Version="4.17.0" />
+    <Compile Include="../native/NativeEngineClient.cs" Link="NativeEngineClient.cs" />
+    <ProjectReference Include="../native/Nexa.Native.Pac/Nexa.Native.Pac.csproj" Condition="'$(NexaExternalModules)' != 'true'" />
     <None Update="ThirdPartyNotices.txt" Link="licenses/Network.ThirdPartyNotices.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="Network/Pac.Substitutions.xml" LogicalName="Nexa.Services.Network.Pac.PublicationPolicy.xml" />
     <ProjectReference Include="../Nexa.Services.Network.Contracts/Nexa.Services.Network.Contracts.csproj" />

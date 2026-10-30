@@ -1,4 +1,6 @@
 <Solution>
+  <Project Path="native/Nexa.Native.Pac/Nexa.Native.Pac.csproj" />
+  <Project Path="native/Nexa.Native.Crypto/Nexa.Native.Crypto.csproj" />
   <Project Path="Nexa.Bootstrap/Nexa.Bootstrap.csproj" />
   <Configurations>
     <BuildType Name="Debug" />

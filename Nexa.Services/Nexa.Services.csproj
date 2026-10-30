@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Nexa.Services.Tests" />
-    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
     <PackageReference Include="ZstdSharp.Port" Version="0.8.6" />
     <ProjectReference Include="../Nexa.Platform.Runtime/Nexa.Platform.Runtime.csproj" />
   </ItemGroup>

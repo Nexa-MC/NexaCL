@@ -1,4 +1,6 @@
 {
+  "Nexa.Native.Pac": [],
+  "Nexa.Native.Crypto": [],
   "Nexa.Bootstrap": ["Nexa.Core"],
   "CapabilityProbe": [
     "Nexa.Services"
@@ -364,6 +366,7 @@
     "Nexa.Xsr.State"
   ],
   "Nexa.Services.Network": [
+    "Nexa.Native.Pac",
     "Nexa.Contracts",
     "Nexa.Core",
     "Nexa.Domain",
@@ -506,6 +509,7 @@
     "Nexa.Xsr.State"
   ],
   "Nexa.Services.Updates": [
+    "Nexa.Native.Crypto",
     "Nexa.Contracts",
     "Nexa.Core",
     "Nexa.Domain",

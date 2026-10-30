@@ -38,6 +38,8 @@ class InstallScopeTests(unittest.TestCase):
                         "executable": root / "programs/NexaCL/Nexa.Desktop.exe",
                         "host": root / "programs/NexaCL/Nexa.Jvm.Host.exe",
                         "module": root / "programs/NexaCL/nexa-host.dll",
+                        "pac": root / "programs/NexaCL/nexa-pac.dll",
+                        "crypto": root / "programs/NexaCL/nexa-crypto.dll",
                         "helper": root / "programs/NexaCL/Nexa.Update.Helper.exe",
                         "desktop": root / "public/Desktop/NexaCL.lnk",
                         "menu": root / "data/Microsoft/Windows/Start Menu/Programs/NexaCL.lnk",
@@ -105,6 +107,8 @@ class InstallScopeTests(unittest.TestCase):
                     package.validate_payload(root, platform)
                 helper.write_bytes(b"helper")
                 (root / ("nexa-host" + {"win": ".dll", "linux": ".so", "osx": ".dylib"}[platform])).write_bytes(b"module")
+                for module in package.module_names(platform + "-x64"):
+                    (root / module).write_bytes(b"module")
                 package.validate_payload(root, platform)
                 host.unlink()
                 helper.unlink()

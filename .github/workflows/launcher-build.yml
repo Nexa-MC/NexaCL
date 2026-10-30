@@ -177,6 +177,22 @@ jobs:
       - name: Verify native Host module boundary
         shell: bash
         run: python eng/release/smoke_native_modules.py --payload "$RUNNER_TEMP/launcher"
+      - name: Verify external engines against service regressions
+        shell: bash
+        run: |
+          dotnet publish tests/Nexa.Services.Tests/Nexa.Services.Tests.csproj --configuration Release \
+            --self-contained false -m:1 -nodeReuse:false -p:PublishAot=false -p:NexaExternalModules=true \
+            --output "$RUNNER_TEMP/native-engine-tests"
+          python - "$RUNNER_TEMP/launcher" "$RUNNER_TEMP/native-engine-tests" '${{ matrix.rid }}' <<'PYMODULES'
+          import pathlib, shutil, sys
+          sys.path.insert(0, "eng/release")
+          from publish_launcher import module_names
+          for name in module_names(sys.argv[3]):
+              if name.startswith("nexa-host."):
+                  continue
+              shutil.copy2(pathlib.Path(sys.argv[1]) / name, pathlib.Path(sys.argv[2]) / name)
+          PYMODULES
+          dotnet "$RUNNER_TEMP/native-engine-tests/Nexa.Services.Tests.dll" 'PAC ' gpg
       - name: Smoke macOS platform helper
         if: startsWith(matrix.rid, 'osx-')
         shell: bash

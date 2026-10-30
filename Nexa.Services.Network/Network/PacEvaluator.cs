@@ -1,8 +1,5 @@
 using System.Net;
 using System.Net.Sockets;
-using Jint;
-using Jint.Native;
-using Jint.Runtime.Interop;
 
 namespace Nexa.Services.Network;
 
@@ -40,33 +37,12 @@ internal static partial class PacEvaluator
 
     private static Uri?[] Evaluate(string source, Uri destination, Dictionary<string, string?> resolved, CancellationToken token)
     {
-        token.ThrowIfCancellationRequested();
-        using var engine = new Engine(options =>
-        {
-            options.LimitMemory(16 * 1024 * 1024).MaxStatements(50_000)
-                .TimeoutInterval(TimeSpan.FromSeconds(2)).LimitRecursion(64)
-                .CancellationToken(token).DisableStringCompilation();
-            options.Interop.Enabled = false;
-            options.AgentCanSuspend = false;
-            options.Constraints.RegexTimeout = TimeSpan.FromMilliseconds(100);
-        });
-        string? Resolve(string host)
-        {
-            token.ThrowIfCancellationRequested();
-            if (host.Length > 253) return null;
-            if (IPAddress.TryParse(host, out var address)) return address.ToString();
-            if (resolved.TryGetValue(host, out string? cached)) return cached;
-            throw new LookupRequired(host);
-        }
-        engine.SetValue("dnsResolve", (JsValue)new ClrFunction(engine, "dnsResolve", (_, args) =>
-            Resolve(args.Length == 0 ? "" : args[0].ToString()) is { } address ? (JsValue)address : JsValue.Null));
-        engine.SetValue("myIpAddress", (JsValue)new ClrFunction(engine, "myIpAddress", (_, _) =>
-            (JsValue)(Resolve(Dns.GetHostName()) ?? "127.0.0.1")));
-        engine.Execute(Helpers);
-        engine.Execute(source);
-        var result = engine.Call("FindProxyForURL", [(JsValue)destination.AbsoluteUri, (JsValue)destination.IdnHost]);
-        if (!result.IsString()) throw new InvalidDataException("PAC must return a proxy list.");
-        return ParseResult(result.AsString());
+#if NEXA_EXTERNAL_MODULES
+        return ParseResult(NativePacClient.Evaluate(source, destination, resolved, token));
+#else
+        try { return ParseResult(Nexa.Native.Pac.PacEngine.Evaluate(source, destination, resolved, () => token.IsCancellationRequested)); }
+        catch (Nexa.Native.Pac.PacEngine.LookupRequiredException lookup) { throw new LookupRequired(lookup.Host); }
+#endif
     }
 
     internal static Uri?[] ParseResult(string text)

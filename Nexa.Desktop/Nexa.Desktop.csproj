@@ -41,6 +41,6 @@
     <ProjectReference Include="../Nexa.Services.Themes.Contracts/Nexa.Services.Themes.Contracts.csproj" />
   </ItemGroup>
   <Import Project="../eng/xsr/Xsr.FunctionPatches.targets" />
-  <Import Project="../eng/xsr/Xsr.Pac.targets" />
+  <Import Project="../eng/xsr/Xsr.Pac.targets" Condition="'$(NexaExternalModules)' != 'true'" />
   <Import Project="../eng/xsr/Xsr.PlatformHelper.targets" />
 </Project>

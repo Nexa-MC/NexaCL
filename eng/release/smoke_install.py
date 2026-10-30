@@ -41,7 +41,7 @@ def check_windows_portable(root, base):
                 if any(is_development_artifact(part) for part in entry.filename.replace("\\", "/").split("/")):
                     raise RuntimeError(f"Development artifact in portable payload: {entry.filename}")
             # Only these exact names become destinations; never extract archive paths.
-            for name in ("Nexa.Desktop.exe", "Nexa.Update.Helper.exe", "Nexa.Jvm.Host.exe", "nexa-host.dll"):
+            for name in ("Nexa.Desktop.exe", "Nexa.Update.Helper.exe", "Nexa.Jvm.Host.exe", "nexa-host.dll", "nexa-pac.dll", "nexa-crypto.dll"):
                 matches = [entry for entry in entries if entry.filename == name]
                 if not matches:
                     raise RuntimeError(f"Windows portable payload is missing {name}")

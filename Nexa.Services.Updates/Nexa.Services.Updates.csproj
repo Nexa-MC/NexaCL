@@ -5,7 +5,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Nexa.Services</RootNamespace>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(NexaExternalModules)' == 'true'">
+    <DefineConstants>$(DefineConstants);NEXA_EXTERNAL_MODULES</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../native/NativeEngineClient.cs" Link="NativeEngineClient.cs" />
+    <ProjectReference Include="../native/Nexa.Native.Crypto/Nexa.Native.Crypto.csproj" Condition="'$(NexaExternalModules)' != 'true'" />
     <ProjectReference Include="../Nexa.Services.Common/Nexa.Services.Common.csproj" />
     <ProjectReference Include="../Nexa.Contracts/Nexa.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Core/Nexa.Core.csproj" />
@@ -18,7 +23,6 @@
     <InternalsVisibleTo Include="Nexa.Services" />
     <InternalsVisibleTo Include="Nexa.Services.Composition" />
     <InternalsVisibleTo Include="Nexa.Services.Tests" />
-    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
     <PackageReference Include="ZstdSharp.Port" Version="0.8.6" />
     <ProjectReference Include="../Nexa.Platform.Runtime/Nexa.Platform.Runtime.csproj" />
   </ItemGroup>

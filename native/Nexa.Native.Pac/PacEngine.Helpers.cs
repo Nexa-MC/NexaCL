@@ -1,6 +1,6 @@
-namespace Nexa.Services.Network;
+namespace Nexa.Native.Pac;
 
-internal static partial class PacEvaluator
+public static partial class PacEngine
 {
     private const string Helpers = """
         function isPlainHostName(h) { return h.indexOf('.') < 0; }

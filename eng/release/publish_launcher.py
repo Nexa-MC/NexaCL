@@ -1,5 +1,6 @@
 """Publish the NativeAOT Host module and its matching minimal executable."""
 import argparse
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -15,6 +16,19 @@ def module_name(rid):
     return "nexa-host" + {"win": ".dll", "linux": ".so", "osx": ".dylib"}[platform]
 
 
+def module_names(rid):
+    suffix = Path(module_name(rid)).suffix
+    return ["nexa-" + name + suffix for name in ("host", "pac", "crypto")]
+
+
+def verify_host_engine_isolation(assets):
+    libraries = json.loads(assets.read_text())["libraries"]
+    forbidden = {"jint", "bouncycastle.cryptography", "nexa.native.pac", "nexa.native.crypto"}
+    embedded = sorted(name for name in libraries if name.split("/", 1)[0].lower() in forbidden)
+    if embedded:
+        raise RuntimeError(f"Stable engines leaked back into the Host dependency closure: {embedded}")
+
+
 def publish(rid, output, properties):
     module = module_name(rid)
     output = output.resolve()
@@ -24,8 +38,20 @@ def publish(rid, output, properties):
     with tempfile.TemporaryDirectory(prefix="nexa-native-") as temporary:
         stage = Path(temporary)
         host, bootstrap = stage / "host", stage / "bootstrap"
+        engines = []
+        # Stable engines never inherit the launcher release/commit stamp.
+        for engine in ("Pac", "Crypto"):
+            directory = stage / engine.lower()
+            subprocess.run(["dotnet", "publish", str(ROOT / f"native/Nexa.Native.{engine}/Nexa.Native.{engine}.csproj"),
+                            *common, "-p:XsrVersionChannel=stable", "-p:XsrVersionPrefix=1.0.0",
+                            "--output", str(directory)], check=True)
+            binary = directory / (f"Nexa.Native.{engine}" + Path(module).suffix)
+            if not binary.is_file():
+                raise RuntimeError(f"Missing native {engine} engine")
+            engines.append((binary, f"nexa-{engine.lower()}" + Path(module).suffix))
         subprocess.run(["dotnet", "publish", str(ROOT / "Nexa.Desktop/Nexa.Desktop.csproj"),
-                        *common, *properties, "-p:NexaNativeModule=true", "--output", str(host)], check=True)
+                        *common, *properties, "-p:NexaNativeModule=true", "-p:NexaExternalModules=true", "--output", str(host)], check=True)
+        verify_host_engine_isolation(ROOT / "Nexa.Desktop/obj/project.assets.json")
         subprocess.run(["dotnet", "publish", str(ROOT / "Nexa.Bootstrap/Nexa.Bootstrap.csproj"),
                         *common, *[p for p in properties if p.startswith(("-p:Xsr", "/p:Xsr"))],
                         "--output", str(bootstrap)], check=True)
@@ -38,6 +64,8 @@ def publish(rid, output, properties):
         # Do not merge bootstrap managed dependencies into the Host's resource directory.
         shutil.copytree(host, output, dirs_exist_ok=True)
         shutil.copy2(bootstrap / boot_executable, output / executable)
+        for binary, name in engines:
+            shutil.copy2(binary, output / name)
         for catalog in bootstrap.glob("Nexa.Bootstrap.nfp"):
             shutil.copy2(catalog, output / catalog.name)
         print(f"Native bootstrap: {(output / executable).stat().st_size} bytes; "
