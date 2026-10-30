@@ -74,6 +74,7 @@ internal static partial class Program
         try
         {
             await VerifyNativeWindowsMediaControlsReadinessAsync(handle);
+            VerifyNativeDwmSetterSupport();
             await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 960, 600));
             VerifyCompositedViewport(window, 960, 600);
             await VerifyNativeWindowPointerHitTestingAsync(shell, window);
@@ -82,6 +83,7 @@ internal static partial class Program
             window.Width -= 100; window.Height -= 50;
             await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
             VerifyCompositedViewport(window, 860, 550);
+            double normalWidth = window.Width, normalHeight = window.Height;
 
             // A normal hidden window can reopen without any size or state notification.
             // Force the stale DWM policy so this cannot pass merely because it stayed off.
@@ -120,9 +122,30 @@ internal static partial class Program
             await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
             VerifyCompositedViewport(window, 860, 550);
             await VerifyAnimatedNativeTrayAsync(shell, window, actions, handle, reveals);
+            // Reproduce a stale platform checkpoint after restoration through the OS.
+            window.WindowState = WindowState.Maximized;
+            await WaitForNativeCornerLayoutAsync(() => NativeCornerMaximizedViewportMatches(window));
+            actions.MinimizeWindow();
+            await WaitForNativeCornerLayoutAsync(() => window.WindowState == WindowState.Minimized && NativeCornerIsIconic(handle));
+            // Windows first restores the maximized placement; then the user unmaximizes.
+            window.WindowState = WindowState.Maximized;
+            await WaitForNativeCornerLayoutAsync(() => !NativeCornerIsIconic(handle) && NativeCornerMaximizedViewportMatches(window));
+            window.WindowState = WindowState.Normal;
+            await WaitForNativeCornerLayoutAsync(() => window.WindowState == WindowState.Normal && window.Surface.Bounds.Width < 1000);
+            // The user resizes the restored normal window before the next minimize.
+            // Establish its placement independently of the OS maximized restore bounds.
+            window.Width = normalWidth;
+            window.Height = normalHeight;
+            await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
+            window.WindowState = WindowState.Minimized;
+            await WaitForNativeCornerLayoutAsync(() => NativeCornerIsIconic(handle));
+            actions.HideWindow(); actions.RestoreWindow();
+            VerifyNativeCornerRestoration(window, handle, WindowState.Normal, reveals);
+            await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
+            Console.WriteLine("PASS: tray restore uses latest native normal state after an earlier maximized minimize; viewport retained");
             await VerifyNativeWindowPointerHitTestingAsync(shell, window);
             window.WindowState = WindowState.Minimized;
-            await WaitForNativeCornerLayoutAsync(() => window.WindowState == WindowState.Minimized);
+            await WaitForNativeCornerLayoutAsync(() => window.WindowState == WindowState.Minimized && NativeCornerIsIconic(handle));
             window.WindowState = WindowState.Normal;
             await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
             VerifyCompositedViewport(window, 860, 550);
@@ -139,7 +162,7 @@ internal static partial class Program
             VerifyCompositedViewport(window, 860, 550);
             AssertEqual(handle, window.TryGetPlatformHandle()!.Handle);
             AssertEqual(1, reveals());
-            Console.WriteLine("PASS: empty managed decorations before show; immediate DWM suppression on every opening; same HWND, viewport and input origin through repeated normal/maximized and animated reversible tray restores; once-only entrance, native composition and opaque fallback; optional DWM attributes checked where readable");
+            Console.WriteLine("PASS: empty managed decorations before show; immediate DWM suppression on every opening; same HWND, viewport and input origin through repeated normal/maximized and animated reversible tray restores; once-only entrance, native composition and opaque fallback; documented DWM getters verified");
             desktop.Shutdown(0);
         }
         catch (Exception error) { Console.Error.WriteLine(error); desktop.Shutdown(1); }
@@ -232,6 +255,10 @@ internal static partial class Program
         => Math.Abs(width - window.Surface.Bounds.Width) <= 1 / window.RenderScaling
             && Math.Abs(height - window.Surface.Bounds.Height) <= 1 / window.RenderScaling;
 
+    [LibraryImport("user32.dll", EntryPoint = "IsIconic")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool NativeCornerIsIconic(nint handle);
+
     private static bool NativeCornerMaximizedViewportMatches(AvaloniaUiShellWindow window)
         => window.WindowState == WindowState.Maximized
             && ((Control)window.Content!).Bounds.Size == window.Surface.Bounds.Size;
@@ -305,31 +332,37 @@ internal static partial class Program
         AssertEqual(0, nonClientEnabled);
         AssertEqual(0, DwmIsCompositionEnabled(out int compositionEnabled));
         AssertEqual(1, compositionEnabled);
-        VerifyNativeCornerAttributeWhenReadable(handle, 3, 0, "transitions forced disabled");
-        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
-        {
-            VerifyNativeCornerAttributeWhenReadable(handle, 33, 1, "corner preference"); // DWMWCP_DONOTROUND
-            VerifyNativeCornerAttributeWhenReadable(handle, AvaloniaWindowsFrame.BorderColorAttribute,
-                unchecked((int)AvaloniaWindowsFrame.NoBorderColor), "border color");
-        }
+        // Attributes 3, 33 and 34 are documented for DwmSetWindowAttribute only.
+        // An undocumented getter's E_INVALIDARG is not an unsupported OS feature.
         long style = GetWindowLongPtrForChrome(handle, -16).ToInt64();
         const long nativeCapabilities = 0x00C00000 | 0x00040000 | 0x00020000 | 0x00010000;
         AssertEqual(nativeCapabilities, style & nativeCapabilities); // caption, resize, minimize, maximize
     }
 
-    private static void VerifyNativeCornerAttributeWhenReadable(nint handle, int attribute, int expected, string name)
+    private static void VerifyNativeDwmSetterSupport()
     {
-        int result = DwmGetWindowAttribute(handle, attribute, out int value, sizeof(int));
-        // These attributes are documented for DwmSetWindowAttribute; getter support varies.
-        // An unreadable setter attribute is separate from a failed mandatory native check.
-        if (result is unchecked((int)0x80070057) or unchecked((int)0x80004001))
+        // Use a separate HWND: writing these values to the product window would
+        // mask a regression in its own decoration policy. This proves API admission,
+        // not the visual appearance or smoothness of system transitions.
+        var probe = new Window { Width = 160, Height = 100, ShowActivated = false, Title = "Nexa DWM probe" };
+        try
         {
-            Console.WriteLine($"UNVERIFIED: DWM {name} query unsupported (HRESULT 0x{result:X8}).");
-            return;
+            probe.Show();
+            nint handle = probe.TryGetPlatformHandle()!.Handle;
+            int enabledTransitions = 0;
+            AssertEqual(0, NativeCornerSetAttribute(handle, 3, in enabledTransitions, sizeof(int)));
+            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+            {
+                int corners = 1, border = unchecked((int)AvaloniaWindowsFrame.NoBorderColor);
+                AssertEqual(0, NativeCornerSetAttribute(handle, 33, in corners, sizeof(int)));
+                AssertEqual(0, NativeCornerSetAttribute(handle, 34, in border, sizeof(int)));
+            }
+            Console.WriteLine("PASS: documented DWM transition/corner/border setters accepted on a separate HWND; no unsupported getter inference");
         }
-        AssertEqual(0, result);
-        AssertEqual(expected, value);
+        finally { probe.Close(); }
     }
+    [LibraryImport("dwmapi.dll", EntryPoint = "DwmSetWindowAttribute")]
+    private static partial int NativeCornerSetAttribute(nint window, int attribute, in int value, int size);
     [LibraryImport("dwmapi.dll")] private static partial int DwmIsCompositionEnabled(out int enabled);
     [LibraryImport("dwmapi.dll")] private static partial int DwmGetWindowAttribute(nint window, int attribute, out int value, int size);
     [StructLayout(LayoutKind.Sequential)] private struct ChromeNativeRect { public int Left, Top, Right, Bottom; }

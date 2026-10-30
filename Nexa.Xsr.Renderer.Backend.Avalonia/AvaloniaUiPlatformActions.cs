@@ -115,7 +115,9 @@ public sealed partial class AvaloniaUiPlatformActions
         if (_owner is not Window window) return;
         if (window is AvaloniaUiShellWindow shellWindow)
         {
-            shellWindow.RestoreFromTray(_stateBeforeMinimize);
+            // The shell observes native/taskbar state changes too; this command's
+            // earlier checkpoint can be stale after an OS-driven restoration.
+            shellWindow.RestoreFromTray();
             _stateBeforeMinimize = null;
             return;
         }
