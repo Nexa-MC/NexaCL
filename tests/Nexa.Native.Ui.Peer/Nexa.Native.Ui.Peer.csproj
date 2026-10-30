@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../native/NativeUiCallGate.cs" Link="NativeUiCallGate.cs" />
+    <Compile Include="../../native/NativeUiAsyncCalls.cs" Link="NativeUiAsyncCalls.cs" />
     <ProjectReference Include="../../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
   </ItemGroup>
 </Project>

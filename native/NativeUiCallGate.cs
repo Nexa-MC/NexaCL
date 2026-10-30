@@ -16,6 +16,13 @@ internal unsafe struct NativeUiCallTable
     internal delegate* unmanaged[Cdecl]<long, long, void> Release;
 }
 
+internal sealed class NativeUiCallBusyException : IOException
+{
+    public NativeUiCallBusyException() : base("Native UI call capacity is temporarily exhausted.") { }
+    public NativeUiCallBusyException(string message) : base(message) { }
+    public NativeUiCallBusyException(string message, Exception innerException) : base(message, innerException) { }
+}
+
 internal sealed unsafe class NativeUiCallClient
 {
     private readonly NativeUiCallTable _table;
@@ -33,6 +40,7 @@ internal sealed unsafe class NativeUiCallClient
         int length = 0;
         long result;
         fixed (byte* input = request.Span) result = _table.Execute(_table.Context, input, request.Length, &length);
+        if (result == 0 && length == -2) throw new NativeUiCallBusyException();
         if (result <= 0) throw new InvalidOperationException("Native UI endpoint is retired or cannot admit this call.");
         try
         {
@@ -60,6 +68,7 @@ internal sealed unsafe class NativeUiCallRegistration : IAsyncDisposable
     private readonly object _gate = new();
     private readonly Func<ReadOnlyMemory<byte>, byte[]> _endpoint;
     private readonly Action<Exception>? _failure;
+    private readonly SynchronizationContext? _callbackContext;
     private readonly Dictionary<long, byte[]> _results = [];
     private readonly TaskCompletionSource _retired = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly long _context;
@@ -67,10 +76,10 @@ internal sealed unsafe class NativeUiCallRegistration : IAsyncDisposable
     private int _active;
     private bool _closing;
 
-    internal NativeUiCallRegistration(Func<ReadOnlyMemory<byte>, byte[]> endpoint, Action<Exception>? failure = null)
+    internal NativeUiCallRegistration(Func<ReadOnlyMemory<byte>, byte[]> endpoint, Action<Exception>? failure = null, SynchronizationContext? callbackContext = null)
     {
         ArgumentNullException.ThrowIfNull(endpoint);
-        _endpoint = endpoint; _failure = failure;
+        _endpoint = endpoint; _failure = failure; _callbackContext = callbackContext;
         _context = Interlocked.Increment(ref _nextContext);
         if (_context <= 0 || !Registrations.TryAdd(_context, this))
             throw new InvalidOperationException("Native UI context space is exhausted.");
@@ -100,12 +109,15 @@ internal sealed unsafe class NativeUiCallRegistration : IAsyncDisposable
         _retired.TrySetResult();
     }
 
-    private bool Enter(int requestBytes)
+    private bool Enter(int requestBytes, out bool busy)
     {
         lock (_gate)
         {
-            if (_closing || _active >= MaximumActiveCalls || _active + _results.Count >= MaximumResults
-                || requestBytes > MaximumRetainedBytes - _activeRequestBytes) return false;
+            busy = false;
+            if (_closing) return false;
+            if (_active >= MaximumActiveCalls || _active + _results.Count >= MaximumResults
+                || requestBytes > MaximumRetainedBytes - _activeRequestBytes)
+            { busy = true; return false; }
             _active++; _activeRequestBytes += requestBytes;
             return true;
         }
@@ -113,6 +125,15 @@ internal sealed unsafe class NativeUiCallRegistration : IAsyncDisposable
     private void Leave(int requestBytes)
     {
         lock (_gate) { _active--; _activeRequestBytes -= requestBytes; CompleteRetirement(); }
+    }
+
+    private byte[] Invoke(ReadOnlyMemory<byte> request)
+    {
+        if (_callbackContext is null) return _endpoint(request);
+        var previous = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(_callbackContext);
+        try { return _endpoint(request); }
+        finally { SynchronizationContext.SetSynchronizationContext(previous); }
     }
 
     private long Store(byte[] bytes, int* length)
@@ -134,13 +155,14 @@ internal sealed unsafe class NativeUiCallRegistration : IAsyncDisposable
         if (outputLength == null) return 0;
         *outputLength = 0;
         if (length is < 0 or > MaximumBytes || input == null && length != 0) return 0;
-        if (!Registrations.TryGetValue(context, out var owner) || !owner.Enter(length)) return 0;
+        if (!Registrations.TryGetValue(context, out var owner)) return 0;
+        if (!owner.Enter(length, out bool busy)) { if (busy) *outputLength = -2; return 0; }
         try
         {
             byte[] result;
             try
             {
-                byte[] body = owner._endpoint(new ReadOnlySpan<byte>(input, length).ToArray());
+                byte[] body = owner.Invoke(new ReadOnlySpan<byte>(input, length).ToArray());
                 if (body is null || body.Length > MaximumBytes) throw new InvalidDataException("Native UI response exceeds its budget.");
                 result = new byte[body.Length + 1];
                 body.CopyTo(result, 1);

@@ -8,14 +8,14 @@ using Nexa.Xsr.State;
 
 namespace Nexa.Native.Ui.Peer;
 
-internal static unsafe class Exports
+internal static class Exports
 {
     private static NativeUiCallRegistration? _registration;
     private static Task? _retirement;
     private static Peer? _peer;
 
     [UnmanagedCallersOnly(EntryPoint = "nexa_ui_probe_open_v1", CallConvs = [typeof(CallConvCdecl)])]
-    private static int Open(NativeUiCallTable* host, NativeUiCallTable* output)
+    private static unsafe int Open(NativeUiCallTable* host, NativeUiCallTable* output)
     {
         try
         {
@@ -34,7 +34,7 @@ internal static unsafe class Exports
         try
         {
             if (_registration is null) return -1;
-            _retirement ??= _registration.DisposeAsync().AsTask();
+            _retirement ??= Task.WhenAll(_registration.DisposeAsync().AsTask(), _peer!.StopAsync());
             if (!_retirement.IsCompletedSuccessfully) return 0;
             _peer?.Dispose();
             return 1;
@@ -48,6 +48,7 @@ internal static unsafe class Exports
         private readonly XsrUiRenderer _renderer;
         private readonly XsrUiRendererEndpoint _input;
         private readonly XsrUiShellEndpoint _shell;
+        private readonly NativeUiAsyncServer _async;
         private readonly XsrUiSceneSender _scenes = new();
         private XsrUiScenePacket? _pending;
         private long _failures;
@@ -64,6 +65,11 @@ internal static unsafe class Exports
             _input = new(_renderer);
             _shell = new(shell);
             _shell.Invalidated += kind => _host.Exchange(new byte[] { 254, (byte)kind });
+            _async = new(ExecuteAsync, completion =>
+            {
+                byte[] bytes = new byte[completion.Length + 1]; bytes[0] = 253;
+                completion.CopyTo(bytes.AsMemory(1)); return _host.Exchange(bytes);
+            }, Failed);
         }
         internal void Failed(Exception _) => Interlocked.Increment(ref _failures);
         internal byte[] Exchange(ReadOnlyMemory<byte> request)
@@ -86,8 +92,29 @@ internal static unsafe class Exports
                 case 4: throw new InvalidOperationException("private fixture text must not cross the ABI");
                 case 5: return BitConverter.GetBytes(Interlocked.Read(ref _failures));
                 case 6: return _shell.Exchange(request[1..]);
+                case 7: return _async.Exchange(request[1..]);
                 default: throw new InvalidDataException("Unknown probe operation.");
             }
+        }
+        internal Task StopAsync() => _async.DisposeAsync().AsTask();
+        private static Task<byte[]> ExecuteAsync(ReadOnlyMemory<byte> request, CancellationToken token)
+        {
+            if (request.IsEmpty) throw new InvalidDataException("Missing async probe operation.");
+            return request.Span[0] switch
+            {
+                0 => Task.FromResult(request[1..].ToArray()),
+                1 => DelayedAsync(request[1..], token),
+                2 => CanceledAsync(token),
+                _ => throw new InvalidOperationException("private async fixture error"),
+            };
+        }
+        private static async Task<byte[]> DelayedAsync(ReadOnlyMemory<byte> request, CancellationToken token)
+        {
+            await Task.Delay(20, token).ConfigureAwait(false); return request.ToArray();
+        }
+        private static async Task<byte[]> CanceledAsync(CancellationToken token)
+        {
+            await Task.Delay(Timeout.Infinite, token).ConfigureAwait(false); return [];
         }
         public void Dispose() { _shell.Dispose(); _pending?.Dispose(); _scenes.Dispose(); }
     }

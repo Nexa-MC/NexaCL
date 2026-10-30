@@ -659,3 +659,35 @@ uses `XsrUiRemoteShell` over the duplex C table, receives queued invalidations a
 checks safe-area/fullscreen geometry. That probe, the 85-project architecture gate
 and generated-schema check passed. Production window startup still needs to adopt
 this projection together with platform-action and dispatcher lifetime ownership.
+
+### Asynchronous platform operations
+
+Startup, pickers and theme preparation use session-owned numeric operation IDs.
+Their `Task` and cancellation sources remain inside their originating runtime.
+Start/cancel messages and terminal success/cancel/failure messages use a bounded
+binary envelope. The caller installs its completion before starting the remote
+operation, so synchronous completion is valid. Cancellation and disposal must not
+hold a registry lock while calling the peer. Closing the server rejects new work,
+cancels admitted work and waits for every admitted handler and terminal delivery
+before its owner releases native resources. Closing the caller cancels its local
+waiters; this is not evidence that the server has drained. Session shutdown must
+await both the server drain and the duplex call-gate drain.
+
+The call table distinguishes temporary admission exhaustion (`result = 0`, output
+length `-2`) from retirement/failure. This status is emitted only before invoking
+the endpoint. Async start, cancellation and terminal delivery may back off on this
+status; admitted operations are never replayed. This avoids losing a completion
+when another runtime temporarily has all call/result slots occupied. Async queues
+bound both operation count and retained request bytes. Call registrations can
+install an owner-local synchronization context for a callback and restore the
+previous one afterward; the actual window adapter must supply a Host-owned
+context, never pass Avalonia's context object between runtimes.
+
+Async checkpoint: the Linux-x64 independent NativeAOT probe passed completion
+before start returns, delayed completion, cancellation, caller retirement with
+pending work, server draining, failure isolation, and three forced busy responses
+on both admission and terminal delivery without replaying the operation. It also
+verified real call-table exhaustion is reported before endpoint invocation, and
+reverse text callbacks install/restore the caller runtime's own context. The
+85-project architecture gate and 46 backend regressions (including the merged
+Windows tray changes) passed. These helpers are not yet a production startup path.
