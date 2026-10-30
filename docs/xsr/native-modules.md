@@ -635,3 +635,27 @@ tables, and retirement with both active calls and outstanding result buffers. Th
 85-project architecture gate passed. The probe payload was checked for CoreCLR
 runtime files. Native engine CI repeats this probe on Linux, Windows and macOS;
 the probe libraries are not included in launcher packages.
+
+### Shell projection over the window boundary
+
+The window runtime receives a local `IXsrUiBackendShell` projection, with window
+facts and complete scenes encoded separately from generated input operations.
+The fixed shell-v1 envelope covers snapshot/render/acknowledge, rail progress,
+activity, and native safe-area metrics. A malformed envelope is rejected before
+mutating the Host shell. Scene acknowledgement is separate: an abandoned response
+forces a full image baseline on the next render. Metadata becomes visible only
+after the complete scene response is admitted and acknowledged.
+
+Shell invalidations are notifications, not permission to reenter rendering. The
+window dispatcher coalesces them and refreshes its snapshot on its owner thread;
+Host event handlers only enqueue the notification. Shell endpoints reject nested
+rendering and detach subscriptions after their native call gate drains. This
+projection does not move application controllers or pretend to own their state.
+
+Shell projection checkpoint: 130 renderer scenarios passed, including real shell
+safe-area/fullscreen changes, lost-ack recovery, reject-before-mutation and event
+detachment. The independent NativeAOT peer now owns a full `XsrUiShell`; its caller
+uses `XsrUiRemoteShell` over the duplex C table, receives queued invalidations and
+checks safe-area/fullscreen geometry. That probe, the 85-project architecture gate
+and generated-schema check passed. Production window startup still needs to adopt
+this projection together with platform-action and dispatcher lifetime ownership.

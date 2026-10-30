@@ -139,4 +139,61 @@ internal static partial class Program
         AssertTrue(renderer.TextLayoutProvider is null);
     }
 
+    private static void ShellWirePreservesWindowMetricsAndRecoversAfterLostAcknowledgement()
+    {
+        var builder = new Nexa.Xsr.State.XsrStateStoreBuilder();
+        XsrUiShellWindowState.Declare(builder);
+        var shell = new XsrUiShell(builder.Build());
+        using var endpoint = new XsrUiShellEndpoint(shell);
+        var transport = new InterruptedShellTransport(endpoint);
+        var remote = new XsrUiRemoteShell(transport, shell.Renderer);
+        AssertEqual(shell.Title, remote.Title);
+        AssertEqual(shell.SelectedNavigationId, remote.SelectedNavigationId);
+        remote.PublishWindowMetrics(86, false, 8);
+        var scene = remote.Render(new(850, 500));
+        AssertEqual(new XsrUiRect(8, 8, 834, XsrUiShell.TitleBarHeight), Node(scene, shell.TitleBar).Rect);
+        remote.PublishWindowMetrics(86, true, 8);
+        scene = remote.Render(new(1040, 680));
+        AssertEqual(new XsrUiRect(0, 0, 1040, XsrUiShell.TitleBarHeight), Node(scene, shell.TitleBar).Rect);
+        transport.DropAcknowledgement = true;
+        AssertThrows<IOException>(() => remote.Render(new(1040, 680)));
+        transport.DropAcknowledgement = false;
+        scene = remote.Render(new(900, 600));
+        AssertEqual(900d, Node(scene, shell.TitleBar).Rect.Width);
+        int refreshed = 0;
+        remote.RenderRequested += (_, _) => refreshed++;
+        remote.NotifyInvalidated(XsrUiShellInvalidation.Render);
+        AssertEqual(1, refreshed);
+        remote.SetRailPresentationProgress(.3);
+        var request = transport.Last!;
+        shell.SetRailPresentationProgress(.8);
+        AssertThrows<InvalidDataException>(() => endpoint.Exchange(request.Concat(new byte[] { 0 }).ToArray()));
+        AssertClose(.8, shell.RailPresentationProgress);
+        int notices = 0;
+        endpoint.Invalidated += _ => notices++;
+        shell.ToggleNavigationExpanded();
+        AssertTrue(notices > 0);
+        endpoint.Dispose();
+        notices = 0;
+        shell.ToggleNavigationExpanded();
+        AssertEqual(0, notices);
+        AssertThrows<ObjectDisposedException>(() => remote.Render(new(900, 600)));
+    }
+
+    private sealed class InterruptedShellTransport(IXsrUiWireTransport endpoint) : IXsrUiWireTransport
+    {
+        public bool DropAcknowledgement { get; set; }
+        public byte[]? Last { get; private set; }
+        public byte[] Exchange(ReadOnlyMemory<byte> request)
+        {
+            Last = request.ToArray();
+            // Header is magic, length-prefixed schema fingerprint, then the fixed operation number.
+            var bytes = request.Span;
+            int operationOffset = 8 + System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(bytes[4..]);
+            if (DropAcknowledgement && System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(bytes[operationOffset..]) == 2)
+                throw new IOException("Simulated lost acknowledgement.");
+            return endpoint.Exchange(request);
+        }
+    }
+
 }

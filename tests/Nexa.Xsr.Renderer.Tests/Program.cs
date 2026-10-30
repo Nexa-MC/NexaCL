@@ -6,6 +6,7 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("shell wire preserves window metrics and recovers after lost acknowledgement", Sync(ShellWirePreservesWindowMetricsAndRecoversAfterLostAcknowledgement)),
         ("input wire preserves hits and validates before mutation", Sync(InputWirePreservesHitsAndRejectsBeforeMutation)),
         ("text wire preserves layout and validates before invocation", Sync(TextWirePreservesUnboundedLayoutAndRejectsTrailingRequests)),
         ("scene wire admission is atomic", Sync(SceneWireRoundTripAndAdmissionAreAtomic)),

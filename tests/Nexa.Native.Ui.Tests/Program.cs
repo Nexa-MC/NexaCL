@@ -93,20 +93,25 @@ internal static class Program
         NativeUiCallClient? peer = null;
         var text = new TextProvider();
         var textEndpoint = new XsrUiTextLayoutEndpoint(text);
-        var host = new NativeUiCallRegistration(request => request.Span[0] == 255
-            ? peer!.Exchange(new byte[] { 5 }) : textEndpoint.Exchange(request));
+        int invalidations = 0;
+        var host = new NativeUiCallRegistration(request =>
+        {
+            if (request.Span[0] == 254)
+            { Interlocked.Or(ref invalidations, request.Span[1]); return []; }
+            return request.Span[0] == 255 ? peer!.Exchange(new byte[] { 5 }) : textEndpoint.Exchange(request);
+        });
         var hostTable = host.Table;
         NativeUiCallTable peerTable = default;
         Equal(0, open(&hostTable, &peerTable));
         peer = new(peerTable);
         var receiver = new XsrUiSceneReceiver();
         XsrUiScene scene = receiver.Accept(peer.Exchange(new byte[] { 0 }));
-        Equal("native runtime text", scene[0].Text);
+        True(scene.Nodes.Any(node => node.Text == "native runtime text"));
         True(text.Calls > 0);
         byte[] acknowledgement = new byte[9]; acknowledgement[0] = 1;
         BinaryPrimitives.WriteInt64LittleEndian(acknowledgement.AsSpan(1), receiver.Sequence);
         Equal(0, peer.Exchange(acknowledgement).Length);
-        var remote = new XsrUiRemoteRenderer(new InputTransport(peer), _ => throw new NotSupportedException());
+        var remote = new XsrUiRemoteRenderer(new InputTransport(peer, 2), _ => throw new NotSupportedException());
         remote.SetTransitionOffset(scene[0].Entity, 22);
         Equal(22d, remote.GetTransitionOffset(scene[0].Entity));
         Equal(0L, BinaryPrimitives.ReadInt64LittleEndian(peer.Exchange(new byte[] { 3, 255 })));
@@ -114,6 +119,18 @@ internal static class Program
         catch (InvalidOperationException error) { True(!error.Message.Contains("private", StringComparison.Ordinal)); }
         Equal(1L, BinaryPrimitives.ReadInt64LittleEndian(peer.Exchange(new byte[] { 5 })));
         Equal(22d, remote.GetTransitionOffset(scene[0].Entity));
+
+        remote.SetTransitionOffset(scene[0].Entity, 0);
+        var shell = new XsrUiRemoteShell(new InputTransport(peer, 6), remote);
+        Equal("NexaCL", shell.Title);
+        shell.PublishWindowMetrics(86, false, 8);
+        var projected = shell.Render(new(850, 500));
+        Equal(834d, projected.Nodes.First(node => node.Role == XsrUiSemanticRole.TitleBar).Rect.Width);
+        shell.PublishWindowMetrics(86, true, 8);
+        projected = shell.Render(new(1040, 680));
+        Equal(1040d, projected.Nodes.First(node => node.Role == XsrUiSemanticRole.TitleBar).Rect.Width);
+        True(invalidations != 0);
+        shell.NotifyInvalidated((XsrUiShellInvalidation)Interlocked.Exchange(ref invalidations, 0));
 
         int length = 0;
         byte operation = 5;
@@ -130,11 +147,11 @@ internal static class Program
         Console.WriteLine("PASS: independent native runtime renders scenes using reverse text calls; generated input and reentrant callbacks preserve ownership");
     }
 
-    private sealed class InputTransport(NativeUiCallClient peer) : IXsrUiWireTransport
+    private sealed class InputTransport(NativeUiCallClient peer, byte operation) : IXsrUiWireTransport
     {
         public byte[] Exchange(ReadOnlyMemory<byte> request)
         {
-            byte[] message = new byte[request.Length + 1]; message[0] = 2;
+            byte[] message = new byte[request.Length + 1]; message[0] = operation;
             request.CopyTo(message.AsMemory(1)); return peer.Exchange(message);
         }
     }

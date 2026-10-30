@@ -73,6 +73,10 @@ internal sealed partial class UiWireWriter : IDisposable
             _imageBytes += value.Bytes.Length;
         }
     }
+    internal void Buffer(ReadOnlyMemory<byte> bytes)
+    {
+        Int32(bytes.Length); Reserve(bytes.Length); _writer.Write(bytes.Span);
+    }
     internal byte[] Finish() { _writer.Flush(); return _stream.ToArray(); }
     public void Dispose() { _writer.Dispose(); _stream.Dispose(); }
 }
@@ -126,6 +130,7 @@ internal sealed partial class UiWireReader : IDisposable
         if (bytes.Length != length) throw new InvalidDataException("Truncated UI buffer.");
         return bytes;
     }
+    internal byte[] Buffer() => Bytes(Int32(), UiWireLimits.Frame);
     internal XsrSemanticId XsrSemanticId()
     {
         string? text = String();

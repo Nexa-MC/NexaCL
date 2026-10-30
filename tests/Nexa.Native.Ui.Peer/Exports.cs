@@ -47,22 +47,23 @@ internal static unsafe class Exports
         private readonly NativeUiCallClient _host;
         private readonly XsrUiRenderer _renderer;
         private readonly XsrUiRendererEndpoint _input;
+        private readonly XsrUiShellEndpoint _shell;
         private readonly XsrUiSceneSender _scenes = new();
         private XsrUiScenePacket? _pending;
         private long _failures;
         internal Peer(NativeUiCallClient host)
         {
             _host = host;
-            var tree = new XsrUiTree();
-            var root = tree.Create("native-ui-probe");
-            tree.SetComponent(root, new XsrUiElement { Width = 320, Height = 180 });
-            tree.SetComponent(root, new XsrUiText("native runtime text"));
-            tree.SetComponent(root, new XsrUiTransition());
-            _renderer = new(tree, new XsrStateStoreBuilder().Build())
-            {
-                TextLayoutProvider = new XsrUiRemoteTextLayoutProvider(new HostTransport(host)),
-            };
-            _renderer.SetRoot(root); _input = new(_renderer);
+            var builder = new XsrStateStoreBuilder();
+            XsrUiShellWindowState.Declare(builder);
+            var shell = new XsrUiShell(builder.Build());
+            shell.Tree.SetComponent(shell.Content, new XsrUiText("native runtime text"));
+            shell.Tree.SetComponent(shell.Root, new XsrUiTransition());
+            _renderer = shell.Renderer;
+            _renderer.TextLayoutProvider = new XsrUiRemoteTextLayoutProvider(new HostTransport(host));
+            _input = new(_renderer);
+            _shell = new(shell);
+            _shell.Invalidated += kind => _host.Exchange(new byte[] { 254, (byte)kind });
         }
         internal void Failed(Exception _) => Interlocked.Increment(ref _failures);
         internal byte[] Exchange(ReadOnlyMemory<byte> request)
@@ -84,10 +85,11 @@ internal static unsafe class Exports
                 case 3: return _host.Exchange(request[1..]);
                 case 4: throw new InvalidOperationException("private fixture text must not cross the ABI");
                 case 5: return BitConverter.GetBytes(Interlocked.Read(ref _failures));
+                case 6: return _shell.Exchange(request[1..]);
                 default: throw new InvalidDataException("Unknown probe operation.");
             }
         }
-        public void Dispose() { _pending?.Dispose(); _scenes.Dispose(); }
+        public void Dispose() { _shell.Dispose(); _pending?.Dispose(); _scenes.Dispose(); }
     }
     private sealed class HostTransport(NativeUiCallClient client) : IXsrUiWireTransport
     {
