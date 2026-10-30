@@ -5,6 +5,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../Nexa.Xsr.Renderer.Nxml.Compiler/Nexa.Xsr.Renderer.Nxml.Compiler.csproj" />
+    <ProjectReference Include="../../Nexa.Services.Minecraft.Metadata/Nexa.Services.Minecraft.Metadata.csproj" />
+    <ProjectReference Include="../../Nexa.Services.Accounts/Nexa.Services.Accounts.csproj" />
     <ProjectReference Include="../../Nexa.Services.Updates/Nexa.Services.Updates.csproj" />
     <PackageReference Include="ZstdSharp.Port" Version="0.8.6" />
     <ProjectReference Include="../../Nexa.Services.Network/Nexa.Services.Network.csproj" />

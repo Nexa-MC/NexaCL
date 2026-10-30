@@ -1,7 +1,11 @@
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 
+#if NEXA_NATIVE_ENGINE
+namespace Nexa.Native.Media;
+#else
 namespace Nexa.Core.Media;
+#endif
 
 /// <summary>Bounded, content-addressed encoded media. Native decoding remains a backend concern.</summary>
 public sealed class PngImage
@@ -16,6 +20,18 @@ public sealed class PngImage
     public int Width { get; }
     public int Height { get; }
     public ReadOnlyMemory<byte> Bytes => _bytes;
+#if NEXA_EXTERNAL_MODULES
+    public static PngImage? TryCreate(ReadOnlySpan<byte> bytes) => FromNative(bytes, 0, 1_048_576);
+    public static PngImage? TryCreatePreview(ReadOnlySpan<byte> bytes) => FromNative(bytes, 1, 16 * 1_048_576);
+    public static PngImage? TryCreateResourceIcon(ReadOnlySpan<byte> bytes) => FromNative(bytes, 2, 1_048_576);
+    private static PngImage? FromNative(ReadOnlySpan<byte> bytes, int mode, int limit)
+    {
+        if (bytes.Length > limit) return null;
+        byte[] frozen = bytes.ToArray();
+        return NativeMediaClient.Inspect(frozen, mode, false, out int width, out int height, out _)
+            ? new(frozen, width, height) : null;
+    }
+#else
     public static PngImage? TryCreate(ReadOnlySpan<byte> bytes)
         => Create(bytes, 1_048_576, 1024);
 
@@ -105,4 +121,5 @@ public sealed class PngImage
         int width = BinaryPrimitives.ReadInt32BigEndian(bytes[16..20]), height = BinaryPrimitives.ReadInt32BigEndian(bytes[20..24]);
         return width > 0 && width <= dimensionLimit && height > 0 && height <= dimensionLimit ? new(bytes.ToArray(), width, height) : null;
     }
+#endif
 }

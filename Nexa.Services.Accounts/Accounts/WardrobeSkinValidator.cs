@@ -1,14 +1,25 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
+#if NEXA_NATIVE_ENGINE
+using Nexa.Native.Media;
+#else
 using Nexa.Core.Media;
+#endif
 
+#if NEXA_NATIVE_ENGINE
+namespace Nexa.Native.Media;
+public enum AccountWardrobeTextureKind { Skin, Cape }
+#else
 namespace Nexa.Services.Accounts;
+#endif
 
 /// <summary>Validates complete, bounded PNG skin uploads before they leave the account service.</summary>
 public static class WardrobeSkinValidator
 {
     private const int MaximumBytes = 1_048_576;
+#if !NEXA_EXTERNAL_MODULES
     private static readonly uint[] CrcTable = CreateCrcTable();
+#endif
 
     /// <summary>Accepts static 64×64 skins and classic 64×32 skins with complete image data.</summary>
     /// <exception cref="InvalidDataException">The image is malformed or unsupported for the selected model.</exception>
@@ -24,6 +35,14 @@ public static class WardrobeSkinValidator
         ArgumentNullException.ThrowIfNull(bytes);
         if (textureKind is not (AccountWardrobeTextureKind.Skin or AccountWardrobeTextureKind.Cape))
             throw new ArgumentOutOfRangeException(nameof(textureKind));
+#if NEXA_EXTERNAL_MODULES
+        if (bytes.Length > MaximumBytes) throw new InvalidDataException("皮肤文件不能超过 1 MiB。");
+        byte[] frozen = bytes.ToArray();
+        int mode = upload ? 3 : textureKind == AccountWardrobeTextureKind.Skin ? 4 : 5;
+        if (!NativeMediaClient.Inspect(frozen, mode, isSlim, out _, out _, out string error))
+            throw new InvalidDataException(error);
+        return PngImage.TryCreate(frozen) ?? throw new InvalidDataException("PNG 图像载体创建失败。");
+#else
         if (bytes.Length > MaximumBytes) throw Invalid("皮肤文件不能超过 1 MiB。");
         // Freeze caller-owned bytes so the returned carrier describes the same image we validated.
         byte[] encoded = bytes.ToArray();
@@ -105,8 +124,11 @@ public static class WardrobeSkinValidator
         if (!endSeen || compressed.Length == 0) throw Invalid("PNG 缺少完整图像数据或结束数据块。");
         ValidateImageData(compressed.ToArray(), width, height, colorType, bitDepth, paletteEntries);
         return PngImage.TryCreate(encoded) ?? throw Invalid("PNG 图像载体创建失败。");
+
+#endif
     }
 
+#if !NEXA_EXTERNAL_MODULES
     private static void ValidateImageData(byte[] compressed, int width, int height, int colorType, int bitDepth, int paletteEntries)
     {
         int channels = colorType switch { 2 => 3, 6 => 4, _ => 1 };
@@ -219,4 +241,5 @@ public static class WardrobeSkinValidator
         public override void SetLength(long value) => throw new NotSupportedException();
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
+#endif
 }

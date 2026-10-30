@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../NativeEngine.props" />
+  <ItemGroup>
+    <Compile Include="../NativeEngineAbi.cs" Link="NativeEngineAbi.cs" />
+    <Compile Include="../../Nexa.Core/Media/PngImage.cs" Link="PngImage.cs" />
+    <Compile Include="../../Nexa.Services.Accounts/Accounts/WardrobeSkinValidator.cs" Link="WardrobeSkinValidator.cs" />
+  </ItemGroup>
+</Project>

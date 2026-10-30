@@ -1,8 +1,13 @@
+#if !NEXA_EXTERNAL_MODULES
 using System.Globalization;
 using System.Text.Json.Nodes;
 
 
+#if NEXA_NATIVE_ENGINE
+namespace Nexa.Native.Minecraft.Libraries;
+#else
 namespace Nexa.Services.Minecraft.Libraries;
+#endif
 
 public static class MinecraftLibraryResolver
 {
@@ -432,3 +437,5 @@ public static class MinecraftClasspathPlanner
         return new MinecraftClasspathPlan(entries.DistinctBy(static path => Path.GetFullPath(path), comparer).ToArray());
     }
 }
+
+#endif

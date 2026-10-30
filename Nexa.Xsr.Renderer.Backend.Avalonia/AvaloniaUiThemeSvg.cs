@@ -1,8 +1,11 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Linq;
+using Nexa.Core.Xml;
+using XElement = Nexa.Core.Xml.XmlSnapshotElement;
+using XAttribute = Nexa.Core.Xml.XmlSnapshotProperty;
+using XText = Nexa.Core.Xml.XmlSnapshotText;
+using XProcessingInstruction = Nexa.Core.Xml.XmlSnapshotProcessingInstruction;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -33,16 +36,7 @@ internal sealed partial class AvaloniaUiThemeSvg
     internal static AvaloniaUiThemeSvg Parse(ReadOnlyMemory<byte> bytes, bool nativeGeometry = true)
     {
         if (bytes.Length is < 1 or > 1048576) throw new InvalidDataException("SVG exceeds its byte budget.");
-        using var input = new MemoryStream(bytes.ToArray(), writable: false);
-        using var reader = XmlReader.Create(input, new XmlReaderSettings
-        {
-            DtdProcessing = DtdProcessing.Prohibit,
-            XmlResolver = null,
-            MaxCharactersInDocument = 1048576,
-            IgnoreComments = true,
-            IgnoreProcessingInstructions = false,
-        });
-        XDocument document = XDocument.Load(reader, LoadOptions.None);
+        XmlSnapshotDocument document = XmlSnapshotReader.ParseBytes(bytes.Span, new(4 * 1024 * 1024, 4096, 25));
         XElement root = document.Root ?? throw new InvalidDataException("SVG root is missing.");
         if (root.Name.LocalName != "svg" || root.Name.NamespaceName is not ("" or "http://www.w3.org/2000/svg"))
             throw new InvalidDataException("SVG root is invalid.");

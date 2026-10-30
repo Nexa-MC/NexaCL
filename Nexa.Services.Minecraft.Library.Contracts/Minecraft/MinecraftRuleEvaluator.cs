@@ -1,8 +1,16 @@
 
 
+#if NEXA_NATIVE_ENGINE
+using Nexa.Native.Minecraft.Libraries;
+#else
 using Nexa.Services.Minecraft.Libraries;
+#endif
 
+#if NEXA_NATIVE_ENGINE
+namespace Nexa.Native.Minecraft;
+#else
 namespace Nexa.Services.Minecraft;
+#endif
 
 /// <summary>
 /// The platform and feature facts used by Mojang's ordered manifest rules.

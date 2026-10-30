@@ -42,9 +42,9 @@ public static class FoundationState
         MachineCapabilityStateContract.DeclareState(builder);
         DownloadService.DeclareState(builder);
         TaskCenterStateContract.DeclareState(builder);
-        AccountService.DeclareState(builder);
+        AccountStateContract.DeclareState(builder);
         AccountOnboardingState.DeclareState(builder);
-        AccountSkinService.DeclareState(builder);
+        AccountSkinContract.DeclareState(builder);
         TelemetryService.DeclareState(builder);
         Rollouts.RolloutStateContract.DeclareState(builder);
         MinecraftProcessStateComposition.DeclareState(builder);

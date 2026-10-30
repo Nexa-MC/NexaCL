@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../NativeEngine.props" />
+  <ItemGroup>
+    <Compile Include="../../Nexa.Core/Xml/XmlSnapshot*.cs" Link="Xml/%(Filename)%(Extension)" />
+    <Compile Include="../NativeBufferResults.cs" Link="NativeBufferResults.cs" />
+    <Compile Include="../MarkupProtocol.cs" Link="MarkupProtocol.cs" />
+    <Compile Include="../../Nexa.Xsr.Renderer.Nxml.Compiler/NxmlDocument.cs" Link="NxmlDocument.cs" />
+    <Compile Include="../../Nexa.Xsr.Renderer.Nxml.Compiler/NxmlParser.cs" Link="NxmlParser.cs" />
+    <Compile Include="../../Nexa.Xsr.Renderer.Nxml.Compiler/NxmlTextFormat.cs" Link="NxmlTextFormat.cs" />
+  </ItemGroup>
+</Project>

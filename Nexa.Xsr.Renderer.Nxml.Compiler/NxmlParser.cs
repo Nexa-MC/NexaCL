@@ -1,7 +1,11 @@
 using System.Globalization;
 using System.Xml;
 
+#if NEXA_NATIVE_ENGINE
+namespace Nexa.Native.Markup;
+#else
 namespace Nexa.Xsr.Renderer.Nxml;
+#endif
 
 /// <summary>
 /// Reports one deterministic NXML parse failure. The message carries the failing construct;
@@ -19,6 +23,9 @@ public sealed class NxmlParseException(string message) : InvalidOperationExcepti
 /// </summary>
 public static class NxmlParser
 {
+#if NEXA_EXTERNAL_MODULES
+    public static NxmlDocument Parse(string text) => NativeMarkupClient.Parse(text);
+#else
     private const int MaximumCharacters = 1024 * 1024;
     public static NxmlDocument Parse(string text)
     {
@@ -207,4 +214,5 @@ public static class NxmlParser
 
         return NxmlValue.StateBinding(path);
     }
+#endif
 }

@@ -7,13 +7,13 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-from publish_launcher import ROOT, module_name
+from publish_launcher import ENGINES, ROOT, module_name
 
 
 def verify(rid, payload):
     suffix = Path(module_name(rid)).suffix
     with tempfile.TemporaryDirectory(prefix="nexa-engine-repro-") as temporary:
-        for engine in ("Pac", "Crypto", "Network", "Updates"):
+        for engine in ENGINES:
             project = ROOT / f"native/Nexa.Native.{engine}/Nexa.Native.{engine}.csproj"
             output = Path(temporary) / engine.lower()
             common = ["--configuration", "Release", "-r", rid, "-m:1", "-nodeReuse:false",

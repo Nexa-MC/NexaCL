@@ -33,9 +33,13 @@ public static class AccountErrors
 /// profile set before any state is published, so Success means persisted and a failure changes
 /// nothing. Credentials stay in the persistence layer and results; they never enter state.
 /// </summary>
-public sealed class AccountService : IAsyncDisposable
+public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
 {
-    public const string OwnerName = "Nexa.Services.Accounts";
+    public const string OwnerName = AccountStateContract.OwnerName;
+
+    ValueTask<XsrResult<Nexa.Services.Minecraft.Launch.MinecraftLaunchIdentity>> IAccountLaunchIdentityResolver.ResolveAsync(
+        int accountIndex, LaunchProfile profile, CancellationToken cancellationToken) =>
+        new AccountLaunchIdentityResolver(this, log: _log).ResolveAsync(accountIndex, profile, cancellationToken);
 
     /// <summary>
     /// The ordered collection state key: items are <see cref="LaunchProfileView"/>, keyed by
@@ -93,15 +97,7 @@ public sealed class AccountService : IAsyncDisposable
     /// <summary>The index of the profile the product currently launches with.</summary>
     public static readonly XsrSemanticId SelectedKey = AccountStateContract.SelectedKey;
 
-    public static void DeclareState(XsrStateStoreBuilder builder)
-    {
-        ArgumentNullException.ThrowIfNull(builder);
-        builder.Collection<LaunchProfileView, int>(
-            ProfilesKey,
-            OwnerName,
-            static view => view.Index);
-        builder.Cell<int>(SelectedKey, OwnerName);
-    }
+    public static void DeclareState(XsrStateStoreBuilder builder) => AccountStateContract.DeclareState(builder);
 
     public AccountService(XsrStateStore store, ILaunchProfilePort port, LogService? log = null)
         : this(store, port, log, RegionalPolicy.Current) { }

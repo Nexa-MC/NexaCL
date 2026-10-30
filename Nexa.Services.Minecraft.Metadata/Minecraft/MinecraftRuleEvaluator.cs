@@ -1,8 +1,13 @@
+#if !NEXA_EXTERNAL_MODULES
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 
+#if NEXA_NATIVE_ENGINE
+namespace Nexa.Native.Minecraft;
+#else
 namespace Nexa.Services.Minecraft;
+#endif
 
 /// <summary>Evaluates Mojang manifest rules: the last matching rule wins.</summary>
 public static class MinecraftRuleEvaluator
@@ -101,3 +106,5 @@ public static class MinecraftRuleEvaluator
         return string.Equals(normalized, actual, StringComparison.OrdinalIgnoreCase);
     }
 }
+
+#endif

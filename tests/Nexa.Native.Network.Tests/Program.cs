@@ -6,6 +6,10 @@ internal static partial class Program
     private static async Task Main()
     {
         NativeInstrumentationWorks();
+        NativeMediaWorks();
+        NativeMinecraftWorks();
+        NativeMarkupWorks();
+        NativeXmlWorks();
         await NativeUpdateCodecsWork();
         await NetworkConnectionTransfersStreamsAndSurvivesRetirement();
         await NetworkConnectionCancellationAndRefusal();

@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import zipfile
 from delta import MAX_PACKAGE, copy_exact
+from publish_launcher import module_names
 from package import is_development_artifact, validate_payload, validate_runtime_contents
 
 
@@ -41,7 +42,7 @@ def check_windows_portable(root, base):
                 if any(is_development_artifact(part) for part in entry.filename.replace("\\", "/").split("/")):
                     raise RuntimeError(f"Development artifact in portable payload: {entry.filename}")
             # Only these exact names become destinations; never extract archive paths.
-            for name in ("Nexa.Desktop.exe", "Nexa.Update.Helper.exe", "Nexa.Jvm.Host.exe", "nexa-host.dll", "nexa-pac.dll", "nexa-crypto.dll", "nexa-network.dll", "nexa-updates.dll"):
+            for name in ("Nexa.Desktop.exe", "Nexa.Update.Helper.exe", "Nexa.Jvm.Host.exe", *module_names("win-x64")):
                 matches = [entry for entry in entries if entry.filename == name]
                 if not matches:
                     raise RuntimeError(f"Windows portable payload is missing {name}")

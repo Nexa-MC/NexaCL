@@ -1,7 +1,11 @@
 
 using System.Text.Json.Nodes;
 
+#if NEXA_NATIVE_ENGINE
+namespace Nexa.Native.Minecraft.Assets;
+#else
 namespace Nexa.Services.Minecraft.Assets;
+#endif
 
 public sealed record MinecraftAssetToken
 {

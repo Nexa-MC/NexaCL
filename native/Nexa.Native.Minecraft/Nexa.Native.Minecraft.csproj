@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../NativeEngine.props" />
+  <ItemGroup>
+    <Compile Include="../NativeBufferResults.cs" Link="NativeBufferResults.cs" />
+    <Compile Include="../MinecraftProtocol.cs" Link="MinecraftProtocol.cs" />
+    <Compile Include="../../Nexa.Domain/Minecraft/MinecraftLibraryModels.cs" Link="MinecraftLibraryModels.cs" />
+    <Compile Include="../../Nexa.Services.Minecraft.Library.Contracts/Minecraft/MinecraftRuleEvaluator.cs" Link="MinecraftRuleContext.cs" />
+    <Compile Include="../../Nexa.Services.Minecraft.Assets.Contracts/Minecraft/Assets/MinecraftAssetContracts.cs" Link="MinecraftAssetModels.cs" />
+    <Compile Include="../../Nexa.Services.Minecraft.Metadata/Minecraft/Libraries/MinecraftLibraryContracts.cs" Link="MinecraftLibraryResolver.cs" />
+    <Compile Include="../../Nexa.Services.Minecraft.Metadata/Minecraft/MinecraftRuleEvaluator.cs" Link="MinecraftRuleEvaluator.cs" />
+    <Compile Include="../../Nexa.Services.Minecraft.Metadata/Minecraft/Assets/MinecraftAssetContracts.cs" Link="MinecraftAssetResolver.cs" />
+  </ItemGroup>
+</Project>

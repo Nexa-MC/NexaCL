@@ -2,6 +2,7 @@
   <PropertyGroup>
     <Description>External NXML components and styles to typed renderer primitives.</Description>
     <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Nexa.Core/Nexa.Core.csproj" />
@@ -9,5 +10,12 @@
     <ProjectReference Include="../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
     <Content Include="../Nexa.Xsr.Renderer/Styles/*.nss" Link="Ui/Styles/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../Nexa.Xsr.Renderer/Components/*.c.nxml" Link="Ui/Components/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(NexaExternalModules)' == 'true'">
+    <DefineConstants>$(DefineConstants);NEXA_EXTERNAL_MODULES</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(NexaExternalModules)' == 'true'">
+    <Compile Include="../native/MarkupProtocol.cs" Link="Native/MarkupProtocol.cs" />
+    <Compile Include="../native/NativeResultClient.cs" Link="Native/NativeResultClient.cs" />
   </ItemGroup>
 </Project>

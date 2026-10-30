@@ -3,7 +3,13 @@
   "Nexa.Native.Crypto": [],
   "Nexa.Native.Network": [],
   "Nexa.Native.Updates": [],
+  "Nexa.Native.Media": [],
+  "Nexa.Native.Minecraft": [],
+  "Nexa.Native.Markup": [],
   "Nexa.Native.Network.Tests": [
+    "Nexa.Xsr.Renderer.Nxml.Compiler",
+    "Nexa.Services.Minecraft.Metadata",
+    "Nexa.Services.Accounts",
     "Nexa.Services.Network",
     "Nexa.Services.Updates"
   ],
@@ -267,7 +273,6 @@
     "Nexa.Contracts",
     "Nexa.Core",
     "Nexa.Domain",
-    "Nexa.Services.Accounts",
     "Nexa.Services.Accounts.Contracts",
     "Nexa.Services.Common",
     "Nexa.Services.Common.Contracts",

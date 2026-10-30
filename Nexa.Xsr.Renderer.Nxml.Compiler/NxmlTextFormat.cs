@@ -1,6 +1,10 @@
 using System.Text;
 
+#if NEXA_NATIVE_ENGINE
+namespace Nexa.Native.Markup;
+#else
 namespace Nexa.Xsr.Renderer.Nxml;
+#endif
 
 internal static class NxmlTextFormat
 {
@@ -30,6 +34,7 @@ internal static class NxmlTextFormat
         return parts;
     }
 
+#if !NEXA_NATIVE_ENGINE
     internal static string Expand(string source, IReadOnlyDictionary<string, string> data, Func<string, string>? localize, ref long remaining)
     {
         var parts = Parse(source);
@@ -57,4 +62,5 @@ internal static class NxmlTextFormat
         }
         return output.ToString();
     }
+#endif
 }

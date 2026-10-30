@@ -1,7 +1,8 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Xml;
-using System.Xml.Linq;
+using Nexa.Core.Xml;
+using XElement = Nexa.Core.Xml.XmlSnapshotElement;
 
 namespace Nexa.Platform;
 
@@ -58,9 +59,7 @@ internal static class WindowsSystemEventCorrelation
         if (string.IsNullOrWhiteSpace(xml)) return [];
         try
         {
-            using var reader = XmlReader.Create(new StringReader("<CapturedEvents>" + xml + "</CapturedEvents>"),
-                new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = 32800 });
-            var document = XDocument.Load(reader);
+            var document = XmlSnapshotReader.ParseText("<CapturedEvents>" + xml + "</CapturedEvents>", new(32800));
             List<PlatformSystemEvent> result = [];
             foreach (var entry in document.Descendants().Where(element => element.Name.LocalName == "Event").Take(32))
             {
@@ -86,6 +85,6 @@ internal static class WindowsSystemEventCorrelation
             }
             return result.AsReadOnly();
         }
-        catch (XmlException) { return null; }
+        catch (Exception error) when (error is XmlException or InvalidDataException) { return null; }
     }
 }

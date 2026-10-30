@@ -1,8 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Linq;
+using Nexa.Core.Xml;
 
 namespace Nexa.Services.Minecraft.Install;
 
@@ -40,8 +39,7 @@ public sealed partial class HttpInstallCatalogSource(HttpClient http, string? cu
                 : legacyNeo ? "https://maven.neoforged.net/releases/net/neoforged/forge/maven-metadata.xml"
                 : "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml";
             string xml = await ReadAsync(url, token).ConfigureAwait(false);
-            using XmlReader reader = XmlReader.Create(new StringReader(xml), new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null });
-            IEnumerable<string> versions = XDocument.Load(reader).Descendants("version").Select(v => v.Value);
+            IEnumerable<string> versions = XmlSnapshotReader.ParseText(xml, new(16 * 1024 * 1024)).Descendants("version").Select(v => v.Value);
             versions = loader == InstallLoader.Forge || legacyNeo ? versions.Where(v => v.StartsWith(game + "-", StringComparison.Ordinal)) : versions.Where(v => NeoGame(v) == game);
             return Array.AsReadOnly(versions.Reverse().Where(v => !legacyNeo || v != "1.20.1-47.1.82")
                 .Select(v => loader == InstallLoader.Forge || legacyNeo ? v[(game.Length + 1)..] : v)

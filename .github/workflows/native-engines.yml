@@ -8,6 +8,14 @@ on:
       - 'Nexa.Services.Updates/**'
       - 'Nexa.Services.Network/**'
       - 'Nexa.Core/Patching/**'
+      - 'Nexa.Core/Media/**'
+      - 'Nexa.Core/Xml/**'
+      - 'Nexa.Services.Accounts/**'
+      - 'Nexa.Services.Minecraft.Metadata/**'
+      - 'Nexa.Services.Minecraft.Library.Contracts/**'
+      - 'Nexa.Services.Minecraft.Assets.Contracts/**'
+      - 'Nexa.Domain/Minecraft/MinecraftLibraryModels.cs'
+      - 'Nexa.Xsr.Renderer.Nxml.Compiler/**'
       - 'tools/Nexa.Xsr.Patch.Compiler/**'
       - 'eng/xsr/Xsr.AutomaticFunctionPatches.targets'
       - 'eng/release/verify_engine_reproducibility.py'
@@ -44,10 +52,10 @@ jobs:
           python - '${{ matrix.rid }}' "$RUNNER_TEMP/engines" <<'PY'
           import pathlib, shutil, subprocess, sys
           sys.path.insert(0, 'eng/release')
-          from publish_launcher import module_name
+          from publish_launcher import ENGINES, module_name
           rid, output = sys.argv[1], pathlib.Path(sys.argv[2])
           output.mkdir(parents=True, exist_ok=True)
-          for engine in ('Pac', 'Crypto', 'Network', 'Updates'):
+          for engine in ENGINES:
               stage = output / engine
               subprocess.run(['dotnet', 'publish', f'native/Nexa.Native.{engine}', '-c', 'Release', '-r', rid,
                               '--self-contained', 'true', '-m:1', '-nr:false', '-p:PublishAot=true',
@@ -62,7 +70,7 @@ jobs:
           rebuilds=1
           if [[ '${{ runner.os }}' == macOS ]]; then rebuilds=3; fi
           python eng/release/verify_engine_reproducibility.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/engines" --rebuilds "$rebuilds"
-      - name: Verify NativeAOT instrumentation, codecs, socket ownership and mTLS
+      - name: Verify NativeAOT instrumentation, media, codecs, socket ownership and mTLS
         shell: bash
         run: python eng/release/verify_native_engine_contracts.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/engines" --output "$RUNNER_TEMP/native-network-caller"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

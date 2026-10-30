@@ -1,7 +1,11 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
 
+#if NEXA_NATIVE_ENGINE
+namespace Nexa.Native.Minecraft.Assets;
+#else
 namespace Nexa.Services.Minecraft.Assets;
+#endif
 
 public static class MinecraftAssetIndexResolver
 {
@@ -60,6 +64,14 @@ public static class MinecraftAssetListResolver
     public static IReadOnlyList<MinecraftAssetToken> GetAssetList(MinecraftAssetListRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
+#if NEXA_EXTERNAL_MODULES
+        return Nexa.Native.Minecraft.NativeMinecraftClient.Call(7, writer =>
+        {
+            Nexa.Native.Minecraft.MinecraftProtocol.Json(writer, request.IndexJson);
+            Nexa.Native.Minecraft.MinecraftProtocol.Text(writer, request.MinecraftRootDirectory);
+            Nexa.Native.Minecraft.MinecraftProtocol.Text(writer, request.InstanceDirectory);
+        }, Nexa.Native.Minecraft.MinecraftProtocol.Assets);
+#else
         JsonObject objects = request.IndexJson["objects"]?.AsObject() ?? throw new FormatException("Asset index does not contain an objects map.");
         string root = Path.GetFullPath(request.MinecraftRootDirectory);
         string instance = Path.GetFullPath(request.InstanceDirectory);
@@ -82,6 +94,7 @@ public static class MinecraftAssetListResolver
         }
 
         return result;
+#endif
     }
 
     public static string GetHashPrefix(string hash)

@@ -33,4 +33,11 @@
     <ProjectReference Include="../Nexa.Services.Minecraft.Process.Contracts/Nexa.Services.Minecraft.Process.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Services.Recovery.Storage/Nexa.Services.Recovery.Storage.csproj" />
   </ItemGroup>
+  <PropertyGroup Condition="'$(NexaExternalModules)' == 'true'">
+    <DefineConstants>$(DefineConstants);NEXA_EXTERNAL_MODULES</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(NexaExternalModules)' == 'true'">
+    <Compile Include="../native/NativeResultClient.cs" Link="Minecraft/NativeResultClient.cs" />
+    <Compile Include="../native/MinecraftProtocol.cs" Link="Minecraft/MinecraftProtocol.cs" />
+  </ItemGroup>
 </Project>

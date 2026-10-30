@@ -38,7 +38,7 @@ public sealed partial class MinecraftLaunchCoordinator
     private readonly LogService? _log;
     private readonly MinecraftLaunchProgressPublisher? _progress;
     private readonly MinecraftInstanceDiscovery _instances;
-    private readonly AccountService _accounts;
+    private readonly IAccountLaunchAccess _accounts;
     private readonly SettingsService _settings;
     private readonly SettingsPolicyService? _settingsPolicy;
     private readonly JavaSelectionService _javaSelection;
@@ -62,7 +62,7 @@ public sealed partial class MinecraftLaunchCoordinator
         string minecraftRootDirectory,
         string javaRuntimeRootDirectory,
         MinecraftInstanceDiscovery instances,
-        AccountService accounts,
+        IAccountLaunchAccess accounts,
         SettingsService settings,
         JavaSelectionService javaSelection,
         IJavaRuntimeInstaller javaInstaller,
@@ -85,7 +85,7 @@ public sealed partial class MinecraftLaunchCoordinator
         _javaRuntimeRootDirectory = Path.GetFullPath(javaRuntimeRootDirectory);
         _log = log;
         _progress = progress;
-        _identityResolver = identityResolver ?? new AccountLaunchIdentityResolver(accounts, log: log);
+        _identityResolver = identityResolver ?? accounts;
         _launcherVersion = string.IsNullOrWhiteSpace(launcherVersion) ? "2.0.0" : launcherVersion;
         _windowProbe = windowProbe ?? new MinecraftWindowProbe();
         _gameWindowAppeared = gameWindowAppeared;

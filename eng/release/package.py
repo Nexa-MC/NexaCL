@@ -41,7 +41,19 @@ def is_payload_artifact(name):
         fnmatch.fnmatchcase(name.lower(), pattern) for pattern in UPDATE_STATE_ARTIFACTS)
 
 
+def validate_native_runtime(payload):
+    managed_runtime = {"system.private.corelib.dll"}
+    managed_runtime.update(stem + ".dll" for stem in ("coreclr", "clrjit", "hostfxr", "hostpolicy"))
+    managed_runtime.update("lib" + stem + suffix for stem in ("coreclr", "clrjit", "hostfxr", "hostpolicy")
+                           for suffix in (".so", ".dylib"))
+    mixed = sorted(str(path.relative_to(payload)) for path in payload.rglob("*")
+                   if path.is_file() and path.name.lower() in managed_runtime)
+    if mixed:
+        raise ValueError(f"CoreCLR runtime files in NativeAOT payload: {mixed}")
+
+
 def validate_runtime_contents(payload):
+    validate_native_runtime(payload)
     unwanted = [str(path.relative_to(payload)) for path in payload.rglob("*")
                 if is_payload_artifact(path.name)]
     if unwanted:
@@ -239,6 +251,7 @@ def linux(payload, output, work, base, version, prefix, arch):
 
 
 def validate_payload(payload, platform):
+    validate_native_runtime(payload)
     suffix = ".exe" if platform == "win" else ""
     required = ["Nexa.Desktop" + suffix, "Nexa.Jvm.Host" + suffix, "Nexa.Update.Helper" + suffix]
     required.extend(module_names(platform + "-x64"))

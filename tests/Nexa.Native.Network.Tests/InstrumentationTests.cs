@@ -8,7 +8,7 @@ internal static partial class Program
     private static unsafe void NativeInstrumentationWorks()
     {
         string suffix = OperatingSystem.IsWindows() ? ".dll" : OperatingSystem.IsMacOS() ? ".dylib" : ".so";
-        foreach (string engine in new[] { "pac", "crypto", "network", "updates" })
+        foreach (string engine in new[] { "pac", "crypto", "network", "updates", "media", "minecraft", "markup" })
         {
             // NativeAOT runtimes stay loaded for the process lifetime.
             nint library = NativeLibrary.Load(Path.Combine(AppContext.BaseDirectory, "nexa-" + engine + suffix));
@@ -31,7 +31,7 @@ internal static partial class Program
                 }
                 string entry = Encoding.UTF8.GetString(bytes);
                 if (entry.Contains("\t3\t", StringComparison.Ordinal)) infrastructure = index;
-                string method = engine == "pac" ? "::Evaluate``0(" : "::Create``0(";
+                string method = engine == "pac" ? "::Evaluate``0(" : engine == "media" ? "::Inspect``0(" : engine is "minecraft" or "markup" ? "::Execute``0(" : "::Create``0(";
                 if (entry.Contains(".Exports" + method, StringComparison.Ordinal)) selected = index;
             }
             if (selected < 0 || infrastructure < 0) throw new InvalidOperationException("Incomplete native inventory.");
@@ -41,7 +41,17 @@ internal static partial class Program
             AssertEqual(0, configure(selected, 1));
             AssertEqual(0, configure(selected, 1));
             AssertEqual(0L, hits(selected));
-            if (engine == "network")
+            if (engine is "minecraft" or "markup")
+            {
+                var invoke = (delegate* unmanaged[Cdecl]<byte*, int, int*, long>)NativeLibrary.GetExport(library, "nexa_" + engine + "_execute_v1");
+                AssertEqual(0L, invoke(null, 0, null));
+            }
+            else if (engine == "media")
+            {
+                var invoke = (delegate* unmanaged[Cdecl]<byte*, int, int, int, int*, int*, byte*, int, int>)NativeLibrary.GetExport(library, "nexa_media_inspect_v1");
+                AssertEqual(-1, invoke(null, 0, 0, 0, null, null, null, 0));
+            }
+            else if (engine == "network")
             {
                 var invoke = (delegate* unmanaged[Cdecl]<int, int, int, int, nint*, int>)NativeLibrary.GetExport(library, "nexa_network_create_v1");
                 AssertEqual(-1, invoke(0, 0, 0, 0, null));

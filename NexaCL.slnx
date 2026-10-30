@@ -1,4 +1,7 @@
 <Solution>
+  <Project Path="native/Nexa.Native.Markup/Nexa.Native.Markup.csproj" />
+  <Project Path="native/Nexa.Native.Minecraft/Nexa.Native.Minecraft.csproj" />
+  <Project Path="native/Nexa.Native.Media/Nexa.Native.Media.csproj" />
   <Project Path="native/Nexa.Native.Updates/Nexa.Native.Updates.csproj" />
   <Project Path="native/Nexa.Native.Pac/Nexa.Native.Pac.csproj" />
   <Project Path="native/Nexa.Native.Crypto/Nexa.Native.Crypto.csproj" />

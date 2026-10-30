@@ -29,6 +29,26 @@ updated independently of their matching launcher release. Native smoke tests mus
 exercise the distributed bootstrap, including a working directory outside the
 installation and a missing-module failure.
 
+## Current release inventory
+
+The publisher emits the bootstrap, `nexa-host`, and seven independent native engines.
+Extensions are `.dll` / `.so` / `.dylib` for Windows / Linux / macOS respectively.
+
+| Engine | Extracted implementation |
+| --- | --- |
+| `nexa-pac` | PAC interpreter |
+| `nexa-crypto` | OpenPGP verification |
+| `nexa-network` | Connection/socket/TLS engine |
+| `nexa-updates` | Streaming compression and delta codecs |
+| `nexa-media` | Image metadata and wardrobe PNG validation |
+| `nexa-minecraft` | Library/classpath/rule and asset metadata algorithms |
+| `nexa-markup` | NXML syntax and bounded XML parsing for SVG, Maven and events |
+
+The names identify ownership groups; the service lifecycle portions of network,
+updates and Minecraft remain in Host. UI and Accounts have not yet become
+independent native modules. The complete business-module acceptance criteria below
+remain open.
+
 ## Stable engine boundaries
 
 PAC interpretation (`nexa-pac`) and OpenPGP verification (`nexa-crypto`) are independent
@@ -306,3 +326,158 @@ with different release/commit metadata produced byte-identical `nexa-updates.so`
 `2ac4a7fad80ce114de5541256609fe00b4061bf6d81a741f3ce74bc87a1a4154`).
 Windows/macOS and other RID acceptance remains in the updated native/release CI
 matrix; local Linux results do not stand in for those platforms.
+
+### Account-to-launch ownership boundary
+
+Minecraft launch consumes the account launch-access contract, not `AccountService`
+or the concrete identity resolver. The account owner supplies profile reads and
+its default identity resolution; an explicitly composed refresh resolver still
+wins. This removes the Minecraft.Launch -> Accounts implementation dependency
+before native extraction. These unpublished in-process assemblies are rebuilt
+and distributed together; Sidecar wire contracts and the profile persistence
+format do not change. The account launch-access port is privileged and must not
+be published as UI state: profile credentials remain confined to account/launch
+operations. This dependency change alone is not a native account module.
+
+Account state topology is declared by the Accounts.Contracts assembly, including
+profile selection and skin collections. Implementation methods remain forwarding
+entry points for callers, with identical semantic IDs, owners, key selectors and
+initial availability. This lets Host construct its topology without loading an
+account implementation merely to discover its state schema.
+
+### Native media boundary
+
+`nexa-media` owns bounded PNG/JPEG/WebP metadata inspection and complete wardrobe
+PNG validation. The Host retains content-addressed media carriers and account
+state; no CLR image, stream, exception or account object crosses the boundary.
+The synchronous ABI borrows a caller-frozen byte buffer for the call only (at
+most 16 MiB for screenshots, 1 MiB for icons/wardrobe), returns dimensions as
+integers, and writes bounded UTF-8 diagnostics to a caller-owned buffer. It never
+retains pointers or calls the Host. Mode 0 is PNG, 1 screenshot PNG, 2 resource
+icon, 3 skin upload, 4 skin preview, 5 cape preview. Slim is an explicit 0/1 flag.
+Status 0 means valid; 1 means invalid image; -1 means malformed ABI arguments or
+engine failure. Both dimensions are zero on failure. Existing nullable metadata
+factories and throwing wardrobe validation retain their public semantics.
+
+The source algorithms are shared between ordinary managed tests and the native
+engine; external Host builds exclude their implementation and use the ABI client.
+The standalone engine has no Core/Services project reference and retains local
+instrumentation. Its name, payload requirements, native caller regression and
+reproducibility checks participate in the same release gates as other engines.
+This extracts media algorithms, not the entire Accounts service or renderer.
+
+### Native Minecraft metadata boundary
+
+The `nexa-minecraft` boundary owns library resolution/classpath ordering,
+Mojang rule evaluation and asset-list path planning. Storage discovery, downloads,
+account identity and game processes remain with their current owners. Manifests
+cross as their original UTF-8 JSON document bytes inside a bounded binary envelope;
+commands and typed results use numeric operations and length-prefixed binary fields.
+No CLR manifest, collection or feature dictionary crosses the ABI. Host snapshots
+feature lookups for the names actually referenced by each manifest, preserving
+custom/case-insensitive dictionary lookup behavior instead of silently changing it.
+
+The engine returns an opaque result ID and exact byte count; Host copies and releases
+it in a finally block. Results contain an explicit success/error discriminator and
+exception category (not an exception object), preserving caller error classification.
+Input/output budgets are 64/128 MiB. Buffers are borrowed only within each call;
+retained results are engine-owned and release is idempotent. The library exposes
+local instrumentation and receives the same payload/reproducibility/native-caller
+checks as the other engines. This is metadata extraction, not game lifecycle migration.
+
+### Native markup parsing boundary
+
+`nexa-markup` owns XML/NXML grammar parsing and its structural budgets. Host retains
+component expansion, compiler IR, theme application, UI state and the OS main thread.
+The parser accepts at most 1 Mi UTF-16 characters (4 MiB UTF-8 transport ceiling),
+returns a bounded binary DOM (16 MiB maximum), and preserves parser error messages
+as `NxmlParseException`. Host reconstructs its own elements/properties from a
+versioned binary response; no DOM object or XML reader crosses runtimes. DTD, node,
+attribute, depth, namespace and binding checks remain in the existing parser.
+
+The transport uses copied opaque results with an unconditional Host-side release,
+shared with the Minecraft engine. Host validates response node/depth/count/string
+budgets before allocating the DOM. Modules load only from the executable directory.
+This boundary moves the syntax parser, not the renderer or full NXML compiler.
+
+All seven engine names are declared once in the publisher's `ENGINES` inventory;
+publishing, clean reproducibility, payload validation and installation smoke derive
+their required files from it. The small native result client/store implementation is
+shared by Minecraft and markup. A borrowed request is read only during execute;
+engine-owned result backing arrays are retained until release, copied once to Host,
+and never exposed as a managed object or retained Host pointer.
+
+### XML consumers and the markup engine
+
+NXML alone does not remove Host's XML implementation: SVG rendering/resource checks,
+Maven catalog parsing and Windows event correlation also consume XML. Their shared
+boundary is a small immutable XML snapshot (qualified names, attributes, ordered
+text/element/processing-instruction nodes, parent traversal). It carries data only;
+rendering, resource grants, network calls and process correlation stay with their
+owners. Namespace comparisons, text order and PI detection must preserve current
+behavior. DTD and external resolution remain prohibited. Each caller supplies its
+existing character/element budgets, with a finite depth and response budget before
+Host allocation. Native and ordinary test paths share the parser/snapshot codec.
+This lets external Host builds stop referencing XML reader/DOM implementations
+instead of keeping a duplicate copy merely to inspect returned documents.
+
+The XML snapshot entry points use the separate `nexa_markup_xml_*_v1` prefix.
+Byte inputs preserve the declared encoding/BOM; text inputs retain StringReader
+semantics, including declarations naming a different byte encoding. Responses
+preserve ordered mixed text, namespace-qualified attributes, parent identity and
+processing-instruction presence. Parser failures remain XmlException; explicit
+structure/transport budget violations are InvalidDataException. Windows event
+correlation treats either as unavailable diagnostic data.
+
+The transport is bounded to 64 MiB input and 128 MiB output, at most 65,536 elements,
+1,000,000 nodes, 4,096 attributes per element and depth 128. Callers tighten these:
+SVG rendering uses 4,096 elements/depth 25; theme validation uses 8,192 elements;
+Windows event XML uses 32,800 characters. Maven metadata has a 16 Mi-character cap.
+All parsing disables DTDs and external resolution. Resource authorization, SVG
+geometry and event filtering remain in their original owners.
+
+Runtime packaging rejects CoreCLR/JIT and hostfxr/hostpolicy files rather than silently
+stripping them from a mixed publish directory. This keeps an accidental managed
+publish from producing an incomplete or runtime-dependent launcher payload.
+
+### Content-engine verification checkpoint (2026-10-30, Linux x64)
+
+The default solution builds with zero warnings/errors. Managed and external-engine
+paths both pass 163 selected account/launch/install/metadata service regressions,
+29 theme service tests, 88 NXML tests and 46 Avalonia backend tests. Architecture
+checks pass for 81 projects; release tooling passes 101 tests. An independent
+NativeAOT caller covers all seven engines, local instrumentation, buffer ownership,
+concurrency, malformed ABI input, XML encoding/namespaces/budgets, cancellation and
+TLS identity. The published bootstrap passes foreign-working-directory/missing-Host
+checks and `--validate-shell`; the payload contains no CoreCLR runtime files.
+
+All seven engines pass clean metadata-only reproducibility checks. After the XML
+consumer extension, markup was rebuilt and rechecked separately; the other six
+final binaries remain byte-identical to their verified checkpoint. Markup SHA-256:
+`2ba163a1beb5e2d9468625b2a1c4d41920a97719aecef4c9b8188ccf1dd27ff6`.
+The existing upstream Jint IL2098 AOT warning remains; no new engine warning was
+introduced. Cross-platform execution is enforced by the native-engine and launcher
+CI matrices; these local measurements do not establish Windows/macOS results.
+
+A real local delta reconstruction compares the six-engine checkpoint before markup
+extraction with the current seven-engine payload. It is an unsigned benchmark,
+not a release. The independent JVM/update helpers are outside these supplied
+publisher directories; debugging artifacts and installation state are excluded.
+
+| Measurement | Bytes |
+| --- | ---: |
+| Previous supplied runtime payload | 135,799,160 |
+| Current supplied runtime payload | 142,804,077 |
+| Current bootstrap | 2,218,840 |
+| Current Host | 82,420,984 |
+| Current markup engine | 7,955,992 |
+| Compressed transition delta | 42,330,794 |
+| Reused bytes | 48,664,404 |
+| New Host data in transition delta | 79,353,380 |
+
+PAC, crypto, network, updates and media require zero new delta data. Minecraft
+changed its result transport in this comparison and markup is a new file, so both
+correctly enter this transition delta. Reconstruction matches the target payload.
+The total payload grows by 7,004,917 bytes at this checkpoint: independent AOT
+runtime overhead is real. This proves reuse and reconstruction, **not** a smaller
+complete installer or completion of UI/account/service lifecycle isolation.

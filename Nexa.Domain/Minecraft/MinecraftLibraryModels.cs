@@ -2,7 +2,11 @@
 using System.Text.Json.Nodes;
 
 
+#if NEXA_NATIVE_ENGINE
+namespace Nexa.Native.Minecraft.Libraries;
+#else
 namespace Nexa.Services.Minecraft.Libraries;
+#endif
 
 public enum MinecraftLibraryOperatingSystem
 {

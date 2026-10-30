@@ -192,8 +192,18 @@ jobs:
                   continue
               shutil.copy2(pathlib.Path(sys.argv[1]) / name, pathlib.Path(sys.argv[2]) / name)
           PYMODULES
-          dotnet "$RUNNER_TEMP/native-engine-tests/Nexa.Services.Tests.dll" 'PAC ' gpg 'network connection' 'network TLS' 'block codec' vcdiff
-      - name: Verify NativeAOT codec streaming, network ownership and mTLS
+          dotnet "$RUNNER_TEMP/native-engine-tests/Nexa.Services.Tests.dll" 'PAC ' gpg 'network connection' 'network TLS' 'block codec' vcdiff wardrobe skin 'resource icon' 'library' 'classpath' 'asset' 'rules' 'install catalog' WindowsEvent
+          dotnet publish tests/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj --configuration Release \
+            --self-contained false -m:1 -nodeReuse:false -p:PublishAot=false -p:NexaExternalModules=true \
+            --output "$RUNNER_TEMP/native-engine-tests"
+          dotnet "$RUNNER_TEMP/native-engine-tests/Nexa.Xsr.Renderer.Nxml.Tests.dll"
+          for suite in Nexa.Services.Themes.Tests Nexa.Xsr.Renderer.Backend.Avalonia.Tests; do
+            dotnet publish "tests/$suite/$suite.csproj" --configuration Release \
+              --self-contained false -m:1 -nodeReuse:false -p:PublishAot=false -p:NexaExternalModules=true \
+              --output "$RUNNER_TEMP/native-engine-tests"
+            dotnet "$RUNNER_TEMP/native-engine-tests/$suite.dll"
+          done
+      - name: Verify NativeAOT markup, media, codecs, network ownership and mTLS
         shell: bash
         run: python eng/release/verify_native_engine_contracts.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/launcher" --output "$RUNNER_TEMP/native-network-caller"
       - name: Verify native engine reproducibility across release stamps

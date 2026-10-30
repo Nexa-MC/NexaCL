@@ -1,5 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Description>Portable primitives shared by the Nexa XSR architecture.</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Nexa.Services.Accounts" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(NexaExternalModules)' == 'true'">
+    <DefineConstants>$(DefineConstants);NEXA_EXTERNAL_MODULES</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(NexaExternalModules)' == 'true'">
+    <Compile Include="../native/NativeResultClient.cs" Link="Xml/NativeResultClient.cs" />
+  </ItemGroup>
 </Project>

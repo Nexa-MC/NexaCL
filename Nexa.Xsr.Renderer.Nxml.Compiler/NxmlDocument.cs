@@ -1,4 +1,8 @@
+#if NEXA_NATIVE_ENGINE
+namespace Nexa.Native.Markup;
+#else
 namespace Nexa.Xsr.Renderer.Nxml;
+#endif
 
 /// <summary>
 /// The NXML authoring namespace. Documents that declare a namespace must use exactly this one.

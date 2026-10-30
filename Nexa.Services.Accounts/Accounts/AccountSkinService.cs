@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using Nexa.Core.Media;
 using Nexa.Services.Logging;
@@ -11,18 +9,16 @@ namespace Nexa.Services.Accounts;
 /// <summary>Credential-free skin resolution, bounded to 64 current profiles and one MiB per image.</summary>
 public sealed class AccountSkinService(AccountService accounts, HttpClient client, LogService? log = null) : IDisposable
 {
-    public static readonly XsrSemanticId SkinsKey = XsrSemanticId.Parse("accounts.skins");
-    public static readonly XsrSemanticId RefreshRoute = XsrSemanticId.Parse("accounts.skins.refresh");
+    public static readonly XsrSemanticId SkinsKey = AccountSkinContract.SkinsKey;
+    public static readonly XsrSemanticId RefreshRoute = AccountSkinContract.RefreshRoute;
     private readonly object _gate = new();
     private CancellationTokenSource? _active;
     private Task _running = Task.CompletedTask;
     private bool _disposed;
     public Task WhenIdle { get { lock (_gate) return _running; } }
-    public static void DeclareState(XsrStateStoreBuilder builder) =>
-        builder.Collection<AccountSkinSnapshot, string>(SkinsKey, "Nexa.Services.AccountSkins", item => item.ProfileKey);
+    public static void DeclareState(XsrStateStoreBuilder builder) => AccountSkinContract.DeclareState(builder);
 
-    public static string ProfileKey(LaunchProfileView profile) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
-        $"{profile.Kind}\n{profile.Uuid}\n{profile.AuthServer}\n{profile.SkinAddress}\n{profile.Username}")));
+    public static string ProfileKey(LaunchProfileView profile) => AccountSkinContract.ProfileKey(profile);
 
     public XsrResult Refresh(bool force = false)
     {

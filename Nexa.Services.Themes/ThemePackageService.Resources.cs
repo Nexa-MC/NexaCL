@@ -1,5 +1,5 @@
 using System.Text;
-using System.Xml;
+using Nexa.Core.Xml;
 using Nexa.Xsr;
 
 namespace Nexa.Services.Themes;
@@ -186,20 +186,16 @@ public sealed partial class ThemePackageService
         if (contentType == "image/svg+xml")
         {
             if (bytes.Length > 4 * 1024 * 1024) throw new InvalidDataException("SVG exceeds 4 MiB.");
-            using var stream = new MemoryStream(bytes, false); using var reader = XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = 4 * 1024 * 1024 });
-            bool root = false; int elements = 0;
-            while (reader.Read())
+            var document = XmlSnapshotReader.ParseBytes(bytes, new(4 * 1024 * 1024, 8192));
+            bool root = false;
+            foreach (var element in document.Descendants())
             {
-                if (reader.NodeType != XmlNodeType.Element) continue;
-                if (++elements > 8192) throw new InvalidDataException("SVG complexity budget exceeded.");
-                if (!root) { if (reader.LocalName != "svg") throw new InvalidDataException("SVG root is invalid."); root = true; }
-                if (reader.LocalName is "script" or "style" or "foreignObject" or "iframe" or "image" or "animate" or "animateTransform" or "set") throw new InvalidDataException("SVG active or external content is prohibited.");
-                if (reader.MoveToFirstAttribute()) do
-                {
-                    if (reader.LocalName.StartsWith("on", StringComparison.OrdinalIgnoreCase) || reader.LocalName is "href" && !reader.Value.StartsWith('#') || ExternalSvgUrl(reader.Value))
+                if (!root) { if (element.Name.LocalName != "svg") throw new InvalidDataException("SVG root is invalid."); root = true; }
+                if (element.Name.LocalName is "script" or "style" or "foreignObject" or "iframe" or "image" or "animate" or "animateTransform" or "set") throw new InvalidDataException("SVG active or external content is prohibited.");
+                foreach (var attribute in element.Attributes())
+                    if (attribute.Name.LocalName.StartsWith("on", StringComparison.OrdinalIgnoreCase)
+                        || attribute.Name.LocalName is "href" && !attribute.Value.StartsWith('#') || ExternalSvgUrl(attribute.Value))
                         throw new InvalidDataException("SVG external references and active attributes are prohibited.");
-                } while (reader.MoveToNextAttribute());
-                reader.MoveToElement();
             }
             if (!root) throw new InvalidDataException("Empty SVG."); return;
         }
