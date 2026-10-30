@@ -472,6 +472,9 @@ jobs:
       - name: Enforce architecture boundaries
         run: dotnet run --project tests/Nexa.Xsr.ArchitectureTests/Nexa.Xsr.ArchitectureTests.csproj --configuration Release --no-build -- --repo-root .
 
+      - name: Verify generated native UI wire schema
+        run: python eng/xsr/generate_ui_wire.py --check
+
       - name: Verify source formatting
         run: dotnet format NexaCL.slnx --no-restore --verify-no-changes --diagnostics IDE0055 IMPORTS
 

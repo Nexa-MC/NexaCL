@@ -569,3 +569,43 @@ code/formatting changes, not only artwork extraction. A18/A19 are measurement
 fixture labels required by the update format, not newly published releases.
 The initial migration increases total size; reproducible unchanged artwork can be
 reused by later Host updates without carrying its bytes again.
+
+### Window-runtime transport boundary
+
+The native window runtime consumes a versioned binary scene, input and text-layout
+protocol, not CLR scene/tree references. Serialization is generated ahead of time
+from an explicit DTO closure; reflection is limited to the development generator.
+The wire schema fingerprint changes when that closure changes. Frames have bounded
+strings, collections, total bytes and image resources. Encoded images are addressed
+by their content hash and retained only across consecutive accepted scenes; rejected
+frames cannot partially replace the resource table or current scene. Equal scene
+versions are permitted for viewport/presentation changes, while session sequencing
+prevents stale packets from overwriting a newer scene. Native callbacks and their
+retirement remain a separate lifecycle contract; a codec alone is not a native UI
+module and is not introduced as a per-frame local round trip in production.
+
+The input operation table is generated from `IXsrUiBackendRenderer`, including
+properties and overload signatures. A matching fingerprint is required before any
+operation executes, and the entire argument buffer is admitted before dispatch.
+Text-provider installation is an explicit local callback: the provider itself must
+remain in its originating runtime and the opposite runtime receives a byte proxy.
+Unbounded text-layout width is permitted; NaN and non-finite scene geometry are not.
+The code generator runs only during development (`python eng/xsr/generate_ui_wire.py`);
+CI's `--check` compares generated sources with the built contract. No runtime
+reflection dispatch is added. These channels are preparation for the window-module
+lifecycle migration, not a claim that Avalonia has already left Host.
+
+macOS publication regression: the clipboard/resize scenario assumed the custom
+maximize button existed in the visual tree. macOS deliberately uses native traffic
+lights, so indexing the second custom button failed on both architectures. The
+scenario now asserts the platform-specific button count and keeps resize/clipboard
+checks on every platform; it does not change window behavior or skip the scenario.
+
+Transport checkpoint validation (Linux x64): all 129 renderer scenarios passed in
+both managed and published NativeAOT executables; 46 offscreen/native backend
+scenarios and the 83-project architecture gate passed. Schema regeneration matched
+both checked-in generated files. The backend timing run initially exceeded the
+tray-animation deadline while build processes were active; the isolated rerun after
+build-server shutdown passed. macOS CI is still required to verify the corrected
+traffic-light expectation on both architectures. No new native UI payload is
+advertised or distributed at this checkpoint.

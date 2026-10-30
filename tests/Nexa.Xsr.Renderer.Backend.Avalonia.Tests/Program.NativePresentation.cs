@@ -243,11 +243,14 @@ internal static partial class Program
         actions.Attach(window);
         AssertEqual(TimeSpan.FromSeconds(1d / 24), AvaloniaUiMotion.FrameInterval);
         AssertFalse(window.CanResize);
-        var maximize = window.GetVisualDescendants().OfType<AvaloniaNativeWindowActions.WindowActionButton>().ElementAt(1);
-        AssertFalse(maximize.IsEnabled);
+        var buttons = window.GetVisualDescendants().OfType<AvaloniaNativeWindowActions.WindowActionButton>().ToArray();
+        // macOS owns its traffic lights; only the other platforms create these custom buttons.
+        AssertEqual(OperatingSystem.IsMacOS() ? 0 : 3, buttons.Length);
+        var maximize = OperatingSystem.IsMacOS() ? null : buttons[1];
+        if (maximize is not null) AssertFalse(maximize.IsEnabled);
         actions.SetWindowResizeEnabled(true);
         AssertTrue(window.CanResize);
-        AssertTrue(maximize.IsEnabled);
+        if (maximize is not null) AssertTrue(maximize.IsEnabled);
         actions.SetAnimationFrameRate(60);
         const string code = "ABCD-EFGH";
         await actions.CopyTextAsync(code).ConfigureAwait(true);

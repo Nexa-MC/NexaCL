@@ -6,6 +6,10 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("input wire preserves hits and validates before mutation", Sync(InputWirePreservesHitsAndRejectsBeforeMutation)),
+        ("text wire preserves layout and validates before invocation", Sync(TextWirePreservesUnboundedLayoutAndRejectsTrailingRequests)),
+        ("scene wire admission is atomic", Sync(SceneWireRoundTripAndAdmissionAreAtomic)),
+        ("scene wire images reuse retire and resynchronize", Sync(SceneWireImagesReuseRetireAndResynchronize)),
         ("HorizontalContentDragKeepsClicksAndPublishesAxisInertia", Sync(HorizontalContentDragKeepsClicksAndPublishesAxisInertia)),
         ("DirectScrollLocksAxisUntilReleaseAndRetiresLostOverflow", Sync(DirectScrollLocksAxisUntilReleaseAndRetiresLostOverflow)),
         ("NestedDirectScrollingChoosesAncestorOnTheDominantAxis", Sync(NestedDirectScrollingChoosesAncestorOnTheDominantAxis)),
