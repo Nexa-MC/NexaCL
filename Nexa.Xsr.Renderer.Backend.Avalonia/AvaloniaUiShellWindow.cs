@@ -472,6 +472,8 @@ public sealed partial class AvaloniaUiShellWindow : Window
 
     private void OnWindowPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
+        if (e.Property == WindowStateProperty && e.OldValue is WindowState previous && e.NewValue is WindowState next)
+            AvaloniaWindowsFrame.OnStateTransition(this, previous, next);
         if (e.Property == CanResizeProperty) _windowActions.SetResizeEnabled(CanResize);
         if (e.Property == CanResizeProperty || e.Property == WindowStateProperty) UpdateResizeGrips();
         if (e.Property == WindowStateProperty || e.Property == IsVisibleProperty)

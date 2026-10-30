@@ -186,5 +186,8 @@ internal sealed partial class DesktopThemeSession : IDesktopThemeSettingsSession
 
     private sealed record PreparedTheme(ThemeCandidate Candidate, NssThemeStyleProgram Program,
         AvaloniaUiThemeAppearance NativeAppearance, DesktopEffectiveAppearanceSnapshot Appearance,
-        IReadOnlyList<Guid> Leases);
+        IReadOnlyList<Guid> Leases)
+    {
+        public bool DowngradeApproved { get; init; }
+    }
 }

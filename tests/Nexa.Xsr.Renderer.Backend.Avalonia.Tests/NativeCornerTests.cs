@@ -83,7 +83,6 @@ internal static partial class Program
             window.Width -= 100; window.Height -= 50;
             await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
             VerifyCompositedViewport(window, 860, 550);
-            double normalWidth = window.Width, normalHeight = window.Height;
 
             // A normal hidden window can reopen without any size or state notification.
             // Force the stale DWM policy so this cannot pass merely because it stayed off.
@@ -122,27 +121,32 @@ internal static partial class Program
             await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
             VerifyCompositedViewport(window, 860, 550);
             await VerifyAnimatedNativeTrayAsync(shell, window, actions, handle, reveals);
-            // Reproduce a stale platform checkpoint after restoration through the OS.
-            window.WindowState = WindowState.Maximized;
-            await WaitForNativeCornerLayoutAsync(() => NativeCornerMaximizedViewportMatches(window));
-            actions.MinimizeWindow();
-            await WaitForNativeCornerLayoutAsync(() => window.WindowState == WindowState.Minimized && NativeCornerIsIconic(handle));
-            // Windows first restores the maximized placement; then the user unmaximizes.
-            window.WindowState = WindowState.Maximized;
-            await WaitForNativeCornerLayoutAsync(() => !NativeCornerIsIconic(handle) && NativeCornerMaximizedViewportMatches(window));
-            window.WindowState = WindowState.Normal;
-            await WaitForNativeCornerLayoutAsync(() => window.WindowState == WindowState.Normal && window.Surface.Bounds.Width < 1000);
-            // The user resizes the restored normal window before the next minimize.
-            // Establish its placement independently of the OS maximized restore bounds.
-            window.Width = normalWidth;
-            window.Height = normalHeight;
-            await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
-            window.WindowState = WindowState.Minimized;
-            await WaitForNativeCornerLayoutAsync(() => NativeCornerIsIconic(handle));
-            actions.HideWindow(); actions.RestoreWindow();
-            VerifyNativeCornerRestoration(window, handle, WindowState.Normal, reveals);
-            await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
-            Console.WriteLine("PASS: tray restore uses latest native normal state after an earlier maximized minimize; viewport retained");
+            for (int cycle = 0; cycle < 3; cycle++)
+            {
+                // Reproduce a stale platform checkpoint after restoration through the OS.
+                RestorePlacement normalPlacement = ReadRestorePlacement(handle);
+                window.WindowState = WindowState.Maximized;
+                await WaitForNativeCornerLayoutAsync(() => NativeCornerMaximizedViewportMatches(window));
+                VerifyRestorePlacement(handle, normalPlacement);
+                actions.MinimizeWindow();
+                await WaitForNativeCornerLayoutAsync(() => window.WindowState == WindowState.Minimized && NativeCornerIsIconic(handle));
+                VerifyRestorePlacement(handle, normalPlacement);
+                // Windows first restores the maximized placement; then the user unmaximizes.
+                window.WindowState = WindowState.Maximized;
+                await WaitForNativeCornerLayoutAsync(() => !NativeCornerIsIconic(handle) && NativeCornerMaximizedViewportMatches(window));
+                VerifyRestorePlacement(handle, normalPlacement);
+                window.WindowState = WindowState.Normal;
+                await WaitForNativeCornerLayoutAsync(() => window.WindowState == WindowState.Normal && window.Surface.Bounds.Width < 1000);
+                VerifyRestorePlacement(handle, normalPlacement);
+                // Native restoration must preserve the viewport without a corrective resize.
+                await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
+                window.WindowState = WindowState.Minimized;
+                await WaitForNativeCornerLayoutAsync(() => NativeCornerIsIconic(handle));
+                actions.HideWindow(); actions.RestoreWindow();
+                VerifyNativeCornerRestoration(window, handle, WindowState.Normal, reveals);
+                await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 860, 550));
+                Console.WriteLine("PASS: tray restore uses latest native normal state after an earlier maximized minimize; viewport retained");
+            }
             await VerifyNativeWindowPointerHitTestingAsync(shell, window);
             window.WindowState = WindowState.Minimized;
             await WaitForNativeCornerLayoutAsync(() => window.WindowState == WindowState.Minimized && NativeCornerIsIconic(handle));
@@ -258,6 +262,25 @@ internal static partial class Program
     [LibraryImport("user32.dll", EntryPoint = "IsIconic")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool NativeCornerIsIconic(nint handle);
+
+    private static RestorePlacement ReadRestorePlacement(nint handle)
+    {
+        var placement = new RestorePlacement { Length = Marshal.SizeOf<RestorePlacement>() };
+        AssertTrue(GetRestorePlacement(handle, ref placement));
+        return placement;
+    }
+
+    private static void VerifyRestorePlacement(nint handle, RestorePlacement expected)
+    {
+        RestorePlacement actual = ReadRestorePlacement(handle);
+        AssertEqual((expected.Left, expected.Top, expected.Right, expected.Bottom),
+            (actual.Left, actual.Top, actual.Right, actual.Bottom));
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RestorePlacement { public int Length, Flags, Show, MinX, MinY, MaxX, MaxY, Left, Top, Right, Bottom; }
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowPlacement")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetRestorePlacement(nint handle, ref RestorePlacement placement);
 
     private static bool NativeCornerMaximizedViewportMatches(AvaloniaUiShellWindow window)
         => window.WindowState == WindowState.Maximized

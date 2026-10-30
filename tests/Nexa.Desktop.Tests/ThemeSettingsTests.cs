@@ -240,8 +240,12 @@ internal static partial class Program
             XsrUiEntityId option = default;
             Tree.Walk(Settings.Page, entity =>
             {
-                if (Tree.Name(entity).StartsWith("Theme.Option.", StringComparison.Ordinal)
-                    && Tree.Children(entity).Any(child => Tree.GetComponent<XsrUiText>(child)?.Content == label)) option = entity;
+                if (Tree.Name(entity).StartsWith("Theme.Option.", StringComparison.Ordinal))
+                {
+                    bool hasLabel = false;
+                    Tree.Walk(entity, child => { hasLabel |= Tree.GetComponent<XsrUiText>(child)?.Content == label; return true; });
+                    if (hasLabel) option = entity;
+                }
                 return true;
             });
             AssertTrue(option.IsAssigned); XsrUiEntityId action = default;
@@ -262,6 +266,8 @@ internal static partial class Program
         public DesktopThemeSettingsSnapshot Snapshot { get; private set; }
         internal int RefreshCalls, SaveCalls, ResetCalls, RevokeCalls, EndPreviewCalls;
         internal bool FailSave;
+        internal ThemeCandidate? ImportCandidate;
+        internal bool? DowngradeDecision;
         internal Func<CancellationToken, Task>? BeforeSave;
         internal Func<CancellationToken, Task>? AfterSave;
         internal ThemeOptionsSaveCommand? LastSave;
@@ -282,7 +288,13 @@ internal static partial class Program
         internal void Touch(string? error = null) => Snapshot = Snapshot with { Revision = Snapshot.Revision + 1, Error = error };
         internal void Select(string source, bool preview = false) { Snapshot = Snapshot with { PresentedSourceIdentity = source, IsPreview = preview }; Touch(); }
         public Task<XsrResult> RefreshAsync(CancellationToken token) { RefreshCalls++; Touch(); return Task.FromResult(XsrResult.Success()); }
-        public Task<XsrResult> ImportAsync(string path, ThemeSourceKind kind, bool preview, CancellationToken token) => Task.FromResult(XsrResult.Success());
+        public async Task<XsrResult> ImportAsync(string path, ThemeSourceKind kind, bool preview, CancellationToken token,
+            Func<ThemeCandidate, CancellationToken, Task<bool>>? confirmDowngrade = null)
+        {
+            if (ImportCandidate is { } candidate && confirmDowngrade is not null)
+                DowngradeDecision = await confirmDowngrade(candidate, token);
+            return XsrResult.Success();
+        }
         public Task<XsrResult> ActivateAsync(string sourceIdentity, bool preview, CancellationToken token) { Select(sourceIdentity, preview); return Task.FromResult(XsrResult.Success()); }
         public Task<XsrResult> EndPreviewAsync(CancellationToken token) { EndPreviewCalls++; Snapshot = Snapshot with { IsPreview = false, PresentedSourceIdentity = Snapshot.Current.Selection?.SourceIdentity }; Touch(); return Task.FromResult(XsrResult.Success()); }
         public Task<XsrResult> SaveOptionsAsync(ThemeOptionsSaveCommand command, CancellationToken token)

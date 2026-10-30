@@ -94,6 +94,7 @@ public sealed partial class ThemePackageService
     {
         if (!Enum.IsDefined(kind)) throw new InvalidDataException("Invalid resource kind.");
         if (function == "asset") return (ThemePaths.Within(prepared.Installation.Root, argument), null);
+        if (!HasPriorResourceAuthority(prepared)) throw new InvalidDataException("A theme from a different source requires new external resource grants.");
         string path = ThemePaths.Canonical(argument); ThemePaths.NoLinks(path);
         var grant = _grants.Values.FirstOrDefault(g => g.SourceIdentity == prepared.Candidate.SourceIdentity && g.Kind == kind &&
             (g.Scope == ThemeGrantScope.File && function == "file" && SamePath(path, g.CanonicalPath)

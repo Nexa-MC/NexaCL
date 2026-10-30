@@ -28,10 +28,10 @@ internal static partial class Program
 
     // Native theme IO, services, session, controllers and decoders are real. Only
     // game/account/instance data and explicit picker selections are isolated fixtures.
-    private static int RunNativeThemePreview(string mode, string outputDirectory) =>
-        AvaloniaUiStartupSession.RunApplicationOnMainThread(() => RunNativeThemePreviewAsync(mode, Path.GetFullPath(outputDirectory)));
+    private static int RunNativeThemePreview(string mode, string outputDirectory, bool optionsOnly = false) =>
+        AvaloniaUiStartupSession.RunApplicationOnMainThread(() => RunNativeThemePreviewAsync(mode, Path.GetFullPath(outputDirectory), optionsOnly));
 
-    private static async Task<int> RunNativeThemePreviewAsync(string mode, string outputDirectory)
+    private static async Task<int> RunNativeThemePreviewAsync(string mode, string outputDirectory, bool optionsOnly)
     {
         if (mode is not ("light" or "dark")) throw new ArgumentException("Expected light or dark.", nameof(mode));
         Directory.CreateDirectory(outputDirectory);
@@ -185,6 +185,13 @@ internal static partial class Program
 
             await NavigateSettings(h.Global, "appearance");
             await CapturePair("builtin-settings");
+            if (optionsOnly)
+            {
+                await Show(OptionKey(builtin, "appearance.background-opacity") + ".Slider");
+                await CapturePair("builtin-options");
+                Console.WriteLine("PASS: built-in theme option rows captured through native Windows rendering at both viewport widths.");
+                return 0;
+            }
             nextImport = Path.Combine(AppContext.BaseDirectory, "Themes", "Minimal");
             await Activate("Theme.ImportDirectory");
             await Eventually(() => themes.Snapshot.Catalogue.Themes.Any(entry => entry.Manifest.Id == "nexa.minimal")

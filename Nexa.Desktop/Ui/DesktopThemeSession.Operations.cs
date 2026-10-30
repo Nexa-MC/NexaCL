@@ -9,13 +9,29 @@ internal sealed partial class DesktopThemeSession
     public Task<XsrResult> RefreshAsync(CancellationToken token) => ExclusiveAsync(async (_, cancellation) =>
     { await RefreshSnapshotAsync(cancellation).ConfigureAwait(false); return XsrResult.Success(); }, token);
 
-    public Task<XsrResult> ImportAsync(string path, ThemeSourceKind kind, bool preview, CancellationToken token) =>
+    public Task<XsrResult> ImportAsync(string path, ThemeSourceKind kind, bool preview, CancellationToken token,
+        Func<ThemeCandidate, CancellationToken, Task<bool>>? confirmDowngrade = null) =>
         ExclusiveAsync(async (request, cancellation) =>
         {
             if (_safeMode) return XsrResult.Failure(new(XsrErrorKind.Rejected, XsrSemanticId.Parse("themes.safe_mode"), "Safe mode uses the built-in theme."));
             var candidate = await QueryAsync<ThemePrepareQuery, ThemeCandidate>(ThemesContract.Prepare, new(path, kind), cancellation).ConfigureAwait(false);
             if (!candidate.IsSuccess) return XsrResult.Failure(candidate.Error!);
-            return await ActivateCandidateCoreAsync(candidate.Value!, preview, request, cancellation).ConfigureAwait(false);
+            bool activationStarted = false;
+            try
+            {
+                if (candidate.Value!.IsDowngrade && confirmDowngrade is null)
+                    return XsrResult.Failure(new(XsrErrorKind.Rejected, XsrSemanticId.Parse("themes.downgrade_confirmation_required"), "A theme downgrade requires confirmation before activation."));
+                bool approved = candidate.Value!.IsDowngrade && confirmDowngrade is not null
+                    && await confirmDowngrade(candidate.Value, cancellation).ConfigureAwait(false);
+                if (candidate.Value.IsDowngrade && !approved) return XsrResult.Success();
+                CheckRequest(request, cancellation);
+                activationStarted = true;
+                return await ActivateCandidateCoreAsync(candidate.Value, preview, request, cancellation, allowDowngrade: approved).ConfigureAwait(false);
+            }
+            finally
+            {
+                if (!activationStarted) await CommandAsync(ThemesContract.Revert, new ThemeRevertCommand(candidate.Value!.CandidateId), CancellationToken.None).ConfigureAwait(false);
+            }
         }, token, true);
 
     public Task<XsrResult> ActivateAsync(string sourceIdentity, bool preview, CancellationToken token) =>

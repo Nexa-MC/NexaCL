@@ -34,6 +34,12 @@ Limits: manifest 64 KiB/depth 16; 4096 archive entries; 128 MiB compressed/per e
 cross-platform ambiguous paths. Resources and folder enumeration have explicit type,
 size and count budgets. Both package and folder sources use the same validation.
 
+Importing an installed manifest ID prepares an upgrade of that installation, not
+a second catalogue entry. Equal versions may be reinstalled; lower versions require
+explicit confirmation before activation. Version comparison and commit enforcement
+belong to the service. See [theme upgrades](theme-upgrades.md) for ordering,
+option retention, cancellation and source-authority rules.
+
 `asset()` resolves within admitted package identity. `file()` and `folder()` require
 explicit user-selected grants bound to installation/source identity, resource kind
 and canonical path. Theme ID alone cannot inherit a different package's grants.

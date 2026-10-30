@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="已安装版本为 {data current}，导入版本为 {data incoming}。继续将替换现有主题，并保留兼容的设置。" Localize="false" /></nxml-dynamic>

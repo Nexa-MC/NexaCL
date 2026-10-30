@@ -1,5 +1,10 @@
 <nxml-page>
   <StackPanel>
+    <Text Key="settings.theme.group.color" Content="颜色" />
+    <Text Key="settings.theme.group.background" Content="背景" />
+    <Text Key="settings.theme.group.window" Content="窗口" />
+    <Text Key="settings.theme.group.video" Content="视频" />
+    <Text Key="settings.theme.group.music" Content="音乐" />
     <Text Key="settings.action.back" Content="返回" />
     <Text Key="settings.action.cancel" Content="取消" />
     <Text Key="settings.action.restore" Content="恢复" />
@@ -79,5 +84,8 @@
     <Text Key="settings.trace.captureFailed" Content="无法捕获 XSR Trace，请重试。" />
     <Text Key="settings.advanced.paletteBlocked" Content="请先完成当前对话框，再打开命令面板。" />
     <Text Key="loading.settings" Content="正在读取设置…" />
+    <Text Key="settings.theme.downgradeTitle" Content="安装较早版本的主题？" />
+    <Text Key="settings.theme.downgradeAccept" Content="继续降级" />
+    <Text Key="settings.theme.downgradeCancel" Content="取消" />
   </StackPanel>
 </nxml-page>

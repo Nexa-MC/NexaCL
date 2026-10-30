@@ -1,7 +1,10 @@
 <nxml-dynamic>
   <StackPanel Key="{data key}" IsVisible="{data visible}" Class="theme-option">
-    <Text Content="{data group}" Localize="false" IsVisible="{data hasGroup}" Class="theme-group" />
-    <Text Content="{data label}" Label="{data label}" Localize="false" Class="theme-option-label" />
-    <Dynamic Key="{data editorKey}" Class="theme-option-editor" />
+    <Text Content="{data group}" IsVisible="{data hasGroup}" Class="theme-group" />
+    <StackPanel Class="theme-option-row">
+      <Text Content="{data label}" Label="{data label}" Localize="false" Class="theme-option-label" />
+      <Dynamic Key="{data editorKey}" Class="theme-option-editor" />
+    </StackPanel>
+    <ContentHost Class="theme-option-divider" />
   </StackPanel>
 </nxml-dynamic>
