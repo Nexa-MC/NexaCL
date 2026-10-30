@@ -8,6 +8,17 @@ namespace Nexa.Services.Tasks;
 /// </summary>
 public static class TaskStagePlanner
 {
+    public static TaskCenterStep[] Terminate(IReadOnlyList<TaskCenterStep> plan, TaskCenterEntryState state, string detail)
+    {
+        if (state == TaskCenterEntryState.Finished) return Advance(plan, "完成", detail, 1d);
+        var result = plan.ToArray();
+        if (state == TaskCenterEntryState.Paused || result.Length == 0) return result;
+        int active = Array.FindLastIndex(result, step => step.State == TaskCenterEntryState.Running);
+        if (active < 0) active = Array.FindIndex(result, step => step.State == TaskCenterEntryState.Waiting);
+        if (active >= 0) result[active] = result[active] with { State = state, Detail = detail };
+        return result;
+    }
+
     public static TaskCenterStep[] Create(IReadOnlyList<string> names) =>
         names
             .Where(static name => !string.IsNullOrWhiteSpace(name))

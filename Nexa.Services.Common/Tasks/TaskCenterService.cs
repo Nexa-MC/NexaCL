@@ -400,7 +400,7 @@ public sealed class TaskCenterService : IDisposable
             // Finished reads as fully complete; canceled keeps the progress it reached.
             Progress = state == TaskCenterEntryState.Finished ? 1d : entry.Progress,
             SpeedBytesPerSecond = 0,
-            Steps = state == TaskCenterEntryState.Paused ? entry.Steps : entry.Steps is { } steps ? TaskStagePlanner.Advance(steps, "完成", detail, 1d) : null,
+            Steps = entry.Steps is { } steps ? TaskStagePlanner.Terminate(steps, state, detail) : null,
         };
 
     /// <summary>

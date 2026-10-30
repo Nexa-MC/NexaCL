@@ -9,6 +9,27 @@ namespace Nexa.Services.Tests;
 // on one built store so the collection/summary cells behave exactly as the renderer sees them.
 internal static partial class Program
 {
+    private static ValueTask TaskCenterFailurePreservesUnfinishedStages()
+    {
+        foreach (bool canceled in new[] { false, true })
+        {
+            TaskCenterService service = NewTaskCenter(out XsrStateStore store);
+            using var task = service.Begin(new("terminal:1", "安装", ["版本信息", "游戏文件", "完成"]));
+            task.Report("游戏文件", "下载中", .4, 2, 5, 100);
+            if (canceled) task.Canceled(); else task.Fail("下载失败");
+            var entry = store.ReadCollection<TaskCenterEntry>(store.Resolve(TaskCenterStateContract.EntriesKey)).Items.Single();
+            AssertEqual(TaskCenterEntryState.Finished, entry.Steps![0].State);
+            AssertEqual(entry.State, entry.Steps[1].State);
+            AssertEqual(.4, entry.Steps[1].Progress);
+            AssertEqual(TaskCenterEntryState.Waiting, entry.Steps[2].State);
+            AssertEqual(0d, entry.Steps[2].Progress);
+        }
+        var early = TaskStagePlanner.Terminate(TaskStagePlanner.Create(["准备", "完成"]), TaskCenterEntryState.Failed, "元数据不可用");
+        AssertEqual(TaskCenterEntryState.Failed, early[0].State);
+        AssertEqual(TaskCenterEntryState.Waiting, early[1].State);
+        return ValueTask.CompletedTask;
+    }
+
     private static ValueTask TaskCenterPausePreservesCheckpointWithoutCompletingSteps()
     {
         TaskCenterService service = NewTaskCenter(out XsrStateStore store);

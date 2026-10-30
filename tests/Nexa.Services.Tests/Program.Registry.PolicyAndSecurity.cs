@@ -70,6 +70,7 @@ internal static partial class Program
         ("task retry preserves recovery policy and rejects stale owners", TaskRetryPreservesRecoveryPolicyAndRejectsStaleOwners),
         ("task retry repeats failures and honors cancellation dismissal shutdown", TaskRetryRepeatsFailuresAndHonorsCancellationAndDismissal),
         ("task center pause preserves checkpoint without completing steps", TaskCenterPausePreservesCheckpointWithoutCompletingSteps),
+        ("task center failures preserve unfinished stages", TaskCenterFailurePreservesUnfinishedStages),
         ("prerelease telemetry cannot be disabled", PrereleaseTelemetryCannotBeDisabled),
         ("telemetry lifecycle records only bounded facts", TelemetryLifecycleRecordsOnlyBoundedFacts),
         ("diagnostic revocation preserves necessary facts", DiagnosticRevocationPreservesNecessaryFacts),

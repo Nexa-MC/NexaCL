@@ -247,14 +247,30 @@ public sealed partial class MinecraftInstallService
         string name = MinecraftModpackArchive.SafeRelative(file["fileName"]?.GetValue<string>() ?? "");
         if (name.Contains('/')) throw new InvalidDataException("CurseForge 文件名无效。");
         string? rawUrl = file["downloadUrl"]?.GetValue<string>();
-        if (string.IsNullOrWhiteSpace(rawUrl)) throw new InvalidDataException("作者未提供第三方下载地址，请在 CurseForge 获取此文件：" + name);
-        string url = MinecraftModpackArchive.DownloadUrl(rawUrl);
         long size = file["fileLength"]?.GetValue<long>() ?? -1;
         if (size < 0 || size > MinecraftModpackArchive.MaxFile) throw new InvalidDataException("CurseForge 文件大小无效。");
         string? sha = (file["hashes"] as JsonArray ?? []).FirstOrDefault(item => item?["algo"]?.GetValue<int>() == 1)?["value"]?.GetValue<string>();
         var project = await ReadCurseForgePackDataAsync($"/mods/{reference.ProjectId}", token).ConfigureAwait(false);
         if (project["id"]?.GetValue<long>() != reference.ProjectId || file["isAvailable"]?.GetValue<bool>() == false)
             throw new InvalidDataException("CurseForge 项目不匹配或文件不可用。");
+        sha = MinecraftModpackArchive.RequireHash(sha, 40);
+        if (string.IsNullOrWhiteSpace(rawUrl) && project["allowModDistribution"]?.GetValue<bool>() != false)
+        {
+            try
+            {
+                var download = await ReadCurseForgePackDataAsync($"/mods/{reference.ProjectId}/files/{reference.FileId}/download-url", token).ConfigureAwait(false);
+                if (download is JsonValue value && value.TryGetValue<string>(out var resolved)) rawUrl = resolved;
+            }
+            catch (InvalidDataException error) when (error.Message == "无法获取 CurseForge 文件信息。")
+            {
+                // A denied/missing URL is not permission to manufacture a CDN address.
+                // Continue with the independently published identical file on Modrinth.
+            }
+        }
+        if (string.IsNullOrWhiteSpace(rawUrl))
+            rawUrl = await ResolvePackHashDownloadAsync(sha, size, token).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(rawUrl)) throw new InvalidDataException("CurseForge 未提供下载地址，Modrinth 也未找到相同文件。请在 CurseForge 获取此文件：" + name);
+        string url = MinecraftModpackArchive.DownloadUrl(rawUrl);
         string folder = project["classId"]?.GetValue<int>() switch
         {
             6 => "mods",
@@ -263,6 +279,34 @@ public sealed partial class MinecraftInstallService
             _ => throw new InvalidDataException("整合包引用了尚不支持的 CurseForge 内容类型。"),
         };
         return new(folder + "/" + name, [url], size, MinecraftModpackArchive.RequireHash(sha, 40), null, reference.Optional);
+    }
+
+    private async Task<string?> ResolvePackHashDownloadAsync(string sha1, long size, CancellationToken token)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.modrinth.com/v2/version_file/" + sha1 + "?algorithm=sha1");
+        request.Headers.UserAgent.ParseAdd("NexaCL/2.0 (https://github.com/Nexa-MC/NexaCL)");
+        using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+        response.EnsureSuccessStatusCode();
+        await using var source = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
+        using var buffer = new MemoryStream();
+        byte[] bytes = new byte[8192];
+        int read;
+        while ((read = await source.ReadAsync(bytes, token).ConfigureAwait(false)) > 0)
+        {
+            if (buffer.Length + read > 4 * 1024 * 1024) throw new InvalidDataException("Modrinth 响应过大。");
+            buffer.Write(bytes, 0, read);
+        }
+        var document = JsonNode.Parse(buffer.ToArray());
+        foreach (var candidate in document?["files"] as JsonArray ?? [])
+        {
+            if (!string.Equals(candidate?["hashes"]?["sha1"]?.GetValue<string>(), sha1, StringComparison.OrdinalIgnoreCase)
+                || candidate?["size"]?.GetValue<long>() != size) continue;
+            string url = MinecraftModpackArchive.DownloadUrl(candidate["url"]?.GetValue<string>() ?? "");
+            if (new Uri(url).Host != "cdn.modrinth.com") throw new InvalidDataException("Modrinth 文件来源无效。");
+            return url;
+        }
+        return null;
     }
 
     private static void ValidatePackDestination(string relative, string instance)

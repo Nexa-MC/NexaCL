@@ -235,12 +235,13 @@ internal static partial class Program
             };
             string source = Path.Combine(temporary, "pack.zip"); WriteLocalJar(source, ("manifest.json", manifest.ToJsonString()), ("overrides/options.txt", "options"));
             var preview = await MinecraftModpackArchive.InspectAsync(source);
-            foreach (bool allowed in new[] { true, false })
+            foreach (string mode in new[] { "allowed", "download-url", "blocked", "hash", "wrong-hash", "wrong-size" })
             {
-                using var http = new HttpClient(new PackCurseHandler(allowed, packagedKey));
+                bool allowed = mode is "allowed" or "download-url" or "hash";
+                using var http = new HttpClient(new PackCurseHandler(mode, packagedKey));
                 using var fixture = new InstallFixture(PackMetadata(), http: http, countryPolicy: countryPolicy,
                     packagedCurseForgeApiKey: packagedKey);
-                string root = Path.Combine(temporary, allowed ? "allowed" : "blocked"); Directory.CreateDirectory(root);
+                string root = Path.Combine(temporary, mode); Directory.CreateDirectory(root);
                 if (countryPolicy.IsMainlandChina) await SeedLocalPackBaseAsync(root);
                 var result = await fixture.Install.InstallModpackAsync(new(preview, root));
                 AssertEqual(allowed, result.IsSuccess);
@@ -261,12 +262,38 @@ internal static partial class Program
         }
     }
 
-    private sealed class PackCurseHandler(bool allowed, string expectedKey) : HttpMessageHandler
+    private sealed class PackCurseHandler(string mode, string expectedKey) : HttpMessageHandler
     {
+        private bool _downloadUrlRequested;
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            AssertEqual("api.curseforge.com", request.RequestUri!.Host);
-            AssertTrue(request.Headers.GetValues("x-api-key").Single() == expectedKey);
+            if (request.RequestUri!.Host == "api.modrinth.com")
+            {
+                AssertTrue(mode is not ("allowed" or "download-url"));
+                AssertTrue(_downloadUrlRequested);
+                AssertFalse(request.Headers.Contains("x-api-key"));
+                AssertEqual("/v2/version_file/" + Sha1Hex("MODJAR!"), request.RequestUri.AbsolutePath);
+                if (mode == "blocked") return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+                var version = new JsonObject
+                {
+                    ["files"] = new JsonArray(new JsonObject
+                    {
+                        ["hashes"] = new JsonObject { ["sha1"] = mode == "wrong-hash" ? new string('0', 40) : Sha1Hex("MODJAR!") },
+                        ["size"] = mode == "wrong-size" ? 8 : 7,
+                        ["url"] = "https://cdn.modrinth.com/data/pack/versions/1/content.jar"
+                    })
+                };
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(version.ToJsonString()) });
+            }
+            AssertTrue(request.RequestUri.Host is "api.curseforge.com" or "mod.mcimirror.top");
+            if (request.RequestUri.Host == "api.curseforge.com") AssertTrue(request.Headers.GetValues("x-api-key").Single() == expectedKey);
+            else AssertFalse(request.Headers.Contains("x-api-key"));
+            if (request.RequestUri.AbsolutePath.EndsWith("/download-url", StringComparison.Ordinal))
+            {
+                _downloadUrlRequested = true;
+                return Task.FromResult(new HttpResponseMessage(mode == "download-url" ? HttpStatusCode.OK : HttpStatusCode.Forbidden)
+                { Content = new StringContent("{\"data\":\"https://edge.forgecdn.net/files/1/1/textures.zip\"}") });
+            }
             var data = request.RequestUri!.AbsolutePath.EndsWith("/files/456", StringComparison.Ordinal)
                 ? new JsonObject
                 {
@@ -274,7 +301,7 @@ internal static partial class Program
                     ["modId"] = 123,
                     ["fileName"] = "textures.zip",
                     ["fileLength"] = 7,
-                    ["downloadUrl"] = allowed ? "https://edge.forgecdn.net/files/1/1/textures.zip" : null,
+                    ["downloadUrl"] = mode == "allowed" ? "https://edge.forgecdn.net/files/1/1/textures.zip" : null,
                     ["hashes"] = new JsonArray(new JsonObject { ["algo"] = 1, ["value"] = Sha1Hex("MODJAR!") })
                 }
                 : new JsonObject { ["id"] = 123, ["classId"] = 12 };
