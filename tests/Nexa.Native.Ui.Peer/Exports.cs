@@ -56,6 +56,7 @@ internal static class Exports
         private readonly XsrUiRendererEndpoint _input;
         private readonly XsrUiShellEndpoint _shell;
         private readonly NativeUiAsyncServer _async;
+        private readonly DispatcherFixture _dispatcher;
         private readonly NativeUiResources<MemoryStream> _resources = new(8, 1024);
         private readonly XsrUiSceneSender _scenes = new();
         private XsrUiScenePacket? _pending;
@@ -81,6 +82,7 @@ internal static class Exports
             {
                 if (request.Span[0] == 4) _resources.RejectProvisional(BinaryPrimitives.ReadInt64LittleEndian(result.Span));
             });
+            _dispatcher = new(host, Failed);
         }
         internal void Failed(Exception _) => Interlocked.Increment(ref _failures);
         internal byte[] Exchange(ReadOnlyMemory<byte> request)
@@ -137,11 +139,18 @@ internal static class Exports
                         8 => WindowValueChannel.EncodePickerKind(WindowValueChannel.DecodePickerKind(value)),
                         _ => throw new InvalidDataException("Unknown window value kind."),
                     };
+                case 11:
+                    if (request.Length != 9) throw new InvalidDataException("Invalid continuation ID.");
+                    _dispatcher.Post(BinaryPrimitives.ReadInt64LittleEndian(request.Span[1..])); return [];
                 default: throw new InvalidDataException("Unknown probe operation.");
             }
         }
         internal Task StopAsync() => _async.DisposeAsync().AsTask();
-        internal ValueTask ReleaseResourcesAsync() => _resources.DisposeAsync();
+        internal async ValueTask ReleaseResourcesAsync()
+        {
+            await _dispatcher.DisposeAsync().ConfigureAwait(false);
+            await _resources.DisposeAsync().ConfigureAwait(false);
+        }
         private Task<byte[]> ExecuteAsync(ReadOnlyMemory<byte> request, CancellationToken token)
         {
             if (request.IsEmpty) throw new InvalidDataException("Missing async probe operation.");

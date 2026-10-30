@@ -779,3 +779,42 @@ yet switched to a separately published window module.
 The complete 85-project Release solution subsequently built with zero warnings
 and errors. Both generated-schema drift checks and all 46 backend regressions
 passed after the source-contract extraction.
+
+### Runtime-local dispatcher continuations
+
+The Host owns its synchronization context and continuation delegates. The window
+runtime receives only monotonic continuation IDs and posts them to its native
+UI dispatcher; a reverse callback consumes each ID at most once. Host operations
+that return tasks are explicitly tracked until their actual completion, including
+cancellation cleanup, rather than treating caller cancellation as resource drain.
+Async-void context operations are tracked through OperationStarted/Completed.
+Admission closes before context retirement; continuations for already admitted
+work remain admissible until that work and all callbacks finish.
+
+Dispatcher delivery may back off on pre-admission busy responses. An ambiguous
+or permanent delivery failure retains the continuation and reports a session
+failure; it must neither replay its body nor discard asynchronous finally blocks.
+The session owner can switch to a cleanup dispatcher only after the old native
+dispatcher and its call gate have stopped. Pending IDs are resubmitted, but a
+consumed ID cannot execute twice. All callback bodies remain serialized under the
+Host context. The cleanup dispatcher runs Host cleanup only; it does not revive
+closed native resources. Context retirement completes only after operations,
+queued callbacks, active callbacks and the delivery worker drain. The window
+adapter must perform this ordered handover when native shutdown precedes Host
+cleanup; the context alone does not prove native dispatcher shutdown.
+
+Dispatcher checkpoint: the Linux-x64 independent NativeAOT peer owns a dedicated
+UI dispatcher thread. Host callbacks and their delay/yield continuations resumed
+on that same thread with the Host-owned synchronization context installed and
+restored afterward. Retirement waited for both Task and async-void finally blocks;
+new operations and synchronous Send were rejected. Local fault fixtures passed
+three pre-admission busy responses, acknowledgement loss after consumption, and
+failed-delivery handover to a cleanup dispatcher without executing an ID twice,
+including a throwing diagnostics callback. This is dispatcher protocol validation;
+the production window startup still needs to install the context and own the
+native-shutdown/cleanup handover.
+
+The dispatcher probe also canceled an already running callback while its async
+finally block was suspended, and verified the returned operation did not complete
+until cleanup finished on the native UI thread. The 85-project architecture gate
+passed after adding the runtime-local dispatcher.

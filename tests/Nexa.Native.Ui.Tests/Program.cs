@@ -15,6 +15,7 @@ internal static partial class Program
         AsyncAdmissionAndDeliveryRetry();
         AsyncResultOwnership();
         NativeResourceOwnership();
+        DispatcherDeliveryAndCleanup();
         if (args.Length != 1) throw new ArgumentException("Supply the independently published native UI peer library.");
         IndependentRuntime(args[0]);
         Console.WriteLine("Native UI duplex tests passed: independent scenes/input/text, reverse calls, reentrancy, failure isolation and retirement.");
@@ -224,12 +225,19 @@ internal static partial class Program
         var context = new SynchronizationContext();
         var text = new TextProvider(context);
         NativeUiAsyncClient? operations = null;
+        NativeUiSynchronizationContext? dispatcher = null;
+        int dispatcherFailures = 0;
         using var resourceCallEntered = new ManualResetEventSlim();
         using var resourceCallRelease = new ManualResetEventSlim();
         var textEndpoint = new XsrUiTextLayoutEndpoint(text);
         int invalidations = 0;
         var host = new NativeUiCallRegistration(request =>
         {
+            if (request.Span[0] == 251)
+            {
+                if (request.Length != 9) throw new InvalidDataException("Invalid continuation callback.");
+                dispatcher!.Execute(BinaryPrimitives.ReadInt64LittleEndian(request.Span[1..])); return [];
+            }
             if (request.Span[0] == 252)
             {
                 resourceCallEntered.Set();
@@ -245,6 +253,13 @@ internal static partial class Program
         NativeUiCallTable peerTable = default;
         Equal(0, open(&hostTable, &peerTable));
         peer = new(peerTable);
+        dispatcher = new(id =>
+        {
+            byte[] message = new byte[9]; message[0] = 11;
+            BinaryPrimitives.WriteInt64LittleEndian(message.AsSpan(1), id); peer.Exchange(message);
+        }, _ => Interlocked.Increment(ref dispatcherFailures));
+        IndependentDispatcher(dispatcher);
+        Equal(0, dispatcherFailures);
         operations = new(new InputTransport(peer, 7).Exchange);
         WindowValues(peer);
         Equal((byte)37, operations.InvokeAsync(new byte[] { 0, 37 }).GetAwaiter().GetResult()[0]);
