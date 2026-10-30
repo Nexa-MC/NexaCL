@@ -36,12 +36,12 @@ class NativeModulePayloadTests(unittest.TestCase):
             assets = Path(temp) / "project.assets.json"
             assets.write_text(json.dumps({"libraries": {"Nexa.Services.Network/2.0.0": {}}}))
             verify_host_engine_isolation(assets)
-            for name in ("Jint/4.17.0", "BouncyCastle.Cryptography/2.6.2", "Nexa.Native.Pac/1.0.0", "Nexa.Native.Crypto/1.0.0"):
+            for name in ("Jint/4.17.0", "BouncyCastle.Cryptography/2.6.2", "Nexa.Native.Pac/1.0.0", "Nexa.Native.Crypto/1.0.0", "Nexa.Native.Network/1.0.0"):
                 assets.write_text(json.dumps({"libraries": {name: {}}}))
                 with self.assertRaisesRegex(RuntimeError, "leaked back"):
                     verify_host_engine_isolation(assets)
 
-    def test_host_change_reuses_both_stable_engines_without_new_data(self):
+    def test_host_change_reuses_stable_engines_without_new_data(self):
         from measure_module_delta import measure
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -56,8 +56,25 @@ class NativeModulePayloadTests(unittest.TestCase):
             result = measure(before, after, root / "report", "linux-x64", "2.0.0.alpha.18", "2.0.0.alpha.19")
             engines = [m for m in result["modules"] if m["name"] != "nexa-host.so"]
             self.assertTrue(result["roundTripVerified"])
-            self.assertEqual(2, len(engines))
+            self.assertEqual(3, len(engines))
             self.assertTrue(all(m["identical"] and m["newDataBytes"] == 0 for m in engines))
+
+    def test_first_network_module_is_carried_by_a_verified_delta(self):
+        from measure_module_delta import measure
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            before, after = root / "before", root / "after"
+            before.mkdir(); after.mkdir()
+            for name in module_names("linux-x64"):
+                data = (name + " code").encode() * 100
+                (after / name).write_bytes(data)
+                if name != "nexa-network.so":
+                    (before / name).write_bytes(data)
+            result = measure(before, after, root / "report", "linux-x64", "2.0.0.alpha.18", "2.0.0.alpha.19")
+            network = next(item for item in result["modules"] if item["name"] == "nexa-network.so")
+            self.assertFalse(network["identical"])
+            self.assertEqual(network["bytes"], network["newDataBytes"])
+            self.assertTrue(result["roundTripVerified"])
 
 
 if __name__ == "__main__":

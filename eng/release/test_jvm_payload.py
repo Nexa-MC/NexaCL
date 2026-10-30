@@ -11,7 +11,7 @@ from smoke_install import check_windows_portable
 
 
 class JvmPortablePayloadTests(unittest.TestCase):
-    WINDOWS_FILES = ("Nexa.Desktop.exe", "Nexa.Update.Helper.exe", "Nexa.Jvm.Host.exe", "nexa-host.dll", "nexa-pac.dll", "nexa-crypto.dll")
+    WINDOWS_FILES = ("Nexa.Desktop.exe", "Nexa.Update.Helper.exe", "Nexa.Jvm.Host.exe", "nexa-host.dll", "nexa-pac.dll", "nexa-crypto.dll", "nexa-network.dll")
 
     def test_portable_staging_strips_symbols_and_smoke_executes_host(self):
         with tempfile.TemporaryDirectory() as temporary:

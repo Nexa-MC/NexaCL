@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="native/Nexa.Native.Pac/Nexa.Native.Pac.csproj" />
   <Project Path="native/Nexa.Native.Crypto/Nexa.Native.Crypto.csproj" />
+  <Project Path="native/Nexa.Native.Network/Nexa.Native.Network.csproj" />
   <Project Path="Nexa.Bootstrap/Nexa.Bootstrap.csproj" />
   <Configurations>
     <BuildType Name="Debug" />
@@ -90,6 +91,7 @@
     <Project Path="tests/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj" />
     <Project Path="tests/Nexa.Sidecar.Tests/Nexa.Sidecar.Tests.csproj" />
     <Project Path="tests/Nexa.Services.Tests/Nexa.Services.Tests.csproj" />
+  <Project Path="tests/Nexa.Native.Network.Tests/Nexa.Native.Network.Tests.csproj" />
     <Project Path="tests/Nexa.Services.Themes.Tests/Nexa.Services.Themes.Tests.csproj" />
     <Project Path="tests/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj" />
     <Project Path="tools/CapabilityProbe/CapabilityProbe.csproj" />

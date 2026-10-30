@@ -1,0 +1,22 @@
+<Project>
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NativeLib>Shared</NativeLib>
+    <Version>1.0.0</Version>
+    <InformationalVersion>1.0.0</InformationalVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <!-- A Host-only commit must not rewrite an unchanged engine's binary/debug identity. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <EnableSourceLink>false</EnableSourceLink>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+    <EmbedUntrackedSources>false</EmbedUntrackedSources>
+    <PublishRepositoryUrl>false</PublishRepositoryUrl>
+    <NexaEngineSourceRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))/</NexaEngineSourceRoot>
+    <PathMap>$(NexaEngineSourceRoot)=/_/</PathMap>
+  </PropertyGroup>
+  <ItemGroup>
+    <SourceRoot Include="$(NexaEngineSourceRoot)" MappedPath="/_/" />
+  </ItemGroup>
+</Project>

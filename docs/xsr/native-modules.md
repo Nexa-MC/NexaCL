@@ -122,3 +122,67 @@ new bytes. This is evidence that stable engine extraction works **and that the
 remaining Host is still too coarse**; it is not acceptance of the full split.
 Separate NativeAOT runtimes also increase full-payload overhead. Do not describe
 this checkpoint as a smaller complete installer or completed business isolation.
+
+## Network connection ABI
+
+The first network extraction owns DNS/DoH caches, address ordering and asynchronous
+socket connection in `nexa-network`. HTTP framing, TLS and client certificates stay
+with the caller's `SocketsHttpHandler`. Its existing `ConnectCallback` accepts a
+`NetworkStream` over the transferred OS socket. This preserves specialized mTLS
+configuration, streaming uploads, redirects and response leases without transferring
+CLR objects or serializing private keys. This is the connection boundary, not yet
+the entire network/download service boundary in the target table above.
+
+Each transport owns one resolver cache. Connect requests acquire a transport lease;
+retiring a transport prevents new requests but cannot dispose a resolver still in
+use. Requests have unique native IDs and cancellation sources. Completion happens
+exactly once, asynchronously, through a C callback containing scalar error metadata,
+a bounded UTF-8 diagnostic and, on success, an OS socket handle. The OS handle is duplicated with close-on-exec/non-inheritance semantics, then the
+original Socket is disposed normally to unregister its native runtime epoll/IOCP
+context. Invalidating the original async Socket handle is forbidden: it bypasses
+that cleanup. The duplicate relinquishes ownership before callback invocation. The callback returns whether it
+accepted ownership; rejection closes the handle in the native module. Once accepted,
+the Host owns disposal even if cancellation wins before publishing the result.
+No callback pointer or context may be used after completion returns. Libraries stay
+loaded until process exit. Cancellation must also complete the request and release
+its transport lease; it cannot merely remove a pending callback.
+
+Managed development uses the same connection engine. Native publications use an
+adapter, and the Host must not contain the resolver/connection implementation after
+AOT linking. Existing managed DNS tests remain available; native integration tests
+must cover real loopback transfer, cancellation, failure and retirement while leased.
+
+The external-adapter regression runner sets `NexaNetworkTestInternals=true` so the
+existing injected-client DNS unit fixtures can also compile. Publication explicitly
+sets it to `false`: the Host excludes the DNS implementation source entirely, and
+has no managed reference to `Nexa.Native.Network`. The module itself links the same
+resolver source used by the managed fixtures; there is no alternate resolver policy.
+
+## Reproducible engine identity
+
+Fixed assembly versions alone are insufficient: SDK SourceLink can embed the
+repository-wide Git revision and cause unchanged engines to differ on every Host
+commit. `native/NativeEngine.props` disables SourceLink/SCM queries and untracked
+source embedding for these standalone engines, and maps repository source paths to
+`/_/`. Debug symbols remain available, but do not carry a changing repository URL.
+The full release manifest retains product provenance and binds the engine hashes.
+Reproducibility checks must vary Git/SourceLink revision inputs as well as the Host
+version, while keeping engine source, RID, toolchain and native dependencies fixed.
+
+### Network extraction verification
+
+The local Linux x64 publication passed bootstrap/foreign-working-directory checks,
+Xvfb shell startup, and the managed-caller regression suite against the published
+native libraries. A separate NativeAOT executable in `tests/Nexa.Native.Network.Tests`
+reuses the same socket transfer/cancellation/retirement/mTLS fixtures, and passed
+against the actual shared library as well. Both caller modes are release CI gates.
+
+`eng/release/verify_engine_reproducibility.py --rid <rid> --payload <published-dir>`
+cleans and rebuilds every engine with different source revision, repository commit
+and launcher sequence inputs. The Linux x64 run produced identical SHA-256 hashes
+for all three engines; release CI applies the check to every supported RID. This
+checks fresh compilation rather than an incremental cache hit.
+
+The measured network library is approximately 5.8 MiB; independent AOT runtimes add
+full-payload overhead. The remaining Host is still approximately 79.7 MiB. Connection
+extraction and reproducibility fixes do not satisfy the business-module target above.

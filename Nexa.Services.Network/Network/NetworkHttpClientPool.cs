@@ -108,33 +108,14 @@ public sealed partial class NetworkHttpClientPool : IDisposable
         try { configureTransport?.Invoke(handler); }
         catch { handler.Dispose(); throw; }
         if ((!policy.DnsOverHttps || policy.ProxyMode == 2) && policy.IpStack == "auto") return handler;
-        DnsOverHttpsResolver? resolver = policy.DnsOverHttps && policy.ProxyMode != 2
-            ? new(mainlandChina, policy.ProxyMode) : null;
-        handler.ConnectCallback = async (context, token) =>
+        NetworkConnection? connection = null;
+        try
         {
-            // A system proxy owns destination resolution; its own hostname uses system DNS.
-            bool destination = resolver is not null && string.Equals(context.DnsEndPoint.Host,
-                context.InitialRequestMessage.RequestUri?.IdnHost, StringComparison.OrdinalIgnoreCase);
-            IPAddress[] addresses = destination
-                ? await resolver!.ResolveAsync(context.DnsEndPoint.Host, token).ConfigureAwait(false)
-                : await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, token).ConfigureAwait(false);
-            foreach (IPAddress address in OrderAddresses(addresses, policy.IpStack))
-            {
-                var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
-                try
-                {
-                    using var attempt = CancellationTokenSource.CreateLinkedTokenSource(token);
-                    attempt.CancelAfter(TimeSpan.FromSeconds(4));
-                    await socket.ConnectAsync(address, context.DnsEndPoint.Port, attempt.Token).ConfigureAwait(false);
-                    return new NetworkStream(socket, ownsSocket: true);
-                }
-                catch (SocketException) { socket.Dispose(); }
-                catch (OperationCanceledException) when (!token.IsCancellationRequested) { socket.Dispose(); }
-                catch { socket.Dispose(); throw; }
-            }
-            throw new HttpRequestException("The destination could not be connected.");
-        };
-        return resolver is null ? handler : new OwnedResolverHandler(handler, resolver);
+            connection = new NetworkConnection(policy, mainlandChina);
+            handler.ConnectCallback = connection.ConnectAsync;
+            return new OwnedConnectionHandler(handler, connection);
+        }
+        catch { connection?.Dispose(); handler.Dispose(); throw; }
     }
 
     internal static IEnumerable<IPAddress> OrderAddresses(IPAddress[] addresses, string preference) => preference == "auto" ? addresses
@@ -158,9 +139,9 @@ public sealed partial class NetworkHttpClientPool : IDisposable
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token) =>
             owner.SendAsync(request, redirects, token);
     }
-    private sealed class OwnedResolverHandler(HttpMessageHandler transport, DnsOverHttpsResolver resolver) : DelegatingHandler(transport)
+    private sealed class OwnedConnectionHandler(HttpMessageHandler transport, NetworkConnection connection) : DelegatingHandler(transport)
     {
-        protected override void Dispose(bool disposing) { if (disposing) resolver.Dispose(); base.Dispose(disposing); }
+        protected override void Dispose(bool disposing) { if (disposing) connection.Dispose(); base.Dispose(disposing); }
     }
     private sealed class Generation(NetworkPreferences policy, HttpMessageInvoker transport) : IDisposable
     {

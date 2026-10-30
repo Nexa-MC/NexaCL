@@ -40,6 +40,7 @@ class InstallScopeTests(unittest.TestCase):
                         "module": root / "programs/NexaCL/nexa-host.dll",
                         "pac": root / "programs/NexaCL/nexa-pac.dll",
                         "crypto": root / "programs/NexaCL/nexa-crypto.dll",
+                        "network": root / "programs/NexaCL/nexa-network.dll",
                         "helper": root / "programs/NexaCL/Nexa.Update.Helper.exe",
                         "desktop": root / "public/Desktop/NexaCL.lnk",
                         "menu": root / "data/Microsoft/Windows/Start Menu/Programs/NexaCL.lnk",

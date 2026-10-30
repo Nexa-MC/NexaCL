@@ -18,12 +18,12 @@ def module_name(rid):
 
 def module_names(rid):
     suffix = Path(module_name(rid)).suffix
-    return ["nexa-" + name + suffix for name in ("host", "pac", "crypto")]
+    return ["nexa-" + name + suffix for name in ("host", "pac", "crypto", "network")]
 
 
 def verify_host_engine_isolation(assets):
     libraries = json.loads(assets.read_text())["libraries"]
-    forbidden = {"jint", "bouncycastle.cryptography", "nexa.native.pac", "nexa.native.crypto"}
+    forbidden = {"jint", "bouncycastle.cryptography", "nexa.native.pac", "nexa.native.crypto", "nexa.native.network"}
     embedded = sorted(name for name in libraries if name.split("/", 1)[0].lower() in forbidden)
     if embedded:
         raise RuntimeError(f"Stable engines leaked back into the Host dependency closure: {embedded}")
@@ -40,7 +40,7 @@ def publish(rid, output, properties):
         host, bootstrap = stage / "host", stage / "bootstrap"
         engines = []
         # Stable engines never inherit the launcher release/commit stamp.
-        for engine in ("Pac", "Crypto"):
+        for engine in ("Pac", "Crypto", "Network"):
             directory = stage / engine.lower()
             subprocess.run(["dotnet", "publish", str(ROOT / f"native/Nexa.Native.{engine}/Nexa.Native.{engine}.csproj"),
                             *common, "-p:XsrVersionChannel=stable", "-p:XsrVersionPrefix=1.0.0",
@@ -50,7 +50,7 @@ def publish(rid, output, properties):
                 raise RuntimeError(f"Missing native {engine} engine")
             engines.append((binary, f"nexa-{engine.lower()}" + Path(module).suffix))
         subprocess.run(["dotnet", "publish", str(ROOT / "Nexa.Desktop/Nexa.Desktop.csproj"),
-                        *common, *properties, "-p:NexaNativeModule=true", "-p:NexaExternalModules=true", "--output", str(host)], check=True)
+                        *common, *properties, "-p:NexaNativeModule=true", "-p:NexaExternalModules=true", "-p:NexaNetworkTestInternals=false", "--output", str(host)], check=True)
         verify_host_engine_isolation(ROOT / "Nexa.Desktop/obj/project.assets.json")
         subprocess.run(["dotnet", "publish", str(ROOT / "Nexa.Bootstrap/Nexa.Bootstrap.csproj"),
                         *common, *[p for p in properties if p.startswith(("-p:Xsr", "/p:Xsr"))],

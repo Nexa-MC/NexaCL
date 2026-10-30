@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../NativeEngine.props" />
+  <ItemGroup>
+    <Compile Include="../../Nexa.Services.Network/Network/DnsOverHttpsResolver.cs" Link="DnsOverHttpsResolver.cs" />
+  </ItemGroup>
+</Project>

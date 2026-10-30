@@ -28,7 +28,7 @@ def measure(before, after, output, rid, source_version, target_version):
         modules = []
         for name in module_names(rid):
             old, new = source / name, target / name
-            modules.append(dict(name=name, bytes=new.stat().st_size, identical=digest(old) == digest(new),
+            modules.append(dict(name=name, bytes=new.stat().st_size, identical=old.is_file() and digest(old) == digest(new),
                                 newDataBytes=sum(size for kind, _, size in operations[name] if kind == "data")))
         result = dict(scope="supplied runtime payloads; symbols and installation state excluded",
                       beforeBytes=sum(p.stat().st_size for p in source.rglob("*") if p.is_file()),

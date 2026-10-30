@@ -177,11 +177,14 @@ jobs:
       - name: Verify native Host module boundary
         shell: bash
         run: python eng/release/smoke_native_modules.py --payload "$RUNNER_TEMP/launcher"
+      - name: Verify native engine reproducibility across release stamps
+        shell: bash
+        run: python eng/release/verify_engine_reproducibility.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/launcher"
       - name: Verify external engines against service regressions
         shell: bash
         run: |
           dotnet publish tests/Nexa.Services.Tests/Nexa.Services.Tests.csproj --configuration Release \
-            --self-contained false -m:1 -nodeReuse:false -p:PublishAot=false -p:NexaExternalModules=true \
+            --self-contained false -m:1 -nodeReuse:false -p:PublishAot=false -p:NexaExternalModules=true -p:NexaNetworkTestInternals=true \
             --output "$RUNNER_TEMP/native-engine-tests"
           python - "$RUNNER_TEMP/launcher" "$RUNNER_TEMP/native-engine-tests" '${{ matrix.rid }}' <<'PYMODULES'
           import pathlib, shutil, sys
@@ -192,7 +195,24 @@ jobs:
                   continue
               shutil.copy2(pathlib.Path(sys.argv[1]) / name, pathlib.Path(sys.argv[2]) / name)
           PYMODULES
-          dotnet "$RUNNER_TEMP/native-engine-tests/Nexa.Services.Tests.dll" 'PAC ' gpg
+          dotnet "$RUNNER_TEMP/native-engine-tests/Nexa.Services.Tests.dll" 'PAC ' gpg 'network connection' 'network TLS'
+      - name: Verify NativeAOT network caller ownership and mTLS
+        shell: bash
+        run: |
+          dotnet publish tests/Nexa.Native.Network.Tests/Nexa.Native.Network.Tests.csproj --configuration Release \
+            -r '${{ matrix.rid }}' --self-contained true -m:1 -nodeReuse:false \
+            -p:PublishAot=true -p:NexaExternalModules=true -p:NexaNetworkTestInternals=false \
+            --output "$RUNNER_TEMP/native-network-caller"
+          python - "$RUNNER_TEMP/launcher" "$RUNNER_TEMP/native-network-caller" '${{ matrix.rid }}' <<'PYNETWORK'
+          import pathlib, shutil, subprocess, sys
+          sys.path.insert(0, "eng/release")
+          from publish_launcher import module_names
+          for name in module_names(sys.argv[3]):
+              if not name.startswith("nexa-host."):
+                  shutil.copy2(pathlib.Path(sys.argv[1]) / name, pathlib.Path(sys.argv[2]) / name)
+          suffix = ".exe" if sys.argv[3].startswith("win-") else ""
+          subprocess.run([str(pathlib.Path(sys.argv[2]) / ("Nexa.Native.Network.Tests" + suffix))], check=True, timeout=90)
+          PYNETWORK
       - name: Smoke macOS platform helper
         if: startsWith(matrix.rid, 'osx-')
         shell: bash
