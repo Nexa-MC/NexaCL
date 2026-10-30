@@ -47,12 +47,20 @@ internal sealed class NativeUiSynchronizationContext : SynchronizationContext, I
         throw new NotSupportedException("Use asynchronous native UI dispatch.");
 
     internal Task RunAsync(Func<Task> operation, CancellationToken token = default)
+        => QueueOperation(operation, cleanup: false, token);
+
+    // The owner holds a lifetime OperationStarted/Completed pair until controller cleanup ends.
+    internal Task RunCleanupAsync(Func<Task> operation)
+        => QueueOperation(operation, cleanup: true, CancellationToken.None);
+
+    private Task QueueOperation(Func<Task> operation, bool cleanup, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(operation);
         var result = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         lock (_gate)
         {
-            ObjectDisposedException.ThrowIf(_closing, this);
+            ObjectDisposedException.ThrowIf(_drained.Task.IsCompleted || !cleanup && _closing, this);
+            if (cleanup && !_cleanup) throw new InvalidOperationException("Native UI cleanup handover has not occurred.");
             _operations++;
         }
         try { Post(state => { _ = RunCoreAsync(operation, result, token); }, null); }
@@ -102,16 +110,40 @@ internal sealed class NativeUiSynchronizationContext : SynchronizationContext, I
                 if (!_pending.Remove(id, out callback)) return false;
                 _active++;
             }
-            var previous = Current;
-            SetSynchronizationContext(this);
-            try { callback.Callback(callback.State); }
-            catch (Exception error) { Report(error); }
-            finally
+            InvokeActive(() =>
             {
-                SetSynchronizationContext(previous);
-                lock (_gate) { _active--; FinishIfDrained(); }
-            }
+                try { callback.Callback(callback.State); }
+                catch (Exception error) { Report(error); }
+                return true;
+            });
             return true;
+        }
+    }
+
+    // Only the UI call-gate owner invokes this for synchronous incoming render/input callbacks.
+    internal T ExecuteInline<T>(Func<T> callback)
+    {
+        ArgumentNullException.ThrowIfNull(callback);
+        lock (_execution)
+        {
+            lock (_gate)
+            {
+                ObjectDisposedException.ThrowIf(_closing, this);
+                _active++;
+            }
+            return InvokeActive(callback);
+        }
+    }
+
+    private T InvokeActive<T>(Func<T> callback)
+    {
+        var previous = Current;
+        SetSynchronizationContext(this);
+        try { return callback(); }
+        finally
+        {
+            SetSynchronizationContext(previous);
+            lock (_gate) { _active--; FinishIfDrained(); }
         }
     }
 

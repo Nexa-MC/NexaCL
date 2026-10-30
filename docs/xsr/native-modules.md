@@ -818,3 +818,30 @@ The dispatcher probe also canceled an already running callback while its async
 finally block was suspended, and verified the returned operation did not complete
 until cleanup finished on the native UI thread. The 85-project architecture gate
 passed after adding the runtime-local dispatcher.
+
+### Window lifecycle adoption order
+
+The real window module needs distinct UI and control call tables in both
+directions. UI shutdown retires UI dispatch/render/text calls first; async
+completion, diagnostics and main-entry completion remain on the control plane
+until Host cleanup finishes. A single gate cannot provide this order because
+retiring completion delivery while awaiting Host bootstrap would deadlock exit.
+On macOS the native module's main-entry export calls the existing Cocoa main-thread
+wrapper; only after that wrapper is installed does its local callback request the
+Host's asynchronous bootstrap. No managed bootstrap delegate crosses runtimes.
+
+The Host holds a synchronization-context lifetime operation across composition
+and teardown. Incoming UI callbacks execute inline under that context's serialized
+scope, while async callbacks use the tracked queue. After native UI shutdown and
+UI-gate drain, the owner switches to the cleanup dispatcher; only explicit owner
+cleanup operations can then be newly admitted. The lifetime operation is released
+only after controller disposal, and context retirement still waits for admitted
+continuations. The native runtime similarly owns its async UI context so platform
+finally blocks do not depend on a stopped Avalonia synchronization context.
+Normal UI admission cannot be reopened through the cleanup API.
+
+Owner-lifetime checkpoint: the independent NativeAOT suite passed serialized
+inline/queued callbacks, reentrant inline scopes, context restoration on exception,
+cleanup admission after the native-dispatcher handover, continued retirement while
+the composition lifetime is held, and rejection of normal UI admission during
+cleanup and all admission after retirement. Source formatting verification passed.

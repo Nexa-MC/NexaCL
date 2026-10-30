@@ -16,6 +16,7 @@ internal static partial class Program
         AsyncResultOwnership();
         NativeResourceOwnership();
         DispatcherDeliveryAndCleanup();
+        DispatcherOwnerLifetime();
         if (args.Length != 1) throw new ArgumentException("Supply the independently published native UI peer library.");
         IndependentRuntime(args[0]);
         Console.WriteLine("Native UI duplex tests passed: independent scenes/input/text, reverse calls, reentrancy, failure isolation and retirement.");

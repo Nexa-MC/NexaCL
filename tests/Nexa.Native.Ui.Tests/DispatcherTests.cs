@@ -4,6 +4,51 @@ namespace Nexa.Native.Ui.Tests;
 
 internal static partial class Program
 {
+    private static void DispatcherOwnerLifetime()
+    {
+        NativeUiSynchronizationContext? context = null;
+        int failures = 0, queued = 0;
+        context = new(id => context!.Execute(id), _ => Interlocked.Increment(ref failures));
+        context.OperationStarted(); // Composition owns this lifetime until controller teardown ends.
+        Equal(17, context.ExecuteInline(() =>
+        {
+            True(ReferenceEquals(context, SynchronizationContext.Current));
+            return context.ExecuteInline(() => 17);
+        }));
+        Throws<IOException>(() => context.ExecuteInline<int>(() => throw new IOException("local inline failure")));
+        True(SynchronizationContext.Current is null);
+        Throws<InvalidOperationException>(() => context.RunCleanupAsync(() => Task.CompletedTask));
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        Task inline = Task.Run(() => context.ExecuteInline(() =>
+        {
+            entered.Set();
+            if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException();
+            return 0;
+        }));
+        True(entered.Wait(TimeSpan.FromSeconds(10)));
+        Task queuedWork = context.RunAsync(() => { Interlocked.Increment(ref queued); return Task.CompletedTask; });
+        Equal(0, Volatile.Read(ref queued));
+        release.Set(); Task.WhenAll(inline, queuedWork).WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+        context.ExecuteInline(() => 0); // All old dispatcher callbacks are now outside their scopes.
+        context.UseCleanupDispatcher(id => context.Execute(id));
+        Throws<ObjectDisposedException>(() => context.RunAsync(() => Task.CompletedTask));
+        Throws<ObjectDisposedException>(() => context.ExecuteInline(() => 0));
+        Task retired = context.DisposeAsync().AsTask(); True(!retired.IsCompleted);
+        context.RunCleanupAsync(async () =>
+        {
+            True(ReferenceEquals(context, SynchronizationContext.Current));
+            await Task.Yield();
+            True(ReferenceEquals(context, SynchronizationContext.Current));
+            Interlocked.Increment(ref queued);
+        }).WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+        True(!retired.IsCompleted); context.OperationCompleted();
+        retired.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+        Equal(2, queued); Equal(0, failures);
+        Throws<ObjectDisposedException>(() => context.RunCleanupAsync(() => Task.CompletedTask));
+        Console.WriteLine("PASS: owner lifetime admits ordered controller cleanup without reopening UI admission; inline callbacks serialize with continuations");
+    }
+
     private static void DispatcherDeliveryAndCleanup()
     {
         NativeUiSynchronizationContext? context = null;
