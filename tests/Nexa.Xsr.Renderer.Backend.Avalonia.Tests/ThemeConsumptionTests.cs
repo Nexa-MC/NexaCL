@@ -305,7 +305,7 @@ internal static partial class Program
         using Stream builtinLight = AssertNotNull(typeof(Program).Assembly.GetManifestResourceStream("Nexa.Brand.Tests.light.png"));
         using Stream builtinDark = AssertNotNull(typeof(Program).Assembly.GetManifestResourceStream("Nexa.Brand.Tests.dark.png"));
         var builtin = AvaloniaUiBrandImages.Load(builtinLight, builtinDark);
-        window.SetOwnedBrandImages(builtin);
+        window.SetOwnedBuiltinBrandImages(builtin);
         var actions = new AvaloniaUiPlatformActions(); actions.Attach(window);
         var tray = new TrayIcon();
         using var integration = new AvaloniaUiDesktopIntegration(window, () => { }, () => { }, text => text, () => tray);

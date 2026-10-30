@@ -40,7 +40,7 @@ internal static partial class Program
         var shell = new XsrUiShell(new XsrStateStoreBuilder().Build());
         shell.Renderer.ReducedMotion = true;
         var window = new AvaloniaUiShellWindow(shell);
-        window.SetOwnedBrandImages(images); // Native window owns both bitmaps until close.
+        window.SetOwnedBuiltinBrandImages(images); // Native window owns both bitmaps until close.
         var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         window.Closed += (_, _) => closed.TrySetResult();
         var tray = new TrayIcon();

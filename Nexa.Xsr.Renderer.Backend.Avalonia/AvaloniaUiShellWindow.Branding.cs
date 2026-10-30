@@ -22,7 +22,7 @@ public sealed partial class AvaloniaUiShellWindow
     {
         PropertyChanged += OnBrandThemeChanged;
         if (AvaloniaUiBrandImages.TryLoadProduct() is { } images)
-            SetOwnedBrandImages(images);
+            SetOwnedBuiltinBrandImages(images);
         else if (fallback is not null)
         {
             _fallbackBrandImage = new Bitmap(fallback);
@@ -31,19 +31,19 @@ public sealed partial class AvaloniaUiShellWindow
         }
     }
 
-    /// <summary>Transfers ownership; production loads only embedded artwork, tests can supply the same assets explicitly.</summary>
-    internal void SetOwnedBrandImages(AvaloniaUiBrandImages images)
+    /// <summary>Replaces the owned built-in artwork; third-party themes use separate prepared leases.</summary>
+    internal void SetOwnedBuiltinBrandImages(AvaloniaUiBrandImages images)
     {
         ArgumentNullException.ThrowIfNull(images);
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (ReferenceEquals(_brandImages, images)) return;
-        if (_builtinBrandImages is null && _brandImages is null)
-        {
-            // Both variants must be ready before a third party theme can replace them.
-            _ = images.ResolveIcon(false); _ = images.ResolveIcon(true);
-            _builtinBrandImages = images;
-        }
+        // Validate both variants before replacing the retained fallback.
+        _ = images.ResolveIcon(false); _ = images.ResolveIcon(true);
+        AvaloniaUiBrandImages? previousBuiltin = _builtinBrandImages;
+        AvaloniaUiBrandImages? previousBrand = _brandImages;
+        _builtinBrandImages = images;
         SwapOwnedBrandImages(images)?.Dispose();
+        if (!ReferenceEquals(previousBuiltin, previousBrand)) previousBuiltin?.Dispose();
     }
 
     private AvaloniaUiBrandImages? SwapOwnedBrandImages(AvaloniaUiBrandImages images)

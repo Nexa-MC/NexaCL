@@ -2,6 +2,7 @@ using System.Globalization;
 using Nexa.Core.Media;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Artwork;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.State;
@@ -275,7 +276,7 @@ internal sealed class GamepadEntrySession : IDisposable
         if (!_sheets.TryGetValue(key, out var sheet))
         {
             string file = layout switch { GamepadLayout.SymmetricLow => "01-symmetric-low", GamepadLayout.SymmetricHigh => "03-symmetric-high", _ => "02-offset-left-high" };
-            using Stream stream = typeof(GamepadEntrySession).Assembly.GetManifestResourceStream("Nexa.Desktop.Assets.Gamepads." + file + "." + key.Item2.ToString("D2", CultureInfo.InvariantCulture) + ".png")!;
+            using Stream stream = ProductArtwork.Open("Nexa.Desktop.Assets.Gamepads." + file + "." + key.Item2.ToString("D2", CultureInfo.InvariantCulture) + ".png")!;
             using var buffer = new MemoryStream(); stream.CopyTo(buffer);
             sheet = PngImage.TryCreatePreview(buffer.ToArray()) ?? throw new InvalidDataException("Invalid controller artwork.");
             _sheets.Add(key, sheet);
@@ -288,7 +289,7 @@ internal sealed class GamepadEntrySession : IDisposable
 
     private static PngImage Texture(string name)
     {
-        using Stream stream = typeof(GamepadEntrySession).Assembly.GetManifestResourceStream("Nexa.Desktop.Assets.Brand." + name)!;
+        using Stream stream = ProductArtwork.Open("Nexa.Desktop.Assets.Brand." + name)!;
         using var buffer = new MemoryStream(); stream.CopyTo(buffer);
         return PngImage.TryCreatePreview(buffer.ToArray()) ?? throw new InvalidDataException("Invalid entry texture.");
     }

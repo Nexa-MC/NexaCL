@@ -1,4 +1,6 @@
 <Solution>
+  <Project Path="Nexa.Xsr.Renderer.Artwork/Nexa.Xsr.Renderer.Artwork.csproj" />
+  <Project Path="native/Nexa.Native.Artwork/Nexa.Native.Artwork.csproj" />
   <Project Path="native/Nexa.Native.Markup/Nexa.Native.Markup.csproj" />
   <Project Path="native/Nexa.Native.Minecraft/Nexa.Native.Minecraft.csproj" />
   <Project Path="native/Nexa.Native.Media/Nexa.Native.Media.csproj" />

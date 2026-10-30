@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <Description>Read-only product artwork ownership and native resource adapter.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Nexa.Core/Nexa.Core.csproj" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(NexaExternalModules)' == 'true'">
+    <DefineConstants>$(DefineConstants);NEXA_EXTERNAL_MODULES</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(NexaExternalModules)' == 'true'">
+    <Compile Include="../native/NativeResultClient.cs" Link="NativeResultClient.cs" />
+  </ItemGroup>
+  <Import Project="../native/ArtworkResources.props" Condition="'$(NexaExternalModules)' != 'true'" />
+  <ItemGroup Condition="'$(NexaExternalModules)' != 'true'">
+    <Compile Include="../native/Nexa.Native.Artwork/ArtworkCatalog.cs" Link="ArtworkCatalog.cs" />
+  </ItemGroup>
+</Project>

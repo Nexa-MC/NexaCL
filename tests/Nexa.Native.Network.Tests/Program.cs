@@ -7,6 +7,7 @@ internal static partial class Program
     {
         NativeInstrumentationWorks();
         NativeMediaWorks();
+        NativeArtworkWorks();
         NativeMinecraftWorks();
         NativeMarkupWorks();
         NativeXmlWorks();

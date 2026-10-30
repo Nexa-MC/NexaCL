@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../NativeEngine.props" />
+  <Import Project="../ArtworkResources.props" />
+  <ItemGroup>
+    <Compile Include="../NativeBufferResults.cs" Link="NativeBufferResults.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,8 @@
+<Project>
+  <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)../Nexa.Desktop/Assets/icon.png" LogicalName="Nexa.Desktop.Assets.icon.png" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)../Nexa.Desktop/Assets/icon.ico" LogicalName="Nexa.Desktop.Assets.icon.ico" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)../Nexa.Desktop/Assets/Brand/*.png" LogicalName="Nexa.Desktop.Assets.Brand.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)../Nexa.Desktop/Assets/Gamepads/*.png" LogicalName="Nexa.Desktop.Assets.Gamepads.%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

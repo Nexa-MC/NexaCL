@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
-ENGINES = ("Pac", "Crypto", "Network", "Updates", "Media", "Minecraft", "Markup")
+ENGINES = ("Pac", "Crypto", "Network", "Updates", "Media", "Minecraft", "Markup", "Artwork")
 
 
 def module_name(rid):

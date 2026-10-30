@@ -6,7 +6,10 @@
   "Nexa.Native.Media": [],
   "Nexa.Native.Minecraft": [],
   "Nexa.Native.Markup": [],
+  "Nexa.Native.Artwork": [],
+  "Nexa.Xsr.Renderer.Artwork": ["Nexa.Core"],
   "Nexa.Native.Network.Tests": [
+    "Nexa.Xsr.Renderer.Artwork",
     "Nexa.Xsr.Renderer.Nxml.Compiler",
     "Nexa.Services.Minecraft.Metadata",
     "Nexa.Services.Accounts",
@@ -557,6 +560,7 @@
     "Nexa.Xsr.State"
   ],
   "Nexa.Xsr.Renderer.Backend.Avalonia": [
+    "Nexa.Xsr.Renderer.Artwork",
     "Nexa.Xsr.Renderer"
   ],
   "Nexa.Xsr.Renderer.Backend.Avalonia.Tests": [

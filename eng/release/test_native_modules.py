@@ -52,7 +52,7 @@ class NativeModulePayloadTests(unittest.TestCase):
             assets = Path(temp) / "project.assets.json"
             assets.write_text(json.dumps({"libraries": {"Nexa.Services.Network/2.0.0": {}}}))
             verify_host_engine_isolation(assets)
-            for name in ("Jint/4.17.0", "BouncyCastle.Cryptography/2.6.2", "Nexa.Native.Pac/1.0.0", "Nexa.Native.Crypto/1.0.0", "Nexa.Native.Network/1.0.0", "Nexa.Native.Updates/1.0.0", "Nexa.Native.Media/1.0.0", "Nexa.Native.Minecraft/1.0.0", "Nexa.Native.Markup/1.0.0", "ZstdSharp.Port/0.8.6"):
+            for name in ("Jint/4.17.0", "BouncyCastle.Cryptography/2.6.2", "Nexa.Native.Pac/1.0.0", "Nexa.Native.Crypto/1.0.0", "Nexa.Native.Network/1.0.0", "Nexa.Native.Updates/1.0.0", "Nexa.Native.Media/1.0.0", "Nexa.Native.Minecraft/1.0.0", "Nexa.Native.Markup/1.0.0", "Nexa.Native.Artwork/1.0.0", "ZstdSharp.Port/0.8.6"):
                 assets.write_text(json.dumps({"libraries": {name: {}}}))
                 with self.assertRaisesRegex(RuntimeError, "leaked back"):
                     verify_host_engine_isolation(assets)
@@ -72,7 +72,7 @@ class NativeModulePayloadTests(unittest.TestCase):
             result = measure(before, after, root / "report", "linux-x64", "2.0.0.alpha.18", "2.0.0.alpha.19")
             engines = [m for m in result["modules"] if m["name"] != "nexa-host.so"]
             self.assertTrue(result["roundTripVerified"])
-            self.assertEqual(7, len(engines))
+            self.assertEqual(8, len(engines))
             self.assertTrue(all(m["identical"] and m["newDataBytes"] == 0 for m in engines))
 
     def test_first_content_modules_are_carried_by_a_verified_delta(self):
@@ -81,7 +81,7 @@ class NativeModulePayloadTests(unittest.TestCase):
             root = Path(temp)
             before, after = root / "before", root / "after"
             before.mkdir(); after.mkdir()
-            added = {"nexa-media.so", "nexa-minecraft.so", "nexa-markup.so"}
+            added = {"nexa-media.so", "nexa-minecraft.so", "nexa-markup.so", "nexa-artwork.so"}
             for name in module_names("linux-x64"):
                 data = (name + " code").encode() * 100
                 (after / name).write_bytes(data)

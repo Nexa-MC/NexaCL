@@ -5,6 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../Nexa.Xsr.Renderer.Artwork/Nexa.Xsr.Renderer.Artwork.csproj" />
     <ProjectReference Include="../../Nexa.Xsr.Renderer.Nxml.Compiler/Nexa.Xsr.Renderer.Nxml.Compiler.csproj" />
     <ProjectReference Include="../../Nexa.Services.Minecraft.Metadata/Nexa.Services.Minecraft.Metadata.csproj" />
     <ProjectReference Include="../../Nexa.Services.Accounts/Nexa.Services.Accounts.csproj" />
@@ -13,4 +14,5 @@
     <ProjectReference Include="../../Nexa.Services.Network/Nexa.Services.Network.csproj" />
     <Compile Include="../Nexa.Services.Tests/NativeNetworkTests.cs" Link="NativeNetworkTests.cs" />
   </ItemGroup>
+  <Import Project="../../native/ArtworkResources.props" />
 </Project>

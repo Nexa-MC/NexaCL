@@ -45,6 +45,7 @@ class InstallScopeTests(unittest.TestCase):
                         "media": root / "programs/NexaCL/nexa-media.dll",
                         "minecraft": root / "programs/NexaCL/nexa-minecraft.dll",
                         "markup": root / "programs/NexaCL/nexa-markup.dll",
+                        "artwork": root / "programs/NexaCL/nexa-artwork.dll",
                         "helper": root / "programs/NexaCL/Nexa.Update.Helper.exe",
                         "desktop": root / "public/Desktop/NexaCL.lnk",
                         "menu": root / "data/Microsoft/Windows/Start Menu/Programs/NexaCL.lnk",

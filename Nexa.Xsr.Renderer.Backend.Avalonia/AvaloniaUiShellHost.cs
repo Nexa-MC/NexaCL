@@ -1,10 +1,10 @@
-using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
 using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Artwork;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
@@ -75,7 +75,7 @@ public static class AvaloniaUiShellHost
         _shell ?? throw new InvalidOperationException("The Avalonia shell host was not configured.");
 
     /// <summary>
-    /// Resolves a brand asset embedded in the product assembly (the composition root owns the
+    /// Resolves a brand asset from the product artwork owner (the resource module owns the
     /// assets; this host only consumes streams). Missing assets disable the decoration that
     /// needed them — the splash is never a startup dependency.
     /// </summary>
@@ -83,10 +83,7 @@ public static class AvaloniaUiShellHost
     {
         try
         {
-            Assembly? product = AppDomain.CurrentDomain.GetAssemblies()
-                .FirstOrDefault(assembly =>
-                    string.Equals(assembly.GetName().Name, "Nexa.Desktop", StringComparison.Ordinal));
-            return product?.GetManifestResourceStream(resourceName);
+            return ProductArtwork.Open(resourceName);
         }
         catch (Exception)
         {

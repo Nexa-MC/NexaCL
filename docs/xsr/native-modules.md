@@ -31,7 +31,7 @@ installation and a missing-module failure.
 
 ## Current release inventory
 
-The publisher emits the bootstrap, `nexa-host`, and seven independent native engines.
+The publisher emits the bootstrap, `nexa-host`, and eight independent native engines.
 Extensions are `.dll` / `.so` / `.dylib` for Windows / Linux / macOS respectively.
 
 | Engine | Extracted implementation |
@@ -43,6 +43,7 @@ Extensions are `.dll` / `.so` / `.dylib` for Windows / Linux / macOS respectivel
 | `nexa-media` | Image metadata and wardrobe PNG validation |
 | `nexa-minecraft` | Library/classpath/rule and asset metadata algorithms |
 | `nexa-markup` | NXML syntax and bounded XML parsing for SVG, Maven and events |
+| `nexa-artwork` | Product icons, brand artwork and controller sprite images |
 
 The names identify ownership groups; the service lifecycle portions of network,
 updates and Minecraft remain in Host. UI and Accounts have not yet become
@@ -523,3 +524,48 @@ Both metadata and snapshot guards share this policy; installation-internal links
 remain rejected and metadata failures retain their existing user-facing message.
 The two real-snapshot reconciliation regressions pass locally on Linux after this
 change; macOS system-alias execution remains a platform CI check.
+
+### Independent product artwork
+
+`nexa-artwork` owns only the launcher icon, brand PNGs and controller sprite PNGs.
+The 31 source images total 3,629,309 bytes (about 3.46 MiB); it is not the entire Desktop asset
+folder. The Windows native application icon resource is retained for the OS.
+Credentials, signing trust, version metadata and UI markup stay in their
+existing owners. An explicit resource list is shared by managed development and
+native publishing; no directory-wide resource glob may include credentials.
+
+The UTF-8 resource-name request is bounded to 256 bytes. A result contains one
+presence byte followed by at most 16 MiB of copied image bytes, using the existing
+opaque result/copy/release ABI. Unknown names return absence; there is no filesystem
+fallback or resource enumeration across runtimes. The native catalog never loads
+Host assemblies. The renderer artwork adapter exposes read-only streams; release builds exclude the catalog
+implementation and embedded images from Host. Backend splash/icon and Desktop
+controller callers use the same adapter. Stable artwork is version-independent,
+while complete signed payloads still govern installation and differential updates.
+This extracts resources, not the native window/render lifecycle; total installer
+size may increase because this independent NativeAOT runtime has its own overhead.
+
+The same verified macOS root-alias predicate is shared in `PathIdentity` by
+metadata caches and recovery storage, including offline readiness. Only exact
+OS-owned aliases with the expected target and link-free target ancestors qualify.
+
+Linux-x64 artwork extraction checkpoint: managed solution build, 83-project
+architecture gate, nine gamepad flows, 46 backend scenarios, four real snapshot /
+offline-readiness regressions and 101 release-tool tests passed. The distributed
+bootstrap passed `--validate-shell` outside its installation directory. An independent
+NativeAOT caller matched all 31 image hashes against embedded test fixtures and
+verified Host-adapter resource exclusion, read-only streams, missing/private names,
+invalid requests, concurrent calls and result retirement. The payload has no
+CoreCLR/CoreLib runtime files. A clean artwork rebuild with different release and
+repository stamps retained SHA-256
+`12e396ef4ee33caa1f437c271feff16acb40af70df10ba1fc4790ad063f5c68b`.
+
+Compared with the earlier seven-engine supplied checkpoint, Host changed from
+82,420,984 to 78,845,512 bytes; artwork is 5,872,520 bytes. Total runtime payload
+changed from 142,804,077 to 145,105,261 bytes. The measured first-migration delta is
+43,477,415 bytes with a verified reconstruction; PAC, crypto, network and updates
+are identical and contribute no new data. This comparison includes intervening
+code/formatting changes, not only artwork extraction. A18/A19 are measurement
+fixture labels required by the update format, not newly published releases.
+The initial migration increases total size; reproducible unchanged artwork can be
+reused by later Host updates without carrying its bytes again.
