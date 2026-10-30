@@ -8,7 +8,7 @@ namespace Nexa.Services.Themes;
 public sealed partial class ThemePackageService : IThemePackageService
 {
     private sealed record Installation(string Identity, string Root, string Revision, ThemeSourceKind Kind, string? Origin, ThemeManifest Manifest);
-    private sealed record Prepared(ThemeCandidate Candidate, Installation Installation, long OptionsRevision);
+    private sealed record Prepared(ThemeCandidate Candidate, Installation Installation, long OptionsRevision, Installation? PreviousInstallation);
     private readonly object _gate = new();
     private readonly SemaphoreSlim _operations = new(1);
     private readonly string _root;
@@ -83,7 +83,6 @@ public sealed partial class ThemePackageService : IThemePackageService
                 }
                 else
                 {
-                    if (_installed.Count >= 256) return Reject<ThemeCandidate>("Installed theme count exceeds its budget.");
                     previous = null; identity = query.SourceKind == ThemeSourceKind.BuiltIn ? "builtin" : "source-" + Guid.NewGuid().ToString("N");
                     kind = query.SourceKind; source = ThemePaths.Canonical(query.SourcePath);
                     if (kind == ThemeSourceKind.BuiltIn && (_builtin is null || !SamePath(source, _builtin))) return Reject<ThemeCandidate>("Only the host-owned root can be a built-in theme.");
@@ -100,6 +99,17 @@ public sealed partial class ThemePackageService : IThemePackageService
             await ThemeSourceReader.CopyAsync(source, kind, staging, token).ConfigureAwait(false);
             var admitted = ThemeSourceReader.Validate(staging, _capabilities);
             if (previous is not null && admitted.Manifest.Id != previous.Manifest.Id) return Reject<ThemeCandidate>("A source update cannot change its theme identity.");
+            lock (_gate)
+            {
+                if (previous is null && kind != ThemeSourceKind.BuiltIn)
+                {
+                    previous = FindInstalledTheme(admitted.Manifest.Id);
+                    if (_installed.Values.Any(i => i.Manifest.Id == admitted.Manifest.Id && i.Kind == ThemeSourceKind.BuiltIn))
+                        return Reject<ThemeCandidate>("An imported theme cannot replace the built-in theme.");
+                    if (previous is not null) identity = previous.Identity;
+                }
+                if (previous is null && _installed.Count >= 256) return Reject<ThemeCandidate>("Installed theme count exceeds its budget.");
+            }
             string destination = Path.Combine(_root, "sources", identity, admitted.Revision);
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             if (Directory.Exists(destination)) DeleteDirectory(staging); else Directory.Move(staging, destination);
@@ -145,7 +155,14 @@ public sealed partial class ThemePackageService : IThemePackageService
         long generation = checked(++_generation);
         var candidate = new ThemeCandidate(Guid.NewGuid(), generation, installation.Identity, installation.Revision, installation.Kind, installation.Manifest, styles,
             new ReadOnlyDictionary<string, ThemeOptionValue>(values), installation.Manifest.OptionalCapabilities.Where(c => !_capabilities.Contains(c.Name)).Select(c => c.Name).ToArray());
-        WriteJournal(candidate); _candidates.Add(candidate.CandidateId, new(candidate, installation, _options.TryGetValue(installation.Identity, out var priorOptions) ? priorOptions.Revision : 0)); return XsrResult.Success(candidate);
+        _installed.TryGetValue(installation.Identity, out var previousInstallation);
+        var previousTheme = FindInstalledTheme(installation.Manifest.Id);
+        candidate = candidate with
+        {
+            PreviousVersion = previousTheme?.Manifest.Version,
+            IsDowngrade = previousTheme is not null && CompareThemeVersions(installation.Manifest.Version, previousTheme.Manifest.Version) < 0
+        };
+        WriteJournal(candidate); _candidates.Add(candidate.CandidateId, new(candidate, installation, _options.TryGetValue(installation.Identity, out var priorOptions) ? priorOptions.Revision : 0, previousInstallation)); return XsrResult.Success(candidate);
     }
 
     public ValueTask<XsrResult<ThemeCandidate>> CandidateAsync(ThemeCandidateQuery query, CancellationToken token = default)
@@ -164,17 +181,32 @@ public sealed partial class ThemePackageService : IThemePackageService
         token.ThrowIfCancellationRequested(); lock (_gate)
         {
             if (_disposed || command.ExpectedRevision != _revision || !_candidates.TryGetValue(command.CandidateId, out var prepared)) return ValueTask.FromResult(Reject("Theme candidate or persistent revision is stale."));
+            if (prepared.Installation.Kind != ThemeSourceKind.BuiltIn && _installed.Values.Any(i => i.Kind == ThemeSourceKind.BuiltIn && i.Manifest.Id == prepared.Installation.Manifest.Id))
+                return ValueTask.FromResult(Reject("An imported theme cannot replace the built-in theme."));
+            if (prepared.Candidate.IsDowngrade && !command.AllowDowngrade) return ValueTask.FromResult(Reject("A theme downgrade requires explicit confirmation."));
+            _installed.TryGetValue(prepared.Installation.Identity, out var installedAtCommit);
+            // Native activation failure can re-pin the already committed generation for rollback.
+            bool restoresCommitted = command.Preview && _selection?.Generation == prepared.Candidate.Generation
+                && installedAtCommit == prepared.Installation;
+            if (installedAtCommit != prepared.PreviousInstallation && !restoresCommitted) return ValueTask.FromResult(Reject("The installed theme changed after candidate preparation."));
             if (command.Preview) { _previewCandidate = command.CandidateId; return ValueTask.FromResult(XsrResult.Success()); } // Pin transient resource ownership without persisting selection.
             if ((_options.TryGetValue(prepared.Installation.Identity, out var currentOptions) ? currentOptions.Revision : 0) != prepared.OptionsRevision) return ValueTask.FromResult(Reject("Theme options changed after candidate preparation."));
             var oldSelection = _selection; var oldGood = _lastKnownGood; long oldRevision = _revision;
             _installed.TryGetValue(prepared.Installation.Identity, out var priorInstallation); _options.TryGetValue(prepared.Installation.Identity, out var priorOptions);
+            var replaced = _installed.Values.Where(i => i.Manifest.Id == prepared.Installation.Manifest.Id && i.Identity != prepared.Installation.Identity).ToArray();
+            var retiredGrants = _grants.Values.Where(g => replaced.Any(i => i.Identity == g.SourceIdentity)
+                || g.SourceIdentity == prepared.Installation.Identity && !HasPriorResourceAuthority(prepared)).ToArray();
             try
             {
                 _selection = new(prepared.Installation.Identity, prepared.Installation.Revision, prepared.Installation.Manifest.Id, prepared.Installation.Manifest.Version, prepared.Candidate.Generation);
                 _lastKnownGood = _selection; _installed[prepared.Installation.Identity] = prepared.Installation;
                 _options[prepared.Installation.Identity] = new(prepared.Installation.Identity, prepared.Installation.Manifest.OptionsVersion, (priorOptions?.Revision ?? 0) + 1, prepared.Candidate.Options,
                     priorOptions?.RetainedLegacyValues ?? new Dictionary<string, string>());
+                foreach (var item in replaced) _installed.Remove(item.Identity);
+                foreach (var grant in retiredGrants) _grants.Remove(grant.GrantId);
                 _revision++; WriteState(); TryRemoveJournal(); _previewCandidate = null;
+                foreach (var item in replaced) StopWatch(item.Identity);
+                if (priorInstallation is not null && !SameOrigin(priorInstallation, prepared.Installation)) StopWatch(priorInstallation.Identity);
                 foreach (Guid id in _candidates.Keys.Where(id => id != command.CandidateId).ToArray()) RetireCandidate(id);
                 return ValueTask.FromResult(XsrResult.Success());
             }
@@ -183,6 +215,8 @@ public sealed partial class ThemePackageService : IThemePackageService
                 _selection = oldSelection; _lastKnownGood = oldGood; _revision = oldRevision;
                 if (priorInstallation is null) _installed.Remove(prepared.Installation.Identity); else _installed[prepared.Installation.Identity] = priorInstallation;
                 if (priorOptions is null) _options.Remove(prepared.Installation.Identity); else _options[prepared.Installation.Identity] = priorOptions;
+                foreach (var item in replaced) _installed[item.Identity] = item;
+                foreach (var grant in retiredGrants) _grants[grant.GrantId] = grant;
                 return ValueTask.FromResult(Reject(error.Message));
             }
         }

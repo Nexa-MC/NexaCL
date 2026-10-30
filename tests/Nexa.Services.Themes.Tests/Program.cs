@@ -37,6 +37,12 @@ internal static partial class Program
         ("Same-source preview cancellation resolves committed revision explicitly", CommittedSourcePreview),
         ("Option controls preserve typed values and legacy manifests", OptionControlsPreserveTypedValuesAndLegacyManifests),
         ("Option controls reject incompatible and unbounded editors", OptionControlsRejectIncompatibleAndUnboundedEditors),
+        ("Same ID upgrades retain identity and compatible options across restart", SameIdUpgrade),
+        ("Theme version comparisons are numeric and prerelease-aware", UpgradeVersions),
+        ("Downgrade requires explicit confirmation for preview and commit", DowngradeConfirmation),
+        ("Rejected replacement preserves prior resource authority", ReplacementAuthority),
+        ("Imported theme cannot replace host built-in", BuiltinReplacement),
+        ("Legacy ID collision cannot retire host built-in", LegacyBuiltinCollision),
     ];
 
     private static async Task<int> Main()
@@ -224,7 +230,7 @@ internal static partial class Program
         using var workspace = new Workspace(); using var service = workspace.Service(); var first = await Prepare(service, workspace.Theme("first")); string image = Visual(workspace);
         Require((await service.GrantAsync(new(first.SourceIdentity, ThemeResourceKind.Image, ThemeGrantScope.File, image))).IsSuccess);
         await Commit(service, first);
-        var second = await Prepare(service, workspace.Theme("second")); Require(first.Manifest.Id == second.Manifest.Id && first.SourceIdentity != second.SourceIdentity);
+        var second = await Prepare(service, workspace.Theme("second")); Require(first.Manifest.Id == second.Manifest.Id && first.SourceIdentity == second.SourceIdentity);
         Require(!(await service.ReadResourceAsync(new(second.CandidateId, "file(" + image + ")", ThemeResourceKind.Image))).IsSuccess);
         Require(!(await service.PrepareAsync(new(workspace.Theme("third"), ThemeSourceKind.Directory, first.SourceIdentity))).IsSuccess);
     }
@@ -386,7 +392,7 @@ internal static partial class Program
         using var workspace = new Workspace(); string builtinRoot = workspace.Theme("builtin"); using var service = workspace.Service(builtinRoot);
         var direct = await service.PrepareAsync(new(builtinRoot, ThemeSourceKind.BuiltIn)); Require(direct.IsSuccess && direct.Value.SourceIdentity == "builtin"); await Commit(service, direct.Value);
         Require((await service.CatalogueAsync(new())).Value.Themes.Single().InstalledDirectory == ThemePaths.Canonical(builtinRoot));
-        var external = await Prepare(service, workspace.Theme("external")); await Commit(service, external);
+        var external = await Prepare(service, workspace.Theme("external", Manifest.Replace("tests.theme", "tests.external", StringComparison.Ordinal))); await Commit(service, external);
         string snapshot = (await service.CatalogueAsync(new())).Value.Themes.Single(theme => theme.SourceIdentity == external.SourceIdentity).InstalledDirectory!;
         File.WriteAllText(Path.Combine(snapshot, "styles", "main.nss"), ".card { Background:#ffffff; }");
         Require(!(await service.PrepareAsync(new("", ThemeSourceKind.Directory, external.SourceIdentity))).IsSuccess && (await service.CurrentAsync(new())).Value.Selection?.SourceRevision == external.SourceRevision);
@@ -399,7 +405,7 @@ internal static partial class Program
             using (var service = workspace.Service())
             {
                 var committed = await Prepare(service, workspace.Theme("committed")); await Commit(service, committed); committedIdentity = committed.SourceIdentity;
-                var preview = await Prepare(service, workspace.Theme("preview")); previewIdentity = preview.SourceIdentity;
+                var preview = await Prepare(service, workspace.Theme("preview", Manifest.Replace("tests.theme", "tests.preview", StringComparison.Ordinal))); previewIdentity = preview.SourceIdentity;
                 var catalogue = (await service.CatalogueAsync(new())).Value;
                 Require(catalogue.Themes.Single(theme => theme.SourceIdentity == committedIdentity).IsInstalled);
                 Require(!catalogue.Themes.Single(theme => theme.SourceIdentity == previewIdentity).IsInstalled);
@@ -413,7 +419,7 @@ internal static partial class Program
                 Require((await service.CommitAsync(new(changed.CandidateId, (await service.CurrentAsync(new())).Value.Revision, true))).IsSuccess);
                 Require((await service.RevertAsync(new(preview.CandidateId))).IsSuccess);
                 var resource = (await service.ReadResourceAsync(new(changed.CandidateId, "file(" + selected + ")", ThemeResourceKind.Icon))).Value;
-                for (int index = 0; index < 10; index++) await Prepare(service, workspace.Theme("noise-" + index));
+                for (int index = 0; index < 10; index++) await Prepare(service, workspace.Theme("noise-" + index, Manifest.Replace("tests.theme", "tests.noise" + index, StringComparison.Ordinal)));
                 Require((await service.CandidateAsync(new(changed.CandidateId))).IsSuccess && File.Exists(resource.PreparedPath));
                 Require((await service.CurrentAsync(new())).Value.Selection?.SourceIdentity == committedIdentity);
                 if (cancelPreview) Require((await service.RevertAsync(new(changed.CandidateId))).IsSuccess);

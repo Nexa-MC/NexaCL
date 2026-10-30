@@ -34,7 +34,7 @@ internal sealed partial class SettingsPageController
                 {
                     bool directory = action.Operation == ThemeUiOperation.ImportDirectory;
                     var paths = await _themePicker(new(directory ? ThemeOptionKind.Directory : ThemeOptionKind.File, null, Package: !directory), token).ConfigureAwait(false);
-                    return paths.Count == 0 ? XsrResult.Success() : await session.ImportAsync(paths[0], directory ? ThemeSourceKind.Directory : ThemeSourceKind.Package, false, token).ConfigureAwait(false);
+                    return paths.Count == 0 ? XsrResult.Success() : await session.ImportAsync(paths[0], directory ? ThemeSourceKind.Directory : ThemeSourceKind.Package, false, token, ConfirmThemeDowngradeAsync).ConfigureAwait(false);
                 });
                 break;
             case ThemeUiOperation.Refresh:
@@ -86,6 +86,22 @@ internal sealed partial class SettingsPageController
             if (current == _sections) return true;
         }
         return false;
+    }
+
+    private async Task<bool> ConfirmThemeDowngradeAsync(ThemeCandidate candidate, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        string message = ProductPresentationText.Format("SettingsThemeDowngrade", _shell.Renderer.LocalizeText,
+            ("current", candidate.PreviousVersion!), ("incoming", candidate.Manifest.Version));
+        Guid dialog = _feedback.ShowDialog("themes.downgrade." + candidate.CandidateId,
+            ProductPresentationText.Raw("settings.theme.downgradeTitle"),
+            message,
+            ProductPresentationText.Raw("settings.theme.downgradeAccept"),
+            ProductPresentationText.Raw("settings.theme.downgradeCancel"),
+            accepted => completion.TrySetResult(accepted), localizeMessage: false);
+        try { return await completion.Task.WaitAsync(token).ConfigureAwait(false); }
+        finally { _feedback.DismissDialog(dialog); }
     }
 
     private void StartThemeOperation(Func<CancellationToken, Task<XsrResult>> operation, Action? completed = null)

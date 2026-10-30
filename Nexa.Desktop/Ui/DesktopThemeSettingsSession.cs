@@ -13,7 +13,8 @@ internal interface IDesktopThemeSettingsSession
 {
     DesktopThemeSettingsSnapshot Snapshot { get; }
     Task<XsrResult> RefreshAsync(CancellationToken token);
-    Task<XsrResult> ImportAsync(string path, ThemeSourceKind kind, bool preview, CancellationToken token);
+    Task<XsrResult> ImportAsync(string path, ThemeSourceKind kind, bool preview, CancellationToken token,
+        Func<ThemeCandidate, CancellationToken, Task<bool>>? confirmDowngrade = null);
     Task<XsrResult> ActivateAsync(string sourceIdentity, bool preview, CancellationToken token);
     Task<XsrResult> EndPreviewAsync(CancellationToken token);
     Task<XsrResult> SaveOptionsAsync(ThemeOptionsSaveCommand command, CancellationToken token);

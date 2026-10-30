@@ -10883,5 +10883,8 @@
   {"source": "规划与暂不可用", "en": "Planned and unavailable", "zh-Hant": "規劃與暫不可用"},
   {"source": "颜色", "en": "Colors", "zh-Hant": "顏色"},
   {"source": "视频", "en": "Video", "zh-Hant": "影片"},
-  {"source": "音乐", "en": "Music", "zh-Hant": "音樂"}
+  {"source": "音乐", "en": "Music", "zh-Hant": "音樂"},
+  {"source": "安装较早版本的主题？", "en": "Install an older theme version?", "zh-Hant": "安裝較早版本的佈景主題？"},
+  {"source": "已安装版本为 {data current}，导入版本为 {data incoming}。继续将替换现有主题，并保留兼容的设置。", "en": "Version {data current} is installed. You are importing {data incoming}. Continuing will replace the theme and keep compatible settings.", "zh-Hant": "已安裝版本為 {data current}，匯入版本為 {data incoming}。繼續將取代現有佈景主題，並保留相容的設定。"},
+  {"source": "继续降级", "en": "Downgrade", "zh-Hant": "繼續降級"}
 ]

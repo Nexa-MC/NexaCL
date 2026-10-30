@@ -172,7 +172,7 @@ internal sealed partial class DesktopThemeSession
         || _committed?.Candidate.CandidateId == prepared.Candidate.CandidateId;
 
     private async Task<XsrResult> ActivateCandidateCoreAsync(ThemeCandidate candidate, bool preview, long request, CancellationToken token,
-        Func<CancellationToken, Task>? persistOptions = null)
+        Func<CancellationToken, Task>? persistOptions = null, bool allowDowngrade = false)
     {
         PreparedTheme? prepared = null;
         try
@@ -180,6 +180,13 @@ internal sealed partial class DesktopThemeSession
             if (_safeMode && candidate.SourceKind != ThemeSourceKind.BuiltIn)
                 return XsrResult.Failure(new(XsrErrorKind.Rejected, XsrSemanticId.Parse("themes.safe_mode"), "Safe mode uses the built-in theme."));
             prepared = await BuildPreparedAsync(candidate, NextGeneration(), token).ConfigureAwait(false);
+            prepared = prepared with
+            {
+                DowngradeApproved = allowDowngrade || _active is { DowngradeApproved: true } approved
+                    && approved.Candidate.SourceIdentity == candidate.SourceIdentity
+                    && approved.Candidate.SourceRevision == candidate.SourceRevision
+                    && approved.Candidate.PreviousVersion == candidate.PreviousVersion
+            };
             CheckRequest(request, token);
             await ApplyPreparedAsync(prepared, !preview, !preview && !_safeMode, request, token, persistOptions: _safeMode ? null : persistOptions).ConfigureAwait(false);
             prepared = null;
@@ -228,7 +235,8 @@ internal sealed partial class DesktopThemeSession
             if (!current.IsSuccess) throw new IOException(current.Error!.Message);
             if (!compensation) CheckRequest(request, token);
             var activated = await CommandAsync(ThemesContract.Commit,
-                new ThemeCommitCommand(candidate.Candidate.CandidateId, current.Value!.Revision, Preview: !persist), token).ConfigureAwait(false);
+                new ThemeCommitCommand(candidate.Candidate.CandidateId, current.Value!.Revision, Preview: !persist)
+                { AllowDowngrade = candidate.DowngradeApproved }, token).ConfigureAwait(false);
             if (!activated.IsSuccess) throw new IOException(activated.Error!.Message);
             if (persist)
             {

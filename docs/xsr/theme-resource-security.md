@@ -49,6 +49,13 @@ host resolves option values under grants; the expression does not itself provide
 permission. Grants bind canonical path, file/directory scope, resource kind and
 source identity. Selecting an Audio file does not authorize Font or Image reads.
 
+Same-ID upgrades retain installation identity and compatible options, but identity
+alone does not transfer grants. A candidate from a different origin path or source
+kind cannot read its predecessor's external resources. Successful replacement revokes
+those grants and the old directory watch; cancellation preserves them. Same-origin
+updates retain existing grants. Imported themes cannot retire the host-owned built-in
+theme, including when loading a legacy catalogue with colliding IDs.
+
 A directory grant is bounded enumeration within the selected canonical tree;
 links cannot escape it. Inputs are checked at use, not only when a settings form
 was opened. A failed, replaced, revoked or absent grant returns a resource failure

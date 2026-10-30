@@ -32,7 +32,11 @@ public sealed record ThemeCatalogueEntry(string SourceIdentity, string SourceRev
 public sealed record ThemeCatalogueSnapshot(long Revision, IReadOnlyList<ThemeCatalogueEntry> Themes);
 public sealed record ThemeCandidate(Guid CandidateId, long Generation, string SourceIdentity, string SourceRevision,
     ThemeSourceKind SourceKind, ThemeManifest Manifest, IReadOnlyList<ThemeStyleSource> Styles,
-    IReadOnlyDictionary<string, ThemeOptionValue> Options, IReadOnlyList<string> UnsupportedOptionalCapabilities);
+    IReadOnlyDictionary<string, ThemeOptionValue> Options, IReadOnlyList<string> UnsupportedOptionalCapabilities)
+{
+    public string? PreviousVersion { get; init; }
+    public bool IsDowngrade { get; init; }
+}
 public sealed record ThemeSelection(string SourceIdentity, string SourceRevision, string ThemeId, string Version, long Generation);
 public sealed record ThemeResourceGrant(Guid GrantId, string SourceIdentity, ThemeResourceKind Kind,
     ThemeGrantScope Scope, string CanonicalPath, long Revision);
@@ -54,7 +58,10 @@ public sealed record ThemePrepareQuery(string SourcePath, ThemeSourceKind Source
 }
 public sealed record ThemeCandidateQuery(Guid CandidateId);
 public sealed record ThemeCurrentQuery;
-public sealed record ThemeCommitCommand(Guid CandidateId, long ExpectedRevision, bool Preview = false);
+public sealed record ThemeCommitCommand(Guid CandidateId, long ExpectedRevision, bool Preview = false)
+{
+    public bool AllowDowngrade { get; init; }
+}
 public sealed record ThemeRevertCommand(Guid CandidateId);
 public sealed record ThemeOptionsSaveCommand(string SourceIdentity, IReadOnlyDictionary<string, ThemeOptionValue> Values, long ExpectedRevision);
 public sealed record ThemeResourceGrantCommand(string SourceIdentity, ThemeResourceKind Kind, ThemeGrantScope Scope, string SelectedPath);
