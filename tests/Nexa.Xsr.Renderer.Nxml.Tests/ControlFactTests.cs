@@ -11,10 +11,10 @@ internal static partial class Program
         var slot = NxmlUiLoader.LoadDetached(Compile("<Dynamic Key=\"slot\" />"), tree, store);
         var owner = new NxmlDynamicContent(tree, store);
         var template = new NxmlDynamicTemplate("""
-            <nxml-dynamic><StackPanel SegmentThumb="thumb">
+            <nxml-dynamic><StackPanel SegmentThumb="thumb" Orientation="Horizontal">
               <ContentHost Key="thumb" TransitionKey="selection" IsVisible="false" />
-              <Button Selected="{data home}" Content="Home" />
-              <Button Selected="{data theme}" Content="Themes" />
+              <Button Selected="{data home}" Content="Home" Width="100" Height="40" />
+              <Button Selected="{data theme}" Content="Themes" Width="100" Height="40" />
             </StackPanel></nxml-dynamic>
             """);
         var data = new Dictionary<string, string> { ["home"] = "true", ["theme"] = "false" };
@@ -23,20 +23,38 @@ internal static partial class Program
         var track = tree.GetComponent<XsrUiSegmentedTrack>(root)!;
         var motion = tree.GetComponent<XsrUiTransition>(children[0])!;
         AssertEqual(children[1], track.Selected);
+        var renderer = new XsrUiRenderer(tree, store);
+        renderer.SetRoot(slot); renderer.Viewport = new(400, 100);
+        var scene = renderer.Render();
+        double homeX = scene.Nodes.Single(node => node.Entity == children[1]).Rect.X;
+        AssertEqual(homeX, scene.Nodes.Single(node => node.Entity == track.Thumb).Rect.X);
         data["home"] = "false"; data["theme"] = "true";
         owner.Reload(root, template.Compile(data, NxmlComponentLibrary.Default));
         AssertEqual(children[2], track.Selected);
         AssertTrue(ReferenceEquals(track, tree.GetComponent<XsrUiSegmentedTrack>(root)));
         AssertTrue(ReferenceEquals(motion, tree.GetComponent<XsrUiTransition>(children[0])));
+        scene = renderer.Render();
+        double themeX = scene.Nodes.Single(node => node.Entity == children[2]).Rect.X;
+        AssertTrue(themeX > homeX);
+        // Start at the previous presented location, then settle exactly beneath Themes.
+        AssertEqual(homeX, scene.Nodes.Single(node => node.Entity == track.Thumb).Rect.X);
+        AssertTrue(renderer.GetTransitionOffset(track.Thumb) < 0);
+        renderer.SetTransitionOffset(track.Thumb, 0);
+        AssertEqual(themeX, renderer.Render().Nodes.Single(node => node.Entity == track.Thumb).Rect.X);
         // Unrelated reloads retain the existing motion/interaction state.
         owner.Reload(root, template.Compile(data, NxmlComponentLibrary.Default));
         AssertEqual(children[2], track.Selected);
         data["home"] = "true"; data["theme"] = "false";
         owner.Reload(root, template.Compile(data, NxmlComponentLibrary.Default));
         AssertEqual(children[1], track.Selected);
+        scene = renderer.Render();
+        AssertEqual(themeX, scene.Nodes.Single(node => node.Entity == track.Thumb).Rect.X);
+        renderer.SetTransitionOffset(track.Thumb, 0);
+        AssertEqual(homeX, renderer.Render().Nodes.Single(node => node.Entity == track.Thumb).Rect.X);
         data["home"] = "false";
         owner.Reload(root, template.Compile(data, NxmlComponentLibrary.Default));
         AssertFalse(track.Selected.IsAssigned);
+        AssertFalse(renderer.Render().Nodes.Any(node => node.Entity == track.Thumb));
     }
 
     private static void DeclarativeControlFactsRetainLiveObjects()
