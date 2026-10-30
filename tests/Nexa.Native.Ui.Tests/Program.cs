@@ -13,6 +13,8 @@ internal static class Program
         LocalOwnershipAndFaults();
         ActiveRetirementAndConcurrency();
         AsyncAdmissionAndDeliveryRetry();
+        AsyncResultOwnership();
+        NativeResourceOwnership();
         if (args.Length != 1) throw new ArgumentException("Supply the independently published native UI peer library.");
         IndependentRuntime(args[0]);
         Console.WriteLine("Native UI duplex tests passed: independent scenes/input/text, reverse calls, reentrancy, failure isolation and retirement.");
@@ -122,6 +124,96 @@ internal static class Program
         Console.WriteLine("PASS: async admission and completion backpressure retry without repeating the admitted operation");
     }
 
+    private static void AsyncResultOwnership()
+    {
+        // Native resource creation may finish even when the caller has canceled.
+        foreach (bool disposeCaller in new[] { false, true })
+        {
+            var ready = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+            NativeUiAsyncClient? client = null;
+            int released = 0;
+            var server = new NativeUiAsyncServer((_, _) => ready.Task, message => client!.Complete(message),
+                rejectedResult: (id, _, bytes) =>
+                {
+                    Equal(1L, id); Equal((byte)73, bytes.Span[0]); Interlocked.Increment(ref released);
+                });
+            client = new(server.Exchange);
+            using var cancellation = new CancellationTokenSource();
+            Task<byte[]> result = client.InvokeAsync(ReadOnlyMemory<byte>.Empty, cancellation.Token);
+            if (disposeCaller) client.Dispose();
+            else cancellation.Cancel();
+            Throws<OperationCanceledException>(() => result.GetAwaiter().GetResult());
+            Task drain = server.DisposeAsync().AsTask();
+            True(!drain.IsCompleted);
+            ready.SetResult([73]);
+            drain.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+            Equal(1, released);
+            Equal((byte)0, client.Complete(NativeUiAsyncProtocol.Message(NativeUiAsyncProtocol.Success, 1, new byte[] { 73 }))[0]);
+            client.Dispose();
+        }
+        // An ACK lost after acceptance must not free a resource visible to its caller.
+        foreach (bool malformed in new[] { false, true })
+        {
+            NativeUiAsyncClient? client = null;
+            int released = 0, failures = 0;
+            var server = new NativeUiAsyncServer((_, _) => Task.FromResult(new byte[] { 74 }), message =>
+            {
+                Equal((byte)1, client!.Complete(message)[0]);
+                if (malformed) return [];
+                throw new IOException("lost acknowledgement");
+            }, _ => Interlocked.Increment(ref failures), (_, _, _) => Interlocked.Increment(ref released));
+            client = new(server.Exchange);
+            Equal((byte)74, client.InvokeAsync(ReadOnlyMemory<byte>.Empty).GetAwaiter().GetResult()[0]);
+            server.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            Equal(0, released); Equal(1, failures); client.Dispose();
+        }
+        Console.WriteLine("PASS: canceled resource results return to their owner; ambiguous acknowledgements never free accepted resources");
+    }
+
+    private static void NativeResourceOwnership()
+    {
+        int disposals = 0;
+        var resources = new NativeUiResources<DisposableResource>(2, 16);
+        long id = resources.Register(new(() => Interlocked.Increment(ref disposals)), 12);
+        Throws<InvalidOperationException>(() => resources.Acquire(id));
+        True(resources.Claim(id)); True(resources.Claim(id));
+        resources.RejectProvisional(id); // A late rejection cannot invalidate a claimed resource.
+        var first = resources.Acquire(id);
+        var second = resources.Acquire(id);
+        resources.Release(id);
+        True(!resources.Claim(id));
+        Throws<InvalidOperationException>(() => resources.Acquire(id));
+        using var rejected = new DisposableResource(() => { });
+        Throws<InvalidOperationException>(() => resources.Register(rejected, 8)); // Retired borrows still consume the budget.
+        Task drain = resources.DisposeAsync().AsTask();
+        True(!drain.IsCompleted); Equal(0, disposals);
+        first.Dispose(); first.Dispose(); Equal(0, disposals);
+        True(second.Resource is not null);
+        second.Dispose();
+        drain.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+        Equal(1, disposals);
+        Throws<ObjectDisposedException>(() => _ = second.Resource);
+        Throws<ObjectDisposedException>(() => resources.Register(rejected, 0));
+
+        int errors = 0;
+        var provisional = new NativeUiResources<DisposableResource>(2, 16,
+            _ => { errors++; throw new IOException("logger failed"); });
+        long abandoned = provisional.Register(new(() => { throw new IOException("dispose failed"); }), 8);
+        provisional.RejectProvisional(abandoned);
+        provisional.RejectProvisional(abandoned);
+        Equal(1, errors);
+        long next = provisional.Register(new(() => Interlocked.Increment(ref disposals)), 16);
+        True(next > abandoned);
+        provisional.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        Equal(2, disposals);
+        Console.WriteLine("PASS: resource handles require claims, drain outstanding borrows, retain budgets and contain disposal faults");
+    }
+
+    private sealed class DisposableResource(Action dispose) : IDisposable
+    {
+        public void Dispose() => dispose();
+    }
+
     private static unsafe void IndependentRuntime(string path)
     {
         // NativeAOT shared runtimes remain loaded for process lifetime; never unload live code tables.
@@ -148,6 +240,13 @@ internal static class Program
         operations = new(new InputTransport(peer, 7).Exchange);
         Equal((byte)37, operations.InvokeAsync(new byte[] { 0, 37 }).GetAwaiter().GetResult()[0]);
         Equal((byte)38, operations.InvokeAsync(new byte[] { 1, 38 }).GetAwaiter().GetResult()[0]);
+        byte[] handle = operations.InvokeAsync(new byte[] { 4, 81, 82 }).GetAwaiter().GetResult();
+        byte[] resourceRequest = new byte[10]; resourceRequest[0] = 8; handle.CopyTo(resourceRequest, 2);
+        Equal((byte)1, peer.Exchange(resourceRequest)[0]); // Claim in the owner runtime.
+        resourceRequest[1] = 1;
+        True(peer.Exchange(resourceRequest).SequenceEqual(new byte[] { 81, 82 }));
+        resourceRequest[1] = 2; peer.Exchange(resourceRequest);
+        resourceRequest[1] = 0; Equal((byte)0, peer.Exchange(resourceRequest)[0]);
         using (var cancellation = new CancellationTokenSource())
         {
             Task<byte[]> canceled = operations.InvokeAsync(new byte[] { 2 }, cancellation.Token);

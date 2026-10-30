@@ -697,3 +697,32 @@ second test still selected a nonexistent custom close button. All three caption
 fixtures now share the platform-specific inventory assertion; macOS invokes the
 same shell close command directly, while Windows/Linux retain the pointer-driven
 custom-button route. Shadow and backdrop assertions still run on every platform.
+
+Async resource results require an explicit one-byte completion acknowledgement:
+`1` means the caller accepted the result into its task; `0` means it retired or
+canceled first. A successful result rejected with `0` is returned to an
+owner-local rejection callback before server drain completes. Resource-producing
+handlers retain provisional ownership until that acknowledgement; a transport
+failure or malformed acknowledgement is ambiguous and must remain owned by the
+session until explicit claim or session cleanup, not be eagerly freed. This
+prevents cancellation from silently losing newly prepared native theme resources
+and avoids freeing a result already accepted before an acknowledgement was lost.
+
+Window-owned resources use session-scoped monotonic handles. A newly registered
+resource is provisional; only an explicit claim allows subsequent borrowing.
+Definite completion rejection retires provisional handles only, so a delayed
+rejection cannot invalidate a handle already claimed by the caller. Release and
+session shutdown close admission immediately but defer disposal until every
+native borrow has returned. Disposal executes outside registry locks and is part
+of the session drain. Count and byte budgets include retired-but-borrowed objects.
+The wire carries handles only; the registry, disposable objects and borrow guards
+remain in the owning native runtime. Unacknowledged provisional resources remain
+bounded and are collected at session shutdown.
+
+Resource-ownership checkpoint: the Linux-x64 NativeAOT caller and independent
+native peer passed explicit handle creation/claim/read/release, canceled and
+retired caller rejection, ambiguous acknowledgement preservation, borrow-delayed
+shutdown, retained-resource budgets, monotonic handles, and disposal/logging fault
+containment. The 85-project architecture gate remains the dependency check. This
+is transport/lifetime validation, not evidence of an extracted production window
+module or a new reduction in Host size.

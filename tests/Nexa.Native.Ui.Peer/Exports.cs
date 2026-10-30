@@ -49,6 +49,7 @@ internal static class Exports
         private readonly XsrUiRendererEndpoint _input;
         private readonly XsrUiShellEndpoint _shell;
         private readonly NativeUiAsyncServer _async;
+        private readonly NativeUiResources<MemoryStream> _resources = new(8, 1024);
         private readonly XsrUiSceneSender _scenes = new();
         private XsrUiScenePacket? _pending;
         private long _failures;
@@ -69,7 +70,10 @@ internal static class Exports
             {
                 byte[] bytes = new byte[completion.Length + 1]; bytes[0] = 253;
                 completion.CopyTo(bytes.AsMemory(1)); return _host.Exchange(bytes);
-            }, Failed);
+            }, Failed, (_, request, result) =>
+            {
+                if (request.Span[0] == 4) _resources.RejectProvisional(BinaryPrimitives.ReadInt64LittleEndian(result.Span));
+            });
         }
         internal void Failed(Exception _) => Interlocked.Increment(ref _failures);
         internal byte[] Exchange(ReadOnlyMemory<byte> request)
@@ -93,11 +97,26 @@ internal static class Exports
                 case 5: return BitConverter.GetBytes(Interlocked.Read(ref _failures));
                 case 6: return _shell.Exchange(request[1..]);
                 case 7: return _async.Exchange(request[1..]);
+                case 8:
+                    if (request.Length != 10) throw new InvalidDataException("Invalid resource operation.");
+                    long resource = BinaryPrimitives.ReadInt64LittleEndian(request.Span[2..]);
+                    switch (request.Span[1])
+                    {
+                        case 0: return [_resources.Claim(resource) ? (byte)1 : (byte)0];
+                        case 1:
+                            using (var borrow = _resources.Acquire(resource)) return borrow.Resource.ToArray();
+                        case 2: _resources.Release(resource); return [];
+                        default: throw new InvalidDataException("Unknown resource operation.");
+                    }
                 default: throw new InvalidDataException("Unknown probe operation.");
             }
         }
-        internal Task StopAsync() => _async.DisposeAsync().AsTask();
-        private static Task<byte[]> ExecuteAsync(ReadOnlyMemory<byte> request, CancellationToken token)
+        internal async Task StopAsync()
+        {
+            await _async.DisposeAsync().ConfigureAwait(false);
+            await _resources.DisposeAsync().ConfigureAwait(false);
+        }
+        private Task<byte[]> ExecuteAsync(ReadOnlyMemory<byte> request, CancellationToken token)
         {
             if (request.IsEmpty) throw new InvalidDataException("Missing async probe operation.");
             return request.Span[0] switch
@@ -105,8 +124,15 @@ internal static class Exports
                 0 => Task.FromResult(request[1..].ToArray()),
                 1 => DelayedAsync(request[1..], token),
                 2 => CanceledAsync(token),
+                4 => Task.FromResult(CreateResource(request[1..])),
                 _ => throw new InvalidOperationException("private async fixture error"),
             };
+        }
+        private byte[] CreateResource(ReadOnlyMemory<byte> request)
+        {
+            var resource = new MemoryStream(request.ToArray(), writable: false);
+            try { return BitConverter.GetBytes(_resources.Register(resource, request.Length)); }
+            catch { resource.Dispose(); throw; }
         }
         private static async Task<byte[]> DelayedAsync(ReadOnlyMemory<byte> request, CancellationToken token)
         {

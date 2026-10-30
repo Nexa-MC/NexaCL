@@ -88,15 +88,16 @@ internal sealed class NativeUiAsyncClient(Func<ReadOnlyMemory<byte>, byte[]> sen
             || kind != NativeUiAsyncProtocol.Success && !body.IsEmpty)
             throw new InvalidDataException("Invalid native UI completion.");
         var pending = Remove(id);
-        if (pending is null) return []; // Late completion after caller retirement.
+        if (pending is null) return [0]; // Late completion after caller retirement.
+        bool accepted;
         try
         {
-            if (kind == NativeUiAsyncProtocol.Success) pending.Source.TrySetResult(body.ToArray());
-            else if (kind == NativeUiAsyncProtocol.Canceled) pending.Source.TrySetCanceled();
-            else pending.Source.TrySetException(new InvalidOperationException("The native UI async operation failed."));
+            if (kind == NativeUiAsyncProtocol.Success) accepted = pending.Source.TrySetResult(body.ToArray());
+            else if (kind == NativeUiAsyncProtocol.Canceled) accepted = pending.Source.TrySetCanceled();
+            else accepted = pending.Source.TrySetException(new InvalidOperationException("The native UI async operation failed."));
         }
         finally { pending.Dispose(); }
-        return [];
+        return [accepted ? (byte)1 : (byte)0];
     }
 
     private Pending? Remove(long id)
@@ -159,7 +160,8 @@ internal sealed class NativeUiAsyncClient(Func<ReadOnlyMemory<byte>, byte[]> sen
 internal sealed class NativeUiAsyncServer(
     Func<ReadOnlyMemory<byte>, CancellationToken, Task<byte[]>> execute,
     Func<ReadOnlyMemory<byte>, byte[]> complete,
-    Action<Exception>? failure = null) : IAsyncDisposable
+    Action<Exception>? failure = null,
+    Action<long, ReadOnlyMemory<byte>, ReadOnlyMemory<byte>>? rejectedResult = null) : IAsyncDisposable
 {
     private readonly object _gate = new();
     private readonly Dictionary<long, (CancellationTokenSource Source, int Bytes)> _pending = [];
@@ -209,7 +211,20 @@ internal sealed class NativeUiAsyncServer(
             int delay = 1;
             while (true)
             {
-                try { _ = complete(message); break; }
+                try
+                {
+                    byte[] acknowledgement = complete(message);
+                    if (acknowledgement is not { Length: 1 } || acknowledgement[0] > 1)
+                        throw new InvalidDataException("Invalid native UI completion acknowledgement.");
+                    if (acknowledgement[0] == 0 && message[4] == NativeUiAsyncProtocol.Success)
+                    {
+                        // Rejection is definite. An ambiguous transport failure must instead
+                        // leave provisional resources owned by the session until cleanup.
+                        try { rejectedResult?.Invoke(id, body, message.AsMemory(NativeUiAsyncProtocol.Header)); }
+                        catch (Exception error) { Report(error); }
+                    }
+                    break;
+                }
                 catch (NativeUiCallBusyException)
                 { await Task.Delay(delay).ConfigureAwait(false); delay = Math.Min(delay * 2, 32); }
                 catch (Exception error) { Report(error); break; }
