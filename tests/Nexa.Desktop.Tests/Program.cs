@@ -95,6 +95,11 @@ internal static partial class Program
             Environment.ExitCode = RunNativeThemePreview(themeMode, themeDirectory);
             return;
         }
+        if (args is ["--native-theme-options-preview", var optionsMode, var optionsDirectory])
+        {
+            Environment.ExitCode = RunNativeThemePreview(optionsMode, optionsDirectory, optionsOnly: true);
+            return;
+        }
         if (args is ["--native-launcher-migration-preview", var migrationPreviewTheme, var migrationPreviewDirectory])
         {
             Environment.ExitCode = RunNativeLauncherMigrationPreview(migrationPreviewTheme, migrationPreviewDirectory);

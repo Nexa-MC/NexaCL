@@ -10880,5 +10880,8 @@
   {"source": "启动器更新", "en": "Launcher updates", "zh-Hant": "啟動器更新"},
   {"source": "开发与实验", "en": "Development and experiments", "zh-Hant": "開發與實驗"},
   {"source": "快照与备份", "en": "Snapshots and backups", "zh-Hant": "快照與備份"},
-  {"source": "规划与暂不可用", "en": "Planned and unavailable", "zh-Hant": "規劃與暫不可用"}
+  {"source": "规划与暂不可用", "en": "Planned and unavailable", "zh-Hant": "規劃與暫不可用"},
+  {"source": "颜色", "en": "Colors", "zh-Hant": "顏色"},
+  {"source": "视频", "en": "Video", "zh-Hant": "影片"},
+  {"source": "音乐", "en": "Music", "zh-Hant": "音樂"}
 ]

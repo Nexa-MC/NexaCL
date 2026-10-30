@@ -240,8 +240,12 @@ internal static partial class Program
             XsrUiEntityId option = default;
             Tree.Walk(Settings.Page, entity =>
             {
-                if (Tree.Name(entity).StartsWith("Theme.Option.", StringComparison.Ordinal)
-                    && Tree.Children(entity).Any(child => Tree.GetComponent<XsrUiText>(child)?.Content == label)) option = entity;
+                if (Tree.Name(entity).StartsWith("Theme.Option.", StringComparison.Ordinal))
+                {
+                    bool hasLabel = false;
+                    Tree.Walk(entity, child => { hasLabel |= Tree.GetComponent<XsrUiText>(child)?.Content == label; return true; });
+                    if (hasLabel) option = entity;
+                }
                 return true;
             });
             AssertTrue(option.IsAssigned); XsrUiEntityId action = default;

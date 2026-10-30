@@ -138,7 +138,12 @@ internal sealed partial class SettingsPageController
         ["choicesKey"] = prefix + ".Choices",
         ["filesKey"] = prefix + ".Files",
         ["pickKey"] = prefix + ".Pick",
-        ["group"] = definition.Group ?? "",
+        ["group"] = definition.Group switch
+        {
+            "color" or "background" or "window" or "video" or "music"
+                => ProductPresentationText.Raw("settings.theme.group." + definition.Group),
+            _ => definition.Group ?? "",
+        },
         ["hasGroup"] = Flag(!string.IsNullOrEmpty(definition.Group)),
         ["visible"] = Flag(visible),
         ["enabled"] = Flag(!ThemeOptionEditorsBusy),
