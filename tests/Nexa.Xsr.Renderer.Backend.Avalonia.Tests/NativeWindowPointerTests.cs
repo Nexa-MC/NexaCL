@@ -35,6 +35,11 @@ internal static partial class Program
             window.Surface.CommitScene();
             window.UpdateLayout();
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+            // Native non-client hit testing uses the presented composition tree.
+            // A dispatcher/layout barrier alone need not publish the newly added control.
+            var presented = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            window.RequestAnimationFrame(_ => window.RequestAnimationFrame(_ => presented.SetResult()));
+            await presented.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
             nint handle = window.TryGetPlatformHandle()!.Handle;
             Border[] grips = window.GetVisualDescendants().OfType<Border>()

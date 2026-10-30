@@ -136,6 +136,15 @@ internal static partial class Program
             AssertEqual(WindowState.Maximized, window.WindowState);
             window.WindowState = WindowState.Normal;
 
+            // A taskbar/system restore does not call PlatformActions.RestoreWindow.
+            // Its old maximized checkpoint must not override a later normal minimize.
+            window.WindowState = WindowState.Maximized;
+            actions.MinimizeWindow();
+            window.WindowState = WindowState.Normal;
+            window.WindowState = WindowState.Minimized;
+            window.HideToTray(); actions.RestoreWindow();
+            AssertEqual(WindowState.Normal, window.WindowState);
+
             shell.Renderer.ReducedMotion = false;
             actions.HideWindow();
             await WaitForTrayMotionAsync(() => content.Opacity is > 0 and < 1);

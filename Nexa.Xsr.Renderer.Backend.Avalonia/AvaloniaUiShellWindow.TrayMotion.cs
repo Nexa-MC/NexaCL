@@ -35,7 +35,7 @@ public sealed partial class AvaloniaUiShellWindow
             immediate: WindowState == WindowState.Minimized);
     }
 
-    internal void RestoreFromTray(WindowState? minimizedState = null)
+    internal void RestoreFromTray()
     {
         if (_disposed || _closeAnimationStarted) return;
         if (!_hasOpened)
@@ -53,7 +53,7 @@ public sealed partial class AvaloniaUiShellWindow
             if (!IsVisible) _maskedContent.Opacity = 0;
         }
         if (WindowState == WindowState.Minimized)
-            WindowState = minimizedState ?? _lastNonMinimizedState;
+            WindowState = _lastNonMinimizedState;
         if (!IsVisible)
         {
             _showingForTrayRestore = true;
