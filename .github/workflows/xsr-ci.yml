@@ -258,8 +258,11 @@ jobs:
         shell: pwsh
         run: |
           $binary = if ($IsWindows) { './native-theme-services/Nexa.Services.Themes.Tests.exe' } else { './native-theme-services/Nexa.Services.Themes.Tests' }
-          & $binary
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $log = Join-Path $env:RUNNER_TEMP 'ntp-native-services.log'
+          & $binary *> $log
+          $probeExitCode = $LASTEXITCODE
+          Get-Content $log
+          exit $probeExitCode
       - name: Publish NativeAOT Desktop theme host
         run: dotnet publish Nexa.Desktop/Nexa.Desktop.csproj --configuration Release -p:XsrVersionChannel=ci -p:PublishAot=true -p:StripSymbols=true --output native-theme-desktop
       - name: Verify external author assets and execute actual published theme host
@@ -316,6 +319,7 @@ jobs:
         with:
           name: ntp-native-publication-${{ matrix.os }}
           path: |
+            ${{ runner.temp }}/ntp-native-services.log
             ${{ runner.temp }}/ntp-native-publication.log
             ${{ runner.temp }}/ntp-native-preview-*.log
             ${{ runner.temp }}/ntp-native-previews/
