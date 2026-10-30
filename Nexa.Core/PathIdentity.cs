@@ -8,6 +8,17 @@ public static class PathIdentity
 
     public static string Normalize(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
 
+    /// <summary>Recognizes only fixed macOS root aliases and verifies their target ancestry.</summary>
+    public static bool IsMacOSSystemDirectoryAlias(string path)
+    {
+        if (!OperatingSystem.IsMacOS() || path is not ("/var" or "/tmp" or "/etc")) return false;
+        if (new DirectoryInfo(path).ResolveLinkTarget(true)?.FullName is not { } target
+            || !string.Equals(target, "/private" + path, StringComparison.Ordinal)) return false;
+        for (string? current = target; current is not null; current = Path.GetDirectoryName(current))
+            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0) return false;
+        return true;
+    }
+
     public static string Contained(string root, string relative)
     {
         string full = Path.GetFullPath(Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar)));

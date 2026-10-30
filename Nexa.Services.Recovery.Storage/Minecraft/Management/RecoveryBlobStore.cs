@@ -228,7 +228,8 @@ internal sealed class RecoveryBlobStore
         {
             try
             {
-                if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+                if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0
+                    && !Nexa.Core.PathIdentity.IsMacOSSystemDirectoryAlias(current))
                     throw new IOException("快照路径不能包含链接。");
             }
             catch (FileNotFoundException) { }

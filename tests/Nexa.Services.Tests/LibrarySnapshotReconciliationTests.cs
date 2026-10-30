@@ -17,6 +17,11 @@ internal static partial class Program
             try { MinecraftDiscoverySnapshotStore.CheckLinks(Path.Combine(link, "snapshot.json")); }
             catch (InvalidDataException) { rejected = true; }
             AssertTrue(rejected);
+            AssertFalse(Nexa.Core.PathIdentity.IsMacOSSystemDirectoryAlias(link));
+            rejected = false;
+            try { Nexa.Services.Minecraft.Management.RecoveryBlobStore.CheckLinks(link); }
+            catch (IOException) { rejected = true; }
+            AssertTrue(rejected);
             AssertTrue((await new MinecraftInstanceMetadataStore().LoadForDisplayAsync(link)).Error is not null);
         }
         string root = fixture.AddRoot("offline-game"), offlineRoot = root + ".offline";
