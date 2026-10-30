@@ -5,6 +5,40 @@ namespace Nexa.Xsr.Renderer.Nxml.Tests;
 
 internal static partial class Program
 {
+    private static void ReloadedSegmentSelectionTracksDeclaredState()
+    {
+        var tree = new XsrUiTree(); var store = new XsrStateStoreBuilder().Build();
+        var slot = NxmlUiLoader.LoadDetached(Compile("<Dynamic Key=\"slot\" />"), tree, store);
+        var owner = new NxmlDynamicContent(tree, store);
+        var template = new NxmlDynamicTemplate("""
+            <nxml-dynamic><StackPanel SegmentThumb="thumb">
+              <ContentHost Key="thumb" TransitionKey="selection" IsVisible="false" />
+              <Button Selected="{data home}" Content="Home" />
+              <Button Selected="{data theme}" Content="Themes" />
+            </StackPanel></nxml-dynamic>
+            """);
+        var data = new Dictionary<string, string> { ["home"] = "true", ["theme"] = "false" };
+        var root = owner.Append(slot, template.Compile(data, NxmlComponentLibrary.Default));
+        var children = tree.Children(root).ToArray();
+        var track = tree.GetComponent<XsrUiSegmentedTrack>(root)!;
+        var motion = tree.GetComponent<XsrUiTransition>(children[0])!;
+        AssertEqual(children[1], track.Selected);
+        data["home"] = "false"; data["theme"] = "true";
+        owner.Reload(root, template.Compile(data, NxmlComponentLibrary.Default));
+        AssertEqual(children[2], track.Selected);
+        AssertTrue(ReferenceEquals(track, tree.GetComponent<XsrUiSegmentedTrack>(root)));
+        AssertTrue(ReferenceEquals(motion, tree.GetComponent<XsrUiTransition>(children[0])));
+        // Unrelated reloads retain the existing motion/interaction state.
+        owner.Reload(root, template.Compile(data, NxmlComponentLibrary.Default));
+        AssertEqual(children[2], track.Selected);
+        data["home"] = "true"; data["theme"] = "false";
+        owner.Reload(root, template.Compile(data, NxmlComponentLibrary.Default));
+        AssertEqual(children[1], track.Selected);
+        data["home"] = "false";
+        owner.Reload(root, template.Compile(data, NxmlComponentLibrary.Default));
+        AssertFalse(track.Selected.IsAssigned);
+    }
+
     private static void DeclarativeControlFactsRetainLiveObjects()
     {
         var tree = new XsrUiTree();

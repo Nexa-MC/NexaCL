@@ -192,6 +192,25 @@ public sealed partial class NxmlUiLoader
         if (before.Recipe == NxmlRuntimeRecipe.DynamicSlot) return;
         var children = tree.Children(entity);
         for (int i = 0; i < children.Count; i++) ApplyReload(before.Children[i], after.Children[i], children[i], tree);
+        // State-driven navigation must move the existing thumb as well as the buttons.
+        // Keep the track and transition instances so presentation continuity survives reload.
+        if (tree.GetComponent<XsrUiSegmentedTrack>(entity) is { } track)
+        {
+            bool changed = false;
+            for (int i = 0; i < children.Count; i++)
+                changed |= before.Children[i].Selected != after.Children[i].Selected;
+            if (changed)
+            {
+                track.Selected = default;
+                foreach (var child in children)
+                    if (tree.GetComponent<XsrUiSelection>(child)?.IsSelected == true)
+                    {
+                        track.Selected = child;
+                        break;
+                    }
+                tree.MarkDirty(entity, XsrUiDirtyKinds.Paint);
+            }
+        }
     }
 
     private static void ValidateRangeFacts(NxmlIrNode node)

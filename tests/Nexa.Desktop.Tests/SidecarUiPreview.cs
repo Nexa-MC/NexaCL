@@ -75,9 +75,14 @@ internal static partial class Program
                     Set("nsc.market.ready", "true"); Set("nsc.market.home", "true");
                     await Capture("market-home");
                     Set("nsc.market.home", "false"); Set("nsc.market.list", "true"); Set("nsc.market.title", "主题");
+                    Set("nsc.market.home.selected", "false"); Set("nsc.market.theme.selected", "true");
                     for (int i = 0; i < 10; i++)
                     { Set($"nsc.market.item.{i}.visible", "true"); Set($"nsc.market.item.{i}.name", $"社区主题 {i + 1}"); Set($"nsc.market.item.{i}.summary", "简洁的配色与舒适的阅读层级，让启动器更像你。"); }
                     await Capture("market-list");
+                    Set("nsc.market.list", "false"); Set("nsc.market.detail.visible", "true");
+                    Set("nsc.market.title", "真正的主题标题"); Set("nsc.market.subtitle", "这里是摘要，不是标题");
+                    Set("nsc.market.description", "主题正文");
+                    await Capture("market-detail");
                     if (warnings.Count > 0) throw new InvalidOperationException(string.Join("\n", warnings));
                     Console.WriteLine("PASS: offscreen Sidecar UI; raw touch copies device codes, explicitly opens the unfilled device page, and drags account/market lists at both widths and themes.");
                 }
@@ -93,7 +98,7 @@ internal static partial class Program
                 }
                 async Task Capture(string name)
                 {
-                    string? expected = name switch { "account-device-code" or "onboarding-device-code" => "ABCD-EFGH", "account-overview" => "6200 Exp", "market-list" => "社区主题 1", _ => null };
+                    string? expected = name switch { "account-device-code" or "onboarding-device-code" => "ABCD-EFGH", "account-overview" => "6200 Exp", "market-list" => "社区主题 1", "market-detail" => "真正的主题标题", _ => null };
                     long until = Environment.TickCount64 + 10000;
                     while (expected is not null && !shell.Render(new(1040, 700)).Nodes.Any(n => n.Text == expected))
                     {
@@ -116,6 +121,29 @@ internal static partial class Program
                             string stem = $"{name}-{width}-{(dark ? "dark" : "light")}";
                             bitmap.Save(Path.Combine(output, stem + ".png"), PngBitmapEncoderOptions.Default);
                             File.WriteAllLines(Path.Combine(output, stem + ".txt"), surface.Scene!.Nodes.Select(n => $"{shell.Tree.Name(n.Entity)} | {n.Rect} | {n.Text}"));
+                            if (name == "account-overview")
+                            {
+                                var button = surface.Scene!.Nodes.Single(n => shell.Tree.GetComponent<XsrUiCommandBinding>(n.Entity)?.Command.Value == "nsc.account.section"
+                                    && shell.Renderer.ReadIntentArgument(n.Entity) == "overview");
+                                var caption = surface.Scene.Nodes.Single(n => n.Text == "账户概览" && shell.Tree.Parent(n.Entity) == button.Entity);
+                                AssertTrue(caption.Rect.X >= button.Rect.X + 12);
+                                AssertTrue(caption.Rect.X + caption.Rect.Width <= button.Rect.X + button.Rect.Width - 12);
+                                AssertTrue(button.IsEnabled);
+                            }
+                            if (name is "market-list" or "market-detail")
+                            {
+                                var category = surface.Scene!.Nodes.Single(n => shell.Tree.GetComponent<XsrUiCommandBinding>(n.Entity)?.Command.Value == "nsc.market.navigate"
+                                    && shell.Renderer.ReadIntentArgument(n.Entity) == "theme");
+                                var track = shell.Tree.GetComponent<XsrUiSegmentedTrack>(shell.Tree.Parent(category.Entity))!;
+                                AssertEqual(category.Entity, track.Selected);
+                                AssertTrue(category.IsSelected);
+                            }
+                            if (name == "market-detail")
+                            {
+                                var heading = surface.Scene!.Nodes.Single(n => shell.Tree.Name(n.Entity) == "NscMarketDetailTitle");
+                                AssertEqual("真正的主题标题", heading.Text!);
+                                AssertTrue(surface.Scene.Nodes.Any(n => n.Text == "这里是摘要，不是标题"));
+                            }
                             if (name is "account-device-code" or "onboarding-device-code")
                             {
                                 var code = surface.Scene!.Nodes.Single(n => shell.Tree.Name(n.Entity) == "NexaMcDeviceCode");
