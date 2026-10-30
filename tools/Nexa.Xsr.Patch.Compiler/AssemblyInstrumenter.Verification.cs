@@ -36,6 +36,7 @@ internal sealed partial class AssemblyInstrumenter
             "Nexa.Native.Pac" => "nexa_pac_",
             "Nexa.Native.Crypto" => "nexa_crypto_",
             "Nexa.Native.Network" => "nexa_network_",
+            "Nexa.Native.Updates" => "nexa_updates_",
             _ => null,
         };
         if (prefix is null

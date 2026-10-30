@@ -41,6 +41,7 @@ class InstallScopeTests(unittest.TestCase):
                         "pac": root / "programs/NexaCL/nexa-pac.dll",
                         "crypto": root / "programs/NexaCL/nexa-crypto.dll",
                         "network": root / "programs/NexaCL/nexa-network.dll",
+                        "updates": root / "programs/NexaCL/nexa-updates.dll",
                         "helper": root / "programs/NexaCL/Nexa.Update.Helper.exe",
                         "desktop": root / "public/Desktop/NexaCL.lnk",
                         "menu": root / "data/Microsoft/Windows/Start Menu/Programs/NexaCL.lnk",

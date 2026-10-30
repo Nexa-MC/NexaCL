@@ -36,7 +36,7 @@ class NativeModulePayloadTests(unittest.TestCase):
             assets = Path(temp) / "project.assets.json"
             assets.write_text(json.dumps({"libraries": {"Nexa.Services.Network/2.0.0": {}}}))
             verify_host_engine_isolation(assets)
-            for name in ("Jint/4.17.0", "BouncyCastle.Cryptography/2.6.2", "Nexa.Native.Pac/1.0.0", "Nexa.Native.Crypto/1.0.0", "Nexa.Native.Network/1.0.0"):
+            for name in ("Jint/4.17.0", "BouncyCastle.Cryptography/2.6.2", "Nexa.Native.Pac/1.0.0", "Nexa.Native.Crypto/1.0.0", "Nexa.Native.Network/1.0.0", "Nexa.Native.Updates/1.0.0", "ZstdSharp.Port/0.8.6"):
                 assets.write_text(json.dumps({"libraries": {name: {}}}))
                 with self.assertRaisesRegex(RuntimeError, "leaked back"):
                     verify_host_engine_isolation(assets)
@@ -56,7 +56,7 @@ class NativeModulePayloadTests(unittest.TestCase):
             result = measure(before, after, root / "report", "linux-x64", "2.0.0.alpha.18", "2.0.0.alpha.19")
             engines = [m for m in result["modules"] if m["name"] != "nexa-host.so"]
             self.assertTrue(result["roundTripVerified"])
-            self.assertEqual(3, len(engines))
+            self.assertEqual(4, len(engines))
             self.assertTrue(all(m["identical"] and m["newDataBytes"] == 0 for m in engines))
 
     def test_first_network_module_is_carried_by_a_verified_delta(self):

@@ -1,7 +1,5 @@
 using System.Buffers;
-using System.IO.Compression;
 using System.Security.Cryptography;
-using ZstdSharp;
 
 namespace Nexa.Services.Updates;
 
@@ -59,12 +57,11 @@ public static class UpdateBlockCodec
     public static Stream OpenDecompressor(Stream compressed, string? compression, bool leaveOpen = false)
     {
         string codec = Normalize(compression);
-        return codec switch
-        {
-            Gzip => new GZipStream(compressed, CompressionMode.Decompress, leaveOpen),
-            Zstd => new DecompressionStream(compressed, leaveOpen: leaveOpen),
-            _ => throw new InvalidDataException($"不支持的分块压缩算法：{codec}。")
-        };
+#if NEXA_EXTERNAL_MODULES
+        return new NativeBlockStream(compressed, codec == Gzip ? 1 : 2, leaveOpen);
+#else
+        return Nexa.Native.Updates.BlockDecoder.Open(compressed, codec == Gzip ? 1 : 2, leaveOpen);
+#endif
     }
 
     /// <summary>

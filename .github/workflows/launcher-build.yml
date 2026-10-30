@@ -192,8 +192,8 @@ jobs:
                   continue
               shutil.copy2(pathlib.Path(sys.argv[1]) / name, pathlib.Path(sys.argv[2]) / name)
           PYMODULES
-          dotnet "$RUNNER_TEMP/native-engine-tests/Nexa.Services.Tests.dll" 'PAC ' gpg 'network connection' 'network TLS'
-      - name: Verify NativeAOT network caller ownership and mTLS
+          dotnet "$RUNNER_TEMP/native-engine-tests/Nexa.Services.Tests.dll" 'PAC ' gpg 'network connection' 'network TLS' 'block codec' vcdiff
+      - name: Verify NativeAOT codec streaming, network ownership and mTLS
         shell: bash
         run: python eng/release/verify_native_engine_contracts.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/launcher" --output "$RUNNER_TEMP/native-network-caller"
       - name: Verify native engine reproducibility across release stamps

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../NativeEngine.props" />
+  <ItemGroup>
+    <PackageReference Include="ZstdSharp.Port" Version="0.8.6" />
+    <Compile Include="../NativeEngineAbi.cs" Link="NativeEngineAbi.cs" />
+  </ItemGroup>
+</Project>

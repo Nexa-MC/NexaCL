@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="ZstdSharp.Port" Version="0.8.6" />
     <Compile Include="../Shared/LicensedAccountFixture.cs" Link="Fixtures/LicensedAccountFixture.cs" />
     <Using Include="Nexa.Testing.LicensedAccountFixture" Static="true" />
   </ItemGroup>

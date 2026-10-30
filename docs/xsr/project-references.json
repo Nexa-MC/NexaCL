@@ -2,7 +2,11 @@
   "Nexa.Native.Pac": [],
   "Nexa.Native.Crypto": [],
   "Nexa.Native.Network": [],
-  "Nexa.Native.Network.Tests": ["Nexa.Services.Network"],
+  "Nexa.Native.Updates": [],
+  "Nexa.Native.Network.Tests": [
+    "Nexa.Services.Network",
+    "Nexa.Services.Updates"
+  ],
   "Nexa.Bootstrap": ["Nexa.Core"],
   "CapabilityProbe": [
     "Nexa.Services"
@@ -521,7 +525,8 @@
     "Nexa.Services.Rollouts",
     "Nexa.Services.Updates.Contracts",
     "Nexa.Xsr.Abstractions",
-    "Nexa.Xsr.State"
+    "Nexa.Xsr.State",
+    "Nexa.Native.Updates"
   ],
   "Nexa.Services.Updates.Contracts": [
     "Nexa.Contracts",

@@ -8,7 +8,7 @@ internal static partial class Program
     private static unsafe void NativeInstrumentationWorks()
     {
         string suffix = OperatingSystem.IsWindows() ? ".dll" : OperatingSystem.IsMacOS() ? ".dylib" : ".so";
-        foreach (string engine in new[] { "pac", "crypto", "network" })
+        foreach (string engine in new[] { "pac", "crypto", "network", "updates" })
         {
             // NativeAOT runtimes stay loaded for the process lifetime.
             nint library = NativeLibrary.Load(Path.Combine(AppContext.BaseDirectory, "nexa-" + engine + suffix));
@@ -45,6 +45,11 @@ internal static partial class Program
             {
                 var invoke = (delegate* unmanaged[Cdecl]<int, int, int, int, nint*, int>)NativeLibrary.GetExport(library, "nexa_network_create_v1");
                 AssertEqual(-1, invoke(0, 0, 0, 0, null));
+            }
+            else if (engine == "updates")
+            {
+                var invoke = (delegate* unmanaged[Cdecl]<int, nint, long, long>)NativeLibrary.GetExport(library, "nexa_updates_create_v1");
+                AssertEqual(0L, invoke(0, 0, 0));
             }
             else if (engine == "crypto")
             {

@@ -6,6 +6,7 @@ internal static partial class Program
     private static async Task Main()
     {
         NativeInstrumentationWorks();
+        await NativeUpdateCodecsWork();
         await NetworkConnectionTransfersStreamsAndSurvivesRetirement();
         await NetworkConnectionCancellationAndRefusal();
         await NetworkTlsPreservesSpecializedIdentity();

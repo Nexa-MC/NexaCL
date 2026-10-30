@@ -253,3 +253,56 @@ On ARM64, use `-objc_stubs_small` to reuse the ordinary message-send stub instea
 that second GOT slot. This is a linker-supported stub form, not binary rewriting.
 The focused macOS CI gate performs three independent clean rebuilds to catch
 intermittent identity changes, then executes the NativeAOT socket/mTLS fixtures.
+
+### Updates calculation engine (2026-10-30)
+
+`nexa-updates` owns gzip/zstd streaming decompression and RFC 3284 VCDIFF
+calculation. Host retains discovery, signature admission, raw size/SHA-256
+verification, staging and apply orchestration. This is not extraction of the
+whole Updates service. Managed development and the privileged helper use the
+same engine statically; the helper must not load app-slot native libraries.
+
+The streaming ABI passes copied packets of at most 64 KiB, opaque session IDs,
+and a wake-only callback with a numeric context. No CLR Stream, Task, exception
+or retained caller buffer crosses runtimes. Capacity-one input/output queues plus active 64 KiB packets provide bounded
+backpressure without buffering entire blocks. Host performs source reads asynchronously;
+source exceptions keep their original type and identity. Cancellation and
+release wake pending reads and stop the worker without blocking the UI. Native
+codec errors become InvalidDataException. VCDIFF results have explicit copy and
+release ownership. All engines retain local instrumentation and stable build
+identity; publishing must reject ZstdSharp and native engine assemblies in the
+external Host dependency closure.
+
+The `nexa_updates_*_v1` exports use cdecl, signed 32-bit lengths/status and
+signed 64-bit session/result IDs (not platform-dependent C `long`):
+
+| Suffix | Contract |
+| --- | --- |
+| `create(codec, wake, context)` | Codec 1 = gzip, 2 = zstd; returns a session ID, or zero. `wake(int64 context)` can run before create returns and after close. Host registers the context first and ignores retired contexts. |
+| `feed(id, bytes, length)` | Copies up to 65536 bytes only after read requests input; zero length is EOF. Returns zero, or -1 for invalid state/input. |
+| `read(id, output, capacity, error, errorCapacity)` | Copies up to 65536 output bytes. Nonnegative = bytes/EOF; -2 = input requested; -3 = wait for wake; -4 = codec failure with bounded UTF-8 diagnostic; -1 = invalid call/session. |
+| `close(id)` | Idempotent retirement and cancellation; never waits for the decoder worker. Numeric contexts and permanently loaded callback code prevent callback use-after-free. |
+| `delta(deltaBytes, deltaLength, sourceBytes, sourceLength, size)` | Borrows spans only for the call, returns an owned result ID and exact size; zero means decode failure. |
+| `delta_copy(id, output, length)` | Copies only when length matches the owned result; zero success, -1 invalid input/result. |
+| `delta_release(id)` | Idempotently retires the result, including when caller allocation/copy fails. |
+
+A wake is a coalesced hint, not a data packet. Callers recheck state after every
+wake; native code never waits for callback work. Per-read cancellation does not
+discard a packet already read from the source, so a later read may continue.
+Terminal source failures abort the native worker and remain terminal with the
+original Host exception. The callback registry uses weak references so pending
+read continuations cannot root abandoned streams; SafeHandle finalization retires
+their native sessions. Native modules remain release-coherent files covered by
+the signed payload; this ABI does not permit independent unsigned module updates.
+
+Local acceptance for this extraction: the Release solution and Linux x64
+external Host publish passed; 78-project architecture checks, 10 codec/delta/GPG
+regressions, 100 release-tool tests, the real NativeAOT caller (including async
+fragmentation, cancellation, disposal, original network errors and streaming
+before EOF), and Host ABI/missing-library smoke passed. Automatic coverage
+verified 41,422 executable bodies and four standalone engines. A clean rebuild
+with different release/commit metadata produced byte-identical `nexa-updates.so`
+(3,037,968 bytes; SHA-256
+`2ac4a7fad80ce114de5541256609fe00b4061bf6d81a741f3ce74bc87a1a4154`).
+Windows/macOS and other RID acceptance remains in the updated native/release CI
+matrix; local Linux results do not stand in for those platforms.

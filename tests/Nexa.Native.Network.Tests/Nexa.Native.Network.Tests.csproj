@@ -5,6 +5,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../Nexa.Services.Updates/Nexa.Services.Updates.csproj" />
+    <PackageReference Include="ZstdSharp.Port" Version="0.8.6" />
     <ProjectReference Include="../../Nexa.Services.Network/Nexa.Services.Network.csproj" />
     <Compile Include="../Nexa.Services.Tests/NativeNetworkTests.cs" Link="NativeNetworkTests.cs" />
   </ItemGroup>

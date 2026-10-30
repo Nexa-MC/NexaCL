@@ -18,12 +18,12 @@ def module_name(rid):
 
 def module_names(rid):
     suffix = Path(module_name(rid)).suffix
-    return ["nexa-" + name + suffix for name in ("host", "pac", "crypto", "network")]
+    return ["nexa-" + name + suffix for name in ("host", "pac", "crypto", "network", "updates")]
 
 
 def verify_host_engine_isolation(assets):
     libraries = json.loads(assets.read_text())["libraries"]
-    forbidden = {"jint", "bouncycastle.cryptography", "nexa.native.pac", "nexa.native.crypto", "nexa.native.network"}
+    forbidden = {"jint", "bouncycastle.cryptography", "nexa.native.pac", "nexa.native.crypto", "nexa.native.network", "nexa.native.updates", "zstdsharp.port"}
     embedded = sorted(name for name in libraries if name.split("/", 1)[0].lower() in forbidden)
     if embedded:
         raise RuntimeError(f"Stable engines leaked back into the Host dependency closure: {embedded}")
@@ -40,7 +40,7 @@ def publish(rid, output, properties):
         host, bootstrap = stage / "host", stage / "bootstrap"
         engines = []
         # Stable engines never inherit the launcher release/commit stamp.
-        for engine in ("Pac", "Crypto", "Network"):
+        for engine in ("Pac", "Crypto", "Network", "Updates"):
             directory = stage / engine.lower()
             subprocess.run(["dotnet", "publish", str(ROOT / f"native/Nexa.Native.{engine}/Nexa.Native.{engine}.csproj"),
                             *common, "-p:XsrVersionChannel=stable", "-p:XsrVersionPrefix=1.0.0",
