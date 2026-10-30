@@ -16,4 +16,5 @@
     <ProjectReference Include="../Nexa.Xsr.Renderer.Artwork/Nexa.Xsr.Renderer.Artwork.csproj" />
     <ProjectReference Include="../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
   </ItemGroup>
+  <Import Project="../native/WindowProtocol/WindowContracts.props" />
 </Project>

@@ -1,11 +1,5 @@
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
-/// <summary>Native process-wide submission and admission facts; no physical display FPS claim.</summary>
-public readonly record struct AvaloniaUiRuntimeCapture(long CommittedScenes, long NodePaintCallbacks,
-    int ActiveMotionTracks, bool MotionTimerRunning, int MotionTargetFramesPerSecond, double? MotionTickRate,
-    long RasterPixelChargeBytes, long RasterAdmissionBudgetBytes, int RasterEntries, int RasterLeases,
-    long RasterDecodeAttempts, long RasterDisposedBitmaps, AvaloniaUiMemoryObservation MemoryPressure);
-
 public static class AvaloniaUiRuntimeDiagnostics
 {
     private static long _committedScenes, _nodePaintCallbacks;

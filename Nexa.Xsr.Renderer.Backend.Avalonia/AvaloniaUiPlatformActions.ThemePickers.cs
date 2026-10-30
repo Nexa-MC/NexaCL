@@ -3,8 +3,6 @@ using Avalonia.Threading;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
-public enum AvaloniaUiThemePickerKind { Package, Image, Icon, Font, Audio, Video }
-
 public sealed partial class AvaloniaUiPlatformActions
 {
     public Task<string?> PickThemeOptionsFileAsync(CancellationToken token = default) =>

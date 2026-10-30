@@ -5,14 +5,6 @@ using Nexa.Core.Media;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
-public enum AvaloniaUiMediaStatus { Stopped, Playing, Paused, Completed, DependencyMissing, Failed }
-public sealed record AvaloniaUiMediaState(AvaloniaUiMediaStatus Status, string? Detail = null, long Generation = 0)
-{
-    public AvaloniaUiMediaState(AvaloniaUiMediaStatus status, string? detail) : this(status, detail, 0) { }
-    public void Deconstruct(out AvaloniaUiMediaStatus status, out string? detail) { status = Status; detail = Detail; }
-}
-public sealed record AvaloniaUiMediaFrame(long Generation, string Path, PngImage Image);
-
 /// <summary>Owns one bounded local decoder/player process; never launches URI or shell input.</summary>
 public sealed partial class AvaloniaUiLocalMediaPlayer : IAsyncDisposable
 {

@@ -23,6 +23,12 @@ internal static partial class Program
         var libraries = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator)
             .Concat(projects.Values.SelectMany(p => Directory.Exists(Path.Combine(Path.GetDirectoryName(p)!, "bin")) ? Directory.EnumerateFiles(Path.Combine(Path.GetDirectoryName(p)!, "bin"), "*.dll", SearchOption.AllDirectories) : []))
             .GroupBy(Path.GetFileName, StringComparer.Ordinal).Select(g => g.First()).ToArray();
+        // Tests can intentionally compile runtime-local copies of production value contracts.
+        // Their dependencies are useful metadata, but the fixture assemblies are never
+        // production references and would make otherwise valid public types ambiguous.
+        var testAssemblies = projects.Where(project => Path.GetRelativePath(root, project.Value)
+            .StartsWith("tests" + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+            .Select(project => project.Key).ToHashSet(StringComparer.Ordinal);
         // This pass resolves ownership from compiled dependencies. Missing metadata makes
         // logging/term adapters unresolved and turns their keys into false copy violations.
         // Fail the gate explicitly instead of interpreting an incomplete semantic model.
@@ -44,7 +50,8 @@ internal static partial class Program
             var trees = Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories).Where(p => !IsBuildOutput(p))
                 .Select(p => CSharpSyntaxTree.ParseText(File.ReadAllText(p), path: p)).ToList();
             trees.Add(CSharpSyntaxTree.ParseText("global using System; global using System.Collections.Generic; global using System.IO; global using System.Linq; global using System.Net.Http; global using System.Threading; global using System.Threading.Tasks;"));
-            var references = libraries.Where(p => Path.GetFileNameWithoutExtension(p) != projectName)
+            var references = libraries.Where(p => Path.GetFileNameWithoutExtension(p) != projectName
+                    && !testAssemblies.Contains(Path.GetFileNameWithoutExtension(p)))
                 .Select(p => MetadataReference.CreateFromFile(p));
             var compilation = CSharpCompilation.Create(projectName, trees, references,
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));

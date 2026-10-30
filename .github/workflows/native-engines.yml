@@ -6,6 +6,8 @@ on:
     paths:
       - 'native/**'
       - 'Nexa.Xsr.Renderer/**'
+      - 'Nexa.Xsr.Renderer.Backend.Avalonia/Contracts/**'
+      - 'eng/xsr/generate_ui_wire.*'
       - 'tests/Nexa.Native.Ui.Peer/**'
       - 'tests/Nexa.Native.Ui.Tests/**'
       - 'eng/release/verify_native_ui_contracts.py'

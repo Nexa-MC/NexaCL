@@ -8,8 +8,6 @@ using Avalonia.Threading;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
-public enum AvaloniaUiInputKind { Keyboard, Mouse, Touch, Controller }
-
 /// <summary>Explicit user-triggered OS effects. Does not know accounts or product layout.</summary>
 public sealed partial class AvaloniaUiPlatformActions
 {

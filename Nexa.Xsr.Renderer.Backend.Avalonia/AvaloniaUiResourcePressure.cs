@@ -4,10 +4,6 @@ using System.Runtime.InteropServices;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
-public enum AvaloniaUiMemoryPressure { Unknown, Normal, Elevated, Critical }
-public readonly record struct AvaloniaUiMemoryObservation(AvaloniaUiMemoryPressure Pressure,
-    long? AvailableBytes, long? LimitBytes, long? GpuResidentBytes, string Source);
-
 /// <summary>Native measurements. GPU residency is never inferred from decoded bitmap sizes.</summary>
 public static class AvaloniaUiResourcePressure
 {

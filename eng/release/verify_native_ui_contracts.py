@@ -1,5 +1,6 @@
 """Exercise the window boundary between two independently published NativeAOT runtimes."""
 import argparse
+import json
 from pathlib import Path
 import subprocess
 
@@ -14,6 +15,11 @@ def test(rid: str, output: Path):
             "-c", "Release", "-r", rid, "--self-contained", "true", "-m:1", "-nr:false",
             "-p:PublishAot=true", "-o", str(output / folder),
         ], check=True, cwd=ROOT)
+        assets = json.loads((ROOT / "tests" / name / "obj/project.assets.json").read_text(encoding="utf-8"))
+        if any(library.split("/")[0].startswith("Avalonia")
+               or library.split("/")[0] == "Nexa.Xsr.Renderer.Backend.Avalonia"
+               for library in assets["libraries"]):
+            raise RuntimeError("Native UI value contracts unexpectedly reference the Avalonia implementation")
     forbidden = {"coreclr.dll", "libcoreclr.so", "libcoreclr.dylib", "System.Private.CoreLib.dll"}
     if any(path.name in forbidden for path in output.rglob("*")):
         raise RuntimeError("UI contract probe unexpectedly carries a CoreCLR payload")

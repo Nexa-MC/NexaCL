@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Nexa.Native.Ui;
+using Nexa.Native.Window.Wire;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Wire;
 using Nexa.Xsr.State;
@@ -120,6 +121,22 @@ internal static class Exports
                 case 9:
                     if (request.Length != 1) throw new InvalidDataException("Invalid async drain operation.");
                     return [_async.DisposeAsync().AsTask().IsCompletedSuccessfully ? (byte)1 : (byte)0];
+                case 10:
+                    if (request.Length < 2) throw new InvalidDataException("Missing window value kind.");
+                    byte[] value = request[2..].ToArray();
+                    return request.Span[1] switch
+                    {
+                        0 => WindowValueChannel.EncodeStartup(WindowValueChannel.DecodeStartup(value)),
+                        1 => WindowValueChannel.EncodeTheme(WindowValueChannel.DecodeTheme(value)),
+                        2 => WindowValueChannel.EncodeDesktopPolicy(WindowValueChannel.DecodeDesktopPolicy(value)),
+                        3 => WindowValueChannel.EncodeMediaState(WindowValueChannel.DecodeMediaState(value)),
+                        4 => WindowValueChannel.EncodeMediaFrame(WindowValueChannel.DecodeMediaFrame(value)),
+                        5 => WindowValueChannel.EncodeRuntimeCapture(WindowValueChannel.DecodeRuntimeCapture(value)),
+                        6 => WindowValueChannel.EncodeMaterial(WindowValueChannel.DecodeMaterial(value)),
+                        7 => WindowValueChannel.EncodeInputKind(WindowValueChannel.DecodeInputKind(value)),
+                        8 => WindowValueChannel.EncodePickerKind(WindowValueChannel.DecodePickerKind(value)),
+                        _ => throw new InvalidDataException("Unknown window value kind."),
+                    };
                 default: throw new InvalidDataException("Unknown probe operation.");
             }
         }

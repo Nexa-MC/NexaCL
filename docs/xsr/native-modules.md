@@ -733,3 +733,49 @@ admitted synchronous call may not yet have acquired its resource. The independen
 peer therefore closes call admission, drains admitted calls and operations, then
 retires resources. Its regression holds an admitted call immediately before the
 borrow, begins shutdown, and verifies the call can still acquire/read its handle.
+
+### Window value contracts
+
+Window appearance/startup/media/diagnostic DTOs are canonical source contracts
+under the backend's `Contracts/` directory. The ordinary backend still defines
+the same public types in the same assembly; no public assembly identity moves.
+The external Host adapter and native window runtime compile those value sources
+locally and exchange generated binary values, never the objects themselves. A
+contract-only caller must compile without Avalonia to prove this distinction.
+The same development-only generator emits the window profile; runtime reflection
+and JSON dispatch remain forbidden. Window schema drift is checked separately
+from scene/input schema drift.
+
+A theme already permits 64 MiB of authorized resource content, excluding metadata.
+The window control envelope and native call gate therefore allow 72 MiB, while
+scene/image limits remain unchanged. This preserves existing theme admission
+rather than silently reducing it by the envelope overhead. The call gate's
+128 MiB retained-result and active-request budgets still bound concurrency.
+Window decoding validates the complete envelope before invoking existing domain
+snapshot validation; malformed or oversized candidates cannot mutate appearance.
+Memory observation source is nullable because an unobserved/default struct has
+no source; this does not imply a measurement has been obtained.
+
+The semantic architecture compiler must not inject test executables/fixtures as
+production references. Contract-only native probes intentionally compile local
+copies of the same public value names; adding those unrelated test assemblies to
+Desktop's semantic model produces ambiguous types and false logging diagnostics.
+Test output directories may supply third-party dependency metadata, but test
+project assemblies themselves are excluded from production semantic references.
+This does not waive any service/presentation or project-reference rule.
+
+Window-value checkpoint: 31 generated shapes passed independent Linux-x64
+NativeAOT round trips, including all theme icon slots, startup PNGs/colors/motion,
+tray policy, media generation/frame hashes, default and measured diagnostics,
+and a full 64 MiB resource candidate with envelope overhead. Both probe dependency
+graphs reject Avalonia/backend references and their publications reject CoreCLR.
+Malformed schemas, trailing/truncated data, invalid enums, duplicate resource IDs
+and over-budget appearance candidates were rejected. The existing 89-shape scene
+schema fingerprint remains unchanged. The 85-project architecture gate passed
+with production semantic references isolated from test fixtures. This moves value
+ownership and encoding only; platform effects and native window startup have not
+yet switched to a separately published window module.
+
+The complete 85-project Release solution subsequently built with zero warnings
+and errors. Both generated-schema drift checks and all 46 backend regressions
+passed after the source-contract extraction.

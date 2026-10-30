@@ -6,7 +6,7 @@ using Nexa.Xsr.Renderer.Wire;
 
 namespace Nexa.Native.Ui.Tests;
 
-internal static class Program
+internal static partial class Program
 {
     private static void Main(string[] args)
     {
@@ -246,6 +246,7 @@ internal static class Program
         Equal(0, open(&hostTable, &peerTable));
         peer = new(peerTable);
         operations = new(new InputTransport(peer, 7).Exchange);
+        WindowValues(peer);
         Equal((byte)37, operations.InvokeAsync(new byte[] { 0, 37 }).GetAwaiter().GetResult()[0]);
         Equal((byte)38, operations.InvokeAsync(new byte[] { 1, 38 }).GetAwaiter().GetResult()[0]);
         byte[] handle = operations.InvokeAsync(new byte[] { 4, 81, 82 }).GetAwaiter().GetResult();

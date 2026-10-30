@@ -6,8 +6,6 @@ using Avalonia.Threading;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
-public sealed record AvaloniaUiDesktopPolicy(bool TrayEnabled = true, bool CloseToTray = false, bool MinimizeToTray = false);
-
 /// <summary>Native desktop affordances; no account, service or renderer-tree access.</summary>
 internal sealed class AvaloniaUiDesktopIntegration : IDisposable
 {

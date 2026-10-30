@@ -1,11 +1,20 @@
 using System.Text;
 using Nexa.Core.Media;
 
+#if NEXA_WINDOW_WIRE
+using Nexa.Xsr;
+namespace Nexa.Native.Window.Wire;
+#else
 namespace Nexa.Xsr.Renderer.Wire;
+#endif
 
 internal static class UiWireLimits
 {
+#if NEXA_WINDOW_WIRE
+    internal const int Frame = 72 * 1024 * 1024;
+#else
     internal const int Frame = 64 * 1024 * 1024;
+#endif
     internal const int String = 1024 * 1024;
     internal const int Collection = 65536;
     internal const int Values = 1_000_000;
@@ -26,6 +35,11 @@ internal sealed partial class UiWireWriter : IDisposable
     {
         if (count < 0 || count > UiWireLimits.Frame - _bytes) throw new InvalidDataException("UI frame byte budget exceeded.");
         _bytes += count;
+#if NEXA_WINDOW_WIRE
+        // The 72 MiB control limit must not round MemoryStream capacity up to 128 MiB.
+        if (_bytes > _stream.Capacity)
+            _stream.Capacity = Math.Min(UiWireLimits.Frame, Math.Max(_bytes, Math.Max(256, _stream.Capacity * 2)));
+#endif
     }
     internal void Boolean(bool value) { Reserve(1); _writer.Write(value); }
     internal void Byte(byte value) { Reserve(1); _writer.Write(value); }
@@ -77,6 +91,7 @@ internal sealed partial class UiWireWriter : IDisposable
     {
         Int32(bytes.Length); Reserve(bytes.Length); _writer.Write(bytes.Span);
     }
+    internal void ReadOnlyMemory_Byte(ReadOnlyMemory<byte> bytes) => Buffer(bytes);
     internal byte[] Finish() { _writer.Flush(); return _stream.ToArray(); }
     public void Dispose() { _writer.Dispose(); _stream.Dispose(); }
 }
@@ -131,6 +146,7 @@ internal sealed partial class UiWireReader : IDisposable
         return bytes;
     }
     internal byte[] Buffer() => Bytes(Int32(), UiWireLimits.Frame);
+    internal ReadOnlyMemory<byte> ReadOnlyMemory_Byte() => Buffer();
     internal XsrSemanticId XsrSemanticId()
     {
         string? text = String();

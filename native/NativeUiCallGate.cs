@@ -59,7 +59,7 @@ internal sealed unsafe class NativeUiCallClient
 
 internal sealed unsafe class NativeUiCallRegistration : IAsyncDisposable
 {
-    internal const int MaximumBytes = 64 * 1024 * 1024;
+    internal const int MaximumBytes = 72 * 1024 * 1024;
     private const int MaximumResults = 128;
     private const int MaximumActiveCalls = 16;
     private const long MaximumRetainedBytes = 128L * 1024 * 1024;
