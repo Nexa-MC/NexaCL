@@ -9,6 +9,7 @@ internal static partial class Program
 
     private static readonly HashSet<string> ExecutableProjects =
         [
+            "Nexa.Native.Ui.Tests",
             "CapabilityProbe",
             "Nexa.Minecraft.Benchmarks",
             "Nexa.Jvm.Host",

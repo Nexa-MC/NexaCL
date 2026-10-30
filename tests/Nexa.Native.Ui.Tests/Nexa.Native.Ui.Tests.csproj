@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../native/NativeUiCallGate.cs" Link="NativeUiCallGate.cs" />
+    <ProjectReference Include="../../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
+  </ItemGroup>
+</Project>

@@ -609,3 +609,29 @@ tray-animation deadline while build processes were active; the isolated rerun af
 build-server shutdown passed. macOS CI is still required to verify the corrected
 traffic-light expectation on both architectures. No new native UI payload is
 advertised or distributed at this checkpoint.
+
+### Duplex native UI call lifetime
+
+The UI boundary uses a versioned C table containing a numeric context and three
+function pointers (execute/copy/release). Each runtime registers and retains its own
+managed endpoint; only byte buffers and numeric result IDs cross the table. Calls
+may reenter the opposite runtime (for example scene construction measuring native
+text). No registry lock is held while invoking an endpoint. Exceptions are caught
+inside the originating runtime; the opposite runtime receives a bounded failure
+marker, not a CLR exception or its potentially sensitive message.
+
+Retirement first rejects new calls. Existing calls and result buffers remain valid
+until their execution and copy/release leases finish. Only then may the owning UI
+session dispose its window resources. Retirement is asynchronous and must not be
+synchronously awaited from a callback it is draining. An independent NativeAOT
+probe is test infrastructure, not a distributed window module; its purpose is to
+exercise reverse calls, reentrancy, result ownership and shutdown before routing
+production startup through this boundary.
+
+Duplex gate checkpoint: an independent Linux-x64 NativeAOT shared peer and NativeAOT
+caller passed actual scene/input transport, reverse text measurement, nested calls,
+400 concurrent-result round trips, contained endpoint/logging failures, malformed
+tables, and retirement with both active calls and outstanding result buffers. The
+85-project architecture gate passed. The probe payload was checked for CoreCLR
+runtime files. Native engine CI repeats this probe on Linux, Windows and macOS;
+the probe libraries are not included in launcher packages.

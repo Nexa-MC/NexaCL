@@ -606,5 +606,11 @@
   "Nexa.Xsr.State": [
     "Nexa.Core",
     "Nexa.Xsr.Abstractions"
+  ],
+  "Nexa.Native.Ui.Peer": [
+    "Nexa.Xsr.Renderer"
+  ],
+  "Nexa.Native.Ui.Tests": [
+    "Nexa.Xsr.Renderer"
   ]
 }

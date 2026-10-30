@@ -1,4 +1,6 @@
 <Solution>
+  <Project Path="tests/Nexa.Native.Ui.Peer/Nexa.Native.Ui.Peer.csproj" />
+  <Project Path="tests/Nexa.Native.Ui.Tests/Nexa.Native.Ui.Tests.csproj" />
   <Project Path="Nexa.Xsr.Renderer.Artwork/Nexa.Xsr.Renderer.Artwork.csproj" />
   <Project Path="native/Nexa.Native.Artwork/Nexa.Native.Artwork.csproj" />
   <Project Path="native/Nexa.Native.Markup/Nexa.Native.Markup.csproj" />
