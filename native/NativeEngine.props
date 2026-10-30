@@ -25,4 +25,10 @@
     <AssemblyMetadata Include="Nexa.NativeEngineAbi" Value="1" />
     <SourceRoot Include="$(NexaEngineSourceRoot)" MappedPath="/_/" />
   </ItemGroup>
+  <Target Name="ConfigureDeterministicNativeEngineLink" BeforeTargets="LinkNative" Condition="'$(PublishAot)' == 'true' and '$(_targetOS)' == 'win'">
+    <ItemGroup>
+      <LinkerArg Include="/Brepro" />
+      <LinkerArg Include="/PDBALTPATH:%_PDB%" />
+    </ItemGroup>
+  </Target>
 </Project>

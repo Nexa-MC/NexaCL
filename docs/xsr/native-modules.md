@@ -209,3 +209,17 @@ A probe observes entry only; it does not export arguments, credentials, pointers
 or arbitrary Host callbacks. There is no cross-runtime replacement-patch API yet.
 The NativeAOT caller regression verifies all three engines, actual entry hits,
 short-buffer behavior, infrastructure rejection and retirement.
+
+### Instrumented binary reproducibility
+
+The IL weaver writes atomically via a random staging directory, but the CodeView
+record must contain only the stable PDB basename. Including the temporary directory
+changes Cecil's deterministic MVID and consequently the final native library hash.
+Portable PDB contents and associations are preserved. A regression test weaves the
+same symbol-bearing input in two staging locations and compares both DLL and PDB
+bytes. The build-only compiler also uses a fixed version and mapped source paths,
+because its implementation fingerprint is embedded into the instrumented modules.
+
+Windows links engines with `/Brepro` and a basename-only PDB reference: captured
+failed binaries contained wall-clock PE/debug timestamps and an incrementing PDB
+age despite unchanged source. Native debug symbols remain enabled.

@@ -79,7 +79,7 @@ internal sealed partial class AssemblyInstrumenter
         string staged = Path.Combine(temporary, Path.GetFileName(assemblyPath));
         try
         {
-            module.Write(staged, new WriterParameters { WriteSymbols = module.HasSymbols, DeterministicMvid = true });
+            module.Write(staged, new WriterParameters { WriteSymbols = module.HasSymbols, DeterministicMvid = true, SymbolWriterProvider = new StableSymbolWriterProvider() });
             module.Dispose();
             File.Move(staged, assemblyPath, overwrite: true);
             if (File.Exists(Path.ChangeExtension(staged, ".pdb"))) File.Move(Path.ChangeExtension(staged, ".pdb"), pdb, overwrite: true);
