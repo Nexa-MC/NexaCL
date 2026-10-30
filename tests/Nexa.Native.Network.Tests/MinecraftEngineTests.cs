@@ -21,8 +21,11 @@ internal static partial class Program
         var version = JsonNode.Parse("""{"libraries":[{"name":"example:lib:1","rules":[{"action":"allow","features":{"demo":true}}]},{"name":"../bad:escape:1"}]}""")!.AsObject();
         var libraries = MinecraftLibraryResolver.Resolve(new()
         {
-            VersionJson = version, MinecraftRootDirectory = root, OperatingSystem = context.OperatingSystem,
-            Features = features, Is64BitArchitecture = true,
+            VersionJson = version,
+            MinecraftRootDirectory = root,
+            OperatingSystem = context.OperatingSystem,
+            Features = features,
+            Is64BitArchitecture = true,
         });
         AssertEqual(1, libraries.Count);
         AssertEqual(Path.Combine(root, "libraries", "example", "lib", "1", "lib-1.jar"), libraries[0].LocalPath);
@@ -31,7 +34,8 @@ internal static partial class Program
             MinecraftLibraryResolver.GetNativeCoordinatePath("example:lib:1", root, "natives-linux"));
         var plan = MinecraftClasspathPlanner.CreatePlan(new()
         {
-            Libraries = [libraries[0], libraries[0]], ClasspathHeadEntries = [libraries[0].LocalPath],
+            Libraries = [libraries[0], libraries[0]],
+            ClasspathHeadEntries = [libraries[0].LocalPath],
         });
         AssertEqual(1, plan.Entries.Count);
         Reject(() => MinecraftLibraryResolver.GetCoordinatePath("../escape:lib:1", root));

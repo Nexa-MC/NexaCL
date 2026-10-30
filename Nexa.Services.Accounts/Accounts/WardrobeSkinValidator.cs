@@ -8,6 +8,7 @@ using Nexa.Core.Media;
 
 #if NEXA_NATIVE_ENGINE
 namespace Nexa.Native.Media;
+
 public enum AccountWardrobeTextureKind { Skin, Cape }
 #else
 namespace Nexa.Services.Accounts;

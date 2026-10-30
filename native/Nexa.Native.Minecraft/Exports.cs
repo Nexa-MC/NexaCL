@@ -34,8 +34,12 @@ internal static unsafe class Exports
                 output.SetLength(0); output.Position = 0;
                 writer.Write(failure switch
                 {
-                    ArgumentNullException => 2, ArgumentException => 3, FormatException => 4,
-                    OverflowException => 5, NotSupportedException => 6, InvalidOperationException => 7,
+                    ArgumentNullException => 2,
+                    ArgumentException => 3,
+                    FormatException => 4,
+                    OverflowException => 5,
+                    NotSupportedException => 6,
+                    InvalidOperationException => 7,
                     _ => 1,
                 });
                 MinecraftProtocol.Text(writer, failure.Message);
@@ -57,21 +61,26 @@ internal static unsafe class Exports
         switch (operation)
         {
             case 1:
-            {
-                var json = MinecraftProtocol.Json(reader) as JsonObject ?? throw new InvalidDataException("Missing version manifest.");
-                string root = MinecraftProtocol.RequiredText(reader);
-                string? instance = MinecraftProtocol.Text(reader);
-                var context = MinecraftProtocol.Context(reader);
-                bool glfw = reader.ReadBoolean();
-                MinecraftProtocol.Libraries(writer, MinecraftLibraryResolver.Resolve(new()
                 {
-                    VersionJson = json, MinecraftRootDirectory = root, TargetInstanceDirectory = instance,
-                    OperatingSystem = context.OperatingSystem, OperatingSystemVersion = context.OperatingSystemVersion,
-                    Is64BitArchitecture = context.Is64BitArchitecture, IsArm64Architecture = context.IsArm64Architecture,
-                    Features = context.Features, UseSystemGlfw = glfw,
-                }));
-                break;
-            }
+                    var json = MinecraftProtocol.Json(reader) as JsonObject ?? throw new InvalidDataException("Missing version manifest.");
+                    string root = MinecraftProtocol.RequiredText(reader);
+                    string? instance = MinecraftProtocol.Text(reader);
+                    var context = MinecraftProtocol.Context(reader);
+                    bool glfw = reader.ReadBoolean();
+                    MinecraftProtocol.Libraries(writer, MinecraftLibraryResolver.Resolve(new()
+                    {
+                        VersionJson = json,
+                        MinecraftRootDirectory = root,
+                        TargetInstanceDirectory = instance,
+                        OperatingSystem = context.OperatingSystem,
+                        OperatingSystemVersion = context.OperatingSystemVersion,
+                        Is64BitArchitecture = context.Is64BitArchitecture,
+                        IsArm64Architecture = context.IsArm64Architecture,
+                        Features = context.Features,
+                        UseSystemGlfw = glfw,
+                    }));
+                    break;
+                }
             case 2:
                 MinecraftProtocol.Text(writer, MinecraftLibraryResolver.GetCoordinatePath(
                     MinecraftProtocol.Text(reader)!, MinecraftProtocol.Text(reader)!, reader.ReadBoolean()));
@@ -83,24 +92,27 @@ internal static unsafe class Exports
             case 4:
                 MinecraftProtocol.Strings(writer, MinecraftClasspathPlanner.CreatePlan(new()
                 {
-                    Libraries = MinecraftProtocol.Libraries(reader), ClasspathHeadEntries = MinecraftProtocol.Strings(reader),
-                    BundledClasspathEntries = MinecraftProtocol.Strings(reader), HasCleanroom = reader.ReadBoolean(),
+                    Libraries = MinecraftProtocol.Libraries(reader),
+                    ClasspathHeadEntries = MinecraftProtocol.Strings(reader),
+                    BundledClasspathEntries = MinecraftProtocol.Strings(reader),
+                    HasCleanroom = reader.ReadBoolean(),
                 }).Entries);
                 break;
             case 5:
             case 6:
-            {
-                var json = MinecraftProtocol.Json(reader);
-                var context = MinecraftProtocol.Context(reader);
-                writer.Write(operation == 5 ? MinecraftRuleEvaluator.IsAllowed(json, context)
-                    : MinecraftRuleEvaluator.Matches(json as JsonObject ?? throw new InvalidDataException("Missing rule."), context));
-                break;
-            }
+                {
+                    var json = MinecraftProtocol.Json(reader);
+                    var context = MinecraftProtocol.Context(reader);
+                    writer.Write(operation == 5 ? MinecraftRuleEvaluator.IsAllowed(json, context)
+                        : MinecraftRuleEvaluator.Matches(json as JsonObject ?? throw new InvalidDataException("Missing rule."), context));
+                    break;
+                }
             case 7:
                 MinecraftProtocol.Assets(writer, MinecraftAssetListResolver.GetAssetList(new()
                 {
                     IndexJson = MinecraftProtocol.Json(reader) as JsonObject ?? throw new InvalidDataException("Missing asset index."),
-                    MinecraftRootDirectory = MinecraftProtocol.RequiredText(reader), InstanceDirectory = MinecraftProtocol.RequiredText(reader),
+                    MinecraftRootDirectory = MinecraftProtocol.RequiredText(reader),
+                    InstanceDirectory = MinecraftProtocol.RequiredText(reader),
                 }));
                 break;
             default: throw new InvalidDataException("Unknown Minecraft operation.");

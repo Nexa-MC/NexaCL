@@ -481,3 +481,21 @@ correctly enter this transition delta. Reconstruction matches the target payload
 The total payload grows by 7,004,917 bytes at this checkpoint: independent AOT
 runtime overhead is real. This proves reuse and reconstruction, **not** a smaller
 complete installer or completion of UI/account/service lifecycle isolation.
+
+The expanded macOS service gate exposed discovery-cache rejection of Apple's
+root directory aliases (`/var`, `/tmp`, `/etc`). Link checks admit only those exact
+macOS paths resolving to the corresponding `/private` directory, rechecking the
+target path. Links inside a game/cache directory remain rejected; the offline
+snapshot regression also exercises this rejection on Unix.
+
+### UI backend ownership port
+
+Before the native window runtime can be isolated, the backend must stop holding
+`XsrUiShell`, `XsrUiTree`, `XsrUiStage` and `XsrUiStateBridge` directly. A renderer-owned
+backend port exposes immutable scenes, input/presentation operations, text metrics,
+window observations and invalidation subscriptions. The local shell implements it;
+the backend uses only the port, retaining existing UI-thread coalescing and explicit
+subscription retirement. Tree/state ownership never transfers to the backend.
+This managed port is a prerequisite, not a native ABI or permission to pass its
+interface object across native runtimes. A native implementation must encode these
+operations and callbacks with bounded data and independent lifetime ownership.

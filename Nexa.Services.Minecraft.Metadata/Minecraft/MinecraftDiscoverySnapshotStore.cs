@@ -162,7 +162,20 @@ internal sealed class MinecraftDiscoverySnapshotStore(string directory)
     {
         for (string? current = Path.GetFullPath(path); current is not null; current = Path.GetDirectoryName(current))
         {
-            try { if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0) throw new InvalidDataException("Discovery cache path traverses a link."); }
+            try
+            {
+                if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) == 0) continue;
+                // macOS exposes these OS-owned directories through fixed root aliases.
+                // Admit only the expected target, never a link inside an installation/cache.
+                if (OperatingSystem.IsMacOS() && current is "/var" or "/tmp" or "/etc"
+                    && new DirectoryInfo(current).ResolveLinkTarget(true)?.FullName is { } target
+                    && string.Equals(target, "/private" + current, StringComparison.Ordinal))
+                {
+                    CheckLinks(target);
+                    continue;
+                }
+                throw new InvalidDataException("Discovery cache path traverses a link.");
+            }
             catch (FileNotFoundException) { }
             catch (DirectoryNotFoundException) { }
         }

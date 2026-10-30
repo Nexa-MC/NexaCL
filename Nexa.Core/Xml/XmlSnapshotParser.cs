@@ -18,8 +18,11 @@ internal static class XmlSnapshotParser
         Parse(() => XmlReader.Create(new StringReader(text), Settings(limits)), limits);
     private static XmlReaderSettings Settings(XmlSnapshotLimits limits) => new()
     {
-        DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = limits.MaximumCharacters,
-        IgnoreComments = true, CloseInput = true,
+        DtdProcessing = DtdProcessing.Prohibit,
+        XmlResolver = null,
+        MaxCharactersInDocument = limits.MaximumCharacters,
+        IgnoreComments = true,
+        CloseInput = true,
     };
     private static XmlSnapshotDocument Parse(Func<XmlReader> create, XmlSnapshotLimits limits)
     {

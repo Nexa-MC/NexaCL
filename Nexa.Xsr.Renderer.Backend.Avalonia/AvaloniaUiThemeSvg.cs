@@ -1,14 +1,14 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using Nexa.Core.Xml;
-using XElement = Nexa.Core.Xml.XmlSnapshotElement;
-using XAttribute = Nexa.Core.Xml.XmlSnapshotProperty;
-using XText = Nexa.Core.Xml.XmlSnapshotText;
-using XProcessingInstruction = Nexa.Core.Xml.XmlSnapshotProcessingInstruction;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Nexa.Core.Xml;
+using XAttribute = Nexa.Core.Xml.XmlSnapshotProperty;
+using XElement = Nexa.Core.Xml.XmlSnapshotElement;
+using XProcessingInstruction = Nexa.Core.Xml.XmlSnapshotProcessingInstruction;
+using XText = Nexa.Core.Xml.XmlSnapshotText;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 

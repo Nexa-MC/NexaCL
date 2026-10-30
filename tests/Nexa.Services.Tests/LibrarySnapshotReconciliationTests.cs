@@ -8,6 +8,16 @@ internal static partial class Program
     private static async ValueTask LibraryOfflineRootRaceRetainsRealSnapshotAndAcceptsEmptyRoot()
     {
         using LibraryFixture fixture = new();
+        if (!OperatingSystem.IsWindows())
+        {
+            string target = fixture.AddRoot("cache-target");
+            string link = target + ".link";
+            Directory.CreateSymbolicLink(link, target);
+            bool rejected = false;
+            try { MinecraftDiscoverySnapshotStore.CheckLinks(Path.Combine(link, "snapshot.json")); }
+            catch (InvalidDataException) { rejected = true; }
+            AssertTrue(rejected);
+        }
         string root = fixture.AddRoot("offline-game"), offlineRoot = root + ".offline";
         LibraryVersion(root, "local");
         using SharedStateCache cache = new();

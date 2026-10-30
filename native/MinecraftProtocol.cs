@@ -95,9 +95,15 @@ internal static class MinecraftProtocol
         var result = new MinecraftLibraryToken[Count(reader)];
         for (int i = 0; i < result.Length; i++) result[i] = new()
         {
-            OriginalName = Text(reader), NameWithoutVersion = Text(reader), Url = Text(reader),
-            LocalPath = RequiredText(reader), Sha1 = Text(reader), Size = reader.ReadInt64(),
-            IsNatives = reader.ReadBoolean(), IncludeOnClasspath = reader.ReadBoolean(), IsLocal = reader.ReadBoolean(),
+            OriginalName = Text(reader),
+            NameWithoutVersion = Text(reader),
+            Url = Text(reader),
+            LocalPath = RequiredText(reader),
+            Sha1 = Text(reader),
+            Size = reader.ReadInt64(),
+            IsNatives = reader.ReadBoolean(),
+            IncludeOnClasspath = reader.ReadBoolean(),
+            IsLocal = reader.ReadBoolean(),
         };
         return result;
     }
@@ -124,7 +130,10 @@ internal static class MinecraftProtocol
         var result = new MinecraftAssetToken[Count(reader)];
         for (int i = 0; i < result.Length; i++) result[i] = new()
         {
-            LocalPath = RequiredText(reader), SourcePath = RequiredText(reader), Hash = RequiredText(reader), Size = reader.ReadInt64(),
+            LocalPath = RequiredText(reader),
+            SourcePath = RequiredText(reader),
+            Hash = RequiredText(reader),
+            Size = reader.ReadInt64(),
         };
         return result;
     }
