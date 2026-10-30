@@ -17,6 +17,7 @@ internal static partial class Program
             try { MinecraftDiscoverySnapshotStore.CheckLinks(Path.Combine(link, "snapshot.json")); }
             catch (InvalidDataException) { rejected = true; }
             AssertTrue(rejected);
+            AssertTrue((await new MinecraftInstanceMetadataStore().LoadForDisplayAsync(link)).Error is not null);
         }
         string root = fixture.AddRoot("offline-game"), offlineRoot = root + ".offline";
         LibraryVersion(root, "local");
@@ -26,6 +27,8 @@ internal static partial class Program
         {
             AssertTrue((await initial.RefreshAsync()).IsSuccess);
             AssertEqual("local", fixture.Snapshot.SelectedInstance!.Id);
+            AssertTrue(fixture.Snapshot.SelectedInstance.MetadataError is null);
+            AssertTrue(await discovery.LoadSnapshotAsync(root) is not null);
         }
         string remembered = fixture.Host.Settings.GetValue<string>(MinecraftLibraryService.SettingKey).Value;
 

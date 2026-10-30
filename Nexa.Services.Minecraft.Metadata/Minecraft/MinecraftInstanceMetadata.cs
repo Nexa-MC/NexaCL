@@ -142,16 +142,9 @@ public sealed class MinecraftInstanceMetadataStore
 
     private static void CheckLinks(string path)
     {
-        for (string? current = Path.GetFullPath(path); current is not null; current = Path.GetDirectoryName(current))
-        {
-            try
-            {
-                if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
-                    throw new InvalidDataException("实例信息路径经过链接，原文件已保留。");
-            }
-            catch (FileNotFoundException) { }
-            catch (DirectoryNotFoundException) { }
-        }
+        try { MinecraftMetadataPathPolicy.CheckLinks(path); }
+        catch (InvalidDataException error)
+        { throw new InvalidDataException("实例信息路径经过链接，原文件已保留。", error); }
     }
 
     private static async Task SaveCoreAsync(string path, MinecraftInstanceMetadata metadata, CancellationToken cancellationToken)

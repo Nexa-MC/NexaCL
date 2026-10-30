@@ -158,28 +158,8 @@ internal sealed class MinecraftDiscoverySnapshotStore(string directory)
         return Path.Combine(_directory, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity))) + ".json");
     }
 
-    internal static void CheckLinks(string path)
-    {
-        for (string? current = Path.GetFullPath(path); current is not null; current = Path.GetDirectoryName(current))
-        {
-            try
-            {
-                if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) == 0) continue;
-                // macOS exposes these OS-owned directories through fixed root aliases.
-                // Admit only the expected target, never a link inside an installation/cache.
-                if (OperatingSystem.IsMacOS() && current is "/var" or "/tmp" or "/etc"
-                    && new DirectoryInfo(current).ResolveLinkTarget(true)?.FullName is { } target
-                    && string.Equals(target, "/private" + current, StringComparison.Ordinal))
-                {
-                    CheckLinks(target);
-                    continue;
-                }
-                throw new InvalidDataException("Discovery cache path traverses a link.");
-            }
-            catch (FileNotFoundException) { }
-            catch (DirectoryNotFoundException) { }
-        }
-    }
+    internal static void CheckLinks(string path) => MinecraftMetadataPathPolicy.CheckLinks(path);
+
 }
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
