@@ -240,6 +240,7 @@ def linux(payload, output, work, base, version, prefix, arch):
 def validate_payload(payload, platform):
     suffix = ".exe" if platform == "win" else ""
     required = ["Nexa.Desktop" + suffix, "Nexa.Jvm.Host" + suffix, "Nexa.Update.Helper" + suffix]
+    required.append("nexa-host" + {"win": ".dll", "linux": ".so", "osx": ".dylib"}[platform])
     for name in required:
         path = payload / name
         if not path.is_file() or path.stat().st_size == 0:

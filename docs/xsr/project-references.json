@@ -1,4 +1,5 @@
 {
+  "Nexa.Bootstrap": ["Nexa.Core"],
   "CapabilityProbe": [
     "Nexa.Services"
   ],

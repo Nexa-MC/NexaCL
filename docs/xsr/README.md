@@ -14,7 +14,7 @@
 
 [平台集成](../platform-integration.md) · [本地平台实施记录](local-platform-roadmap.md) · [运行观测](launch-observation-and-preflight.md) · [遥测分级](telemetry-tiers-and-rollouts.md) · [内存分析停用](preflight-memory-analysis.md) · [下载信任](download-trust.md) · [安装恢复](resumable-installation.md) · [整合包更新](modpack-updates-and-install-validation.md) · [跨启动器导入](foreign-launcher-migration.md) · [资源调度](work-scheduling.md) · [手柄入口](gamepad-entry.md)
 
-[系统安装](system-installation.md) · [自动更新](automatic-update-transaction.md) · [更新中心与版本化引导](update-center-and-versioned-onboarding.md) · [更新权限](update-privilege-boundary.md) · [发布签名](release-signatures.md) · [签名策略](update-signature-policy.md) · [构建发布流程](../build-and-release.md)
+[原生模块](native-modules.md) · [系统安装](system-installation.md) · [自动更新](automatic-update-transaction.md) · [更新中心与版本化引导](update-center-and-versioned-onboarding.md) · [更新权限](update-privilege-boundary.md) · [发布签名](release-signatures.md) · [签名策略](update-signature-policy.md) · [构建发布流程](../build-and-release.md)
 
 ## 设置
 

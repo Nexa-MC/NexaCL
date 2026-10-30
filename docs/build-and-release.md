@@ -17,6 +17,22 @@ python3 -m unittest discover -s eng/release -p 'test_*.py'
 
 `xsr-ci.yml` 验证依赖边界、原生账户、主题、Sidecar、JNI 与真实隔离 Btrfs 场景。`launcher-build.yml` 原生构建六个平台并验证安装、启动、更新恢复、差分消费。macOS helper 使用 Xcode 工程生成 App Intents 元数据，不能改成缺少元数据的裸 swiftc 编译；打包前移动至 `Contents/Helpers`，再签名完整 bundle。
 
+## NativeAOT 多文件发布
+
+正式构建使用同一 RID 的小型 `Nexa.Desktop[.exe]` 入口与独立 Host 模块。
+模块文件名全小写：Windows 为 `nexa-host.dll`，Linux 为 `nexa-host.so`，
+macOS 为 `nexa-host.dylib`。渲染与服务目前仍在 Host 的同一托管调用边界内，
+不是能够分别更新的独立 DLL。第三方原生依赖保留上游名称。
+
+```sh
+python3 eng/release/publish_launcher.py --rid linux-x64 --output artifacts/launcher
+python3 eng/release/smoke_native_modules.py --payload artifacts/launcher
+```
+
+该入口同时构建 NativeAOT 动态库和 NativeAOT 启动器，不需要安装 .NET 运行时。
+不要只复制 EXE；模块、资源和其他运行依赖必须一起分发。完整包和差分更新都必须
+通过签名及文件清单验证。ABI、主线程和资源所有权约束见[原生模块](xsr/native-modules.md)。
+
 ## 发布步骤
 
 1. 提交并推送候选代码，等待源码 CI 与六平台验证。

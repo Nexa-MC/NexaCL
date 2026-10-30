@@ -154,7 +154,7 @@ jobs:
           elif os.environ.get("GITHUB_REF", "").startswith("refs/tags/"):
               raise SystemExit("Cloudflare API identity is required for release builds")
           PY
-      - name: Publish NativeAOT launcher
+      - name: Publish NativeAOT bootstrap and Host module
         shell: bash
         env:
           NexaCurseForgeApiKey: ${{ secrets.CURSEFORGE_API_KEY }}
@@ -164,9 +164,7 @@ jobs:
             echo 'CURSEFORGE_API_KEY is required for official launcher artifacts' >&2
             exit 1
           fi
-          dotnet publish Nexa.Desktop/Nexa.Desktop.csproj --configuration Release \
-            -r '${{ matrix.rid }}' --self-contained true -m:1 -nodeReuse:false \
-            -p:PublishAot=true -p:StripSymbols=true \
+          python eng/release/publish_launcher.py --rid '${{ matrix.rid }}' \
             -p:XsrVersionPrefix="$VERSION_PREFIX" -p:XsrVersionChannel="$VERSION_CHANNEL" \
             -p:XsrVersionSequence="$VERSION_SEQUENCE" -p:XsrCommitShort="$COMMIT_SHORT" \
             -p:NexaMicrosoftClientId="$NEXA_MS_CLIENT_ID" -p:NexaLittleSkinClientId="$NEXA_LITTLESKIN_CLIENT_ID" \
@@ -176,6 +174,9 @@ jobs:
             if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
             "$binary" --validate-resource-credentials
           fi
+      - name: Verify native Host module boundary
+        shell: bash
+        run: python eng/release/smoke_native_modules.py --payload "$RUNNER_TEMP/launcher"
       - name: Smoke macOS platform helper
         if: startsWith(matrix.rid, 'osx-')
         shell: bash

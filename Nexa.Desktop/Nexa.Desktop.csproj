@@ -1,9 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType Condition="'$(NexaNativeModule)' == 'true'">Library</OutputType>
+    <OutputType Condition="'$(NexaNativeModule)' != 'true'">WinExe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationIcon>Assets/icon.ico</ApplicationIcon>
-    <Description>Thin Nexa process bootstrap and XSR composition root.</Description>
+    <Description>Nexa Host composition root and desktop runtime.</Description>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(NexaNativeModule)' == 'true'">
+    <NativeLib>Shared</NativeLib>
+    <DefineConstants>$(DefineConstants);NEXA_NATIVE_MODULE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

@@ -14,6 +14,7 @@ internal static partial class Program
             "Nexa.Jvm.Host",
             "Nexa.Update.Helper",
             "Nexa.Desktop",
+            "Nexa.Bootstrap",
             "Nexa.Xsr.Renderer.Benchmarks",
             "Nexa.Xsr.ArchitectureTests",
             "Nexa.Xsr.Runtime.Tests",
@@ -260,7 +261,7 @@ internal static partial class Program
         if (projectName == "Nexa.Jvm.Host" && !string.Equals(Property(project, "CETCompat"), "false", StringComparison.OrdinalIgnoreCase))
             failures.Add("The isolated JVM host requires its documented CET compatibility setting.");
         string? outputType = Property(project, "OutputType");
-        string expectedOutputType = projectName is "Nexa.Desktop" or "Nexa.Update.Helper" ? "WinExe" : "Exe";
+        string expectedOutputType = projectName is "Nexa.Desktop" or "Nexa.Update.Helper" or "Nexa.Bootstrap" ? "WinExe" : "Exe";
         if (ExecutableProjects.Contains(projectName) && !string.Equals(outputType, expectedOutputType, StringComparison.Ordinal))
         {
             failures.Add($"{projectName} must remain an executable project with OutputType={expectedOutputType}.");

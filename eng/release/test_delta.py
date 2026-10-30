@@ -43,6 +43,25 @@ class DeltaTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 verify_bundle(output, source, files, manifest)
 
+    def test_monolithic_to_native_module_delta_roundtrip(self):
+        from delta import verify_bundle
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source, target = root / "source", root / "target"
+            source.mkdir(); target.mkdir()
+            data = random.Random(18).randbytes(1024 * 1024)
+            (source / "Nexa.Desktop.exe").write_bytes(data)
+            (target / "Nexa.Desktop.exe").write_bytes(b"small native bootstrap")
+            (target / "nexa-host.dll").write_bytes(data + b"exported Host entry point")
+            files = {p.name: dict(path=p.name, size=p.stat().st_size, sha256=digest(p), executable=False)
+                     for p in target.iterdir()}
+            output = root / "delta.zip"
+            build_bundle(source, target, files, output, "2.0.0.alpha.19", "2.0.0.alpha.18", "win-x64", "a" * 64)
+            with zipfile.ZipFile(output) as archive:
+                manifest = json.loads(archive.read("manifest.json"))
+            self.assertEqual({"Nexa.Desktop.exe", "nexa-host.dll"}, {f["path"] for f in manifest["files"]})
+            verify_bundle(output, source, files, manifest)
+
     def make_archive(self, directory, version, rid, data):
         path = directory / package_name(version, rid)
         names = ["Nexa.Desktop.exe", "Nexa.Jvm.Host.exe"] if rid.startswith("win-") else ["Nexa.Desktop", "Nexa.Jvm.Host"]
