@@ -726,3 +726,10 @@ shutdown, retained-resource budgets, monotonic handles, and disposal/logging fau
 containment. The 85-project architecture gate remains the dependency check. This
 is transport/lifetime validation, not evidence of an extracted production window
 module or a new reduction in Host size.
+
+Resource retirement must follow both call-gate and async-operation draining.
+Closing the resource registry alongside those drains is too early: an already
+admitted synchronous call may not yet have acquired its resource. The independent
+peer therefore closes call admission, drains admitted calls and operations, then
+retires resources. Its regression holds an admitted call immediately before the
+borrow, begins shutdown, and verifies the call can still acquire/read its handle.

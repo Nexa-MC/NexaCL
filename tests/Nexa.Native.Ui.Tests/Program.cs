@@ -224,10 +224,18 @@ internal static class Program
         var context = new SynchronizationContext();
         var text = new TextProvider(context);
         NativeUiAsyncClient? operations = null;
+        using var resourceCallEntered = new ManualResetEventSlim();
+        using var resourceCallRelease = new ManualResetEventSlim();
         var textEndpoint = new XsrUiTextLayoutEndpoint(text);
         int invalidations = 0;
         var host = new NativeUiCallRegistration(request =>
         {
+            if (request.Span[0] == 252)
+            {
+                resourceCallEntered.Set();
+                if (!resourceCallRelease.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException();
+                return [];
+            }
             if (request.Span[0] == 253) return operations!.Complete(request[1..]);
             if (request.Span[0] == 254)
             { Interlocked.Or(ref invalidations, request.Span[1]); return []; }
@@ -283,14 +291,23 @@ internal static class Program
         True(invalidations != 0);
         shell.NotifyInvalidated((XsrUiShellInvalidation)Interlocked.Exchange(ref invalidations, 0));
 
+        byte[] lateHandle = operations.InvokeAsync(new byte[] { 4, 83 }).GetAwaiter().GetResult();
+        byte[] lateRequest = new byte[10]; lateRequest[0] = 8; lateHandle.CopyTo(lateRequest, 2);
+        Equal((byte)1, peer.Exchange(lateRequest)[0]);
+        lateRequest[1] = 3;
+        Task<byte[]> activeResourceCall = Task.Run(() => peer.Exchange(lateRequest));
+        True(resourceCallEntered.Wait(TimeSpan.FromSeconds(10)));
         Task<byte[]> pendingAsync = operations.InvokeAsync(new byte[] { 2 });
         operations.Dispose();
         Throws<OperationCanceledException>(() => pendingAsync.GetAwaiter().GetResult());
+        True(SpinWait.SpinUntil(() => peer.Exchange(new byte[] { 9 })[0] == 1, TimeSpan.FromSeconds(10)));
         int length = 0;
         byte operation = 5;
         long pending = peerTable.Execute(peerTable.Context, &operation, 1, &length);
         True(pending > 0);
         Equal(0, close());
+        resourceCallRelease.Set();
+        Equal((byte)83, activeResourceCall.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult()[0]);
         Throws<InvalidOperationException>(() => peer.Exchange(new byte[] { 5 }));
         byte[] bytes = new byte[length];
         fixed (byte* output = bytes) Equal(0, peerTable.Copy(peerTable.Context, pending, output, length));

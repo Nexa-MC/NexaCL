@@ -34,12 +34,18 @@ internal static class Exports
         try
         {
             if (_registration is null) return -1;
-            _retirement ??= Task.WhenAll(_registration.DisposeAsync().AsTask(), _peer!.StopAsync());
+            _retirement ??= RetireAsync(_registration, _peer!);
             if (!_retirement.IsCompletedSuccessfully) return 0;
             _peer?.Dispose();
             return 1;
         }
         catch { return -1; }
+    }
+
+    private static async Task RetireAsync(NativeUiCallRegistration registration, Peer peer)
+    {
+        await Task.WhenAll(registration.DisposeAsync().AsTask(), peer.StopAsync()).ConfigureAwait(false);
+        await peer.ReleaseResourcesAsync().ConfigureAwait(false);
     }
 
     private sealed class Peer : IDisposable
@@ -106,16 +112,19 @@ internal static class Exports
                         case 1:
                             using (var borrow = _resources.Acquire(resource)) return borrow.Resource.ToArray();
                         case 2: _resources.Release(resource); return [];
+                        case 3:
+                            _host.Exchange(new byte[] { 252 });
+                            using (var borrow = _resources.Acquire(resource)) return borrow.Resource.ToArray();
                         default: throw new InvalidDataException("Unknown resource operation.");
                     }
+                case 9:
+                    if (request.Length != 1) throw new InvalidDataException("Invalid async drain operation.");
+                    return [_async.DisposeAsync().AsTask().IsCompletedSuccessfully ? (byte)1 : (byte)0];
                 default: throw new InvalidDataException("Unknown probe operation.");
             }
         }
-        internal async Task StopAsync()
-        {
-            await _async.DisposeAsync().ConfigureAwait(false);
-            await _resources.DisposeAsync().ConfigureAwait(false);
-        }
+        internal Task StopAsync() => _async.DisposeAsync().AsTask();
+        internal ValueTask ReleaseResourcesAsync() => _resources.DisposeAsync();
         private Task<byte[]> ExecuteAsync(ReadOnlyMemory<byte> request, CancellationToken token)
         {
             if (request.IsEmpty) throw new InvalidDataException("Missing async probe operation.");
