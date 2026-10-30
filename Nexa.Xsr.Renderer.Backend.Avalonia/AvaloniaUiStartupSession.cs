@@ -161,7 +161,7 @@ public sealed partial class AvaloniaUiStartupSession : IAsyncDisposable
         Dispatcher.UIThread.Post(() => _window?.SetFailureLog(filePath));
     }
 
-    internal int Present(XsrUiShell shell, AvaloniaUiPlatformActions? actions, Stream? icon)
+    internal int Present(IXsrUiBackendShell shell, AvaloniaUiPlatformActions? actions, Stream? icon)
     {
         if (Dispatcher.UIThread.CheckAccess())
             throw new InvalidOperationException("Shell composition must not block the native startup dispatcher.");

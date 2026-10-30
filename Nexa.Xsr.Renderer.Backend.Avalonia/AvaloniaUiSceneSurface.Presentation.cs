@@ -225,13 +225,12 @@ public sealed partial class AvaloniaUiSceneSurface
     /// </summary>
     private void RunPageEnterAnimationsIfNavigated(XsrUiScene scene)
     {
-        XsrUiEntityId pageRoot = _shell.Stage.Navigation.Current;
+        XsrUiEntityId pageRoot = _shell.CurrentPage;
         bool navigated = pageRoot != _lastPageRoot || _shell.SelectedNavigationId != _lastNavigation;
         _lastPageRoot = pageRoot;
         _lastNavigation = _shell.SelectedNavigationId;
         HashSet<XsrUiEntityId> animated = [], retained = [];
-        var hostTransition = _shell.Tree.GetComponent<XsrUiTransition>(_shell.Stage.ContentHost);
-        bool hasSpatialContent = hostTransition is { OffsetX: not 0 } or { OffsetY: not 0 }, inPage = false;
+        bool hasSpatialContent = _shell.HasContentTransition, inPage = false;
         int pageDepth = 0;
         foreach (XsrUiSceneNode candidate in scene.Nodes)
         {
@@ -412,5 +411,4 @@ public sealed partial class AvaloniaUiSceneSurface
 
     private void OnTreeRenderInvalidated(object? sender, EventArgs e) => RequestCommit();
 
-    private void OnStateRenderRequested(object? sender, EventArgs e) => RequestCommit();
 }

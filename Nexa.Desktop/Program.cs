@@ -548,7 +548,7 @@ internal static partial class Program
         await using var mediaSession = safeMode ? null : new DesktopMediaSession(runtime.Queries, runtime.Commands, host.StateStore, shell, uiIntents, platformActions, message => host.Logging.Warn("Media", message), effectiveAppearance,
             saveThemeVolumeAsync: themes.SetMediaVolumeAsync);
         if (mediaSession is not null) themes.WaitForAppearanceConsumers = mediaSession.WaitForGenerationAsync;
-        using var gameWindows = new DesktopGameWindowSession(host.StateStore, action => Avalonia.Threading.Dispatcher.UIThread.Post(action),
+        using var gameWindows = new DesktopGameWindowSession(host.StateStore, AvaloniaUiPlatformActions.PostToUiThread,
             platformActions.HideWindow, platformActions.MinimizeWindow, platformActions.RestoreWindow, platformActions.RequestClose,
             message => host.Logging.Warn("Launch", message));
         using var presentationSession = new DesktopPresentationSession(shell, host.StateStore,

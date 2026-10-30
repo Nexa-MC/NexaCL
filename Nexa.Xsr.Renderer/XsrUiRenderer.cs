@@ -10,7 +10,7 @@ namespace Nexa.Xsr.Renderer;
 /// state through <see cref="XsrStateStore"/> and emits intent through
 /// <see cref="IXsrUiIntentSink"/>; it never resolves services or touches a backend type.
 /// </summary>
-public sealed partial class XsrUiRenderer
+public sealed partial class XsrUiRenderer : IXsrUiBackendRenderer
 {
     private readonly XsrUiPresentation _tree;
     private long _presentationRevision;

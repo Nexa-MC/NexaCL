@@ -16,14 +16,21 @@ namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 /// </summary>
 public static class AvaloniaUiShellHost
 {
-    private static XsrUiShell? _shell;
+    public static AppBuilder Build(XsrUiShell shell, AvaloniaUiPlatformActions? platformActions = null, bool disableHardwareAcceleration = false) =>
+        Build((IXsrUiBackendShell)shell, platformActions, disableHardwareAcceleration);
+    public static int Run(XsrUiShell shell, string[]? args = null, AvaloniaUiPlatformActions? platformActions = null, bool disableHardwareAcceleration = false) =>
+        Run((IXsrUiBackendShell)shell, args, platformActions, disableHardwareAcceleration);
+    public static int Run(AvaloniaUiStartupSession startup, XsrUiShell shell, AvaloniaUiPlatformActions? platformActions = null) =>
+        Run(startup, (IXsrUiBackendShell)shell, platformActions);
+
+    private static IXsrUiBackendShell? _shell;
     private static AvaloniaUiPlatformActions? _platformActions;
 
     /// <summary>
     /// Builds an Avalonia app configured for the supplied shell. Keeping this separate from
     /// <see cref="Run"/> makes the composition edge testable without starting a native loop.
     /// </summary>
-    public static AppBuilder Build(XsrUiShell shell, AvaloniaUiPlatformActions? platformActions = null,
+    public static AppBuilder Build(IXsrUiBackendShell shell, AvaloniaUiPlatformActions? platformActions = null,
         bool disableHardwareAcceleration = false)
     {
         ArgumentNullException.ThrowIfNull(shell);
@@ -37,7 +44,7 @@ public static class AvaloniaUiShellHost
     /// Starts the classic desktop lifetime: splash first, then the shell window with the splash
     /// dismissing on top of it.
     /// </summary>
-    public static int Run(XsrUiShell shell, string[]? args = null, AvaloniaUiPlatformActions? platformActions = null,
+    public static int Run(IXsrUiBackendShell shell, string[]? args = null, AvaloniaUiPlatformActions? platformActions = null,
         bool disableHardwareAcceleration = false)
     {
         if (AvaloniaUiStartupSession.Active is { } startup)
@@ -46,7 +53,7 @@ public static class AvaloniaUiShellHost
     }
 
     /// <summary>Presents through an explicitly owned startup lifetime, including its cancellation boundary.</summary>
-    public static int Run(AvaloniaUiStartupSession startup, XsrUiShell shell, AvaloniaUiPlatformActions? platformActions = null)
+    public static int Run(AvaloniaUiStartupSession startup, IXsrUiBackendShell shell, AvaloniaUiPlatformActions? platformActions = null)
     {
         ArgumentNullException.ThrowIfNull(startup);
         ArgumentNullException.ThrowIfNull(shell);
@@ -64,7 +71,7 @@ public static class AvaloniaUiShellHost
             };
     }
 
-    private static XsrUiShell CurrentShell =>
+    private static IXsrUiBackendShell CurrentShell =>
         _shell ?? throw new InvalidOperationException("The Avalonia shell host was not configured.");
 
     /// <summary>

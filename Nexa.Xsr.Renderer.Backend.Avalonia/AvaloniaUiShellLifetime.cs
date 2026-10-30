@@ -16,7 +16,7 @@ namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 public static class AvaloniaUiShellLifetime
 {
     /// <summary>Creates the real shell while the startup window still owns the lifetime.</summary>
-    internal static AvaloniaUiShellWindow Prepare(XsrUiShell shell, Stream? windowIcon)
+    internal static AvaloniaUiShellWindow Prepare(IXsrUiBackendShell shell, Stream? windowIcon)
     {
         var window = new AvaloniaUiShellWindow(shell, windowIcon);
         var pressure = new AvaloniaUiResourcePressureSession(window.ReportMemoryPressure);
@@ -31,9 +31,12 @@ public static class AvaloniaUiShellLifetime
         window.Show();
     }
 
+    public static AvaloniaUiShellWindow Compose(IClassicDesktopStyleApplicationLifetime desktop, XsrUiShell shell, Stream? splashIcon, Stream? windowIcon) =>
+        Compose(desktop, (IXsrUiBackendShell)shell, splashIcon, windowIcon);
+
     public static AvaloniaUiShellWindow Compose(
         IClassicDesktopStyleApplicationLifetime desktop,
-        XsrUiShell shell,
+        IXsrUiBackendShell shell,
         Stream? splashIcon,
         Stream? windowIcon)
     {

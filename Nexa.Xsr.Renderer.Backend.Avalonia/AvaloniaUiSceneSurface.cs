@@ -22,7 +22,7 @@ namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 /// </summary>
 public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
 {
-    private readonly XsrUiShell _shell;
+    private readonly IXsrUiBackendShell _shell;
     private readonly object _commitGate = new();
     private readonly Dictionary<XsrUiEntityId, AvaloniaUiSceneNodeControl> _controls = [];
     private readonly Dictionary<XsrUiEntityId, XsrUiSceneNode> _sceneNodes = [];
@@ -52,7 +52,9 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
     private XsrUiPoint _lastPointerPoint;
     private XsrUiPointerCursor _presentedPointerCursor;
 
-    public AvaloniaUiSceneSurface(XsrUiShell shell)
+    public AvaloniaUiSceneSurface(XsrUiShell shell) : this((IXsrUiBackendShell)shell) { }
+
+    public AvaloniaUiSceneSurface(IXsrUiBackendShell shell)
     {
         _shell = shell ?? throw new ArgumentNullException(nameof(shell));
         UseLayoutRounding = false;
@@ -66,8 +68,7 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
         // every click, hover, drag, and double-click would fall through to the window.
         Background = Brushes.Transparent;
         ClipToBounds = true;
-        _shell.Tree.RenderInvalidated += OnTreeRenderInvalidated;
-        _shell.StateBridge?.RenderRequested += OnStateRenderRequested;
+        _shell.RenderRequested += OnTreeRenderInvalidated;
         _shell.NavigationExpandedChanged += OnNavigationExpandedChanged;
         SizeChanged += (_, _) => OnNativeViewportChanged();
         AttachedToVisualTree += (_, _) => RequestCommit();
@@ -208,12 +209,8 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
         RetireThemeResize();
         AvaloniaUiMotion.CancelAll(this);
         _contextMenu?.Close();
-        _shell.Tree.RenderInvalidated -= OnTreeRenderInvalidated;
+        _shell.RenderRequested -= OnTreeRenderInvalidated;
         _shell.NavigationExpandedChanged -= OnNavigationExpandedChanged;
-        if (_shell.StateBridge is not null)
-        {
-            _shell.StateBridge.RenderRequested -= OnStateRenderRequested;
-        }
 
         foreach (AvaloniaUiSceneNodeControl control in _controls.Values) control.ReleasePresentation();
         foreach (AvaloniaUiSceneNodeControl control in _outgoingControls) control.ReleasePresentation();

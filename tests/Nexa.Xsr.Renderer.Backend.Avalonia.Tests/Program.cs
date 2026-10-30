@@ -72,6 +72,14 @@ internal static partial class Program
 
     private static int Main(string[] args)
     {
+        if (args is ["--backend-port-smoke"])
+        {
+            AppBuilder.Configure<Application>().UseSkia()
+                .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
+            BackendPortCoalescesInvalidationAndRetiresSubscriptions();
+            Console.WriteLine("PASS: backend port invalidation coalescing and subscription retirement");
+            return 0;
+        }
         if (args is ["--theme-animation-smoke"])
         {
             AppBuilder.Configure<Application>().UseSkia()

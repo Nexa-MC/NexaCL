@@ -26,7 +26,7 @@ public sealed partial class AvaloniaUiShellWindow : Window
     private const double CloseIconSize = 112;
 
 
-    private readonly XsrUiShell _shell;
+    private readonly IXsrUiBackendShell _shell;
     private readonly AvaloniaUiSceneSurface _surface;
     private readonly AvaloniaNativeWindowActions _windowActions;
     private readonly Border _shadowSurface;
@@ -49,7 +49,9 @@ public sealed partial class AvaloniaUiShellWindow : Window
     internal bool UsesCompositedEdges => ActualTransparencyLevel == WindowTransparencyLevel.Transparent
         && !AvaloniaWindowsFrame.IsLayered(this);
 
-    public AvaloniaUiShellWindow(XsrUiShell shell, Stream? iconStream = null)
+    public AvaloniaUiShellWindow(XsrUiShell shell, Stream? iconStream = null) : this((IXsrUiBackendShell)shell, iconStream) { }
+
+    public AvaloniaUiShellWindow(IXsrUiBackendShell shell, Stream? iconStream = null)
     {
         ArgumentNullException.ThrowIfNull(shell);
         _shell = shell;

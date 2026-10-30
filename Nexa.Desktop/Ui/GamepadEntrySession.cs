@@ -1,5 +1,4 @@
 using System.Globalization;
-using Avalonia.Threading;
 using Nexa.Core.Media;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
@@ -21,7 +20,7 @@ internal sealed class GamepadEntrySession : IDisposable
     private readonly Action<double> _scrim;
     private readonly Action _observe;
     private readonly Func<bool> _foreground;
-    private readonly DispatcherTimer? _timer;
+    private readonly IDisposable? _timer;
     private IGamepadInput? _input;
     private readonly Dictionary<string, XsrUiEntityId> _nodes = [];
     private readonly HashSet<string> _suppressed = [];
@@ -62,20 +61,13 @@ internal sealed class GamepadEntrySession : IDisposable
         intents.IntentEmitted += OnIntent;
         if (runTimer)
         {
-            // Composition runs off-thread; posting Start does not change a timer's dispatcher.
-            _timer = new DispatcherTimer(DispatcherPriority.Input, Dispatcher.UIThread)
+            _timer = AvaloniaUiPlatformActions.StartInputPolling(TimeSpan.FromMilliseconds(20), () =>
             {
-                Interval = TimeSpan.FromMilliseconds(20)
-            };
-            _timer.Tick += (_, _) =>
-            {
-                if (_disposed) return;
+                if (_disposed) return TimeSpan.FromMilliseconds(20);
                 _input ??= new NativeGamepadInput(); // Native message windows belong to the GUI thread.
                 Step(_input.Read(), Environment.TickCount64, _foreground());
-                _timer!.Interval = IsEntered && !IsIntroComplete ? PresentationInterval
-                    : TimeSpan.FromMilliseconds(20);
-            };
-            Dispatcher.UIThread.Post(() => { if (!_disposed) _timer.Start(); });
+                return IsEntered && !IsIntroComplete ? PresentationInterval : TimeSpan.FromMilliseconds(20);
+            });
         }
     }
 
@@ -333,7 +325,7 @@ internal sealed class GamepadEntrySession : IDisposable
     public void Dispose()
     {
         if (_disposed) return;
-        _disposed = true; _timer?.Stop(); _intents.IntentEmitted -= OnIntent;
+        _disposed = true; _timer?.Dispose(); _intents.IntentEmitted -= OnIntent;
         Close(); _input?.Dispose(); _sheets.Clear();
     }
 }

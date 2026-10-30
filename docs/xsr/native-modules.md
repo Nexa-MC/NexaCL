@@ -493,9 +493,33 @@ snapshot regression also exercises this rejection on Unix.
 Before the native window runtime can be isolated, the backend must stop holding
 `XsrUiShell`, `XsrUiTree`, `XsrUiStage` and `XsrUiStateBridge` directly. A renderer-owned
 backend port exposes immutable scenes, input/presentation operations, text metrics,
-window observations and invalidation subscriptions. The local shell implements it;
+window observations, a read-only content-transition flag and invalidation subscriptions. The local shell implements it;
 the backend uses only the port, retaining existing UI-thread coalescing and explicit
 subscription retirement. Tree/state ownership never transfers to the backend.
 This managed port is a prerequisite, not a native ABI or permission to pass its
 interface object across native runtimes. A native implementation must encode these
 operations and callbacks with bounded data and independent lifetime ownership.
+
+Desktop input polling and game-window dispatch also belong to the backend. The
+backend owns the input-priority dispatcher timer and returns a disposable lease;
+its local callback selects the next interval without exposing Avalonia types.
+Disposal retires the callback before posting timer shutdown, including disposal
+before queued startup. This is a local ownership boundary; a native adapter must
+replace delegates with callback IDs and provide equivalent callback quiescence.
+
+Validation of this ownership step: the complete solution and Desktop test project
+built without warnings; all 46 Avalonia backend scenarios passed in both managed
+and linux-x64 NativeAOT executables, including alternate shell-port consumption,
+100 invalidations coalescing into one render, subscription retirement, and input
+polling retirement before startup/from within its callback. Nine gamepad flow
+regressions and the 81-project architecture gate passed. These results validate
+the local boundary and AOT dispatch; they do not demonstrate a separate native UI
+runtime or remove the remaining Host lifecycle implementations.
+
+macOS cache reconciliation also requires instance metadata reads to use the same
+fixed system-alias policy. Otherwise discovery returns a metadata error and
+intentionally declines to save a snapshot even after cache-path validation succeeds.
+Both metadata and snapshot guards share this policy; installation-internal links
+remain rejected and metadata failures retain their existing user-facing message.
+The two real-snapshot reconciliation regressions pass locally on Linux after this
+change; macOS system-alias execution remains a platform CI check.

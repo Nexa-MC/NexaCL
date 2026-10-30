@@ -5,7 +5,7 @@ namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
 public sealed partial class AvaloniaUiStartupSession
 {
-    private XsrUiShell? _preparedShell;
+    private IXsrUiBackendShell? _preparedShell;
     private AvaloniaUiShellWindow? _preparedWindow;
     private bool _shellWarmed;
     private TaskCompletionSource? _retryRequested;
@@ -30,7 +30,10 @@ public sealed partial class AvaloniaUiStartupSession
         }, DispatcherPriority.Normal).WaitAsync(cancellation).ConfigureAwait(false);
     }
 
-    public Task PrepareShellAsync(XsrUiShell shell, AvaloniaUiPlatformActions? actions = null,
+    public Task PrepareShellAsync(XsrUiShell shell, AvaloniaUiPlatformActions? actions = null, CancellationToken token = default) =>
+        PrepareShellAsync((IXsrUiBackendShell)shell, actions, token);
+
+    public Task PrepareShellAsync(IXsrUiBackendShell shell, AvaloniaUiPlatformActions? actions = null,
         CancellationToken token = default) => InvokeAsync(() =>
     {
         if (_presented) throw new InvalidOperationException("The product shell is already visible.");
@@ -45,7 +48,9 @@ public sealed partial class AvaloniaUiStartupSession
         while (_pendingProtocols.TryDequeue(out string? uri)) actions?.OnProtocolActivated(uri);
     }, token);
 
-    public Task WarmUpShellAsync(XsrUiShell shell, CancellationToken token = default) => InvokeAsync(() =>
+    public Task WarmUpShellAsync(XsrUiShell shell, CancellationToken token = default) => WarmUpShellAsync((IXsrUiBackendShell)shell, token);
+
+    public Task WarmUpShellAsync(IXsrUiBackendShell shell, CancellationToken token = default) => InvokeAsync(() =>
     {
         if (_preparedShell != shell || _preparedWindow is null)
             throw new InvalidOperationException("The hidden product shell has not been prepared.");
