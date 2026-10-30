@@ -116,11 +116,15 @@ internal static partial class Program
         // window bounds): nothing may reintroduce one across close, scene updates, or state
         // changes.
         shell.Renderer.ReducedMotion = false;
-        AvaloniaNativeWindowActions.WindowActionButton close = window.GetVisualDescendants()
-            .OfType<AvaloniaNativeWindowActions.WindowActionButton>().Last();
-        Point center = close.TranslatePoint(new Point(14, 14), window)!.Value;
-        window.MouseDown(center, MouseButton.Left, RawInputModifiers.None);
-        window.MouseUp(center, MouseButton.Left, RawInputModifiers.None);
+        var buttons = NativeActionButtons(window);
+        if (OperatingSystem.IsMacOS()) window.RequestWindowClose();
+        else
+        {
+            var close = buttons[^1];
+            Point center = close.TranslatePoint(new Point(14, 14), window)!.Value;
+            window.MouseDown(center, MouseButton.Left, RawInputModifiers.None);
+            window.MouseUp(center, MouseButton.Left, RawInputModifiers.None);
+        }
         AssertTrue(window.GetVisualDescendants().OfType<Border>()
             .All(border => border.BoxShadow.Count == 0));
         shell.SetNavigationExpanded(!shell.IsNavigationExpanded);
@@ -243,9 +247,7 @@ internal static partial class Program
         actions.Attach(window);
         AssertEqual(TimeSpan.FromSeconds(1d / 24), AvaloniaUiMotion.FrameInterval);
         AssertFalse(window.CanResize);
-        var buttons = window.GetVisualDescendants().OfType<AvaloniaNativeWindowActions.WindowActionButton>().ToArray();
-        // macOS owns its traffic lights; only the other platforms create these custom buttons.
-        AssertEqual(OperatingSystem.IsMacOS() ? 0 : 3, buttons.Length);
+        var buttons = NativeActionButtons(window);
         var maximize = OperatingSystem.IsMacOS() ? null : buttons[1];
         if (maximize is not null) AssertFalse(maximize.IsEnabled);
         actions.SetWindowResizeEnabled(true);
@@ -279,10 +281,17 @@ internal static partial class Program
         Console.WriteLine("PASS: configured frame interval changes while active timelines retain their completion");
     }
 
+    private static AvaloniaNativeWindowActions.WindowActionButton[] NativeActionButtons(AvaloniaUiShellWindow window)
+    {
+        var buttons = window.GetVisualDescendants().OfType<AvaloniaNativeWindowActions.WindowActionButton>().ToArray();
+        // macOS owns its traffic lights; only the other platforms create these custom buttons.
+        AssertEqual(OperatingSystem.IsMacOS() ? 0 : 3, buttons.Length);
+        return buttons;
+    }
+
     private static void VerifyWindowActionFeedback(AvaloniaUiShellWindow window, AvaloniaUiSceneSurface surface)
     {
-        foreach (AvaloniaNativeWindowActions.WindowActionButton button in window.GetVisualDescendants()
-            .OfType<AvaloniaNativeWindowActions.WindowActionButton>())
+        foreach (var button in NativeActionButtons(window))
         {
             AssertTrue(button.HoverBrush is ISolidColorBrush brush && brush.Color.A > 0);
             Point center = button.TranslatePoint(new Point(14, 14), window)!.Value;

@@ -691,3 +691,9 @@ verified real call-table exhaustion is reported before endpoint invocation, and
 reverse text callbacks install/restore the caller runtime's own context. The
 85-project architecture gate and 46 backend regressions (including the merged
 Windows tray changes) passed. These helpers are not yet a production startup path.
+
+The next macOS publication run reached the final close/shadow scenario, where a
+second test still selected a nonexistent custom close button. All three caption
+fixtures now share the platform-specific inventory assertion; macOS invokes the
+same shell close command directly, while Windows/Linux retain the pointer-driven
+custom-button route. Shadow and backdrop assertions still run on every platform.
