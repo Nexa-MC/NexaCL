@@ -1,0 +1,4 @@
+LIBRARY "Nexa.ExplorerCommand.dll"
+EXPORTS
+    DllGetClassObject PRIVATE
+    DllCanUnloadNow PRIVATE
