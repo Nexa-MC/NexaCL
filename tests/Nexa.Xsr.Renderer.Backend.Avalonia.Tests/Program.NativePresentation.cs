@@ -257,7 +257,14 @@ internal static partial class Program
         const string code = "ABCD-EFGH";
         await actions.CopyTextAsync(code).ConfigureAwait(true);
         AssertEqual(code, await window.Clipboard!.TryGetTextAsync().ConfigureAwait(true));
-        Console.WriteLine("PASS: platform copy marshals to the UI thread and persists text");
+        using var canceledNotification = new CancellationTokenSource();
+        actions.LocalizeDesktopText = text => { canceledNotification.Cancel(); return text; };
+        bool notificationCanceled = false;
+        try { await actions.NotifyNativeAsync("Fixture", "Canceled before native dispatch", canceledNotification.Token); }
+        catch (OperationCanceledException) { notificationCanceled = true; }
+        finally { actions.LocalizeDesktopText = null; }
+        AssertTrue(notificationCanceled);
+        Console.WriteLine("PASS: platform copy persists text; canceled localization does not dispatch a native notification");
     }
 
     private static async Task VerifyConfigurableMotionFrameClock()

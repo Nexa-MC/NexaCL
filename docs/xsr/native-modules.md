@@ -894,3 +894,29 @@ architecture check passed. The first real-window CI run passed on Windows/Linux;
 both macOS architectures reached the test assertions but aborted during process
 exit. Native debugger capture is enabled before accepting macOS retirement or
 moving the window module into production launcher payloads.
+
+Value-only platform operations share a closed numeric command table. Every handler
+fully decodes its arguments before invoking an OS effect, then runs to completion
+on the native-owned UI context with session-linked cancellation. This covers
+window preferences, clipboard, pickers, document transfer and screenshot/notification
+requests; resource owners and long-lived callback subscriptions remain separate
+handle protocols. Indeterminate taskbar progress uses an explicit presence bit
+instead of admitting non-finite geometry. JSON documents use bounded UTF-8 byte
+buffers so the existing document budget is independent of ordinary UI string limits.
+
+Synchronous platform setters/facts additionally have a UI-only channel for calls
+made inside Host render/input callbacks. It validates the actual native UI thread
+and executes under the owner context without blocking on a queued Task. Async
+operations are rejected by this channel before effects begin; the shared command
+catalog explicitly partitions the two sets. The async control path reuses the
+same synchronous handler for worker-originated setters.
+
+Platform-operation checkpoint: Linux NativeAOT passed both synchronous UI setters
+and asynchronous clipboard/facts/indeterminate-progress exchanges, rejected a
+trailing-data copy without changing the clipboard, rejected async operations on
+the synchronous gate, and rejected invalid UTF-8 before opening a document picker.
+The 46 backend tests include cancellation from notification localization before
+native dispatch. Full solution build and 86-project architecture checks passed.
+macOS exit diagnosis now identifies libAvaloniaNative's global dispatcher ComPtr
+releasing its managed callback after NativeAOT thread admission has shut down;
+this is still a blocker to production Window adoption, not a test assertion waiver.

@@ -79,10 +79,11 @@ public sealed partial class AvaloniaUiPlatformActions
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         (title, message) = await Dispatcher.UIThread.InvokeAsync(() =>
             (LocalizeDesktopText?.Invoke(title) ?? title, LocalizeDesktopText?.Invoke(message) ?? message), DispatcherPriority.Normal, token);
+        token.ThrowIfCancellationRequested();
         title = title[..Math.Min(title.Length, 63)]; message = message[..Math.Min(message.Length, 255)];
         if (OperatingSystem.IsWindows())
         {
-            nint handle = await Dispatcher.UIThread.InvokeAsync(() => (_owner as Window)?.TryGetPlatformHandle()?.Handle ?? 0);
+            nint handle = await Dispatcher.UIThread.InvokeAsync(() => (_owner as Window)?.TryGetPlatformHandle()?.Handle ?? 0, DispatcherPriority.Normal, token);
             if (handle == 0) return false;
             return await WindowsBalloonAsync(handle, title, message, token).ConfigureAwait(false);
         }

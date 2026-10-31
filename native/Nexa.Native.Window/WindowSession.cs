@@ -9,7 +9,7 @@ using Nexa.Xsr.Renderer.Wire;
 namespace Nexa.Native.Window;
 
 /// <summary>Owns the actual native application; Host state remains behind the UI call table.</summary>
-internal sealed class WindowSession : IAsyncDisposable
+internal sealed partial class WindowSession : IAsyncDisposable
 {
     private readonly NativeUiCallClient _hostControl, _hostUi;
     private readonly NativeUiCallRegistration _control, _ui;
@@ -101,6 +101,14 @@ internal sealed class WindowSession : IAsyncDisposable
                 Interlocked.Or(ref _invalidations, request.Span[1]);
                 if (Interlocked.Exchange(ref _invalidationQueued, 1) == 0) Dispatcher.UIThread.Post(Invalidate);
                 return [];
+            case WindowUiCommand.Platform:
+                if (!Dispatcher.UIThread.CheckAccess()) throw new InvalidOperationException("Synchronous platform effects belong to the native UI thread.");
+                return NativeContext.ExecuteInline(() =>
+                {
+                    using var reader = WindowControlProtocol.Read(request[1..], out int command);
+                    if (command != (int)WindowCommand.Platform) throw new InvalidDataException("Invalid synchronous platform request.");
+                    return ExecutePlatformSynchronous((WindowPlatformCommand)reader.Int32(), reader, _lifetime.Token);
+                });
             case WindowUiCommand.Text:
                 if (!Dispatcher.UIThread.CheckAccess()) throw new InvalidOperationException("Text measurement belongs to the native UI thread.");
                 return (_text ?? throw new InvalidOperationException("Native text layout is not ready.")).Exchange(request[1..]);
@@ -172,6 +180,12 @@ internal sealed class WindowSession : IAsyncDisposable
                 reader.End();
                 int result = await Task.Run(() => AvaloniaUiShellHost.Run(Startup, Shell, _actions), token).ConfigureAwait(false);
                 return BitConverter.GetBytes(result);
+            case WindowCommand.Platform:
+                var platformCommand = (WindowPlatformCommand)reader.Int32();
+                byte[] platformResult = [];
+                await NativeContext.RunAsync(async () =>
+                { platformResult = await ExecutePlatformAsync(platformCommand, reader, token); }, token).ConfigureAwait(false);
+                return platformResult;
             case WindowCommand.Appearance:
                 var updatedAppearance = WindowValueChannel.DecodeStartup(reader.Buffer()); reader.End();
                 await NativeContext.RunAsync(() => { Startup.SetAppearance(updatedAppearance); return Task.CompletedTask; }, token).ConfigureAwait(false);

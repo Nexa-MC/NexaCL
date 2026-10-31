@@ -142,6 +142,70 @@ internal static partial class Program
             if (value.HasValue) writer.Int32(value.Value);
             return _control.Exchange(WindowControlProtocol.Prefix(1, writer.Finish()));
         }
+        private Task<byte[]> Platform(WindowPlatformCommand command, Action<Nexa.Native.Window.Wire.UiWireWriter>? arguments = null)
+        {
+            using var writer = WindowControlProtocol.Write((int)WindowCommand.Platform);
+            writer.Int32((int)command); arguments?.Invoke(writer);
+            return _operations.InvokeAsync(writer.Finish());
+        }
+        private static Nexa.Native.Window.Wire.UiWireReader PlatformResult(byte[] bytes, WindowPlatformCommand expected)
+        {
+            var reader = WindowControlProtocol.Read(bytes, out int kind);
+            try
+            {
+                Equal((int)WindowCommand.Platform, kind); Equal((int)expected, reader.Int32()); return reader;
+            }
+            catch { reader.Dispose(); throw; }
+        }
+        private async Task VerifyPlatform()
+        {
+            await Platform(WindowPlatformCommand.Resize, writer => writer.Boolean(false));
+            await Platform(WindowPlatformCommand.Resize, writer => writer.Boolean(true));
+            await _context.RunAsync(() =>
+            {
+                using var request = WindowControlProtocol.Write((int)WindowCommand.Platform);
+                request.Int32((int)WindowPlatformCommand.FrameRate); request.Int32(60);
+                using var response = PlatformResult(_ui.Exchange(WindowControlProtocol.Prefix((byte)WindowUiCommand.Platform, request.Finish())), WindowPlatformCommand.FrameRate);
+                response.End(); return Task.CompletedTask;
+            });
+            await Platform(WindowPlatformCommand.WindowAppearance, writer => { writer.Int32(100); writer.Boolean(false); });
+            await Platform(WindowPlatformCommand.CopyText, writer => writer.String("native clipboard before malformed request"));
+            try
+            {
+                await Platform(WindowPlatformCommand.CopyText, writer => { writer.String("must not replace clipboard"); writer.Byte(1); });
+                throw new InvalidDataException("Malformed platform command unexpectedly succeeded.");
+            }
+            catch (InvalidOperationException) { }
+            await _context.RunAsync(() =>
+            {
+                using var request = WindowControlProtocol.Write((int)WindowCommand.Platform);
+                request.Int32((int)WindowPlatformCommand.CopyText); request.String("async operation must not enter synchronous channel");
+                Throws<InvalidOperationException>(() => _ui.Exchange(WindowControlProtocol.Prefix((byte)WindowUiCommand.Platform, request.Finish())));
+                return Task.CompletedTask;
+            });
+            using (var clipboard = PlatformResult(await Platform(WindowPlatformCommand.ReadClipboard), WindowPlatformCommand.ReadClipboard))
+            { Equal("native clipboard before malformed request", clipboard.String()); clipboard.End(); }
+            using (var progress = PlatformResult(await Platform(WindowPlatformCommand.TaskbarProgress,
+                writer => { writer.Boolean(false); writer.Boolean(false); }), WindowPlatformCommand.TaskbarProgress))
+            { _ = progress.Boolean(); progress.End(); }
+            using (var captions = PlatformResult(await Platform(WindowPlatformCommand.LocalizeCaptions,
+                writer => { writer.Count(2); writer.String("First"); writer.String("Second"); }), WindowPlatformCommand.LocalizeCaptions))
+            { Equal(2, captions.Count()); Equal("First", captions.String()); Equal("Second", captions.String()); captions.End(); }
+            using (var facts = PlatformResult(await Platform(WindowPlatformCommand.Facts), WindowPlatformCommand.Facts))
+            {
+                _ = facts.Boolean(); True(facts.Byte() <= 2); True(facts.Int64() > 0); _ = facts.Int64();
+                if (facts.Boolean()) _ = WindowValueChannel.DecodeMaterial(facts.Buffer());
+                facts.End();
+            }
+            try
+            {
+                await Platform(WindowPlatformCommand.SaveDocument,
+                    writer => { writer.Buffer(new byte[] { 255 }); writer.Int32(1024); writer.String(null); });
+                throw new InvalidDataException("Invalid UTF-8 unexpectedly opened a document picker.");
+            }
+            catch (InvalidOperationException) { }
+            Console.WriteLine("PASS: native clipboard survives malformed effects; platform facts, preferences and indeterminate progress cross the value boundary");
+        }
         private async Task Bootstrap()
         {
             Exception? failure = null;
@@ -196,6 +260,7 @@ internal static partial class Program
                     prepare.Buffer(WindowValueChannel.EncodeDesktopPolicy(new(TrayEnabled: false)));
                     await _operations.InvokeAsync(prepare.Finish());
                 }
+                await VerifyPlatform();
                 await Invoke(WindowCommand.WarmShell);
                 Task<byte[]> presented = Invoke(WindowCommand.Present);
                 DateTime deadline = DateTime.UtcNow.AddSeconds(30);
