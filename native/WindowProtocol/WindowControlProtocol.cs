@@ -4,7 +4,8 @@ internal enum WindowCommand
 {
     MainCompleted = 0, Start = 1, PrepareShell = 2, WarmShell = 3, Present = 4,
     QuiesceUi = 5, ReportStage = 6, ReportFailure = 7, FailureLog = 8,
-    CloseWindow = 9, Metrics = 10,
+    CloseWindow = 9, Metrics = 10, Appearance = 11, Relocalize = 12,
+    StartupFacts = 13, DiscardShell = 14, WaitForRetry = 15,
 }
 
 internal enum WindowControlCallback { BeginMain = 0, AsyncCompletion = 1, UiStopped = 2, Diagnostic = 3, Localize = 4 }

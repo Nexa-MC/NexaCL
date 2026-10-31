@@ -21,6 +21,7 @@ internal sealed class WindowSession : IAsyncDisposable
     private readonly object _startupGate = new();
     private AvaloniaUiStartupSession? _startup;
     private XsrUiRemoteShell? _shell;
+    private NativeUiSynchronizationContext? _nativeContext;
     private XsrUiTextLayoutEndpoint? _text;
     private Task? _uiStopped;
     private Task? _quiesced;
@@ -117,6 +118,12 @@ internal sealed class WindowSession : IAsyncDisposable
 
     private async Task<byte[]> ExecuteAsync(ReadOnlyMemory<byte> request, CancellationToken token)
     {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, _lifetime.Token);
+        return await ExecuteCoreAsync(request, linked.Token).ConfigureAwait(false);
+    }
+
+    private async Task<byte[]> ExecuteCoreAsync(ReadOnlyMemory<byte> request, CancellationToken token)
+    {
         using var reader = WindowControlProtocol.Read(request, out int command);
         switch ((WindowCommand)command)
         {
@@ -136,15 +143,17 @@ internal sealed class WindowSession : IAsyncDisposable
                 {
                     using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, _lifetime.Token);
                     _startup = await AvaloniaUiStartupSession.StartWithAppearanceAsync(args, disableHardware, appearance, Localize, linked.Token).ConfigureAwait(false);
+                    _nativeContext = new(id => Dispatcher.UIThread.Post(() => _nativeContext!.Execute(id)), Report);
+                    _nativeContext.OperationStarted();
                     _created.TrySetResult(_startup); _ = ObserveUiLifetimeAsync(_startup);
                     return [];
                 }
                 catch (Exception error) { _created.TrySetException(error); _ = _created.Task.Exception; throw; }
             case WindowCommand.PrepareShell:
                 var desktopPolicy = WindowValueChannel.DecodeDesktopPolicy(reader.Buffer()); reader.End();
-                await Startup.InvokeAsync(() =>
+                await NativeContext.RunAsync(() =>
                 {
-                    if (_shell is not null) return;
+                    if (_shell is not null) return Task.CompletedTask;
                     var renderer = new XsrUiRemoteRenderer(new UiTransport(_hostUi, WindowUiCallback.Input), provider =>
                     {
                         _text = provider is null ? null : new(provider);
@@ -152,6 +161,7 @@ internal sealed class WindowSession : IAsyncDisposable
                     });
                     _shell = new(new UiTransport(_hostUi, WindowUiCallback.Shell), renderer);
                     _actions.SetDesktopPolicy(desktopPolicy);
+                    return Task.CompletedTask;
                 }, token).ConfigureAwait(false);
                 await Startup.PrepareShellAsync(_shell!, _actions, token).ConfigureAwait(false);
                 return [];
@@ -162,6 +172,29 @@ internal sealed class WindowSession : IAsyncDisposable
                 reader.End();
                 int result = await Task.Run(() => AvaloniaUiShellHost.Run(Startup, Shell, _actions), token).ConfigureAwait(false);
                 return BitConverter.GetBytes(result);
+            case WindowCommand.Appearance:
+                var updatedAppearance = WindowValueChannel.DecodeStartup(reader.Buffer()); reader.End();
+                await NativeContext.RunAsync(() => { Startup.SetAppearance(updatedAppearance); return Task.CompletedTask; }, token).ConfigureAwait(false);
+                return [];
+            case WindowCommand.Relocalize:
+                reader.End(); Startup.SetLocalizer(Localize); return [];
+            case WindowCommand.StartupFacts:
+                reader.End();
+                byte[] facts = [];
+                await NativeContext.RunAsync(() =>
+                {
+                    facts = WindowStartupFacts.Encode(new(Startup.Appearance, Startup.HardwareAccelerationDisabled,
+                        Startup.Stage, Startup.FirstRenderElapsed?.Ticks, Startup.ShellReadyElapsed?.Ticks));
+                    return Task.CompletedTask;
+                }, token).ConfigureAwait(false);
+                return facts;
+            case WindowCommand.DiscardShell:
+                reader.End(); await Startup.DiscardPreparedShellAsync().ConfigureAwait(false); return [];
+            case WindowCommand.WaitForRetry:
+                string retryMessage = Required(reader.String()); reader.End();
+                bool retry = false;
+                await NativeContext.RunAsync(async () => { retry = await Startup.WaitForRetryAsync(retryMessage, token); }, token).ConfigureAwait(false);
+                return [retry ? (byte)1 : (byte)0];
             case WindowCommand.QuiesceUi:
                 reader.End(); await QuiesceUiAsync().ConfigureAwait(false); return [];
             default: throw new InvalidDataException("Unknown asynchronous window command.");
@@ -169,6 +202,7 @@ internal sealed class WindowSession : IAsyncDisposable
     }
 
     private AvaloniaUiStartupSession Startup => Volatile.Read(ref _startup) ?? throw new InvalidOperationException("Native startup is not ready.");
+    private NativeUiSynchronizationContext NativeContext => _nativeContext ?? throw new InvalidOperationException("Native UI context is not ready.");
     private XsrUiRemoteShell Shell => _shell ?? throw new InvalidOperationException("Native shell is not prepared.");
     private static string Required(string? value) => value ?? throw new InvalidDataException("Missing window value.");
 
@@ -201,6 +235,9 @@ internal sealed class WindowSession : IAsyncDisposable
         try
         {
             await _ui.DisposeAsync().ConfigureAwait(false);
+            _lifetime.Cancel();
+            if (_nativeContext is { } context)
+                context.UseCleanupDispatcher(id => ThreadPool.QueueUserWorkItem(_ => context.Execute(id)));
             using var writer = WindowControlProtocol.Write((int)WindowControlCallback.UiStopped, callback: true);
             byte[] message = writer.Finish(); int delay = 1;
             while (true)
@@ -258,6 +295,8 @@ internal sealed class WindowSession : IAsyncDisposable
         Task operations = _operations.DisposeAsync().AsTask();
         await QuiesceUiAsync().ConfigureAwait(false);
         await Task.WhenAll(calls, operations).ConfigureAwait(false);
+        if (_nativeContext is { } context)
+        { context.OperationCompleted(); await context.DisposeAsync().ConfigureAwait(false); }
         _text = null; _shell = null; _lifetime.Dispose();
     }
 

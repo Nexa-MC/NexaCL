@@ -874,3 +874,23 @@ their previous fingerprints (89 scene shapes / 31 window value shapes). NTP serv
 regressions passed 35/35 after separating the built-in/imported fixture identities;
 macOS OS-alias assertions remain platform-specific. Other-platform native-window
 results are supplied by the new CI matrix, not inferred from the Linux run.
+
+For platform adoption, the native window owns a local continuation context in
+addition to the Host context. Its root operation spans native initialization and
+teardown. Platform tasks run on that context, retaining their actual completion
+rather than merely a canceled waiter. After the GUI loop and incoming UI gate have
+stopped, pending native continuations move to serialized cleanup; the async control
+plane remains live until all operations drain. The root is released last.
+Startup appearance/localization refresh, prepared-shell discard and retry choices
+use explicit commands. Startup facts are copied values, including nullable elapsed
+ticks; cancellation and completion remain local and are represented by terminal
+messages, never by passing Task or CancellationToken objects across runtimes.
+
+Startup-control checkpoint: the Linux NativeAOT window runner passed appearance
+refresh, native retry entry/cancellation, prepared-shell discard and subsequent
+main-window painting/retirement. Snapshot decoding rejects truncated/trailing
+frames and negative elapsed ticks. The merged solution build and 86-project
+architecture check passed. The first real-window CI run passed on Windows/Linux;
+both macOS architectures reached the test assertions but aborted during process
+exit. Native debugger capture is enabled before accepting macOS retirement or
+moving the window module into production launcher payloads.

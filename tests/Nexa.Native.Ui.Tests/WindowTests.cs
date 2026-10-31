@@ -153,6 +153,32 @@ internal static partial class Program
                     writer.Buffer(WindowValueChannel.EncodeStartup(new AvaloniaUiStartupAppearance(ReducedMotion: true)));
                     await _operations.InvokeAsync(writer.Finish());
                 }
+                var initial = WindowStartupFacts.Decode(await Invoke(WindowCommand.StartupFacts));
+                True(initial.HardwareAccelerationDisabled); True(initial.Appearance.ReducedMotion);
+                var updated = initial.Appearance with { ThemeMode = XsrUiThemeMode.Dark, ProductVersion = "2.0.0.alpha.18" };
+                using (var appearance = WindowControlProtocol.Write((int)WindowCommand.Appearance))
+                {
+                    appearance.Buffer(WindowValueChannel.EncodeStartup(updated));
+                    await _operations.InvokeAsync(appearance.Finish());
+                }
+                Equal(updated, WindowStartupFacts.Decode(await Invoke(WindowCommand.StartupFacts)).Appearance);
+                await Invoke(WindowCommand.Relocalize);
+                using (var cancellation = new CancellationTokenSource())
+                using (var retry = WindowControlProtocol.Write((int)WindowCommand.WaitForRetry))
+                {
+                    retry.String("Native startup retry");
+                    Task<byte[]> pendingRetry = _operations.InvokeAsync(retry.Finish(), cancellation.Token);
+                    DateTime retryDeadline = DateTime.UtcNow.AddSeconds(10);
+                    while (WindowStartupFacts.Decode(await Invoke(WindowCommand.StartupFacts)).Stage != "Native startup retry")
+                    {
+                        if (DateTime.UtcNow >= retryDeadline) throw new TimeoutException("Retry UI did not enter.");
+                        await Task.Delay(10);
+                    }
+                    cancellation.Cancel();
+                    try { await pendingRetry; throw new InvalidOperationException("Retry was not canceled."); }
+                    catch (OperationCanceledException) { }
+                }
+                await Invoke(WindowCommand.DiscardShell);
                 using (var stage = WindowControlProtocol.Write((int)WindowCommand.ReportStage))
                 { stage.String("Native window contract test"); _control.Exchange(WindowControlProtocol.Prefix(1, stage.Finish())); }
                 await _context.RunAsync(() =>

@@ -11,6 +11,13 @@ internal static partial class Program
 {
     private static void WindowValues(NativeUiCallClient peer)
     {
+        var facts = new WindowStartupFacts(new(), true, "ready", null, 42);
+        byte[] encodedFacts = WindowStartupFacts.Encode(facts);
+        Equal(facts, WindowStartupFacts.Decode(encodedFacts));
+        Throws<InvalidDataException>(() => WindowStartupFacts.Encode(facts with { FirstRenderTicks = -1 }));
+        Throws<IOException>(() => WindowStartupFacts.Decode(encodedFacts.AsMemory(0, encodedFacts.Length - 1)));
+        Throws<InvalidDataException>(() => WindowStartupFacts.Decode((byte[])[.. encodedFacts, 0]));
+
         byte[] Exchange(byte kind, byte[] value)
         {
             byte[] request = new byte[value.Length + 2]; request[0] = 10; request[1] = kind;

@@ -6,6 +6,7 @@
   <ItemGroup>
     <Compile Include="../NativeUiCallGate.cs" Link="NativeUiCallGate.cs" />
     <Compile Include="../NativeUiAsyncCalls.cs" Link="NativeUiAsyncCalls.cs" />
+    <Compile Include="../NativeUiSynchronizationContext.cs" Link="NativeUiSynchronizationContext.cs" />
     <ProjectReference Include="../../Nexa.Core/Nexa.Core.csproj" />
     <ProjectReference Include="../../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
     <ProjectReference Include="../../Nexa.Xsr.Renderer.Backend.Avalonia/Nexa.Xsr.Renderer.Backend.Avalonia.csproj" />
