@@ -164,6 +164,9 @@ internal static partial class Program
         Wait(() => Find("InstanceOfflineReadiness.Check", false).IsAssigned);
         var button = Find("InstanceOfflineReadiness.Check");
         Click(); Click(); AssertEqual(1, requests.Count); AssertEqual(button, Find("InstanceOfflineReadiness.Check"));
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Busy"))!.IsVisible);
+        AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Actions"))!.IsVisible);
+        AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Report"))!.IsVisible);
         instance = second; Wait(() => requests[0].Token.IsCancellationRequested && Find("InstanceOfflineReadiness.Check", false).IsAssigned);
         requests[0].Completion.SetResult(XsrResult.Success(Report(first)));
         fixture.Shell.Render(new(1400, 8000)); AssertFalse(HasText("本地离线依赖校验通过"));
@@ -175,6 +178,9 @@ internal static partial class Program
         Click(); AssertEqual(3, requests.Count);
         requests[2].Completion.SetResult(XsrResult.Success(Report(second)));
         Wait(() => HasText("本地离线依赖校验通过"));
+        AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Busy"))!.IsVisible);
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Actions"))!.IsVisible);
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Report"))!.IsVisible);
         fixture.Shell.Render(new(1400, 8000)); AssertEqual(3, requests.Count);
         static InstanceOfflineReadinessReport Report(string path) => new(path, DateTimeOffset.UtcNow, true, true, "{data literal}",
             [new("client", "client.jar", OfflineArtifactState.Verified, 123, "verified")]);

@@ -215,7 +215,7 @@ public sealed partial class MinecraftInstallService : IDisposable
         // dies mid-transfer leaves an invisible, resumable directory instead of a launchable
         // half-install whose missing libraries would kill the JVM before its window appears.
         task.Report(StagePlan[0], "正在获取版本清单", 0.02, 0, 0, 0);
-        JsonObject vanillaJson = await metadata.FetchVanillaVersionJsonAsync(game, token).ConfigureAwait(false);
+        JsonObject vanillaJson = (JsonObject)(await metadata.FetchVanillaVersionJsonAsync(game, token).ConfigureAwait(false)).DeepClone();
         bool isolated = !command.PreparingEdit && new SettingsInstanceIsolationPolicy(command.DefaultIsolationMode ?? "all")
             .Isolate(command.Loader is not null, vanillaJson["type"] is JsonValue type && type.TryGetValue<string>(out var releaseType) ? releaseType : null);
         JsonObject? loaderJson = !processorLoader && command.Loader is { } profileLoader && command.LoaderBuild is { } build
@@ -310,6 +310,18 @@ public sealed partial class MinecraftInstallService : IDisposable
         else
         {
             throw new InvalidOperationException("版本缺少资源索引信息。");
+        }
+        if (assetIndexPlan.HasDownload && assetIndexContent is not null && vanillaJson["assetIndex"] is JsonObject indexDeclaration)
+        {
+            // Mojang can publish different language snapshots under the same index ID.
+            // Pin the local name to verified bytes instead of replacing another instance's index.
+#pragma warning disable CA5350 // Mojang identifies resource indexes by SHA-1; this is not an authentication primitive.
+            string digest = Convert.ToHexStringLower(System.Security.Cryptography.SHA1.HashData(assetIndexContent));
+#pragma warning restore CA5350
+            string id = assetIndexPlan.IndexId!;
+            indexDeclaration["id"] = id.EndsWith("-" + digest, StringComparison.Ordinal) ? id : id + "-" + digest;
+            assetIndexPlan = MinecraftClientDownloadPlanner.CreateAssetIndexPlan(new()
+            { VersionJson = vanillaJson, MinecraftRootDirectory = root });
         }
         if (assetIndexPlan.HasDownload && assetIndexPlan.LocalPath is { } indexPath)
         {

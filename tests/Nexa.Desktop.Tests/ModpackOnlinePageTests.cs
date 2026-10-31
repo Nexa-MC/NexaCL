@@ -51,7 +51,6 @@ internal static partial class Program
         var commands = new XsrCommandRouterBuilder(); ResourceModpackUpdateCommand? applied = null;
         commands.Register<ResourceModpackUpdateCommand>(ResourceModpackContract.Update, (q, _) =>
         { applied = q; return ValueTask.FromResult(XsrResult.Success()); });
-        EnableInstanceDevelopmentMode(fixture, instance);
         using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, queries.Build(new NoopDispatchObserver()),
             new XsrCommandRouterBuilder().Build(new NoopDispatchObserver()), fixture.Store, fixture.Feedback, () => instance);
         settings.ConfigureModpackUpdates(localQueries.Build(new NoopDispatchObserver()), new XsrCommandRouterBuilder().Build(new NoopDispatchObserver()));
@@ -60,8 +59,8 @@ internal static partial class Program
         var scene = fixture.Shell.Render(new(1000, 1800));
         void Pump(Func<bool> condition) => AssertTrue(SpinWait.SpinUntil(() => { scene = fixture.Shell.Render(new(1000, 1800)); return condition(); }, TimeSpan.FromSeconds(5)));
         void Click(string name) => Emit(fixture.Intents, "ui.settings.management.action", FindByKey(fixture.Shell, scene, name).Entity);
-        Pump(() => scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "SettingsNav.modpack"));
-        Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.modpack").Entity);
+        Pump(() => scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "SettingsNav.overview"));
+        Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.overview").Entity);
         Pump(() => scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity).StartsWith("ModpackOnline.Preview.", StringComparison.Ordinal)));
         string Action() => fixture.Shell.Tree.Name(scene.Nodes.First(node => fixture.Shell.Tree.Name(node.Entity).StartsWith("ModpackOnline.Preview.", StringComparison.Ordinal)).Entity);
         var archive = FindByKey(fixture.Shell, scene, "ModpackUpdate.Archive").Entity;

@@ -39,16 +39,17 @@ internal sealed partial class SettingsPageController
     private Dictionary<string, string> OfflineReadinessData()
     {
         var report = _offlineReport;
+        bool busy = _offlinePrepare is not null || _offlineRead is not null;
         return new()
         {
             ["canCheck"] = Flag(_offlineRead is null && _offlinePrepare is null),
             ["canPrepare"] = Flag(_offlineRead is null && _offlinePrepare is null && report is { Ready: false }
                 && _commands.TryResolve(MachineCapabilityStateContract.RemediationCommand, out _)),
-            ["preparing"] = Flag(_offlinePrepare is not null),
-            ["pending"] = Flag(_offlineRead is not null),
-            ["hasError"] = Flag(_offlineError is not null),
+            ["busy"] = Flag(busy),
+            ["idle"] = Flag(!busy),
+            ["hasError"] = Flag(!busy && _offlineError is not null),
             ["error"] = _offlineError is null ? "" : InstanceToolTerm(_offlineError),
-            ["hasReport"] = Flag(report is not null),
+            ["hasReport"] = Flag(!busy && report is not null),
             ["result"] = report is null ? "" : InstanceToolTerm(report.Ready ? "offline.ready" : report.Complete ? "offline.not-ready" : "offline.incomplete"),
             ["java"] = report?.JavaCompatible == true ? InstanceToolFormat("OfflineJava", new() { ["version"] = report.JavaVersion ?? "" })
                 : report?.JavaCompatible == false ? InstanceToolTerm("java.missing") : InstanceToolTerm("java.unknown"),

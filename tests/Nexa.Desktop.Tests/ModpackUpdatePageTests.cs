@@ -35,7 +35,6 @@ internal static partial class Program
         var modpackCommands = new XsrCommandRouterBuilder(); MinecraftModpackUpdateCommand? applied = null;
         modpackCommands.Register<MinecraftModpackUpdateCommand>(MinecraftModpackUpdateContract.Apply, (command, _) =>
         { applied = command; return ValueTask.FromResult(XsrResult.Success()); });
-        EnableInstanceDevelopmentMode(fixture, instance);
         using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, queries.Build(new NoopDispatchObserver()),
             new XsrCommandRouterBuilder().Build(new NoopDispatchObserver()), fixture.Store, fixture.Feedback, () => instance);
         settings.ConfigureModpackUpdates(modpackQueries.Build(new NoopDispatchObserver()), modpackCommands.Build(new NoopDispatchObserver()));
@@ -43,8 +42,8 @@ internal static partial class Program
         var scene = fixture.Shell.Render(new(1000, 1800));
         void Pump(Func<bool> condition) => AssertTrue(SpinWait.SpinUntil(() => { scene = fixture.Shell.Render(new(1000, 1800)); return condition(); }, TimeSpan.FromSeconds(5)));
         void Click(string name) => Emit(fixture.Intents, "ui.settings.management.action", FindByKey(fixture.Shell, scene, name).Entity);
-        Pump(() => scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "SettingsNav.modpack"));
-        Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.modpack").Entity);
+        Pump(() => scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "SettingsNav.overview"));
+        Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.overview").Entity);
         Pump(() => scene.Nodes.Any(node => fixture.Shell.Tree.Name(node.Entity) == "ModpackUpdate.Archive"));
         string path = Path.Combine(fixture.TemporaryDirectory, "new-pack.mrpack");
         var archive = FindByKey(fixture.Shell, scene, "ModpackUpdate.Archive").Entity;

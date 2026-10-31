@@ -63,10 +63,22 @@ public sealed partial class MinecraftInstallService
             string relative = Path.GetRelativePath(root, localPath);
             foreach (string baseRoot in reuseRoot is null ? [root] : new[] { root, reuseRoot })
             {
-                string path = Nexa.Core.PathIdentity.Contained(baseRoot, relative);
-                if (File.Exists(path) && await _verification.VerifyAsync(new(path, plan.Size >= 0 ? plan.Size : null, plan.Sha1),
-                    token, forceHash: true).ConfigureAwait(false))
-                    return await File.ReadAllBytesAsync(path, token).ConfigureAwait(false);
+                var candidates = new List<string> { relative };
+                if (plan.Sha1 is { Length: 40 } digest && digest.All(char.IsAsciiHexDigit))
+                {
+                    string suffix = "-" + digest.ToLowerInvariant();
+                    string name = Path.GetFileNameWithoutExtension(relative);
+                    string alternate = name.EndsWith(suffix, StringComparison.Ordinal)
+                        ? name[..^suffix.Length] : name + suffix;
+                    candidates.Add(Path.Combine(Path.GetDirectoryName(relative)!, alternate + ".json"));
+                }
+                foreach (string candidate in candidates)
+                {
+                    string path = Nexa.Core.PathIdentity.Contained(baseRoot, candidate);
+                    if (File.Exists(path) && await _verification.VerifyAsync(new(path, plan.Size >= 0 ? plan.Size : null, plan.Sha1),
+                        token, forceHash: true).ConfigureAwait(false))
+                        return await File.ReadAllBytesAsync(path, token).ConfigureAwait(false);
+                }
             }
         }
         CountryPolicy.EnsureMinecraftDownloadsAllowed();
