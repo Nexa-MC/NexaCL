@@ -5,12 +5,12 @@ internal enum WindowCommand
     MainCompleted = 0, Start = 1, PrepareShell = 2, WarmShell = 3, Present = 4,
     QuiesceUi = 5, ReportStage = 6, ReportFailure = 7, FailureLog = 8,
     CloseWindow = 9, Metrics = 10, Appearance = 11, Relocalize = 12,
-    StartupFacts = 13, DiscardShell = 14, WaitForRetry = 15, Platform = 16,
+    StartupFacts = 13, DiscardShell = 14, WaitForRetry = 15, Platform = 16, Theme = 17, ClaimTheme = 18, ReleaseTheme = 19,
 }
 
 internal enum WindowControlCallback { BeginMain = 0, AsyncCompletion = 1, UiStopped = 2, Diagnostic = 3, Localize = 4 }
 internal enum WindowUiCallback : byte { Continuation = 0, Shell = 1, Input = 2, InstallText = 3 }
-internal enum WindowUiCommand : byte { Continuation = 0, Invalidate = 1, Text = 2, Platform = 3 }
+internal enum WindowUiCommand : byte { Continuation = 0, Invalidate = 1, Text = 2, Platform = 3, Theme = 4 }
 
 internal static class WindowControlProtocol
 {

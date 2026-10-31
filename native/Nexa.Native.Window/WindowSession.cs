@@ -35,7 +35,7 @@ internal sealed partial class WindowSession : IAsyncDisposable
         {
             using var writer = WindowControlProtocol.Write((int)WindowControlCallback.AsyncCompletion, callback: true);
             writer.Buffer(message); return _hostControl.Exchange(writer.Finish());
-        }, Report);
+        }, Report, (_, _, result) => { long handle = WindowThemeResult.ProvisionalHandle(result); if (handle != 0) _themes.RejectProvisional(handle); });
         _control = new(ExchangeControl, Report);
         _ui = new(ExchangeUi, Report);
     }
@@ -64,6 +64,10 @@ internal sealed partial class WindowSession : IAsyncDisposable
         using var reader = WindowControlProtocol.Read(request[1..], out int command);
         switch ((WindowCommand)command)
         {
+            case WindowCommand.ClaimTheme:
+                long claim = reader.Int64(); reader.End(); return [_themes.Claim(claim) ? (byte)1 : (byte)0];
+            case WindowCommand.ReleaseTheme:
+                long release = reader.Int64(); reader.End(); _themes.Release(release); return [];
             case WindowCommand.MainCompleted:
                 int exitCode = reader.Int32(); reader.End(); _main.TrySetResult(exitCode); return [];
             case WindowCommand.ReportStage:
@@ -102,6 +106,9 @@ internal sealed partial class WindowSession : IAsyncDisposable
                 Interlocked.Or(ref _invalidations, request.Span[1]);
                 if (Interlocked.Exchange(ref _invalidationQueued, 1) == 0) Dispatcher.UIThread.Post(Invalidate);
                 return [];
+            case WindowUiCommand.Theme:
+                if (!Dispatcher.UIThread.CheckAccess()) throw new InvalidOperationException("Theme effects belong to the native UI thread.");
+                return NativeContext.ExecuteInline(() => ExchangeTheme(request[1..]));
             case WindowUiCommand.Platform:
                 if (!Dispatcher.UIThread.CheckAccess()) throw new InvalidOperationException("Synchronous platform effects belong to the native UI thread.");
                 return NativeContext.ExecuteInline(() =>
@@ -136,6 +143,8 @@ internal sealed partial class WindowSession : IAsyncDisposable
         using var reader = WindowControlProtocol.Read(request, out int command);
         switch ((WindowCommand)command)
         {
+            case WindowCommand.Theme:
+                return await PrepareThemeAsync(reader, token).ConfigureAwait(false);
             case WindowCommand.Start:
                 int count = reader.Count();
                 if (count < 0) throw new InvalidDataException("Missing window arguments.");
@@ -310,6 +319,8 @@ internal sealed partial class WindowSession : IAsyncDisposable
         Task operations = _operations.DisposeAsync().AsTask();
         await QuiesceUiAsync().ConfigureAwait(false);
         await Task.WhenAll(calls, operations).ConfigureAwait(false);
+        _activeTheme?.Dispose(); _activeTheme = null;
+        await _themes.DisposeAsync().ConfigureAwait(false);
         if (_nativeContext is { } context)
         { context.OperationCompleted(); await context.DisposeAsync().ConfigureAwait(false); }
         _text = null; _shell = null; _lifetime.Dispose();

@@ -159,6 +159,77 @@ internal static partial class Program
             }
             catch { reader.Dispose(); throw; }
         }
+        private sealed class ThemeTextTransport(NativeUiCallClient ui, long handle) : IXsrUiWireTransport
+        {
+            public byte[] Exchange(ReadOnlyMemory<byte> request)
+            {
+                using var writer = WindowControlProtocol.Write((int)WindowCommand.Theme);
+                writer.Int32(3); writer.Int64(handle); writer.Buffer(request);
+                using var reader = WindowControlProtocol.Read(ui.Exchange(WindowControlProtocol.Prefix((byte)WindowUiCommand.Theme, writer.Finish())), out int kind);
+                Equal((int)WindowCommand.Theme, kind);
+                byte[] result = reader.Buffer(); reader.End(); return result;
+            }
+        }
+
+        private async Task VerifyThemes()
+        {
+            async Task<WindowPreparedTheme> Prepare(long generation)
+            {
+                using var writer = WindowControlProtocol.Write((int)WindowCommand.Theme);
+                writer.Buffer(WindowValueChannel.EncodeTheme(new(generation)));
+                return WindowThemeResult.Decode(await _operations.InvokeAsync(writer.Finish()));
+            }
+            byte[] Ownership(WindowCommand command, long handle)
+            {
+                using var writer = WindowControlProtocol.Write((int)command); writer.Int64(handle);
+                return _control.Exchange(WindowControlProtocol.Prefix(1, writer.Finish()));
+            }
+            async Task<long> Effect(int operation, long value)
+            {
+                long result = 0;
+                await _context.RunAsync(() =>
+                {
+                    using var writer = WindowControlProtocol.Write((int)WindowCommand.Theme);
+                    writer.Int32(operation); writer.Int64(value);
+                    using var reader = WindowControlProtocol.Read(_ui.Exchange(WindowControlProtocol.Prefix((byte)WindowUiCommand.Theme, writer.Finish())), out int kind);
+                    Equal((int)WindowCommand.Theme, kind);
+                    if (operation is 0 or 1) result = reader.Int64();
+                    reader.End(); return Task.CompletedTask;
+                });
+                return result;
+            }
+            var first = await Prepare(100);
+            Equal(true, first.NativePrepared); Equal(100L, first.Startup!.Generation);
+            Equal((byte)1, Ownership(WindowCommand.ClaimTheme, first.Handle)[0]);
+            var text = new XsrUiRemoteTextLayoutProvider(new ThemeTextTransport(_ui, first.Handle));
+            await _context.RunAsync(() =>
+            {
+                True(text.Measure(new("Native theme shaping", null, 16, 400, 200)).Size.Width > 0);
+                using var malformed = WindowControlProtocol.Write((int)WindowCommand.Theme);
+                malformed.Int32(0); malformed.Int64(first.Handle); malformed.Byte(1);
+                Throws<InvalidOperationException>(() => _ui.Exchange(WindowControlProtocol.Prefix((byte)WindowUiCommand.Theme, malformed.Finish())));
+                return Task.CompletedTask;
+            });
+            Equal(0L, await Effect(0, first.Handle));
+            Ownership(WindowCommand.ReleaseTheme, first.Handle); // An active borrow must survive premature Host release.
+            await _context.RunAsync(() =>
+            {
+                Throws<InvalidOperationException>(() => _ = text.Revision);
+                return Task.CompletedTask;
+            });
+            var next = await Prepare(101);
+            Equal((byte)1, Ownership(WindowCommand.ClaimTheme, next.Handle)[0]);
+            Equal(first.Handle, await Effect(0, next.Handle));
+            Equal((byte)0, Ownership(WindowCommand.ClaimTheme, first.Handle)[0]);
+            await Effect(2, 100);
+            Equal(next.Handle, await Effect(1, 102));
+            Ownership(WindowCommand.ReleaseTheme, next.Handle);
+            Equal((byte)0, Ownership(WindowCommand.ClaimTheme, next.Handle)[0]);
+            var abandoned = await Prepare(103); // Unclaimed resources also retire with the native session.
+            Equal(true, abandoned.Handle > next.Handle);
+            Console.WriteLine("PASS: native theme handles prepare, claim, commit, replace and clear without transferring CLR ownership");
+        }
+
         private async Task VerifyPlatform()
         {
             await Platform(WindowPlatformCommand.Resize, writer => writer.Boolean(false));
@@ -263,6 +334,7 @@ internal static partial class Program
                     await _operations.InvokeAsync(prepare.Finish());
                 }
                 await VerifyPlatform();
+                await VerifyThemes();
                 await Invoke(WindowCommand.WarmShell);
                 Task<byte[]> presented = Invoke(WindowCommand.Present);
                 DateTime deadline = DateTime.UtcNow.AddSeconds(30);

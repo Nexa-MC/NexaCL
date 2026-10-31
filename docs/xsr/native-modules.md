@@ -939,3 +939,32 @@ stubs even though there is no first IL instruction; attempting to weave them is
 invalid. The exact accessor attribute plus zero RVA/static shape is required,
 and accessors carrying IL are rejected rather than exempted from coverage. Their
 ordinary callers and owned target methods remain instrumented.
+
+### Window theme resource ownership
+
+Prepared themes are session-local native resources, not CLR objects returned to
+Host. Preparation accepts the existing bounded appearance value and returns a
+provisional monotonic handle with startup snapshot, native-prepared flag and
+known decoded bitmap bytes. Host must claim before use; rejected asynchronous
+completion releases only unclaimed handles. A distinct result envelope permits
+this cleanup without decoding the original appearance again. Registration is
+bounded by count and encoded appearance plus known decoded bitmap bytes; this is
+an admission budget, not an estimate of total native memory.
+
+Commit, clear, retired-resource flush and prepared text measurement run on the
+synchronous UI plane, with complete argument validation before effects. Commit
+holds a registry borrow for the active theme; releasing its Host handle cannot
+dispose an active appearance. Replacement returns the prior handle so Host can
+release it after its renderer style transaction. Prepared text calls borrow the
+specified claimed handle for the duration of measurement. Claim and release use
+the control plane, which remains available during UI retirement. Session cleanup
+first drains UI and asynchronous operations, then releases the active borrow and
+retires the resource registry, before releasing the native context root.
+
+Validation: the independent NativeAOT caller prepares and claims native themes,
+measures text through a handle-bound endpoint, rejects a trailing-byte commit
+before mutation, replaces an active theme after early Host release, clears the
+replacement, rejects retired handles and closes with an unclaimed candidate.
+The real Linux window still paints and exits without CoreCLR. The 86-project
+architecture check passes. This closes the theme resource boundary only; Host
+facade adoption and production packaging remain pending.

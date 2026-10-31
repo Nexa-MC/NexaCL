@@ -5,6 +5,7 @@
   <Import Project="../NativeEngine.props" />
   <ItemGroup>
     <Compile Include="../NativeUiCallGate.cs" Link="NativeUiCallGate.cs" />
+    <Compile Include="../NativeUiResources.cs" Link="NativeUiResources.cs" />
     <Compile Include="../NativeUiAsyncCalls.cs" Link="NativeUiAsyncCalls.cs" />
     <Compile Include="../NativeUiSynchronizationContext.cs" Link="NativeUiSynchronizationContext.cs" />
     <ProjectReference Include="../../Nexa.Core/Nexa.Core.csproj" />
