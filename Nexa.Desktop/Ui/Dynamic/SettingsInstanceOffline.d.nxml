@@ -1,17 +1,14 @@
 <nxml-dynamic>
   <StackPanel Key="InstanceOfflineReadiness" Class="settings-diagnostics-card">
     <StackPanel Class="instance-tools-body">
-      <Text Content="离线就绪" Class="instance-tools-title" />
-      <StackPanel Class="instance-tools-toolbar">
+      <Text Content="离线就绪" IsVisible="{data idle}" Class="instance-tools-title" />
+      <LoadingView Key="InstanceOfflineReadiness.Busy" IsVisible="{data busy}" Label="离线就绪" />
+      <StackPanel Key="InstanceOfflineReadiness.Actions" IsVisible="{data idle}" Class="instance-tools-toolbar">
         <Button Key="InstanceOfflineReadiness.Check" Content="检查本地离线依赖" Command="ui.settings.management.action" Enabled="{data canCheck}" Class="settings-catalog-action instance-tools-check" />
         <Button Key="InstanceOfflineReadiness.Prepare" Content="一键准备离线就绪" Command="ui.settings.management.action" Enabled="{data canPrepare}" Class="settings-catalog-action instance-tools-check" />
-        <LoadingView IsVisible="{data preparing}"><Text Content="正在补齐文件与 Java…" Class="loading-hint" LiveSetting="Polite" /></LoadingView>
-        <LoadingView IsVisible="{data pending}">
-          <Text Content="正在检查本地文件…" Class="loading-hint" LiveSetting="Polite" />
-        </LoadingView>
       </StackPanel>
       <Text Content="{data error}" IsVisible="{data hasError}" Localize="false" Class="instance-tools-hint" MaxLines="3" />
-      <StackPanel IsVisible="{data hasReport}" Class="instance-tools-rows">
+      <StackPanel Key="InstanceOfflineReadiness.Report" IsVisible="{data hasReport}" Class="instance-tools-rows">
         <StackPanel Class="instance-tools-field">
           <Text Content="检查结果" Class="instance-tools-label" />
           <Text Key="InstanceOfflineReadiness.Result" Content="{data result}" Localize="false" Class="instance-tools-value" />

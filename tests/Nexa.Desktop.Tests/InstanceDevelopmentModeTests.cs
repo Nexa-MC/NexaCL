@@ -36,7 +36,10 @@ internal static partial class Program
         string[] advanced = ["modpack", "contentgraph", "recovery", "files", "diagnostics"];
         void AssertAdvanced(bool visible)
         { foreach (string page in advanced) AssertEqual(visible, Find("SettingsNav." + page).IsAssigned); }
-        PumpUntil(() => Find("SettingsNav.mods").IsAssigned && Find("SettingsOption.instance.development-mode.true").IsAssigned);
+        PumpUntil(() => Find("SettingsNav.game").IsAssigned);
+        AssertFalse(Find("InstanceDevelopmentMode").IsAssigned);
+        Emit(fixture.Intents, "ui.settings.section", Find("SettingsNav.game"));
+        PumpUntil(() => Find("SettingsOption.instance.development-mode.true").IsAssigned);
         AssertAdvanced(false);
         foreach (string page in new[] { "game", "mods", "resourcepacks", "saves", "screenshots", "servers", "trash" })
             AssertTrue(Find("SettingsNav." + page).IsAssigned);

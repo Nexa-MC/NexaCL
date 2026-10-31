@@ -49,11 +49,16 @@ internal static partial class Program
         Wait(() => reads == 1 && fixture.Shell.Tree.GetComponent<XsrUiInput>(Find("InstanceOfflineReadiness.Prepare"))?.Enabled == true);
         Click("InstanceOfflineReadiness.Prepare");
         Wait(() => { lock (repairs) return repairs.Count == 1; });
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Busy"))!.IsVisible);
+        AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Actions"))!.IsVisible);
+        AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Report"))!.IsVisible);
         Click("InstanceOfflineReadiness.Prepare");
         AssertEqual(1, repairs.Count);
         pending.SetResult(XsrResult.Success());
         Wait(() => reads == 2 && fixture.Shell.Tree.GetComponent<XsrUiText>(Find("InstanceOfflineReadiness.Result"))?.Content == "本地离线依赖校验通过");
         AssertTrue(repairs.SequenceEqual(["remediation.game.repair_files", "remediation.java.download"]));
+        AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Busy"))!.IsVisible);
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Report"))!.IsVisible);
 
         void Forward<TQuery, TResponse>(XsrSemanticId semantic) where TQuery : notnull
         {

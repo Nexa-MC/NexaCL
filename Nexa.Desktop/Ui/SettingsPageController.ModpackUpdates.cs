@@ -51,7 +51,7 @@ internal sealed partial class SettingsPageController
 
     private void UpdateModpackUpdate()
     {
-        if (_selected != "modpack" || _instance is null)
+        if (_selected != "overview" || _instance is null)
         { if (_modpackUpdateInstance is not null) CancelModpackUpdate(); return; }
         if (_modpackUpdateInstance != _instance) { CancelModpackUpdate(); _modpackUpdateInstance = _instance; }
         CaptureModpackUpdateDrafts();

@@ -83,7 +83,7 @@ internal sealed partial class SettingsPageController
     {
         RetireContentScope();
         CloseScreenshotPreview(); CancelScreenshotThumbnails();
-        CancelOnlineList(); CancelServers(); CancelExport(); CancelFileWorkspace(); CancelWorldHealth(); CancelWorldDetails(); CancelInstanceDiagnostics();
+        CancelOnlineList(); CancelServers(); CancelExport(); CancelModpackUpdate(); CancelFileWorkspace(); CancelWorldHealth(); CancelWorldDetails(); CancelInstanceDiagnostics();
         CancelAdvancedLaunchDiagnostics();
         ObserveRetiredInstanceToolRead(_managementRead);
         _managementStop?.Cancel(); _managementStop?.Dispose(); _managementStop = null;
@@ -210,7 +210,7 @@ internal sealed partial class SettingsPageController
             var loading = AppendContent(_sections, "SettingsContentLoading.d.nxml", new() { ["loading"] = ContentFlag(_managementError is null), ["enabled"] = ContentFlag(_managementWrite is null), ["message"] = _managementError ?? ContentTerm("loading") });
             BindContentAction(ContentNodes(loading), ContentKey("refresh"), RefreshManagement); return;
         }
-        if (_selected == "overview") BuildInstanceDevelopmentMode();
+        if (_selected == "overview") BuildModpackUpdate(snapshot);
         var page = snapshot.Pages.First(item => item.Id == _selected);
         if (page.Directory is { } directory)
         {

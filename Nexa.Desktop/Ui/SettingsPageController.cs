@@ -363,7 +363,11 @@ internal sealed partial class SettingsPageController : IDisposable
             _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsCategoryEmpty.d.nxml", new Dictionary<string, string>
             { ["label"] = Pages.First(page => page.Id == _selected).Label }));
         }
-        if (_instanceDirectory is not null && _selected == "game") BuildLaunchProfiles();
+        if (_instanceDirectory is not null && _selected == "game")
+        {
+            BuildInstanceDevelopmentMode();
+            BuildLaunchProfiles();
+        }
         var groups = available.GroupBy(item => (Section: item.DeveloperOnly ? CatalogCopy("catalog.copy.38084d301e3f1a31")
                 : _instanceDirectory is not null ? InstanceSettingGroup(item)
                 : item.Section, item.DeveloperOnly))
