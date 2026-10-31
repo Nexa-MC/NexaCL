@@ -27,7 +27,23 @@ def verify(rid: str, output: Path):
     command = [str(caller), str(peer), str(window)]
     if rid.startswith("linux-"):
         command = ["xvfb-run", "-a", *command]
-    subprocess.run(command, check=True, timeout=180, cwd=caller.parent)
+    try:
+        subprocess.run(command, check=True, timeout=180, cwd=caller.parent)
+    except subprocess.CalledProcessError as error:
+        # A successful managed test body does not prove native process teardown.
+        # Keep the original failure while collecting a native stack on macOS runners.
+        if rid.startswith("osx-") and error.returncode < 0 and shutil.which("lldb"):
+            diagnostic = output / "native-window-debugger.log"
+            with diagnostic.open("w", encoding="utf-8") as log:
+                try:
+                    subprocess.run([
+                        "lldb", "--batch", "-o", "settings set target.disable-aslr false",
+                        "-o", "run", "-o", "thread backtrace all", "--", *command,
+                    ], cwd=caller.parent, stdout=log, stderr=subprocess.STDOUT, timeout=180, check=False)
+                except subprocess.TimeoutExpired:
+                    log.write("\nNative debugger exceeded its diagnostic time budget.\n")
+            print(diagnostic.read_text(encoding="utf-8", errors="replace")[-65536:], flush=True)
+        raise
 
 
 if __name__ == "__main__":

@@ -86,6 +86,30 @@ jobs:
       - name: Verify NativeAOT instrumentation, media, codecs, socket ownership and mTLS
         shell: bash
         run: python eng/release/verify_native_engine_contracts.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/engines" --output "$RUNNER_TEMP/native-network-caller"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: native-repro-${{ matrix.rid }}
+          path: install-diagnostics/**
+  window-contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            rid: linux-x64
+          - os: windows-2025
+            rid: win-x64
+          - os: macos-15
+            rid: osx-arm64
+          - os: macos-15-intel
+            rid: osx-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: '10.0.x'
       - name: Install virtual display
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y xvfb
@@ -97,7 +121,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
         with:
-          name: native-repro-${{ matrix.rid }}
+          name: native-window-${{ matrix.rid }}
           path: |
-            install-diagnostics/**
             ${{ runner.temp }}/native-window-contracts.log
+            ${{ runner.temp }}/native-ui-contracts/native-window-debugger.log
