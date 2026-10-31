@@ -139,6 +139,8 @@ internal static partial class Program
                 || args.Contains("--validate-setup", StringComparer.OrdinalIgnoreCase)
                 || args.Contains("--validate-themes", StringComparer.OrdinalIgnoreCase);
             DesktopDestination destination = DesktopDestination.Activate;
+            if (args.Contains("--install-theme", StringComparer.Ordinal)) destination = DesktopDestination.ThemeImport;
+            else if (args.Contains("--install-modpack", StringComparer.Ordinal)) destination = DesktopDestination.Install;
             if (args.FirstOrDefault(argument => argument.StartsWith("nexacl:", StringComparison.OrdinalIgnoreCase)) is { } uri
                 && !DesktopActivation.TryParse(uri, out destination))
             {
@@ -780,7 +782,7 @@ internal static partial class Program
             minecraft.LaunchCoordinator!.WaitForFinalizationAsync, platformActions.PostToWindow, platformActions.RequestClose, feedback);
         platformActions.CloseRequested = () => installExit.CanClose() && launchExit.CanClose();
         await using var desktopIntegration = new DesktopIntegrationSession(shell, uiIntents, host.StateStore, platformActions, instance, args,
-            message => { host.Logging.Warn("Desktop", message); feedback.Warn(message); }, openFile: dropController.OpenFile, registerProtocol: !safeMode, notify: message => feedback.Info(message), openExtension: sidecarNxml.EnqueueExternal);
+            message => { host.Logging.Warn("Desktop", message); feedback.Warn(message); }, openFile: dropController.OpenFile, registerProtocol: !safeMode, notify: message => feedback.Info(message), openExtension: sidecarNxml.EnqueueExternal, openTheme: settingsPage.ImportThemeFile);
         using var commandPalette = new DesktopCommandPalette(shell, uiIntents, host.StateStore, platformActions,
             route => desktopIntegration.ActivateProtocol("nexacl://" + route.Id));
         using var gamepadEntry = new GamepadEntrySession(shell, uiIntents, host.StateStore, platformActions);

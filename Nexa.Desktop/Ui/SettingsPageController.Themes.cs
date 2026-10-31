@@ -78,6 +78,8 @@ internal sealed partial class SettingsPageController
     private void UpdateThemeSettings()
     {
         if (!ThemeSettingsVisible) return;
+        if (_themeSession is { } importing && !ThemeSettingsBusy && _themeImports.TryDequeue(out var importPath))
+            StartThemeOperation(token => importing.ImportAsync(importPath, Nexa.Services.Themes.ThemeSourceKind.Package, false, token, ConfirmThemeDowngradeAsync));
         if (_themeOperation is { IsCompleted: true } operation)
         {
             _themeOperation = null;

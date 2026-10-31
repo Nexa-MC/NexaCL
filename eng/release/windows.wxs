@@ -18,7 +18,61 @@
       <Shortcut Id="DesktopShortcutLink" Directory="DesktopFolder" Name="NexaCL" Target="[INSTALLFOLDER]Nexa.Desktop.exe" WorkingDirectory="INSTALLFOLDER" Icon="LauncherIcon" />
       <RegistryValue Root="HKLM" Key="Software\Nexa" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
     </Component>
-    <Feature Id="Launcher" Title="NexaCL" Level="1"><ComponentGroupRef Id="Payload" /><ComponentRef Id="MenuShortcut" /></Feature>
+    <Component Id="ZipContextMenu" Directory="INSTALLFOLDER" Guid="*">
+      <RegistryKey Root="HKLM" Key="Software\Classes\SystemFileAssociations\.zip\shell\NexaCL" ForceDeleteOnUninstall="yes">
+        <RegistryValue Name="MUIVerb" Type="string" Value="NexaCL" KeyPath="yes" />
+        <RegistryValue Name="SubCommands" Type="string" Value="" />
+        <RegistryValue Name="Icon" Type="string" Value="[INSTALLFOLDER]Nexa.Desktop.exe" />
+        <RegistryKey Key="shell\modpack">
+          <RegistryValue Name="MUIVerb" Type="string" Value="作为整合包安装" />
+          <RegistryValue Name="MultiSelectModel" Type="string" Value="Single" />
+          <RegistryKey Key="command"><RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]Nexa.Desktop.exe&quot; --install-modpack &quot;%1&quot;" /></RegistryKey>
+        </RegistryKey>
+        <RegistryKey Key="shell\theme">
+          <RegistryValue Name="MUIVerb" Type="string" Value="作为主题包安装" />
+          <RegistryValue Name="MultiSelectModel" Type="string" Value="Single" />
+          <RegistryKey Key="command"><RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]Nexa.Desktop.exe&quot; --install-theme &quot;%1&quot;" /></RegistryKey>
+        </RegistryKey>
+      </RegistryKey>
+    </Component>
+    <Component Id="DocumentAssociations" Directory="INSTALLFOLDER" Guid="*">
+      <RegistryValue Root="HKLM" Key="Software\Classes\.nmp" Type="string" Value="NexaCL.NexaModpack" KeyPath="yes" />
+      <RegistryValue Root="HKLM" Key="Software\Classes\.ntp" Type="string" Value="NexaCL.ThemePack" />
+      <RegistryKey Root="HKLM" Key="Software\Classes\NexaCL.NexaModpack" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="string" Value="Nexa Modpack" />
+        <RegistryKey Key="DefaultIcon"><RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]Assets\FileTypes\nmp.ico&quot;,0" /></RegistryKey>
+        <RegistryKey Key="shell\open\command"><RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]Nexa.Desktop.exe&quot; --install-modpack &quot;%1&quot;" /></RegistryKey>
+      </RegistryKey>
+      <RegistryKey Root="HKLM" Key="Software\Classes\NexaCL.ThemePack" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="string" Value="Nexa Theme Pack" />
+        <RegistryKey Key="DefaultIcon"><RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]Assets\FileTypes\ntp.ico&quot;,0" /></RegistryKey>
+        <RegistryKey Key="shell\open\command"><RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]Nexa.Desktop.exe&quot; --install-theme &quot;%1&quot;" /></RegistryKey>
+      </RegistryKey>
+      <RegistryValue Root="HKLM" Key="Software\Classes\.mrpack\OpenWithProgids" Name="NexaCL.ModrinthPack" Type="string" Value="" />
+      <RegistryValue Root="HKLM" Key="Software\Classes\.nexapack\OpenWithProgids" Name="NexaCL.Pack" Type="string" Value="" />
+      <RegistryKey Root="HKLM" Key="Software\Classes\NexaCL.ModrinthPack" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="string" Value="Modrinth Modpack" />
+        <RegistryKey Key="DefaultIcon"><RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]Assets\FileTypes\mrpack.ico&quot;,0" /></RegistryKey>
+        <RegistryKey Key="shell\open\command"><RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]Nexa.Desktop.exe&quot; --install-modpack &quot;%1&quot;" /></RegistryKey>
+      </RegistryKey>
+      <RegistryKey Root="HKLM" Key="Software\Classes\NexaCL.Pack" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="string" Value="Nexa Modpack" />
+        <RegistryKey Key="DefaultIcon"><RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]Assets\FileTypes\nexapack.ico&quot;,0" /></RegistryKey>
+        <RegistryKey Key="shell\open\command"><RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]Nexa.Desktop.exe&quot; --install-modpack &quot;%1&quot;" /></RegistryKey>
+      </RegistryKey>
+    </Component>
+    <Component Id="NativeExplorerRegistration" Directory="INSTALLFOLDER" Guid="*">
+      <RegistryKey Root="HKLM" Key="Software\Microsoft\Active Setup\Installed Components\{522C4ED3-0A1F-47E8-B018-961652D63816}" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="string" Value="NexaCL Explorer integration" KeyPath="yes" />
+        <RegistryValue Name="Version" Type="string" Value="1,0,0,0" />
+        <RegistryValue Name="StubPath" Type="string" Value="&quot;[INSTALLFOLDER]ShellIntegration\Nexa.ShellRegistration.exe&quot; --register" />
+      </RegistryKey>
+    </Component>
+    <CustomAction Id="RemoveNativeExplorerPackage" Directory="INSTALLFOLDER" ExeCommand="&quot;[INSTALLFOLDER]ShellIntegration\Nexa.ShellRegistration.exe&quot; --unregister-all" Execute="deferred" Impersonate="no" Return="check" />
+    <InstallExecuteSequence>
+      <Custom Action="RemoveNativeExplorerPackage" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
+    <Feature Id="Launcher" Title="NexaCL" Level="1"><ComponentGroupRef Id="Payload" /><ComponentRef Id="MenuShortcut" /><ComponentRef Id="ZipContextMenu" /><ComponentRef Id="DocumentAssociations" /><ComponentRef Id="NativeExplorerRegistration" /></Feature>
     <Feature Id="DesktopShortcut" Title="Desktop shortcut" Level="1"><ComponentRef Id="DesktopShortcutComponent" /></Feature>
   </Package>
 </Wix>

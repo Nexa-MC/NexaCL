@@ -201,5 +201,17 @@ internal static partial class Program
         }
         finally { integration.DisposeAsync().AsTask().GetAwaiter().GetResult(); }
         AssertEqual(mediaCommand, shell.Tree.GetComponent<XsrUiContextMenu>(shell.Root)!.Items.Single().Command);
+        string theme = Path.Combine(Path.GetTempPath(), "中文 Theme.ntp");
+        List<string> themes = [];
+        var themeSession = new DesktopIntegrationSession(shell, intents, store, platform, null, [theme],
+            static _ => { }, opened.Add, registerProtocol: false, openTheme: themes.Add);
+        try
+        {
+            AssertEqual(0, themes.Count);
+            shell.Render(new(800, 600));
+            AssertEqual(theme, themes.Single()); AssertEqual(1, opened.Count);
+            shell.Render(new(800, 600)); AssertEqual(1, themes.Count);
+        }
+        finally { themeSession.DisposeAsync().AsTask().GetAwaiter().GetResult(); }
     }
 }

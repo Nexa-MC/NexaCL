@@ -1,4 +1,6 @@
 <StackPanel>
+  <Text Key="native.archive.modpack" Content="作为整合包安装" />
+  <Text Key="native.archive.theme" Content="作为主题包安装" />
   <Text Key="native.protocol.bundleRequired" Content="nexacl:// 协议需要使用 NexaCL.app 应用包。" />
   <Text Key="native.protocol.unsupported" Content="当前平台不支持 nexacl:// 协议注册。" />
   <Text Key="native.common.cancel" Content="取消" />

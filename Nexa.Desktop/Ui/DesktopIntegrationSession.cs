@@ -30,8 +30,9 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
     private readonly DesktopUiIntentSink _intents;
     private readonly XsrUiShell _shell;
     private readonly Action<string>? _openFile;
+    private readonly Action<string>? _openTheme;
     private readonly Action<string>? _openExtension;
-    private readonly Queue<string> _pendingFiles = new(16);
+    private readonly Queue<DesktopInstanceActivation> _pendingFiles = new(16);
     private readonly HashSet<XsrStateId> _keys = [];
     private readonly CancellationTokenSource _stop = new();
     private readonly Task _registration;
@@ -44,10 +45,10 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
 
     internal DesktopIntegrationSession(XsrUiShell shell, DesktopUiIntentSink intents, XsrStateStore state,
         AvaloniaUiPlatformActions platform, DesktopSingleInstance? instance, string[] args, Action<string> report,
-        Action<string>? openFile = null, bool registerProtocol = true, Action<string>? notify = null, Action<string>? openExtension = null)
+        Action<string>? openFile = null, bool registerProtocol = true, Action<string>? notify = null, Action<string>? openExtension = null, Action<string>? openTheme = null)
     {
         _state = state; _platform = platform; _instance = instance; _report = report; _intents = intents; _shell = shell;
-        _openExtension = openExtension; _openFile = openFile; _notify = notify ?? report;
+        _openExtension = openExtension; _openFile = openFile; _openTheme = openTheme; _notify = notify ?? report;
         shell.Renderer.FramePreparing += OnFrame;
         var existingMenu = shell.Tree.GetComponent<XsrUiContextMenu>(shell.Root)?.Items ?? [];
         shell.Tree.SetComponent(shell.Root, new XsrUiContextMenu(_menuItems.Concat(existingMenu)
@@ -62,7 +63,7 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
             {
                 DesktopDestination.Install => "ui.navigation.download",
                 DesktopDestination.Resources => "ui.navigation.community",
-                DesktopDestination.Settings or DesktopDestination.Java or DesktopDestination.Storage or DesktopDestination.About => "ui.navigation.settings",
+                DesktopDestination.Settings or DesktopDestination.Java or DesktopDestination.Storage or DesktopDestination.About or DesktopDestination.ThemeImport => "ui.navigation.settings",
                 DesktopDestination.Tasks => "ui.tasks.open",
                 _ => "ui.navigation.launch",
             };
@@ -90,7 +91,7 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
         {
             if (args.FirstOrDefault(value => value.StartsWith("nexacl:", StringComparison.OrdinalIgnoreCase)) is { } uri) OnProtocol(uri);
             foreach (string argument in args)
-                if (DesktopActivation.TryFile(argument, out string file)) ScheduleFile(file);
+                if (DesktopActivation.TryFile(argument, out string file)) ScheduleTypedFile(file, args.Contains("--install-theme", StringComparer.Ordinal) ? DesktopDestination.ThemeImport : DesktopDestination.Install);
         }
         if (OperatingSystem.IsMacOS()) _nativeFiles = DesktopNativeFileActivation.Subscribe(ScheduleFile, report);
         _registration = registerProtocol ? Task.Run(async () =>
@@ -146,15 +147,17 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
         {
             if (activation.Destination == DesktopDestination.Extension && activation.File is { } external) { OnProtocol(external); continue; }
             _activate(activation.Destination);
-            if (activation.File is { } file) ScheduleFile(file);
+            if (activation.File is { } file) ScheduleTypedFile(file, activation.Destination);
         }
     });
-    private void ScheduleFile(string file)
+    private void ScheduleFile(string file) => ScheduleTypedFile(file, DesktopDestination.Install);
+    private void ScheduleTypedFile(string file, DesktopDestination destination)
     {
+        if (Path.GetExtension(file).Equals(".ntp", StringComparison.OrdinalIgnoreCase)) destination = DesktopDestination.ThemeImport;
         if (_disposed) return;
         HasExplicitActivation = true;
         if (_pendingFiles.Count >= 16) { _report(ProductPresentationText.Raw("native.drop.pending-limit")); return; }
-        _pendingFiles.Enqueue(file);
+        _pendingFiles.Enqueue(new(destination, file));
         _shell.Tree.MarkDirty(_shell.Root, XsrUiDirtyKinds.Paint);
     }
     private void OnFrame(object? sender, EventArgs args)
@@ -173,8 +176,13 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
         }
         if (_pendingFiles.Count == 0) return;
         _platform.RestoreWindow();
-        if (_openFile is null) { _report(ProductPresentationText.Raw("native.desktop.no-file-receiver")); _pendingFiles.Clear(); return; }
-        while (_pendingFiles.TryDequeue(out string? file)) _openFile(file);
+        while (_pendingFiles.TryDequeue(out var item))
+        {
+            if (item.Destination == DesktopDestination.ThemeImport) _activate(DesktopDestination.ThemeImport);
+            var receiver = item.Destination == DesktopDestination.ThemeImport ? _openTheme : _openFile;
+            if (receiver is null) _report(ProductPresentationText.Raw("native.desktop.no-file-receiver"));
+            else receiver(item.File!);
+        }
     }
     private void OnChanged(XsrStateChange change) { if (_keys.Contains(change.Id)) ApplyPolicy(); }
     private bool Read(string key, bool fallback) => _state.TryResolve(XsrSemanticId.Parse(key), out XsrStateId id)

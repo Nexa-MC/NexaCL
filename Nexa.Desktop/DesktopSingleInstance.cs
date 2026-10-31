@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Nexa.Desktop;
 
-internal enum DesktopDestination : byte { Launch, Install, Resources, Settings, Activate, Tasks, Java, Storage, About, Extension }
+internal enum DesktopDestination : byte { Launch, Install, Resources, Settings, Activate, Tasks, Java, Storage, About, Extension, ThemeImport }
 internal readonly record struct DesktopInstanceActivation(DesktopDestination Destination, string? File);
 
 internal static class DesktopActivation
@@ -17,7 +17,7 @@ internal static class DesktopActivation
         if (string.IsNullOrWhiteSpace(value) || value.Length > MaximumFileBytes || value.Any(char.IsControl)
             || !Path.IsPathFullyQualified(value) || value.StartsWith("\\\\", StringComparison.Ordinal)) return false;
         string extension = Path.GetExtension(value);
-        if (!extension.Equals(".mrpack", StringComparison.OrdinalIgnoreCase) && !extension.Equals(".nexapack", StringComparison.OrdinalIgnoreCase)) return false;
+        if (!new[] { ".mrpack", ".nexapack", ".nmp", ".ntp", ".zip" }.Contains(extension, StringComparer.OrdinalIgnoreCase)) return false;
         try
         {
             file = Path.GetFullPath(value);

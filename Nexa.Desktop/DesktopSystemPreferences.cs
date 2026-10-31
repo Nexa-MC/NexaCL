@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.Win32;
+using Nexa.Desktop.Ui;
 
 namespace Nexa.Desktop;
 
@@ -57,25 +58,35 @@ internal static class DesktopSystemPreferences
     {
         if (OperatingSystem.IsWindows())
         {
-            foreach (var (extension, name) in new[] { (".mrpack", "NexaCL.ModrinthPack"), (".nexapack", "NexaCL.Pack") })
+            foreach (var (extension, name) in new[] { (".mrpack", "NexaCL.ModrinthPack"), (".nexapack", "NexaCL.Pack"), (".nmp", "NexaCL.NexaModpack"), (".ntp", "NexaCL.ThemePack") })
             {
                 string root = @"Software\Classes\";
                 if (enabled)
                 {
                     using RegistryKey type = Registry.CurrentUser.CreateSubKey(root + name);
                     type.SetValue("", "NexaCL Pack");
+                    using RegistryKey icon = type.CreateSubKey("DefaultIcon");
+                    icon.SetValue("", "\"" + Path.Combine(AppContext.BaseDirectory, "Assets", "FileTypes", extension[1..] + ".ico") + "\",0");
                     using RegistryKey open = type.CreateSubKey(@"shell\open\command");
-                    open.SetValue("", DesktopProtocolRegistration.WindowsCommand(DesktopProtocolRegistration.LauncherCommand()));
+                    open.SetValue("", ZipMenuCommand(DesktopProtocolRegistration.LauncherCommand(), extension == ".ntp"));
                     using RegistryKey choices = Registry.CurrentUser.CreateSubKey(root + extension + @"\OpenWithProgids");
                     choices.SetValue(name, Array.Empty<byte>(), RegistryValueKind.None);
+                    if (extension is ".nmp" or ".ntp")
+                    { using RegistryKey direct = Registry.CurrentUser.CreateSubKey(root + extension); direct.SetValue("", name); }
                 }
                 else
                 {
                     Registry.CurrentUser.DeleteSubKeyTree(root + name, false);
                     using RegistryKey? choices = Registry.CurrentUser.OpenSubKey(root + extension + @"\OpenWithProgids", true);
                     choices?.DeleteValue(name, false);
+                    using RegistryKey? direct = Registry.CurrentUser.OpenSubKey(root + extension, true);
+                    if (direct?.GetValue("") as string == name) direct.DeleteValue("", false);
                 }
             }
+            ApplyZipContextMenu(enabled);
+            string nativeRegistration = Path.Combine(AppContext.BaseDirectory, "ShellIntegration", "Nexa.ShellRegistration.exe");
+            if (File.Exists(nativeRegistration))
+                await RunAsync(nativeRegistration, [enabled ? "--register" : "--unregister"], token, timeoutSeconds: 60).ConfigureAwait(false);
             return;
         }
         if (OperatingSystem.IsLinux())
@@ -100,6 +111,26 @@ internal static class DesktopSystemPreferences
         throw new PlatformNotSupportedException("当前平台不支持文件关联。");
     }
 
+    internal static string ZipMenuCommand(IReadOnlyList<string> launcher, bool theme) =>
+        DesktopProtocolRegistration.WindowsCommand([.. launcher, theme ? "--install-theme" : "--install-modpack"]);
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private static void ApplyZipContextMenu(bool enabled)
+    {
+        const string path = @"Software\Classes\SystemFileAssociations\.zip\shell\NexaCL";
+        if (!enabled) { Registry.CurrentUser.DeleteSubKeyTree(path, false); return; }
+        var launcher = DesktopProtocolRegistration.LauncherCommand();
+        using var menu = Registry.CurrentUser.CreateSubKey(path);
+        menu.SetValue("MUIVerb", "NexaCL"); menu.SetValue("SubCommands", "");
+        menu.SetValue("Icon", launcher[0]);
+        foreach (var (id, title, theme) in new[] { ("modpack", ProductPresentationText.Raw("native.archive.modpack"), false), ("theme", ProductPresentationText.Raw("native.archive.theme"), true) })
+        {
+            using var verb = menu.CreateSubKey(@"shell\" + id);
+            verb.SetValue("MUIVerb", title); verb.SetValue("MultiSelectModel", "Single");
+            using var command = verb.CreateSubKey("command"); command.SetValue("", ZipMenuCommand(launcher, theme));
+        }
+    }
+
     private static async Task WriteOwnedAsync(string path, string? contents, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
@@ -115,10 +146,10 @@ internal static class DesktopSystemPreferences
         finally { File.Delete(temporary); }
     }
 
-    internal static async Task<bool> RunAsync(string executable, IReadOnlyList<string> arguments, CancellationToken token, bool requireSuccess = true)
+    internal static async Task<bool> RunAsync(string executable, IReadOnlyList<string> arguments, CancellationToken token, bool requireSuccess = true, int timeoutSeconds = 5)
     {
         using var budget = CancellationTokenSource.CreateLinkedTokenSource(token);
-        budget.CancelAfter(TimeSpan.FromSeconds(5));
+        budget.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true };
         foreach (string argument in arguments) start.ArgumentList.Add(argument);
         using Process process = Process.Start(start) ?? throw new IOException("无法启动系统集成工具。");

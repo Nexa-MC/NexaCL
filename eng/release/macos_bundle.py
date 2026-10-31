@@ -8,6 +8,11 @@ def bundle_info(version, prefix):
         dict(CFBundleTypeName="NexaCL Modpack", CFBundleTypeExtensions=["nexapack"],
              CFBundleTypeRole="Viewer", LSHandlerRank="Alternate", LSItemContentTypes=["org.nexacl.nexapack"]),
     ]
+    for extension, title in (("nmp", "Nexa Modpack"), ("ntp", "Nexa Theme Pack")):
+        document_types.append(dict(CFBundleTypeName=title, CFBundleTypeExtensions=[extension],
+            CFBundleTypeRole="Viewer", LSHandlerRank="Owner", LSItemContentTypes=[f"org.nexacl.{extension}"]))
+    for document in document_types:
+        document["CFBundleTypeIconFile"] = document["CFBundleTypeExtensions"][0] + ".icns"
     types = [
         dict(UTTypeIdentifier="org.modrinth.mrpack", UTTypeDescription="Modrinth Modpack",
              UTTypeConformsTo=["public.zip-archive"], UTTypeTagSpecification={"public.filename-extension": ["mrpack"]}),
@@ -19,4 +24,7 @@ def bundle_info(version, prefix):
                 CFBundleShortVersionString=prefix, CFBundleVersion=prefix, NexaProductVersion=version,
                 CFBundleURLTypes=[dict(CFBundleURLName="org.nexacl.launcher", CFBundleURLSchemes=["nexacl"], CFBundleTypeRole="Viewer")],
                 CFBundleDocumentTypes=document_types, UTImportedTypeDeclarations=types,
+                UTExportedTypeDeclarations=[dict(UTTypeIdentifier=f"org.nexacl.{extension}", UTTypeDescription=title,
+                    UTTypeConformsTo=["public.zip-archive"], UTTypeTagSpecification={"public.filename-extension": [extension]})
+                    for extension, title in (("nmp", "Nexa Modpack"), ("ntp", "Nexa Theme Pack"))],
                 NSHighResolutionCapable=True, LSMinimumSystemVersion="12.0")

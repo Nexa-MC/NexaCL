@@ -20,6 +20,7 @@
     <Content Include="Themes/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="Assets/api-client.pfx" Condition="Exists('Assets/api-client.pfx')" />
     <Content Include="Assets/icon.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets/FileTypes/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="../GPG-PUBLIC-KEY.asc" LogicalName="Nexa.Desktop.SidecarReleaseKey.asc" />
     <ProjectReference Include="../Nexa.Xsr.Renderer.Nxml.Runtime/Nexa.Xsr.Renderer.Nxml.Runtime.csproj" />
     <ProjectReference Include="../Nexa.Services/Nexa.Services.csproj" />

@@ -30,6 +30,42 @@ Source: "{#Payload}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs cr
 Name: "{commonprograms}\NexaCL"; Filename: "{app}\Nexa.Desktop.exe"; WorkingDir: "{app}"
 Name: "{commondesktop}\NexaCL"; Filename: "{app}\Nexa.Desktop.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
+[Registry]
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\NexaCL"; ValueType: string; ValueName: "MUIVerb"; ValueData: "NexaCL"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\NexaCL"; ValueType: string; ValueName: "SubCommands"; ValueData: ""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\NexaCL"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\Nexa.Desktop.exe"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\NexaCL\shell\modpack"; ValueType: string; ValueName: "MUIVerb"; ValueData: "Install as modpack"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\NexaCL\shell\modpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Nexa.Desktop.exe"" --install-modpack ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\NexaCL\shell\theme"; ValueType: string; ValueName: "MUIVerb"; ValueData: "Install as theme"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\NexaCL\shell\theme\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Nexa.Desktop.exe"" --install-theme ""%1"""
+Root: HKLM; Subkey: "Software\Classes\NexaCL.NexaModpack"; ValueType: string; ValueName: ""; ValueData: "Nexa Modpack"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\NexaCL.NexaModpack\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\Assets\FileTypes\nmp.ico"",0"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Classes\NexaCL.NexaModpack\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Nexa.Desktop.exe"" --install-modpack ""%1"""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Classes\.nmp\OpenWithProgids"; ValueType: string; ValueName: "NexaCL.NexaModpack"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Classes\.nmp"; ValueType: string; ValueName: ""; ValueData: "NexaCL.NexaModpack"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Classes\NexaCL.ThemePack"; ValueType: string; ValueName: ""; ValueData: "Nexa Theme Pack"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\NexaCL.ThemePack\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\Assets\FileTypes\ntp.ico"",0"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Classes\NexaCL.ThemePack\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Nexa.Desktop.exe"" --install-theme ""%1"""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Classes\.ntp\OpenWithProgids"; ValueType: string; ValueName: "NexaCL.ThemePack"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Classes\.ntp"; ValueType: string; ValueName: ""; ValueData: "NexaCL.ThemePack"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Classes\NexaCL.ModrinthPack"; ValueType: string; ValueName: ""; ValueData: "Modrinth Modpack"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\NexaCL.ModrinthPack\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\Assets\FileTypes\mrpack.ico"",0"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Classes\NexaCL.ModrinthPack\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Nexa.Desktop.exe"" --install-modpack ""%1"""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Classes\.mrpack\OpenWithProgids"; ValueType: string; ValueName: "NexaCL.ModrinthPack"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Classes\NexaCL.Pack"; ValueType: string; ValueName: ""; ValueData: "Nexa Modpack"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\NexaCL.Pack\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\Assets\FileTypes\nexapack.ico"",0"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Classes\NexaCL.Pack\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Nexa.Desktop.exe"" --install-modpack ""%1"""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Classes\.nexapack\OpenWithProgids"; ValueType: string; ValueName: "NexaCL.Pack"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Microsoft\Active Setup\Installed Components\{{522C4ED3-0A1F-47E8-B018-961652D63816}"; ValueType: string; ValueName: ""; ValueData: "NexaCL Explorer integration"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Microsoft\Active Setup\Installed Components\{{522C4ED3-0A1F-47E8-B018-961652D63816}"; ValueType: string; ValueName: "Version"; ValueData: "1,0,0,0"
+Root: HKLM; Subkey: "Software\Microsoft\Active Setup\Installed Components\{{522C4ED3-0A1F-47E8-B018-961652D63816}"; ValueType: string; ValueName: "StubPath"; ValueData: """{app}\ShellIntegration\Nexa.ShellRegistration.exe"" --register"
+
+[Run]
+Filename: "{app}\ShellIntegration\Nexa.ShellRegistration.exe"; Parameters: "--register"; Flags: runhidden runasoriginaluser waituntilterminated
+
+[UninstallRun]
+Filename: "{app}\ShellIntegration\Nexa.ShellRegistration.exe"; Parameters: "--unregister-all"; Flags: runhidden waituntilterminated; RunOnceId: "NexaCL.ExplorerIntegration"
+
 [Code]
 // The pinned Inno 6.4 compiler emits a 32-bit Setup process on both Windows RIDs.
 // Set the token default owner before creating files, rather than repairing their

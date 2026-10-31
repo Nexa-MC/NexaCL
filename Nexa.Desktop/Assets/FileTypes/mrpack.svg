@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+<defs><linearGradient id="paper" x2="0" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#eaf0f8"/></linearGradient>
+<linearGradient id="badge" x2="1" y2="1"><stop stop-color="#27c99a"/><stop offset="1" stop-color="#087c62"/></linearGradient></defs>
+<path d="M58 20h100l50 50v150q0 20-20 20H58q-20 0-20-20V40q0-20 20-20Z" fill="#102038" opacity=".12"/>
+<path d="M58 16h100l50 50v150q0 20-20 20H58q-20 0-20-20V36q0-20 20-20Z" fill="url(#paper)" stroke="#c8d3e2" stroke-width="2"/>
+<path d="M158 17v31q0 18 18 18h31" fill="#d8e3f1"/>
+<rect x="65" y="64" width="126" height="112" rx="28" fill="url(#badge)"/><path d="m128 79 39 22-39 23-39-23Z" fill="white"/><path d="m89 109 35 20v38l-35-21Z" fill="white" opacity=".78"/><path d="m132 129 35-20v37l-35 21Z" fill="white" opacity=".95"/>
+<g fill="none" stroke="#087c62" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M0 28V0L10 14L20 0V28" transform="translate(86 190)"/><path d="M0 28V0H13Q20 0 20 7Q20 14 13 14H0M10 14L20 28" transform="translate(118 190)"/><path d="M0 28V0H13Q20 0 20 7Q20 14 13 14H0" transform="translate(150 190)"/></g></svg>

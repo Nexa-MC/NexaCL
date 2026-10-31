@@ -89,6 +89,8 @@ def archive(source, output, name):
 
 
 def windows(payload, output, work, base, version, prefix, arch):
+    from build_windows_shell import build as build_shell
+    build_shell(payload, arch)
     iscc = required_tool("NEXA_ISCC")
     icon = ROOT / "Nexa.Desktop/Assets/icon.ico"
     run(iscc, f"/DPayload={payload}", f"/DProductVersion={version}", f"/DNumericVersion={prefix}",
@@ -170,6 +172,8 @@ def macos(payload, output, work, base, version, prefix, arch):
             run("sips", "-z", size * scale, size * scale, ROOT / "Nexa.Desktop/Assets/icon.png",
                 "--out", iconset / f"icon_{size}x{size}{suffix}.png", stdout=subprocess.DEVNULL)
     run("iconutil", "-c", "icns", iconset, "-o", resources / "Launcher.icns")
+    for document_icon in (ROOT / "Nexa.Desktop/Assets/FileTypes").glob("*.icns"):
+        shutil.copy2(document_icon, resources / document_icon.name)
     with (contents / "Info.plist").open("wb") as stream:
         plistlib.dump(bundle_info(version, prefix), stream)
     seal_macos_bundle(app, work)

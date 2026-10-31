@@ -9,6 +9,13 @@ internal sealed partial class SettingsPageController
 {
     private Action? _themeOperationCompleted;
     private readonly HashSet<string> _themeWatching = new(StringComparer.Ordinal);
+    private readonly Queue<string> _themeImports = new(16);
+    internal void ImportThemeFile(string path)
+    {
+        if (_disposed || _themeImports.Count >= 16) return;
+        _themeImports.Enqueue(path);
+        SwitchPage("appearance");
+    }
 
     private void HandleThemeIntent(DesktopUiIntent intent)
     {

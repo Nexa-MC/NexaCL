@@ -10,11 +10,12 @@ class MacOSBundleTests(unittest.TestCase):
         self.assertEqual("org.nexacl.launcher", info["CFBundleIdentifier"])
         self.assertEqual("2.0.0.alpha.6", info["NexaProductVersion"])
         self.assertEqual(["nexacl"], info["CFBundleURLTypes"][0]["CFBundleURLSchemes"])
-        self.assertEqual({"mrpack", "nexapack"}, {
+        self.assertEqual({"mrpack", "nexapack", "nmp", "ntp"}, {
             extension for entry in info["CFBundleDocumentTypes"] for extension in entry["CFBundleTypeExtensions"]})
-        self.assertTrue(all(entry["CFBundleTypeRole"] == "Viewer" and entry["LSHandlerRank"] == "Alternate"
+        self.assertTrue(all(entry["CFBundleTypeRole"] == "Viewer" and entry["LSHandlerRank"] in ("Alternate", "Owner") and entry["CFBundleTypeIconFile"].endswith(".icns")
                             for entry in info["CFBundleDocumentTypes"]))
         declarations = info["UTImportedTypeDeclarations"]
+        self.assertEqual({"org.nexacl.nmp", "org.nexacl.ntp"}, {entry["UTTypeIdentifier"] for entry in info["UTExportedTypeDeclarations"]})
         self.assertEqual({"org.modrinth.mrpack", "org.nexacl.nexapack"}, {entry["UTTypeIdentifier"] for entry in declarations})
         self.assertNotIn("zip", [value for entry in declarations for value in entry["UTTypeTagSpecification"]["public.filename-extension"]])
 
