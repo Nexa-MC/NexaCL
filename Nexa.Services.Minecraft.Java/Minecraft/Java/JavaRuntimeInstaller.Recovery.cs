@@ -75,7 +75,7 @@ public sealed partial class JavaRuntimeInstaller
             if (++count > 4096) throw new InvalidDataException("Java 恢复记录过多。");
             if (!Guid.TryParseExact(Path.GetFileName(stage), "N", out _)) continue;
             var journal = await JavaInstallJournal.OpenAsync(root, stage, token).ConfigureAwait(false);
-            if (!journal.Completed && !journal.Canceled) pending.Add(journal);
+            if (!journal.Completed && !journal.Canceled && !journal.Dismissed) pending.Add(journal);
             if (pending.Count > 64) throw new InvalidDataException("Java 恢复任务过多。");
         }
         return pending;
