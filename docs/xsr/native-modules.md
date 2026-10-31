@@ -920,3 +920,22 @@ native dispatch. Full solution build and 86-project architecture checks passed.
 macOS exit diagnosis now identifies libAvaloniaNative's global dispatcher ComPtr
 releasing its managed callback after NativeAOT thread admission has shut down;
 this is still a blocker to production Window adoption, not a test assertion waiver.
+
+macOS shared-runtime retirement explicitly disposes Avalonia.Native's registered
+native factory on the process main thread, after session UI/control operations and
+local continuations have drained, before reporting terminal close. Avalonia 12.1.0
+(commit a21b9f573172f705a944dcc8aad7f036b9986f39) otherwise does this only from its
+own AppDomain.ProcessExit handler; a foreign NativeAOT executable's exit does not
+provide that managed event for the shared window runtime. The native factory
+destructor clears the global dispatcher/deallocator callbacks before C++ static
+destruction can call into a retired runtime. Lookup uses the exact pinned internal
+factory service type and direct IDisposable, without reflective method invocation,
+DLL unloading or early process termination. Successful GUI startup requires that
+owner to be found; startup failure/no-GUI paths also release it if initialized.
+
+The automatic patch inventory treats valid bodyless static UnsafeAccessor methods
+as runtime-provided declarations. Mono.Cecil reports HasBody for these zero-RVA
+stubs even though there is no first IL instruction; attempting to weave them is
+invalid. The exact accessor attribute plus zero RVA/static shape is required,
+and accessors carrying IL are rejected rather than exempted from coverage. Their
+ordinary callers and owned target methods remain instrumented.

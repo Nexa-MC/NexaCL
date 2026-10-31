@@ -40,6 +40,7 @@ internal sealed partial class WindowSession : IAsyncDisposable
         _ui = new(ExchangeUi, Report);
     }
 
+    internal bool HasNativeStartup => Volatile.Read(ref _startup) is not null;
     internal NativeUiCallTable ControlTable => _control.Table;
     internal NativeUiCallTable UiTable => _ui.Table;
 

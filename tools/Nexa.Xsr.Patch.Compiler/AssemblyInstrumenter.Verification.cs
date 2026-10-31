@@ -89,7 +89,7 @@ internal sealed partial class AssemblyInstrumenter
                 if (entry.Status != 3) throw new InvalidDataException("Patch infrastructure must be explicitly inventoried.");
                 continue;
             }
-            if (!method.HasBody)
+            if (RuntimeAccessor(method) || !method.HasBody)
             {
                 if (entry.Status != (method.IsAbstract ? 1 : 2) || entry.Slot != -1)
                     throw new InvalidDataException("Invalid no-body function inventory: " + signature);

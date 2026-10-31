@@ -55,6 +55,17 @@ internal static partial class Program
                 try { AssemblyInstrumenter.Verify(invalid); } catch (InvalidDataException) { rejected = true; }
                 if (!rejected) throw new InvalidDataException("Coverage verification accepted a missing executable body.");
             }
+            using (var altered = Mono.Cecil.ModuleDefinition.ReadModule(assembly, new Mono.Cecil.ReaderParameters { InMemory = true }))
+            {
+                var accessor = altered.Types.Single(type => type.Name == "Sample").Methods.Single(method => method.Name == "ReadPrivate");
+                accessor.Body.GetILProcessor().Emit(Mono.Cecil.Cil.OpCodes.Ldc_I4_0);
+                accessor.Body.GetILProcessor().Emit(Mono.Cecil.Cil.OpCodes.Ret);
+                string invalid = Path.Combine(directory, "AccessorWithBody.dll"); altered.Write(invalid);
+                File.Copy(Path.Combine(directory, "AutomaticFixture.nfp"), Path.Combine(directory, "AccessorWithBody.nfp"));
+                bool rejected = false;
+                try { AssemblyInstrumenter.Verify(invalid); } catch (InvalidDataException) { rejected = true; }
+                if (!rejected) throw new InvalidDataException("An accessor attribute must not exempt an executable body from coverage.");
+            }
             var start = new ProcessStartInfo("dotnet") { UseShellExecute = false, WorkingDirectory = directory };
             start.ArgumentList.Add(assembly);
             using var process = Process.Start(start) ?? throw new InvalidOperationException("Fixture process did not start.");
@@ -78,6 +89,10 @@ internal static partial class Program
             public int Value {get; private set;}
             public Sample(int value) { Value=value; }
             public int Add(int x,int y)=>x+y;
+            private int PrivateRead()=>Value;
+            private static int PrivateStatic()=>29;
+            [UnsafeAccessor(UnsafeAccessorKind.Method,Name="PrivateRead")] public static extern int ReadPrivate(Sample instance);
+            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod,Name="PrivateStatic")] public static extern int ReadStatic(Sample type);
             public static T Echo<T>(T item)=>item;
             public static int References(ref int a,out int b) { a+=2; b=3; return a+b; }
             public static ref int Reference(ref int a)=>ref a;
@@ -105,6 +120,10 @@ internal static partial class Program
                 Check(Patch.Catalog.Any(t=>t.Signature.Contains("Unloaded::Value",StringComparison.Ordinal))); Check(Unloaded.Value()==7);
                 Check(Vendor.Value()==14); Check(!Patch.Catalog.Any(t=>t.Signature.Contains("Vendor::Value",StringComparison.Ordinal)));
                 var sample=new Sample(3); Check(sample.Add(1,2)==3);
+                Check(Sample.ReadPrivate(sample)==3); Check(Sample.ReadStatic(null)==29);
+                Check(Target("Sample::ReadPrivate``0").Status==PatchTargetStatus.RuntimeProvided);
+                Check(Target("Sample::ReadStatic``0").Status==PatchTargetStatus.RuntimeProvided);
+                using(var privateTarget=Patch.Install(Target("Sample::PrivateRead``0"),PatchPhase.Return,f=>f.Result=33))Check(Sample.ReadPrivate(sample)==33);
                 var add=Target("Sample::Add``0"); int head=0,tail=0;
                 using(var h=Patch.Install(add,PatchPhase.Head,f=>head++))
                 using(var a=Patch.Install(add,PatchPhase.Args,f=>f.Arguments[0]=10))

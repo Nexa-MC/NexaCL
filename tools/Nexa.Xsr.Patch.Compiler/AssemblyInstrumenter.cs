@@ -101,7 +101,7 @@ internal sealed partial class AssemblyInstrumenter
         {
             string signature = Signature(method);
             byte status = Infrastructure(method.DeclaringType) ? (byte)3
-                : method.IsAbstract ? (byte)1 : method.HasBody ? (byte)0 : (byte)2;
+                : method.IsAbstract ? (byte)1 : RuntimeAccessor(method) ? (byte)2 : method.HasBody ? (byte)0 : (byte)2;
             string id = Identity(_module.Assembly.Name.Name, signature);
             return new Descriptor(method, id, signature, status, -1);
         }).OrderBy(item => item.Id, StringComparer.Ordinal).Select(item => item with { Slot = item.Status == 0 ? slot++ : -1 }).ToArray();
@@ -154,6 +154,14 @@ internal sealed partial class AssemblyInstrumenter
         for (var current = type; current is not null; current = current.DeclaringType)
             if (current.Namespace == runtimeNamespace || current.Namespace.StartsWith(runtimeNamespace + ".", StringComparison.Ordinal)) return true;
         return false;
+    }
+    private static bool RuntimeAccessor(MethodDefinition method)
+    {
+        if (!method.CustomAttributes.Any(attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.UnsafeAccessorAttribute")) return false;
+        if (!method.IsStatic || method.IsAbstract || method.IsPInvokeImpl || method.RVA != 0
+            || method.HasBody && method.Body.Instructions.Count != 0)
+            throw new InvalidDataException("Unsafe accessor must remain a bodyless runtime declaration: " + method.FullName);
+        return true;
     }
     private static bool StackOnly(TypeReference type)
     {

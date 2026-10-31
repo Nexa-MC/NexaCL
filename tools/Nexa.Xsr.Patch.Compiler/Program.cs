@@ -36,6 +36,6 @@ internal static partial class Program
             return 0;
         }
         catch (Exception error) when (error is IOException or ArgumentException)
-        { Console.Error.WriteLine(error.Message); return 1; }
+        { Console.Error.WriteLine(error); return 1; }
     }
 }

@@ -34,6 +34,8 @@ internal static partial class Program
             if (DateTime.UtcNow >= deadline) throw new TimeoutException("Native window retirement timed out.");
             Thread.Sleep(10);
         }
+        Thread.Sleep(250); // The retired native platform must stay quiescent before process exit.
+        Equal(1, close(control.Context));
         owner.DisposeAsync().AsTask().GetAwaiter().GetResult();
         Console.WriteLine("PASS: independent native window painted Host scenes, measured text and drained both runtimes without CoreCLR");
     }

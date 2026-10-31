@@ -22,6 +22,7 @@ internal static partial class Program
 {
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("native factory lifetime accessors resolve without creating a Cocoa application", () => AssertTrue(Nexa.Native.Window.MacPlatformRetirement.FindFactory() is null)),
         ("startup main thread entry completes without native initialization", StartupMainThreadEntryCompletesWithoutNativeInitialization),
         ("theme recovery before native attachment returns the owned lease", ThemeRecoveryBeforeNativeAttachmentReturnsOwnedLease),
         ("shared press feedback is immediate bounded and available without motion", SharedPressFeedbackIsImmediateBoundedAndAvailableWithoutMotion),

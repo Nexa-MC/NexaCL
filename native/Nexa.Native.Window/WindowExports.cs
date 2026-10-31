@@ -43,7 +43,10 @@ internal static class WindowExports
         Task? previous = Interlocked.CompareExchange(ref _retirement, completion.Task, null);
         if (previous is null) _ = RetireAsync(session, completion);
         Task retirement = previous ?? completion.Task;
-        return retirement.IsFaulted ? -1 : retirement.IsCompletedSuccessfully ? 1 : 0;
+        if (retirement.IsFaulted) return -1;
+        if (!retirement.IsCompletedSuccessfully) return 0;
+        try { MacPlatformRetirement.Complete(session.HasNativeStartup); return 1; }
+        catch (Exception error) { session.Report(error); return -1; }
     }
 
     private static async Task RetireAsync(WindowSession session, TaskCompletionSource completion)
