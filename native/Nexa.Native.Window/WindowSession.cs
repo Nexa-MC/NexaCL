@@ -178,6 +178,7 @@ internal sealed partial class WindowSession : IAsyncDisposable
                         _hostUi.Exchange(new byte[] { (byte)WindowUiCallback.InstallText, provider is null ? (byte)0 : (byte)1 });
                     });
                     _shell = new(new UiTransport(_hostUi, WindowUiCallback.Shell), renderer);
+                    AttachPlatformEvents();
                     _actions.SetDesktopPolicy(desktopPolicy);
                     return Task.CompletedTask;
                 }, token).ConfigureAwait(false);
@@ -230,12 +231,13 @@ internal sealed partial class WindowSession : IAsyncDisposable
     private XsrUiRemoteShell Shell => _shell ?? throw new InvalidOperationException("Native shell is not prepared.");
     private static string Required(string? value) => value ?? throw new InvalidDataException("Missing window value.");
 
-    private string Localize(string text)
+    private string Localize(string text) => LocalizeValue(text, WindowControlCallback.Localize);
+    private string LocalizeValue(string text, WindowControlCallback callback)
     {
-        using var writer = WindowControlProtocol.Write((int)WindowControlCallback.Localize, callback: true);
+        using var writer = WindowControlProtocol.Write((int)callback, callback: true);
         writer.String(text);
         using var reader = WindowControlProtocol.Read(_hostControl.Exchange(writer.Finish()), out int kind, callback: true);
-        if (kind != (int)WindowControlCallback.Localize) throw new InvalidDataException("Invalid localization response.");
+        if (kind != (int)callback) throw new InvalidDataException("Invalid localization response.");
         string result = Required(reader.String()); reader.End(); return result;
     }
 
@@ -318,6 +320,7 @@ internal sealed partial class WindowSession : IAsyncDisposable
         Task calls = _control.DisposeAsync().AsTask();
         Task operations = _operations.DisposeAsync().AsTask();
         await QuiesceUiAsync().ConfigureAwait(false);
+        DetachPlatformEvents();
         await Task.WhenAll(calls, operations).ConfigureAwait(false);
         _activeTheme?.Dispose(); _activeTheme = null;
         await _themes.DisposeAsync().ConfigureAwait(false);

@@ -968,3 +968,23 @@ replacement, rejects retired handles and closes with an unclaimed candidate.
 The real Linux window still paints and exits without CoreCLR. The 86-project
 architecture check passes. This closes the theme resource boundary only; Host
 facade adoption and production packaging remain pending.
+
+### Native platform callbacks
+
+Window lifecycle, input, dropped files, desktop protocol/media actions, settings
+and command-palette requests travel through finite typed callback envelopes on
+the UI plane. Close/palette decisions are synchronous one-byte answers, preserving
+native input admission and close veto without transferring delegates. Immutable
+memory observations retain their sampler-worker delivery on the control plane;
+they must not synchronously marshal through the UI dispatcher. Desktop and picker
+localization have distinct control callback identifiers. The native session owns
+all backend subscriptions and removes them during retirement; callback failures
+are contained at the boundary and boolean admission fails closed.
+
+Validation: the independent NativeAOT window test observes controller input in
+the Host's local UI context, resolves native captions through Host localization,
+vetoes the first close request, permits the next and observes exactly one closed
+event. Real paint, theme ownership and normal process exit still pass on Linux;
+the architecture check passes for 86 projects. The preceding Cocoa retirement
+fix has also passed normal process exit on Windows, Linux, macOS Intel and macOS
+Apple Silicon (native-engines run 41160628894).

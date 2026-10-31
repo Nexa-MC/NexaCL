@@ -68,7 +68,7 @@ internal static partial class Program
         private XsrUiShell _shell = null!;
         private XsrUiShellEndpoint _shellEndpoint = null!;
         private XsrUiRendererEndpoint _input = null!;
-        private int _begun;
+        private int _begun, _controllerEvents, _closeEvents, _closedEvents, _permitClose;
         internal WindowOwner() { Control = new(ControlCall); Ui = new(UiCall); }
         public async ValueTask DisposeAsync()
         { await Ui.DisposeAsync(); await Control.DisposeAsync(); }
@@ -96,10 +96,13 @@ internal static partial class Program
                     byte[] completion = reader.Buffer(); reader.End(); return _operations.Complete(completion);
                 case WindowControlCallback.UiStopped:
                     reader.End(); _ = RetireUi(); return [];
+                case WindowControlCallback.PlatformEvent:
+                    return ReceivePlatformEvent(reader, worker: true);
+                case WindowControlCallback.LocalizePicker:
                 case WindowControlCallback.Localize:
                     string? text = reader.String(); reader.End();
                     using (var writer = WindowControlProtocol.Write(kind, callback: true))
-                    { writer.String(text); return writer.Finish(); }
+                    { writer.String(text is "First" or "Second" ? "Translated " + text : text); return writer.Finish(); }
                 case WindowControlCallback.Diagnostic:
                     string? type = reader.String(); int code = reader.Int32(); reader.End();
                     Console.Error.WriteLine($"Native window: {type} 0x{code:X8}"); return [];
@@ -125,6 +128,12 @@ internal static partial class Program
             {
                 switch ((WindowUiCallback)message.Span[0])
                 {
+                    case WindowUiCallback.PlatformEvent:
+                        using (var callback = WindowControlProtocol.Read(message[1..], out int kind, callback: true))
+                        {
+                            Equal((int)WindowControlCallback.PlatformEvent, kind);
+                            return ReceivePlatformEvent(callback, worker: false);
+                        }
                     case WindowUiCallback.Shell: return _shellEndpoint.Exchange(message[1..]);
                     case WindowUiCallback.Input: return _input.Exchange(message[1..]);
                     case WindowUiCallback.InstallText:
@@ -136,6 +145,38 @@ internal static partial class Program
                 }
             });
         }
+        private byte[] ReceivePlatformEvent(Nexa.Native.Window.Wire.UiWireReader reader, bool worker)
+        {
+            var kind = (WindowPlatformEvent)reader.Int32();
+            if (worker)
+            {
+                Equal(WindowPlatformEvent.Memory, kind); _ = reader.AvaloniaUiMemoryObservation(); reader.End(); return [];
+            }
+            True(ReferenceEquals(SynchronizationContext.Current, _context));
+            switch (kind)
+            {
+                case WindowPlatformEvent.CloseRequested:
+                    reader.End(); Interlocked.Increment(ref _closeEvents); return [Volatile.Read(ref _permitClose) != 0 ? (byte)1 : (byte)0];
+                case WindowPlatformEvent.PaletteOpen:
+                case WindowPlatformEvent.PaletteClose:
+                    reader.End(); return [0];
+                case WindowPlatformEvent.Input:
+                    if (reader.AvaloniaUiInputKind() == AvaloniaUiInputKind.Controller) Interlocked.Increment(ref _controllerEvents);
+                    break;
+                case WindowPlatformEvent.Activity: _ = reader.Boolean(); break;
+                case WindowPlatformEvent.Media:
+                case WindowPlatformEvent.Protocol: _ = reader.String(); break;
+                case WindowPlatformEvent.Files:
+                    int count = reader.Count(); for (int i = 0; i < count; i++) _ = reader.String(); break;
+                case WindowPlatformEvent.Closed: Interlocked.Increment(ref _closedEvents); break;
+                case WindowPlatformEvent.Settings:
+                case WindowPlatformEvent.Appearance:
+                case WindowPlatformEvent.Activated: break;
+                default: throw new InvalidDataException("Unknown native platform callback.");
+            }
+            reader.End(); return [];
+        }
+
         private Task<byte[]> Invoke(WindowCommand command)
         { using var writer = WindowControlProtocol.Write((int)command); return _operations.InvokeAsync(writer.Finish()); }
         private byte[] Call(WindowCommand command, int? value = null)
@@ -232,6 +273,8 @@ internal static partial class Program
 
         private async Task VerifyPlatform()
         {
+            await Platform(WindowPlatformCommand.ControllerInput);
+            Equal(1, Volatile.Read(ref _controllerEvents));
             await Platform(WindowPlatformCommand.Resize, writer => writer.Boolean(false));
             await Platform(WindowPlatformCommand.Resize, writer => writer.Boolean(true));
             await _context.RunAsync(() =>
@@ -263,7 +306,7 @@ internal static partial class Program
             { _ = progress.Boolean(); progress.End(); }
             using (var captions = PlatformResult(await Platform(WindowPlatformCommand.LocalizeCaptions,
                 writer => { writer.Count(2); writer.String("First"); writer.String("Second"); }), WindowPlatformCommand.LocalizeCaptions))
-            { Equal(2, captions.Count()); Equal("First", captions.String()); Equal("Second", captions.String()); captions.End(); }
+            { Equal(2, captions.Count()); Equal("Translated First", captions.String()); Equal("Translated Second", captions.String()); captions.End(); }
             using (var facts = PlatformResult(await Platform(WindowPlatformCommand.Facts), WindowPlatformCommand.Facts))
             {
                 _ = facts.Boolean(); True(facts.Byte() <= 2); True(facts.Int64() > 0); _ = facts.Int64();
@@ -346,13 +389,24 @@ internal static partial class Program
                     await Task.Delay(50);
                 }
                 Call(WindowCommand.CloseWindow);
+                deadline = DateTime.UtcNow.AddSeconds(10);
+                while (Volatile.Read(ref _closeEvents) == 0)
+                {
+                    if (DateTime.UtcNow >= deadline) throw new TimeoutException("Native close decision was not delivered.");
+                    await Task.Delay(10);
+                }
+                True(!presented.IsCompleted); Equal(0, Volatile.Read(ref _closedEvents));
+                Volatile.Write(ref _permitClose, 1);
+                Call(WindowCommand.CloseWindow);
                 Equal(0, BitConverter.ToInt32(await presented.WaitAsync(TimeSpan.FromSeconds(30))));
+                True(Volatile.Read(ref _closeEvents) > 0); Equal(1, Volatile.Read(ref _closedEvents));
             }
             catch (Exception error) { failure = error; Console.Error.WriteLine(error); }
             finally
             {
                 try
                 {
+                    Volatile.Write(ref _permitClose, 1);
                     await Invoke(WindowCommand.QuiesceUi).WaitAsync(TimeSpan.FromSeconds(30));
                     await _stopped.Task.WaitAsync(TimeSpan.FromSeconds(30));
                     await _context.RunCleanupAsync(() => { _shellEndpoint?.Dispose(); return Task.CompletedTask; });
