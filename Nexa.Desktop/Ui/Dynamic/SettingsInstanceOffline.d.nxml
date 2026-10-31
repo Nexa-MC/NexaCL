@@ -1,7 +1,7 @@
 <nxml-dynamic>
   <StackPanel Key="InstanceOfflineReadiness" Class="settings-diagnostics-card">
     <StackPanel Class="instance-tools-body">
-      <Text Content="离线就绪" IsVisible="{data idle}" Class="instance-tools-title" />
+      <Text Key="InstanceOfflineReadiness.Title" Content="离线就绪" Class="instance-tools-title" />
       <LoadingView Key="InstanceOfflineReadiness.Busy" IsVisible="{data busy}" Label="离线就绪" />
       <StackPanel Key="InstanceOfflineReadiness.Actions" IsVisible="{data idle}" Class="instance-tools-toolbar">
         <Button Key="InstanceOfflineReadiness.Check" Content="检查本地离线依赖" Command="ui.settings.management.action" Enabled="{data canCheck}" Class="settings-catalog-action instance-tools-check" />

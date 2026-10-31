@@ -94,6 +94,8 @@ public static class FoundationRuntimeComposer
         }
         var recovery = new InstanceRecoveryService(host.SettingsPolicy, host.StateStore, host.Logging);
         var exporter = new InstanceModpackExportService(host.Tasks, host.StateStore);
+        commands.Register<InstanceExportOptionsSave>(InstanceModpackExportContract.SaveOptions,
+            async (command, token) => await InstanceModpackExportService.SaveOptionsAsync(command, token).ConfigureAwait(false));
         commands.Register<InstanceModpackExportCommand>(InstanceModpackExportContract.Export,
             async (command, token) => await exporter.ExportAsync(command, token).ConfigureAwait(false));
         commands.Register<InstanceServerListSaveCommand>(InstanceServerListContract.Save,
@@ -175,6 +177,8 @@ public static class FoundationRuntimeComposer
             Nexa.Services.Minecraft.Java.JavaRuntimeInventoryContract.Query, javaInventory.ReadAsync);
         queries.Register<InstanceModpackExportQuery, InstanceModpackExportPreview>(InstanceModpackExportContract.Preview,
             async (query, token) => Nexa.Xsr.XsrResult.Success(await InstanceModpackExportService.PreviewAsync(query, token).ConfigureAwait(false)));
+        queries.Register<InstanceExportOptionsQuery, InstanceExportOptions>(InstanceModpackExportContract.LoadOptions,
+            async (query, token) => Nexa.Xsr.XsrResult.Success(await InstanceModpackExportService.LoadOptionsAsync(query, token).ConfigureAwait(false)));
         queries.Register<InstanceServerListQuery, InstanceServerList>(InstanceServerListContract.Read,
             async (query, token) => Nexa.Xsr.XsrResult.Success(await InstanceServerListService.ReadAsync(query, token).ConfigureAwait(false)));
         queries.Register<InstanceServerStatusQuery, InstanceServerStatus>(InstanceServerListContract.Status,

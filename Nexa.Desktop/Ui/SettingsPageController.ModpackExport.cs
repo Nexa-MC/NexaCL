@@ -24,6 +24,7 @@ internal sealed partial class SettingsPageController
         _exportName = _exportVersion = _exportPath = default;
         _exportNameDraft = ""; _exportVersionDraft = "1.0.0"; _exportPathDraft = "";
         _exportCategories.Clear(); _exportCategories.UnionWith(["mods", "config", "defaultconfigs"]);
+        ResetExportFiles();
     }
     private void UpdateExport()
     {
@@ -32,12 +33,18 @@ internal sealed partial class SettingsPageController
         if (_exportInstance != _instance) { CancelExport(); _exportInstance = _instance; }
         if (_selected != "modpack" || _instance is null || !_managementLoaded) return;
         CaptureExportDrafts();
+        UpdateExportFiles();
         if (_exportDirectoryRead is { IsCompleted: true } picking)
         {
             _exportDirectoryRead = null;
             if (picking.IsCompletedSuccessfully && picking.Result is { } directory)
             {
                 _exportPathDraft = Path.Combine(directory, Path.GetFileName(_instance) + ".mrpack");
+                if (_exportOptionsPathDraft.Length == 0)
+                {
+                    _exportOptionsPathDraft = Path.Combine(directory, Path.GetFileName(_instance) + ".export.json");
+                    if (_shell.Tree.IsAlive(_exportOptionsPath)) _shell.Renderer.SetTextInputValue(_exportOptionsPath, _exportOptionsPathDraft);
+                }
                 if (_shell.Tree.IsAlive(_exportPath)) _shell.Renderer.SetTextInputValue(_exportPath, _exportPathDraft);
             }
             else if (picking.IsFaulted) _feedback.Error(WorldTerm("export.pick-error"));
@@ -58,6 +65,8 @@ internal sealed partial class SettingsPageController
         string Draft(XsrUiEntityId field, string fallback) => field.IsAssigned && _shell.Tree.IsAlive(field)
             ? _shell.Tree.GetComponent<XsrUiTextInput>(field)!.ReadDraft() : fallback;
         _exportNameDraft = Draft(_exportName, _exportNameDraft); _exportVersionDraft = Draft(_exportVersion, _exportVersionDraft); _exportPathDraft = Draft(_exportPath, _exportPathDraft);
+        _exportSummaryDraft = Draft(_exportSummary, _exportSummaryDraft);
+        _exportOptionsPathDraft = Draft(_exportOptionsPath, _exportOptionsPathDraft);
     }
     private XsrUiEntityId _exportRoot;
     private readonly Dictionary<string, XsrUiEntityId> _exportCategoryViews = [];
@@ -100,7 +109,7 @@ internal sealed partial class SettingsPageController
             {
                 ["key"] = key,
                 ["choice"] = choice,
-                ["label"] = category.Label,
+                ["label"] = _shell.Renderer.LocalizeText(category.Label),
                 ["selected"] = Flag(_exportCategories.Contains(category.Id)),
                 ["files"] = WorldNumber(category.FileCount),
                 ["size"] = (category.Bytes / 1048576d).ToString("0.0", System.Globalization.CultureInfo.CurrentCulture)
@@ -113,13 +122,15 @@ internal sealed partial class SettingsPageController
             });
         }
         _dynamic.Reorder(nodes["Export.Categories"], categories.Select(category => _exportCategoryViews[category.Id]).ToArray());
+        BuildExportFiles(nodes, preview, initialize);
         BindWorldAction(nodes, WorldKey("Export"), () =>
         {
             if (preview is null || _managementWrite is not null || _instance is null || !_commands.TryResolve(InstanceModpackExportContract.Export, out var route)) return;
             _managementWriteInstance = _instance;
             _managementWrite = _commands.Dispatch(route, new InstanceModpackExportCommand(_instance,
                 _shell.Tree.GetComponent<XsrUiTextInput>(_exportPath)!.ReadDraft(), _shell.Tree.GetComponent<XsrUiTextInput>(_exportName)!.ReadDraft(),
-                _shell.Tree.GetComponent<XsrUiTextInput>(_exportVersion)!.ReadDraft(), preview.Categories.Where(c => _exportCategories.Contains(c.Id)).Select(c => c.Id).ToArray())).Completion;
+                _shell.Tree.GetComponent<XsrUiTextInput>(_exportVersion)!.ReadDraft(), preview.Categories.Where(c => _exportCategories.Contains(c.Id)).Select(c => c.Id).ToArray())
+            { Summary = _shell.Tree.GetComponent<XsrUiTextInput>(_exportSummary)!.ReadDraft(), ExcludedPaths = _exportExcluded.ToArray() }).Completion;
             WakeOnPlatformCompletion(_managementWrite); BuildModpackExport(snapshot);
         });
     }

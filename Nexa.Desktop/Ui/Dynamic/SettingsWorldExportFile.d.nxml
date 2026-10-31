@@ -1,0 +1,6 @@
+<nxml-dynamic>
+  <StackPanel Key="{data key}" Class="world-actions">
+    <CheckBox Key="{data choice}" Content="{data path}" Label="{data path}" Localize="false" Checked="{data selected}" Command="ui.settings.management.action" Class="world-category" />
+    <Text Content="{data size} MiB" Class="world-counter" Localize="false" />
+  </StackPanel>
+</nxml-dynamic>

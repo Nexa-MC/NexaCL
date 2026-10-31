@@ -210,7 +210,6 @@ internal sealed partial class SettingsPageController
             var loading = AppendContent(_sections, "SettingsContentLoading.d.nxml", new() { ["loading"] = ContentFlag(_managementError is null), ["enabled"] = ContentFlag(_managementWrite is null), ["message"] = _managementError ?? ContentTerm("loading") });
             BindContentAction(ContentNodes(loading), ContentKey("refresh"), RefreshManagement); return;
         }
-        if (_selected == "overview") BuildModpackUpdate(snapshot);
         var page = snapshot.Pages.First(item => item.Id == _selected);
         if (page.Directory is { } directory)
         {
@@ -261,6 +260,8 @@ internal sealed partial class SettingsPageController
             AppendContentFact(facts, "minecraft", snapshot.GameVersion); AppendContentFact(facts, "instanceDirectory", snapshot.InstanceDirectory); AppendContentFact(facts, "gameDirectory", snapshot.GameDirectory);
             if (snapshot.Description.Length > 0) AppendContentFact(facts, "description", snapshot.Description);
             BindContentAction(nodes, ContentKey("instanceFolder"), () => OpenContentDirectory(snapshot.InstanceDirectory));
+            _modpackOverviewHost = nodes["ContentOverview.Modpack"];
+            BuildModpackUpdate(snapshot);
         }
         else if (_selected == "recovery") { BuildRecoveryStorage(snapshot); BuildRecoveryTimeline(snapshot); }
         else if (_selected == "trash") BuildContentTrash(snapshot);

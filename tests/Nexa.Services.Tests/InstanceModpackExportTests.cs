@@ -24,6 +24,7 @@ internal static partial class Program
             await File.WriteAllTextAsync(Path.Combine(instance, "saves", "World", "level.dat"), "world");
             var preview = await InstanceModpackExportService.PreviewAsync(new(instance));
             AssertEqual(1, preview.Categories.Single(c => c.Id == "config").FileCount);
+            AssertTrue(preview.Files.Any(file => file.Path == "config/selected.cfg"));
             var builder = new XsrStateStoreBuilder(); TaskCenterStateContract.DeclareState(builder); DownloadService.DeclareState(builder); MinecraftProcessStateComposition.DeclareState(builder);
             var store = builder.Build(); var tasks = new TaskCenterService(store); var exporter = new InstanceModpackExportService(tasks, store);
             string destination = Path.Combine(root, "export.mrpack"); var command = new InstanceModpackExportCommand(instance, destination, "示例整合包", "1.2.3", ["mods", "config"]);
@@ -36,6 +37,20 @@ internal static partial class Program
                 AssertFalse(archive.Entries.Any(e => e.FullName.Contains("accounts", StringComparison.Ordinal) || e.FullName.Contains("saves", StringComparison.Ordinal) || e.FullName.EndsWith(".log", StringComparison.Ordinal)));
             }
             byte[] original = await File.ReadAllBytesAsync(destination);
+            var options = new InstanceExportOptions("pack", "2", "description", ["mods", "config"], ["config/selected.cfg"]);
+            string optionsPath = Path.Combine(root, "export-options.json");
+            AssertTrue((await InstanceModpackExportService.SaveOptionsAsync(new(optionsPath, options), default)).IsSuccess);
+            var loaded = await InstanceModpackExportService.LoadOptionsAsync(new(optionsPath), default);
+            AssertTrue(loaded.ExcludedPaths.SequenceEqual(options.ExcludedPaths)); AssertEqual(options.Name, loaded.Name);
+            string filteredPath = Path.Combine(root, "filtered.mrpack");
+            AssertTrue((await exporter.ExportAsync(command with { DestinationPath = filteredPath, ExcludedPaths = loaded.ExcludedPaths, Summary = loaded.Summary })).IsSuccess);
+            using (var filtered = ZipFile.OpenRead(filteredPath))
+            {
+                AssertTrue(filtered.GetEntry("overrides/mods/a.jar.disabled") is not null);
+                AssertTrue(filtered.GetEntry("overrides/config/selected.cfg") is null);
+                using var reader = new StreamReader(filtered.GetEntry("modrinth.index.json")!.Open());
+                AssertEqual("description", JsonNode.Parse(await reader.ReadToEndAsync())!["summary"]!.GetValue<string>());
+            }
             AssertFalse((await exporter.ExportAsync(command)).IsSuccess); AssertTrue((await File.ReadAllBytesAsync(destination)).SequenceEqual(original));
             using var canceled = new CancellationTokenSource(); canceled.Cancel();
             AssertFalse((await exporter.ExportAsync(command with { DestinationPath = Path.Combine(root, "canceled.mrpack") }, canceled.Token)).IsSuccess);
