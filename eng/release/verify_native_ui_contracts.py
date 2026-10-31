@@ -7,7 +7,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test(rid: str, output: Path):
+def test(rid: str, output: Path, *, run_probe: bool = True):
     output = output.resolve()
     for name, folder in (("Nexa.Native.Ui.Peer", "peer"), ("Nexa.Native.Ui.Tests", "caller")):
         subprocess.run([
@@ -26,7 +26,9 @@ def test(rid: str, output: Path):
     suffix = ".dll" if rid.startswith("win-") else ".dylib" if rid.startswith("osx-") else ".so"
     caller = output / "caller" / ("Nexa.Native.Ui.Tests" + (".exe" if rid.startswith("win-") else ""))
     peer = output / "peer" / ("Nexa.Native.Ui.Peer" + suffix)
-    subprocess.run([str(caller), str(peer)], check=True, timeout=90, cwd=output)
+    if run_probe:
+        subprocess.run([str(caller), str(peer)], check=True, timeout=90, cwd=output)
+    return caller, peer
 
 
 if __name__ == "__main__":

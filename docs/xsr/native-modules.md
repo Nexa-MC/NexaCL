@@ -845,3 +845,32 @@ inline/queued callbacks, reentrant inline scopes, context restoration on excepti
 cleanup admission after the native-dispatcher handover, continued retirement while
 the composition lifetime is held, and rejection of normal UI admission during
 cleanup and all admission after retirement. Source formatting verification passed.
+
+The next adoption unit is a real `Nexa.Native.Window` shared library, initially
+exercised by an isolated native caller before inclusion in launcher payloads. It
+owns Avalonia startup, splash stages, shell preparation/presentation, native text
+layout, and GUI shutdown. Host-owned shell/input state remains behind the existing
+binary projections. Its instrumentation uses the referenced Core patch runtime,
+so exported probes cover the actual backend rather than a disconnected local
+catalog. The production Host reference and `ENGINES` list remain unchanged until
+the remaining platform facade and end-to-end launcher behavior are implemented.
+
+The real-window contract runner publishes an Avalonia-free NativeAOT caller and
+`nexa-window`, paints Host-owned shell content through reverse text calls, and
+checks native scene/paint counters before closing. UI and control gates retire
+separately; Host cleanup runs only after the native UI stop acknowledgement and
+Host UI gate drain. Desktop policy is passed explicitly, so the test can disable
+the tray without changing production defaults. The runner also enables an entry
+probe on the actual backend `AvaloniaUiStartupSession.ReportStage` target and
+requires a hit. Linux uses Xvfb; Windows and both macOS architectures run in CI.
+This checkpoint proves native window composition, not production Host adoption
+or completion of all platform operations.
+
+Local real-window checkpoint: Linux x64 independently published NativeAOT caller
+and library passed actual scene painting, reverse text measurement, orderly close,
+and a backend entry-probe hit. The full solution compiled without warnings/errors,
+architecture checks passed for 86 projects, and both generated wire schemas retained
+their previous fingerprints (89 scene shapes / 31 window value shapes). NTP service
+regressions passed 35/35 after separating the built-in/imported fixture identities;
+macOS OS-alias assertions remain platform-specific. Other-platform native-window
+results are supplied by the new CI matrix, not inferred from the Linux run.

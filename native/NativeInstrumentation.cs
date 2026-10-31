@@ -1,6 +1,9 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+#if NEXA_NATIVE_SHARED_PATCH_RUNTIME
+using Nexa.Core.Patching;
+#endif
 
 namespace Nexa.Native.Instrumentation;
 

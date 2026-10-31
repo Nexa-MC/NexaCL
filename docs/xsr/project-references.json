@@ -612,5 +612,10 @@
   ],
   "Nexa.Native.Ui.Tests": [
     "Nexa.Xsr.Renderer"
+  ],
+  "Nexa.Native.Window": [
+    "Nexa.Core",
+    "Nexa.Xsr.Renderer",
+    "Nexa.Xsr.Renderer.Backend.Avalonia"
   ]
 }

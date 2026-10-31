@@ -6,11 +6,12 @@ on:
     paths:
       - 'native/**'
       - 'Nexa.Xsr.Renderer/**'
-      - 'Nexa.Xsr.Renderer.Backend.Avalonia/Contracts/**'
+      - 'Nexa.Xsr.Renderer.Backend.Avalonia/**'
       - 'eng/xsr/generate_ui_wire.*'
       - 'tests/Nexa.Native.Ui.Peer/**'
       - 'tests/Nexa.Native.Ui.Tests/**'
       - 'eng/release/verify_native_ui_contracts.py'
+      - 'eng/release/verify_native_window_contracts.py'
       - 'Nexa.Services.Updates/**'
       - 'Nexa.Services.Network/**'
       - 'Nexa.Core/Patching/**'
@@ -85,11 +86,18 @@ jobs:
       - name: Verify NativeAOT instrumentation, media, codecs, socket ownership and mTLS
         shell: bash
         run: python eng/release/verify_native_engine_contracts.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/engines" --output "$RUNNER_TEMP/native-network-caller"
-      - name: Verify independent NativeAOT UI callbacks and retirement
+      - name: Install virtual display
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+      - name: Verify independent NativeAOT window rendering and retirement
         shell: bash
-        run: python eng/release/verify_native_ui_contracts.py --rid '${{ matrix.rid }}' --output "$RUNNER_TEMP/native-ui-contracts"
+        run: |
+          set -o pipefail
+          python eng/release/verify_native_window_contracts.py --rid '${{ matrix.rid }}' --output "$RUNNER_TEMP/native-ui-contracts" 2>&1 | tee "$RUNNER_TEMP/native-window-contracts.log"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
         with:
           name: native-repro-${{ matrix.rid }}
-          path: install-diagnostics/**
+          path: |
+            install-diagnostics/**
+            ${{ runner.temp }}/native-window-contracts.log

@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Nexa.Native.Window" />
     <EmbeddedResource Include="Assets/Avatars/Steve.png" />
     <EmbeddedResource Include="Assets/Avatars/Alex.png" />
     <EmbeddedResource Include="Assets/Versions/*.png" />

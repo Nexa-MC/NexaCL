@@ -4,8 +4,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NativeLib>Shared</NativeLib>
     <NexaAutomaticFunctionPatches>true</NexaAutomaticFunctionPatches>
-    <NexaLocalPatchRuntime>true</NexaLocalPatchRuntime>
+    <NexaLocalPatchRuntime Condition="'$(NexaLocalPatchRuntime)' == ''">true</NexaLocalPatchRuntime>
     <DefineConstants>$(DefineConstants);NEXA_NATIVE_ENGINE</DefineConstants>
+    <DefineConstants Condition="'$(NexaLocalPatchRuntime)' == 'false'">$(DefineConstants);NEXA_NATIVE_SHARED_PATCH_RUNTIME</DefineConstants>
     <Version>1.0.0</Version>
     <InformationalVersion>1.0.0</InformationalVersion>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
@@ -21,7 +22,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)NativeInstrumentation.cs" Link="Instrumentation/NativeInstrumentation.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)../Nexa.Core/Patching/Patch.cs" Link="Instrumentation/Patch.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../Nexa.Core/Patching/Patch.cs" Link="Instrumentation/Patch.cs" Condition="'$(NexaLocalPatchRuntime)' == 'true'" />
     <AssemblyMetadata Include="Nexa.NativeEngineAbi" Value="1" />
     <SourceRoot Include="$(NexaEngineSourceRoot)" MappedPath="/_/" />
   </ItemGroup>
