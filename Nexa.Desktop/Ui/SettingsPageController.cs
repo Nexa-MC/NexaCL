@@ -391,6 +391,7 @@ internal sealed partial class SettingsPageController : IDisposable
         var scroll = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!;
         scroll.OffsetY = _scrollPositions.GetValueOrDefault(_selected);
         _shell.Tree.GetComponent<XsrUiTransition>(_sections)!.Key = _selected + ":" + _developer;
+        _shell.Tree.GetComponent<XsrUiTransition>(_sections)!.IndependentChildren = true;
         _shell.Tree.MarkDirty(_sections, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
         UpdateEditors();
         RestoreHookDrafts(hookDrafts);

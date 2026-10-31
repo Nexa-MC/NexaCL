@@ -20,7 +20,7 @@ public sealed partial class XsrUiRenderer
     private void CollectNode(XsrUiEntityId entity, int depth, List<XsrUiSceneNode> nodes,
         XsrUiRect? clip = null, bool accessible = true, double offsetX = 0, double offsetY = 0,
         double opacity = 1, XsrUiOverlayMotionKind overlayMotion = XsrUiOverlayMotionKind.None,
-        bool overlayClosing = false, XsrUiRect? overlayAnchor = null, XsrUiSceneTransform? parentTransform = null, IReadOnlyList<XsrUiSceneClip>? clipGeometry = null)
+        bool overlayClosing = false, XsrUiRect? overlayAnchor = null, XsrUiSceneTransform? parentTransform = null, IReadOnlyList<XsrUiSceneClip>? clipGeometry = null, string? entryKey = null)
     {
         if (!IsVisible(entity))
         {
@@ -39,10 +39,23 @@ public sealed partial class XsrUiRenderer
         XsrUiAnimation? animation = components.Get<XsrUiAnimation>();
         XsrUiImage? image = components.Get<XsrUiImage>();
         XsrUiTransition? transition = components.Get<XsrUiTransition>();
+        bool entryGroup = transition is { IndependentChildren: true, MovesSelf: false };
+        if (entryKey is not null && !IsStableContent(entity) && _tree.Children(entity).Count == 0
+            && (transition is null || transition.IndependentEntry)
+            && (text is not null || image is not null || components.Get<XsrUiInput>() is not null))
+        {
+            if (transition is null)
+            {
+                transition = new XsrUiTransition { MovesSelf = true, StaggerEntry = true, IndependentEntry = true, OffsetY = 8 };
+                _tree.SetComponent(entity, transition);
+            }
+            transition.Key = entryKey;
+        }
         string? transitionKey = transition?.BoundKey.IsAssigned == true
             ? _state.ReadAppliedValue(transition.BoundKey) as string ?? string.Empty : transition?.Key;
+        if (entryGroup) entryKey = transitionKey;
         rect = rect with { X = rect.X + offsetX, Y = rect.Y + offsetY };
-        if (transition is not null)
+        if (transition is not null && !entryGroup)
         {
             XsrUiEntityId parent = _tree.Parent(entity);
             XsrUiRect bounds = transition.MovesSelf && parent.IsAssigned && _paintRects.TryGetValue(parent.Index, out XsrUiRect parentBounds)
@@ -129,8 +142,8 @@ public sealed partial class XsrUiRenderer
             accessible,
             LocalizeInput(components.Get<XsrUiTextInput>(), semantic?.Localize ?? true),
             themeStyle?.ImageSource is null ? image?.Raster : null,
-            transitionKey, transition?.OffsetX ?? 0, transition?.PresentedOffsetX ?? 0,
-            transition?.OffsetY ?? 0, opacity, transition?.PresentedOffsetY ?? 0, entryOrder,
+            entryGroup ? null : transitionKey, entryGroup ? 0 : transition?.OffsetX ?? 0, entryGroup ? 0 : transition?.PresentedOffsetX ?? 0,
+            entryGroup ? 0 : transition?.OffsetY ?? 0, opacity, entryGroup ? 0 : transition?.PresentedOffsetY ?? 0, entryOrder,
             components.Get<XsrUiProgress>()?.Presented,
             components.Get<XsrUiLiveRegion>()?.Setting ?? XsrUiLiveSetting.Off,
             overlayMotion,
@@ -218,7 +231,7 @@ public sealed partial class XsrUiRenderer
             XsrUiRect geometryBounds = sceneTransform?.Bounds(rawClip) ?? rawClip;
             childClip = Intersect(geometryBounds, clip ?? geometryBounds);
         }
-        if (transition is { MovesSelf: false })
+        if (transition is { MovesSelf: false } && !entryGroup)
         {
             offsetX += transition.PresentedOffsetX;
             offsetY += transition.PresentedOffsetY;
@@ -242,7 +255,7 @@ public sealed partial class XsrUiRenderer
                 accessible
                 && (pageContainer is null || pageContainer.PageIndex == pageIndex)
                 && (modalIndex < 0 || index >= modalIndex),
-                offsetX, offsetY, opacity, overlayMotion, overlayClosing, overlayAnchor, sceneTransform, clipGeometry);
+                offsetX, offsetY, opacity, overlayMotion, overlayClosing, overlayAnchor, sceneTransform, clipGeometry, entryKey);
             pageIndex++;
         }
     }
