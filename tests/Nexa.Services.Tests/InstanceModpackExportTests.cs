@@ -11,6 +11,82 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask InstanceModpackZipExportsOnlySelectedRuntimeReferences()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string instance = ResourceInstanceFixture(root);
+            string baseDirectory = CreateVersionDirectory(root, "base", new JsonObject
+            {
+                ["id"] = "base",
+                ["mainClass"] = "Main",
+                ["_minecraftVersion"] = "1.21.1",
+                ["assetIndex"] = new JsonObject { ["id"] = "test-index" },
+                ["libraries"] = new JsonArray(new JsonObject { ["name"] = "example:runtime:1.0" })
+            });
+            string leafPath = Path.Combine(instance, "fixture.json");
+            var leaf = JsonNode.Parse(await File.ReadAllTextAsync(leafPath))!;
+            leaf["inheritsFrom"] = "base"; await File.WriteAllTextAsync(leafPath, leaf.ToJsonString());
+            await File.WriteAllBytesAsync(Path.Combine(baseDirectory, "base.jar"), ResourceJar("base"));
+            Directory.CreateDirectory(Path.Combine(instance, "mods"));
+            await File.WriteAllBytesAsync(Path.Combine(instance, "mods", "example.jar"), ResourceJar("example"));
+            foreach (string relative in new[] { "libraries/example/runtime/1.0/runtime-1.0.jar", "libraries/net/fabricmc/fabric-loader/0.16.0/fabric-loader-0.16.0.jar", "libraries/unrelated/secret.jar" })
+            {
+                string path = Path.Combine(root, relative); Directory.CreateDirectory(Path.GetDirectoryName(path)!); await File.WriteAllBytesAsync(path, ResourceJar("library"));
+            }
+            byte[] asset = "language"u8.ToArray(); string hash = Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(asset)).ToLowerInvariant();
+            string assetPath = Path.Combine(root, "assets", "objects", hash[..2], hash);
+            Directory.CreateDirectory(Path.GetDirectoryName(assetPath)!); await File.WriteAllBytesAsync(assetPath, asset);
+            Directory.CreateDirectory(Path.Combine(root, "assets", "indexes"));
+            await File.WriteAllTextAsync(Path.Combine(root, "assets", "indexes", "test-index.json"), new JsonObject
+            { ["objects"] = new JsonObject { ["lang/en_us.json"] = new JsonObject { ["hash"] = hash, ["size"] = asset.Length } } }.ToJsonString());
+            var builder = new XsrStateStoreBuilder(); TaskCenterStateContract.DeclareState(builder); DownloadService.DeclareState(builder); MinecraftProcessStateComposition.DeclareState(builder);
+            var store = builder.Build(); using var tasks = new TaskCenterService(store); var exporter = new InstanceModpackExportService(tasks, store);
+            var command = new InstanceModpackExportCommand(instance, Path.Combine(root, "content.zip"), "ZIP Pack", "1", ["mods"]) { Format = InstanceExportFormat.Zip };
+            var plain = await exporter.ExportAsync(command); AssertTrue(plain.IsSuccess, plain.Error?.Message ?? "");
+            using (var zip = ZipFile.OpenRead(command.DestinationPath))
+            {
+                AssertTrue(zip.GetEntry("nexa-export.json") is not null); AssertTrue(zip.GetEntry("modrinth.index.json") is null);
+                AssertTrue(zip.GetEntry(".minecraft/versions/base/base.json") is not null);
+                AssertTrue(zip.GetEntry(".minecraft/versions/fixture/fixture.json") is not null);
+                AssertTrue(zip.Entries.Any(entry => entry.FullName.EndsWith("mods/example.jar", StringComparison.Ordinal)));
+                AssertFalse(zip.Entries.Any(entry => entry.FullName.EndsWith("base.jar", StringComparison.Ordinal) || entry.FullName.Contains("libraries/", StringComparison.Ordinal)));
+            }
+            var bundled = command with { DestinationPath = Path.Combine(root, "bundled.zip"), IncludeGameCore = true, IncludeLibraries = true, IncludeAssets = true };
+            var result = await exporter.ExportAsync(bundled); AssertTrue(result.IsSuccess, result.Error?.Message ?? "");
+            using (var zip = ZipFile.OpenRead(bundled.DestinationPath))
+            {
+                AssertTrue(zip.GetEntry(".minecraft/versions/base/base.jar") is not null);
+                AssertTrue(zip.GetEntry(".minecraft/libraries/example/runtime/1.0/runtime-1.0.jar") is not null);
+                AssertTrue(zip.GetEntry(".minecraft/assets/objects/" + hash[..2] + "/" + hash) is not null);
+                AssertFalse(zip.Entries.Any(entry => entry.FullName.Contains("unrelated", StringComparison.Ordinal)));
+            }
+            string preset = Path.Combine(root, "zip-options.json");
+            var options = new InstanceExportOptions("ZIP Pack", "1", "", ["mods"], []) { Format = InstanceExportFormat.Zip, IncludeGameCore = true, IncludeLibraries = true, IncludeAssets = true };
+            await InstanceModpackExportService.SaveOptionsAsync(new(preset, options), default);
+            var loaded = await InstanceModpackExportService.LoadOptionsAsync(new(preset), default);
+            AssertEqual(InstanceExportFormat.Zip, loaded.Format); AssertTrue(loaded.IncludeGameCore && loaded.IncludeLibraries && loaded.IncludeAssets);
+            AssertFalse((await exporter.ExportAsync(bundled with { Format = InstanceExportFormat.Mrpack, DestinationPath = Path.Combine(root, "invalid.mrpack") })).IsSuccess);
+            File.Delete(assetPath);
+            string failed = Path.Combine(root, "missing.zip");
+            AssertFalse((await exporter.ExportAsync(bundled with { DestinationPath = failed })).IsSuccess); AssertFalse(File.Exists(failed));
+            leaf["libraries"] = new JsonArray(new JsonObject
+            {
+                ["name"] = "example:private:1",
+                ["downloads"] = new JsonObject
+                { ["artifact"] = new JsonObject { ["path"] = "accounts.json" } }
+            });
+            await File.WriteAllTextAsync(leafPath, leaf.ToJsonString());
+            await File.WriteAllTextAsync(Path.Combine(root, "libraries", "accounts.json"), "private");
+            string privateTarget = Path.Combine(root, "private.zip");
+            AssertFalse((await exporter.ExportAsync(command with { DestinationPath = privateTarget, IncludeLibraries = true })).IsSuccess);
+            AssertFalse(File.Exists(privateTarget));
+            AssertFalse(Directory.EnumerateFiles(root, ".nexa-export-*").Any());
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     private static async ValueTask InstanceModpackExportRoundTripsSelectionAndRetainsExistingTargets()
     {
         string root = CreateTempDirectory();

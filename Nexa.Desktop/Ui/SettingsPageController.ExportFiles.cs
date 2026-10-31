@@ -36,6 +36,12 @@ internal sealed partial class SettingsPageController
             {
                 var options = read.Result.Value!;
                 _exportNameDraft = options.Name; _exportVersionDraft = options.Version; _exportSummaryDraft = options.Summary;
+                _exportFormat = options.Format; _exportCore = options.IncludeGameCore; _exportLibraries = options.IncludeLibraries; _exportAssets = options.IncludeAssets;
+                if (_exportPathDraft.Length > 0)
+                {
+                    _exportPathDraft = Path.ChangeExtension(_exportPathDraft, _exportFormat == InstanceExportFormat.Zip ? ".zip" : ".mrpack");
+                    _shell.Renderer.SetTextInputValue(_exportPath, _exportPathDraft);
+                }
                 _exportCategories.Clear(); _exportCategories.UnionWith(options.Categories);
                 _exportExcluded.Clear(); _exportExcluded.UnionWith(options.ExcludedPaths.Where(path => !path.StartsWith("mods/", StringComparison.OrdinalIgnoreCase)));
                 _shell.Renderer.SetTextInputValue(_exportName, options.Name);
@@ -98,11 +104,16 @@ internal sealed partial class SettingsPageController
         BindWorldAction(nodes, "Export.SaveOptions", () =>
         {
             CaptureExportDrafts();
-            if (_managementWrite is not null || !_commands.TryResolve(InstanceModpackExportContract.SaveOptions, out var route)) return;
-            _managementWriteInstance = _instance;
-            _managementWrite = _commands.Dispatch(route, new InstanceExportOptionsSave(_exportOptionsPathDraft,
-                new(_exportNameDraft, _exportVersionDraft, _exportSummaryDraft, _exportCategories.ToArray(), _exportExcluded.ToArray()))).Completion;
-            WakeOnPlatformCompletion(_managementWrite);
+            if (_managementWrite is not null || _exportWrite is not null || !_commands.TryResolve(InstanceModpackExportContract.SaveOptions, out var route)) return;
+            _exportWrite = _commands.Dispatch(route, new InstanceExportOptionsSave(_exportOptionsPathDraft,
+                new(_exportNameDraft, _exportVersionDraft, _exportSummaryDraft, _exportCategories.ToArray(), _exportExcluded.ToArray())
+                {
+                    Format = _exportFormat,
+                    IncludeGameCore = _exportFormat == InstanceExportFormat.Zip && _exportCore,
+                    IncludeLibraries = _exportFormat == InstanceExportFormat.Zip && _exportLibraries,
+                    IncludeAssets = _exportFormat == InstanceExportFormat.Zip && _exportAssets
+                })).Completion;
+            WakeOnPlatformCompletion(_exportWrite); Rebuild();
         });
     }
 }

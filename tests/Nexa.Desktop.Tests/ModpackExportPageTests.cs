@@ -56,5 +56,16 @@ internal static partial class Program
         Click("Management.导出整合包", "ui.settings.management.action"); Pump(() => saved is not null);
         AssertEqual(instance, saved!.InstanceDirectory); AssertEqual("My Pack", saved.Name); AssertEqual("3.2", saved.Version);
         AssertTrue(saved.Categories.SequenceEqual(["mods", "saves"]));
+        AssertEqual(InstanceExportFormat.Mrpack, saved.Format);
+        Pump(() => FindByKey(fixture.Shell, scene, "Management.导出整合包").IsEnabled);
+        Click("Export.Zip", "ui.settings.management.action");
+        Pump(() => scene.Nodes.Any(n => fixture.Shell.Tree.Name(n.Entity) == "Export.GameCore"));
+        Click("Export.GameCore", "ui.settings.management.action");
+        Pump(() => FindByKey(fixture.Shell, scene, "Export.GameCore").IsChecked == true);
+        saved = null;
+        Click("Management.导出整合包", "ui.settings.management.action"); Pump(() => saved is not null);
+        AssertEqual(InstanceExportFormat.Zip, saved!.Format); AssertTrue(saved.IncludeGameCore);
+        AssertTrue(saved.DestinationPath.EndsWith(".zip", StringComparison.Ordinal));
+        AssertFalse(saved.IncludeLibraries || saved.IncludeAssets);
     }
 }

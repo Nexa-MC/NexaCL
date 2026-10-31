@@ -1,4 +1,12 @@
 [
+  {"source":"导出未完成，请重试。","en":"Export did not finish. Try again.","zh-Hant":"匯出未完成，請重試。"},
+  {"source":"导出已保存。","en":"Export saved.","zh-Hant":"匯出已儲存。"},
+  {"source":"导出格式","en":"Export format","zh-Hant":"匯出格式"},
+  {"source":"包含游戏核心（含原版）","en":"Include game core (including vanilla)","zh-Hant":"包含遊戲核心（含原版）"},
+  {"source":"包含当前平台运行库","en":"Include libraries for this platform","zh-Hant":"包含目前平台執行庫"},
+  {"source":"包含资源文件（声音、语言等）","en":"Include assets (sounds, languages, etc.)","zh-Hant":"包含資源檔案（聲音、語言等）"},
+  {"source":"ZIP 解压为游戏目录；未包含的依赖需由启动器补齐。","en":"Extract ZIP to a game directory. The launcher must download any dependencies not included.","zh-Hant":"ZIP 解壓縮為遊戲目錄；未包含的依賴需由啟動器補齊。"},
+  {"source":"完整 .mrpack 或 .zip 文件路径","en":"Full .mrpack or .zip file path","zh-Hant":"完整 .mrpack 或 .zip 檔案路徑"},
   {"zh-Hant":"遊戲預設設定","source":"游戏默认设置","en":"Default game settings"},
   {"zh-Hant":"錄影","source":"录像","en":"Replays"},
   {"zh-Hant":"錄影影片","source":"录像视频","en":"Replay videos"},
