@@ -29,7 +29,7 @@ public sealed partial class MinecraftInstallService
                     if (!Guid.TryParseExact(Path.GetFileName(stage), "N", out Guid id)) continue;
                     var plan = await InstallTaskJournal.ReadAsync(root, stage, CancellationToken.None).ConfigureAwait(false);
                     var status = await InstallTaskJournal.ReadStatusAsync(stage, plan, CancellationToken.None).ConfigureAwait(false);
-                    if (status is InstallTaskStatus.Completed or InstallTaskStatus.RolledBack) continue;
+                    if (status is InstallTaskStatus.Completed or InstallTaskStatus.RolledBack or InstallTaskStatus.Dismissed) continue;
                     try { await RollbackInstallationAsync(root, id, newInstallation, CancellationToken.None).ConfigureAwait(false); }
                     catch (InvalidOperationException)
                     {

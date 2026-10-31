@@ -163,6 +163,8 @@ public sealed partial class MinecraftInstallService : IDisposable
         }
         catch (Exception exception) when (exception is not OutOfMemoryException and not AccessViolationException)
         {
+            if (execution.Stage is { } failedStage)
+                _tasks.SetDismissAction(task, () => DismissInstallationAsync(command.RootDirectory, failedStage));
             _tasks.SetRetryCancellation(task.TaskId, execution.Stage is not { } stage
                 || !File.Exists(Path.Combine(stage, InstallTaskJournal.DirectoryName, "plan.json")), taskToken);
             task.Fail(exception.Message);

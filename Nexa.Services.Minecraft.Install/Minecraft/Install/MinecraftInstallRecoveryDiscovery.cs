@@ -97,7 +97,7 @@ public sealed partial class MinecraftInstallService
                         {
                             var saved = await InstallTaskJournal.ReadAsync(root, stage, token).ConfigureAwait(false);
                             var status = await InstallTaskJournal.ReadStatusAsync(stage, saved, token).ConfigureAwait(false);
-                            if (status is InstallTaskStatus.Completed or InstallTaskStatus.RolledBack) continue;
+                            if (status is InstallTaskStatus.Completed or InstallTaskStatus.RolledBack or InstallTaskStatus.Dismissed) continue;
                             if (status == InstallTaskStatus.Pending && await ReconcileCommittedTaskAsync(root, stage, saved, token).ConfigureAwait(false)) continue;
                             if (++pending > 256)
                             {

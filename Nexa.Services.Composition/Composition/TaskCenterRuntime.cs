@@ -32,14 +32,14 @@ public static class TaskCenterRuntimeComposer
                 _ => Nexa.Xsr.XsrResult.Failure(Nexa.Xsr.XsrRuntimeErrors.TargetNotFound("任务不存在或已结束。")),
             }));
         commands.Register<TaskCenterDismissCommand>(TaskCenterRoutes.Dismiss,
-            (command, _) => ValueTask.FromResult(host.Tasks.Dismiss(command.TaskId)
+            async (command, _) => await host.Tasks.DismissAsync(command.TaskId).ConfigureAwait(false)
                 ? Nexa.Xsr.XsrResult.Success()
-                : Nexa.Xsr.XsrResult.Failure(Nexa.Xsr.XsrRuntimeErrors.TargetNotFound("任务不存在或已结束。"))));
+                : Nexa.Xsr.XsrResult.Failure(Nexa.Xsr.XsrRuntimeErrors.TargetNotFound("任务不存在或尚未结束。")));
         commands.Register<TaskCenterClearCommand>(TaskCenterRoutes.ClearFinished,
-            (_, _) =>
+            async (_, _) =>
             {
-                host.Tasks.ClearFinished();
-                return ValueTask.FromResult(Nexa.Xsr.XsrResult.Success());
+                await host.Tasks.ClearFinishedAsync().ConfigureAwait(false);
+                return Nexa.Xsr.XsrResult.Success();
             });
         var dispatchObserver = observer ?? new Observer();
         return new TaskCenterRuntime(commands.Build(dispatchObserver));

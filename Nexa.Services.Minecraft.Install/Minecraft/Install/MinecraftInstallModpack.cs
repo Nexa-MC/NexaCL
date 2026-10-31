@@ -194,7 +194,11 @@ public sealed partial class MinecraftInstallService
         {
             Exception failure = !CountryPolicy.AllowMinecraftDownloads && error is InvalidDataException && error.Message == RegionalPolicy.MinecraftDownloadUnavailable
                 ? new ModpackLocalBaseRequiredException(command.Pack.Game) : error;
-            if (parentTask is null) task.Fail(failure.Message);
+            if (parentTask is null)
+            {
+                if (journal is not null) _tasks.SetDismissAction(task, journal.DismissAsync);
+                task.Fail(failure.Message);
+            }
             return XsrResult.Failure<MinecraftInstallResult>(failure is ModpackLocalBaseRequiredException
                 ? new(XsrErrorKind.Rejected, XsrSemanticId.Parse("minecraft.modpack_base_required"), failure.Message)
                 : MinecraftErrors.InvalidRequest(failure.Message));

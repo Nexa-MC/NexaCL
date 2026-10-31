@@ -120,6 +120,13 @@ internal sealed class ModpackInstallJournal
         if (!Complete) await WriteAsync(Stage, "complete", "1"u8.ToArray(), CancellationToken.None).ConfigureAwait(false);
         InstallTaskCleanup.TryPrune(Stage, "intent.json", "files.json", "publication.json", "complete", "lock");
     }
+    internal async Task DismissAsync()
+    {
+        using var lease = Acquire();
+        if (Complete || Canceled) return;
+        await WriteAsync(Stage, "canceled", "1"u8.ToArray(), CancellationToken.None).ConfigureAwait(false);
+    }
+
     internal async Task CancelAsync()
     {
         if (Complete || Canceled) return;

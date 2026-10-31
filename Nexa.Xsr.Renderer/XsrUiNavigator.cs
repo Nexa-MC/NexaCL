@@ -133,6 +133,7 @@ public sealed class XsrUiNavigator
             && !transition.BoundKey.IsAssigned)
         {
             transition.Key = "navigation-" + (++_presentationRevision).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            transition.IndependentChildren = true;
             _tree.MarkDirty(_host, XsrUiDirtyKinds.Paint);
         }
         _observer?.OnNavigated(args);

@@ -195,6 +195,7 @@ public sealed partial class MinecraftInstallService
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
         {
             string message = committed ? "整合包文件已更新，但完成记录未能保存；请通过安装恢复任务确认结果。" + error.Message : error.Message;
+            if (prepared) _tasks.SetDismissAction(task, () => DismissInstallationAsync(root, stage));
             task.Fail(message);
             if (committed) Installed?.Invoke(root);
             return XsrResult.Failure<MinecraftInstallResult>(MinecraftErrors.InvalidRequest(message));

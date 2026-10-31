@@ -5,7 +5,7 @@ using Nexa.Services.Minecraft.Management;
 namespace Nexa.Services.Minecraft.Install;
 
 internal sealed record InstallTaskPlan(int Schema, Guid Id, DateTimeOffset CreatedAt, MinecraftInstallCommand Command);
-internal enum InstallTaskStatus { Pending, RollbackRequested, Completed, RolledBack }
+internal enum InstallTaskStatus { Pending, RollbackRequested, Completed, RolledBack, Dismissed }
 internal sealed record InstallTaskStatusRecord(int Schema, Guid Id, InstallTaskStatus Status);
 
 /// <summary>Immutable intent, written before preparing artifacts. No UI selection is needed to reopen it.</summary>
@@ -35,7 +35,8 @@ internal static class InstallTaskJournal
     {
         InstallTaskStatus current = await ReadStatusAsync(stage, plan, token).ConfigureAwait(false);
         if (status == current && status != InstallTaskStatus.Pending) return;
-        if (!((current == InstallTaskStatus.Pending && status is InstallTaskStatus.Completed or InstallTaskStatus.RollbackRequested)
+        if (!((current == InstallTaskStatus.Pending && status is InstallTaskStatus.Completed or InstallTaskStatus.RollbackRequested or InstallTaskStatus.Dismissed)
+            || current == InstallTaskStatus.Dismissed && status == InstallTaskStatus.RollbackRequested
             || current == InstallTaskStatus.RollbackRequested && status == InstallTaskStatus.RolledBack))
             throw new InvalidDataException("安装任务状态不允许此转换。");
         string directory = Path.Combine(stage, DirectoryName);

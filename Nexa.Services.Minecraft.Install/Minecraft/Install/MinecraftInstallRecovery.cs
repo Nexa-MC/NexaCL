@@ -34,7 +34,7 @@ public sealed partial class MinecraftInstallService
                 string instance = saved.Command.NewInstanceName ?? saved.Command.InstanceName!;
                 return new(instance, Path.Combine(root, "versions", instance));
             }
-            if (status is InstallTaskStatus.RollbackRequested or InstallTaskStatus.RolledBack)
+            if (status is InstallTaskStatus.RollbackRequested or InstallTaskStatus.RolledBack or InstallTaskStatus.Dismissed)
                 throw new InvalidOperationException("此任务已选择回滚，不能继续安装。");
             if (saved.Schema < 2)
             {
@@ -109,7 +109,7 @@ public sealed partial class MinecraftInstallService
             catch (OperationCanceledException) when (linked.IsCancellationRequested)
             { task.Paused(); throw; }
             catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-            { task.Fail(error.Message); throw; }
+            { _tasks.SetDismissAction(task, () => DismissInstallationAsync(root, stage)); task.Fail(error.Message); throw; }
         }
         finally { FinishExecution(execution); }
     }

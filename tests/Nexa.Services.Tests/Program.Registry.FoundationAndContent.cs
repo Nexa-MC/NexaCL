@@ -243,6 +243,7 @@ internal static partial class Program
         ("instance server status uses bounded protocol and admitted revisions", InstanceServerStatusUsesBoundedProtocolAndAdmittedRevision),
         ("instance server lists reject malformed and expanded NBT", InstanceServersRejectMalformedAndExpandedNbtWithoutModification),
         ("instance modpack export round trips selection and protects targets", InstanceModpackExportRoundTripsSelectionAndRetainsExistingTargets),
+        ("instance modpack ZIP exports only selected runtime references", InstanceModpackZipExportsOnlySelectedRuntimeReferences),
         ("automatic update differential reconstructs all platforms", AutomaticUpdateDeltaReconstructsAllPlatforms),
         ("portable update uses delta and restores original baseline", PortableUpdateUsesDeltaAndRestoresOriginalBaseline),
         ("portable update fallback and offline recovery", PortableUpdateFallbackAndOfflineRecovery),

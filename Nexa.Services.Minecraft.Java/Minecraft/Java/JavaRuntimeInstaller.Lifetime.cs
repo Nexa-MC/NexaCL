@@ -14,6 +14,7 @@ public sealed partial class JavaRuntimeInstaller
     private bool _stopBusy;
     private sealed class JavaExecution : IDisposable
     {
+        internal JavaInstallJournal? Journal { get; set; }
         private readonly object _gate = new();
         private readonly CancellationTokenSource _stop = new();
         private Task? _cancellation;
@@ -79,7 +80,14 @@ public sealed partial class JavaRuntimeInstaller
             }
             catch (OperationCanceledException) { if (reportCompletion) task?.Paused(); throw; }
             catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
-            { if (reportCompletion) task?.Fail("Java 安装未完成，已保留恢复记录。"); throw; }
+            {
+                if (reportCompletion && task is not null)
+                {
+                    if (execution.Journal is { } journal) _tasks!.SetDismissAction(task, journal.DismissAsync);
+                    task.Fail("Java 安装未完成，已保留恢复记录。");
+                }
+                throw;
+            }
         }
         finally
         {

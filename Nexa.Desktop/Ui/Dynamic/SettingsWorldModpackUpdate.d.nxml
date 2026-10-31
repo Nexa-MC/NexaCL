@@ -1,7 +1,7 @@
 <nxml-dynamic>
-  <StackPanel Key="ModpackUpdateWorkspace" Class="world-card" Weight="{data loadingWeight}" MinHeight="124">
+  <StackPanel Key="ModpackUpdateWorkspace" Class="world-stack" Weight="{data loadingWeight}" MinHeight="124">
     <StackPanel IsVisible="{data !loading}" Spacing="12">
-      <StackPanel Class="world-card-body">
+      <StackPanel Class="world-stack">
         <StackPanel IsVisible="{data online}" Class="world-stack">
           <Text Content="在线整合包" Class="world-title" />
           <Text Content="{data onlineInfo}" Localize="false" Class="world-hint" />

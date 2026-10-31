@@ -9,6 +9,9 @@ internal sealed record JavaInstallIntent(int Schema, string Root, string Compone
 
 internal sealed class JavaInstallJournal
 {
+    internal bool Dismissed => Marker("dismissed");
+    internal Task DismissAsync() => Dismissed || Completed || Canceled ? Task.CompletedTask
+        : WriteAsync(Path.Combine(Stage, "dismissed"), "1"u8.ToArray(), CancellationToken.None);
     internal const string DirectoryName = Nexa.Services.Minecraft.Process.JvmRuntimeUseRecord.JobsDirectory;
     internal string Stage { get; }
     internal string Root { get; }

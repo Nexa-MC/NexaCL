@@ -631,13 +631,15 @@ internal static partial class Program
         XsrUiScene scene = stage.Renderer.Render();
         AssertEqual("second-page", scene[2].Text);
         AssertTrue(firstKey != transition.Key);
-        AssertEqual(16d, stage.Renderer.GetTransitionOffset(stage.ContentHost));
-        stage.Renderer.SetTransitionOffset(stage.ContentHost, 0);
+        AssertEqual(0d, stage.Renderer.GetTransitionOffset(stage.ContentHost));
+        AssertEqual(8d, stage.Renderer.GetTransitionOffsetY(second));
+        stage.Renderer.SetTransitionOffsetY(second, 0);
         stage.Renderer.Render();
         AssertEqual(0d, stage.Renderer.GetTransitionOffset(stage.ContentHost));
         AssertTrue(stage.Navigation.Pop());
         stage.Renderer.Render();
-        AssertEqual(16d, stage.Renderer.GetTransitionOffset(stage.ContentHost));
+        AssertEqual(0d, stage.Renderer.GetTransitionOffset(stage.ContentHost));
+        AssertEqual(8d, stage.Renderer.GetTransitionOffsetY(first));
         stage.Renderer.ReducedMotion = true;
         stage.Navigation.Replace(second);
         stage.Renderer.Render();

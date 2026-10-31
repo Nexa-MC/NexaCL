@@ -73,6 +73,7 @@ public sealed partial class JavaRuntimeInstaller : IConfirmedJavaRuntimeInstalle
                 ValidateReviewedPlan(reviewedNewPlan, expectedPlanFingerprint);
             }
             journal ??= await JavaInstallJournal.CreateAsync(runtimeRootDirectory, requestedComponent, cancellationToken).ConfigureAwait(false);
+            execution.Journal = journal;
             execution.Ready.TrySetResult();
             if (journal.CancelRequested)
             {

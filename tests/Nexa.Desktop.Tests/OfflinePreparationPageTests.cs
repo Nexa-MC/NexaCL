@@ -50,6 +50,7 @@ internal static partial class Program
         Click("InstanceOfflineReadiness.Prepare");
         Wait(() => { lock (repairs) return repairs.Count == 1; });
         AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Busy"))!.IsVisible);
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Title"))!.IsVisible);
         AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Actions"))!.IsVisible);
         AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiElement>(Find("InstanceOfflineReadiness.Report"))!.IsVisible);
         Click("InstanceOfflineReadiness.Prepare");

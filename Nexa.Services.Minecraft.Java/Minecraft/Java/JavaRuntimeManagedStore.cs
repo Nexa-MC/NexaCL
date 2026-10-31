@@ -66,7 +66,7 @@ internal sealed class JavaRuntimeManagedStore(IReadOnlyList<string> roots)
         {
             if (!Guid.TryParseExact(Path.GetFileName(stage), "N", out _)) continue;
             var journal = await JavaInstallJournal.OpenAsync(root, stage, token).ConfigureAwait(false);
-            if (journal.Intent.Component == component && !journal.Completed && !journal.Canceled)
+            if (journal.Intent.Component == component && !journal.Completed && !journal.Canceled && !journal.Dismissed)
                 throw new IOException("此 Java 有待处理的安装任务，请先完成或取消安装。");
         }
     }

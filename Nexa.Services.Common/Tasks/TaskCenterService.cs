@@ -9,7 +9,7 @@ namespace Nexa.Services.Tasks;
 /// handle; the service owns cancellation so the cancel route works without reaching into the
 /// caller. Terminal entries stay visible until dismissed or evicted by the retention cap.
 /// </summary>
-public sealed class TaskCenterService : IDisposable
+public sealed partial class TaskCenterService : IDisposable
 {
     private const int MaxStateConflicts = 8;
     private const int RetainedTerminalEntries = 30;
@@ -34,6 +34,9 @@ public sealed class TaskCenterService : IDisposable
         public CancellationTokenSource Cancellation { get; } = new();
         public bool Released { get; set; }
         public bool OwnerDisposed { get; set; }
+        public bool Dismissing { get; set; }
+        public Func<Task>? DismissAction { get; set; }
+        public TaskCompletionSource OwnerReleased { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCenterStart Start { get; init; } = null!;
         public Func<ITaskCenterTask, CancellationToken, Task>? Retry { get; set; }
         public bool? RetryCanCancel { get; set; }
@@ -73,7 +76,7 @@ public sealed class TaskCenterService : IDisposable
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            if (_registrations.TryGetValue(start.TaskId, out Registration? previous) && !previous.Released)
+            if (_registrations.TryGetValue(start.TaskId, out Registration? previous) && (!previous.Released || previous.Dismissing))
             {
                 throw new InvalidOperationException($"Task '{start.TaskId}' is already registered.");
             }
@@ -96,7 +99,7 @@ public sealed class TaskCenterService : IDisposable
         lock (_gate)
         {
             if (_disposed || !_registrations.TryGetValue(taskId, out var previous)
-                || !previous.Entry.CanRetry || previous.Retry is null) return false;
+                || previous.Dismissing || !previous.Entry.CanRetry || previous.Retry is null) return false;
             retry = previous.Retry;
             next = new Registration(previous.Entry with
             {
@@ -112,7 +115,7 @@ public sealed class TaskCenterService : IDisposable
                 CanCancel = previous.RetryCanCancel ?? previous.Entry.CanCancel,
                 Steps = TaskStagePlanner.Create(previous.Start.StagePlan),
             }, ++_generation)
-            { Start = previous.Start, Retry = previous.Retry, RetryCanCancel = previous.RetryCanCancel };
+            { Start = previous.Start, Retry = previous.Retry, RetryCanCancel = previous.RetryCanCancel, DismissAction = previous.DismissAction };
             previous.Retry = null;
             _registrations[taskId] = next;
             Enqueue(next);
@@ -150,6 +153,7 @@ public sealed class TaskCenterService : IDisposable
         {
             if (registration.OwnerDisposed) return;
             registration.OwnerDisposed = true;
+            registration.OwnerReleased.TrySetResult();
             if (_disposed || registration.Entry.State != TaskCenterEntryState.Failed) registration.Retry = null;
             if (!_disposed && registration.Entry.State == TaskCenterEntryState.Failed && registration.Retry is not null
                 && _registrations.TryGetValue(registration.Entry.TaskId, out var current) && ReferenceEquals(current, registration))
@@ -212,7 +216,7 @@ public sealed class TaskCenterService : IDisposable
         lock (_gate)
         {
             if (!_registrations.TryGetValue(taskId, out Registration? registration)
-                || !registration.Entry.IsTerminal)
+                || !registration.Entry.IsTerminal || registration.Dismissing || registration.DismissAction is not null)
             {
                 return false;
             }
@@ -233,7 +237,7 @@ public sealed class TaskCenterService : IDisposable
         {
             foreach (KeyValuePair<string, Registration> pair in _registrations)
             {
-                if (pair.Value.Entry.IsTerminal)
+                if (pair.Value.Entry.IsTerminal && !pair.Value.Dismissing && pair.Value.DismissAction is null)
                 {
                     removed.Add(pair.Key);
                 }
@@ -263,6 +267,8 @@ public sealed class TaskCenterService : IDisposable
         ArgumentNullException.ThrowIfNull(expected);
         lock (_gate)
         {
+            if (_registrations.Values.Any(item => item.Entry.State == TaskCenterEntryState.Finished
+                && (item.Dismissing || item.DismissAction is not null))) return false;
             var current = _registrations.Values.Where(item => item.Entry.State == TaskCenterEntryState.Finished)
                 .Select(item => item.Entry).OrderBy(item => item.TaskId, StringComparer.Ordinal).ToArray();
             if (!current.SequenceEqual(expected.OrderBy(item => item.TaskId, StringComparer.Ordinal))) return false;
@@ -421,7 +427,7 @@ public sealed class TaskCenterService : IDisposable
         lock (_gate)
         {
             List<string> terminal = [.. _registrations
-                .Where(pair => pair.Value.Entry.IsTerminal)
+                .Where(pair => pair.Value.Entry.IsTerminal && !pair.Value.Dismissing && pair.Value.DismissAction is null)
                 .Select(pair => pair.Key)];
             if (terminal.Count <= RetainedTerminalEntries)
             {

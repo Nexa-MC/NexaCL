@@ -13,7 +13,7 @@ internal sealed partial class SettingsPageController
     private Task<string?>? _modpackPicking;
     private bool _modpackPickOriginal, _modpackOptional, _modpackReplace;
     private string _modpackArchive = "", _modpackOriginal = "", _modpackUpdateStatus = "";
-    private XsrUiEntityId _modpackUpdateRoot, _modpackArchiveInput, _modpackOriginalInput;
+    private XsrUiEntityId _modpackUpdateRoot, _modpackArchiveInput, _modpackOriginalInput, _modpackOverviewHost;
     private MinecraftModpackUpdatePreview? _modpackPreview;
     private Task<XsrResult<MinecraftModpackUpdatePreview>>? _modpackPreviewRead;
     private Task<XsrResult>? _modpackApplying;
@@ -107,11 +107,11 @@ internal sealed partial class SettingsPageController
 
     private void BuildModpackUpdate(Nexa.Services.Minecraft.Management.InstanceManagementSnapshot snapshot)
     {
-        if (_modpackQueries?.TryResolve(MinecraftModpackUpdateContract.Preview, out _) != true || !_shell.Tree.IsAlive(_sections)) return;
+        if (_modpackQueries?.TryResolve(MinecraftModpackUpdateContract.Preview, out _) != true || !_shell.Tree.IsAlive(_modpackOverviewHost)) return;
         CaptureModpackUpdateDrafts();
-        bool initialize = _modpackDraftsNeedReset || !_shell.Tree.IsAlive(_modpackUpdateRoot) || _shell.Tree.Parent(_modpackUpdateRoot) != _sections;
+        bool initialize = _modpackDraftsNeedReset || !_shell.Tree.IsAlive(_modpackUpdateRoot) || _shell.Tree.Parent(_modpackUpdateRoot) != _modpackOverviewHost;
         bool enabled = _managementWrite is null && _modpackPreviewRead is null && _modpackPicking is null && _modpackOnlinePreviewRead is null;
-        var nodes = WorldView(_sections, ref _modpackUpdateRoot, "ModpackUpdate", new()
+        var nodes = WorldView(_modpackOverviewHost, ref _modpackUpdateRoot, "ModpackUpdate", new()
         {
             ["loading"] = Flag(_modpackPreviewRead is not null || _modpackOnlinePreviewRead is not null || _modpackOnlineRead is not null),
             ["picker"] = Flag(_pickModpack is not null),

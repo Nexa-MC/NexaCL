@@ -12,6 +12,7 @@ public sealed class XsrUiTransition
     public double OffsetY { get; set; }
     public bool MovesSelf { get; set; }
     public bool StaggerEntry { get; set; }
+    public bool IndependentChildren { get; set; }
     public XsrUiEntityId Source { get; set; }
     internal long LastSceneVersion { get; set; }
     internal double PresentedOffsetX { get; set; }
@@ -21,6 +22,7 @@ public sealed class XsrUiTransition
     internal IReadOnlyList<XsrUiSceneNode> Outgoing { get; set; } = [];
     internal string? PresentedKey { get; set; }
     internal bool HasPresentedKey { get; set; }
+    internal bool IndependentEntry { get; set; }
 
     /// <summary>Gives content leaves independent entry tracks; containers and explicitly bound motion stay untouched.</summary>
     public static void ConfigureIndependent(XsrUiTree tree, XsrUiEntityId root, string key, double distance = 6)
