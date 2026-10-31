@@ -38,7 +38,8 @@ def verify(rid: str, output: Path):
                 try:
                     subprocess.run([
                         "lldb", "--batch", "-o", "settings set target.disable-aslr false",
-                        "-o", "run", "-o", "thread backtrace all", "--", *command,
+                        "-o", "process handle -p true -s false -n false SIGUSR1 SIGUSR2",
+                        "-k", "thread backtrace all", "-o", "run", "--", *command,
                     ], cwd=caller.parent, stdout=log, stderr=subprocess.STDOUT, timeout=180, check=False)
                 except subprocess.TimeoutExpired:
                     log.write("\nNative debugger exceeded its diagnostic time budget.\n")
