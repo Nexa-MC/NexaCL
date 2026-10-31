@@ -154,7 +154,8 @@ internal static partial class Program
                     await _operations.InvokeAsync(writer.Finish());
                 }
                 var initial = WindowStartupFacts.Decode(await Invoke(WindowCommand.StartupFacts));
-                True(initial.HardwareAccelerationDisabled); True(initial.Appearance.ReducedMotion);
+                Equal(OperatingSystem.IsWindows() || OperatingSystem.IsLinux(), initial.HardwareAccelerationDisabled);
+                True(initial.Appearance.ReducedMotion);
                 var updated = initial.Appearance with { ThemeMode = XsrUiThemeMode.Dark, ProductVersion = "2.0.0.alpha.18" };
                 using (var appearance = WindowControlProtocol.Write((int)WindowCommand.Appearance))
                 {
