@@ -191,15 +191,17 @@ internal static partial class Program
             catch (InvalidDataException) { rejected = true; }
             Require(rejected, "An arbitrary data-root ancestor link must remain rejected.");
         }
-        if (!OperatingSystem.IsMacOS()) return;
-        foreach (string alias in new[] { "/var", "/tmp", "/etc" })
+        if (OperatingSystem.IsMacOS())
         {
-            Require(ThemePaths.Canonical(alias + "/nexa-path-test") == "/private" + alias + "/nexa-path-test");
-            Require(ThemePaths.Canonical(alias + "/./nexa-path-test") == "/private" + alias + "/nexa-path-test");
-            Require(ThemePaths.Canonical(alias + "-other/nexa-path-test") == alias + "-other/nexa-path-test", "Only a complete root component is an OS alias.");
+            foreach (string alias in new[] { "/var", "/tmp", "/etc" })
+            {
+                Require(ThemePaths.Canonical(alias + "/nexa-path-test") == "/private" + alias + "/nexa-path-test");
+                Require(ThemePaths.Canonical(alias + "/./nexa-path-test") == "/private" + alias + "/nexa-path-test");
+                Require(ThemePaths.Canonical(alias + "-other/nexa-path-test") == alias + "-other/nexa-path-test", "Only a complete root component is an OS alias.");
+            }
+            Require(ThemePaths.Canonical("/private/tmp/nexa-path-test") == "/private/tmp/nexa-path-test");
         }
-        Require(ThemePaths.Canonical("/private/tmp/nexa-path-test") == "/private/tmp/nexa-path-test");
-        using var aliased = new Workspace("/tmp"); string path = aliased.Theme(), builtin = aliased.Theme("builtin"), selected = Visual(aliased); string identity;
+        using var aliased = new Workspace(OperatingSystem.IsMacOS() ? "/tmp" : null); string path = aliased.Theme(), builtin = aliased.Theme("builtin", Manifest.Replace("tests.theme", "tests.builtin", StringComparison.Ordinal)), selected = Visual(aliased); string identity;
         using (var service = aliased.Service(builtin))
         {
             var first = await Prepare(service, path); identity = first.SourceIdentity;
