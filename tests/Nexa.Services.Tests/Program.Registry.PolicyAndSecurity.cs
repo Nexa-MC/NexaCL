@@ -43,6 +43,7 @@ internal static partial class Program
         ("modpack update publication resumes and rolls back atomically", ModpackUpdatePublicationResumesAndRollsBackAtomically),
         ("online modpacks identify cache preview and publish verified updates", OnlineModpackUpdatesIdentifyDownloadPreviewAndPublish),
         ("modpack failures never publish instance", ModpackFailuresNeverPublishInstance),
+        ("modpack asset index snapshots coexist", ModpackAssetIndexesCoexist),
         ("modpack failed task retries pinned archive", () => ModpackFailedTaskRetriesPinnedArchive(new("US"))),
         ("mainland modpack failed task retries pinned archive", () => ModpackFailedTaskRetriesPinnedArchive(new("CN"))),
         ("archive actual byte limits and stored length mismatch", ArchiveActualByteLimits),
