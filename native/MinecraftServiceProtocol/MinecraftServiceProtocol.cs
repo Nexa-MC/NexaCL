@@ -9,6 +9,7 @@ internal static class MinecraftServiceProtocol
     internal const int Processes = 20, ProcessOutput = 21, CancelProcess = 22, CrashAnalyze = 23;
     internal const int StartProcess = 24;
     internal const int JavaInventory = 30, ProcessState = 100, FailureState = 101;
+    internal const int TaskRetry = 40, TaskCancel = 41, TaskDismiss = 42, TaskClear = 43, TaskDismissFinished = 44, TaskState = 102;
 
     internal static ServiceWireWriter Request(int operation)
     {

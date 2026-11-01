@@ -46,7 +46,7 @@ public static class SettingsErrors
 /// it, so Success means persisted and a failure changes nothing. A failed startup load keeps
 /// schema defaults visible but marks every cell unavailable until the next successful write.
 /// </summary>
-public sealed partial class SettingsService
+public sealed partial class SettingsService : ISettingsValueReader
 {
     public const string OwnerName = "Nexa.Services.Settings";
 

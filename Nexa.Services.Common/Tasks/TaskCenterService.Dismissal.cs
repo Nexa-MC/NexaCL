@@ -20,6 +20,7 @@ public sealed partial class TaskCenterService
 
     public Task<bool> DismissAsync(string taskId)
     {
+        if (ExternalOwner(taskId) is { } source) return source.DismissAsync(taskId[source.Prefix.Length..]);
         Registration? registration;
         lock (_gate) _registrations.TryGetValue(taskId, out registration);
         return registration is not null ? DismissRegistrationAsync(registration) : Task.FromResult(false);
@@ -32,6 +33,8 @@ public sealed partial class TaskCenterService
         int count = 0;
         foreach (var entry in entries)
             if (await DismissRegistrationAsync(entry).ConfigureAwait(false)) count++;
+        IExternalTaskCenterSource[] sources; lock (_gate) sources = _externalSources.Values.Select(partition => partition.Source).ToArray();
+        foreach (var source in sources) count += await source.ClearFinishedAsync().ConfigureAwait(false);
         return count;
     }
 

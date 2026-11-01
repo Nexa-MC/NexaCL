@@ -229,9 +229,13 @@ public static class MinecraftRuntimeComposer
         commandBuilder.Register<MinecraftSelectJavaCommand>(MinecraftRouteIds.JavaSelect, (command, token) => coordinator.SelectJavaAsync(command.Path, token));
         commandBuilder.Register(MinecraftRouteIds.ProcessCancel, MinecraftCommands.CreateCancelProcessHandler(processService));
         XsrQueryRouterBuilder queryBuilder = new();
+#if NEXA_NATIVE_SERVICES
+        NativeMinecraftReadRouters.Register(queryBuilder, host.NativeMinecraft);
+#else
         queryBuilder.Register(MinecraftRouteIds.VersionsRead, MinecraftQueries.CreateVersionsHandler(versionDiscovery));
         queryBuilder.Register(MinecraftRouteIds.InstancesRead, MinecraftQueries.CreateInstancesHandler(instanceDiscovery));
         queryBuilder.Register(MinecraftRouteIds.CrashAnalyze, MinecraftQueries.CreateCrashHandler());
+#endif
         queryBuilder.Register<MinecraftProcessOutputQuery, MinecraftProcessOutputSnapshot>(MinecraftProcessOutputContract.Query,
             (query, token) => processService.ReadOutputAsync(query.SessionId, token));
         MinecraftSafeLaunchSessionRuntime.Register(commandBuilder, queryBuilder, coordinator);

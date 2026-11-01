@@ -9,7 +9,7 @@ using Nexa.Services.Network;
 namespace Nexa.Native.Network.Client;
 
 /// <summary>Async binary network admission and local streaming HTTP handlers.</summary>
-public sealed partial class NativeNetworkClient : IAsyncDisposable
+public sealed partial class NativeNetworkClient : IAsyncDisposable, INativeDownloadPort
 {
     private readonly ServiceEndpoint _endpoint;
     private readonly nint _close;

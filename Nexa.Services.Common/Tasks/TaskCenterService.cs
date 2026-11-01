@@ -9,7 +9,7 @@ namespace Nexa.Services.Tasks;
 /// handle; the service owns cancellation so the cancel route works without reaching into the
 /// caller. Terminal entries stay visible until dismissed or evicted by the retention cap.
 /// </summary>
-public sealed partial class TaskCenterService : IDisposable
+public sealed partial class TaskCenterService : IDisposable, IAsyncDisposable
 {
     private const int MaxStateConflicts = 8;
     private const int RetainedTerminalEntries = 30;
@@ -19,10 +19,11 @@ public sealed partial class TaskCenterService : IDisposable
     private readonly object _gate = new();
     private readonly Dictionary<string, Registration> _registrations = new(StringComparer.Ordinal);
     private readonly Queue<Publication> _publications = new();
+    private readonly HashSet<TaskCompletionSource> _retryFlights = [];
     private bool _publishing;
     private bool _disposed;
     private long _generation;
-    private sealed record Publication(long Generation, long Revision, string TaskId, TaskCenterEntry? Entry);
+    private sealed record Publication(long Generation, long Revision, string TaskId, TaskCenterEntry? Entry, string? ExternalPrefix = null);
     private readonly XsrStateId _entriesId;
     private readonly XsrStateId _summaryId;
 
@@ -76,6 +77,8 @@ public sealed partial class TaskCenterService : IDisposable
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_externalSources.Keys.Any(prefix => start.TaskId.StartsWith(prefix, StringComparison.Ordinal)))
+                throw new InvalidOperationException("Task identity belongs to an attached external source.");
             if (_registrations.TryGetValue(start.TaskId, out Registration? previous) && (!previous.Released || previous.Dismissing))
             {
                 throw new InvalidOperationException($"Task '{start.TaskId}' is already registered.");
@@ -96,6 +99,7 @@ public sealed partial class TaskCenterService : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(taskId);
         Registration next;
         Func<ITaskCenterTask, CancellationToken, Task> retry;
+        TaskCompletionSource retired = new(TaskCreationOptions.RunContinuationsAsynchronously);
         lock (_gate)
         {
             if (_disposed || !_registrations.TryGetValue(taskId, out var previous)
@@ -119,21 +123,40 @@ public sealed partial class TaskCenterService : IDisposable
             previous.Retry = null;
             _registrations[taskId] = next;
             Enqueue(next);
+            _retryFlights.Add(retired);
         }
-        DrainPublications();
-        _ = Task.Run(async () =>
+        try
         {
-            using var handle = new TaskHandle(this, next);
-            try
+            DrainPublications();
+            _ = Task.Run(async () =>
             {
-                var token = handle.CancellationToken;
-                token.ThrowIfCancellationRequested();
-                await retry(handle, token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) { handle.Canceled(); }
-            catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException) { handle.Fail(error.Message); }
-        });
+                try
+                {
+                    using var handle = new TaskHandle(this, next);
+                    try
+                    {
+                        var token = handle.CancellationToken;
+                        token.ThrowIfCancellationRequested();
+                        await retry(handle, token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) { handle.Canceled(); }
+                    catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException) { handle.Fail(error.Message); }
+                }
+                finally { FinishRetry(retired); }
+            });
+        }
+        catch { FinishRetry(retired); throw; }
         return true;
+    }
+    private void FinishRetry(TaskCompletionSource retired)
+    {
+        retired.TrySetResult(); lock (_gate) _retryFlights.Remove(retired);
+    }
+    public async ValueTask DisposeAsync()
+    {
+        Dispose(); Task[] pending;
+        lock (_gate) pending = _retryFlights.Select(flight => flight.Task).ToArray();
+        await Task.WhenAll(pending).ConfigureAwait(false);
     }
 
     internal void SetRetryCancellation(string taskId, bool canCancel, CancellationToken attemptToken)
@@ -258,7 +281,8 @@ public sealed partial class TaskCenterService : IDisposable
     /// <summary>A registration snapshot for read-only previews, independent of publication timing.</summary>
     public IReadOnlyList<TaskCenterEntry> ReadEntries()
     {
-        lock (_gate) return Array.AsReadOnly(_registrations.Values.Select(item => item.Entry).ToArray());
+        lock (_gate) return Array.AsReadOnly(_registrations.Values.Select(item => item.Entry)
+            .Concat(_externalSources.Values.SelectMany(partition => partition.Entries)).ToArray());
     }
 
     /// <summary>Atomically dismisses the exact successful history captured by a cleanup preview.</summary>
@@ -271,7 +295,9 @@ public sealed partial class TaskCenterService : IDisposable
                 && (item.Dismissing || item.DismissAction is not null))) return false;
             var current = _registrations.Values.Where(item => item.Entry.State == TaskCenterEntryState.Finished)
                 .Select(item => item.Entry).OrderBy(item => item.TaskId, StringComparer.Ordinal).ToArray();
-            if (!current.SequenceEqual(expected.OrderBy(item => item.TaskId, StringComparer.Ordinal))) return false;
+            var captured = expected.OrderBy(item => item.TaskId, StringComparer.Ordinal).ToArray();
+            if (current.Length != captured.Length) return false;
+            for (int index = 0; index < current.Length; index++) if (!SameEntry(current[index], captured[index])) return false;
             foreach (var entry in current)
             {
                 Enqueue(_registrations[entry.TaskId], remove: true);
@@ -445,9 +471,16 @@ public sealed partial class TaskCenterService : IDisposable
     }
 
     // Caller holds _gate. Capturing and queuing the mutation is one indivisible operation.
-    private void Enqueue(Registration registration, bool remove = false) =>
-        _publications.Enqueue(new(registration.Generation, ++registration.Revision,
+    private void Enqueue(Registration registration, bool remove = false)
+    {
+        registration.Entry = registration.Entry with { AttemptGeneration = registration.Generation, Revision = ++registration.Revision };
+        _publications.Enqueue(new(registration.Generation, registration.Revision,
             registration.Entry.TaskId, remove ? null : registration.Entry));
+    }
+
+    private static bool SameEntry(TaskCenterEntry left, TaskCenterEntry right) =>
+        (left with { Steps = null }) == (right with { Steps = null })
+        && (left.Steps is null ? right.Steps is null : right.Steps is not null && left.Steps.SequenceEqual(right.Steps));
 
     private void DrainPublications()
     {
@@ -471,7 +504,8 @@ public sealed partial class TaskCenterService : IDisposable
                 }
                 // One publisher owns both collection and summary, including observer reentry.
                 // FIFO covers generations and revisions as well as removal tombstones.
-                if (publication.Entry is { } entry) ApplyEntry(entry);
+                if (publication.ExternalPrefix is { } prefix) ApplyExternalPartition(prefix);
+                else if (publication.Entry is { } entry) ApplyEntry(entry);
                 else RemoveEntry(publication.TaskId);
             }
         }

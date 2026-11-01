@@ -37,7 +37,7 @@ public sealed record NativeDownloadRequest(
     WorkPriority Priority = WorkPriority.Interactive,
     bool BackgroundDownloadsEnabled = true);
 
-internal enum NativeDownloadFailureKind { Http, Io, Unauthorized, InvalidData, InvalidOperation, Argument, NotSupported, Other }
-internal sealed record NativeDownloadFailure(string Source, string Message, NativeDownloadFailureKind Kind, int? HttpStatus);
-internal sealed record NativeDownloadOutcome(bool Success, string DestinationPath, string? SuccessfulSource,
+public enum NativeDownloadFailureKind { Http, Io, Unauthorized, InvalidData, InvalidOperation, Argument, NotSupported, Other }
+public sealed record NativeDownloadFailure(string Source, string Message, NativeDownloadFailureKind Kind, int? HttpStatus);
+public sealed record NativeDownloadOutcome(bool Success, string DestinationPath, string? SuccessfulSource,
     long TotalBytes, TimeSpan Duration, IReadOnlyList<NativeDownloadFailure> Errors);

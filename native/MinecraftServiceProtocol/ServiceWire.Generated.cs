@@ -11,12 +11,44 @@ internal sealed partial class ServiceWireWriter
         Count(value.Length);
         foreach (var item in value) String(item);
     }
+    internal void CapturedSettingValue(global::Nexa.Services.Settings.CapturedSettingValue? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Key);
+        SettingValueType(value.ValueType);
+        String(value.Value);
+    }
+    internal void CapturedSettingsSnapshot(global::Nexa.Services.Settings.CapturedSettingsSnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int64(value.Revision);
+        IReadOnlyList_CapturedSettingValue(value.Values);
+    }
+    internal void DownloadProgress(global::Nexa.Services.Downloads.DownloadProgress value)
+    {
+        using var scope = EnterValue();
+        DownloadStage(value.Stage);
+        String(value.Source);
+        Int64(value.DownloadedBytes);
+        Int64(value.TotalBytes);
+        Int64(value.BytesPerSecond);
+    }
+    internal void DownloadStage(global::Nexa.Services.Downloads.DownloadStage value) => Int32((int)value);
     internal void IReadOnlyDictionary_String_String(global::System.Collections.Generic.IReadOnlyDictionary<global::System.String, global::System.String>? value)
     {
         if (value is null) { Int32(-1); return; }
         using var scope = EnterValue();
         Count(value.Count);
         foreach (var item in value) { String(item.Key); String(item.Value); }
+    }
+    internal void IReadOnlyList_CapturedSettingValue(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Settings.CapturedSettingValue>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) CapturedSettingValue(item);
     }
     internal void IReadOnlyList_Int32(global::System.Collections.Generic.IReadOnlyList<global::System.Int32>? value)
     {
@@ -67,12 +99,40 @@ internal sealed partial class ServiceWireWriter
         Count(value.Count);
         foreach (var item in value) MinecraftRepairActionKind(item);
     }
+    internal void IReadOnlyList_NativeDownloadFailure(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Native.Network.Services.NativeDownloadFailure>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) NativeDownloadFailure(item);
+    }
+    internal void IReadOnlyList_NativeDownloadSource(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Native.Network.Services.NativeDownloadSource>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) NativeDownloadSource(item);
+    }
+    internal void IReadOnlyList_NativeHttpHeader(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Native.Network.Services.NativeHttpHeader>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) NativeHttpHeader(item);
+    }
     internal void IReadOnlyList_String(global::System.Collections.Generic.IReadOnlyList<global::System.String>? value)
     {
         if (value is null) { Int32(-1); return; }
         using var scope = EnterValue();
         Count(value.Count);
         foreach (var item in value) String(item);
+    }
+    internal void IReadOnlyList_TaskCenterStep(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Tasks.TaskCenterStep>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) TaskCenterStep(item);
     }
     internal void JavaArchitecture(global::Nexa.Services.Minecraft.Java.JavaArchitecture value) => Int32((int)value);
     internal void JavaBrand(global::Nexa.Services.Minecraft.Java.JavaBrand value) => Int32((int)value);
@@ -358,6 +418,87 @@ internal sealed partial class ServiceWireWriter
         MinecraftVersionKind(value.Kind);
     }
     internal void MinecraftVersionKind(global::Nexa.Services.Minecraft.MinecraftVersionKind value) => Int32((int)value);
+    internal void NativeDownloadFailure(global::Nexa.Native.Network.Services.NativeDownloadFailure? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Source);
+        String(value.Message);
+        NativeDownloadFailureKind(value.Kind);
+        Nullable_Int32(value.HttpStatus);
+    }
+    internal void NativeDownloadFailureKind(global::Nexa.Native.Network.Services.NativeDownloadFailureKind value) => Int32((int)value);
+    internal void NativeDownloadOutcome(global::Nexa.Native.Network.Services.NativeDownloadOutcome? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Boolean(value.Success);
+        String(value.DestinationPath);
+        String(value.SuccessfulSource);
+        Int64(value.TotalBytes);
+        TimeSpan(value.Duration);
+        IReadOnlyList_NativeDownloadFailure(value.Errors);
+    }
+    internal void NativeDownloadRequest(global::Nexa.Native.Network.Services.NativeDownloadRequest? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        IReadOnlyList_NativeDownloadSource(value.Sources);
+        String(value.DestinationPath);
+        Boolean(value.AllowResume);
+        Int32(value.MaxParallelSegments);
+        String(value.TemporaryExtension);
+        String(value.Digest);
+        Nullable_Int64(value.ExpectedSize);
+        Int64(value.BandwidthBytesPerSecond);
+        WorkPriority(value.Priority);
+        Boolean(value.BackgroundDownloadsEnabled);
+    }
+    internal void NativeDownloadSource(global::Nexa.Native.Network.Services.NativeDownloadSource? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Address);
+        NetworkPreferences(value.Preferences);
+        Boolean(value.AllowAutoRedirect);
+        String(value.AuthoritativeOrigin);
+        Nullable_Int64(value.MaximumLength);
+        Nullable_Int64(value.ExactLength);
+        Boolean(value.ResourceHostsOnly);
+        Boolean(value.MainlandChina);
+        String(value.UserAgent);
+        IReadOnlyList_NativeHttpHeader(value.Headers);
+        Nullable_TimeSpan(value.HeaderTimeout);
+        Int64(value.Certificate);
+        Int64(value.CertificateContext);
+        Boolean(value.Available);
+        Boolean(value.ModpackHostsOnly);
+        Int32(value.MaximumRedirects);
+    }
+    internal void NativeHttpHeader(global::Nexa.Native.Network.Services.NativeHttpHeader? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Name);
+        IReadOnlyList_String(value.Values);
+    }
+    internal void NetworkPreferences(global::Nexa.Services.Network.NetworkPreferences? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Boolean(value.AutoDiagnose);
+        Boolean(value.CurseForgeProviderEnabled);
+        Boolean(value.DnsOverHttps);
+        String(value.IpStack);
+        Boolean(value.MirrorProviderEnabled);
+        Boolean(value.ModrinthProviderEnabled);
+        Boolean(value.OfficialProviderEnabled);
+        String(value.ProxyAddress);
+        Int32(value.ProxyMode);
+        String(value.ProxyPassword);
+        String(value.ProxyUser);
+        Boolean(value.TraceEnabled);
+    }
     internal void Nullable_DateTimeOffset(global::System.Nullable<global::System.DateTimeOffset> value)
     {
         Boolean(value.HasValue); if (value.HasValue) DateTimeOffset(value.Value);
@@ -365,6 +506,10 @@ internal sealed partial class ServiceWireWriter
     internal void Nullable_Int32(global::System.Nullable<global::System.Int32> value)
     {
         Boolean(value.HasValue); if (value.HasValue) Int32(value.Value);
+    }
+    internal void Nullable_Int64(global::System.Nullable<global::System.Int64> value)
+    {
+        Boolean(value.HasValue); if (value.HasValue) Int64(value.Value);
     }
     internal void Nullable_MinecraftAprilFoolsDescriptor(global::System.Nullable<global::Nexa.Services.Minecraft.MinecraftAprilFoolsDescriptor> value)
     {
@@ -374,13 +519,49 @@ internal sealed partial class ServiceWireWriter
     {
         Boolean(value.HasValue); if (value.HasValue) ProcessPriorityClass(value.Value);
     }
+    internal void Nullable_TimeSpan(global::System.Nullable<global::System.TimeSpan> value)
+    {
+        Boolean(value.HasValue); if (value.HasValue) TimeSpan(value.Value);
+    }
     internal void ProcessPriorityClass(global::System.Diagnostics.ProcessPriorityClass value) => Int32((int)value);
+    internal void SettingValueType(global::Nexa.Services.Settings.SettingValueType value) => Int32((int)value);
+    internal void TaskCenterEntry(global::Nexa.Services.Tasks.TaskCenterEntry? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.TaskId);
+        String(value.Title);
+        String(value.Stage);
+        String(value.Detail);
+        Double(value.Progress);
+        Int32(value.CompletedFiles);
+        Int32(value.TotalFiles);
+        Int64(value.SpeedBytesPerSecond);
+        TaskCenterEntryState(value.State);
+        String(value.ErrorMessage);
+        Boolean(value.CanCancel);
+        IReadOnlyList_TaskCenterStep(value.Steps);
+        Int64(value.AttemptGeneration);
+        Boolean(value.CanRetry);
+        Int64(value.Revision);
+    }
+    internal void TaskCenterEntryState(global::Nexa.Services.Tasks.TaskCenterEntryState value) => Int32((int)value);
+    internal void TaskCenterStep(global::Nexa.Services.Tasks.TaskCenterStep? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Name);
+        String(value.Detail);
+        Double(value.Progress);
+        TaskCenterEntryState(value.State);
+    }
     internal void Version(global::System.Version? value)
     {
         Boolean(value is not null); if (value is null) return;
         using var scope = EnterValue();
         Int32(value.Major); Int32(value.Minor); Int32(value.Build); Int32(value.Revision);
     }
+    internal void WorkPriority(global::Nexa.Services.Scheduling.WorkPriority value) => Int32((int)value);
     internal void XsrError(global::Nexa.Xsr.XsrError? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -402,6 +583,34 @@ internal sealed partial class ServiceWireReader
         for (int index = 0; index < count; index++) value[index] = String() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
+    internal global::Nexa.Services.Settings.CapturedSettingValue? CapturedSettingValue()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = SettingValueType();
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Settings.CapturedSettingValue(p0!, p1, p2!);
+    }
+    internal global::Nexa.Services.Settings.CapturedSettingsSnapshot? CapturedSettingsSnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int64();
+        var p1 = IReadOnlyList_CapturedSettingValue() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Settings.CapturedSettingsSnapshot(p0, p1!);
+    }
+    internal global::Nexa.Services.Downloads.DownloadProgress DownloadProgress()
+    {
+        using var scope = EnterValue();
+        var p0 = DownloadStage();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Int64();
+        var p3 = Int64();
+        var p4 = Int64();
+        return new global::Nexa.Services.Downloads.DownloadProgress(p0, p1!, p2, p3, p4);
+    }
+    internal global::Nexa.Services.Downloads.DownloadStage DownloadStage() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 or 6 ? (global::Nexa.Services.Downloads.DownloadStage)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::System.Collections.Generic.IReadOnlyDictionary<global::System.String, global::System.String>? IReadOnlyDictionary_String_String()
     {
         int count = Count(); if (count == -1) return null;
@@ -414,6 +623,14 @@ internal sealed partial class ServiceWireReader
             if (!value.TryAdd(key, item)) throw new global::System.IO.InvalidDataException("Duplicate service map key.");
         }
         return new global::System.Collections.ObjectModel.ReadOnlyDictionary<string, string>(value);
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Settings.CapturedSettingValue>? IReadOnlyList_CapturedSettingValue()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Settings.CapturedSettingValue[count];
+        for (int index = 0; index < count; index++) value[index] = CapturedSettingValue() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
     }
     internal global::System.Collections.Generic.IReadOnlyList<global::System.Int32>? IReadOnlyList_Int32()
     {
@@ -471,12 +688,44 @@ internal sealed partial class ServiceWireReader
         for (int index = 0; index < count; index++) value[index] = MinecraftRepairActionKind();
         return value;
     }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Native.Network.Services.NativeDownloadFailure>? IReadOnlyList_NativeDownloadFailure()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Native.Network.Services.NativeDownloadFailure[count];
+        for (int index = 0; index < count; index++) value[index] = NativeDownloadFailure() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Native.Network.Services.NativeDownloadSource>? IReadOnlyList_NativeDownloadSource()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Native.Network.Services.NativeDownloadSource[count];
+        for (int index = 0; index < count; index++) value[index] = NativeDownloadSource() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Native.Network.Services.NativeHttpHeader>? IReadOnlyList_NativeHttpHeader()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Native.Network.Services.NativeHttpHeader[count];
+        for (int index = 0; index < count; index++) value[index] = NativeHttpHeader() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
     internal global::System.Collections.Generic.IReadOnlyList<global::System.String>? IReadOnlyList_String()
     {
         int count = Count(); if (count == -1) return null;
         using var scope = EnterValue();
         var value = new global::System.String[count];
         for (int index = 0; index < count; index++) value[index] = String() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Tasks.TaskCenterStep>? IReadOnlyList_TaskCenterStep()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Tasks.TaskCenterStep[count];
+        for (int index = 0; index < count; index++) value[index] = TaskCenterStep() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
     internal global::Nexa.Services.Minecraft.Java.JavaArchitecture JavaArchitecture() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 ? (global::Nexa.Services.Minecraft.Java.JavaArchitecture)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
@@ -782,6 +1031,93 @@ internal sealed partial class ServiceWireReader
         return new global::Nexa.Services.Minecraft.MinecraftVersionDescriptor(p0!, p1!, p2!, p3!, p4!, p5!, p6, p7) { Kind = p8 };
     }
     internal global::Nexa.Services.Minecraft.MinecraftVersionKind MinecraftVersionKind() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10 or 11 ? (global::Nexa.Services.Minecraft.MinecraftVersionKind)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Native.Network.Services.NativeDownloadFailure? NativeDownloadFailure()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = NativeDownloadFailureKind();
+        var p3 = Nullable_Int32();
+        return new global::Nexa.Native.Network.Services.NativeDownloadFailure(p0!, p1!, p2, p3);
+    }
+    internal global::Nexa.Native.Network.Services.NativeDownloadFailureKind NativeDownloadFailureKind() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 7 ? (global::Nexa.Native.Network.Services.NativeDownloadFailureKind)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Native.Network.Services.NativeDownloadOutcome? NativeDownloadOutcome()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Boolean();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String();
+        var p3 = Int64();
+        var p4 = TimeSpan();
+        var p5 = IReadOnlyList_NativeDownloadFailure() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Native.Network.Services.NativeDownloadOutcome(p0, p1!, p2!, p3, p4, p5!);
+    }
+    internal global::Nexa.Native.Network.Services.NativeDownloadRequest? NativeDownloadRequest()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = IReadOnlyList_NativeDownloadSource() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Boolean();
+        var p3 = Int32();
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = String();
+        var p6 = Nullable_Int64();
+        var p7 = Int64();
+        var p8 = WorkPriority();
+        var p9 = Boolean();
+        return new global::Nexa.Native.Network.Services.NativeDownloadRequest(p0!, p1!, p2, p3, p4!, p5!, p6, p7, p8, p9);
+    }
+    internal global::Nexa.Native.Network.Services.NativeDownloadSource? NativeDownloadSource()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = NetworkPreferences() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Boolean();
+        var p3 = String();
+        var p4 = Nullable_Int64();
+        var p5 = Nullable_Int64();
+        var p6 = Boolean();
+        var p7 = Boolean();
+        var p8 = String();
+        var p9 = IReadOnlyList_NativeHttpHeader();
+        var p10 = Nullable_TimeSpan();
+        var p11 = Int64();
+        var p12 = Int64();
+        var p13 = Boolean();
+        var p14 = Boolean();
+        var p15 = Int32();
+        return new global::Nexa.Native.Network.Services.NativeDownloadSource(p0!, p1!, p2, p3!, p4, p5, p6, p7, p8!, p9!, p10, p11, p12, p13, p14, p15);
+    }
+    internal global::Nexa.Native.Network.Services.NativeHttpHeader? NativeHttpHeader()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Native.Network.Services.NativeHttpHeader(p0!, p1!);
+    }
+    internal global::Nexa.Services.Network.NetworkPreferences? NetworkPreferences()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Boolean();
+        var p1 = Boolean();
+        var p2 = Boolean();
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = Boolean();
+        var p5 = Boolean();
+        var p6 = Boolean();
+        var p7 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p8 = Int32();
+        var p9 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p10 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p11 = Boolean();
+        return new global::Nexa.Services.Network.NetworkPreferences() { AutoDiagnose = p0, CurseForgeProviderEnabled = p1, DnsOverHttps = p2, IpStack = p3!, MirrorProviderEnabled = p4, ModrinthProviderEnabled = p5, OfficialProviderEnabled = p6, ProxyAddress = p7!, ProxyMode = p8, ProxyPassword = p9!, ProxyUser = p10!, TraceEnabled = p11 };
+    }
     internal global::System.Nullable<global::System.DateTimeOffset> Nullable_DateTimeOffset()
     {
         return Boolean() ? DateTimeOffset() : null;
@@ -789,6 +1125,10 @@ internal sealed partial class ServiceWireReader
     internal global::System.Nullable<global::System.Int32> Nullable_Int32()
     {
         return Boolean() ? Int32() : null;
+    }
+    internal global::System.Nullable<global::System.Int64> Nullable_Int64()
+    {
+        return Boolean() ? Int64() : null;
     }
     internal global::System.Nullable<global::Nexa.Services.Minecraft.MinecraftAprilFoolsDescriptor> Nullable_MinecraftAprilFoolsDescriptor()
     {
@@ -798,7 +1138,44 @@ internal sealed partial class ServiceWireReader
     {
         return Boolean() ? ProcessPriorityClass() : null;
     }
+    internal global::System.Nullable<global::System.TimeSpan> Nullable_TimeSpan()
+    {
+        return Boolean() ? TimeSpan() : null;
+    }
     internal global::System.Diagnostics.ProcessPriorityClass ProcessPriorityClass() { int value = Int32(); return value is 32 or 64 or 128 or 256 or 16384 or 32768 ? (global::System.Diagnostics.ProcessPriorityClass)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Settings.SettingValueType SettingValueType() { int value = Int32(); return value is 1 or 2 or 3 or 4 or 5 ? (global::Nexa.Services.Settings.SettingValueType)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Tasks.TaskCenterEntry? TaskCenterEntry()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = Double();
+        var p5 = Int32();
+        var p6 = Int32();
+        var p7 = Int64();
+        var p8 = TaskCenterEntryState();
+        var p9 = String();
+        var p10 = Boolean();
+        var p11 = IReadOnlyList_TaskCenterStep();
+        var p12 = Int64();
+        var p13 = Boolean();
+        var p14 = Int64();
+        return new global::Nexa.Services.Tasks.TaskCenterEntry(p0!, p1!, p2!, p3!, p4, p5, p6, p7, p8, p9!, p10, p11!) { AttemptGeneration = p12, CanRetry = p13, Revision = p14 };
+    }
+    internal global::Nexa.Services.Tasks.TaskCenterEntryState TaskCenterEntryState() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 ? (global::Nexa.Services.Tasks.TaskCenterEntryState)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Tasks.TaskCenterStep? TaskCenterStep()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Double();
+        var p3 = TaskCenterEntryState();
+        return new global::Nexa.Services.Tasks.TaskCenterStep(p0!, p1!, p2, p3);
+    }
     internal global::System.Version? Version()
     {
         if (!Boolean()) return null;
@@ -810,6 +1187,7 @@ internal sealed partial class ServiceWireReader
             : revision == -1 ? new global::System.Version(major, minor, build)
             : new global::System.Version(major, minor, build, revision);
     }
+    internal global::Nexa.Services.Scheduling.WorkPriority WorkPriority() { int value = Int32(); return value is 0 or 1 or 2 or 3 ? (global::Nexa.Services.Scheduling.WorkPriority)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Xsr.XsrError? XsrError()
     {
         if (!Boolean()) return null;
@@ -824,5 +1202,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "3C83D3500DDE6BC047C2F274FEC6D8E5D0C1B7CADB037E471867D08C491EAF60";
+    internal const string Fingerprint = "22BBBE9B5B411F9348AE4DA3F81983E88801C7893D42DC4077783395A9B486CD";
 }

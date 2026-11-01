@@ -16,11 +16,11 @@ public static class TaskCenterRuntimeComposer
     {
         XsrCommandRouterBuilder commands = new();
         commands.Register<TaskCenterRetryCommand>(TaskCenterRoutes.Retry,
-            (command, _) => ValueTask.FromResult(host.Tasks.RequestRetry(command.TaskId)
+            async (command, token) => await host.Tasks.RequestRetryAsync(command.TaskId, token).ConfigureAwait(false)
                 ? Nexa.Xsr.XsrResult.Success()
-                : Nexa.Xsr.XsrResult.Failure(Nexa.Xsr.XsrRuntimeErrors.TargetNotFound("任务不存在、仍在结束或不支持重试。"))));
+                : Nexa.Xsr.XsrResult.Failure(Nexa.Xsr.XsrRuntimeErrors.TargetNotFound("任务不存在、仍在结束或不支持重试。")));
         commands.Register<TaskCenterCancelCommand>(TaskCenterRoutes.Cancel,
-            (command, _) => ValueTask.FromResult(host.Tasks.RequestCancel(command.TaskId) switch
+            async (command, token) => await host.Tasks.RequestCancelAsync(command.TaskId, token).ConfigureAwait(false) switch
             {
                 TaskCenterCancelResult.Canceled => Nexa.Xsr.XsrResult.Success(),
                 // Not-cancelable is not missing: the route says which, so callers never
@@ -30,7 +30,7 @@ public static class TaskCenterRuntimeComposer
                     Nexa.Xsr.XsrSemanticId.Parse("tasks.task_not_cancelable"),
                     "该任务不支持取消。")),
                 _ => Nexa.Xsr.XsrResult.Failure(Nexa.Xsr.XsrRuntimeErrors.TargetNotFound("任务不存在或已结束。")),
-            }));
+            });
         commands.Register<TaskCenterDismissCommand>(TaskCenterRoutes.Dismiss,
             async (command, _) => await host.Tasks.DismissAsync(command.TaskId).ConfigureAwait(false)
                 ? Nexa.Xsr.XsrResult.Success()

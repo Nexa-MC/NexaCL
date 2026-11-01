@@ -2,6 +2,7 @@
   <PropertyGroup><IsAotCompatible>true</IsAotCompatible><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
   <Import Project="../ServiceProtocol/ServiceProtocol.props" />
   <ItemGroup>
+    <Compile Include="../DownloadServiceProtocol/NativeDownloadResults.cs" Link="Downloads/NativeDownloadResults.cs" />
     <ProjectReference Include="../../Nexa.Services.Network.Contracts/Nexa.Services.Network.Contracts.csproj" />
     <ProjectReference Include="../../Nexa.Services.Common.Contracts/Nexa.Services.Common.Contracts.csproj" />
     <Compile Include="../NativeUiAsyncResources.cs" Link="NativeUiAsyncResources.cs" />

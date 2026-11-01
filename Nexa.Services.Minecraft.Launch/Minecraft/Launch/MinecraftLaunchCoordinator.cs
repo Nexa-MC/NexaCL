@@ -39,7 +39,8 @@ public sealed partial class MinecraftLaunchCoordinator
     private readonly MinecraftLaunchProgressPublisher? _progress;
     private readonly MinecraftInstanceDiscovery _instances;
     private readonly IAccountLaunchAccess _accounts;
-    private readonly SettingsService _settings;
+    private readonly ISettingsValueReader _settings;
+    public ISettingsValueReader SettingsValues { get => _settings; init => _settings = value ?? throw new ArgumentNullException(nameof(value)); }
     private readonly SettingsPolicyService? _settingsPolicy;
     private readonly JavaSelectionService _javaSelection;
     private readonly IJavaRuntimeInstaller _javaInstaller;

@@ -7,3 +7,8 @@ Nexa.Domain|Nexa.Services.Minecraft.Launch.MinecraftLaunchPlan
 Nexa.Services.Minecraft.Process.Contracts|Nexa.Services.Minecraft.Process.MinecraftProcessFailure
 Nexa.Services.Minecraft.Crash.Contracts|Nexa.Services.Minecraft.Crash.MinecraftLaunchFaultReport
 Nexa.Xsr.Abstractions|Nexa.Xsr.XsrError
+Nexa.Services.Common.Contracts|Nexa.Services.Tasks.TaskCenterEntry
+Nexa.Native.Network.Client|Nexa.Native.Network.Services.NativeDownloadRequest
+Nexa.Native.Network.Client|Nexa.Native.Network.Services.NativeDownloadOutcome
+Nexa.Services.Common.Contracts|Nexa.Services.Downloads.DownloadProgress
+Nexa.Services.Settings.Contracts|Nexa.Services.Settings.CapturedSettingsSnapshot

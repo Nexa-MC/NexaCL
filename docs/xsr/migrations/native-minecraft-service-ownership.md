@@ -48,8 +48,8 @@ child retirement during module close. The existing eight-engine AOT caller still
 passes the original Minecraft algorithm ABI. The independent fixture is included in
 the four-platform native workflow. Production route adoption and the complete
 install/launch/management composition remain the next stage of this boundary.
-That adoption must also await shared-cache producers after canceled discovery;
-the application cache's synchronous disposal currently only requests cancellation.
+The subsequent adoption adds awaited retirement for shared-cache producers after
+canceled discovery, including flights detached from the logical cache by invalidation.
 
 Core-port validation: warning-free Release build, 97-project architecture gate,
 automatic coverage over 28 assemblies/14,964 executable bodies, and a clean native
@@ -66,3 +66,39 @@ chooses the matching two-, three- or four-component local constructor. Its schem
 fingerprint changes so an outdated caller cannot silently decode a new owner.
 The independent caller explicitly covers all three arities, null and malformed
 negative/omitted components before inspecting any machine-specific Java runtimes.
+
+## Canonical network delegation
+
+Minecraft receives asynchronous reverse HTTP and download ports. Reuse the existing
+64 KiB credited HTTP transfer machinery in both Minecraft peers, with Minecraft's
+own protocol identity. The host adapter sends requests through its existing native
+network client; it does not create a second download owner or budget. Download
+descriptions return the host's committed transport policy and flow back through that
+same canonical client's download admission. Default headers and timeout remain
+properties of caller-local HttpClient adapters. Bodies and physical retirement stay
+streamed and bounded; the buffered account HTTP helper is not suitable for large
+Minecraft payloads.
+
+The full production Minecraft owner will be published with `NexaNativeServices=true`
+so its Common dependency uses the same descriptor-only download facade as the UI.
+That facade accepts an explicit INativeDownloadPort and will be attached to the
+Minecraft reverse adapter, which delegates to the host's existing network session. All native
+Minecraft publishing/verification/reproducibility entrypoints must select this
+composition consistently. Managed development keeps its original download engine.
+No second download execution/cache implementation should remain reachable from the
+production Minecraft owner.
+
+## Host bridge foundation validation
+
+The next implementation adds host HTTP/download delegation, task partitions and
+immutable scalar settings snapshots. Production read routes use the native client;
+the host lazily owns and asynchronously retires that session. The descriptor-only
+download port is injectable without exchanging CLR services. Existing credited HTTP
+code is linked under a Minecraft-specific identity rather than copied.
+
+Validation at this stage: native-service UI build and default service-test build both
+have zero warnings/errors; all 860 service tests pass. The independent AOT fixture
+passes with the 82-shape schema
+`22BBBE9B5B411F9348AE4DA3F81983E88801C7893D42DC4077783395A9B486CD`.
+The full install/launch/management migration and actual production traffic through
+the new host bridge remain required before declaring Minecraft ownership complete.

@@ -2,9 +2,17 @@ using System.Net.Http.Headers;
 using System.Threading.Channels;
 using Nexa.Native.Services.Wire;
 using Nexa.Native.Ui;
+#if NEXA_MINECRAFT_HTTP_BRIDGE
+using static Nexa.Native.Minecraft.Http.NetworkHttpWire;
+#else
 using static Nexa.Native.Network.Services.NetworkHttpWire;
+#endif
 
+#if NEXA_MINECRAFT_HTTP_BRIDGE
+namespace Nexa.Native.Minecraft.Http;
+#else
 namespace Nexa.Native.Network.Services;
+#endif
 
 // Linked into the network owner only. Its peer exchanges handles and bounded chunks.
 internal sealed class NetworkHttpStreamServer : IAsyncDisposable

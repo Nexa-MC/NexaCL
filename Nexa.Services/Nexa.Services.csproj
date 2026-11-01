@@ -18,6 +18,7 @@
     <ProjectReference Include="../Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
     <ProjectReference Include="../Nexa.Services.Accounts/Nexa.Services.Accounts.csproj" Condition="'$(NexaNativeServices)' != 'true'" />
     <ProjectReference Include="../native/Nexa.Native.Accounts.Client/Nexa.Native.Accounts.Client.csproj" Condition="'$(NexaNativeServices)' == 'true'" />
+    <ProjectReference Include="../native/Nexa.Native.Minecraft.Client/Nexa.Native.Minecraft.Client.csproj" Condition="'$(NexaNativeServices)' == 'true'" />
     <ProjectReference Include="../Nexa.Services.Accounts.Contracts/Nexa.Services.Accounts.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Services.Capabilities/Nexa.Services.Capabilities.csproj" />
     <ProjectReference Include="../Nexa.Services.Capabilities.Contracts/Nexa.Services.Capabilities.Contracts.csproj" />

@@ -12,6 +12,22 @@ namespace Nexa.Services.Tests;
 /// </summary>
 internal static partial class Program
 {
+    private static void CapturedSettingsPreserveTypesDefaultsAndRequestIsolation()
+    {
+        var (service, _) = CreateService(new InMemorySettingsPort());
+        var snapshot = service.CaptureValues(); var captured = new CapturedSettingsValues(snapshot.Values);
+        AssertEqual(false, captured.GetValue<bool>(KeyToggle).Value);
+        AssertEqual(3, captured.GetValue<int>(KeyCount).Value);
+        AssertEqual(-7L, captured.GetValue<long>(KeyBig).Value);
+        AssertEqual(.5, captured.GetValue<double>(KeyRatio).Value);
+        AssertEqual("default", captured.GetValue<string>(KeyLabel).Value);
+        AssertEqual(SettingsErrors.TypeMismatchCode, captured.GetValue<string>(KeyCount).Error!.Code);
+        AssertEqual(SettingsErrors.UnknownKeyCode, captured.GetValue<string>("settings.missing").Error!.Code);
+        AssertTrue(service.SetValue(KeyCount, 12).IsSuccess);
+        AssertEqual(3, captured.GetValue<int>(KeyCount).Value);
+        var next = service.CaptureValues(); AssertTrue(next.Revision > snapshot.Revision);
+        AssertEqual(12, new CapturedSettingsValues(next.Values).GetValue<int>(KeyCount).Value);
+    }
     internal const string KeyToggle = "settings.test.toggle";
     internal const string KeyCount = "settings.test.count";
     internal const string KeyBig = "settings.test.big";

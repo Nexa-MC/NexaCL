@@ -15,7 +15,7 @@ using Nexa.Xsr.State;
 namespace Nexa.Native.Minecraft.Client;
 
 /// <summary>Local typed adapters over asynchronous Minecraft service ports.</summary>
-public sealed class NativeMinecraftClient : IAsyncDisposable
+public sealed partial class NativeMinecraftClient : IAsyncDisposable
 {
     private readonly ServiceEndpoint _endpoint;
     private readonly long _context;
@@ -25,6 +25,7 @@ public sealed class NativeMinecraftClient : IAsyncDisposable
     private Task? _retirement;
     private bool _closed;
     private readonly XsrStateStore? _replicas;
+    private readonly Action<Exception>? _failure;
 
     public static void DeclareProcessState(XsrStateStoreBuilder builder)
     {
@@ -37,20 +38,22 @@ public sealed class NativeMinecraftClient : IAsyncDisposable
         XsrStateStore? replicas = null, Action<Exception>? failure = null)
     {
         _replicas = replicas;
-        _endpoint = new((_, _) => throw new InvalidDataException("Unexpected Minecraft reverse operation."),
-            ApplyPublication, error => failure?.Invoke(error));
+        _failure = failure;
+        _endpoint = new(ExecuteReverseAsync, ApplyPublication, Report, RejectReverse);
         try { (_context, _close) = Open(_endpoint); }
         catch { _ = _endpoint.DisposeAsync().AsTask(); throw; }
         _initialization = InitializeAsync(javaRuntimeRoot, cacheDirectory, jvmHostExecutable);
         _ = _initialization.ContinueWith(static task => { _ = task.Exception; }, CancellationToken.None,
             TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     }
+    private void Report(Exception error) { try { _failure?.Invoke(error); } catch { } }
     private byte[] ApplyPublication(ReadOnlyMemory<byte> bytes)
     {
         using var reader = MinecraftServiceProtocol.Read(bytes, out int operation);
         long revision = reader.Int64(); var availability = (XsrStateAvailability)reader.Int32(); int count = reader.Count();
         if (revision <= 0 || count < 0 || availability is not (XsrStateAvailability.Available or XsrStateAvailability.Unavailable or XsrStateAvailability.Stale))
             throw new InvalidDataException("Invalid native Minecraft state.");
+        if (operation == MinecraftServiceProtocol.TaskState) return ApplyTaskState(reader, revision, count);
         if (operation == MinecraftServiceProtocol.ProcessState)
         {
             MinecraftProcessSnapshot[] items = new MinecraftProcessSnapshot[count];
@@ -191,6 +194,9 @@ public sealed class NativeMinecraftClient : IAsyncDisposable
             if (status != 0) throw new IOException("Native Minecraft shutdown failed; callbacks remain retained.");
             await Task.Delay(delay).ConfigureAwait(false); delay = Math.Min(delay * 2, 32);
         }
+        if (_hostHttp is { } http) await http.DisposeAsync().ConfigureAwait(false);
+        if (_hostPublications is { } publications) await publications.DisposeAsync().ConfigureAwait(false);
         await _endpoint.DisposeAsync().ConfigureAwait(false);
+        _downloadAdmission.Dispose();
     }
 }

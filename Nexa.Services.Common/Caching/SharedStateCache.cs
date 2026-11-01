@@ -1,7 +1,7 @@
 namespace Nexa.Services.Caching;
 
 /// <summary>One application owner for immutable, non-secret query results; no background timers.</summary>
-public sealed class SharedStateCache : ISharedStateCache, IStateCachePressureControl, IDisposable
+public sealed class SharedStateCache : ISharedStateCache, IStateCachePressureControl, IDisposable, IAsyncDisposable
 {
     private sealed record Entry(Type Type, object Value, DateTimeOffset StoredAt, StateCachePolicy Policy,
         LinkedListNode<StateCacheKey> Recency);
@@ -9,11 +9,15 @@ public sealed class SharedStateCache : ISharedStateCache, IStateCachePressureCon
     {
         public Type Type { get; } = type;
         public TaskCompletionSource<object> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Retired { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
     private readonly object _gate = new();
     private readonly Dictionary<StateCacheKey, Entry> _entries = [];
     private readonly Dictionary<StateCacheKey, Flight> _flights = [];
+    private readonly HashSet<Flight> _physicalFlights = [];
+    private readonly TaskCompletionSource _stopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private Task? _retirement;
     private readonly LinkedList<StateCacheKey> _recency = [];
     private readonly CancellationTokenSource _lifetime = new();
     private readonly TimeProvider _timeProvider;
@@ -94,7 +98,7 @@ public sealed class SharedStateCache : ISharedStateCache, IStateCachePressureCon
             else
             {
                 if (_pending >= _maximumPending) throw new InvalidOperationException("Shared query work budget is exhausted.");
-                flight = new(typeof(T)); _flights.Add(key, flight); ++_pending; produce = true;
+                flight = new(typeof(T)); _flights.Add(key, flight); _physicalFlights.Add(flight); ++_pending; produce = true;
             }
         }
         if (produce) _ = ProduceAsync(key, policy, factory, shouldStore, flight);
@@ -163,6 +167,11 @@ public sealed class SharedStateCache : ISharedStateCache, IStateCachePressureCon
             lock (_gate) FinishFlightLocked(key, flight);
             flight.Completion.TrySetException(error);
         }
+        finally
+        {
+            flight.Retired.TrySetResult();
+            lock (_gate) _physicalFlights.Remove(flight);
+        }
     }
 
     private void FinishFlightLocked(StateCacheKey key, Flight flight)
@@ -226,7 +235,22 @@ public sealed class SharedStateCache : ISharedStateCache, IStateCachePressureCon
             if (_disposed) return;
             _disposed = true; _entries.Clear(); _recency.Clear(); _flights.Clear(); _bytes = 0;
         }
-        _lifetime.Cancel();
+        try { _lifetime.Cancel(); }
+        finally { _stopped.TrySetResult(); }
         // Producers may still inspect the token while cancellation propagates.
+    }
+
+    /// <summary>Physically drains producers, including flights detached by invalidation.</summary>
+    public ValueTask DisposeAsync()
+    {
+        Dispose();
+        lock (_gate) return new(_retirement ??= RetireAsync([.. _physicalFlights]));
+    }
+    private async Task RetireAsync(Flight[] flights)
+    {
+        await _stopped.Task.ConfigureAwait(false);
+        await Task.WhenAll(flights.Select(flight => flight.Retired.Task)).ConfigureAwait(false);
+        foreach (var flight in flights) _ = flight.Completion.Task.Exception;
+        _lifetime.Dispose();
     }
 }

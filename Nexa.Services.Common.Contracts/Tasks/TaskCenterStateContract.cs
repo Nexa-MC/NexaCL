@@ -39,6 +39,8 @@ public sealed record TaskCenterEntry(
     IReadOnlyList<TaskCenterStep>? Steps = null)
 {
     public bool CanRetry { get; init; }
+    public long AttemptGeneration { get; init; }
+    public long Revision { get; init; }
     public bool IsTerminal => State is TaskCenterEntryState.Finished or TaskCenterEntryState.Failed or TaskCenterEntryState.Canceled or TaskCenterEntryState.Paused;
 };
 

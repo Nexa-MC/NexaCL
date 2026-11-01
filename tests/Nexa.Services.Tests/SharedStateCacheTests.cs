@@ -4,6 +4,30 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask SharedCacheRetirementDrainsInvalidatedProducers()
+    {
+        var cache = new SharedStateCache();
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        TaskCompletionSource stopped = new(TaskCreationOptions.RunContinuationsAsynchronously), release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        StateCacheKey key = new("native-retirement", "detached", "1");
+        StateCachePolicy policy = new(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(2), 8);
+        var pending = cache.GetOrCreateAsync(key, policy, async token =>
+        {
+            using var cancellation = token.Register(() => stopped.TrySetResult());
+            await release.Task.WaitAsync(deadline.Token);
+            token.ThrowIfCancellationRequested(); return "late";
+        }).AsTask();
+        cache.Invalidate(key);
+        Task retirement = cache.DisposeAsync().AsTask();
+        try
+        {
+            await stopped.Task.WaitAsync(deadline.Token); AssertFalse(retirement.IsCompleted);
+            release.TrySetResult();
+            bool canceled = false; try { await pending; } catch (OperationCanceledException) { canceled = true; }
+            AssertTrue(canceled); await retirement.WaitAsync(deadline.Token); await cache.DisposeAsync();
+        }
+        finally { release.TrySetResult(); await cache.DisposeAsync(); }
+    }
     private static void SharedCachePressureTrimsLruAndRecoversWithoutRefetch()
     {
         using SharedStateCache cache = new(8, 80);

@@ -97,8 +97,7 @@ internal sealed class NativeDownloadOwner : IAsyncDisposable
                     Report(new(item.Stage, item.Source, item.DownloadedBytes, item.TotalBytes, item.BytesPerSecond));
             var result = await transfer.ConfigureAwait(false);
             using var output = new ServiceWireWriter();
-            output.NativeDownloadOutcome(new(result.Success, result.DestinationPath, result.SuccessfulSource,
-                result.TotalBytes, result.Duration, result.Errors.Select(Error).ToArray()));
+            output.NativeDownloadOutcome(NativeDownloadResults.Encode(result));
             return output.Finish();
         }
         finally
@@ -111,18 +110,6 @@ internal sealed class NativeDownloadOwner : IAsyncDisposable
             finally { _current.Value = null; _slots.Enqueue(slot); _admission.Release(); }
         }
     }
-    private static NativeDownloadFailure Error(DownloadAttemptError error) => new(error.Source, error.Message,
-        error.Failure switch
-        {
-            HttpRequestException => NativeDownloadFailureKind.Http,
-            UnauthorizedAccessException => NativeDownloadFailureKind.Unauthorized,
-            InvalidDataException => NativeDownloadFailureKind.InvalidData,
-            IOException => NativeDownloadFailureKind.Io,
-            ArgumentException => NativeDownloadFailureKind.Argument,
-            InvalidOperationException => NativeDownloadFailureKind.InvalidOperation,
-            NotSupportedException => NativeDownloadFailureKind.NotSupported,
-            _ => NativeDownloadFailureKind.Other
-        }, error.Failure is HttpRequestException { StatusCode: { } code } ? (int)code : null);
     private void Changed(XsrStateChange change)
     {
         if (change.SemanticId != DownloadStateContract.TransfersKey) return;

@@ -36,7 +36,7 @@ public sealed partial class StoragePreferencesService
             token.ThrowIfCancellationRequested(); EnsureIdle();
             if (command.Kind == StorageCleanupKind.FinishedTasks)
             {
-                if (tasks?.DismissFinished(facts.Tasks) != true) throw new IOException("任务列表已变化，请重新预览。");
+                if (tasks is null || !await tasks.DismissFinishedAsync(facts.Tasks, token).ConfigureAwait(false)) throw new IOException("任务列表已变化，请重新预览。");
                 return XsrResult.Success();
             }
             if (facts.Files.Count == 0) return XsrResult.Success();
@@ -90,7 +90,8 @@ public sealed partial class StoragePreferencesService
             if (tasks is null) throw new IOException("任务历史不可用。");
             var entries = tasks.ReadEntries().Where(entry => entry.State == TaskCenterEntryState.Finished)
                 .OrderBy(entry => entry.TaskId, StringComparer.Ordinal).ToArray();
-            return new([], entries, Hash(string.Join('\n', entries.Select(entry => entry.TaskId + "\0" + entry.Title + "\0" + entry.Stage + "\0" + entry.Detail))));
+            return new([], entries, Hash(string.Join('\n', entries.Select(entry => entry.TaskId + "\0" + entry.Title + "\0" + entry.Stage + "\0" + entry.Detail
+                + "\0" + entry.AttemptGeneration.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\0" + entry.Revision.ToString(System.Globalization.CultureInfo.InvariantCulture)))));
         }
         if (kind != StorageCleanupKind.TemporaryFiles) throw new InvalidDataException("清理类型无效。");
         CheckLinks(_root);

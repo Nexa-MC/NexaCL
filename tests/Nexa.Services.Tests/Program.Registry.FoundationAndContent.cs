@@ -15,6 +15,8 @@ internal static partial class Program
         ("SharedCachePressurePreservesFlightsAndBoundsCompletionAdmission", SharedCachePressurePreservesFlightsAndBoundsCompletionAdmission),
         ("SharedCacheCoalescesWaitersWithoutSharingCancellation", SharedCacheCoalescesWaitersWithoutSharingCancellation),
         ("SharedCacheInvalidationBlocksOlderPublication", SharedCacheInvalidationBlocksOlderPublication),
+        ("captured settings preserve types defaults and request isolation", Sync(CapturedSettingsPreserveTypesDefaultsAndRequestIsolation)),
+        ("SharedCacheRetirementDrainsInvalidatedProducers", SharedCacheRetirementDrainsInvalidatedProducers),
         ("SharedCacheStoreDuringFlightKeepsProducerSharedAndRefreshPublication", SharedCacheStoreDuringFlightKeepsProducerSharedAndRefreshPublication),
         ("SharedCacheEnforcesLruBytesAndOriginalAge", Sync(SharedCacheEnforcesLruBytesAndOriginalAge)),
         ("DiscoverySnapshotReusesCatalogAcrossRestartWithFreshMetadata", DiscoverySnapshotReusesCatalogAcrossRestartWithFreshMetadata),

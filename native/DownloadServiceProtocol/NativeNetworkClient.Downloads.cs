@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Net;
 using Nexa.Native.Network.Services;
 using Nexa.Native.Services.Wire;
 using Nexa.Services.Downloads;
@@ -100,8 +99,7 @@ public sealed partial class NativeNetworkClient
             byte[] bytes = await HttpAsync(writer.Finish(), token).ConfigureAwait(false);
             using var reader = new ServiceWireReader(bytes);
             var result = reader.NativeDownloadOutcome() ?? throw new InvalidDataException("Missing native download outcome."); reader.End();
-            return new(result.Success, result.DestinationPath, result.SuccessfulSource, result.TotalBytes, result.Duration,
-                result.Errors.Select(error => new DownloadAttemptError(error.Source, error.Message, Failure(error))).ToArray());
+            return NativeDownloadResults.Decode(result);
         }
         finally
         {
@@ -110,16 +108,6 @@ public sealed partial class NativeNetworkClient
             finally { lock (_gate) { _activeDownloads--; if (_closed && _activeDownloads == 0) _downloadsDrained.TrySetResult(); } }
         }
     }
-    private static Exception Failure(NativeDownloadFailure error) => error.Kind switch
-    {
-        NativeDownloadFailureKind.Http => new HttpRequestException(error.Message, null, error.HttpStatus is { } status ? (HttpStatusCode)status : null),
-        NativeDownloadFailureKind.Unauthorized => new UnauthorizedAccessException(error.Message),
-        NativeDownloadFailureKind.InvalidData => new InvalidDataException(error.Message),
-        NativeDownloadFailureKind.InvalidOperation => new InvalidOperationException(error.Message),
-        NativeDownloadFailureKind.Argument => new ArgumentException(error.Message),
-        NativeDownloadFailureKind.NotSupported => new NotSupportedException(error.Message),
-        _ => new IOException(error.Message)
-    };
     private async Task DrainDownloadsAsync()
     {
         lock (_gate) { if (_activeDownloads == 0) _downloadsDrained.TrySetResult(); }

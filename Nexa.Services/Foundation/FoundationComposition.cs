@@ -68,7 +68,7 @@ public static class FoundationState
 /// state bridge is the store observer, so every foundation publication reaches the renderer
 /// drain without extra wiring.
 /// </summary>
-public sealed class FoundationHost : IDisposable, IAsyncDisposable
+public sealed partial class FoundationHost : IDisposable, IAsyncDisposable
 {
     private readonly IReadOnlyList<object> _services;
     private readonly SettingsLoggingSession _loggingSettings;
@@ -195,7 +195,7 @@ public sealed class FoundationHost : IDisposable, IAsyncDisposable
     public void Dispose() { _powerPressure.Dispose(); _networkCost.Dispose(); Tasks.Dispose(); Downloads.Dispose(); SharedStateCache.Dispose(); _loggingSettings.Dispose(); NetworkHttp.Dispose(); Work.Dispose(); }
 #if NEXA_NATIVE_SERVICES
     public async ValueTask DisposeAsync()
-    { await Accounts.DisposeAsync().ConfigureAwait(false); await NetworkHttp.DisposeAsync().ConfigureAwait(false); Dispose(); }
+    { await RetireNativeMinecraftAsync().ConfigureAwait(false); await Accounts.DisposeAsync().ConfigureAwait(false); await NetworkHttp.DisposeAsync().ConfigureAwait(false); Dispose(); }
 #else
     public ValueTask DisposeAsync() { Dispose(); return ValueTask.CompletedTask; }
 #endif

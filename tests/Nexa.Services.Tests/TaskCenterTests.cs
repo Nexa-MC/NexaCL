@@ -9,6 +9,78 @@ namespace Nexa.Services.Tests;
 // on one built store so the collection/summary cells behave exactly as the renderer sees them.
 internal static partial class Program
 {
+    private static async ValueTask TaskCenterShutdownDrainsBackgroundRetries()
+    {
+        var service = NewTaskCenter(out _); using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        TaskCompletionSource entered = new(TaskCreationOptions.RunContinuationsAsynchronously), canceled = new(TaskCreationOptions.RunContinuationsAsynchronously), release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using (var first = service.Begin(new("drain-retry", "任务", ["运行"]), async (_, token) =>
+        {
+            using var observe = token.Register(() => canceled.TrySetResult()); entered.TrySetResult();
+            await release.Task.WaitAsync(timeout.Token); token.ThrowIfCancellationRequested();
+        })) first.Fail("可重试");
+        AssertTrue(service.RequestRetry("drain-retry")); await entered.Task.WaitAsync(timeout.Token);
+        Task retirement = service.DisposeAsync().AsTask();
+        try
+        {
+            await canceled.Task.WaitAsync(timeout.Token); AssertFalse(retirement.IsCompleted);
+            release.TrySetResult(); await retirement.WaitAsync(timeout.Token);
+            AssertEqual(TaskCenterEntryState.Canceled, service.ReadEntries().Single().State);
+        }
+        finally { release.TrySetResult(); await service.DisposeAsync(); }
+    }
+    private static ValueTask TaskCenterTransportedHistoryUsesAttemptStamps()
+    {
+        using var service = NewTaskCenter(out _);
+        using (var first = service.Begin(new("transported", "任务", ["运行"]))) first.Complete();
+        var captured = service.ReadEntries().Select(entry => entry with { Steps = entry.Steps?.ToArray() }).ToArray();
+        AssertTrue(service.DismissFinished(captured));
+        using (var reused = service.Begin(new("transported", "任务", ["运行"]))) reused.Complete();
+        AssertFalse(service.DismissFinished(captured));
+        var current = service.ReadEntries().Select(entry => entry with { Steps = entry.Steps?.ToArray() }).ToArray();
+        AssertTrue(current[0].AttemptGeneration > captured[0].AttemptGeneration);
+        AssertTrue(service.DismissFinished(current));
+        return ValueTask.CompletedTask;
+    }
+    private static async ValueTask TaskCenterExternalPartitionsPreserveLocalTasksAndControls()
+    {
+        using var host = NewTaskCenter(out var store); using var remote = NewTaskCenter(out var remoteStore);
+        var source = new ExternalTaskFixture(remote); host.AttachExternalSource(source);
+        void Publish(XsrStateChange change)
+        {
+            if (change.SemanticId == TaskCenterStateContract.EntriesKey)
+            {
+                var snapshot = remoteStore.ReadCollection<TaskCenterEntry>(remoteStore.Resolve(TaskCenterStateContract.EntriesKey));
+                host.PublishExternalSnapshot(source, snapshot.Revision, remote.ReadEntries());
+            }
+        }
+        remoteStore.Changed += Publish;
+        try
+        {
+            using var local = host.Begin(new("local", "本地", ["运行"])); local.Report("运行", "", .25, 1, 4, 10);
+            using var foreign = remote.Begin(new("install", "原生", ["运行"])); foreign.Report("运行", "", .75, 3, 4, 20);
+            var entries = store.ReadCollection<TaskCenterEntry>(store.Resolve(TaskCenterStateContract.EntriesKey));
+            AssertEqual(2, entries.Items.Count); AssertTrue(entries.Items.Any(entry => entry.TaskId == source.Prefix + "install"));
+            var summary = store.Read<TaskCenterSummary>(store.Resolve(TaskCenterStateContract.SummaryKey)).Value;
+            AssertEqual(2, summary.ActiveCount); AssertEqual(.5, summary.Progress);
+            AssertFalse(host.PublishExternalSnapshot(source, 1, []));
+            AssertEqual(TaskCenterCancelResult.Canceled, await host.RequestCancelAsync(source.Prefix + "install"));
+            AssertTrue(foreign.CancellationToken.IsCancellationRequested); AssertFalse(local.CancellationToken.IsCancellationRequested);
+            foreign.Canceled(); AssertTrue(await host.DismissAsync(source.Prefix + "install"));
+            AssertEqual("local", host.ReadEntries().Single().TaskId);
+            local.Complete(); AssertEqual(1, await host.ClearFinishedAsync());
+            AssertEqual(0, store.ReadCollection<TaskCenterEntry>(store.Resolve(TaskCenterStateContract.EntriesKey)).Items.Count);
+        }
+        finally { remoteStore.Changed -= Publish; }
+    }
+    private sealed class ExternalTaskFixture(TaskCenterService remote) : IExternalTaskCenterSource
+    {
+        public string Prefix => "minecraft:test:";
+        public Task<bool> RetryAsync(string taskId, CancellationToken token = default) => Task.FromResult(remote.RequestRetry(taskId));
+        public Task<TaskCenterCancelResult> CancelAsync(string taskId, CancellationToken token = default) => Task.FromResult(remote.RequestCancel(taskId));
+        public Task<bool> DismissAsync(string taskId, CancellationToken token = default) => remote.DismissAsync(taskId);
+        public Task<int> ClearFinishedAsync(CancellationToken token = default) => remote.ClearFinishedAsync();
+        public Task<bool> DismissFinishedAsync(IReadOnlyList<TaskCenterEntry> expected, CancellationToken token = default) => Task.FromResult(remote.DismissFinished(expected));
+    }
     private static ValueTask TaskCenterFailurePreservesUnfinishedStages()
     {
         foreach (bool canceled in new[] { false, true })

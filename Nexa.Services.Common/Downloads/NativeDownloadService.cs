@@ -20,7 +20,7 @@ public sealed class DownloadService : IDisposable
     public DownloadBandwidthLimiter? BandwidthLimiter { get; internal set; }
     public Func<bool>? BackgroundDownloadsEnabled { get; set; }
     internal TimeProvider ProgressClock { get; init; } = TimeProvider.System;
-    private NativeNetworkClient? _client;
+    private INativeDownloadPort? _client;
     private bool _closed;
 
     public DownloadService(XsrStateStore store, int bufferSize = 128 * 1024, LogService? log = null,
@@ -29,7 +29,7 @@ public sealed class DownloadService : IDisposable
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize); ArgumentOutOfRangeException.ThrowIfNegativeOrZero(minimumSegmentBytes);
         StateStore = store ?? throw new ArgumentNullException(nameof(store));
     }
-    internal void AttachNative(NativeNetworkClient client) => _client = client;
+    internal void AttachNative(INativeDownloadPort client) => _client = client;
     public Task<DownloadTransferResult> DownloadAsync(DownloadRequest request, Action<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_closed, this); ArgumentNullException.ThrowIfNull(request);

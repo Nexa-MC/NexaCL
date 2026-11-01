@@ -1,3 +1,4 @@
+using Nexa.Native.Minecraft.Http;
 using Nexa.Native.Minecraft.Services;
 using Nexa.Native.Services;
 using Nexa.Native.Services.Wire;
@@ -7,6 +8,7 @@ using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Crash;
 using Nexa.Services.Minecraft.Java;
 using Nexa.Services.Minecraft.Process;
+using Nexa.Services.Tasks;
 using Nexa.Xsr.State;
 
 namespace Nexa.Native.Minecraft;
@@ -19,19 +21,32 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
     private readonly MinecraftVersionDiscovery _versions = new();
     private readonly XsrStateStore _store;
     private readonly ServiceStatePublisher _publications;
+    private readonly TaskCenterService _tasks;
+    private readonly NetworkHttpStreamHandler _hostHttp;
+    private readonly HttpClient _http;
+    private readonly RemoteMinecraftDownloads _downloads;
     private MinecraftInstanceDiscovery? _instances;
     private MinecraftProcessService? _processes;
     private JavaRuntimeInventoryService? _java;
 
     internal MinecraftServiceSession(NativeUiCallTable peer)
     {
-        _endpoint = new(ExecuteAsync, _ => throw new InvalidDataException("Unexpected Minecraft publication."),
+        _endpoint = new(ExecuteAsync, ReceiveHostPublication,
             error => Console.Error.WriteLine("Native Minecraft operation failed: " + error.GetType().Name), Rejected);
         _endpoint.Connect(peer);
-        XsrStateStoreBuilder builder = new(); MinecraftProcessStateComposition.DeclareState(builder); _store = builder.Build();
-        _publications = new(_endpoint); _store.Changed += Changed;
+        _downloads = new(_endpoint);
+        _hostHttp = new((request, token) => _endpoint.InvokeAsync(request, token), _ => []);
+        _http = new(_hostHttp) { Timeout = Timeout.InfiniteTimeSpan };
+        XsrStateStoreBuilder builder = new(); MinecraftProcessStateComposition.DeclareState(builder); TaskCenterStateContract.DeclareState(builder); _store = builder.Build();
+        _tasks = new(_store); _publications = new(_endpoint); _store.Changed += Changed;
     }
     internal NativeUiCallTable Table => _endpoint.Table;
+    private byte[] ReceiveHostPublication(ReadOnlyMemory<byte> bytes)
+    {
+        using var reader = MinecraftServiceProtocol.Read(bytes, out int operation);
+        if (operation != MinecraftHostOperations.DownloadProgress) throw new InvalidDataException("Unexpected Minecraft host publication.");
+        _downloads.ReceiveProgress(reader); return [];
+    }
     private async Task<byte[]> ExecuteAsync(ReadOnlyMemory<byte> bytes, CancellationToken token)
     {
         using var writer = new ServiceWireWriter();
@@ -129,6 +144,22 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
                 var inventory = await _java!.ReadAsync(new(refresh), token).ConfigureAwait(false);
                 if (!inventory.IsSuccess) throw new InvalidOperationException("Java inventory is unavailable.");
                 writer.JavaRuntimeInventorySnapshot(inventory.Value); break;
+            case MinecraftServiceProtocol.TaskRetry:
+                string retry = reader.String() ?? throw new InvalidDataException("Missing task identity."); reader.End();
+                writer.Boolean(_tasks.RequestRetry(retry)); break;
+            case MinecraftServiceProtocol.TaskCancel:
+                string cancel = reader.String() ?? throw new InvalidDataException("Missing task identity."); reader.End();
+                writer.Int32((int)_tasks.RequestCancel(cancel)); break;
+            case MinecraftServiceProtocol.TaskDismiss:
+                string dismiss = reader.String() ?? throw new InvalidDataException("Missing task identity."); reader.End();
+                writer.Boolean(await _tasks.DismissAsync(dismiss).ConfigureAwait(false)); break;
+            case MinecraftServiceProtocol.TaskClear:
+                reader.End(); writer.Int32(await _tasks.ClearFinishedAsync().ConfigureAwait(false)); break;
+            case MinecraftServiceProtocol.TaskDismissFinished:
+                int expectedCount = reader.Count(); if (expectedCount < 0) throw new InvalidDataException("Missing task history.");
+                TaskCenterEntry[] expected = new TaskCenterEntry[expectedCount];
+                for (int index = 0; index < expectedCount; index++) expected[index] = reader.TaskCenterEntry() ?? throw new InvalidDataException("Missing task history entry.");
+                reader.End(); writer.Boolean(_tasks.DismissFinished(expected)); break;
             default: throw new InvalidDataException("Unknown Minecraft service operation.");
         }
         return writer.Finish();
@@ -147,13 +178,19 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
     private void Changed(XsrStateChange change)
     {
         bool processes = change.SemanticId == MinecraftProcessStateComposition.SessionsKey;
-        if (!processes && change.SemanticId != MinecraftProcessStateComposition.FailuresKey) return;
+        bool tasks = change.SemanticId == TaskCenterStateContract.EntriesKey;
+        if (!processes && !tasks && change.SemanticId != MinecraftProcessStateComposition.FailuresKey) return;
         var entry = _store.CaptureSnapshot().Entries.Single(item => item.SemanticId == change.SemanticId);
-        _publications.Post(processes ? 0 : 1, entry.Revision, () =>
+        _publications.Post(tasks ? 2 : processes ? 0 : 1, entry.Revision, () =>
         {
-            using var writer = MinecraftServiceProtocol.Request(processes ? MinecraftServiceProtocol.ProcessState : MinecraftServiceProtocol.FailureState);
+            using var writer = MinecraftServiceProtocol.Request(tasks ? MinecraftServiceProtocol.TaskState : processes ? MinecraftServiceProtocol.ProcessState : MinecraftServiceProtocol.FailureState);
             writer.Int64(entry.Revision); writer.Int32((int)entry.Availability);
-            if (processes)
+            if (tasks)
+            {
+                var items = (IReadOnlyList<TaskCenterEntry>)entry.Value!; writer.Count(items.Count);
+                foreach (var item in items) writer.TaskCenterEntry(item);
+            }
+            else if (processes)
             {
                 var items = (IReadOnlyList<MinecraftProcessSnapshot>)entry.Value!; writer.Count(items.Count);
                 foreach (var item in items) writer.MinecraftProcessSnapshot(item);
@@ -169,8 +206,11 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _endpoint.StopAsync().ConfigureAwait(false);
+        await _tasks.DisposeAsync().ConfigureAwait(false);
         if (_processes is not null) await _processes.DisposeAsync().ConfigureAwait(false);
+        _http.Dispose(); await _hostHttp.DisposeAsync().ConfigureAwait(false);
         _store.Changed -= Changed; await _publications.DisposeAsync().ConfigureAwait(false);
-        _cache.Dispose(); await _endpoint.DisposeAsync().ConfigureAwait(false); _initialization.Dispose();
+        await _cache.DisposeAsync().ConfigureAwait(false);
+        await _endpoint.DisposeAsync().ConfigureAwait(false); _initialization.Dispose();
     }
 }

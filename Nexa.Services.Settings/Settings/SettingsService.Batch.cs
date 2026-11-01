@@ -23,6 +23,13 @@ public sealed partial class SettingsService
         return (committed.Revision, committed.Values);
     }
 
+    public CapturedSettingsSnapshot CaptureValues()
+    {
+        var snapshot = ReadBatch();
+        return new(snapshot.Revision, Array.AsReadOnly(Schema.Definitions.Select(definition =>
+            new CapturedSettingValue(definition.Key.Value, definition.ValueType, snapshot.Values[definition.Key.Value])).ToArray()));
+    }
+
     private void PublishCommittedSnapshot() => Volatile.Write(ref _committed,
         new(Revision, new ReadOnlyDictionary<string, string>(CurrentEntries())));
 

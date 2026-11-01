@@ -1,7 +1,11 @@
 using System.Net.Http.Headers;
 using Nexa.Native.Services.Wire;
 
+#if NEXA_MINECRAFT_HTTP_BRIDGE
+namespace Nexa.Native.Minecraft.Http;
+#else
 namespace Nexa.Native.Network.Services;
+#endif
 
 internal static class NetworkHttpWire
 {
