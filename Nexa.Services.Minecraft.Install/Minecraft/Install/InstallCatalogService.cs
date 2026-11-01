@@ -33,7 +33,7 @@ public static partial class InstallCompatibility
             && Version.TryParse(numeric, out Version? quiltGame)) allowed = quiltGame >= new Version(1, 14, 4);
         return allowed ? null : $"{loader} 不支持 Minecraft {game}。";
     }
-    public static bool IsAddon(InstallLoader loader) => loader is InstallLoader.FabricApi or InstallLoader.Qsl or InstallLoader.OptiFabric;
+    public static bool IsAddon(InstallLoader loader) => InstallLoaderFacts.IsAddon(loader);
     public static bool CanCombine(InstallLoader first, InstallLoader second, string game) => first == second
         || first == InstallLoader.Fabric && second is InstallLoader.OptiFine or InstallLoader.FabricApi or InstallLoader.OptiFabric
         || second == InstallLoader.Fabric && first is InstallLoader.OptiFine or InstallLoader.FabricApi or InstallLoader.OptiFabric

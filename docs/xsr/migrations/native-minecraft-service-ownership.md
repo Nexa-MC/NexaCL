@@ -188,3 +188,102 @@ startup replay operate over its process state and await canonical host settings
 capture/planning/commit/rollback. The owner references Management directly; its
 static caller references only Management.Contracts. Production routing moves once
 the shared work/process ownership required by this lifetime is present.
+
+Launch account access is an asynchronous reverse port to the canonical account
+owner. The Minecraft peer receives a privileged launch profile and resolved launch
+identity as bounded binary values; neither enters renderer state. The caller-local
+adapter retains account refresh/session ownership. The synchronous profile method
+is unsupported in the remote adapter and is never implemented by waiting on IPC.
+
+The full launch coordinator is composed in Minecraft with the existing Java,
+process, file-completion and recovery implementations. Host reverse ports supply
+account access, settings, resource admission, preflight evaluation and window
+observations. Progress, Java acquisition and preflight prompts replicate typed
+state with their source revisions. The UI sends decisions by numeric commands.
+Module close cancels admission and waits for process/finalization work while host
+callbacks remain available.
+
+Native launch retirement also retains JVM observation/recovery tasks until process
+exit and their final settings transactions complete. The owner closes incoming
+commands before waiting for these finalizers; reverse host ports remain connected
+until afterward. A visible-window probe invokes the caller-local taskbar callback
+before returning its typed observation. Alternate-root Java scans use the same
+asynchronous registration snapshot as the primary scan.
+
+Production launch routing uses the native client after its asynchronous
+configuration completes. The managed developer composition and its public service
+APIs stay available in the managed build. Native production composition must not
+construct a second launch coordinator, installer, process manager or Java registry.
+Its instance source delegates to native discovery, while its progress and process
+collections are replicas in the shared host store. Native configuration failures
+are observed before desktop routes admit launch work.
+
+The raw managed `MinecraftLaunchRequest` route is a developer-level API containing
+JSON nodes. Production UI continues to submit instance/account identifiers through
+`minecraft.start`; no raw manifest object is transported over the native boundary.
+Launch diagnostics and post-exit finalization remain owned by Minecraft. Queries
+cross as typed snapshots, and pending finalization is replicated so the desktop's
+existing exit coordinator can await the owner without a synchronous remote read.
+
+JVM observations, sampled run windows and inventory contexts also originate in
+Minecraft and replicate into the host store. Resource-history estimation remains
+canonical in the host: Minecraft submits a typed, validated observation sample
+through an asynchronous reverse sink instead of constructing a second history.
+Observation, context collection and recovery are all retained until retirement.
+
+The independent native caller also dispatches the platform launch-hook worker
+before composing its fixture. It links the two standalone OS supervisor sources from Platform.Runtime to
+exercise the real command supervisor used by the production executable without
+referencing that project and its metadata-service dependency. No Minecraft
+service implementation enters the caller. Post-exit validation covers the actual
+supervisor handshake and finalization-state retirement.
+
+Native production launch must retain the existing preflight remediation actions.
+Their domain algorithms belong to Minecraft.Launch; the managed composition keeps
+its public binding facade and forwards to the same domain service. Native bindings
+submit typed remediation requests to Minecraft. Java selection writes await a
+canonical settings mutation port. Installation and launch bind the same owner-side
+installer and completion instances before the production UI admits commands.
+Native remediation composition exposes only the remote binding; managed-only
+Java/install binding methods remain in the managed build. The production install
+composer must not register a second local remediation owner. The native endpoint
+also enforces the existing confirmation requirement before running domain work.
+The remediation domain consumes an installation command interface from
+Install.Contracts; Launch does not gain a dependency on the Install implementation.
+The managed install service implements that existing command shape directly.
+Primary-instance scope resolution and installed-loader projection move from the
+aggregate composition project into Metadata, preserving the public scope type
+through an assembly forwarder. Addon classification is a pure Install.Contracts
+rule; the existing managed InstallCompatibility method forwards to it. This keeps
+remediation independent of aggregate services and avoids an implementation cycle.
+File repair uses the existing shared Recovery.Storage operation gate from Launch
+so it remains mutually exclusive with restore/capture operations. Launch receives
+an explicit reference and internal visibility to that gate; no second lock is
+introduced for the native route.
+Before requesting a game-window observation, Minecraft flushes pending process and
+launch publications. The host's visible-window integration therefore reads the
+matching process snapshot, including its requested title, before applying OS
+window effects.
+
+Launch ownership validation: the independent NativeAOT caller passes the 167-shape
+schema `BEE5CDD5919A68FFCBA02FA8D27908660C3EF0814C53ED4ABE63D83C229B0508`.
+It prepares a real installed instance through Java inspection, asynchronous account
+resolution and file completion; rejects stale/declined preflight and unconfirmed
+repair; selects Java through canonical settings writes and repairs files through
+the owner. A successful launch confirms its window only after process replication,
+retains real OS post-exit hooks until completion, transports diagnostics and all
+three JVM observation collections, and records a successful-run recovery baseline.
+The three-second fixture exercises observation transport; it does not constitute a
+long-run resource-history calibration test. Existing direct-process cancellation,
+held-policy shutdown and 40 repeated quiet-lease grace periods also pass.
+
+The full production NativeAOT UI passes module admission/CLI checks, headless shell
+validation (61 semantic nodes, including native launch composition), and actual
+X11 window visibility followed by normal OS closure with exit code zero. Native
+owner and production desktop compilation report no warnings or errors.
+Final regression gates: 109 related managed tests pass; architecture validation
+passes for all 97 projects. The independent NativeAOT network compatibility caller
+continues to stream a 20 MiB upload/response and drain canceled/blocked operations
+with the shared work-lease implementation. These checks cover the launch adoption;
+installation/catalog, remaining management, Updates and Host migration still need
+their own production ownership closure.

@@ -2,7 +2,7 @@ using System.Collections.Frozen;
 
 namespace Nexa.Services.Capabilities;
 
-public sealed class ResourceObservationHistory(int capacity = 128)
+public sealed class ResourceObservationHistory(int capacity = 128) : IResourceObservationSink
 {
     private readonly object _gate = new();
     private readonly Queue<ResourceObservationSample> _samples = new();
@@ -16,6 +16,10 @@ public sealed class ResourceObservationHistory(int capacity = 128)
             while (_samples.Count >= _capacity) _samples.Dequeue();
             _samples.Enqueue(sample);
         }
+    }
+    public ValueTask RecordAsync(ResourceObservationSample sample, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested(); Record(sample); return ValueTask.CompletedTask;
     }
 
     public IReadOnlyList<ResourceObservationSample> Snapshot()

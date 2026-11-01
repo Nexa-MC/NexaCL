@@ -629,3 +629,5 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftErrors))]
 
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftLibraryRoutes))]
+
+[assembly: TypeForwardedTo(typeof(Nexa.Services.Capabilities.MinecraftPrimaryInstanceScope))]

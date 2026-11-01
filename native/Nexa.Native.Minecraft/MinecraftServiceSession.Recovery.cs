@@ -8,7 +8,7 @@ internal sealed partial class MinecraftServiceSession
 {
     private async Task<byte[]> ExecuteRecoveryAsync(int operation, ServiceWireReader reader, CancellationToken token)
     {
-        var recovery = new InstanceRecoveryService(_settings, _store);
+        var recovery = new InstanceRecoveryService(_settings, _store) { WorkScheduler = _work };
         using var writer = new ServiceWireWriter();
         switch (operation)
         {

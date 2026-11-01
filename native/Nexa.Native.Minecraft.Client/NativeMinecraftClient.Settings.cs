@@ -9,6 +9,7 @@ public sealed partial class NativeMinecraftClient
     private ISettingsSnapshotReader? _settingsSnapshots;
     private ISettingsPolicyReader? _settingsPolicies;
     private ISettingsRenameTransactions? _settingsTransactions;
+    private ISettingsPolicyWriter? _settingsWriter;
     public void AttachSettings(ISettingsSnapshotReader snapshots, ISettingsPolicyReader policies)
     {
         ArgumentNullException.ThrowIfNull(snapshots); ArgumentNullException.ThrowIfNull(policies);
@@ -18,6 +19,7 @@ public sealed partial class NativeMinecraftClient
             if (_settingsSnapshots is not null) throw new InvalidOperationException("Canonical settings are already attached.");
             _settingsSnapshots = snapshots; _settingsPolicies = policies; _settingsTransactions = policies as ISettingsRenameTransactions;
             _settingsRecovery = policies as ISettingsRecoveryTransactions;
+            _settingsWriter = policies as ISettingsPolicyWriter;
         }
     }
     private async Task<byte[]> ExecuteSettingsAsync(int operation, ReadOnlyMemory<byte> bytes, CancellationToken token)
@@ -28,6 +30,12 @@ public sealed partial class NativeMinecraftClient
             reader.End();
             var source = Volatile.Read(ref _settingsSnapshots) ?? throw new InvalidOperationException("Canonical settings snapshots are not attached.");
             writer.CapturedSettingsSnapshot(await source.CaptureAsync(token).ConfigureAwait(false));
+        }
+        else if (operation == MinecraftHostOperations.SettingsPolicySet)
+        {
+            var command = reader.SettingsMutation() ?? throw new InvalidDataException("Missing settings mutation."); reader.End();
+            var target = Volatile.Read(ref _settingsWriter) ?? throw new InvalidOperationException("Canonical settings mutations are not attached.");
+            writer.XsrError((await target.SetAsync(command, token).ConfigureAwait(false)).Error);
         }
         else if (operation == MinecraftHostOperations.SettingsPolicyRead)
         {

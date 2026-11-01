@@ -23,6 +23,7 @@ public sealed partial class FoundationHost
                 var client = new NativeMinecraftClient(javaRoot,
                     CacheDirectory is null ? null : Path.Combine(CacheDirectory, "native-minecraft"),
                     Path.Combine(AppContext.BaseDirectory, "Nexa.Jvm.Host" + (OperatingSystem.IsWindows() ? ".exe" : "")),
+                    replicas: StateStore,
                     failure: error => Logging.Warn("Minecraft", "Native Minecraft callback failed: " + error.GetType().Name));
                 _nativeMinecraft = client; Tasks.AttachExternalSource(client);
                 client.AttachTasks((revision, entries) => Tasks.PublishExternalSnapshot(client, revision, entries));
@@ -32,6 +33,9 @@ public sealed partial class FoundationHost
                 client.AttachDownloads(NetworkHttp.Client, _nativeMinecraftHttp);
                 client.AttachJavaRegistry(JavaRegistrations, JavaManagedRuntimeRoots.Count == 0 ? [javaRoot] : JavaManagedRuntimeRoots);
                 client.AttachSettings(Settings, SettingsPolicy);
+                client.AttachWork(Work);
+                client.AttachAccounts(Accounts);
+                client.AttachObservations(ObservationHistory);
                 return client;
             }
         }

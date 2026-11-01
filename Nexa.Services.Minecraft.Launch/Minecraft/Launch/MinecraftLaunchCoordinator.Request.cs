@@ -456,7 +456,7 @@ public sealed partial class MinecraftLaunchCoordinator
 
     private T GetSetting<T>(string key, T fallback)
     {
-        XsrResult<T> result = _settings.GetValue<T>(key);
+        XsrResult<T> result = (_preparationSettings.Value ?? _settings).GetValue<T>(key);
         return result.IsSuccess ? result.Value : fallback;
     }
 

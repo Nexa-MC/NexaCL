@@ -6,8 +6,14 @@ using Nexa.Xsr;
 
 namespace Nexa.Native.Minecraft;
 
-internal sealed partial class RemoteMinecraftSettings(ServiceEndpoint endpoint) : ISettingsPolicyReader, ISettingsSnapshotReader, ISettingsRenameTransactions, ISettingsRecoveryTransactions
+internal sealed partial class RemoteMinecraftSettings(ServiceEndpoint endpoint) : ISettingsPolicyReader, ISettingsSnapshotReader, ISettingsRenameTransactions, ISettingsRecoveryTransactions, ISettingsPolicyWriter
 {
+    public async ValueTask<XsrResult> SetAsync(SettingsMutation command, CancellationToken cancellationToken = default)
+    {
+        using var request = MinecraftServiceProtocol.Request(MinecraftHostOperations.SettingsPolicySet); request.SettingsMutation(command);
+        byte[] bytes = await _endpoint.InvokeAsync(request.Finish(), cancellationToken).ConfigureAwait(false);
+        using var reader = new ServiceWireReader(bytes); var error = reader.XsrError(); reader.End(); return error is null ? XsrResult.Success() : XsrResult.Failure(error);
+    }
     private readonly ServiceEndpoint _endpoint = endpoint;
     public async ValueTask<XsrResult<SettingsRenameReceipt>> PrepareRenameAsync(string source, string destination, CancellationToken token = default)
     {

@@ -6,6 +6,8 @@
     <RootNamespace>Nexa.Services</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Nexa.Services.Minecraft.Install.Contracts/Nexa.Services.Minecraft.Install.Contracts.csproj" />
+    <ProjectReference Include="../Nexa.Services.Recovery.Storage/Nexa.Services.Recovery.Storage.csproj" />
     <ProjectReference Include="../Nexa.Services.Accounts.Contracts/Nexa.Services.Accounts.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Services.Common/Nexa.Services.Common.csproj" />
     <ProjectReference Include="../Nexa.Services.Common.Contracts/Nexa.Services.Common.Contracts.csproj" />

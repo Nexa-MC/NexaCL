@@ -1,3 +1,4 @@
+#if !NEXA_NATIVE_SERVICES
 using Nexa.Services.Capabilities;
 using Nexa.Services.Foundation;
 using Nexa.Services.Minecraft;
@@ -282,3 +283,5 @@ public static class MinecraftRuntimeComposer
             owned);
     }
 }
+
+#endif

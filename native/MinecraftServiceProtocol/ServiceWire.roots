@@ -36,3 +36,17 @@ Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.
 Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceRecoveryReport
 Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceRecoveryRestoreCommand
 Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceRecoveryResumeCommand
+Nexa.Services.Accounts.Contracts|Nexa.Services.Accounts.LaunchProfile
+Nexa.Domain|Nexa.Services.Minecraft.Launch.MinecraftLaunchIdentity
+Nexa.Services.Minecraft.Launch.Contracts|Nexa.Services.Minecraft.Launch.LaunchPreflightDecision
+Nexa.Services.Minecraft.Launch.Contracts|Nexa.Services.Minecraft.Launch.LaunchPreflightPrompt
+Nexa.Services.Capabilities.Contracts|Nexa.Services.Capabilities.CapabilityPreflightReport
+Nexa.Services.Minecraft.Launch.Contracts|Nexa.Services.Minecraft.Launch.MinecraftLaunchProgressSnapshot
+Nexa.Services.Minecraft.Launch.Contracts|Nexa.Services.Minecraft.Launch.MinecraftSafeLaunchSessionSnapshot
+Nexa.Services.Minecraft.Launch.Contracts|Nexa.Services.Minecraft.Launch.MinecraftLaunchPlanDiagnosticSnapshot
+Nexa.Services.Capabilities.Contracts|Nexa.Services.Capabilities.ResourceObservationSample
+Nexa.Services.Minecraft.Process.Contracts|Nexa.Services.Minecraft.Process.JvmHostObservation
+Nexa.Services.Minecraft.Process.Contracts|Nexa.Services.Minecraft.Process.JvmRunSample
+Nexa.Services.Minecraft.Process.Contracts|Nexa.Services.Minecraft.Process.JvmRunContext
+Nexa.Services.Capabilities.Contracts|Nexa.Services.Capabilities.RemediationRequest
+Nexa.Services.Capabilities.Contracts|Nexa.Services.Capabilities.RemediationResult

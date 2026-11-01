@@ -7,6 +7,25 @@ namespace Nexa.Native.Minecraft.Client;
 
 public sealed partial class NativeMinecraftClient
 {
+    private Task? _installationConfiguration;
+    private string? _installationCountry, _installationApiKey;
+    public Task EnsureInstallationConfiguredAsync(string countryCode, string? curseForgeApiKey = null, CancellationToken token = default)
+    {
+        lock (_gate)
+        {
+            ObjectDisposedException.ThrowIf(_closed, this);
+            if (_installationConfiguration is null)
+            {
+                _installationCountry = countryCode; _installationApiKey = curseForgeApiKey;
+                _installationConfiguration = ConfigureInstallationAsync(countryCode, curseForgeApiKey, CancellationToken.None);
+                _ = _installationConfiguration.ContinueWith(static task => { _ = task.Exception; }, CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            }
+            else if (_installationCountry != countryCode || _installationApiKey != curseForgeApiKey)
+                throw new InvalidOperationException("Minecraft installation configuration changed after admission.");
+            return _installationConfiguration.WaitAsync(token);
+        }
+    }
     public async Task<MinecraftInstallEditSnapshot> ReadInstallationAsync(MinecraftInstallEditQuery query, CancellationToken token = default)
     {
         byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.InstallEditRead, writer =>

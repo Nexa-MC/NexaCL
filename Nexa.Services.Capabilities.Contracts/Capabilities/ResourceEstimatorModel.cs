@@ -2,6 +2,11 @@
 
 namespace Nexa.Services.Capabilities;
 
+public interface IResourceObservationSink
+{
+    ValueTask RecordAsync(ResourceObservationSample sample, CancellationToken cancellationToken = default);
+}
+
 public sealed record ResourceObservationSample(
     string InstanceKey,
     string Loader,

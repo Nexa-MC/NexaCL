@@ -8,7 +8,9 @@
     <ProjectReference Include="../../Nexa.Services.Minecraft.Java/Nexa.Services.Minecraft.Java.csproj" />
     <ProjectReference Include="../../Nexa.Services.Minecraft.Process/Nexa.Services.Minecraft.Process.csproj" />
     <ProjectReference Include="../../Nexa.Services.Minecraft.Install/Nexa.Services.Minecraft.Install.csproj" />
+    <ProjectReference Include="../../Nexa.Services.Minecraft.Launch/Nexa.Services.Minecraft.Launch.csproj" />
     <ProjectReference Include="../../Nexa.Services.Minecraft.Management/Nexa.Services.Minecraft.Management.csproj" />
+    <ProjectReference Include="../../Nexa.Services.Accounts.Contracts/Nexa.Services.Accounts.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Native.Network.Client/Nexa.Native.Network.Client.csproj" />
     <Compile Include="../MinecraftServiceProtocol/*.cs" Link="Wire/%(Filename)%(Extension)" />
     <Compile Include="../MinecraftHostProtocol/NetworkProtocol.cs" Link="Host/NetworkProtocol.cs" />
@@ -17,7 +19,11 @@
     <Compile Include="../MinecraftHostProtocol/RemoteJavaRegistry.cs" Link="Host/RemoteJavaRegistry.cs" />
     <Compile Include="../MinecraftHostProtocol/RemoteMinecraftSettings.cs" Link="Host/RemoteMinecraftSettings.cs" />
     <Compile Include="../MinecraftHostProtocol/RemoteMinecraftSettings.Recovery.cs" Link="Host/RemoteMinecraftSettings.Recovery.cs" />
+    <Compile Include="../MinecraftHostProtocol/RemoteMinecraftAccounts.cs" Link="Host/RemoteMinecraftAccounts.cs" />
+    <Compile Include="../MinecraftHostProtocol/RemoteMinecraftWindow.cs" Link="Host/RemoteMinecraftWindow.cs" />
     <Compile Include="../DownloadServiceProtocol/DownloadProgressSink.cs" Link="Host/DownloadProgressSink.cs" />
+    <Compile Include="../DownloadServiceProtocol/RemoteWorkScheduler.cs" Link="Host/RemoteWorkScheduler.cs" />
+    <Compile Include="../DownloadServiceProtocol/DownloadProtocol.cs" Link="Host/DownloadProtocol.cs" />
     <Compile Include="../NetworkServiceProtocol/NetworkHttpWire.cs" Link="Host/NetworkHttpWire.cs" />
     <Compile Include="../NetworkServiceProtocol/NetworkHttpStreamHandler.cs" Link="Host/NetworkHttpStreamHandler.cs" />
     <Compile Include="../NativeBufferResults.cs" Link="NativeBufferResults.cs" />

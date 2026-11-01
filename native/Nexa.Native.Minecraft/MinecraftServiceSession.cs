@@ -9,6 +9,7 @@ using Nexa.Services.Downloads;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Crash;
 using Nexa.Services.Minecraft.Java;
+using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Services.Tasks;
 using Nexa.Xsr.State;
@@ -21,6 +22,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
     private readonly SemaphoreSlim _initialization = new(1, 1);
     private bool _closing;
     private readonly SharedStateCache _cache = new();
+    private readonly RemoteWorkScheduler _work;
     private readonly MinecraftVersionDiscovery _versions = new();
     private readonly XsrStateStore _store;
     private readonly ServiceStatePublisher _publications;
@@ -43,6 +45,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         _endpoint = new(ExecuteAsync, ReceiveHostPublication,
             error => Console.Error.WriteLine("Native Minecraft operation failed: " + error.GetType().Name), Rejected);
         _endpoint.Connect(peer);
+        _work = new(_endpoint);
         _downloads = new(_endpoint);
         _hostHttp = new((request, token) => _endpoint.InvokeAsync(request, token), _ => []);
         _strictHostHttp = new((request, token) => _endpoint.InvokeAsync(request, token), _ =>
@@ -56,7 +59,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         _http.Timeout = TimeSpan.FromMinutes(10);
         _metadataHttp = new(_hostHttp, disposeHandler: false) { Timeout = TimeSpan.FromMinutes(2) };
         _metadataHttp.DefaultRequestHeaders.UserAgent.ParseAdd("NexaCL/2.0");
-        XsrStateStoreBuilder builder = new(); MinecraftProcessStateComposition.DeclareState(builder); TaskCenterStateContract.DeclareState(builder); DownloadService.DeclareState(builder); _store = builder.Build();
+        XsrStateStoreBuilder builder = new(); MinecraftProcessStateComposition.DeclareState(builder); TaskCenterStateContract.DeclareState(builder); DownloadService.DeclareState(builder); MinecraftLaunchProgressState.DeclareState(builder); _store = builder.Build();
         _sessionDownloads = new(_store);
 #if NEXA_NATIVE_SERVICES
         _sessionDownloads.AttachNative(_downloads);
@@ -128,12 +131,16 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
             return [];
         }
         if (_instances is null) throw new InvalidOperationException("Minecraft service has not initialized.");
+        if (operation == MinecraftServiceProtocol.Remediation) return await ExecuteRemediationAsync(reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.JavaConfigure and <= MinecraftServiceProtocol.JavaModules)
             return await ExecuteJavaManagementAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.InstallConfigure and <= MinecraftServiceProtocol.InstallEditRead)
             return await ExecuteInstallationAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.RecoveryRead and <= MinecraftServiceProtocol.RecoveryResume)
             return await ExecuteRecoveryAsync(operation, reader, token).ConfigureAwait(false);
+        if (operation is >= MinecraftServiceProtocol.LaunchConfigure and <= MinecraftServiceProtocol.LaunchFinalize
+            or MinecraftServiceProtocol.LaunchSafeRead or MinecraftServiceProtocol.LaunchDiagnostics)
+            return await ExecuteLaunchAsync(operation, reader, token).ConfigureAwait(false);
         switch (operation)
         {
             case MinecraftServiceProtocol.Versions:
@@ -238,6 +245,8 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
     }
     private void Changed(XsrStateChange change)
     {
+        if (PublishLaunchState(change)) return;
+        if (PublishObservationState(change)) return;
         bool processes = change.SemanticId == MinecraftProcessStateComposition.SessionsKey;
         bool tasks = change.SemanticId == TaskCenterStateContract.EntriesKey;
         if (!processes && !tasks && change.SemanticId != MinecraftProcessStateComposition.FailuresKey) return;
@@ -269,6 +278,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         Volatile.Write(ref _closing, true);
         await _initialization.WaitAsync().ConfigureAwait(false);
         _initialization.Release();
+        _launch?.CancelActiveLaunch();
         await RetireInstallationAsync().ConfigureAwait(false);
         await _endpoint.StopAsync().ConfigureAwait(false);
         _manualJava?.Dispose();
@@ -276,12 +286,16 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         await _tasks.DisposeAsync().ConfigureAwait(false);
         _installation?.Dispose(); _installationHttp?.Dispose();
         if (_processes is not null) await _processes.DisposeAsync().ConfigureAwait(false);
+        if (_launchExecutor is not null) await _launchExecutor.WaitForFinalizationAsync().ConfigureAwait(false);
+        if (_jvmHost is not null) await _jvmHost.WaitForFinalizationAsync().ConfigureAwait(false);
+        _completion?.Dispose(); _authlib?.Dispose(); _launchHttp?.Dispose();
         _metadataHttp.Dispose(); _http.Dispose(); await _hostHttp.DisposeAsync().ConfigureAwait(false);
         await _strictHostHttp.DisposeAsync().ConfigureAwait(false);
         _sessionDownloads.Dispose();
         _javaInstaller?.Dispose();
         _store.Changed -= Changed; await _publications.DisposeAsync().ConfigureAwait(false);
         await _cache.DisposeAsync().ConfigureAwait(false);
+        await _work.DisposeAsync().ConfigureAwait(false);
         await _endpoint.DisposeAsync().ConfigureAwait(false); _initialization.Dispose();
         _javaAdmission.Dispose();
     }

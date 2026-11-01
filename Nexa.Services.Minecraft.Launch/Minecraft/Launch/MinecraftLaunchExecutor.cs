@@ -21,6 +21,13 @@ public sealed class MinecraftLaunchExecutor
     public MinecraftLaunchPlanDiagnostics? Diagnostics { get; init; }
 
     public bool HasPendingFinalization => !_finalizations.IsEmpty;
+    public event Action? FinalizationChanged;
+    private void NotifyFinalization()
+    {
+        try { FinalizationChanged?.Invoke(); }
+        catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
+        { _log?.Warn("Launch", "Finalization observer failed: " + error.GetType().Name); }
+    }
     public Task WaitForFinalizationAsync(CancellationToken cancellationToken = default)
         => Task.WhenAll(_finalizations.Values.Select(completion => completion.Task)).WaitAsync(cancellationToken);
 
@@ -78,6 +85,7 @@ public sealed class MinecraftLaunchExecutor
             {
                 lifetime = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 _finalizations[lifetimeId] = lifetime;
+                NotifyFinalization();
             }
             if (plan.Overlay.IsRequired || Directory.Exists(Path.Combine(plan.GameDirectory, ".nexacl-launch-overlay")))
                 overlay = await MinecraftLaunchOverlayLease.AcquireAsync(plan.GameDirectory, plan.Overlay, ProcessIdentity, cancellationToken)
@@ -233,7 +241,7 @@ public sealed class MinecraftLaunchExecutor
                     finally
                     {
                         if (!completed && lifetime is not null)
-                        { _finalizations.TryRemove(lifetimeId, out _); lifetime.TrySetResult(); }
+                        { _finalizations.TryRemove(lifetimeId, out _); lifetime.TrySetResult(); NotifyFinalization(); }
                     }
                 }
             }
@@ -264,7 +272,7 @@ public sealed class MinecraftLaunchExecutor
             try { if (gameUse is not null) await gameUse.DisposeAsync().ConfigureAwait(false); }
             catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
             { _log?.Warn("Launch", $"Exited game directory receipt retained instance={instanceId} exception={error.GetType().Name}."); }
-            _finalizations.TryRemove(lifetimeId, out _); lifetime.TrySetResult();
+            _finalizations.TryRemove(lifetimeId, out _); lifetime.TrySetResult(); NotifyFinalization();
         }
     }
 

@@ -30,11 +30,29 @@ public interface IJvmHost
 public sealed class JvmHostService : IJvmHost
 {
     public Nexa.Services.Logging.LogService? Log { get; init; }
+    public IResourceObservationSink? ObservationPort { get; init; }
     private readonly MinecraftProcessService _processes;
     private readonly XsrStateStore? _store;
     private readonly XsrStateId _observationsId;
     private readonly ResourceObservationHistory? _history;
     private readonly Management.InstanceRecoveryService? _recovery;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<long, Task> _lifetimes = new();
+    private long _nextLifetime;
+    public Task WaitForFinalizationAsync(CancellationToken cancellationToken = default)
+        => Task.WhenAll(_lifetimes.Values).WaitAsync(cancellationToken);
+    private void TrackLifetime(Task task)
+    {
+        long id = Interlocked.Increment(ref _nextLifetime); _lifetimes[id] = task;
+        _ = task.ContinueWith(completed =>
+        {
+            if (completed.IsFaulted)
+            {
+                var failure = completed.Exception!.GetBaseException();
+                Log?.Warn("Process", "JVM finalization failed: " + failure.GetType().Name);
+            }
+            _lifetimes.TryRemove(id, out _);
+        }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+    }
 
     public JvmHostService(MinecraftProcessService processes, ResourceObservationHistory? history = null,
         Management.InstanceRecoveryService? recovery = null, Nexa.Platform.IPlatformProcessControl? control = null,
@@ -77,9 +95,10 @@ public sealed class JvmHostService : IJvmHost
             session = await _processes.StartAsync(plan, instanceId, cancellationToken).ConfigureAwait(false);
         long launchDuration = Math.Max(0, Environment.TickCount64 - started);
         RecordLifecycleFact(session.Snapshot, launchDuration, terminal: false, null);
-        if (Log is not null) _ = ObserveTerminalFactAsync(session, plan, launchDuration);
+        if (Log is not null) TrackLifetime(ObserveTerminalFactAsync(session, plan, launchDuration));
         Task<JvmRunContext?> context = CollectContextAsync(session, plan);
-        _ = ObserveAsync(session, plan, launchDuration, context);
+        TrackLifetime(context);
+        TrackLifetime(ObserveAsync(session, plan, launchDuration, context));
         return session;
     }
 
@@ -322,7 +341,11 @@ public sealed class JvmHostService : IJvmHost
                 using var verify = new CancellationTokenSource(TimeSpan.FromSeconds(20));
                 var finalInventory = await LaunchModInventoryReader.ReadAsync(plan.GameDirectory, verify.Token).ConfigureAwait(false);
                 if (fingerprint == ModInventoryFingerprint.Create(finalInventory))
-                    _history?.Record(historySample with { ModFingerprint = fingerprint, SettingsFingerprint = settingsFingerprint });
+                {
+                    var sample = historySample with { ModFingerprint = fingerprint, SettingsFingerprint = settingsFingerprint };
+                    if (ObservationPort is { } port) await port.RecordAsync(sample, verify.Token).ConfigureAwait(false);
+                    else _history?.Record(sample);
+                }
             }
             catch (Exception error) when (error is OperationCanceledException or IOException or UnauthorizedAccessException)
             { /* Incomplete post-run identity must not calibrate future launches. */ }

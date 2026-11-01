@@ -58,6 +58,10 @@ public static class FoundationState
         Minecraft.Install.MinecraftInstallDraftContract.DeclareState(builder);
 #if NEXA_NATIVE_SERVICES
         AccountService.DeclareReplicas(builder);
+        builder.Replica(MinecraftProcessStateComposition.SessionsKey);
+        builder.Replica(MinecraftProcessStateComposition.FailuresKey);
+        Nexa.Native.Minecraft.Client.NativeMinecraftClient.DeclareLaunchReplicas(builder);
+        Nexa.Native.Minecraft.Client.NativeMinecraftClient.DeclareObservationReplicas(builder);
 #endif
         return builder;
     }
@@ -116,7 +120,11 @@ public sealed partial class FoundationHost : IDisposable, IAsyncDisposable
         InputUsage = new InputUsageTracker();
         ObservationHistory = new ResourceObservationHistory();
         OnlineResourceModels = new OnlineWorkingSetModelStore();
+#if NEXA_NATIVE_SERVICES
+        MinecraftRemediations = new() { SharedStateCache = SharedStateCache };
+#else
         MinecraftRemediations = new(SettingsPolicy, StateStore) { SharedStateCache = SharedStateCache };
+#endif
         IRemediationHandler[] configuredRemediations = [.. remediationHandlers ?? []];
         HashSet<string> configuredRemediationIds = configuredRemediations
             .Select(static handler => handler.Id).ToHashSet(StringComparer.Ordinal);

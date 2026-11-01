@@ -427,7 +427,9 @@ internal static partial class Program
                 return policy.IsSuccess && policy.Value!.Values.Single(item => item.Key == "diagnostics.ai.enabled") is { ValidationError: null, Value.Value: "true" };
             },
         };
+#if !NEXA_NATIVE_SERVICES
         var launchDiagnostics = new Nexa.Services.Minecraft.Launch.MinecraftLaunchPlanDiagnostics();
+#endif
         DesktopThemeSession? watchedThemes = null;
         using var themeService = new ThemePackageService(folders.Root,
             Path.Combine(AppContext.BaseDirectory, "Themes", "BuiltIn"), DesktopThemeSession.SupportedCapabilities(),
@@ -437,7 +439,11 @@ internal static partial class Program
             {
                 runtimeTraces.Register(queries);
                 ThemesRuntime.Register(queries, commands, themeService);
+#if NEXA_NATIVE_SERVICES
+                MinecraftLaunchDiagnosticsRuntime.Register(queries, host.NativeMinecraft);
+#else
                 MinecraftLaunchDiagnosticsRuntime.Register(queries, launchDiagnostics);
+#endif
                 ContentWorkspaceRuntime.Register(commands, queries, contentBackups, legacyMigration, diagnosticHistory, diagnosticAi);
                 launcherMigrationLifetime = LauncherMigrationRuntime.Register(commands, queries, launcherMigration, host.Tasks, receipt =>
                     migrationLibrary is not null && host.StateStore.Read<MinecraftLibrarySnapshot>(
@@ -470,7 +476,12 @@ internal static partial class Program
             identityResolver: accounts.LaunchIdentityResolver,
             observer: dispatchObservation,
             launcherVersion: buildInfo.ProductVersion,
+#if NEXA_NATIVE_SERVICES
+            packagedCurseForgeApiKey: ResolveEmbeddedSetting("NexaCurseForgeApiKey"),
+#endif
+#if !NEXA_NATIVE_SERVICES
             launchDiagnostics: launchDiagnostics,
+#endif
             jvmHostExecutable: jvmHostPath,
             gameWindowAppeared: pid =>
             {
@@ -482,6 +493,9 @@ internal static partial class Program
                     .Items.FirstOrDefault(item => item.ProcessId == pid && item.State is Nexa.Services.Minecraft.Process.MinecraftProcessState.Created or Nexa.Services.Minecraft.Process.MinecraftProcessState.Running);
                 MinecraftWindowIntegration.ApplyGameWindowTitle(pid, process?.WindowTitle, message => host.Logging.Warn("Launch", message));
             });
+#if NEXA_NATIVE_SERVICES
+        await minecraft.Initialization.ConfigureAwait(false);
+#endif
         if (safeMode && minecraft.Commands.TryResolve(Nexa.Services.Minecraft.Launch.MinecraftSafeLaunchSessionContract.Set, out var safeRoute))
         {
             var safeResult = await minecraft.Commands.Dispatch(safeRoute, new Nexa.Services.Minecraft.Launch.MinecraftSafeLaunchSessionCommand(true)).Completion.ConfigureAwait(false);

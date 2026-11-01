@@ -81,6 +81,7 @@ public static class MinecraftLaunchProgressState
     public const string OwnerName = "Nexa.Services.Minecraft.Launch";
 
     public static readonly XsrSemanticId SnapshotKey = XsrSemanticId.Parse("minecraft.launch.snapshot");
+    public static readonly XsrSemanticId FinalizationKey = XsrSemanticId.Parse("minecraft.launch.finalization");
     public static readonly XsrSemanticId ActiveKey = XsrSemanticId.Parse("minecraft.launch.active");
     public static readonly XsrSemanticId StageKey = XsrSemanticId.Parse("minecraft.launch.stage");
     public static readonly XsrSemanticId ProgressKey = XsrSemanticId.Parse("minecraft.launch.progress");
@@ -100,6 +101,7 @@ public static class MinecraftLaunchProgressState
         ArgumentNullException.ThrowIfNull(builder);
         LaunchPreflightContract.DeclareState(builder);
         builder.Cell<MinecraftLaunchProgressSnapshot>(SnapshotKey, OwnerName);
+        builder.Cell<bool>(FinalizationKey, OwnerName);
         builder.Derived(ActiveKey, OwnerName, [SnapshotKey],
             static (reader, cancellationToken) => ReadSnapshot(reader, cancellationToken).Active);
         builder.Derived(StageKey, OwnerName, [SnapshotKey],

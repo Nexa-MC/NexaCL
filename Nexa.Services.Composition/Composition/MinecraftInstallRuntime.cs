@@ -44,7 +44,9 @@ public static class MinecraftInstallRuntimeComposer
                 .FirstOrDefault(value => value.Key == "install.inherit-vanilla")?.Value.Value == "true",
             settingsPolicy: host.SettingsPolicy, hostStore: host.StateStore)
         { HttpClientFactory = host.CreateHttpClient, CurseForgeApiKey = CurseForgeCredentials.ResolveApiKey(packagedCurseForgeApiKey) };
+#if !NEXA_NATIVE_SERVICES
         host.MinecraftRemediations.BindInstall(service);
+#endif
         XsrCommandRouterBuilder commands = new();
         commands.Register<MinecraftInstallStopCommand>(MinecraftInstallRoutes.Stop,
             async (command, token) => await service.StopAsync(command, token).ConfigureAwait(false));

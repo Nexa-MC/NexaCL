@@ -13,12 +13,13 @@ using Nexa.Xsr.State;
 
 internal static class JavaInstallCases
 {
-    internal static async Task RunAsync(NativeMinecraftClient minecraft, string directory, CancellationToken token)
+    internal static async Task RunAsync(NativeMinecraftClient minecraft, string directory, XsrStateStore replicas, string javaExecutable, CancellationToken token)
     {
         XsrStateStoreBuilder builder = new(); TaskCenterStateContract.DeclareState(builder); var state = builder.Build();
         await using var tasks = new TaskCenterService(state); tasks.AttachExternalSource(minecraft);
         minecraft.AttachTasks((revision, entries) => tasks.PublishExternalSnapshot(minecraft, revision, entries));
         using var scheduler = new WorkScheduler(new() { HttpConcurrency = 2, DiskConcurrency = 2, CpuConcurrency = 2 });
+        minecraft.AttachWork(scheduler);
         await using var network = new NativeNetworkClient(); network.AttachDownloads(scheduler);
         using var transport = network.CreateClient(() => new() { ProxyMode = 0, DnsOverHttps = false, IpStack = "ipv4" });
         using var server = new TcpListener(IPAddress.Loopback, 0); server.Start();
@@ -77,6 +78,8 @@ internal static class JavaInstallCases
             throw new InvalidDataException("Native recovery comparison invented a successful-run baseline.");
         if (!(await minecraft.ResumeRecoveryAsync(new([gameRoot]), token)).IsSuccess)
             throw new InvalidDataException("Native recovery replay rejected a clean installation.");
+        await LaunchCases.RunAsync(minecraft, gameRoot, renamed.Value.InstanceDirectory, replicas, javaExecutable, token);
+        if (settings.JavaWrites != 1) throw new InvalidDataException("Native Java remediation bypassed canonical settings writes.");
         settings.Hold = true;
         var waitingInstall = minecraft.InstallMinecraftAsync(new(Path.Combine(directory, "waiting-install"), "1.20.1"), token);
         await settings.Entered.Task.WaitAsync(token);
@@ -130,8 +133,30 @@ internal static class JavaInstallCases
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") });
         }
     }
-    private sealed class InstallSettings : ISettingsSnapshotReader, ISettingsPolicyReader, ISettingsRenameTransactions
+    private sealed class InstallSettings : ISettingsSnapshotReader, ISettingsRecoveryTransactions, ISettingsRenameTransactions, ISettingsPolicyWriter
     {
+        internal int JavaWrites;
+        public ValueTask<XsrResult> SetAsync(SettingsMutation command, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (command.Key != "java.runtime" || command.Layer != SettingsLayer.Instance
+                || command.Value.Mode != SettingsOverrideMode.Custom || !File.Exists(command.Value.Value)
+                || command.InstanceId is null || !Path.IsPathFullyQualified(command.InstanceId))
+                throw new InvalidDataException("Unexpected native Java settings mutation.");
+            JavaWrites++; return ValueTask.FromResult(XsrResult.Success());
+        }
+        public async ValueTask<XsrResult<SettingsRecoverySnapshot>> CaptureRecoveryAsync(string instanceDirectory, CancellationToken token = default)
+        {
+            var effective = await ReadAsync(new(instanceDirectory), token);
+            var keys = SettingsPolicySchema.Definitions.Where(item => item.InstanceOverride && item.Key != "instance.development-mode"
+                && !item.Key.StartsWith("recovery.", StringComparison.Ordinal)).Select(item => item.Key).ToHashSet(StringComparer.Ordinal);
+            return XsrResult.Success(new SettingsRecoverySnapshot(instanceDirectory, effective.Value!.Values.Where(item => keys.Contains(item.Key))
+                .Select(item => new SettingsRecoveryValue(item.Key, null, item.Value)).ToArray()));
+        }
+        public ValueTask<XsrResult<RecoverySettingsPlan>> PlanRecoveryAsync(string instanceDirectory, SettingsRecoverySnapshot baseline,
+            IReadOnlyList<string> selectedKeys, CancellationToken token = default) => throw new InvalidOperationException("Fixture does not restore settings.");
+        public ValueTask<XsrResult> ApplyRecoveryAsync(RecoverySettingsPlan plan, bool reverse, CancellationToken token = default)
+            => throw new InvalidOperationException("Fixture does not restore settings.");
         internal int Reads;
         internal int RenameWrites;
         private SettingsRenameReceipt? _rename;
@@ -160,14 +185,25 @@ internal static class JavaInstallCases
                 try { await Task.Delay(Timeout.InfiniteTimeSpan, token); }
                 finally { Interlocked.Decrement(ref Active); }
             }
-            return XsrResult.Success(new SettingsEffectiveSnapshot(0,
-            [
-                new("network.file-concurrency", new(SettingsOverrideMode.Custom, "2"), SettingsLayer.Global, SettingsApplyTiming.Immediate, null),
-                new("network.file-retry", new(SettingsOverrideMode.Custom, "false"), SettingsLayer.Global, SettingsApplyTiming.Immediate, null),
-                new("network.game-source", new(SettingsOverrideMode.Custom, "official-only"), SettingsLayer.Global, SettingsApplyTiming.Immediate, null),
-                new("install.inherit-vanilla", new(SettingsOverrideMode.Custom, "false"), SettingsLayer.Global, SettingsApplyTiming.Immediate, null),
-                new("game.default-isolation", new(SettingsOverrideMode.Custom, "none"), SettingsLayer.Global, SettingsApplyTiming.Immediate, null)
-            ]));
+            var values = SettingsPolicySchema.Definitions.Select(definition =>
+            {
+                string? selected = definition.Key switch
+                {
+                    "network.file-concurrency" => "2",
+                    "network.file-retry" => "false",
+                    "network.game-source" => "official-only",
+                    "install.inherit-vanilla" => "false",
+                    "game.default-isolation" => "none",
+                    "game.environment" => "NEXA_NATIVE_PROCESS_MODE=delayed-exit",
+                    "game.post-exit" => "echo native-finalization",
+                    _ => null
+                };
+                var value = selected is not null ? new SettingsOverride(SettingsOverrideMode.Custom, selected)
+                    : definition.SupportsAuto ? new SettingsOverride(SettingsOverrideMode.Auto)
+                    : new SettingsOverride(SettingsOverrideMode.Custom, definition.DefaultValue);
+                return new SettingsEffectiveValue(definition.Key, value, selected is null ? SettingsLayer.Builtin : SettingsLayer.Global, definition.Timing, null);
+            }).ToArray();
+            return XsrResult.Success(new SettingsEffectiveSnapshot(0, values));
         }
     }
     private sealed class Registry : IJavaRuntimeRegistrationStore

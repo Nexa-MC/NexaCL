@@ -7,6 +7,15 @@ namespace Nexa.Services.Composition;
 
 public static class MinecraftLaunchDiagnosticsRuntime
 {
+#if NEXA_NATIVE_SERVICES
+    public static void Register(XsrQueryRouterBuilder queries, Nexa.Native.Minecraft.Client.NativeMinecraftClient minecraft)
+    {
+        queries.Register<MinecraftLaunchPlanDiagnosticQuery, MinecraftLaunchPlanDiagnosticSnapshot>(MinecraftLaunchPlanDiagnosticContract.Query,
+            async (query, token) => XsrResult.Success(await minecraft.ReadLaunchDiagnosticsAsync(query, token).ConfigureAwait(false)));
+        queries.Register<InstanceLocalDocumentsQuery, InstanceLocalDocumentsSnapshot>(InstanceLocalDocumentsContract.Query,
+            async (query, token) => XsrResult.Success(await InstanceLocalDocumentsService.ReadAsync(query, token).ConfigureAwait(false)));
+    }
+#endif
     public static void Register(XsrQueryRouterBuilder queries, MinecraftLaunchPlanDiagnostics diagnostics)
     {
         queries.Register<MinecraftLaunchPlanDiagnosticQuery, MinecraftLaunchPlanDiagnosticSnapshot>(MinecraftLaunchPlanDiagnosticContract.Query,

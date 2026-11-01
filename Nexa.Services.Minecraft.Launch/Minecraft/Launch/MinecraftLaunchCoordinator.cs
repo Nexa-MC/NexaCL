@@ -23,6 +23,7 @@ public sealed partial class MinecraftLaunchCoordinator
         => _executor.WaitForFinalizationAsync(cancellationToken);
     public IWorkScheduler? WorkScheduler { get; init; }
     public IJavaRuntimeRegistrationStore? JavaRegistrations { get; init; }
+    public IAsyncJavaRuntimeRegistrationStore? JavaRegistrationPort { get; init; }
     private bool _safeLaunchRequired;
     public XsrResult SetSafeLaunchSession(MinecraftSafeLaunchSessionCommand command)
     { Volatile.Write(ref _safeLaunchRequired, command.Required); return XsrResult.Success(); }
@@ -41,6 +42,8 @@ public sealed partial class MinecraftLaunchCoordinator
     private readonly IAccountLaunchAccess _accounts;
     private readonly ISettingsValueReader _settings;
     public ISettingsValueReader SettingsValues { get => _settings; init => _settings = value ?? throw new ArgumentNullException(nameof(value)); }
+    public ISettingsSnapshotReader? SettingsSnapshots { get; init; }
+    private readonly AsyncLocal<ISettingsValueReader?> _preparationSettings = new();
     private readonly ISettingsPolicyReader? _settingsPolicy;
     public ISettingsPolicyReader? SettingsPolicies { get => _settingsPolicy; init => _settingsPolicy = value; }
     private readonly JavaSelectionService _javaSelection;

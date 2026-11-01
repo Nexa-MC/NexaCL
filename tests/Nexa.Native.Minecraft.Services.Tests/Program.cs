@@ -6,6 +6,13 @@ using Nexa.Services.Minecraft.ModLoaders;
 using Nexa.Services.Minecraft.Process;
 using Nexa.Xsr.State;
 
+if (args is [MinecraftLaunchHookWorker.WorkerArgument]) return await MinecraftLaunchHookWorker.RunWorkerAsync();
+if (args.Contains("-version", StringComparer.Ordinal))
+{
+    string arch = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.Arm64 ? "aarch64" : "amd64";
+    Console.Error.WriteLine("java.version = 17.0.10\nos.arch = " + arch + "\njava.vendor = Eclipse Adoptium");
+    return 0;
+}
 if (args is ["--jvm-host"])
 {
     using var input = new MemoryStream(); await Console.OpenStandardInput().CopyToAsync(input);
@@ -13,10 +20,13 @@ if (args is ["--jvm-host"])
     Console.WriteLine("Native Minecraft fixture access_token=fixture-private-value");
     Console.Error.WriteLine("Native Minecraft fixture stderr");
     if (Environment.GetEnvironmentVariable("NEXA_NATIVE_PROCESS_MODE") == "hold") await Task.Delay(Timeout.InfiniteTimeSpan);
+    if (Environment.GetEnvironmentVariable("NEXA_NATIVE_PROCESS_MODE") == "delayed-exit") await Task.Delay(3000);
     return 0;
 }
 
 using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(90)); var token = deadline.Token;
+await WorkLeaseCases.RunAsync(token);
+if (args is ["--work-contracts"]) return 0;
 foreach (Version? version in new Version?[] { null, new(8, 0), new(17, 0, 12), new(21, 0, 5, 9) })
 {
     using var writer = new ServiceWireWriter(); writer.Version(version);
@@ -39,7 +49,7 @@ try
     await File.WriteAllTextAsync(Path.Combine(instance, "1.20.1.json"),
         """{"id":"1.20.1","type":"release","mainClass":"net.minecraft.client.main.Main","releaseTime":"2023-06-12T13:25:51Z"}""", token);
     await File.WriteAllBytesAsync(Path.Combine(instance, "1.20.1.jar"), [0], token);
-    XsrStateStoreBuilder builder = new(); NativeMinecraftClient.DeclareProcessState(builder); var store = builder.Build();
+    XsrStateStoreBuilder builder = new(); NativeMinecraftClient.DeclareProcessState(builder); NativeMinecraftClient.DeclareLaunchState(builder); var store = builder.Build();
     string executable = Environment.ProcessPath ?? throw new InvalidOperationException("Missing native caller executable.");
     string javaExecutable = executable;
     if (OperatingSystem.IsWindows())
@@ -80,7 +90,7 @@ try
     Check((await minecraft.CancelProcessAsync(canceled.SessionId, token)).IsSuccess, "Native process cancellation was rejected.");
     await WaitForExit(canceled.ProcessId, token);
     var shutdown = await minecraft.StartProcessAsync(Plan("hold"), "shutdown-fixture", token);
-    await JavaInstallCases.RunAsync(minecraft, root, token);
+    await JavaInstallCases.RunAsync(minecraft, root, store, javaExecutable, token);
     await minecraft.DisposeAsync(); await WaitForExit(shutdown.ProcessId, token);
     Console.WriteLine("Independent native Minecraft discovery, Java inventory, process state, redacted output, cancellation and physical shutdown passed.");
     return 0;

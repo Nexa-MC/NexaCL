@@ -33,8 +33,11 @@ public sealed partial class MinecraftLaunchCoordinator
                 MinecraftErrors.InvalidRequest("an instance id is required."));
         }
 
+        var previousSettings = _preparationSettings.Value;
         try
         {
+            if (SettingsSnapshots is { } snapshots)
+                _preparationSettings.Value = new CapturedSettingsValues((await snapshots.CaptureAsync(cancellationToken).ConfigureAwait(false)).Values);
             string root = Nexa.Core.PathIdentity.Normalize(minecraftRootDirectory);
             string javaRoot = Nexa.Core.PathIdentity.Comparer.Equals(root, _minecraftRootDirectory)
                 ? _javaRuntimeRootDirectory : Path.Combine(root, "runtime");
@@ -176,7 +179,11 @@ public sealed partial class MinecraftLaunchCoordinator
                         && !Nexa.Core.PathIdentity.Comparer.Equals(root, _minecraftRootDirectory))
                     {
                         JavaSelectionResult local = await new JavaSelectionService(new LocalJavaRuntimeLocator(javaRoot, _log)
-                        { RegisteredRuntimes = JavaRegistrations is null ? null : () => JavaRegistrations.Read().Registrations })
+                        {
+                            RegisteredRuntimes = JavaRegistrations is null ? null : () => JavaRegistrations.Read().Registrations,
+                            RegisteredRuntimesAsync = JavaRegistrationPort is null ? null : async cancellation =>
+                                (await JavaRegistrationPort.ReadAsync(cancellation).ConfigureAwait(false)).Registrations
+                        })
                             .SelectAsync(javaRequest, preference, token).ConfigureAwait(false);
                         if (local.Success) java = local;
                     }
@@ -235,5 +242,6 @@ public sealed partial class MinecraftLaunchCoordinator
             operation?.Fail(exception);
             throw;
         }
+        finally { _preparationSettings.Value = previousSettings; }
     }
 }

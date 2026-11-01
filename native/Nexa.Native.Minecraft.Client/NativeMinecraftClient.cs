@@ -26,17 +26,20 @@ public sealed partial class NativeMinecraftClient : IAsyncDisposable
     private bool _closed;
     private readonly XsrStateStore? _replicas;
     private readonly Action<Exception>? _failure;
+    public string JavaRuntimeRoot { get; }
 
     public static void DeclareProcessState(XsrStateStoreBuilder builder)
     {
         MinecraftProcessStateComposition.DeclareState(builder);
         builder.Replica(MinecraftProcessStateComposition.SessionsKey);
         builder.Replica(MinecraftProcessStateComposition.FailuresKey);
+        DeclareObservationReplicas(builder);
     }
 
     public NativeMinecraftClient(string javaRuntimeRoot, string? cacheDirectory = null, string? jvmHostExecutable = null,
         XsrStateStore? replicas = null, Action<Exception>? failure = null)
     {
+        JavaRuntimeRoot = Path.GetFullPath(javaRuntimeRoot);
         _replicas = replicas;
         _failure = failure;
         _endpoint = new(ExecuteReverseAsync, ApplyPublication, Report, RejectReverse);
@@ -51,10 +54,14 @@ public sealed partial class NativeMinecraftClient : IAsyncDisposable
     {
         using var reader = MinecraftServiceProtocol.Read(bytes, out int operation);
         if (operation == MinecraftServiceProtocol.JavaProgress) return ReceiveJavaProgress(reader);
+        if (operation is >= MinecraftServiceProtocol.LaunchState and < MinecraftServiceProtocol.LaunchState + 7)
+            return ApplyLaunchState(operation - MinecraftServiceProtocol.LaunchState, reader);
         long revision = reader.Int64(); var availability = (XsrStateAvailability)reader.Int32(); int count = reader.Count();
         if (revision <= 0 || count < 0 || availability is not (XsrStateAvailability.Available or XsrStateAvailability.Unavailable or XsrStateAvailability.Stale))
             throw new InvalidDataException("Invalid native Minecraft state.");
         if (operation == MinecraftServiceProtocol.TaskState) return ApplyTaskState(reader, revision, count);
+        if (operation is >= MinecraftServiceProtocol.ObservationState and <= MinecraftServiceProtocol.ContextState)
+            return ApplyObservationState(operation, reader, revision, availability, count);
         if (operation == MinecraftServiceProtocol.ProcessState)
         {
             MinecraftProcessSnapshot[] items = new MinecraftProcessSnapshot[count];
@@ -206,6 +213,7 @@ public sealed partial class NativeMinecraftClient : IAsyncDisposable
         await DrainJavaAsync().ConfigureAwait(false);
         if (_hostHttp is { } http) await http.DisposeAsync().ConfigureAwait(false);
         if (_hostPublications is { } publications) await publications.DisposeAsync().ConfigureAwait(false);
+        if (_hostWork is { } work) await work.DisposeAsync().ConfigureAwait(false);
         await _endpoint.DisposeAsync().ConfigureAwait(false);
         _downloadAdmission.Dispose();
     }

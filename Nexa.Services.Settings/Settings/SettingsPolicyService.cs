@@ -6,7 +6,7 @@ using Nexa.Xsr;
 namespace Nexa.Services.Settings;
 
 /// <summary>Owns policy resolution. Uses the existing durable store for both legacy keys and layered data.</summary>
-public sealed partial class SettingsPolicyService : ISettingsPolicyReader
+public sealed partial class SettingsPolicyService : ISettingsPolicyReader, ISettingsPolicyWriter
 {
     private readonly SettingsService _settings;
     public SettingsPolicyService(SettingsService settings)
@@ -164,6 +164,10 @@ public sealed partial class SettingsPolicyService : ISettingsPolicyReader
     }
 
     public XsrResult Set(SettingsMutation command) => Apply([command], null);
+    public ValueTask<XsrResult> SetAsync(SettingsMutation command, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested(); return ValueTask.FromResult(Set(command));
+    }
     public XsrResult SetBatch(SettingsBatchCommand command) => Apply(command.Changes.ToArray(), command.ExpectedRevision);
 
     private XsrResult Apply(IReadOnlyList<SettingsMutation> mutations, long? expectedRevision)

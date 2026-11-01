@@ -45,6 +45,7 @@ internal sealed partial class MinecraftServiceSession
                 _installation = new(_tasks, _sessionDownloads, new HttpInstallCatalogSource(_installationHttp, apiKey, region),
                     _installationHttp, loaderInstaller: new ForgeInstallService(_sessionDownloads, _installationHttp, regionalPolicy: region), hostStore: _store)
                 { SettingsPolicies = _settings, SettingsTransactions = _settings, HttpClientFactory = CreateInstallationHttp, CountryPolicy = region, CurseForgeApiKey = apiKey };
+                Remediations.BindInstall(_installation);
             }
             finally { _initialization.Release(); }
             return writer.Finish();

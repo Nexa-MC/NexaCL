@@ -665,7 +665,12 @@ internal static partial class Program
             await host.Accounts.Initialization.ConfigureAwait(false);
 #endif
             var foundation = Nexa.Services.Composition.FoundationRuntimeComposer.Compose(host);
+#if NEXA_NATIVE_SERVICES
+            using var minecraft = Nexa.Services.Composition.MinecraftRuntimeComposer.Compose(host, directory);
+            await minecraft.Initialization.ConfigureAwait(false);
+#else
             using var minecraft = Nexa.Services.Composition.MinecraftRuntimeComposer.Compose();
+#endif
             using var library = Nexa.Services.Composition.MinecraftLibraryRuntimeComposer.Compose(host, directory,
                 new LaunchInstallValidationInstances());
             using var catalogs = Nexa.Services.Composition.InstallCatalogRuntimeComposer.Compose(host, new LaunchInstallValidationCatalog());

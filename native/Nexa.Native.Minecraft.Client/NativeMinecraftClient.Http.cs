@@ -41,11 +41,19 @@ public sealed partial class NativeMinecraftClient
             return ExecuteDownloadAsync(operation, bytes, token);
         if (operation is MinecraftHostOperations.JavaRegistryRead or MinecraftHostOperations.JavaRegistryWrite)
             return ExecuteJavaRegistryAsync(operation, bytes, token);
-        if (operation is MinecraftHostOperations.SettingsSnapshot or MinecraftHostOperations.SettingsPolicyRead
+        if (operation is MinecraftHostOperations.SettingsSnapshot or MinecraftHostOperations.SettingsPolicyRead or MinecraftHostOperations.SettingsPolicySet
             or MinecraftHostOperations.SettingsRenamePrepare or MinecraftHostOperations.SettingsRenameApply)
             return ExecuteSettingsAsync(operation, bytes, token);
         if (operation is MinecraftHostOperations.SettingsRecoveryCapture or MinecraftHostOperations.SettingsRecoveryPlan or MinecraftHostOperations.SettingsRecoveryApply)
             return ExecuteSettingsRecoveryAsync(operation, bytes, token);
+        if (operation is >= DownloadProtocol.AcquireWork and <= DownloadProtocol.ObserveDiskWrite)
+            return ExecuteWorkAsync(bytes, token);
+        if (operation is >= DownloadProtocol.AcquireQuiet and <= DownloadProtocol.GraceQuiet)
+            return ExecuteWorkAsync(bytes, token);
+        if (operation is MinecraftHostOperations.AccountProfile or MinecraftHostOperations.AccountIdentity)
+            return ExecuteAccountsAsync(operation, bytes, token);
+        if (operation is MinecraftHostOperations.WindowProbe or MinecraftHostOperations.PreflightEvaluate or MinecraftHostOperations.RecordObservation)
+            return ExecuteLaunchHostAsync(operation, bytes, token);
         throw new InvalidDataException("Unknown Minecraft host operation.");
     }
     private async Task<byte[]> ExecuteHttpAsync(int operation, ReadOnlyMemory<byte> bytes, CancellationToken token)
@@ -56,6 +64,7 @@ public sealed partial class NativeMinecraftClient
     }
     private void RejectReverse(long id, ReadOnlyMemory<byte> request, ReadOnlyMemory<byte> result)
     {
+        _hostWork?.Reject(id, request, result);
         using var reader = MinecraftServiceProtocol.Read(request, out int operation);
         if (operation != NetworkHttpWire.Create) return;
         using var response = new ServiceWireReader(result); long handle = response.Int64(); response.End();

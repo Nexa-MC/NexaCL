@@ -57,7 +57,9 @@ public sealed partial class MinecraftLaunchCoordinator
         try
         {
             priority = WorkScheduler?.UsePriority(WorkPriority.Critical);
-            quiet = WorkScheduler?.EnterQuiet();
+            quiet = WorkScheduler is IAsyncWorkQuietScheduler asynchronous
+                ? await asynchronous.EnterQuietAsync(launchCancellation.Token).ConfigureAwait(false)
+                : WorkScheduler?.EnterQuiet();
             XsrResult result = await StartLockedAsync(instanceId, accountIndex, minecraftRootDirectory, serverAddress, launchCancellation, operation, quiet).ConfigureAwait(false);
             if (result.IsSuccess) quiet = null; // Session termination / confirmed-window grace owns it now.
             return result;

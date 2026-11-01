@@ -99,3 +99,8 @@ ownership, rather than being inferred from the empty-baseline protocol case.
 Production native-service composition compiles without warnings or errors after
 the recovery adaptation.
 The architecture gate passes for all 97 projects.
+
+Each native launch preparation captures scalar settings asynchronously before
+reading them. Its reader lives in a local asynchronous context for that preparation,
+so concurrent previews and Java decisions do not overwrite another operation's
+snapshot. Existing managed preparations continue to read the supplied local reader.
