@@ -27,10 +27,12 @@ public sealed partial class MinecraftInstallService
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, task.CancellationToken, execution.Token);
         token = linked.Token;
         ModpackInstallJournal? journal = saved;
-        MinecraftDownloadPolicy downloadPolicy = MinecraftDownloadPolicy.Read(_settingsPolicy);
         FileStream? lease = null;
         try
         {
+            using var policyStop = CancellationTokenSource.CreateLinkedTokenSource(token, execution.PolicyToken);
+            MinecraftDownloadPolicy downloadPolicy = await MinecraftDownloadPolicy.ReadAsync(SettingsPolicies, policyStop.Token).ConfigureAwait(false);
+            policyStop.Token.ThrowIfCancellationRequested();
             string root = Nexa.Core.PathIdentity.Normalize(command.RootDirectory);
             using var recoveryOperation = await Management.InstanceRecoveryOperationGate.EnterOperationAsync(root, token).ConfigureAwait(false);
             MinecraftModpackArchive.CheckPath(root);
@@ -181,7 +183,7 @@ public sealed partial class MinecraftInstallService
             if (!preparingUpdate) { task.Complete("整合包已安装"); Installed?.Invoke(root); }
             return XsrResult.Success(new MinecraftInstallResult(pack.InstanceId, destination));
         }
-        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        catch (OperationCanceledException) when (token.IsCancellationRequested || execution.PolicyToken.IsCancellationRequested)
         {
             if (parentTask is null)
             {

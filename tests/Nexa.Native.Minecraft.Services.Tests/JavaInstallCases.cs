@@ -3,8 +3,10 @@ using System.Net.Sockets;
 using System.Text;
 using Nexa.Native.Minecraft.Client;
 using Nexa.Native.Network.Client;
+using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Minecraft.Java;
 using Nexa.Services.Scheduling;
+using Nexa.Services.Settings;
 using Nexa.Services.Tasks;
 using Nexa.Xsr;
 using Nexa.Xsr.State;
@@ -56,7 +58,24 @@ internal static class JavaInstallCases
         if (entries.Count != 1 || entries[0].State != TaskCenterEntryState.Failed) throw new InvalidDataException("Native manual Java created duplicate task registrations.");
         if ((await minecraft.ManageJavaAsync(new(executable, JavaRuntimeManagementAction.Disable, 99), token)).IsSuccess)
             throw new InvalidDataException("Native Java management accepted a stale revision.");
+        var settings = new InstallSettings(); minecraft.AttachSettings(settings, settings);
+        await minecraft.ConfigureInstallationAsync("US", token: token);
+        string gameRoot = Path.Combine(directory, "native-installed-game");
+        var game = await minecraft.InstallMinecraftAsync(new(gameRoot, "1.20.1"), token);
+        if (!game.IsSuccess) throw new InvalidDataException("Native game installation failed: " + game.Error!.Message);
+        if (await File.ReadAllTextAsync(Path.Combine(game.Value!.InstanceDirectory, "1.20.1.jar"), token) != "hello"
+            || (await minecraft.InstancesAsync(gameRoot, token: token)).Count != 1 || settings.Reads < 2)
+            throw new InvalidDataException("Native game installation lost committed bytes, discovery or canonical policy reads.");
+        settings.Hold = true;
+        var waitingInstall = minecraft.InstallMinecraftAsync(new(Path.Combine(directory, "waiting-install"), "1.20.1"), token);
+        await settings.Entered.Task.WaitAsync(token);
         await minecraft.DisposeAsync();
+        try
+        {
+            if ((await waitingInstall).IsSuccess) throw new InvalidDataException("Shutdown accepted a late game installation.");
+        }
+        catch (OperationCanceledException) { }
+        if (settings.Active != 0) throw new InvalidDataException("Minecraft close returned before its host policy query retired.");
         await serverStop.CancelAsync();
         try { await serving; } catch (OperationCanceledException) when (serverStop.IsCancellationRequested) { }
         Console.WriteLine("Native Java installation used host HTTP, canonical native downloads/work and imported task controls.");
@@ -77,6 +96,11 @@ internal static class JavaInstallCases
     }
     private sealed class Metadata(string address) : HttpMessageHandler
     {
+        private const string Index = """{"objects":{}}""";
+        private static string VersionDocument => """{"id":"1.20.1","type":"release","mainClass":"fixture.Main","libraries":[],"assetIndex":{"id":"native-index","url":"https://piston-meta.mojang.com/v1/packages/native-index.json","sha1":"INDEX_HASH","size":14},"downloads":{"client":{"url":"https://piston-data.mojang.com/native-client.jar","sha1":"aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d","size":5}}}""".Replace("INDEX_HASH", Hash(Index), StringComparison.Ordinal);
+#pragma warning disable CA5350 // Fixture identities match Mojang's SHA-1 metadata contract.
+        private static string Hash(string value) => Convert.ToHexStringLower(System.Security.Cryptography.SHA1.HashData(Encoding.UTF8.GetBytes(value)));
+#pragma warning restore CA5350
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
             string os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "mac-os" : "linux";
@@ -88,7 +112,37 @@ internal static class JavaInstallCases
             string json = request.RequestUri!.AbsolutePath.EndsWith("all.json", StringComparison.Ordinal)
                 ? """{"PLATFORM":{"java-runtime-native-test":[{"version":{"name":"21.0.2"},"manifest":{"url":"https://piston-data.mojang.com/native-java.json"}}]}}""".Replace("PLATFORM", platform, StringComparison.Ordinal)
                 : """{"files":{"EXECUTABLE":{"executable":true,"downloads":{"raw":{"url":"ADDRESS","sha1":"aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d","size":5}}},"LICENSE":{"downloads":{"raw":{"url":"ADDRESS","sha1":"aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d","size":5}}}}}""".Replace("EXECUTABLE", relative, StringComparison.Ordinal).Replace("ADDRESS", address, StringComparison.Ordinal);
+            if (request.RequestUri.AbsolutePath.EndsWith("version_manifest_v2.json", StringComparison.Ordinal))
+                json = """{"versions":[{"id":"1.20.1","url":"https://piston-meta.mojang.com/v1/packages/native-version.json","sha1":"VERSION_HASH"}]}""".Replace("VERSION_HASH", Hash(VersionDocument), StringComparison.Ordinal);
+            else if (request.RequestUri.AbsolutePath.EndsWith("native-version.json", StringComparison.Ordinal)) json = VersionDocument;
+            else if (request.RequestUri.AbsolutePath.EndsWith("native-index.json", StringComparison.Ordinal)) json = Index;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") });
+        }
+    }
+    private sealed class InstallSettings : ISettingsSnapshotReader, ISettingsPolicyReader
+    {
+        internal int Reads;
+        internal volatile bool Hold;
+        internal int Active;
+        internal TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public ValueTask<CapturedSettingsSnapshot> CaptureAsync(CancellationToken token = default) => ValueTask.FromResult(new CapturedSettingsSnapshot(0, []));
+        public async ValueTask<XsrResult<SettingsEffectiveSnapshot>> ReadAsync(SettingsEffectiveQuery query, CancellationToken token = default)
+        {
+            await Task.Yield(); token.ThrowIfCancellationRequested(); Reads++;
+            if (Hold)
+            {
+                Interlocked.Increment(ref Active); Entered.TrySetResult();
+                try { await Task.Delay(Timeout.InfiniteTimeSpan, token); }
+                finally { Interlocked.Decrement(ref Active); }
+            }
+            return XsrResult.Success(new SettingsEffectiveSnapshot(0,
+            [
+                new("network.file-concurrency", new(SettingsOverrideMode.Custom, "2"), SettingsLayer.Global, SettingsApplyTiming.Immediate, null),
+                new("network.file-retry", new(SettingsOverrideMode.Custom, "false"), SettingsLayer.Global, SettingsApplyTiming.Immediate, null),
+                new("network.game-source", new(SettingsOverrideMode.Custom, "official-only"), SettingsLayer.Global, SettingsApplyTiming.Immediate, null),
+                new("install.inherit-vanilla", new(SettingsOverrideMode.Custom, "false"), SettingsLayer.Global, SettingsApplyTiming.Immediate, null),
+                new("game.default-isolation", new(SettingsOverrideMode.Custom, "none"), SettingsLayer.Global, SettingsApplyTiming.Immediate, null)
+            ]));
         }
     }
     private sealed class Registry : IJavaRuntimeRegistrationStore

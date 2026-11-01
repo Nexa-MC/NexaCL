@@ -23,6 +23,12 @@ public sealed partial class SettingsService
         return (committed.Revision, committed.Values);
     }
 
+    public ValueTask<CapturedSettingsSnapshot> CaptureAsync(CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(CaptureValues());
+    }
+
     public CapturedSettingsSnapshot CaptureValues()
     {
         var snapshot = ReadBatch();

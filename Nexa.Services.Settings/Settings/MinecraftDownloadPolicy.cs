@@ -19,7 +19,17 @@ internal sealed record MinecraftDownloadPolicy(int Concurrency = 8, bool Retry =
 
     internal static MinecraftDownloadPolicy Read(SettingsPolicyService? settings)
     {
-        var result = settings?.Read(new());
+        return From(settings?.Read(new()));
+    }
+
+    internal static async ValueTask<MinecraftDownloadPolicy> ReadAsync(ISettingsPolicyReader? settings, CancellationToken token)
+    {
+        var result = settings is null ? null : await settings.ReadAsync(new(), token).ConfigureAwait(false);
+        return From(result);
+    }
+
+    private static MinecraftDownloadPolicy From(Nexa.Xsr.XsrResult<SettingsEffectiveSnapshot>? result)
+    {
         if (result is null || !result.IsSuccess) return new();
         var values = result.Value!.Values;
         string? count = values.Single(item => item.Key == "network.file-concurrency").Value.Value;

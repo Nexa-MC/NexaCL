@@ -41,7 +41,8 @@ public sealed partial class MinecraftLaunchCoordinator
     private readonly IAccountLaunchAccess _accounts;
     private readonly ISettingsValueReader _settings;
     public ISettingsValueReader SettingsValues { get => _settings; init => _settings = value ?? throw new ArgumentNullException(nameof(value)); }
-    private readonly SettingsPolicyService? _settingsPolicy;
+    private readonly ISettingsPolicyReader? _settingsPolicy;
+    public ISettingsPolicyReader? SettingsPolicies { get => _settingsPolicy; init => _settingsPolicy = value; }
     private readonly JavaSelectionService _javaSelection;
     private readonly IJavaRuntimeInstaller _javaInstaller;
     private readonly MinecraftLaunchExecutor _executor;
@@ -65,6 +66,32 @@ public sealed partial class MinecraftLaunchCoordinator
         MinecraftInstanceDiscovery instances,
         IAccountLaunchAccess accounts,
         SettingsService settings,
+        JavaSelectionService javaSelection,
+        IJavaRuntimeInstaller javaInstaller,
+        MinecraftLaunchExecutor executor,
+        MinecraftLaunchPlatform? platform = null,
+        LogService? log = null,
+        MinecraftLaunchProgressPublisher? progress = null,
+        IAccountLaunchIdentityResolver? identityResolver = null,
+        string? launcherVersion = null,
+        IMinecraftWindowProbe? windowProbe = null,
+        IAuthlibInjectorProvider? authlib = null,
+        Action<int>? gameWindowAppeared = null,
+        MinecraftLaunchFileCompletion? fileCompletion = null,
+        SettingsPolicyService? settingsPolicy = null,
+        LaunchPreflightGate? preflight = null)
+        : this(minecraftRootDirectory, javaRuntimeRootDirectory, instances, accounts, (ISettingsValueReader)settings,
+            javaSelection, javaInstaller, executor, platform, log, progress, identityResolver, launcherVersion,
+            windowProbe, authlib, gameWindowAppeared, fileCompletion, settingsPolicy, preflight)
+    {
+    }
+
+    public MinecraftLaunchCoordinator(
+        string minecraftRootDirectory,
+        string javaRuntimeRootDirectory,
+        MinecraftInstanceDiscovery instances,
+        IAccountLaunchAccess accounts,
+        ISettingsValueReader settings,
         JavaSelectionService javaSelection,
         IJavaRuntimeInstaller javaInstaller,
         MinecraftLaunchExecutor executor,

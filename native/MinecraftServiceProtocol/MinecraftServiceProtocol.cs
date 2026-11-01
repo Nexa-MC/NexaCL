@@ -13,6 +13,7 @@ internal static class MinecraftServiceProtocol
     internal const int JavaInstall = 50, JavaStop = 51, JavaRecover = 52, JavaProgress = 103;
     internal const int JavaConfigure = 60, JavaManage = 61, JavaManualPreview = 62, JavaManualInstall = 63, JavaManualCancel = 64, JavaManualStatus = 65;
     internal const int JavaInspect = 66, JavaProperties = 67, JavaModules = 68;
+    internal const int InstallConfigure = 70, InstallRun = 71, InstallStop = 72, InstallRecover = 73, InstallModpack = 74;
 
     internal static ServiceWireWriter Request(int operation)
     {

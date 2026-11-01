@@ -6,7 +6,7 @@ using Nexa.Xsr;
 namespace Nexa.Services.Settings;
 
 /// <summary>Owns policy resolution. Uses the existing durable store for both legacy keys and layered data.</summary>
-public sealed partial class SettingsPolicyService
+public sealed partial class SettingsPolicyService : ISettingsPolicyReader
 {
     private readonly SettingsService _settings;
     public SettingsPolicyService(SettingsService settings)
@@ -42,6 +42,12 @@ public sealed partial class SettingsPolicyService
     }
     private static JsonObject Encode(SettingsOverride value) => new() { ["mode"] = value.Mode.ToString(), ["value"] = value.Value };
     private static bool Recoverable(Exception error) => error is JsonException or InvalidDataException or InvalidOperationException or FormatException or ArgumentException;
+
+    public ValueTask<XsrResult<SettingsEffectiveSnapshot>> ReadAsync(SettingsEffectiveQuery query, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(Read(query));
+    }
 
     public XsrResult<SettingsEffectiveSnapshot> Read(SettingsEffectiveQuery query)
     {

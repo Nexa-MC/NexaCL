@@ -13,7 +13,7 @@ public sealed partial class MinecraftInstallService
     private async Task PrepareComponentEditAsync(MinecraftInstallCommand command, MinecraftInstallEditSnapshot original,
         MinecraftInstallEditPlan plan, string stage, ITaskCenterTask task, CancellationToken token)
     {
-        MinecraftDownloadPolicy downloadPolicy = MinecraftDownloadPolicy.Read(_settingsPolicy);
+        MinecraftDownloadPolicy downloadPolicy = await MinecraftDownloadPolicy.ReadAsync(SettingsPolicies, token).ConfigureAwait(false);
         string relative = $"versions/{original.InstanceId}/{original.InstanceId}.json";
         var profile = await MinecraftVersionJsonReader.ReadAsync(Nexa.Core.PathIdentity.Contained(original.RootDirectory, relative), token).ConfigureAwait(false);
         var managed = original.ManagedMods.Where(file => file.Loader is null || !plan.ChangedLoaders.Contains(file.Loader.Value)).ToList();

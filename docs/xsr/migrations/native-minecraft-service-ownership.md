@@ -154,3 +154,31 @@ writes for unverified Java, one manual task card and stale management rejection.
 Existing discovery/process cancellation and physical retirement cases also pass.
 Production native-service UI compilation has zero warnings/errors, and the
 architecture gate passes for all 97 projects.
+
+## Remaining installation ports
+
+The Minecraft owner will reference the complete Install implementation and own its
+catalog, installation/modpack/recovery operations and task retries. Canonical host
+settings provide asynchronous reads and transaction boundaries. All installer HTTP
+clients must use the same host reverse port, including a distinct explicit
+no-redirect policy for sources whose validation relies on inspecting redirects.
+Caller-local HttpClient wrappers may share owned stream handlers without disposing
+the handler when a per-operation wrapper closes. Preserve the Java-specific
+timeouts and the existing general installer client timeout. Production route
+adoption waits for rename/recovery settings transactions and the complete lifetime
+to be wired; a native vanilla installation alone does not close this migration.
+
+Installation-port validation: 20 related install/modpack tests pass, including
+pause during an asynchronous policy read. Native owner/client and the independent
+caller compile without warnings/errors. The actual NativeAOT fixture passes with
+122 DTO shapes (`BA71C3B6D5ED70AEBFE3D71E4657B442775E2B044ABA05DAFCC62B225C531D6E`):
+it fetches a SHA-1-pinned version document and asset index through host HTTP,
+installs a hash-verified client through canonical native downloads, publishes the
+instance and reads it back through native discovery. Existing Java/manual,
+process cancellation and physical retirement cases continue to pass.
+The native-service composition build is warning-free and the 97-project
+architecture gate passes. An additional independent AOT case closes Minecraft
+while installation is awaiting an asynchronous host policy query: shutdown first
+pauses installation, drains that query, rejects late success and then closes the
+remaining endpoint. Initialization/configuration admission closes before this
+sequence. This preserves pause semantics before the generic request cancellation.

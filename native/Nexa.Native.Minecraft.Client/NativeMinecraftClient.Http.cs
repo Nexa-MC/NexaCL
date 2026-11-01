@@ -8,6 +8,12 @@ public sealed partial class NativeMinecraftClient
 {
     private NetworkHttpStreamServer? _hostHttp;
     public void AttachHttp(HttpClient http)
+        => AttachHttpCore(http, null);
+    public void AttachHttp(HttpClient http, HttpClient noRedirect)
+    {
+        ArgumentNullException.ThrowIfNull(noRedirect); AttachHttpCore(http, noRedirect);
+    }
+    private void AttachHttpCore(HttpClient http, HttpClient? noRedirect)
     {
         ArgumentNullException.ThrowIfNull(http);
         lock (_gate)
@@ -16,8 +22,13 @@ public sealed partial class NativeMinecraftClient
             if (_hostHttp is not null) throw new InvalidOperationException("Minecraft HTTP is already attached.");
             _hostHttp = new((request, configuration, token) =>
             {
-                if (!configuration.IsEmpty) throw new InvalidDataException("Unexpected Minecraft HTTP configuration.");
-                return http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
+                bool redirect = true;
+                if (!configuration.IsEmpty)
+                {
+                    using var reader = new ServiceWireReader(configuration); redirect = reader.Boolean(); reader.End();
+                }
+                var transport = redirect ? http : noRedirect ?? throw new InvalidOperationException("Minecraft no-redirect HTTP is not attached.");
+                return transport.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
             });
         }
     }
@@ -30,6 +41,8 @@ public sealed partial class NativeMinecraftClient
             return ExecuteDownloadAsync(operation, bytes, token);
         if (operation is MinecraftHostOperations.JavaRegistryRead or MinecraftHostOperations.JavaRegistryWrite)
             return ExecuteJavaRegistryAsync(operation, bytes, token);
+        if (operation is MinecraftHostOperations.SettingsSnapshot or MinecraftHostOperations.SettingsPolicyRead)
+            return ExecuteSettingsAsync(operation, bytes, token);
         throw new InvalidDataException("Unknown Minecraft host operation.");
     }
     private async Task<byte[]> ExecuteHttpAsync(int operation, ReadOnlyMemory<byte> bytes, CancellationToken token)

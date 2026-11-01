@@ -31,9 +31,12 @@ public static class NativeHttpClients
         => Descriptions.Add(client, new(capture));
     public static HttpClient CreateDescribed(HttpMessageHandler handler,
         Func<string, CancellationToken, ValueTask<NativeDownloadSource>> capture)
+        => CreateDescribed(handler, capture, disposeHandler: true);
+    public static HttpClient CreateDescribed(HttpMessageHandler handler,
+        Func<string, CancellationToken, ValueTask<NativeDownloadSource>> capture, bool disposeHandler)
     {
         ArgumentNullException.ThrowIfNull(handler); ArgumentNullException.ThrowIfNull(capture);
-        HttpClient client = new(handler); Register(client, capture); return client;
+        HttpClient client = new(handler, disposeHandler); Register(client, capture); return client;
     }
     public static async ValueTask<NativeDownloadSource> DescribeAsync(HttpClient client, string address, CancellationToken token = default)
     {

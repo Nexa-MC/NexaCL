@@ -56,7 +56,7 @@ public sealed partial class MinecraftLaunchCoordinator
             SettingsEffectiveSnapshot? effectiveSettings = null;
             if (_settingsPolicy is not null)
             {
-                var policy = _settingsPolicy.Read(new(instance.DirectoryPath));
+                var policy = await _settingsPolicy.ReadAsync(new(instance.DirectoryPath), cancellationToken).ConfigureAwait(false);
                 if (!policy.IsSuccess) throw new InvalidOperationException("无法读取版本启动设置。");
                 effectiveSettings = policy.Value;
             }

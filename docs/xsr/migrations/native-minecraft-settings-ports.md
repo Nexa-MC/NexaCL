@@ -34,3 +34,27 @@ locator receives a local immutable registration view captured for its operation;
 inventory and destructive management recheck the host revision before completion.
 Manual acquisition retains its consumed preview, fingerprint, license confirmation,
 revision admission and actual executable verification in the Minecraft owner.
+
+## Preparation and pause
+
+Effective policy and immutable scalar reads expose asynchronous interfaces while
+the existing managed methods remain immediate local adapters. Installer and launch
+consumers await those reads. An install waiting for its initial policy has no
+durable work to retain: pause cancels that preparation query before waiting for a
+journal-ready worker. Later journal creation/publication keeps its existing stop
+ordering. Cancellation retirement covers both sources, including modpack preparation.
+
+## Rename identity
+
+Native rename planning returns source/destination and a canonical content identity
+for the instance overrides and profiles. The host keeps their actual values: apply
+and rollback move the currently matching source/destination content under the
+existing revision check. The identity includes absent values and preserves unknown
+settings/profile members, so no serialized JSON or lossy projection crosses the
+native port. Canonical hashing sorts object members and preserves array order.
+
+Existing rename journals containing full original settings remain readable. A
+native identity-only journal uses a new schema version so older readers reject it
+instead of treating absent inline values as an instruction to discard settings.
+Current managed recovery understands both representations. Durable progress and
+the file/settings rollback order remain unchanged.

@@ -16,9 +16,16 @@ public sealed partial class MinecraftInstallService
     {
         private readonly object _gate = new();
         private readonly CancellationTokenSource _stop = new();
+        private readonly CancellationTokenSource _policyStop = new();
         private Task? _cancellation;
+        private Task? _policyCancellation;
         private bool _finished;
         public CancellationToken Token => _stop.Token;
+        public CancellationToken PolicyToken => _policyStop.Token;
+        public Task RequestPolicyStopAsync()
+        {
+            lock (_gate) return _finished ? Task.CompletedTask : _policyCancellation ??= _policyStop.CancelAsync();
+        }
         public Task RequestStopAsync()
         {
             lock (_gate) return _finished ? Task.CompletedTask : _cancellation ??= _stop.CancelAsync();
@@ -26,10 +33,11 @@ public sealed partial class MinecraftInstallService
         public void Dispose()
         {
             Task cancellation;
-            lock (_gate) { _finished = true; cancellation = _cancellation ?? Task.CompletedTask; }
-            if (cancellation.IsCompleted) _stop.Dispose();
-            else _ = cancellation.ContinueWith(_ => _stop.Dispose(), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            lock (_gate) { _finished = true; cancellation = Task.WhenAll(_cancellation ?? Task.CompletedTask, _policyCancellation ?? Task.CompletedTask); }
+            if (cancellation.IsCompleted) DisposeSources();
+            else _ = cancellation.ContinueWith(_ => DisposeSources(), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         }
+        private void DisposeSources() { _stop.Dispose(); _policyStop.Dispose(); }
         public TaskCompletionSource Ready { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource Done { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public string? Stage { get; set; }
@@ -82,7 +90,11 @@ public sealed partial class MinecraftInstallService
             // Stop each ready worker independently: queued work may be waiting on a running worker's root lease.
             await Task.WhenAll(executions.Select(async item =>
             {
-                if (command.Pause) await Task.WhenAny(item.Ready.Task, item.Done.Task).ConfigureAwait(false);
+                if (command.Pause)
+                {
+                    await item.RequestPolicyStopAsync().ConfigureAwait(false);
+                    await Task.WhenAny(item.Ready.Task, item.Done.Task).ConfigureAwait(false);
+                }
                 await item.RequestStopAsync().ConfigureAwait(false);
                 await item.Done.Task.ConfigureAwait(false);
             })).ConfigureAwait(false);

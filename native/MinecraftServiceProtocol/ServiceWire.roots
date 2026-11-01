@@ -22,3 +22,9 @@ Nexa.Services.Minecraft.Java.Contracts|Nexa.Services.Minecraft.Java.JavaManualCa
 Nexa.Services.Minecraft.Java.Contracts|Nexa.Services.Minecraft.Java.JavaManualStatusQuery
 Nexa.Services.Minecraft.Java.Contracts|Nexa.Services.Minecraft.Java.JavaManualReceipt
 Nexa.Services.Minecraft.Java.Contracts|Nexa.Services.Minecraft.Java.JavaRuntimeDiagnosticsSnapshot
+Nexa.Services.Settings.Contracts|Nexa.Services.Settings.SettingsEffectiveQuery
+Nexa.Services.Settings.Contracts|Nexa.Services.Settings.SettingsEffectiveSnapshot
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallCommand
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallResult
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallRecoveryCommand
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftModpackCommand

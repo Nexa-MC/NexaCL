@@ -29,6 +29,7 @@ internal sealed partial class MinecraftServiceSession
             reader.End(); await _initialization.WaitAsync(token).ConfigureAwait(false);
             try
             {
+                ObjectDisposedException.ThrowIf(Volatile.Read(ref _closing), this);
                 if (_javaConfigured) throw new InvalidOperationException("Java services are already configured.");
                 var registry = new RemoteJavaRegistry(_endpoint);
                 _javaLocator = new(_javaRuntimeRoot)

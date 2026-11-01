@@ -19,6 +19,8 @@ public sealed partial class ForgeInstallService(DownloadService downloads, HttpC
 {
     private readonly RegionalPolicy _regionalPolicy = regionalPolicy ?? RegionalPolicy.Current;
     public SettingsPolicyService? SettingsPolicy { get; init; }
+    private ISettingsPolicyReader? _policyReader;
+    internal void BindPolicyReader(ISettingsPolicyReader? reader) => _policyReader = reader;
     public static string InstallerUrl(InstallLoader loader, string game, string build)
         => InstallerUrl(loader, game, build, RegionalPolicy.Current);
     private static string InstallerUrl(InstallLoader loader, string game, string build, RegionalPolicy policy)
@@ -46,7 +48,7 @@ public sealed partial class ForgeInstallService(DownloadService downloads, HttpC
 
     public async Task<JsonObject> InstallAsync(MinecraftLoaderInstallRequest request, IProgress<string>? progress, CancellationToken token)
     {
-        MinecraftDownloadPolicy downloadPolicy = MinecraftDownloadPolicy.Read(SettingsPolicy);
+        MinecraftDownloadPolicy downloadPolicy = await MinecraftDownloadPolicy.ReadAsync(_policyReader ?? SettingsPolicy, token).ConfigureAwait(false);
         ValidateInstallerIdentity(request.Loader, request.Game, request.Build);
         string url = request.LocalInstaller is null ? InstallerUrl(request.Loader, request.Game, request.Build, _regionalPolicy) : "";
         string root = Path.GetFullPath(request.Root);

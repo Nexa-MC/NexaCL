@@ -38,6 +38,16 @@ public sealed partial class MinecraftInstallService : IDisposable
     private readonly IMinecraftLoaderInstaller _loaderInstaller;
     private readonly Func<bool>? _inheritVanilla;
     private readonly SettingsPolicyService? _settingsPolicy;
+    private readonly ISettingsPolicyReader? _policyReader;
+    public ISettingsPolicyReader? SettingsPolicies
+    {
+        get => _policyReader ?? _settingsPolicy;
+        init
+        {
+            _policyReader = value;
+            if (_loaderInstaller is ForgeInstallService forge) forge.BindPolicyReader(value);
+        }
+    }
     private readonly XsrStateStore? _hostStore;
     public Func<bool, HttpClient>? HttpClientFactory { get; init; }
     public RegionalPolicy CountryPolicy { get; init; } = RegionalPolicy.Current;
@@ -107,10 +117,18 @@ public sealed partial class MinecraftInstallService : IDisposable
             command = command with { RootDirectory = Nexa.Core.PathIdentity.Normalize(command.RootDirectory) };
             using var recoveryOperation = await InstanceRecoveryOperationGate.EnterOperationAsync(
                 Path.GetFullPath(command.RootDirectory), linked.Token).ConfigureAwait(false);
-            command = command with { InheritVanilla = command.InheritVanilla ?? _inheritVanilla?.Invoke() ?? false };
+            using var policyStop = CancellationTokenSource.CreateLinkedTokenSource(linked.Token, execution.PolicyToken);
+            var effectivePolicy = SettingsPolicies is { } policyReader
+                ? await policyReader.ReadAsync(new(), policyStop.Token).ConfigureAwait(false) : null;
+            policyStop.Token.ThrowIfCancellationRequested();
+            command = command with
+            {
+                InheritVanilla = command.InheritVanilla ?? _inheritVanilla?.Invoke()
+                ?? (effectivePolicy?.Value?.Values.FirstOrDefault(value => value.Key == "install.inherit-vanilla")?.Value.Value == "true")
+            };
             if (command.DefaultIsolationMode is null)
             {
-                var settings = _settingsPolicy?.Read(new());
+                var settings = effectivePolicy;
                 if (settings is { IsSuccess: false }) throw new InvalidDataException("无法读取默认实例隔离设置。");
                 command = command with { DefaultIsolationMode = SettingsInstanceIsolationPolicy.FromSnapshot(settings?.Value).Mode };
             }
@@ -144,7 +162,7 @@ public sealed partial class MinecraftInstallService : IDisposable
             execution.Completed = true;
             return XsrResult.Success(result);
         }
-        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        catch (OperationCanceledException) when (linked.IsCancellationRequested || execution.PolicyToken.IsCancellationRequested)
         {
             if (!_pauseForExit && execution.Stage is { } retained && command.NewInstanceName is { } renamed && renamed != command.InstanceName)
             {
@@ -198,7 +216,7 @@ public sealed partial class MinecraftInstallService : IDisposable
         bool deferCompletion = false, string? reuseClientPath = null)
     {
         IMinecraftInstallMetadataSource metadata = metadataSource ?? _metadata;
-        MinecraftDownloadPolicy downloadPolicy = MinecraftDownloadPolicy.Read(_settingsPolicy);
+        MinecraftDownloadPolicy downloadPolicy = await MinecraftDownloadPolicy.ReadAsync(SettingsPolicies, token).ConfigureAwait(false);
         bool processorLoader = ValidatePrimaryLoader(command);
         string game = command.GameVersion;
         string gameName = SafeName(game);

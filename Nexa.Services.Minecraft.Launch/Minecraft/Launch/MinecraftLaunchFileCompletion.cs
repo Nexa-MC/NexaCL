@@ -27,7 +27,8 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
     public RegionalPolicy CountryPolicy { get; init; } = RegionalPolicy.Current;
     private readonly MinecraftFileVerificationCache _verification = new();
     private readonly Func<string, IDownloadConnection>? _connectionFactory;
-    private readonly SettingsPolicyService? _settingsPolicy;
+    private readonly ISettingsPolicyReader? _settingsPolicy;
+    public ISettingsPolicyReader? SettingsPolicies { get => _settingsPolicy; init => _settingsPolicy = value; }
 
     public MinecraftLaunchFileCompletion(
         DownloadService downloads,
@@ -52,7 +53,7 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
     {
         ArgumentNullException.ThrowIfNull(manifests);
         ArgumentException.ThrowIfNullOrWhiteSpace(minecraftRootDirectory);
-        MinecraftDownloadPolicy downloadPolicy = MinecraftDownloadPolicy.Read(_settingsPolicy);
+        MinecraftDownloadPolicy downloadPolicy = await MinecraftDownloadPolicy.ReadAsync(_settingsPolicy, cancellationToken).ConfigureAwait(false);
 
         string root = Path.GetFullPath(minecraftRootDirectory);
         // The chain reads current → nearest parent → … → root; the base (vanilla) manifest

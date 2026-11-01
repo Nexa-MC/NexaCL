@@ -367,6 +367,7 @@ internal static partial class Program
         ("install task journal preserves choices and rejects invalid records", InstallTaskJournalPreservesChoicesAndRejectsInvalidRecords),
         ("downloads without identity restart every source", DownloadsWithoutIdentityRestartEverySource),
         ("new installation recovers after killed downloader without repeating verified files", NewInstallationRecoversAfterKilledDownloaderWithoutRepeatingVerifiedFile),
+        ("install stops while awaiting canonical policy", InstallStopsWhileAwaitingCanonicalPolicy),
         ("install recovery discovery isolates invalid tasks and honors disposition", InstallRecoveryDiscoveryIsolatesInvalidTasksAndHonorsDisposition),
         ("completed install recovery does not repopulate task center", CompletedInstallRecoveryDoesNotRepopulateTaskCenter),
         ("install recovery repairs committed terminal before rejecting rollback", InstallRecoveryRepairsCommittedTerminalBeforeRejectingRollback),

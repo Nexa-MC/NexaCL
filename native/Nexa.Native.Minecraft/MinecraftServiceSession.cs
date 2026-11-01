@@ -19,6 +19,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
 {
     private readonly ServiceEndpoint _endpoint;
     private readonly SemaphoreSlim _initialization = new(1, 1);
+    private bool _closing;
     private readonly SharedStateCache _cache = new();
     private readonly MinecraftVersionDiscovery _versions = new();
     private readonly XsrStateStore _store;
@@ -44,6 +45,9 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         _endpoint.Connect(peer);
         _downloads = new(_endpoint);
         _hostHttp = new((request, token) => _endpoint.InvokeAsync(request, token), _ => []);
+        _strictHostHttp = new((request, token) => _endpoint.InvokeAsync(request, token), _ =>
+        { using var configuration = new ServiceWireWriter(); configuration.Boolean(false); return configuration.Finish(); });
+        _settings = new(_endpoint);
 #if NEXA_NATIVE_SERVICES
         _http = NativeHttpClients.CreateDescribed(_hostHttp, _downloads.DescribeAsync);
 #else
@@ -96,6 +100,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
     }
     private async Task<byte[]> ExecuteCoreAsync(ReadOnlyMemory<byte> bytes, CancellationToken token)
     {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _closing), this);
         using var reader = MinecraftServiceProtocol.Read(bytes, out int operation);
         using var writer = new ServiceWireWriter();
         if (operation == MinecraftServiceProtocol.Initialize)
@@ -109,6 +114,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
             await _initialization.WaitAsync(token).ConfigureAwait(false);
             try
             {
+                ObjectDisposedException.ThrowIf(Volatile.Read(ref _closing), this);
                 if (_instances is not null) throw new InvalidOperationException("Minecraft service is already initialized.");
                 AppContext.SetData("APP_CONTEXT_BASE_DIRECTORY", directory);
                 _instances = new(_cache, cache, versionDiscovery: _versions);
@@ -124,6 +130,8 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         if (_instances is null) throw new InvalidOperationException("Minecraft service has not initialized.");
         if (operation is >= MinecraftServiceProtocol.JavaConfigure and <= MinecraftServiceProtocol.JavaModules)
             return await ExecuteJavaManagementAsync(operation, reader, token).ConfigureAwait(false);
+        if (operation is >= MinecraftServiceProtocol.InstallConfigure and <= MinecraftServiceProtocol.InstallModpack)
+            return await ExecuteInstallationAsync(operation, reader, token).ConfigureAwait(false);
         switch (operation)
         {
             case MinecraftServiceProtocol.Versions:
@@ -256,12 +264,18 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
     }
     public async ValueTask DisposeAsync()
     {
+        Volatile.Write(ref _closing, true);
+        await _initialization.WaitAsync().ConfigureAwait(false);
+        _initialization.Release();
+        await RetireInstallationAsync().ConfigureAwait(false);
         await _endpoint.StopAsync().ConfigureAwait(false);
         _manualJava?.Dispose();
         if (_javaInstaller is not null) await _javaInstaller.StopAsync(new(Pause: true)).ConfigureAwait(false);
         await _tasks.DisposeAsync().ConfigureAwait(false);
+        _installation?.Dispose(); _installationHttp?.Dispose();
         if (_processes is not null) await _processes.DisposeAsync().ConfigureAwait(false);
         _metadataHttp.Dispose(); _http.Dispose(); await _hostHttp.DisposeAsync().ConfigureAwait(false);
+        await _strictHostHttp.DisposeAsync().ConfigureAwait(false);
         _sessionDownloads.Dispose();
         _javaInstaller?.Dispose();
         _store.Changed -= Changed; await _publications.DisposeAsync().ConfigureAwait(false);

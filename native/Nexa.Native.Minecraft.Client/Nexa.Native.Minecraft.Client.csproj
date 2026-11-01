@@ -7,6 +7,7 @@
     <ProjectReference Include="../../Nexa.Services.Minecraft.Java.Contracts/Nexa.Services.Minecraft.Java.Contracts.csproj" />
     <ProjectReference Include="../../Nexa.Services.Minecraft.Process.Contracts/Nexa.Services.Minecraft.Process.Contracts.csproj" />
     <ProjectReference Include="../../Nexa.Services.Minecraft.Crash.Contracts/Nexa.Services.Minecraft.Crash.Contracts.csproj" />
+    <ProjectReference Include="../../Nexa.Services.Minecraft.Install.Contracts/Nexa.Services.Minecraft.Install.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Native.Network.Client/Nexa.Native.Network.Client.csproj" />
     <ProjectReference Include="../../Nexa.Services.Settings.Contracts/Nexa.Services.Settings.Contracts.csproj" />
     <Compile Include="../MinecraftServiceProtocol/*.cs" Link="Wire/%(Filename)%(Extension)" />

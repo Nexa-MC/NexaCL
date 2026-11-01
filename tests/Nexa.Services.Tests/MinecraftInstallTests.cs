@@ -19,6 +19,30 @@ namespace Nexa.Services.Tests;
 // Everything runs against in-memory metadata and connection fakes — no network.
 internal static partial class Program
 {
+    private static async ValueTask InstallStopsWhileAwaitingCanonicalPolicy()
+    {
+        string root = CreateTempDirectory(); var reader = new WaitingInstallPolicy();
+        using var fixture = new InstallFixture(new(), policyReader: reader);
+        try
+        {
+            var pending = fixture.Install.InstallAsync(new(root, "1.20.1"));
+            await reader.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            AssertTrue((await fixture.Install.StopAsync(new(Pause: true)).WaitAsync(TimeSpan.FromSeconds(5))).IsSuccess);
+            AssertFalse((await pending.WaitAsync(TimeSpan.FromSeconds(5))).IsSuccess);
+            AssertEqual(0, fixture.InstalledRoots.Count);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    private sealed class WaitingInstallPolicy : Nexa.Services.Settings.ISettingsPolicyReader
+    {
+        internal TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public async ValueTask<XsrResult<Nexa.Services.Settings.SettingsEffectiveSnapshot>> ReadAsync(
+            Nexa.Services.Settings.SettingsEffectiveQuery query, CancellationToken token = default)
+        {
+            Entered.TrySetResult(); await Task.Delay(Timeout.InfiniteTimeSpan, token);
+            throw new InvalidOperationException("A stopped policy request must not return a result.");
+        }
+    }
     private static async ValueTask InstallFailedTaskRetriesAndReusesSuccessfulDownloads()
     {
         string root = CreateTempDirectory();
@@ -129,7 +153,7 @@ internal static partial class Program
         public InstallFixture(FakeMetadata metadata, IInstallCatalogSource? catalog = null, IMinecraftLoaderInstaller? loaderInstaller = null, HttpClient? http = null,
             Func<string, IDownloadConnection>? connectionFactory = null, Func<bool>? inheritVanilla = null,
             Nexa.Services.Settings.SettingsPolicyService? settingsPolicy = null, RegionalPolicy? countryPolicy = null,
-            string? packagedCurseForgeApiKey = null)
+            string? packagedCurseForgeApiKey = null, Nexa.Services.Settings.ISettingsPolicyReader? policyReader = null)
         {
             XsrStateStoreBuilder builder = new();
             TaskCenterStateContract.DeclareState(builder);
@@ -142,7 +166,7 @@ internal static partial class Program
                 Tasks, downloads, catalog, http: http, metadata: metadata,
                 connectionFactory: connectionFactory ?? (source => new ServingConnection(PayloadFor(source))), loaderInstaller: loaderInstaller, inheritVanilla: inheritVanilla,
                 settingsPolicy: settingsPolicy, hostStore: Store)
-            { CountryPolicy = countryPolicy ?? new("US"), CurseForgeApiKey = packagedCurseForgeApiKey };
+            { CountryPolicy = countryPolicy ?? new("US"), CurseForgeApiKey = packagedCurseForgeApiKey, SettingsPolicies = policyReader };
             Install.Installed += root => InstalledRoots.Add(root);
         }
 
