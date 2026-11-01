@@ -45,6 +45,7 @@ internal enum WindowPlatformCommand
     TaskbarProgress = 41,
     LocalizeCaptions = 42,
     Facts = 43,
+    NotifyWithAction = 44,
 }
 
 internal static class WindowPlatformContract

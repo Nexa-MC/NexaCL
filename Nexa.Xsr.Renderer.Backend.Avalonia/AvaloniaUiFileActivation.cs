@@ -28,7 +28,7 @@ public static class AvaloniaUiFileActivation
         void SubscribeOnDispatcher()
         {
             if (Application.Current is { } application) Initialize(application);
-            _consumer = consumer;
+            Volatile.Write(ref _consumer, consumer);
             if (Pending.Count == 0) return;
             string[] files = Pending.ToArray(); Pending.Clear(); consumer(files);
         }
@@ -47,7 +47,7 @@ public static class AvaloniaUiFileActivation
             if (path is null || path.Length > 8192 || path.Any(char.IsControl) || !Path.IsPathFullyQualified(path)) continue;
             files.Add(path);
         }
-        if (_consumer is { } consumer) { if (files.Count > 0) consumer(files.AsReadOnly()); return; }
+        if (Volatile.Read(ref _consumer) is { } consumer) { if (files.Count > 0) consumer(files.AsReadOnly()); return; }
         foreach (string path in files) if (Pending.Count < 16) Pending.Enqueue(path);
     }
     private sealed class Subscription(Action<IReadOnlyList<string>> consumer) : IDisposable
@@ -56,8 +56,9 @@ public static class AvaloniaUiFileActivation
         public void Dispose()
         {
             if (Interlocked.Exchange(ref _subscribed, null) is not { } previous) return;
-            void Remove() { if (ReferenceEquals(_consumer, previous)) _consumer = null; }
-            if (Dispatcher.UIThread.CheckAccess()) Remove(); else Dispatcher.UIThread.Post(Remove);
+            // Detachment must work after the dispatcher exits. A later subscriber
+            // keeps its ownership; native callers separately drain admitted callbacks.
+            Interlocked.CompareExchange(ref _consumer, null, previous);
         }
     }
 }

@@ -1,4 +1,5 @@
 using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr.Renderer.Backend.Native;
 using Nexa.Xsr.State;
 
@@ -27,9 +28,50 @@ int result = NativeWindowSession.RunApplicationOnMainThread(async () =>
         return 23;
     }
     await session.StartAsync([], OperatingSystem.IsLinux() || OperatingSystem.IsWindows(), new());
+    byte[] tinyPng = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
+    var cropped = Nexa.Core.Media.PngImage.TryCreate(await session.CropScreenshotAsync(tinyPng, 0, 0, 1, 1));
+    if (cropped is null || cropped.Width != 1 || cropped.Height != 1) throw new InvalidOperationException("Native screenshot crop did not return a bounded PNG.");
+    await using var media = await session.CreateMediaPlayerAsync(video: true);
+    int mediaChanges = 0;
+    media.Changed += _ => Interlocked.Increment(ref mediaChanges);
+    string missingMedia = Path.Combine(Path.GetTempPath(), "nexa-missing-" + Guid.NewGuid().ToString("N") + ".mp4");
+    await media.ConfigureGenerationAsync(7, missingMedia, 35, play: false);
+    if (media.State is not { Status: AvaloniaUiMediaStatus.Paused, Generation: 7 } || mediaChanges != 1)
+        throw new InvalidOperationException("Native media state was not delivered to its owning player.");
+    await using var independent = await session.CreateMediaPlayerAsync(video: false);
+    if (independent.State.Status != AvaloniaUiMediaStatus.Stopped) throw new InvalidOperationException("Native media players shared state.");
+    Task? mediaReleased = null;
+    media.Changed += _ => mediaReleased = media.DisposeAsync().AsTask();
+    await media.ConfigureGenerationAsync(8, "", 0, play: false);
+    await (mediaReleased ?? throw new InvalidOperationException("Native media did not call its owner.")).WaitAsync(TimeSpan.FromSeconds(5));
+    try { await media.ConfigureAsync("", 0, false); throw new InvalidOperationException("Retired native media accepted work."); }
+    catch (ObjectDisposedException) { }
     var discarded = XsrUiShellComposer.Compose(new XsrStateStoreBuilder().Build());
     await session.PrepareShellAsync(discarded);
     await session.WarmUpShellAsync();
+    await using (var activation = await session.SubscribeFileActivationsAsync(_ => { })) { }
+    await using (var activation = await session.SubscribeFileActivationsAsync(_ => { })) { }
+    if (OperatingSystem.IsMacOS())
+    {
+        string world = Path.Combine("/private/tmp", "nexa-native-world-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(world);
+        try
+        {
+            string path = Path.Combine(world, "session.lock"); File.WriteAllBytes(path, [0]);
+            await using (var owned = await session.AcquireWorldEditLeaseAsync(path)) { }
+            await using (var reacquired = await session.AcquireWorldEditLeaseAsync(path)) { }
+        }
+        finally { Directory.Delete(world, recursive: true); }
+    }
+    if (OperatingSystem.IsLinux() && Environment.GetEnvironmentVariable("NEXA_NATIVE_NOTIFICATION_FIXTURE") == "1")
+    {
+        int activations = 0;
+        if (!await session.NotifyNativeWithActionAsync("Nexa", "Fixture", () => activations++) || activations != 1)
+            throw new InvalidOperationException("Native notification activation was lost before retirement.");
+    }
+    await using (var controls = await session.CreateMediaControlsAsync(new(AvaloniaUiMediaStatus.Paused, Generation: 1), .5, true,
+        (_, _) => { }, _ => { }))
+        await controls.UpdateAsync(new(AvaloniaUiMediaStatus.Stopped, Generation: 2), 0, false);
     await session.SetAnimationFrameRateAsync(24);
     if (session.Capture().MotionTargetFramesPerSecond != 24) throw new InvalidOperationException("The native frame-rate effect was not applied.");
     session.Localize = text => "Native " + text;
@@ -74,6 +116,7 @@ int result = NativeWindowSession.RunApplicationOnMainThread(async () =>
         if (shell.Renderer.TextLayoutProvider is null) throw new InvalidOperationException("Native text was not installed.");
     });
     Task<int> presented = session.PresentAsync();
+    await using var shutdownFiles = await session.SubscribeFileActivationsAsync(_ => { });
     DateTime deadline = DateTime.UtcNow.AddSeconds(15);
     while (session.Capture().NodePaintCallbacks == 0 && DateTime.UtcNow < deadline) await Task.Delay(20);
     if (session.Capture().NodePaintCallbacks == 0) throw new InvalidOperationException("The native backend never painted the Host scene.");

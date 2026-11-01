@@ -7,15 +7,19 @@ internal enum WindowCommand
     CloseWindow = 9, Metrics = 10, Appearance = 11, Relocalize = 12,
     StartupFacts = 13, DiscardShell = 14, WaitForRetry = 15, Platform = 16, Theme = 17, ClaimTheme = 18, ReleaseTheme = 19,
     InputLease = 20, ReleaseInputLease = 21,
+    Media = 22, ClaimMedia = 23,
+    Effect = 24, ClaimEffect = 25, ReleaseEffect = 26,
+    MediaControls = 27, ClaimMediaControls = 28,
+    FileActivation = 29,
 }
 
-internal enum WindowControlCallback { BeginMain = 0, AsyncCompletion = 1, UiStopped = 2, Diagnostic = 3, Localize = 4, LocalizePicker = 5, PlatformEvent = 6, InputLease = 7 }
-internal enum WindowUiCallback : byte { Continuation = 0, Shell = 1, Input = 2, InstallText = 3, PlatformEvent = 4, InputLease = 5 }
+internal enum WindowControlCallback { BeginMain = 0, AsyncCompletion = 1, UiStopped = 2, Diagnostic = 3, Localize = 4, LocalizePicker = 5, PlatformEvent = 6, InputLease = 7, Media = 8, Notification = 9, MediaControls = 10 }
+internal enum WindowUiCallback : byte { Continuation = 0, Shell = 1, Input = 2, InstallText = 3, PlatformEvent = 4, InputLease = 5, Notification = 6 }
 internal enum WindowUiCommand : byte { Continuation = 0, Invalidate = 1, Text = 2, Platform = 3, Theme = 4, InputLease = 5 }
 
 internal static class WindowControlProtocol
 {
-    internal static string Identity => "nexa-window/1/" + UiWireSchema.Fingerprint;
+    internal static string Identity => "nexa-window/2/" + UiWireSchema.Fingerprint;
     internal static UiWireWriter Write(int kind, bool callback = false)
     {
         var writer = new UiWireWriter(new Dictionary<string, Nexa.Core.Media.PngImage>());

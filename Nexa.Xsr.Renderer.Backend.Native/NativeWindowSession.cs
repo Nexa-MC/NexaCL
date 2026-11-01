@@ -194,6 +194,10 @@ public sealed partial class NativeWindowSession
                 Diagnostic?.Invoke(type, code); return [];
             case WindowControlCallback.PlatformEvent:
                 return ReceivePlatformEvent(reader, worker: true);
+            case WindowControlCallback.Media:
+                return ReceiveMedia(reader);
+            case WindowControlCallback.MediaControls:
+                return ReceiveMediaControls(reader);
             default: throw new InvalidDataException("Unknown native window control callback.");
         }
     }
@@ -241,6 +245,8 @@ public sealed partial class NativeWindowSession
                     }
                 case WindowUiCallback.InputLease:
                     return ReceiveInput(message[1..]);
+                case WindowUiCallback.Notification:
+                    return ReceiveNotification(message[1..]);
                 default: throw new InvalidDataException("Unknown native UI callback.");
             }
         });
@@ -286,6 +292,11 @@ public sealed partial class NativeWindowSession
     {
         await _uiStopped.Task.ConfigureAwait(false);
         await _inputCallbacks.DisposeAsync().ConfigureAwait(false);
+        await _notificationCallbacks.DisposeAsync().ConfigureAwait(false);
+        Interlocked.Exchange(ref _fileActivation, null);
+        foreach (var controls in _mediaControls.Values) await controls.DisposeAsync().ConfigureAwait(false);
+        foreach (var player in _media.Values) await player.DisposeAsync().ConfigureAwait(false);
+        foreach (var effect in _effects.Values) await effect.DisposeAsync().ConfigureAwait(false);
         foreach (var theme in _themes.Values) await theme.DisposeAsync().ConfigureAwait(false);
         DetachShell(); _operations.Dispose();
         _context.OperationCompleted(); await _context.DisposeAsync().ConfigureAwait(false);

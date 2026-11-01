@@ -1,3 +1,4 @@
+using Nexa.Native.Ui;
 using Nexa.Native.Window.Wire;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
 
@@ -5,6 +6,35 @@ namespace Nexa.Native.Window;
 
 internal sealed partial class WindowSession
 {
+    private readonly NativeUiAsyncResources<FileSubscription> _fileSubscriptions = new(1);
+    private long _nativeFiles;
+
+    private void SubscribeFiles()
+    {
+        if (_nativeFiles != 0) return;
+        long id = _fileSubscriptions.Register(new());
+        ObjectDisposedException.ThrowIf(!_fileSubscriptions.Claim(id), this);
+        try
+        {
+            using var owned = _fileSubscriptions.Acquire(id);
+            owned.Resource.Subscription = AvaloniaUiFileActivation.Subscribe(files =>
+            {
+                using var callback = _fileSubscriptions.TryAcquire(id);
+                if (callback is null) return;
+                Notify(WindowPlatformEvent.FileActivation, writer =>
+                { writer.Count(files.Count); foreach (string file in files) writer.String(file); });
+            });
+            _nativeFiles = id;
+        }
+        catch { _ = _fileSubscriptions.ReleaseAsync(id); throw; }
+    }
+
+    private sealed class FileSubscription : IAsyncDisposable
+    {
+        internal IDisposable? Subscription;
+        public ValueTask DisposeAsync() { Subscription?.Dispose(); return ValueTask.CompletedTask; }
+    }
+
     private void AttachPlatformEvents()
     {
         _actions.CloseRequested = () => Decide(WindowPlatformEvent.CloseRequested);

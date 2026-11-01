@@ -15,6 +15,7 @@ internal static partial class Program
         AsyncAdmissionAndDeliveryRetry();
         AsyncResultOwnership();
         NativeResourceOwnership();
+        AsyncResourceOwnership().WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
         DispatcherDeliveryAndCleanup();
         DispatcherOwnerLifetime();
         if (args.Length is not (1 or 2)) throw new ArgumentException("Supply the independently published native UI peer library.");

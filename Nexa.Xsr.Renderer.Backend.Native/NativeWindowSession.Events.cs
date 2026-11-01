@@ -43,11 +43,15 @@ public sealed partial class NativeWindowSession
             case WindowPlatformEvent.Input:
                 var input = reader.AvaloniaUiInputKind(); reader.End(); InputObserved?.Invoke(input); break;
             case WindowPlatformEvent.Files:
+            case WindowPlatformEvent.FileActivation:
                 int count = reader.Count();
                 if (count < 0) throw new InvalidDataException("Missing dropped files.");
                 string[] files = new string[count];
                 for (int i = 0; i < count; i++) files[i] = reader.String() ?? throw new InvalidDataException("Missing dropped file.");
-                reader.End(); FilesDropped?.Invoke(files); break;
+                reader.End();
+                if (kind == WindowPlatformEvent.Files) FilesDropped?.Invoke(files);
+                else Volatile.Read(ref _fileActivation)?.Invoke(files);
+                break;
             case WindowPlatformEvent.Activity:
                 bool active = reader.Boolean(); reader.End(); WindowActivityChanged?.Invoke(active); break;
             case WindowPlatformEvent.Media:

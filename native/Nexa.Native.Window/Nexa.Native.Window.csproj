@@ -7,6 +7,7 @@
     <Compile Include="../NativeUiCallGate.cs" Link="NativeUiCallGate.cs" />
     <Compile Include="../NativeUiResources.cs" Link="NativeUiResources.cs" />
     <Compile Include="../NativeUiAsyncCalls.cs" Link="NativeUiAsyncCalls.cs" />
+    <Compile Include="../NativeUiAsyncResources.cs" Link="NativeUiAsyncResources.cs" />
     <Compile Include="../NativeUiSynchronizationContext.cs" Link="NativeUiSynchronizationContext.cs" />
     <ProjectReference Include="../../Nexa.Core/Nexa.Core.csproj" />
     <ProjectReference Include="../../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />

@@ -35,6 +35,13 @@ internal sealed partial class WindowSession
                     writer.Boolean(await _actions.NotifyNativeAsync(title, message, token));
                     break;
                 }
+            case WindowPlatformCommand.NotifyWithAction:
+                {
+                    string title = Required(reader.String()), message = Required(reader.String()); long callback = reader.Int64();
+                    reader.End(); token.ThrowIfCancellationRequested();
+                    writer.Boolean(await NotifyWithActionAsync(title, message, callback, token));
+                    break;
+                }
             case WindowPlatformCommand.CopyScreenshotPath:
                 {
                     string path = Required(reader.String());

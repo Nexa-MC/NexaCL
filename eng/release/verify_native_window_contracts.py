@@ -1,9 +1,11 @@
 """Paint a real window across independent NativeAOT runtimes (requires a desktop/display)."""
 import argparse
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
+import tempfile
 from verify_native_ui_contracts import ROOT, test
 
 
@@ -45,12 +47,23 @@ def verify(rid: str, output: Path):
     for command, directory, display in commands:
         if rid.startswith("linux-") and display:
             command = ["xvfb-run", "-a", *command]
-        run_window_probe(command, directory, rid, output)
+        if rid.startswith("linux-") and directory == client and display:
+            # Environment belongs to each independent runtime. Set the fixture path
+            # before process entry instead of changing one runtime's managed cache.
+            with tempfile.TemporaryDirectory(prefix="nexa-notification-") as temporary:
+                notification = Path(temporary) / "notify-send"
+                notification.write_text("#!/bin/sh\nprintf '%s\\n' nexacl\n", encoding="utf-8")
+                notification.chmod(0o700)
+                environment = {**os.environ, "PATH": temporary + os.pathsep + os.environ["PATH"],
+                               "NEXA_NATIVE_NOTIFICATION_FIXTURE": "1"}
+                run_window_probe(command, directory, rid, output, environment)
+        else:
+            run_window_probe(command, directory, rid, output)
 
 
-def run_window_probe(command, directory, rid, output):
+def run_window_probe(command, directory, rid, output, environment=None):
     try:
-        subprocess.run(command, check=True, timeout=180, cwd=directory)
+        subprocess.run(command, check=True, timeout=180, cwd=directory, env=environment)
     except subprocess.CalledProcessError as error:
         # A successful managed test body does not prove native process teardown.
         # Keep the original failure while collecting a native stack on macOS runners.

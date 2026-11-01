@@ -35,7 +35,17 @@ internal sealed partial class WindowSession : IAsyncDisposable
         {
             using var writer = WindowControlProtocol.Write((int)WindowControlCallback.AsyncCompletion, callback: true);
             writer.Buffer(message); return _hostControl.Exchange(writer.Finish());
-        }, Report, (_, _, result) => { long handle = WindowThemeResult.ProvisionalHandle(result); if (handle != 0) _themes.RejectProvisional(handle); });
+        }, Report, (_, _, result) =>
+        {
+            long handle = WindowThemeResult.ProvisionalHandle(result);
+            if (handle != 0) _themes.RejectProvisional(handle);
+            long media = WindowMediaResult.ProvisionalHandle(result);
+            if (media != 0) _ = _media.RejectProvisionalAsync(media);
+            long effect = WindowEffectResult.ProvisionalHandle(result);
+            if (effect != 0) _effects.RejectProvisional(effect);
+            long controls = WindowEffectResult.ProvisionalHandle(result, kind: 1);
+            if (controls != 0) _ = _mediaControls.RejectProvisionalAsync(controls);
+        });
         _control = new(ExchangeControl, Report);
         _ui = new(ExchangeUi, Report);
     }
@@ -66,6 +76,12 @@ internal sealed partial class WindowSession : IAsyncDisposable
         {
             case WindowCommand.ClaimTheme:
                 long claim = reader.Int64(); reader.End(); return [_themes.Claim(claim) ? (byte)1 : (byte)0];
+            case WindowCommand.ClaimMedia:
+                long media = reader.Int64(); reader.End(); return [_media.Claim(media) ? (byte)1 : (byte)0];
+            case WindowCommand.ClaimEffect:
+                long effect = reader.Int64(); reader.End(); return [_effects.Claim(effect) ? (byte)1 : (byte)0];
+            case WindowCommand.ClaimMediaControls:
+                long controls = reader.Int64(); reader.End(); return [_mediaControls.Claim(controls) ? (byte)1 : (byte)0];
             case WindowCommand.ReleaseTheme:
                 long release = reader.Int64(); reader.End(); _themes.Release(release); return [];
             case WindowCommand.MainCompleted:
@@ -146,6 +162,23 @@ internal sealed partial class WindowSession : IAsyncDisposable
         using var reader = WindowControlProtocol.Read(request, out int command);
         switch ((WindowCommand)command)
         {
+            case WindowCommand.Media:
+                return await ExecuteMediaAsync(reader, token).ConfigureAwait(false);
+            case WindowCommand.MediaControls:
+                return await ExecuteMediaControlsAsync(reader, token).ConfigureAwait(false);
+            case WindowCommand.FileActivation:
+                bool subscribeFiles = reader.Boolean(); reader.End();
+                if (subscribeFiles)
+                    await NativeContext.RunAsync(() => { SubscribeFiles(); return Task.CompletedTask; }, token).ConfigureAwait(false);
+                else
+                    await _fileSubscriptions.ReleaseAsync(Interlocked.Exchange(ref _nativeFiles, 0)).ConfigureAwait(false);
+                return [];
+            case WindowCommand.Effect:
+                return ExecuteEffect(reader, token);
+            case WindowCommand.ReleaseEffect:
+                long effect = reader.Int64(); reader.End();
+                if (effect <= 0) throw new InvalidDataException("Invalid native effect handle.");
+                await _effects.ReleaseAsync(effect).ConfigureAwait(false); return [];
             case WindowCommand.ReleaseInputLease:
                 long inputLease = reader.Int64(); reader.End();
                 if (inputLease <= 0) throw new InvalidDataException("Invalid native input lease.");
@@ -277,6 +310,12 @@ internal sealed partial class WindowSession : IAsyncDisposable
     {
         try
         {
+            _lifetime.Cancel();
+            await _fileSubscriptions.DisposeAsync().ConfigureAwait(false);
+            await _notifications.DisposeAsync().ConfigureAwait(false);
+            await _mediaControls.DisposeAsync().ConfigureAwait(false);
+            await _media.DisposeAsync().ConfigureAwait(false);
+            await _effects.DisposeAsync().ConfigureAwait(false);
             await _inputLeases.DisposeAsync().ConfigureAwait(false);
             await _ui.DisposeAsync().ConfigureAwait(false);
             _lifetime.Cancel();

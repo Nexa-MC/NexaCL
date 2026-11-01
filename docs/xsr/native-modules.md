@@ -129,6 +129,16 @@ the native boundary.
 
 Remaining native media, screenshot, notification-action and world-edit operations
 must also cross explicit bounded protocols before the backend reference is removed.
+Screenshot crop work runs on a native worker, never on the window dispatcher. World
+edit locks stay in the native runtime that acquired their file descriptors; claim
+and retirement use opaque leases, including rollback of cancelled creation. The
+service's existing synchronous world-lock port may wait only on its own worker.
+Native document subscriptions detach with an atomic owner comparison, including
+after the dispatcher exits. Their native resource registry prevents new delivery
+after retirement and drains every admitted callback before acknowledging release.
+System media controls consume immutable state/volume/enabled snapshots rather than
+calling back into Host for property reads. Notification action targets retire before
+their operation completes; a queued activation is delivered before that retirement.
 The Window prototype is the implementation basis for the UI ownership group; its
 existence alone does not complete the UI or business-module extraction.
 
@@ -1093,3 +1103,14 @@ under the Host context, self-release and normal native retirement. The new calle
 has neither Avalonia implementation dependencies nor CoreCLR. Windows/macOS client
 execution is a release CI gate. Desktop production adoption and the full business
 module extraction remain outstanding.
+
+### Remaining window-owned asynchronous resources
+
+Media players and platform leases retain native ownership until their asynchronous
+disposal completes. Retiring a handle first rejects new commands and notifications,
+then drains existing borrowers, and only then disposes the underlying resource.
+Callbacks are included in those borrows. A rejected provisional creation is retired
+without exposing a usable handle. Session shutdown drains these resources before
+retiring its Host callback channels. Commands, immutable media state and bounded
+image frames use the existing binary protocol; players, tasks and streams remain
+inside their originating runtime.
