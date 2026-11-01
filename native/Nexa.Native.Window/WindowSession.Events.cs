@@ -72,5 +72,9 @@ internal sealed partial class WindowSession
     private void OnAppearance() => Notify(WindowPlatformEvent.Appearance);
     private void OnActivated() => Notify(WindowPlatformEvent.Activated);
     private void OnActivity(bool active) => Notify(WindowPlatformEvent.Activity, writer => writer.Boolean(active));
-    private void OnClosed() => Notify(WindowPlatformEvent.Closed);
+    private void OnClosed()
+    {
+        CancelDoubleClickLease();
+        Notify(WindowPlatformEvent.Closed);
+    }
 }

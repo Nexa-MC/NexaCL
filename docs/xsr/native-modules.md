@@ -988,3 +988,39 @@ event. Real paint, theme ownership and normal process exit still pass on Linux;
 the architecture check passes for 86 projects. The preceding Cocoa retirement
 fix has also passed normal process exit on Windows, Linux, macOS Intel and macOS
 Apple Silicon (native-engines run 41160628894).
+
+### Native input callback leases
+
+Input polling and post-navigation double-click actions stay in the window runtime.
+The Host registers its own callback first, then creates a session-local native
+lease on the synchronous UI plane using a positive callback ID. Only the native
+lease ID and bounded binary callback messages cross runtimes. Poll callbacks run
+on the native input dispatcher under each runtime's local continuation context;
+their response supplies the next positive interval, at most one day. Callback
+failures retire the lease rather than escaping through a dispatcher timer.
+
+Release is an asynchronous control operation: it rejects new callbacks and waits
+for already admitted callbacks and native resource disposal. A callback may request
+its own release but must return before awaiting that drain. Double-click leases
+are one-shot; replacement and cancellation retire the previous lease. Native UI
+shutdown drains all input leases before notifying the Host that its UI call table
+can retire. No delegate, timer, or disposable object crosses the ABI. Leases are
+bounded to 32 per session; unknown/repeated releases are idempotent.
+
+This boundary is a prerequisite for Desktop facade adoption. It does not add the
+window module to production payloads or remove the Host's backend reference.
+
+Validation: the independent Linux-x64 NativeAOT caller/window passed real painting,
+reverse text calls, interval changes, Host-context reentry, callback self-release,
+malformed creation/replies, throwing callbacks, the 32-lease limit and shutdown
+with an active poll. No CoreCLR is present; the caller has no Avalonia/backend
+dependency. The Release solution built without warnings/errors; 47 backend tests,
+nine Desktop gamepad tests, changed-source formatting and both unchanged generated schemas
+passed. Windows/macOS execution remains a CI check.
+
+The architecture gate reports only the existing settings-page
+`XsrUiTransition.IndependentChildren` write at `SettingsPageController.cs:394`.
+Release tooling passed 103/104 tests; the existing Windows install-scope test
+raises `KeyError: 'Root'` for nested WiX registry values. Both failures reproduce
+against unchanged source archived from baseline `69331638a`; neither is waived
+or changed by this input-lifetime migration.

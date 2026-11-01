@@ -294,7 +294,7 @@ internal sealed partial class WindowSession
                 {
                     reader.End();
                     token.ThrowIfCancellationRequested();
-                    _actions.CancelPostNavigationDoubleClick();
+                    CancelDoubleClickLease();
                     break;
                 }
             case WindowPlatformCommand.OpenDirectory:

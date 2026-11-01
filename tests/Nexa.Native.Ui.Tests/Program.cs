@@ -183,7 +183,9 @@ internal static partial class Program
         resources.RejectProvisional(id); // A late rejection cannot invalidate a claimed resource.
         var first = resources.Acquire(id);
         var second = resources.Acquire(id);
-        resources.Release(id);
+        Task released = resources.ReleaseAsync(id);
+        True(!released.IsCompleted);
+        True(ReferenceEquals(released, resources.ReleaseAsync(id)));
         True(!resources.Claim(id));
         Throws<InvalidOperationException>(() => resources.Acquire(id));
         using var rejected = new DisposableResource(() => { });
@@ -193,6 +195,8 @@ internal static partial class Program
         first.Dispose(); first.Dispose(); Equal(0, disposals);
         True(second.Resource is not null);
         second.Dispose();
+        released.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+        True(resources.ReleaseAsync(id).IsCompletedSuccessfully);
         drain.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
         Equal(1, disposals);
         Throws<ObjectDisposedException>(() => _ = second.Resource);

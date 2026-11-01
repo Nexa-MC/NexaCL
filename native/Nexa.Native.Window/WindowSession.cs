@@ -109,6 +109,9 @@ internal sealed partial class WindowSession : IAsyncDisposable
             case WindowUiCommand.Theme:
                 if (!Dispatcher.UIThread.CheckAccess()) throw new InvalidOperationException("Theme effects belong to the native UI thread.");
                 return NativeContext.ExecuteInline(() => ExchangeTheme(request[1..]));
+            case WindowUiCommand.InputLease:
+                if (!Dispatcher.UIThread.CheckAccess()) throw new InvalidOperationException("Input leases belong to the native UI thread.");
+                return NativeContext.ExecuteInline(() => ExchangeInputLease(request[1..]));
             case WindowUiCommand.Platform:
                 if (!Dispatcher.UIThread.CheckAccess()) throw new InvalidOperationException("Synchronous platform effects belong to the native UI thread.");
                 return NativeContext.ExecuteInline(() =>
@@ -143,6 +146,10 @@ internal sealed partial class WindowSession : IAsyncDisposable
         using var reader = WindowControlProtocol.Read(request, out int command);
         switch ((WindowCommand)command)
         {
+            case WindowCommand.ReleaseInputLease:
+                long inputLease = reader.Int64(); reader.End();
+                if (inputLease <= 0) throw new InvalidDataException("Invalid native input lease.");
+                await _inputLeases.ReleaseAsync(inputLease).ConfigureAwait(false); return [];
             case WindowCommand.Theme:
                 return await PrepareThemeAsync(reader, token).ConfigureAwait(false);
             case WindowCommand.Start:
@@ -260,6 +267,7 @@ internal sealed partial class WindowSession : IAsyncDisposable
     {
         try
         {
+            await _inputLeases.DisposeAsync().ConfigureAwait(false);
             await _ui.DisposeAsync().ConfigureAwait(false);
             _lifetime.Cancel();
             if (_nativeContext is { } context)

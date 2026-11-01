@@ -49,17 +49,21 @@ internal sealed class NativeUiResources<T>(int maximumCount, long maximumBytes, 
 
     internal void Release(long id) => Retire(id, provisionalOnly: false);
     internal void RejectProvisional(long id) => Retire(id, provisionalOnly: true);
+    internal Task ReleaseAsync(long id) => Retire(id, provisionalOnly: false);
 
-    private void Retire(long id, bool provisionalOnly)
+    private Task Retire(long id, bool provisionalOnly)
     {
         Entry? dispose;
+        Task drained;
         lock (_gate)
         {
-            if (!_entries.TryGetValue(id, out var entry) || provisionalOnly && entry.Claimed) return;
+            if (!_entries.TryGetValue(id, out var entry) || provisionalOnly && entry.Claimed) return Task.CompletedTask;
             entry.Retired = true;
+            drained = entry.Drained.Task;
             dispose = BeginDisposal(entry);
         }
         if (dispose is not null) FinishDisposal(id, dispose);
+        return drained;
     }
 
     private void Return(long id)
@@ -89,6 +93,7 @@ internal sealed class NativeUiResources<T>(int maximumCount, long maximumBytes, 
             lock (_gate)
             {
                 _entries.Remove(id); _bytes -= entry.Bytes;
+                entry.Drained.TrySetResult();
                 if (_closed && _entries.Count == 0) _drained.TrySetResult();
             }
         }
@@ -115,6 +120,7 @@ internal sealed class NativeUiResources<T>(int maximumCount, long maximumBytes, 
     {
         internal readonly T Resource = resource;
         internal readonly long Bytes = bytes;
+        internal readonly TaskCompletionSource Drained = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal int Borrows;
         internal bool Claimed, Retired, Disposing;
     }

@@ -57,7 +57,7 @@ internal static partial class Program
         throw new InvalidOperationException("The window probe catalog does not cover the actual backend.");
     }
 
-    private sealed class WindowOwner : IAsyncDisposable
+    private sealed partial class WindowOwner : IAsyncDisposable
     {
         internal readonly NativeUiCallRegistration Control, Ui;
         internal readonly TaskCompletionSource Finished = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -136,6 +136,7 @@ internal static partial class Program
                         }
                     case WindowUiCallback.Shell: return _shellEndpoint.Exchange(message[1..]);
                     case WindowUiCallback.Input: return _input.Exchange(message[1..]);
+                    case WindowUiCallback.InputLease: return ReceiveInputLease(message[1..]);
                     case WindowUiCallback.InstallText:
                         if (message.Length != 2 || message.Span[1] > 1) throw new InvalidDataException();
                         _shell.Renderer.TextLayoutProvider = message.Span[1] == 0 ? null
@@ -378,6 +379,7 @@ internal static partial class Program
                 }
                 await VerifyPlatform();
                 await VerifyThemes();
+                await VerifyInputLeases();
                 await Invoke(WindowCommand.WarmShell);
                 Task<byte[]> presented = Invoke(WindowCommand.Present);
                 DateTime deadline = DateTime.UtcNow.AddSeconds(30);
@@ -409,6 +411,7 @@ internal static partial class Program
                     Volatile.Write(ref _permitClose, 1);
                     await Invoke(WindowCommand.QuiesceUi).WaitAsync(TimeSpan.FromSeconds(30));
                     await _stopped.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                    await VerifyInputLeasesStopped();
                     await _context.RunCleanupAsync(() => { _shellEndpoint?.Dispose(); return Task.CompletedTask; });
                     _context.OperationCompleted(); await _context.DisposeAsync(); _operations.Dispose();
                 }
