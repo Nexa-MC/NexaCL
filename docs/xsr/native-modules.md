@@ -1016,7 +1016,8 @@ malformed creation/replies, throwing callbacks, the 32-lease limit and shutdown
 with an active poll. No CoreCLR is present; the caller has no Avalonia/backend
 dependency. The Release solution built without warnings/errors; 47 backend tests,
 nine Desktop gamepad tests, changed-source formatting and both unchanged generated schemas
-passed. Windows/macOS execution remains a CI check.
+passed. The independent Window probes subsequently passed on Windows, Linux,
+macOS Intel and Apple Silicon (native-engines run 41275239891).
 
 Follow-up CI closure fixes the settings-page ownership violation through an
 authored `TransitionIndependentChildren` contract, and makes the Windows scope
@@ -1040,3 +1041,10 @@ application-directory links on Unix. Explicit blocks around embedded loops keep
 source formatting identical under local SDK 10.0.100 and CI SDK 10.0.403; both
 format gates pass. A separate Windows Explorer CI job exercises the native command
 fixture before full installer packaging.
+
+The backend spring regression retargets immediately after an in-flight frame,
+rejects any attempt to read stale scene state, and exercises a deliberately delayed
+next frame before asserting final settlement. A valid delayed frame can already
+be below half the previous sample; that ratio is not a continuity contract.
+A separate macOS Intel backend presentation gate runs the motion, input and
+resource-lifetime scenarios before the complete launcher packaging matrix.

@@ -55,23 +55,45 @@ internal static partial class Program
     {
         object owner = new();
         List<double> positions = [];
+        List<double> retargetedPositions = [];
+        TaskCompletionSource retargeted = new();
+        bool retargetQueued = false;
+        void Capture(double position)
+        {
+            positions.Add(position);
+            if (retargetQueued || position < .5 || position >= 1) return;
+            retargetQueued = true;
+            // Retarget after this frame returns, before the next timer tick can retire the
+            // track. A delayed polling continuation may otherwise observe an already settled
+            // spring, for which reading the scene again is correct.
+            Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    AvaloniaUiMotion.AnimateSpring(owner, "value",
+                        () => throw new InvalidOperationException("An in-flight retarget must not read the stale scene."),
+                        retargetedPositions.Add, 0, .3, () => false);
+                    // Exercise a delayed dispatcher frame: its next valid position may be
+                    // below half the previous sample without ever reading the stale scene.
+                    Thread.Sleep(350);
+                    retargeted.SetResult();
+                }
+                catch (Exception error) { retargeted.SetException(error); }
+            }, DispatcherPriority.Send);
+        }
         try
         {
-            AvaloniaUiMotion.AnimateSpring(owner, "value", () => 0, positions.Add, 1, .3, () => false);
-            DateTime deadline = DateTime.UtcNow.AddSeconds(2);
-            while ((positions.Count == 0 || positions[^1] < .5) && DateTime.UtcNow < deadline)
-                await Task.Delay(16).ConfigureAwait(true);
-            AssertTrue(positions.Count > 1 && positions[^1] >= .5);
+            AvaloniaUiMotion.AnimateSpring(owner, "value", () => 0, Capture, 1, .3, () => false);
+            await retargeted.Task.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(true);
+            AssertTrue(positions.Count > 0 && positions[^1] >= .5 && positions[^1] < 1);
             for (int i = 1; i < positions.Count; i++) AssertTrue(positions[i] >= positions[i - 1]);
-            double before = positions[^1];
-            int split = positions.Count;
-            AvaloniaUiMotion.AnimateSpring(owner, "value", () => 0, positions.Add, 0, .3, () => false);
-            while (positions.Count == split && DateTime.UtcNow < deadline)
+            // A delayed first frame can legitimately reach zero. The throwing scene reader
+            // above checks stale-read rejection independently of dispatcher latency.
+            DateTime deadline = DateTime.UtcNow.AddSeconds(5);
+            while ((retargetedPositions.Count == 0 || retargetedPositions[^1] != 0) && DateTime.UtcNow < deadline)
                 await Task.Delay(16).ConfigureAwait(true);
-            AssertTrue(positions[split] > before / 2); // No jump to the stale scene's zero.
-            while (positions[^1] != 0 && DateTime.UtcNow < deadline)
-                await Task.Delay(16).ConfigureAwait(true);
-            AssertEqual(0d, positions[^1]);
+            AssertTrue(retargetedPositions.Count > 0);
+            AssertEqual(0d, retargetedPositions[^1]);
         }
         finally { AvaloniaUiMotion.CancelAll(owner); }
         Console.WriteLine("PASS: spring integration and retargeting tolerate delayed scene commits");
