@@ -6,7 +6,7 @@
     "Nexa.Services.Network.Contracts",
     "Nexa.Services.Common"
   ],
-  "Nexa.Native.Updates": ["Nexa.Services.Updates", "Nexa.Native.Updates.Codecs"],
+  "Nexa.Native.Updates": ["Nexa.Services.Updates", "Nexa.Native.Updates.Codecs", "Nexa.Core"],
   "Nexa.Native.Media": [],
   "Nexa.Native.Minecraft": ["Nexa.Services.Minecraft.Metadata", "Nexa.Services.Minecraft.Java", "Nexa.Services.Minecraft.Process", "Nexa.Services.Minecraft.Install", "Nexa.Services.Minecraft.Launch", "Nexa.Services.Minecraft.Management", "Nexa.Services.Accounts.Contracts", "Nexa.Native.Network.Client", "Nexa.Services.Resources"],
   "Nexa.Native.Minecraft.Client": ["Nexa.Services.Minecraft.Library.Contracts", "Nexa.Services.Minecraft.Java.Contracts", "Nexa.Services.Minecraft.Process.Contracts", "Nexa.Services.Minecraft.Crash.Contracts", "Nexa.Services.Minecraft.Install.Contracts", "Nexa.Services.Minecraft.Management.Contracts", "Nexa.Native.Network.Client", "Nexa.Services.Settings.Contracts", "Nexa.Services.Accounts.Contracts", "Nexa.Services.Minecraft.Launch.Contracts", "Nexa.Services.Resources.Contracts"],
@@ -645,5 +645,5 @@
   ],
   "Nexa.Native.Updates.Client": ["Nexa.Services.Updates.Contracts", "Nexa.Services.Common.Contracts", "Nexa.Native.Network.Client"],
   "Nexa.Native.Updates.Services.Tests": ["Nexa.Native.Updates.Client"],
-  "Nexa.Native.Updates.Codecs": []
+  "Nexa.Native.Updates.Codecs": ["Nexa.Core"]
 }

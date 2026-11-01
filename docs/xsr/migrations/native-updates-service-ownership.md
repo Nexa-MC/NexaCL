@@ -78,3 +78,15 @@ Desktop compatibility validation passed 13 update-related cases, including Sidec
 publication and bootstrap slot selection. The independent privileged helper
 published as Linux x64 NativeAOT and passed `--validate-helper`; formatting and
 publication tooling checks passed. This preserves the helper's static trust path.
+
+CI's complete automatic-function coverage gate also applies to the non-shipped
+codec library. It explicitly uses the shared Core patch ABI and automatic body
+instrumentation. Updates is now classified as a service owner, as Accounts,
+Network and Minecraft already are; it does not claim standalone-engine isolation
+after acquiring the business implementation closure. Service verification keeps
+the existing forbidden presentation references and full body coverage checks.
+
+The repaired default Desktop build passed strict automatic coverage for 63
+assemblies / 43,838 executable bodies, including all 19 codec algorithm bodies.
+The automatic instrumentation self-test passed 51 assertions. No coverage gate
+was disabled or exempted.

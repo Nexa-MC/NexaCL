@@ -39,7 +39,7 @@ internal sealed partial class AssemblyInstrumenter
         if (kind == "Service")
         {
             string? servicePrefix = module.Assembly.Name.Name switch
-            { "Nexa.Native.Network" => "nexa_network_", "Nexa.Native.Accounts" => "nexa_accounts_", "Nexa.Native.Minecraft" => "nexa_minecraft_", _ => null };
+            { "Nexa.Native.Network" => "nexa_network_", "Nexa.Native.Accounts" => "nexa_accounts_", "Nexa.Native.Minecraft" => "nexa_minecraft_", "Nexa.Native.Updates" => "nexa_updates_", _ => null };
             if (servicePrefix is null || !module.AssemblyReferences.Any(reference => reference.Name == "Nexa.Core")
                 || module.GetType("Nexa.Native.Instrumentation.Patch") is not null
                 || module.GetType("Nexa.Core.Patching.Patch") is not null

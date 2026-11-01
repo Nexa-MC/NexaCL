@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><NexaLocalPatchRuntime>false</NexaLocalPatchRuntime></PropertyGroup>
   <Import Project="../NativeEngine.props" />
   <Import Project="../ServiceProtocol/ServiceProtocol.props" Condition="'$(NexaExternalModules)' == 'true'" />
   <ItemGroup>
+    <ProjectReference Include="../../Nexa.Core/Nexa.Core.csproj" />
     <ProjectReference Include="../../Nexa.Services.Updates/Nexa.Services.Updates.csproj" Condition="'$(NexaExternalModules)' == 'true'" />
     <Compile Remove="UpdatesServiceExports.cs;UpdatesServiceSession.cs;UpdatesServiceSession.Telemetry.cs" Condition="'$(NexaExternalModules)' != 'true'" />
     <Compile Include="../UpdatesServiceProtocol/*.cs" Link="Wire/%(Filename)%(Extension)" Condition="'$(NexaExternalModules)' == 'true'" />
