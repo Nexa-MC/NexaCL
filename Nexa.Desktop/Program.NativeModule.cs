@@ -1,6 +1,8 @@
 #if NEXA_NATIVE_MODULE
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
+using Nexa.Native.Host.Services;
 
 namespace Nexa.Desktop;
 
@@ -9,7 +11,7 @@ internal static class NativeUiExports
     [UnmanagedCallersOnly(EntryPoint = "nexa_ui_identity_v1", CallConvs = [typeof(CallConvCdecl)])]
     private static unsafe int NativeUiIdentity(byte* output, int capacity)
     {
-        ReadOnlySpan<byte> identity = "nexa-ui/2"u8;
+        ReadOnlySpan<byte> identity = Encoding.UTF8.GetBytes(HostServiceCatalog.UiIdentity);
         if (output != null && capacity >= identity.Length) identity.CopyTo(new Span<byte>(output, capacity));
         return identity.Length;
     }
@@ -23,6 +25,7 @@ internal static class NativeUiExports
             string directory = Marshal.PtrToStringUTF8(baseDirectory) ?? throw new ArgumentException(null, nameof(baseDirectory));
             if (!Path.IsPathFullyQualified(directory)) return 2;
             AppContext.SetData("APP_CONTEXT_BASE_DIRECTORY", directory);
+            AppContext.SetSwitch("Nexa.Native.Host.AdmissionRequired", true);
             string version = Marshal.PtrToStringUTF8(productVersion) ?? throw new ArgumentException(null, nameof(productVersion));
             if (version.Length > 64 || !Nexa.Services.Updates.UpdateVersion.TryParse(version, out var parsed) || parsed.ToString() != version) return 2;
             NativeUiBuildIdentity.ProductVersion = version;

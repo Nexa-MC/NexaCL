@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using Nexa.Native.Host.Services;
 using Nexa.Native.Minecraft.Services;
 using Nexa.Native.Services;
 using Nexa.Native.Services.Wire;
@@ -20,6 +21,7 @@ public sealed partial class NativeMinecraftClient : IAsyncDisposable
     private readonly ServiceEndpoint _endpoint;
     private readonly long _context;
     private readonly nint _close;
+    private NativeHostServiceAdmission? _hostAdmission;
     private readonly Task _initialization;
     private readonly object _gate = new();
     private Task? _retirement;
@@ -185,8 +187,14 @@ public sealed partial class NativeMinecraftClient : IAsyncDisposable
         using var reader = new ServiceWireReader(bytes);
         var result = reader.MinecraftLaunchFaultReport() ?? throw new InvalidDataException("Missing crash report."); reader.End(); return result;
     }
-    private static unsafe (long Context, nint Close) Open(ServiceEndpoint endpoint)
+    private unsafe (long Context, nint Close) Open(ServiceEndpoint endpoint)
     {
+        if (NativeHostServiceAdmission.Required)
+        {
+            _hostAdmission = NativeHostServiceAdmission.Open(3, MinecraftServiceProtocol.Identity, endpoint.Table, () => DisposeAsync().AsTask());
+            endpoint.Connect(_hostAdmission.Owner);
+            return (_hostAdmission.Owner.Context, 0);
+        }
         string suffix = OperatingSystem.IsWindows() ? ".dll" : OperatingSystem.IsMacOS() ? ".dylib" : ".so";
         nint image = NativeLibrary.Load(Path.Combine(AppContext.BaseDirectory, "nexa-minecraft" + suffix));
         var identity = (delegate* unmanaged[Cdecl]<byte*, int, int>)NativeLibrary.GetExport(image, "nexa_minecraft_service_identity_v1");
@@ -200,7 +208,7 @@ public sealed partial class NativeMinecraftClient : IAsyncDisposable
         if (open(&host, &peer) != 0) throw new InvalidOperationException("Native Minecraft admission failed.");
         endpoint.Connect(peer); return (peer.Context, close);
     }
-    private unsafe int Close() => ((delegate* unmanaged[Cdecl]<long, int>)_close)(_context);
+    private unsafe int Close() => _hostAdmission is { } admission ? admission.CloseOwner() : ((delegate* unmanaged[Cdecl]<long, int>)_close)(_context);
     public ValueTask DisposeAsync()
     { lock (_gate) { _closed = true; return new(_retirement ??= RetireAsync()); } }
     private async Task RetireAsync()
@@ -218,5 +226,6 @@ public sealed partial class NativeMinecraftClient : IAsyncDisposable
         if (_hostWork is { } work) await work.DisposeAsync().ConfigureAwait(false);
         await _endpoint.DisposeAsync().ConfigureAwait(false);
         _downloadAdmission.Dispose();
+        _hostAdmission?.Complete();
     }
 }

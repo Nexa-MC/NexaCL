@@ -1,5 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
+using Nexa.Native.Host.Services;
 
 namespace Nexa.Native.Host;
 
@@ -17,6 +19,7 @@ internal static class HostExports
             if (!Path.IsPathFullyQualified(directory)) return 2;
             if (Interlocked.Exchange(ref _entered, 1) != 0) return 2;
             AppContext.SetData("APP_CONTEXT_BASE_DIRECTORY", directory);
+            HostServices.Configure(directory);
             string suffix = OperatingSystem.IsWindows() ? ".dll" : OperatingSystem.IsMacOS() ? ".dylib" : ".so";
             string path = Path.Combine(directory, "nexa-ui" + suffix);
             // Images stay loaded. Resolve and validate the complete entry surface before
@@ -24,7 +27,7 @@ internal static class HostExports
             nint image = NativeLibrary.Load(path);
             var entry = (delegate* unmanaged[Cdecl]<int, nint*, nint, nint, int>)NativeLibrary.GetExport(image, "nexa_ui_main_v2");
             var identity = (delegate* unmanaged[Cdecl]<byte*, int, int>)NativeLibrary.GetExport(image, "nexa_ui_identity_v1");
-            ReadOnlySpan<byte> expected = "nexa-ui/2"u8;
+            ReadOnlySpan<byte> expected = Encoding.UTF8.GetBytes(HostServiceCatalog.UiIdentity);
             if (identity(null, 0) != expected.Length) throw new InvalidDataException("Incompatible nexa-ui module identity.");
             byte[] actual = new byte[expected.Length];
             fixed (byte* output = actual)
@@ -32,7 +35,9 @@ internal static class HostExports
                     throw new InvalidDataException("Incompatible nexa-ui module identity.");
             // No arguments are decoded/re-encoded here, and this call remains on the
             // original process main thread required by Cocoa.
-            int result = entry(argc, argv, baseDirectory, productVersion);
+            int result;
+            try { result = entry(argc, argv, baseDirectory, productVersion); }
+            finally { HostServices.ShutdownAsync().GetAwaiter().GetResult(); }
             GC.KeepAlive(directory);
             return result;
         }

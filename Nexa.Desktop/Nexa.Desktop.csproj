@@ -14,6 +14,7 @@
   <Import Project="../native/NativeStableImage.props" Condition="'$(NexaNativeModule)' == 'true'" />
 
   <ItemGroup>
+    <Compile Include="../native/HostServiceProtocol/HostServiceCatalog.Generated.cs" Link="HostServiceCatalog.Generated.cs" Condition="'$(NexaNativeModule)' == 'true'" />
     <AssemblyMetadata Include="NexaMicrosoftClientId" Condition="'$(NexaMicrosoftClientId)' != ''" Value="$(NexaMicrosoftClientId)" />
     <AssemblyMetadata Include="NexaLittleSkinClientId" Condition="'$(NexaLittleSkinClientId)' != ''" Value="$(NexaLittleSkinClientId)" />
     <AssemblyMetadata Include="NexaCurseForgeApiKey" Condition="'$(NexaCurseForgeApiKey)' != ''" Value="$(NexaCurseForgeApiKey)" />

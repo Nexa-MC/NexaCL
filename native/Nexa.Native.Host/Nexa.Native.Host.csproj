@@ -3,4 +3,8 @@
   <PropertyGroup>
     <Description>Native module admission and main-thread UI entry; no presentation or service implementation dependencies.</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../HostServiceProtocol/HostServiceCatalog.Generated.cs" Link="HostServiceCatalog.Generated.cs" />
+    <Compile Include="../NativeUiCallGate.cs" Link="NativeUiCallGate.cs" />
+  </ItemGroup>
 </Project>

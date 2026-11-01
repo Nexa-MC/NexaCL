@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using Nexa.Native.Host.Services;
 using Nexa.Native.Network.Services;
 using Nexa.Native.Services;
 using Nexa.Native.Services.Wire;
@@ -21,6 +22,7 @@ public sealed partial class NativeUpdatesClient : IAsyncDisposable, IUpdateTelem
     private readonly NetworkHttpStreamServer _http;
     private HostWorkLeaseServer? _work;
     private readonly nint _close;
+    private NativeHostServiceAdmission? _hostAdmission;
     private readonly long _context;
     private readonly Task _initialization;
     private readonly Action<Exception>? _failure;
@@ -140,8 +142,14 @@ public sealed partial class NativeUpdatesClient : IAsyncDisposable, IUpdateTelem
         using var response = new ServiceWireReader(result); long handle = response.Int64(); response.End(); _ = RejectHttpAsync(handle);
     }
     private async Task RejectHttpAsync(long handle) { try { await _http.RejectAsync(handle).ConfigureAwait(false); } catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException) { Report(error); } }
-    private static unsafe (long Context, nint Close) Open(ServiceEndpoint endpoint)
+    private unsafe (long Context, nint Close) Open(ServiceEndpoint endpoint)
     {
+        if (NativeHostServiceAdmission.Required)
+        {
+            _hostAdmission = NativeHostServiceAdmission.Open(4, UpdatesServiceProtocol.Identity, endpoint.Table, () => DisposeAsync().AsTask());
+            endpoint.Connect(_hostAdmission.Owner);
+            return (_hostAdmission.Owner.Context, 0);
+        }
         string suffix = OperatingSystem.IsWindows() ? ".dll" : OperatingSystem.IsMacOS() ? ".dylib" : ".so";
         nint image = NativeLibrary.Load(Path.Combine(AppContext.BaseDirectory, "nexa-updates" + suffix));
         var identity = (delegate* unmanaged[Cdecl]<byte*, int, int>)NativeLibrary.GetExport(image, "nexa_updates_service_identity_v1");
@@ -151,12 +159,13 @@ public sealed partial class NativeUpdatesClient : IAsyncDisposable, IUpdateTelem
         NativeUiCallTable peer = endpoint.Table, owner = default; if (open(&peer, &owner) != 0) throw new IOException("Unable to open native Updates.");
         endpoint.Connect(owner); return (owner.Context, NativeLibrary.GetExport(image, "nexa_updates_service_close_v1"));
     }
-    private unsafe int Close() => ((delegate* unmanaged[Cdecl]<long, int>)_close)(_context);
+    private unsafe int Close() => _hostAdmission is { } admission ? admission.CloseOwner() : ((delegate* unmanaged[Cdecl]<long, int>)_close)(_context);
     public ValueTask DisposeAsync() { lock (_gate) { _closed = true; return new(_retirement ??= RetireAsync()); } }
     private async Task RetireAsync()
     {
         int delay = 1;
         while (true) { int status = Close(); if (status == 1) break; if (status != 0) throw new IOException("Native Updates shutdown failed; callbacks remain retained."); await Task.Delay(delay).ConfigureAwait(false); delay = Math.Min(delay * 2, 32); }
         await _http.DisposeAsync().ConfigureAwait(false); if (_work is { } work) await work.DisposeAsync().ConfigureAwait(false); await _endpoint.DisposeAsync().ConfigureAwait(false);
+        _hostAdmission?.Complete();
     }
 }

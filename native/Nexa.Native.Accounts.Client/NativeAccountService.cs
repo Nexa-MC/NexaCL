@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using Nexa.Native.Accounts.Wire;
+using Nexa.Native.Host.Services;
 using Nexa.Native.Services;
 using Nexa.Native.Services.Wire;
 using Nexa.Native.Ui;
@@ -36,6 +37,7 @@ public sealed partial class NativeAccountService : IAccountLaunchAccess, IAsyncD
     private readonly LogService? _log;
     private readonly INativeAccountProfileStore _profiles;
     private nint _close;
+    private NativeHostServiceAdmission? _hostAdmission;
     private long _context;
     private HttpClient? _http;
     private readonly object _retirementGate = new();
@@ -162,8 +164,14 @@ public sealed partial class NativeAccountService : IAccountLaunchAccess, IAsyncD
     }
     private void Report(Exception error) => _log?.Error("Accounts", "Native account operation failed.", error.GetType().Name);
 
-    private static unsafe (long Context, nint Close) Open(ServiceEndpoint endpoint)
+    private unsafe (long Context, nint Close) Open(ServiceEndpoint endpoint)
     {
+        if (NativeHostServiceAdmission.Required)
+        {
+            _hostAdmission = NativeHostServiceAdmission.Open(1, AccountProtocol.Identity, endpoint.Table, () => DisposeAsync().AsTask());
+            endpoint.Connect(_hostAdmission.Owner);
+            return (_hostAdmission.Owner.Context, 0);
+        }
         string suffix = OperatingSystem.IsWindows() ? ".dll" : OperatingSystem.IsMacOS() ? ".dylib" : ".so";
         nint image = NativeLibrary.Load(Path.Combine(AppContext.BaseDirectory, "nexa-accounts" + suffix));
         var identity = (delegate* unmanaged[Cdecl]<byte*, int, int>)NativeLibrary.GetExport(image, "nexa_accounts_identity_v1");
@@ -177,7 +185,7 @@ public sealed partial class NativeAccountService : IAccountLaunchAccess, IAsyncD
         if (open(&host, &peer) != 0) throw new InvalidOperationException("Account module admission failed.");
         endpoint.Connect(peer); return (peer.Context, close);
     }
-    private unsafe int Close() => ((delegate* unmanaged[Cdecl]<long, int>)_close)(_context);
+    private unsafe int Close() => _hostAdmission is { } admission ? admission.CloseOwner() : ((delegate* unmanaged[Cdecl]<long, int>)_close)(_context);
     public ValueTask DisposeAsync()
     { lock (_retirementGate) return new(_retirement ??= RetireAsync()); }
     private async Task RetireAsync()
@@ -191,5 +199,6 @@ public sealed partial class NativeAccountService : IAccountLaunchAccess, IAsyncD
             await Task.Delay(delay).ConfigureAwait(false); delay = Math.Min(delay * 2, 32);
         }
         await _endpoint.DisposeAsync().ConfigureAwait(false); _http?.Dispose();
+        _hostAdmission?.Complete();
     }
 }

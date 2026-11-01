@@ -116,6 +116,7 @@
     <Project Path="tests/Nexa.Native.Network.Services.Tests/Nexa.Native.Network.Services.Tests.csproj" />
     <Project Path="tests/Nexa.Native.Minecraft.Services.Tests/Nexa.Native.Minecraft.Services.Tests.csproj" />
     <Project Path="tests/Nexa.Native.Updates.Services.Tests/Nexa.Native.Updates.Services.Tests.csproj" />
+    <Project Path="tests/Nexa.Native.Host.Services.Tests/Nexa.Native.Host.Services.Tests.csproj" />
   <Project Path="tests/Nexa.Native.Network.Tests/Nexa.Native.Network.Tests.csproj" />
     <Project Path="tests/Nexa.Services.Themes.Tests/Nexa.Services.Themes.Tests.csproj" />
     <Project Path="tests/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj" />

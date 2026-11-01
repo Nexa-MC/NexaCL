@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -56,6 +57,7 @@ def verify_host_module_isolation(assets):
 
 
 def publish(rid, output, properties):
+    subprocess.run([sys.executable, str(ROOT / "eng/xsr/generate_host_service_catalog.py"), "--check"], check=True)
     module = module_name(rid)
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=True)

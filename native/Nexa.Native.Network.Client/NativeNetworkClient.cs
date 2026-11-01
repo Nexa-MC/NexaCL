@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using Nexa.Native.Host.Services;
 using Nexa.Native.Network.Services;
 using Nexa.Native.Services;
 using Nexa.Native.Services.Wire;
@@ -13,6 +14,7 @@ public sealed partial class NativeNetworkClient : IAsyncDisposable, INativeDownl
 {
     private readonly ServiceEndpoint _endpoint;
     private readonly nint _close;
+    private NativeHostServiceAdmission? _hostAdmission;
     private readonly long _context;
     private readonly Task _initialization;
     private readonly object _gate = new();
@@ -134,8 +136,14 @@ public sealed partial class NativeNetworkClient : IAsyncDisposable, INativeDownl
             _handlers.Add(handler); return handler;
         }
     }
-    private static unsafe (long Context, nint Close) Open(ServiceEndpoint endpoint)
+    private unsafe (long Context, nint Close) Open(ServiceEndpoint endpoint)
     {
+        if (NativeHostServiceAdmission.Required)
+        {
+            _hostAdmission = NativeHostServiceAdmission.Open(2, NetworkProtocol.Identity, endpoint.Table, () => DisposeAsync().AsTask());
+            endpoint.Connect(_hostAdmission.Owner);
+            return (_hostAdmission.Owner.Context, 0);
+        }
         string suffix = OperatingSystem.IsWindows() ? ".dll" : OperatingSystem.IsMacOS() ? ".dylib" : ".so";
         nint image = NativeLibrary.Load(Path.Combine(AppContext.BaseDirectory, "nexa-network" + suffix));
         var identity = (delegate* unmanaged[Cdecl]<byte*, int, int>)NativeLibrary.GetExport(image, "nexa_network_service_identity_v1");
@@ -149,7 +157,7 @@ public sealed partial class NativeNetworkClient : IAsyncDisposable, INativeDownl
         if (open(&host, &peer) != 0) throw new InvalidOperationException("Native network admission failed.");
         endpoint.Connect(peer); return (peer.Context, close);
     }
-    private unsafe int Close() => ((delegate* unmanaged[Cdecl]<long, int>)_close)(_context);
+    private unsafe int Close() => _hostAdmission is { } admission ? admission.CloseOwner() : ((delegate* unmanaged[Cdecl]<long, int>)_close)(_context);
     public ValueTask DisposeAsync()
     { lock (_gate) { _closed = true; return new(_retirement ??= RetireAsync()); } }
     private async Task RetireAsync()
@@ -173,5 +181,6 @@ public sealed partial class NativeNetworkClient : IAsyncDisposable, INativeDownl
         await DrainDownloadsAsync().ConfigureAwait(false);
         await _endpoint.DisposeAsync().ConfigureAwait(false);
         if (failed is not null) throw new IOException("Native HTTP handler cleanup failed.", failed);
+        _hostAdmission?.Complete();
     }
 }

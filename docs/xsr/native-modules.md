@@ -4,8 +4,9 @@ The launcher retains NativeAOT. The native Host admits modules and enters the co
 UI runtime on the original OS main thread. The UI tree, controllers, renderer and
 backend live in `nexa-ui.dll` (Windows), `nexa-ui.so` (Linux), or `nexa-ui.dylib`
 (macOS). Account storage, login and wardrobe are owned by `nexa-accounts` through binary
-async ports. The remaining business composition moves out through the same service
-port and state-replica boundary. Names of Nexa-owned distribution modules are
+async ports. Network, Minecraft and Updates own their complete business flows through
+the same service port and state-replica boundary. Host admits all four services and
+retires their owner and client callbacks before process exit. Names of Nexa-owned distribution modules are
 lowercase `nexa-<module>`. Upstream native dependencies retain their supported names.
 
 `Nexa.Desktop[.exe]` becomes a small NativeAOT bootstrap with no Host project
@@ -21,9 +22,9 @@ initializes its base directory and Windows apartment before starting the existin
 entry point. Existing workers, protocol arguments and CLI validation commands
 continue through that entry point. Direct managed development builds remain valid.
 
-This is a distribution boundary, not a claim that Renderer and Services have
-independent native ABIs. Such a split would require explicit state, callback,
-resource lifetime and buffer contracts before removing project references.
+The complete renderer and its backend remain together in the UI runtime. Business
+services use independent native ABIs with explicit state, callback, resource
+lifetime and buffer contracts; no CLR objects cross those service boundaries.
 
 Publish builds the bootstrap, Host and UI for the same RID. Host retains a fixed ABI
 identity. The bootstrap supplies the canonical product version to the UI at runtime;
@@ -37,11 +38,15 @@ installation and a missing-module failure.
 
 ## Current release inventory
 
-The publisher emits the bootstrap, `nexa-host`, `nexa-ui`, `nexa-accounts`, and eight independent native engines.
+The publisher emits the bootstrap and eleven native ownership images, including
+Host, UI, Accounts and eight engine/service groups. Windows additionally packages
+`ShellIntegration/Nexa.ExplorerCommand.dll` for Explorer context-menu activation.
 Extensions are `.dll` / `.so` / `.dylib` for Windows / Linux / macOS respectively.
 
-| Engine | Extracted implementation |
+| Image | Extracted implementation |
 | --- | --- |
+| `nexa-host` | Pinned module catalog, service admission, opaque leases and dependent shutdown |
+| `nexa-ui` | UI tree, controllers, renderer, backend and OS window lifecycle |
 | `nexa-accounts` | Encrypted account storage, login/provider sessions, refresh, wardrobe and catalogs |
 | `nexa-pac` | PAC interpreter |
 | `nexa-crypto` | OpenPGP verification |
@@ -58,8 +63,9 @@ from the UI closure. The current ownership and independent NativeAOT evidence ar
 recorded in the [network](migrations/native-network-service-ownership.md),
 [Minecraft](migrations/native-minecraft-environment-facts.md) and
 [Updates](migrations/native-updates-service-ownership.md) migration notes.
-Host admission/composition and complete-payload measurements remain separate final
-acceptance work; the existence of these images alone is not completion evidence.
+Host composition and physical callback retirement are recorded in the
+[Host migration note](migrations/native-host-service-admission.md). Complete-payload
+measurements and final validation are recorded in the completion checkpoint below.
 
 ## Stable engine boundaries
 
@@ -89,12 +95,13 @@ The privileged update helper retains a statically linked verifier: its protected
 installation and macOS helper-root layout must not acquire a new dynamic dependency
 from an application update slot. The interactive Host uses the external engine.
 
-## Business-module split: remaining acceptance criteria
+## Business-module ownership and acceptance
 
-The engine extraction above does **not** complete the requested business-module
-split. The target distribution is a bootstrap plus the following ownership groups:
+The ownership groups below are implemented through the documented native ports.
+The historical engine-only checkpoints later in this document record intermediate
+states; they are not the current ownership inventory.
 
-| Module | Owns | Boundary requirements before extraction |
+| Module | Owns | Enforced boundary |
 | --- | --- | --- |
 | `nexa-host` | Composition, lifecycle, module admission and dispatch | Versioned module registration and shutdown; no duplicated service ownership |
 | `nexa-ui` | XSR UI tree, controllers, renderer, Avalonia and native window lifecycle | Revisioned state input and intent output; retain the OS main thread and coalesced render invalidation |
@@ -103,12 +110,13 @@ split. The target distribution is a bootstrap plus the following ownership group
 | `nexa-network` | HTTP pool, network policy, downloads and resume state | Async request/stream operations, bounded buffers, cancellation and progress; PAC remains a separate stable engine |
 | `nexa-updates` | Update discovery, admission, staging and apply coordination | Download/settings/task ports and signature verification through the crypto engine; privileged helper stays independent |
 
-These are native ABI boundaries, not one DLL per existing C# project. The present
-`FoundationHost` passes concrete services and a single `XsrStateStore` into the
-runtime composers. `AccountOnboardingRuntime` exposes concrete routers and the
-launch-identity resolver, while the Desktop composition root also owns UI
-controllers and asynchronous callbacks. Those relationships must be replaced at
-both ends before removing their managed project references.
+These are native ABI boundaries, not one DLL per existing C# project. Production
+`FoundationHost` and runtime composers use typed clients, canonical host resource
+ports and a renderer-local state store with revisioned replicas. UI controllers and
+local callback resources retain their own lifetime; the four business owner
+implementations are absent from the UI compilation closure. Host owns their
+admission and process-exit retirement without linking UI or service implementations.
+Managed development keeps the existing concrete public APIs.
 
 Independent NativeAOT libraries cannot exchange CLR objects, `Task`, `Stream`,
 managed delegates or exceptions. Each module must own its objects and expose
@@ -136,10 +144,10 @@ still uses the same Desktop entry and backend without the distribution loader.
 
 The independently tested Window ABI remains a regression reference for typed
 effects, resource ownership and independent-runtime rendering. It does not add a
-second shipped `nexa-window` module alongside `nexa-ui`. The UI root initially retains
-the business composition until each service moves behind its native ports; moving
-those services from Host into UI is not their completed business extraction. Final
-dependency checks must exclude service implementations from UI as well as Host.
+second shipped `nexa-window` module alongside `nexa-ui`. The UI root retained
+business composition during the initial migration. Accounts, Network, Minecraft and Updates
+now execute behind their native ports. Final dependency checks exclude their
+implementations from UI as well as Host.
 
 Public immutable platform values have one managed definition in
 `Nexa.Xsr.Renderer.Platform.Contracts`. The existing backend forwards its public
@@ -173,6 +181,45 @@ existence alone does not complete the UI or business-module extraction.
 - Two real publication payloads differing in one business implementation are
   reconstructed through the existing delta builder. Record total payload size,
   compressed delta size, unchanged module hashes and new bytes per module.
+
+### Completed business ownership checkpoint (2026-11-01)
+
+Accounts, Network, Minecraft and Updates execute in their native owners. Host
+owns pinned admission and dependent client/owner retirement. UI contains typed
+adapters, state replicas and local resource callbacks, with concrete business
+implementations rejected by the publication gate. The Windows inventory contains
+eleven lowercase ownership DLLs plus the Explorer command integration DLL; JVM
+Host, privileged update helper and the small Desktop bootstrap remain executables.
+The independently tested Window prototype does not add a shipped DLL.
+
+Linux x64 NativeAOT validation exercised genuine signed update and Sidecar
+transactions, invalid signatures/corrupt payloads, rollback/high-water rejection,
+held-operation physical retirement, missing/mismatched module rejection and
+production GUI startup/OS closure with exit code zero. Managed update compatibility
+passed 38 service and 13 Desktop cases. The strict default UI instrumentation gate
+covered 63 assemblies and 43,838 executable bodies; the Updates owner input closure
+covered 22 assemblies and 9,432 bodies. CI keeps the same strict gates and runs the
+new independent Host/Updates callers across its native platform matrix.
+
+A controlled pair of complete real runtime payloads, including the JVM Host and
+independent privileged helper, changed only Updates' private HTTP timeout. The
+experimental source edit was restored and neither artifact was published:
+
+| Actual measurement | Bytes |
+| --- | ---: |
+| Complete runtime payload, before / after | 197,215,470 / 197,215,470 |
+| Compressed verified delta | 610,504 |
+| Reused runtime bytes | 195,847,737 |
+| New uncompressed bytes in Updates | 1,367,733 |
+| New bytes in each of the other ten modules | 0 |
+
+Both payloads passed native bootstrap/module smokes and the existing delta builder
+verified complete reconstruction. Per-module sizes and before/after SHA-256 values
+are retained in [the measured evidence](evidence/2026-11-01-native-split/measurement.json).
+This measures one representative implementation change; it does not promise that
+every change produces the same delta or that independent AOT runtimes reduce full
+installer size. Public signing credentials and release publication remain separate
+from module ownership work.
 
 ### Measured engine checkpoint
 

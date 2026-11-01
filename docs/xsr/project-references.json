@@ -645,5 +645,6 @@
   ],
   "Nexa.Native.Updates.Client": ["Nexa.Services.Updates.Contracts", "Nexa.Services.Common.Contracts", "Nexa.Native.Network.Client"],
   "Nexa.Native.Updates.Services.Tests": ["Nexa.Native.Updates.Client"],
-  "Nexa.Native.Updates.Codecs": ["Nexa.Core"]
+  "Nexa.Native.Updates.Codecs": ["Nexa.Core"],
+  "Nexa.Native.Host.Services.Tests": ["Nexa.Native.Network.Client", "Nexa.Native.Updates.Client"]
 }

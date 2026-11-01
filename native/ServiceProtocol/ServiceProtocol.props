@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)../HostServiceProtocol/*.cs" Link="Host/%(Filename)%(Extension)" />
     <Compile Include="$(MSBuildThisFileDirectory)ServiceWire.cs" Link="Wire/ServiceWire.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ServiceStatePublisher.cs" Link="Wire/ServiceStatePublisher.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ServiceHttp.cs" Link="Wire/ServiceHttp.cs" />
