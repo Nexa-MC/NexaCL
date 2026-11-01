@@ -225,7 +225,7 @@ internal sealed record FingerprintMetadata(ResourceInstanceService.Fingerprint? 
 internal sealed record ResourceVersionMetadata(ResourceVersion? Version);
 internal sealed record ResourceIdentityMetadata(ResourceInstalledFile[] Files, bool Complete, bool IsStale = false);
 internal sealed record ResourceIdentityBatchMetadata(Dictionary<string, ResourceIdentityMetadata> Matches);
-internal sealed record ResourceModpackIdentityMetadata(Nexa.Services.Minecraft.Install.ModpackOnlineIdentity? Identity);
+internal sealed record ResourceModpackIdentityMetadata(Nexa.Services.Minecraft.Install.MinecraftModpackIdentity? Identity);
 internal sealed record ResourceModpackArchiveMetadata(string Path);
 
 [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata, MaxDepth = 32)]

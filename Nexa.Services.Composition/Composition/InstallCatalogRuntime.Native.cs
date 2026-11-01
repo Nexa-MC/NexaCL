@@ -24,7 +24,7 @@ public static class InstallCatalogRuntimeComposer
         async Task InitializeAsync()
         {
             await client.EnsureInstallationConfiguredAsync(RegionalPolicy.Current.CountryCode, packagedCurseForgeApiKey).ConfigureAwait(false);
-            await client.ConfigureCatalogAsync().ConfigureAwait(false);
+            await client.EnsureCatalogConfiguredAsync().ConfigureAwait(false);
         }
         Task initialization = InitializeAsync();
         _ = initialization.ContinueWith(static task => { _ = task.Exception; }, CancellationToken.None,

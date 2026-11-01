@@ -10,12 +10,23 @@ public sealed partial class NativeMinecraftClient
 {
     private IInstallCatalogSource? _catalogSource;
     private bool _catalogAdmitted;
+    private Task? _catalogConfiguration;
+    public Task EnsureCatalogConfiguredAsync(CancellationToken token = default)
+    {
+        lock (_gate)
+        {
+            ObjectDisposedException.ThrowIf(_closed, this);
+            _catalogConfiguration ??= ConfigureCatalogAsync(CancellationToken.None);
+            return _catalogConfiguration.WaitAsync(token);
+        }
+    }
     public void AttachCatalogSource(IInstallCatalogSource source)
     {
         ArgumentNullException.ThrowIfNull(source);
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_closed, this);
+            if (ReferenceEquals(_catalogSource, source)) return;
             if (_catalogAdmitted) throw new InvalidOperationException("Minecraft catalog admission already began.");
             if (_catalogSource is not null) throw new InvalidOperationException("Minecraft catalog source is already attached.");
             _catalogSource = source;

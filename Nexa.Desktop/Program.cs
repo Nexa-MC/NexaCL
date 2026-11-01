@@ -410,7 +410,7 @@ internal static partial class Program
             },
         };
         var legacyMigration = new LegacyMigrationService(StorageIdle);
-        Nexa.Services.Minecraft.Install.MinecraftInstallService? migrationInstaller = null;
+        Nexa.Services.Minecraft.Install.IMinecraftInstallationPort? migrationInstaller = null;
         MinecraftLibraryService? migrationLibrary = null;
         using var launcherMigration = LauncherMigrationRuntime.CreateService((request, token) => LauncherMigrationRuntime.InstallAsync(
             migrationInstaller ?? throw new InvalidOperationException("游戏安装服务尚未就绪。"), request, token), LauncherMigrationIdle);
@@ -598,6 +598,9 @@ internal static partial class Program
 #endif
         using MinecraftInstallRuntime installRun = MinecraftInstallRuntimeComposer.Compose(host, observer: dispatchObservation,
             packagedCurseForgeApiKey: packagedCurseForgeApiKey);
+#if NEXA_NATIVE_SERVICES
+        await installRun.Initialization.ConfigureAwait(false);
+#endif
         migrationInstaller = installRun.Service;
         var folderImports = MinecraftFolderImportRuntimeComposer.Compose(host, library.Service, installRun.Service, dispatchObservation);
         using MinecraftDropController dropController = new(platformActions, folderImports, library.Commands, host.StateStore, feedback);
@@ -696,7 +699,7 @@ internal static partial class Program
             platformActions.RequestClose();
         });
         launchPage.SettingsPage = settingsPage.Page;
-        using var resourcesRuntime = ResourceCatalogRuntimeComposer.Compose(source: null, observer: dispatchObservation, host: host,
+        using var resourcesRuntime = ResourceCatalogRuntimeComposer.ComposeWithInstallation(source: null, observer: dispatchObservation, host: host,
             favoritesPath: Path.Combine(settingsFolder, "resources-favorites.json"), installer: installRun.Service,
             packagedCurseForgeApiKey: packagedCurseForgeApiKey);
         settingsPage.ConfigureOnlineContent(resourcesRuntime.Queries, platformActions.OpenHttpsUri, resourcesRuntime.Commands);

@@ -9,8 +9,10 @@ using Nexa.Xsr.State;
 
 namespace Nexa.Services.Minecraft.Install;
 
-public sealed class MinecraftLocalJarService(TaskCenterService tasks, XsrStateStore store, MinecraftInstallService installer)
+public sealed class MinecraftLocalJarService(TaskCenterService tasks, XsrStateStore store, IMinecraftInstallExecutor installer)
 {
+    public MinecraftLocalJarService(TaskCenterService tasks, XsrStateStore store, MinecraftInstallService installer)
+        : this(tasks, store, (IMinecraftInstallExecutor)installer) { }
     private int _mutating;
     private readonly MinecraftInstanceMetadataStore _metadata = new();
 

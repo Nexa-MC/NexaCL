@@ -60,3 +60,11 @@ Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.Instal
 Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallEditPlanQuery
 Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallEditPlan
 Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.InstallDraftReplace
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftModpackUpdateQuery
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftModpackUpdatePreview
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftModpackUpdateCommand
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftModpackIdentityQuery
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftModpackIdentity
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftLocalJarCommand
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftFolderInspection
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftFolderImportCommand

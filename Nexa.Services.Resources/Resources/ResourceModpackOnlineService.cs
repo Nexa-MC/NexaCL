@@ -4,9 +4,12 @@ using Nexa.Services.Minecraft.Install;
 
 namespace Nexa.Services.Resources;
 
-public sealed class ResourceModpackOnlineService(MinecraftInstallService installer, ResourceInstanceService instances,
+public sealed class ResourceModpackOnlineService(IMinecraftInstallationPort installer, ResourceInstanceService instances,
     IResourceCatalogSource catalog, ResourceDownloadService downloader, ResourceOnlineInformationCache information, string archiveDirectory)
 {
+    public ResourceModpackOnlineService(MinecraftInstallService installer, ResourceInstanceService instances,
+        IResourceCatalogSource catalog, ResourceDownloadService downloader, ResourceOnlineInformationCache information, string archiveDirectory)
+        : this((IMinecraftInstallationPort)installer, instances, catalog, downloader, information, archiveDirectory) { }
 
     public async Task<Nexa.Xsr.XsrResult<MinecraftInstallResult>> InstallAsync(ResourceModpackInstallCommand command, CancellationToken token = default)
     {
@@ -18,10 +21,10 @@ public sealed class ResourceModpackOnlineService(MinecraftInstallService install
             ?? throw new InvalidDataException("整合包版本不可用，请刷新后重试。");
         string archive = await DownloadArchiveAsync(version, command.MirrorFirst, token, async (ready, cancellation) =>
         {
-            var retriedPreview = await MinecraftModpackArchive.InspectAsync(ready, cancellation).ConfigureAwait(false);
+            var retriedPreview = await installer.InspectModpackAsync(ready, cancellation).ConfigureAwait(false);
             await installer.InstallModpackAsync(new(retriedPreview, command.RootDirectory), cancellation).ConfigureAwait(false);
         }).ConfigureAwait(false);
-        var preview = await MinecraftModpackArchive.InspectAsync(archive, token).ConfigureAwait(false);
+        var preview = await installer.InspectModpackAsync(archive, token).ConfigureAwait(false);
         return await installer.InstallModpackAsync(new(preview, command.RootDirectory), token).ConfigureAwait(false);
     }
 
@@ -106,7 +109,7 @@ public sealed class ResourceModpackOnlineService(MinecraftInstallService install
         return (online, version);
     }
 
-    private async Task<ModpackOnlineIdentity?> ReadIdentityAsync(ResourceModpackOnlineQuery query, CancellationToken token)
+    private async Task<MinecraftModpackIdentity?> ReadIdentityAsync(ResourceModpackOnlineQuery query, CancellationToken token)
     {
         string instance = Nexa.Core.PathIdentity.Normalize(query.InstanceDirectory);
         if (Directory.GetParent(instance) is not { Name: "versions", Parent: not null }) throw new InvalidDataException("请选择实际版本目录。");
@@ -122,7 +125,7 @@ public sealed class ResourceModpackOnlineService(MinecraftInstallService install
         var result = await information.ReadAsync("modpack-archive-identity", ResourceOnlineInformationCache.Identity(instance, baseline?.ArchiveSha256 ?? "", original, stamp),
             ResourceOnlineInformationCache.MetadataFresh, ResourceOnlineInformationCache.MetadataRetain, 2048,
             ResourceMetadataJsonContext.Default.ResourceMetadataEnvelopeResourceModpackIdentityMetadata,
-            async ct => new ResourceModpackIdentityMetadata(await installer.ReadModpackIdentityAsync(instance, query.OriginalArchivePath, ct).ConfigureAwait(false)),
+            async ct => new ResourceModpackIdentityMetadata(await installer.ReadModpackIdentityAsync(new(instance, query.OriginalArchivePath), ct).ConfigureAwait(false)),
             value => value.Identity is { Fingerprint: { Sha512.Length: 128, Sha1.Length: 40 } } id && id.Fingerprint.Sha256 == id.ArchiveSha256,
             value => value, value => value, allowStale: false, token: token).ConfigureAwait(false);
         return result.Identity;

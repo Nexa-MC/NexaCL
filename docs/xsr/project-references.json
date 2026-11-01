@@ -254,6 +254,7 @@
     "Nexa.Xsr.State"
   ],
   "Nexa.Services.Minecraft.Install.Contracts": [
+    "Nexa.Services.Common.Contracts",
     "Nexa.Contracts",
     "Nexa.Core",
     "Nexa.Domain",

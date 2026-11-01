@@ -22,7 +22,7 @@ namespace Nexa.Services.Minecraft.Install;
 /// whole run as one task-center task with byte-accurate progress. Installer-based loaders
 /// execute in an isolated root and publish their version only after validation.
 /// </summary>
-public sealed partial class MinecraftInstallService : IDisposable, IMinecraftInstallExecutor
+public sealed partial class MinecraftInstallService : IDisposable, IMinecraftInstallationPort
 {
     private const string ManifestUrl = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
     private static readonly string[] StagePlan = ["版本信息", "游戏文件", "加载器", "附加组件", "完成"];

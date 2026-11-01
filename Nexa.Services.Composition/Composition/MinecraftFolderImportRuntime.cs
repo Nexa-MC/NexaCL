@@ -11,6 +11,42 @@ public sealed record MinecraftFolderImportRuntime(XsrCommandRouter Commands, Xsr
 
 public static class MinecraftFolderImportRuntimeComposer
 {
+#if NEXA_NATIVE_SERVICES
+    public static MinecraftFolderImportRuntime Compose(FoundationHost host, MinecraftLibraryService library,
+        Nexa.Native.Minecraft.Client.NativeMinecraftClient installer, IXsrDispatchObserver observer)
+    {
+        XsrCommandRouterBuilder commands = new(); XsrQueryRouterBuilder queries = new();
+        commands.Register<MinecraftFolderImportCommand>(MinecraftFolderImportContract.Import, async (command, token) =>
+        { var result = await installer.ImportFolderAsync(command, token).ConfigureAwait(false); if (result.IsSuccess) await library.RefreshAsync(token).ConfigureAwait(false); return result; });
+        commands.Register<MinecraftLocalJarCommand>(MinecraftLocalJarContract.Import, async (command, token) =>
+        { var result = await installer.ImportLocalJarAsync(command, token).ConfigureAwait(false); if (result.IsSuccess) await library.RefreshAsync(CancellationToken.None).ConfigureAwait(false); return result; });
+        commands.Register<MinecraftModpackCommand>(MinecraftModpackContract.Install, async (command, token) =>
+        {
+            var result = await installer.InstallModpackAsync(command, token).ConfigureAwait(false);
+            if (result.IsSuccess) await library.RefreshAsync(CancellationToken.None).ConfigureAwait(false);
+            return result.IsSuccess ? XsrResult.Success() : XsrResult.Failure(result.Error!);
+        });
+        commands.Register<MinecraftModpackUpdateCommand>(MinecraftModpackUpdateContract.Apply, async (command, token) =>
+        {
+            var result = await installer.UpdateModpackAsync(command, token).ConfigureAwait(false);
+            if (result.IsSuccess) await library.RefreshAsync(CancellationToken.None).ConfigureAwait(false);
+            return result.IsSuccess ? XsrResult.Success() : XsrResult.Failure(result.Error!);
+        });
+        queries.Register<MinecraftModpackUpdateQuery, MinecraftModpackUpdatePreview>(MinecraftModpackUpdateContract.Preview, async (query, token) =>
+        {
+            try { return XsrResult.Success(await installer.PreviewModpackUpdateAsync(query, token).ConfigureAwait(false)); }
+            catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or JsonException or InvalidOperationException or FormatException or OverflowException)
+            { return XsrResult.Failure<MinecraftModpackUpdatePreview>(MinecraftErrors.InvalidRequest(error.Message)); }
+        });
+        queries.Register<MinecraftFolderInspectQuery, MinecraftFolderInspection>(MinecraftFolderImportContract.Inspect, async (query, token) =>
+        {
+            try { return XsrResult.Success(await installer.InspectFolderAsync(query.Path, token).ConfigureAwait(false)); }
+            catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or JsonException or InvalidOperationException or FormatException or OverflowException)
+            { return XsrResult.Failure<MinecraftFolderInspection>(MinecraftErrors.InvalidRequest(error.Message)); }
+        });
+        return new(commands.Build(observer), queries.Build(observer));
+    }
+#endif
     public static MinecraftFolderImportRuntime Compose(FoundationHost host, MinecraftLibraryService library, MinecraftInstallService installer, IXsrDispatchObserver observer)
     {
         var service = new MinecraftFolderImportService(host.Tasks);

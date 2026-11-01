@@ -46,10 +46,13 @@ internal sealed partial class MinecraftServiceSession
                 var region = Nexa.Services.RegionalPolicy.Resolve(country);
                 _installationRegion = region;
                 _installationCatalogSource = new HttpInstallCatalogSource(_installationHttp, apiKey, region);
-                _installation = new(_tasks, _sessionDownloads, _installationCatalogSource,
+                _installation = new(_tasks, _sessionDownloads, new InstallationCatalogSource(this),
                     _installationHttp, loaderInstaller: new ForgeInstallService(_sessionDownloads, _installationHttp, regionalPolicy: region), hostStore: _store)
                 { SettingsPolicies = _settings, SettingsTransactions = _settings, HttpClientFactory = CreateInstallationHttp, CountryPolicy = region, CurseForgeApiKey = apiKey };
                 Remediations.BindInstall(_installation);
+                _localJars = new(_tasks, _store, _installation); _folderImports = new(_tasks);
+                _installation.Installed += root => PublishInstallEvent(root);
+                _installation.Renamed += (root, previous, current) => PublishInstallEvent(root, previous, current);
             }
             finally { _initialization.Release(); }
             return writer.Finish();

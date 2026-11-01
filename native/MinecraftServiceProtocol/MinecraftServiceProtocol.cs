@@ -25,6 +25,8 @@ internal static class MinecraftServiceProtocol
     internal const int CatalogConfigure = 140, CatalogRead = 141, CatalogPrefetch = 142, CatalogEligibility = 143, CatalogEditPlan = 144, CatalogDraft = 145;
     internal const int CatalogState = 146, DraftState = 147;
     internal const int CatalogDraftReplace = 148;
+    internal const int ModpackUpdatePreview = 150, ModpackUpdate = 151, ModpackInspect = 152, ModpackIdentity = 153, InstallMigration = 154;
+    internal const int LocalJarImport = 155, FolderInspect = 156, FolderImport = 157;
 
     internal static ServiceWireWriter Request(int operation)
     {

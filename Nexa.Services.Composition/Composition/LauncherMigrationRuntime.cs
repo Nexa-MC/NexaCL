@@ -66,7 +66,10 @@ public static class LauncherMigrationRuntime
         return await ExecuteAsync(tasks, title, action, operation.Token).ConfigureAwait(false);
     }
 
-    public static async Task InstallAsync(MinecraftInstallService installer,
+    public static Task InstallAsync(MinecraftInstallService installer,
+        LauncherMigrationInstallRequest request, CancellationToken token) => InstallAsync((IMinecraftInstallationPort)installer, request, token);
+
+    public static async Task InstallAsync(IMinecraftInstallationPort installer,
         LauncherMigrationInstallRequest request, CancellationToken token)
     {
         InstallLoader? loader = null;
@@ -84,7 +87,7 @@ public static class LauncherMigrationRuntime
             token.ThrowIfCancellationRequested();
             throw new IOException(result.Error?.Message ?? "无法安装迁入实例所需的游戏和加载器。");
         }
-        await MinecraftInstallService.PrepareMigrationRootAsync(request.DestinationRoot, token).ConfigureAwait(false);
+        await installer.PrepareMigrationAsync(request.DestinationRoot, token).ConfigureAwait(false);
     }
 
     private static async ValueTask<XsrResult<T>> QueryAsync<T>(Func<Task<T>> action, CancellationToken token)

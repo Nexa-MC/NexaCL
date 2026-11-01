@@ -1,3 +1,4 @@
+#if !NEXA_NATIVE_SERVICES
 using Nexa.Services.Foundation;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Xsr;
@@ -68,3 +69,5 @@ public static class MinecraftInstallRuntimeComposer
         public void OnCompleted(XsrDispatchObservation observation) { }
     }
 }
+
+#endif

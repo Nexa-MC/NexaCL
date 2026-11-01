@@ -49,6 +49,16 @@ internal sealed partial class ServiceWireWriter
         Int64(value.Revision);
         IReadOnlyList_CapturedSettingValue(value.Values);
     }
+    internal void ContentFingerprint(global::Nexa.Services.Files.ContentFingerprint? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int64(value.Length);
+        String(value.Sha256);
+        String(value.Sha512);
+        String(value.Sha1);
+        UInt32(value.CurseForge);
+    }
     internal void DownloadProgress(global::Nexa.Services.Downloads.DownloadProgress value)
     {
         using var scope = EnterValue();
@@ -789,6 +799,7 @@ internal sealed partial class ServiceWireWriter
         String(value.Uuid);
     }
     internal void LaunchProfileKind(global::Nexa.Services.Accounts.LaunchProfileKind value) => Int32((int)value);
+    internal void LocalJarAction(global::Nexa.Services.Minecraft.Install.LocalJarAction value) => Int32((int)value);
     internal void LocalJarArtifact(global::Nexa.Services.Minecraft.Install.LocalJarArtifact? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -805,6 +816,24 @@ internal sealed partial class ServiceWireWriter
         String(value.DescriptionResourceKey);
         String(value.TagResourceKey);
     }
+    internal void MinecraftFolderImportCommand(global::Nexa.Services.Minecraft.Install.MinecraftFolderImportCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Source);
+        String(value.TargetRoot);
+    }
+    internal void MinecraftFolderInspection(global::Nexa.Services.Minecraft.Install.MinecraftFolderInspection? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        MinecraftFolderKind(value.Kind);
+        String(value.Path);
+        String(value.Name);
+        LocalJarArtifact(value.Jar);
+        MinecraftModpackPreview(value.Modpack);
+    }
+    internal void MinecraftFolderKind(global::Nexa.Services.Minecraft.Install.MinecraftFolderKind value) => Int32((int)value);
     internal void MinecraftInstallAddon(global::Nexa.Services.Minecraft.Install.MinecraftInstallAddon? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -1078,6 +1107,15 @@ internal sealed partial class ServiceWireWriter
         Int64(value.Size);
         String(value.Url);
     }
+    internal void MinecraftLocalJarCommand(global::Nexa.Services.Minecraft.Install.MinecraftLocalJarCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        LocalJarArtifact(value.Artifact);
+        String(value.Root);
+        String(value.InstanceId);
+        LocalJarAction(value.Action);
+    }
     internal void MinecraftModLoaderDescriptor(global::Nexa.Services.Minecraft.ModLoaders.MinecraftModLoaderDescriptor? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -1096,6 +1134,22 @@ internal sealed partial class ServiceWireWriter
         String(value.RootDirectory);
         Boolean(value.IncludeOptional);
     }
+    internal void MinecraftModpackIdentity(global::Nexa.Services.Minecraft.Install.MinecraftModpackIdentity? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.ArchiveSha256);
+        String(value.Version);
+        ContentFingerprint(value.Fingerprint);
+        String(value.OriginalArchive);
+    }
+    internal void MinecraftModpackIdentityQuery(global::Nexa.Services.Minecraft.Install.MinecraftModpackIdentityQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.OriginalArchivePath);
+    }
     internal void MinecraftModpackPreview(global::Nexa.Services.Minecraft.Install.MinecraftModpackPreview? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -1111,6 +1165,35 @@ internal sealed partial class ServiceWireWriter
         String(value.InstanceId);
         Int32(value.RequiredFiles);
         Int32(value.OptionalFiles);
+    }
+    internal void MinecraftModpackUpdateCommand(global::Nexa.Services.Minecraft.Install.MinecraftModpackUpdateCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        MinecraftModpackUpdatePreview(value.Preview);
+    }
+    internal void MinecraftModpackUpdatePreview(global::Nexa.Services.Minecraft.Install.MinecraftModpackUpdatePreview? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        MinecraftModpackUpdateQuery(value.Request);
+        MinecraftModpackPreview(value.Pack);
+        String(value.Revision);
+        IReadOnlyList_String(value.Added);
+        IReadOnlyList_String(value.Updated);
+        IReadOnlyList_String(value.Removed);
+        IReadOnlyList_String(value.Preserved);
+        IReadOnlyList_String(value.Conflicts);
+    }
+    internal void MinecraftModpackUpdateQuery(global::Nexa.Services.Minecraft.Install.MinecraftModpackUpdateQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.ArchivePath);
+        String(value.OriginalArchivePath);
+        Boolean(value.IncludeOptional);
+        Boolean(value.ReplaceModifiedMods);
     }
     internal void MinecraftProcessFailure(global::Nexa.Services.Minecraft.Process.MinecraftProcessFailure? value)
     {
@@ -1538,6 +1621,17 @@ internal sealed partial class ServiceWireReader
         var p0 = Int64();
         var p1 = IReadOnlyList_CapturedSettingValue() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         return new global::Nexa.Services.Settings.CapturedSettingsSnapshot(p0, p1!);
+    }
+    internal global::Nexa.Services.Files.ContentFingerprint? ContentFingerprint()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int64();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = UInt32();
+        return new global::Nexa.Services.Files.ContentFingerprint(p0, p1!, p2!, p3!, p4);
     }
     internal global::Nexa.Services.Downloads.DownloadProgress DownloadProgress()
     {
@@ -2371,6 +2465,7 @@ internal sealed partial class ServiceWireReader
         return new global::Nexa.Services.Accounts.LaunchProfile() { AccessToken = p0!, AuthServer = p1!, ClientToken = p2!, Info = p3!, Kind = p4, Logo = p5!, ProviderAccessToken = p6!, ProviderTokenExpiresAtUnix = p7, RefreshToken = p8!, SkinAddress = p9!, SvgIcon = p10!, Username = p11!, Uuid = p12! };
     }
     internal global::Nexa.Services.Accounts.LaunchProfileKind LaunchProfileKind() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 ? (global::Nexa.Services.Accounts.LaunchProfileKind)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Minecraft.Install.LocalJarAction LocalJarAction() { int value = Int32(); return value is 0 or 1 or 2 ? (global::Nexa.Services.Minecraft.Install.LocalJarAction)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Minecraft.Install.LocalJarArtifact? LocalJarArtifact()
     {
         if (!Boolean()) return null;
@@ -2389,6 +2484,26 @@ internal sealed partial class ServiceWireReader
         var p1 = String();
         return new global::Nexa.Services.Minecraft.MinecraftAprilFoolsDescriptor(p0!, p1!);
     }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftFolderImportCommand? MinecraftFolderImportCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Install.MinecraftFolderImportCommand(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftFolderInspection? MinecraftFolderInspection()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = MinecraftFolderKind();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = LocalJarArtifact();
+        var p4 = MinecraftModpackPreview();
+        return new global::Nexa.Services.Minecraft.Install.MinecraftFolderInspection(p0, p1!, p2!) { Jar = p3!, Modpack = p4! };
+    }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftFolderKind MinecraftFolderKind() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 ? (global::Nexa.Services.Minecraft.Install.MinecraftFolderKind)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Minecraft.Install.MinecraftInstallAddon? MinecraftInstallAddon()
     {
         if (!Boolean()) return null;
@@ -2680,6 +2795,16 @@ internal sealed partial class ServiceWireReader
         var p8 = String();
         return new global::Nexa.Services.Minecraft.Libraries.MinecraftLibraryToken() { IncludeOnClasspath = p0, IsLocal = p1, IsNatives = p2, LocalPath = p3!, NameWithoutVersion = p4!, OriginalName = p5!, Sha1 = p6!, Size = p7, Url = p8! };
     }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftLocalJarCommand? MinecraftLocalJarCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = LocalJarArtifact() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = LocalJarAction();
+        return new global::Nexa.Services.Minecraft.Install.MinecraftLocalJarCommand(p0!, p1!, p2!, p3);
+    }
     internal global::Nexa.Services.Minecraft.ModLoaders.MinecraftModLoaderDescriptor? MinecraftModLoaderDescriptor()
     {
         if (!Boolean()) return null;
@@ -2700,6 +2825,24 @@ internal sealed partial class ServiceWireReader
         var p2 = Boolean();
         return new global::Nexa.Services.Minecraft.Install.MinecraftModpackCommand(p0!, p1!, p2);
     }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftModpackIdentity? MinecraftModpackIdentity()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = ContentFingerprint() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String();
+        return new global::Nexa.Services.Minecraft.Install.MinecraftModpackIdentity(p0!, p1!, p2!, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftModpackIdentityQuery? MinecraftModpackIdentityQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String();
+        return new global::Nexa.Services.Minecraft.Install.MinecraftModpackIdentityQuery(p0!, p1!);
+    }
     internal global::Nexa.Services.Minecraft.Install.MinecraftModpackPreview? MinecraftModpackPreview()
     {
         if (!Boolean()) return null;
@@ -2716,6 +2859,38 @@ internal sealed partial class ServiceWireReader
         var p9 = Int32();
         var p10 = Int32();
         return new global::Nexa.Services.Minecraft.Install.MinecraftModpackPreview(p0!, p1!, p2!, p3!, p4!, p5!, p6, p7!, p8!, p9, p10);
+    }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftModpackUpdateCommand? MinecraftModpackUpdateCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = MinecraftModpackUpdatePreview() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Install.MinecraftModpackUpdateCommand(p0!);
+    }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftModpackUpdatePreview? MinecraftModpackUpdatePreview()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = MinecraftModpackUpdateQuery() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = MinecraftModpackPreview() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p6 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p7 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Install.MinecraftModpackUpdatePreview(p0!, p1!, p2!, p3!, p4!, p5!, p6!, p7!);
+    }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftModpackUpdateQuery? MinecraftModpackUpdateQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String();
+        var p3 = Boolean();
+        var p4 = Boolean();
+        return new global::Nexa.Services.Minecraft.Install.MinecraftModpackUpdateQuery(p0!, p1!, p2!, p3, p4);
     }
     internal global::Nexa.Services.Minecraft.Process.MinecraftProcessFailure? MinecraftProcessFailure()
     {
@@ -3127,5 +3302,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "2E31063E7D37DDC46DD91DDD90935312BE2070C2DDE9E16F9C3C0E6AEB25DEE4";
+    internal const string Fingerprint = "75FCF851396B5D8A2F124A32BADA92F76BCED43B979556D21484647C5C02F1BF";
 }

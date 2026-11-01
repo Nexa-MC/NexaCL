@@ -67,6 +67,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         _sessionDownloads.AttachNative(_downloads);
 #endif
         _tasks = new(_store); _publications = new(_endpoint); _store.Changed += Changed;
+        _installEventPump = Task.Run(PumpInstallEventsAsync);
     }
     internal NativeUiCallTable Table => _endpoint.Table;
     private byte[] ReceiveHostPublication(ReadOnlyMemory<byte> bytes)
@@ -100,7 +101,11 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
             });
             writer.String(error.Message); writer.String((error as ArgumentException)?.ParamName);
         }
-        finally { await _publications.FlushAsync(CancellationToken.None).ConfigureAwait(false); }
+        finally
+        {
+            await _publications.FlushAsync(CancellationToken.None).ConfigureAwait(false);
+            await FlushInstallEventsAsync().ConfigureAwait(false);
+        }
         return writer.Finish();
     }
     private async Task<byte[]> ExecuteCoreAsync(ReadOnlyMemory<byte> bytes, CancellationToken token)
@@ -137,6 +142,8 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         if (operation == MinecraftServiceProtocol.Remediation) return await ExecuteRemediationAsync(reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.CatalogConfigure and <= MinecraftServiceProtocol.CatalogDraft or MinecraftServiceProtocol.CatalogDraftReplace)
             return await ExecuteCatalogAsync(operation, reader, token).ConfigureAwait(false);
+        if (operation is >= MinecraftServiceProtocol.ModpackUpdatePreview and <= MinecraftServiceProtocol.FolderImport)
+            return await ExecuteImportAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.JavaConfigure and <= MinecraftServiceProtocol.JavaModules)
             return await ExecuteJavaManagementAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.InstallConfigure and <= MinecraftServiceProtocol.InstallEditRead)
@@ -291,6 +298,8 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         _manualJava?.Dispose();
         if (_javaInstaller is not null) await _javaInstaller.StopAsync(new(Pause: true)).ConfigureAwait(false);
         await _tasks.DisposeAsync().ConfigureAwait(false);
+        _installEvents.Writer.TryComplete();
+        if (_installEventPump is { } events) await events.ConfigureAwait(false);
         _installation?.Dispose(); _installationHttp?.Dispose();
         if (_processes is not null) await _processes.DisposeAsync().ConfigureAwait(false);
         if (_launchExecutor is not null) await _launchExecutor.WaitForFinalizationAsync().ConfigureAwait(false);

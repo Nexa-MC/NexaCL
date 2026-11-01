@@ -62,9 +62,14 @@ internal static class JavaInstallCases
         var settings = new InstallSettings(); minecraft.AttachSettings(settings, settings);
         await minecraft.ConfigureInstallationAsync("US", token: token);
         await CatalogCases.RunAsync(minecraft, replicas, token);
+        List<string> installationEvents = [];
+        minecraft.Installed += root => installationEvents.Add("installed:" + root);
+        minecraft.Renamed += (root, previous, current) => installationEvents.Add("renamed:" + previous + ":" + current);
         string gameRoot = Path.Combine(directory, "native-installed-game");
         var game = await minecraft.InstallMinecraftAsync(new(gameRoot, "1.20.1"), token);
         if (!game.IsSuccess) throw new InvalidDataException("Native game installation failed: " + game.Error!.Message);
+        if (installationEvents.Count != 1 || installationEvents[0] != "installed:" + gameRoot)
+            throw new InvalidDataException("Installation completed before its canonical notification was acknowledged.");
         if (await File.ReadAllTextAsync(Path.Combine(game.Value!.InstanceDirectory, "1.20.1.jar"), token) != "hello"
             || (await minecraft.InstancesAsync(gameRoot, token: token)).Count != 1 || settings.Reads < 2)
             throw new InvalidDataException("Native game installation lost committed bytes, discovery or canonical policy reads.");
@@ -74,11 +79,14 @@ internal static class JavaInstallCases
         if (!renamed.IsSuccess || !File.Exists(Path.Combine(renamed.Value!.InstanceDirectory, "renamed-game.jar"))
             || Directory.Exists(game.Value.InstanceDirectory) || settings.RenameWrites != 1)
             throw new InvalidDataException("Native game rename did not coordinate files with the canonical settings transaction.");
+        if (installationEvents.Count < 2 || !installationEvents.Contains("renamed:1.20.1:renamed-game"))
+            throw new InvalidDataException("Rename completed before its canonical notification was acknowledged.");
         var recovery = await minecraft.ReadRecoveryAsync(new(renamed.Value!.InstanceDirectory), token);
         if (!recovery.IsSuccess || recovery.Value!.BaselineRevision is not null)
             throw new InvalidDataException("Native recovery comparison invented a successful-run baseline.");
         if (!(await minecraft.ResumeRecoveryAsync(new([gameRoot]), token)).IsSuccess)
             throw new InvalidDataException("Native recovery replay rejected a clean installation.");
+        await ImportCases.RunAsync(minecraft, directory, gameRoot, renamed.Value.InstanceDirectory, token);
         await LaunchCases.RunAsync(minecraft, gameRoot, renamed.Value.InstanceDirectory, replicas, javaExecutable, token);
         if (settings.JavaWrites != 1) throw new InvalidDataException("Native Java remediation bypassed canonical settings writes.");
         settings.Hold = true;

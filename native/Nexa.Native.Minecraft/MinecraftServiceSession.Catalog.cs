@@ -9,6 +9,7 @@ internal sealed partial class MinecraftServiceSession
 {
     private InstallCatalogService? _catalog;
     private MinecraftInstallDraftService? _draft;
+    private bool _reverseInstallationCatalog;
     private async Task<byte[]> ExecuteCatalogAsync(int operation, ServiceWireReader reader, CancellationToken token)
     {
         using var writer = new ServiceWireWriter();
@@ -20,6 +21,7 @@ internal sealed partial class MinecraftServiceSession
                 ObjectDisposedException.ThrowIf(Volatile.Read(ref _closing), this);
                 if (_catalog is not null) throw new InvalidOperationException("Minecraft catalog is already configured.");
                 var source = reverseSource ? new CatalogSource(this) : _installationCatalogSource ?? throw new InvalidOperationException("Installation transport is not configured.");
+                _reverseInstallationCatalog = reverseSource;
                 _catalog = new(_store, source, _cache, () => reverseSource ? "reverse-install-catalog-v1" : "official-install-providers-v1|" + _installationRegion!.CountryCode,
                     informationCache: _catalogCacheDirectory is null || reverseSource ? null : new InstallCatalogInformationCache(_catalogCacheDirectory),
                     regionalPolicy: _installationRegion)
@@ -78,6 +80,12 @@ internal sealed partial class MinecraftServiceSession
         }
         else return false;
         return true;
+    }
+    private sealed class InstallationCatalogSource(MinecraftServiceSession owner) : IInstallCatalogSource
+    {
+        private IInstallCatalogSource Source => owner._reverseInstallationCatalog ? new CatalogSource(owner) : owner._installationCatalogSource!;
+        public Task<IReadOnlyList<InstallCatalogVersion>> GetGamesAsync(CancellationToken token) => Source.GetGamesAsync(token);
+        public Task<IReadOnlyList<InstallCatalogVersion>> GetLoadersAsync(InstallLoader loader, string game, CancellationToken token) => Source.GetLoadersAsync(loader, game, token);
     }
     private sealed class CatalogSource(MinecraftServiceSession owner) : IInstallCatalogSource
     {

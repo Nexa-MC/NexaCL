@@ -24,6 +24,10 @@ public static class ResourceCatalogRuntimeComposer
 
     public static ResourceCatalogRuntime Compose(IResourceCatalogSource? source, IXsrDispatchObserver? observer,
         FoundationHost? host, string? favoritesPath, MinecraftInstallService? installer, string? packagedCurseForgeApiKey)
+        => ComposeWithInstallation(source, observer, host, favoritesPath, installer, packagedCurseForgeApiKey);
+
+    public static ResourceCatalogRuntime ComposeWithInstallation(IResourceCatalogSource? source, IXsrDispatchObserver? observer,
+        FoundationHost? host, string? favoritesPath, IMinecraftInstallationPort? installer, string? packagedCurseForgeApiKey)
     {
         HttpClient? http = source is null ? host?.CreateHttpClient(allowAutoRedirect: false)
             ?? Nexa.Services.Downloads.PooledHttpClient.Create(allowAutoRedirect: false) : null;
