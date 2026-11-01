@@ -3,6 +3,7 @@ using Nexa.Xsr;
 namespace Nexa.Services.Minecraft.Management;
 
 public sealed record InstanceWorldSnapshot(string Identity, DateTimeOffset CreatedAt, int Files, long Bytes);
+public sealed record InstanceWorldSnapshotListing(IReadOnlyList<InstanceWorldSnapshot> Items);
 public sealed record InstanceWorldSnapshotVerification(string Identity, int Files, int VerifiedFiles, IReadOnlyList<string> MissingOrCorruptPaths)
 {
     public bool Ready => Files == VerifiedFiles && MissingOrCorruptPaths.Count == 0;

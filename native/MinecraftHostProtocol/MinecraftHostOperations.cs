@@ -12,5 +12,7 @@ internal static class MinecraftHostOperations
     internal const int RecordObservation = 2402;
     internal const int CatalogSource = 2500;
     internal const int InstallationEvent = 2600;
+    internal const int ResourceSearch = 2800, ResourceDetail = 2801, ResourceChangelog = 2802, ResourceVersion = 2803;
+    internal const int CaptureWorld = 2700, CropScreenshot = 2701, WorldSnapshotList = 2702, WorldSnapshotCapture = 2703, WorldSnapshotVerify = 2704, WorldSnapshotRestore = 2705;
     internal const int JavaRegistryRead = 2200, JavaRegistryWrite = 2201;
 }

@@ -146,12 +146,124 @@ internal sealed partial class ServiceWireWriter
         Count(value.Count);
         foreach (var item in value) InstallLoaderEligibility(item);
     }
+    internal void IReadOnlyList_InstanceContentConsumer(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentConsumer>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceContentConsumer(item);
+    }
+    internal void IReadOnlyList_InstanceContentDependency(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentDependency>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceContentDependency(item);
+    }
+    internal void IReadOnlyList_InstanceContentEntry(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentEntry>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceContentEntry(item);
+    }
+    internal void IReadOnlyList_InstanceContentNode(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentNode>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceContentNode(item);
+    }
+    internal void IReadOnlyList_InstanceContentRemoveCommand(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentRemoveCommand>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceContentRemoveCommand(item);
+    }
+    internal void IReadOnlyList_InstanceContentSnapshot(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentSnapshot>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceContentSnapshot(item);
+    }
+    internal void IReadOnlyList_InstanceContentUpdateRecord(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentUpdateRecord>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceContentUpdateRecord(item);
+    }
+    internal void IReadOnlyList_InstanceExportCategory(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceExportCategory>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceExportCategory(item);
+    }
+    internal void IReadOnlyList_InstanceExportFile(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceExportFile>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceExportFile(item);
+    }
+    internal void IReadOnlyList_InstanceFileEntry(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceFileEntry>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceFileEntry(item);
+    }
+    internal void IReadOnlyList_InstanceManagementPage(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceManagementPage>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceManagementPage(item);
+    }
     internal void IReadOnlyList_InstanceRecoveryChange(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange>? value)
     {
         if (value is null) { Int32(-1); return; }
         using var scope = EnterValue();
         Count(value.Count);
         foreach (var item in value) InstanceRecoveryChange(item);
+    }
+    internal void IReadOnlyList_InstanceRecoverySnapshotSummary(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceRecoverySnapshotSummary>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceRecoverySnapshotSummary(item);
+    }
+    internal void IReadOnlyList_InstanceServerEntry(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceServerEntry>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceServerEntry(item);
+    }
+    internal void IReadOnlyList_InstanceTrashedContent(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceTrashedContent>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceTrashedContent(item);
+    }
+    internal void IReadOnlyList_InstanceWorldDataPack(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceWorldDataPack>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceWorldDataPack(item);
+    }
+    internal void IReadOnlyList_InstanceWorldSnapshot(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshot>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceWorldSnapshot(item);
     }
     internal void IReadOnlyList_Int32(global::System.Collections.Generic.IReadOnlyList<global::System.Int32>? value)
     {
@@ -250,6 +362,76 @@ internal sealed partial class ServiceWireWriter
         using var scope = EnterValue();
         Count(value.Count);
         foreach (var item in value) NativeHttpHeader(item);
+    }
+    internal void IReadOnlyList_OfflineArtifactFact(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.OfflineArtifactFact>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) OfflineArtifactFact(item);
+    }
+    internal void IReadOnlyList_ResourceContentOnlineMatch(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceContentOnlineMatch>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) ResourceContentOnlineMatch(item);
+    }
+    internal void IReadOnlyList_ResourceContentOnlineQuery(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceContentOnlineQuery>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) ResourceContentOnlineQuery(item);
+    }
+    internal void IReadOnlyList_ResourceContentUpdateCommand(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceContentUpdateCommand>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) ResourceContentUpdateCommand(item);
+    }
+    internal void IReadOnlyList_ResourceDependency(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceDependency>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) ResourceDependency(item);
+    }
+    internal void IReadOnlyList_ResourceInstalledFile(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceInstalledFile>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) ResourceInstalledFile(item);
+    }
+    internal void IReadOnlyList_ResourceOptionalDependency(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceOptionalDependency>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) ResourceOptionalDependency(item);
+    }
+    internal void IReadOnlyList_ResourceProject(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceProject>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) ResourceProject(item);
+    }
+    internal void IReadOnlyList_ResourceReference(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceReference>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) ResourceReference(item);
+    }
+    internal void IReadOnlyList_ResourceVersion(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceVersion>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) ResourceVersion(item);
     }
     internal void IReadOnlyList_SettingsEffectiveValue(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Settings.SettingsEffectiveValue>? value)
     {
@@ -412,6 +594,416 @@ internal sealed partial class ServiceWireWriter
         Boolean(value.IsAddon);
         Boolean(value.Visible);
     }
+    internal void InstanceContentBaselineState(global::Nexa.Services.Minecraft.Management.InstanceContentBaselineState value) => Int32((int)value);
+    internal void InstanceContentConsumer(global::Nexa.Services.Minecraft.Management.InstanceContentConsumer? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int32(value.Node);
+        Int32(value.Dependency);
+    }
+    internal void InstanceContentDependency(global::Nexa.Services.Minecraft.Management.InstanceContentDependency? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Id);
+        String(value.Requirement);
+        InstanceDependencyState(value.State);
+        IReadOnlyList_Int32(value.Providers);
+    }
+    internal void InstanceContentEntry(global::Nexa.Services.Minecraft.Management.InstanceContentEntry? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Name);
+        Boolean(value.IsDirectory);
+        Nullable_Int64(value.Size);
+        String(value.Description);
+        String(value.DisplayName);
+        Nullable_Boolean(value.Enabled);
+        PngImage(value.Icon);
+        Nullable_Int32(value.ImageHeight);
+        Nullable_Int32(value.ImageWidth);
+        Int64(value.ModifiedUtcTicks);
+        String(value.PackageProblem);
+        Nullable_Boolean(value.PackageReadable);
+        Nullable_Boolean(value.UpdateAvailable);
+        String(value.UpdateVersion);
+        String(value.Version);
+        InstanceWorldMetadata(value.World);
+    }
+    internal void InstanceContentGraph(global::Nexa.Services.Minecraft.Management.InstanceContentGraph? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        IReadOnlyList_InstanceContentNode(value.Nodes);
+        Int32(value.UnknownFiles);
+        Boolean(value.Complete);
+        String(value.Notice);
+    }
+    internal void InstanceContentIntegrity(global::Nexa.Services.Minecraft.Management.InstanceContentIntegrity? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        InstanceContentIntegrityQuery(value.File);
+        DateTimeOffset(value.CapturedAt);
+        String(value.Sha256);
+        String(value.Sha512);
+        InstanceContentBaselineState(value.BaselineState);
+        String(value.BaselineSha256);
+        Nullable_Guid(value.BaselineTransactionId);
+        Nullable_Boolean(value.Modified);
+    }
+    internal void InstanceContentIntegrityQuery(global::Nexa.Services.Minecraft.Management.InstanceContentIntegrityQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.PageId);
+        String(value.Name);
+        Int64(value.ExpectedSize);
+        Int64(value.ExpectedModifiedUtcTicks);
+    }
+    internal void InstanceContentNode(global::Nexa.Services.Minecraft.Management.InstanceContentNode? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int32(value.Key);
+        String(value.Id);
+        String(value.Version);
+        Boolean(value.Enabled);
+        Boolean(value.NestedCandidate);
+        Boolean(value.DependenciesComplete);
+        Boolean(value.InCycle);
+        IReadOnlyList_InstanceContentDependency(value.Dependencies);
+        IReadOnlyList_InstanceContentConsumer(value.Consumers);
+    }
+    internal void InstanceContentRemoveCommand(global::Nexa.Services.Minecraft.Management.InstanceContentRemoveCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.PageId);
+        String(value.Name);
+        Boolean(value.IsDirectory);
+        Nullable_Int64(value.ExpectedSize);
+        Int64(value.ExpectedModifiedUtcTicks);
+    }
+    internal void InstanceContentRestoreCommand(global::Nexa.Services.Minecraft.Management.InstanceContentRestoreCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.TrashId);
+    }
+    internal void InstanceContentSnapshot(global::Nexa.Services.Minecraft.Management.InstanceContentSnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.PageId);
+        IReadOnlyList_InstanceContentEntry(value.Entries);
+        Boolean(value.Complete);
+        String(value.Error);
+    }
+    internal void InstanceContentUpdateRecord(global::Nexa.Services.Minecraft.Management.InstanceContentUpdateRecord? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Guid(value.Id);
+        DateTimeOffset(value.CreatedAt);
+        Int32(value.Items);
+        String(value.Phase);
+    }
+    internal void InstanceContentUpdateRollbackCommand(global::Nexa.Services.Minecraft.Management.InstanceContentUpdateRollbackCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        Guid(value.TransactionId);
+    }
+    internal void InstanceDependencyState(global::Nexa.Services.Minecraft.Management.InstanceDependencyState value) => Int32((int)value);
+    internal void InstanceExportCategory(global::Nexa.Services.Minecraft.Management.InstanceExportCategory? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Id);
+        String(value.Label);
+        Int32(value.FileCount);
+        Int64(value.Bytes);
+    }
+    internal void InstanceExportFile(global::Nexa.Services.Minecraft.Management.InstanceExportFile? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Path);
+        String(value.Category);
+        Int64(value.Bytes);
+    }
+    internal void InstanceExportFormat(global::Nexa.Services.Minecraft.Management.InstanceExportFormat value) => Int32((int)value);
+    internal void InstanceExportOptions(global::Nexa.Services.Minecraft.Management.InstanceExportOptions? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Name);
+        String(value.Version);
+        String(value.Summary);
+        IReadOnlyList_String(value.Categories);
+        IReadOnlyList_String(value.ExcludedPaths);
+        InstanceExportFormat(value.Format);
+        Boolean(value.IncludeAssets);
+        Boolean(value.IncludeGameCore);
+        Boolean(value.IncludeLibraries);
+    }
+    internal void InstanceExportOptionsQuery(global::Nexa.Services.Minecraft.Management.InstanceExportOptionsQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Path);
+    }
+    internal void InstanceExportOptionsSave(global::Nexa.Services.Minecraft.Management.InstanceExportOptionsSave? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Path);
+        InstanceExportOptions(value.Options);
+    }
+    internal void InstanceFileDocument(global::Nexa.Services.Minecraft.Management.InstanceFileDocument? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        InstanceFileReadQuery(value.File);
+        String(value.Text);
+        String(value.Revision);
+        String(value.Encoding);
+        Boolean(value.Editable);
+    }
+    internal void InstanceFileEntry(global::Nexa.Services.Minecraft.Management.InstanceFileEntry? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Name);
+        Boolean(value.IsDirectory);
+        Nullable_Int64(value.Size);
+        Int64(value.ModifiedUtcTicks);
+    }
+    internal void InstanceFileListQuery(global::Nexa.Services.Minecraft.Management.InstanceFileListQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.Area);
+        String(value.RelativeDirectory);
+    }
+    internal void InstanceFileListing(global::Nexa.Services.Minecraft.Management.InstanceFileListing? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.Area);
+        String(value.RelativeDirectory);
+        String(value.Directory);
+        IReadOnlyList_InstanceFileEntry(value.Entries);
+        Boolean(value.Complete);
+    }
+    internal void InstanceFileReadQuery(global::Nexa.Services.Minecraft.Management.InstanceFileReadQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.Area);
+        String(value.RelativePath);
+        Int64(value.ExpectedSize);
+        Int64(value.ExpectedModifiedUtcTicks);
+    }
+    internal void InstanceFileSaveCommand(global::Nexa.Services.Minecraft.Management.InstanceFileSaveCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        InstanceFileSavePreview(value.Preview);
+    }
+    internal void InstanceFileSavePreview(global::Nexa.Services.Minecraft.Management.InstanceFileSavePreview? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        InstanceFileDocument(value.Original);
+        String(value.Text);
+        String(value.Revision);
+        Int64(value.PreviousBytes);
+        Int64(value.UpdatedBytes);
+        Int32(value.PreviousLines);
+        Int32(value.UpdatedLines);
+    }
+    internal void InstanceFileSavePreviewQuery(global::Nexa.Services.Minecraft.Management.InstanceFileSavePreviewQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        InstanceFileDocument(value.Original);
+        String(value.Text);
+    }
+    internal void InstanceIdentityFields(global::Nexa.Services.Minecraft.Management.InstanceIdentityFields? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.DisplayName);
+        String(value.Description);
+        String(value.IconPath);
+        Boolean(value.Starred);
+        IReadOnlyList_String(value.Tags);
+        String(value.Group);
+        String(value.Notes);
+        String(value.CustomInfo);
+        Boolean(value.InstanceIsolation);
+        String(value.ModpackProject);
+        String(value.ModpackVersion);
+    }
+    internal void InstanceIdentityQuery(global::Nexa.Services.Minecraft.Management.InstanceIdentityQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+    }
+    internal void InstanceIdentitySaveCommand(global::Nexa.Services.Minecraft.Management.InstanceIdentitySaveCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.ExpectedRevision);
+        InstanceIdentityFields(value.Fields);
+        InstanceServerPolicyFields(value.Server);
+    }
+    internal void InstanceIdentitySnapshot(global::Nexa.Services.Minecraft.Management.InstanceIdentitySnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Revision);
+        String(value.Identity);
+        InstanceIdentityFields(value.Fields);
+        InstanceServerPolicyFields(value.Server);
+        Boolean(value.AuthenticationLocked);
+        IReadOnlyList_String(value.EnvironmentMismatches);
+        Boolean(value.EnvironmentRequirementsDeclared);
+        PngImage(value.Icon);
+        String(value.IconNotice);
+        String(value.JavaPreference);
+        Int32(value.LaunchCount);
+        String(value.Loader);
+    }
+    internal void InstanceManagementPage(global::Nexa.Services.Minecraft.Management.InstanceManagementPage? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Id);
+        String(value.Label);
+        String(value.Directory);
+    }
+    internal void InstanceManagementQuery(global::Nexa.Services.Minecraft.Management.InstanceManagementQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        Boolean(value.CheckModUpdates);
+        Boolean(value.IncludeContentGraph);
+        Boolean(value.IncludeRecoveryStorage);
+        Boolean(value.IncludeTrash);
+    }
+    internal void InstanceManagementSnapshot(global::Nexa.Services.Minecraft.Management.InstanceManagementSnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.GameDirectory);
+        String(value.GameVersion);
+        IReadOnlyList_InstallBuildSelection(value.Components);
+        IReadOnlyList_InstanceManagementPage(value.Pages);
+        Boolean(value.ModInventoryComplete);
+        String(value.ModpackVersion);
+        InstanceContentGraph(value.ContentGraph);
+        IReadOnlyList_InstanceContentUpdateRecord(value.ContentUpdates);
+        IReadOnlyList_InstanceContentSnapshot(value.Contents);
+        String(value.Description);
+        InstanceRecoveryReport(value.RecoveryComparison);
+        InstanceRecoveryStorage(value.RecoveryStorage);
+        IReadOnlyList_InstanceTrashedContent(value.Trash);
+    }
+    internal void InstanceModEnabledCommand(global::Nexa.Services.Minecraft.Management.InstanceModEnabledCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.Name);
+        Boolean(value.Enabled);
+        Int64(value.ExpectedSize);
+        Int64(value.ExpectedModifiedUtcTicks);
+    }
+    internal void InstanceModRemovalCommand(global::Nexa.Services.Minecraft.Management.InstanceModRemovalCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        InstanceContentRemoveCommand(value.Primary);
+        IReadOnlyList_InstanceContentRemoveCommand(value.Orphans);
+    }
+    internal void InstanceModRemovalPreview(global::Nexa.Services.Minecraft.Management.InstanceModRemovalPreview? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        InstanceContentRemoveCommand(value.Primary);
+        IReadOnlyList_InstanceContentRemoveCommand(value.Orphans);
+        IReadOnlyList_String(value.RequiredBy);
+        String(value.Notice);
+    }
+    internal void InstanceModRemovalQuery(global::Nexa.Services.Minecraft.Management.InstanceModRemovalQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        InstanceContentRemoveCommand(value.Primary);
+    }
+    internal void InstanceModpackExportCommand(global::Nexa.Services.Minecraft.Management.InstanceModpackExportCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.DestinationPath);
+        String(value.Name);
+        String(value.Version);
+        IReadOnlyList_String(value.Categories);
+        IReadOnlyList_String(value.ExcludedPaths);
+        InstanceExportFormat(value.Format);
+        Boolean(value.IncludeAssets);
+        Boolean(value.IncludeGameCore);
+        Boolean(value.IncludeLibraries);
+        String(value.Summary);
+    }
+    internal void InstanceModpackExportPreview(global::Nexa.Services.Minecraft.Management.InstanceModpackExportPreview? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        IReadOnlyList_InstanceExportCategory(value.Categories);
+        IReadOnlyList_InstanceExportFile(value.Files);
+    }
+    internal void InstanceModpackExportQuery(global::Nexa.Services.Minecraft.Management.InstanceModpackExportQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+    }
+    internal void InstanceOfflineReadinessQuery(global::Nexa.Services.Minecraft.Management.InstanceOfflineReadinessQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+    }
+    internal void InstanceOfflineReadinessReport(global::Nexa.Services.Minecraft.Management.InstanceOfflineReadinessReport? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        DateTimeOffset(value.CapturedAt);
+        Boolean(value.Complete);
+        Nullable_Boolean(value.JavaCompatible);
+        String(value.JavaVersion);
+        IReadOnlyList_OfflineArtifactFact(value.Artifacts);
+    }
     internal void InstanceRecoveryChange(global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -455,6 +1047,300 @@ internal sealed partial class ServiceWireWriter
         Boolean(value is not null); if (value is null) return;
         using var scope = EnterValue();
         IReadOnlyList_String(value.Roots);
+    }
+    internal void InstanceRecoverySnapshotSummary(global::Nexa.Services.Minecraft.Management.InstanceRecoverySnapshotSummary? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Guid(value.Revision);
+        DateTimeOffset(value.CapturedAt);
+        Int32(value.Files);
+        Int64(value.ContentBytes);
+    }
+    internal void InstanceRecoveryStorage(global::Nexa.Services.Minecraft.Management.InstanceRecoveryStorage? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int64(value.VersionBytes);
+        Int64(value.SnapshotBytes);
+        Boolean(value.Complete);
+        IReadOnlyList_InstanceRecoverySnapshotSummary(value.Snapshots);
+        String(value.Error);
+    }
+    internal void InstanceScreenshot(global::Nexa.Services.Minecraft.Management.InstanceScreenshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Path);
+        PngImage(value.Image);
+    }
+    internal void InstanceScreenshotCropCommand(global::Nexa.Services.Minecraft.Management.InstanceScreenshotCropCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        InstanceScreenshotQuery(value.File);
+        Int32(value.X);
+        Int32(value.Y);
+        Int32(value.Width);
+        Int32(value.Height);
+    }
+    internal void InstanceScreenshotQuery(global::Nexa.Services.Minecraft.Management.InstanceScreenshotQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.Name);
+        Int64(value.ExpectedSize);
+        Int64(value.ExpectedModifiedUtcTicks);
+    }
+    internal void InstanceServerEntry(global::Nexa.Services.Minecraft.Management.InstanceServerEntry? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int32(value.SourceIndex);
+        String(value.Name);
+        String(value.Address);
+        String(value.Icon);
+        Nullable_Boolean(value.AcceptTextures);
+    }
+    internal void InstanceServerList(global::Nexa.Services.Minecraft.Management.InstanceServerList? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Revision);
+        IReadOnlyList_InstanceServerEntry(value.Entries);
+    }
+    internal void InstanceServerListQuery(global::Nexa.Services.Minecraft.Management.InstanceServerListQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+    }
+    internal void InstanceServerListSaveCommand(global::Nexa.Services.Minecraft.Management.InstanceServerListSaveCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.ExpectedRevision);
+        IReadOnlyList_InstanceServerEntry(value.Entries);
+    }
+    internal void InstanceServerPolicyFields(global::Nexa.Services.Minecraft.Management.InstanceServerPolicyFields? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int32(value.LoginRequirement);
+        String(value.AuthServerAddress);
+        String(value.AuthRegisterAddress);
+        String(value.AuthServerDisplayName);
+        String(value.DefaultServer);
+        Boolean(value.OfflineLaunchAllowed);
+        String(value.ExpectedGameVersion);
+        String(value.ExpectedLoader);
+        IReadOnlyList_String(value.RequiredMods);
+    }
+    internal void InstanceServerStatus(global::Nexa.Services.Minecraft.Management.InstanceServerStatus? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Boolean(value.Reachable);
+        String(value.Description);
+        String(value.Version);
+        Nullable_Int32(value.OnlinePlayers);
+        Nullable_Int32(value.MaxPlayers);
+        Int64(value.Milliseconds);
+        Nullable_Int32(value.ClientProtocol);
+        Nullable_Int32(value.ServerProtocol);
+    }
+    internal void InstanceServerStatusQuery(global::Nexa.Services.Minecraft.Management.InstanceServerStatusQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.ExpectedRevision);
+        Int32(value.SourceIndex);
+    }
+    internal void InstanceTrashedContent(global::Nexa.Services.Minecraft.Management.InstanceTrashedContent? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Id);
+        String(value.PageId);
+        String(value.Name);
+        DateTimeOffset(value.RemovedAt);
+    }
+    internal void InstanceWorldBackupCommand(global::Nexa.Services.Minecraft.Management.InstanceWorldBackupCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+        String(value.ExpectedRevision);
+    }
+    internal void InstanceWorldCopyCommand(global::Nexa.Services.Minecraft.Management.InstanceWorldCopyCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+        String(value.DestinationName);
+        String(value.ExpectedRevision);
+    }
+    internal void InstanceWorldDataPack(global::Nexa.Services.Minecraft.Management.InstanceWorldDataPack? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Id);
+        String(value.Name);
+        Boolean(value.Enabled);
+        Boolean(value.BuiltIn);
+        String(value.TrashName);
+        Boolean(value.Trashed);
+    }
+    internal void InstanceWorldDataPackCommand(global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+        String(value.Id);
+        Boolean(value.Enabled);
+        String(value.ExpectedRevision);
+    }
+    internal void InstanceWorldDataPackImportCommand(global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackImportCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+        String(value.SourcePath);
+        String(value.ExpectedRevision);
+    }
+    internal void InstanceWorldDataPackRemoveCommand(global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackRemoveCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+        String(value.Name);
+        String(value.ExpectedRevision);
+    }
+    internal void InstanceWorldDataPackRestoreCommand(global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackRestoreCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+        String(value.TrashName);
+        String(value.ExpectedRevision);
+    }
+    internal void InstanceWorldHealth(global::Nexa.Services.Minecraft.Management.InstanceWorldHealth? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Boolean(value.Complete);
+        Int32(value.Regions);
+        Int32(value.Chunks);
+        Int32(value.DetectedIssues);
+        IReadOnlyList_String(value.Issues);
+    }
+    internal void InstanceWorldHealthQuery(global::Nexa.Services.Minecraft.Management.InstanceWorldHealthQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+    }
+    internal void InstanceWorldLockCommand(global::Nexa.Services.Minecraft.Management.InstanceWorldLockCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+        Boolean(value.Locked);
+        String(value.ExpectedRevision);
+    }
+    internal void InstanceWorldMetadata(global::Nexa.Services.Minecraft.Management.InstanceWorldMetadata? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.LevelName);
+        String(value.GameVersion);
+        Nullable_Int32(value.DataVersion);
+        Nullable_DateTimeOffset(value.LastPlayed);
+        Nullable_Int64(value.Seed);
+        Nullable_Int32(value.GameMode);
+        Nullable_Int32(value.Difficulty);
+        Boolean(value.Hardcore);
+        Int64(value.Size);
+        Boolean(value.SizeComplete);
+        String(value.Revision);
+        Boolean(value.Locked);
+        IReadOnlyList_InstanceWorldDataPack(value.DataPacks);
+        Boolean(value.DataPacksSupported);
+    }
+    internal void InstanceWorldMetadataQuery(global::Nexa.Services.Minecraft.Management.InstanceWorldMetadataQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+    }
+    internal void InstanceWorldSnapshot(global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Identity);
+        DateTimeOffset(value.CreatedAt);
+        Int32(value.Files);
+        Int64(value.Bytes);
+    }
+    internal void InstanceWorldSnapshotCaptureCommand(global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotCaptureCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+        String(value.ExpectedRevision);
+    }
+    internal void InstanceWorldSnapshotListQuery(global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotListQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+    }
+    internal void InstanceWorldSnapshotListing(global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotListing? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        IReadOnlyList_InstanceWorldSnapshot(value.Items);
+    }
+    internal void InstanceWorldSnapshotRestoreCommand(global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotRestoreCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+        String(value.Identity);
+        String(value.DestinationName);
+        String(value.ExpectedRevision);
+    }
+    internal void InstanceWorldSnapshotVerification(global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotVerification? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Identity);
+        Int32(value.Files);
+        Int32(value.VerifiedFiles);
+        IReadOnlyList_String(value.MissingOrCorruptPaths);
+    }
+    internal void InstanceWorldSnapshotVerifyQuery(global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotVerifyQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+        String(value.Identity);
     }
     internal void JavaArchitecture(global::Nexa.Services.Minecraft.Java.JavaArchitecture value) => Int32((int)value);
     internal void JavaBrand(global::Nexa.Services.Minecraft.Java.JavaBrand value) => Int32((int)value);
@@ -1399,10 +2285,25 @@ internal sealed partial class ServiceWireWriter
     {
         Boolean(value.HasValue); if (value.HasValue) ProcessPriorityClass(value.Value);
     }
+    internal void Nullable_ResourceProvider(global::System.Nullable<global::Nexa.Services.Resources.ResourceProvider> value)
+    {
+        Boolean(value.HasValue); if (value.HasValue) ResourceProvider(value.Value);
+    }
     internal void Nullable_TimeSpan(global::System.Nullable<global::System.TimeSpan> value)
     {
         Boolean(value.HasValue); if (value.HasValue) TimeSpan(value.Value);
     }
+    internal void OfflineArtifactFact(global::Nexa.Services.Minecraft.Management.OfflineArtifactFact? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Category);
+        String(value.RelativePath);
+        OfflineArtifactState(value.State);
+        Nullable_Int64(value.Bytes);
+        String(value.ReasonCode);
+    }
+    internal void OfflineArtifactState(global::Nexa.Services.Minecraft.Management.OfflineArtifactState value) => Int32((int)value);
     internal void PreflightCertainty(global::Nexa.Services.Capabilities.PreflightCertainty value) => Int32((int)value);
     internal void PreflightSeverity(global::Nexa.Services.Capabilities.PreflightSeverity value) => Int32((int)value);
     internal void ProcessPriorityClass(global::System.Diagnostics.ProcessPriorityClass value) => Int32((int)value);
@@ -1432,6 +2333,284 @@ internal sealed partial class ServiceWireWriter
         String(value.Code);
         String(value.Message);
     }
+    internal void ResourceChangelog(global::Nexa.Services.Resources.ResourceChangelog? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Text);
+    }
+    internal void ResourceChangelogQuery(global::Nexa.Services.Resources.ResourceChangelogQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceReference(value.Source);
+        String(value.VersionId);
+        Boolean(value.MirrorFirst);
+    }
+    internal void ResourceContentOnline(global::Nexa.Services.Resources.ResourceContentOnline? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceProject(value.Project);
+        String(value.InstalledVersion);
+        IReadOnlyList_ResourceVersion(value.Versions);
+        String(value.Notice);
+        IReadOnlyList_ResourceInstalledFile(value.InstalledFiles);
+        Boolean(value.IsStale);
+        Nullable_Boolean(value.UpdateAvailable);
+        ResourceVersion(value.UpdateVersion);
+    }
+    internal void ResourceContentOnlineBatch(global::Nexa.Services.Resources.ResourceContentOnlineBatch? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        IReadOnlyList_ResourceContentOnlineMatch(value.Matches);
+    }
+    internal void ResourceContentOnlineBatchQuery(global::Nexa.Services.Resources.ResourceContentOnlineBatchQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        IReadOnlyList_ResourceContentOnlineQuery(value.Files);
+        Boolean(value.Refresh);
+        Boolean(value.WaitForRefresh);
+    }
+    internal void ResourceContentOnlineMatch(global::Nexa.Services.Resources.ResourceContentOnlineMatch? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceContentOnlineQuery(value.File);
+        ResourceContentOnline(value.Content);
+    }
+    internal void ResourceContentOnlineQuery(global::Nexa.Services.Resources.ResourceContentOnlineQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.PageId);
+        String(value.Name);
+        Int64(value.ExpectedSize);
+        Int64(value.ExpectedModifiedUtcTicks);
+        Boolean(value.MirrorFirst);
+        Boolean(value.Refresh);
+        Boolean(value.WaitForRefresh);
+    }
+    internal void ResourceContentUpdateBatchCommand(global::Nexa.Services.Resources.ResourceContentUpdateBatchCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        IReadOnlyList_ResourceContentUpdateCommand(value.Updates);
+    }
+    internal void ResourceContentUpdateCommand(global::Nexa.Services.Resources.ResourceContentUpdateCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceContentOnlineQuery(value.File);
+        ResourceReference(value.Source);
+        String(value.VersionId);
+    }
+    internal void ResourceDependency(global::Nexa.Services.Resources.ResourceDependency? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.ProjectId);
+        String(value.VersionId);
+        String(value.Kind);
+    }
+    internal void ResourceDetail(global::Nexa.Services.Resources.ResourceDetail? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceProject(value.Project);
+        String(value.License);
+        IReadOnlyList_ResourceVersion(value.Versions);
+        Boolean(value.IsStale);
+        String(value.Notice);
+    }
+    internal void ResourceDetailQuery(global::Nexa.Services.Resources.ResourceDetailQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.ProjectId);
+        String(value.GameVersion);
+        String(value.Loader);
+        Boolean(value.MirrorFirst);
+        Boolean(value.Refresh);
+        IReadOnlyList_ResourceReference(value.Sources);
+        Boolean(value.WaitForRefresh);
+    }
+    internal void ResourceDownloadCommand(global::Nexa.Services.Resources.ResourceDownloadCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceProvider(value.Provider);
+        String(value.ProjectId);
+        String(value.VersionId);
+        String(value.DestinationDirectory);
+        Boolean(value.MirrorFirst);
+        Boolean(value.Refresh);
+    }
+    internal void ResourceFavoriteCommand(global::Nexa.Services.Resources.ResourceFavoriteCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceProject(value.Project);
+        Boolean(value.Saved);
+    }
+    internal void ResourceFavoritesQuery(global::Nexa.Services.Resources.ResourceFavoritesQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+    }
+    internal void ResourceFavoritesSnapshot(global::Nexa.Services.Resources.ResourceFavoritesSnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        IReadOnlyList_ResourceProject(value.Projects);
+    }
+    internal void ResourceFile(global::Nexa.Services.Resources.ResourceFile? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Name);
+        String(value.Url);
+        Int64(value.Size);
+        String(value.Sha1);
+        String(value.Sha512);
+    }
+    internal void ResourceIconQuery(global::Nexa.Services.Resources.ResourceIconQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Url);
+    }
+    internal void ResourceIconResult(global::Nexa.Services.Resources.ResourceIconResult? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        PngImage(value.Image);
+    }
+    internal void ResourceInstallPlan(global::Nexa.Services.Resources.ResourceInstallPlan? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        IReadOnlyList_ResourceVersion(value.Versions);
+        IReadOnlyList_ResourceOptionalDependency(value.Optional);
+        Boolean(value.HasCycles);
+    }
+    internal void ResourceInstalledFile(global::Nexa.Services.Resources.ResourceInstalledFile? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceReference(value.Source);
+        String(value.VersionId);
+        String(value.FileName);
+        String(value.Sha512);
+        Boolean(value.Enabled);
+    }
+    internal void ResourceInstanceContext(global::Nexa.Services.Resources.ResourceInstanceContext? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Game);
+        String(value.Loader);
+        IReadOnlyList_ResourceInstalledFile(value.Installed);
+        String(value.Notice);
+        String(value.GameDirectory);
+    }
+    internal void ResourceInstanceQuery(global::Nexa.Services.Resources.ResourceInstanceQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Root);
+        String(value.InstanceId);
+        Boolean(value.MirrorFirst);
+    }
+    internal void ResourceKind(global::Nexa.Services.Resources.ResourceKind value) => Int32((int)value);
+    internal void ResourceModInstallCommand(global::Nexa.Services.Resources.ResourceModInstallCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceReference(value.Source);
+        String(value.VersionId);
+        ResourceInstanceQuery(value.Instance);
+        IReadOnlyList_ResourceReference(value.OptionalDependencies);
+    }
+    internal void ResourceModPlanQuery(global::Nexa.Services.Resources.ResourceModPlanQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceModInstallCommand(value.Command);
+    }
+    internal void ResourceModpackInstallCommand(global::Nexa.Services.Resources.ResourceModpackInstallCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceReference(value.Source);
+        String(value.VersionId);
+        String(value.RootDirectory);
+        Boolean(value.MirrorFirst);
+    }
+    internal void ResourceModpackOnline(global::Nexa.Services.Resources.ResourceModpackOnline? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceModpackOnlineQuery(value.Request);
+        String(value.InstalledArchiveSha256);
+        ResourceProject(value.Project);
+        ResourceVersion(value.InstalledVersion);
+        IReadOnlyList_ResourceVersion(value.Versions);
+        String(value.Notice);
+        Boolean(value.IsStale);
+        String(value.OriginalArchivePath);
+        ResourceVersion(value.UpdateVersion);
+    }
+    internal void ResourceModpackOnlineQuery(global::Nexa.Services.Resources.ResourceModpackOnlineQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.OriginalArchivePath);
+        Boolean(value.MirrorFirst);
+        Boolean(value.Refresh);
+    }
+    internal void ResourceModpackPreview(global::Nexa.Services.Resources.ResourceModpackPreview? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceModpackPreviewQuery(value.Request);
+        ResourceVersion(value.Version);
+        MinecraftModpackUpdatePreview(value.Installation);
+    }
+    internal void ResourceModpackPreviewQuery(global::Nexa.Services.Resources.ResourceModpackPreviewQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceModpackOnlineQuery(value.Instance);
+        ResourceReference(value.Source);
+        String(value.VersionId);
+        String(value.InstalledArchiveSha256);
+        Boolean(value.IncludeOptional);
+        Boolean(value.ReplaceModifiedMods);
+    }
+    internal void ResourceModpackUpdateCommand(global::Nexa.Services.Resources.ResourceModpackUpdateCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceModpackPreview(value.Preview);
+    }
+    internal void ResourceNetworkPolicyQuery(global::Nexa.Services.Resources.ResourceNetworkPolicyQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+    }
+    internal void ResourceNetworkPolicySnapshot(global::Nexa.Services.Resources.ResourceNetworkPolicySnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Priority);
+        Boolean(value.AutoInstallDependencies);
+        ResourceSourceResolution(value.LastResolution);
+    }
     internal void ResourceObservationSample(global::Nexa.Services.Capabilities.ResourceObservationSample? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -1450,6 +2629,113 @@ internal sealed partial class ServiceWireWriter
         DateTimeOffset(value.Timestamp);
         String(value.ModFingerprint);
         String(value.SettingsFingerprint);
+    }
+    internal void ResourceOptionalDependency(global::Nexa.Services.Resources.ResourceOptionalDependency? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceReference(value.Source);
+        String(value.VersionId);
+        String(value.Name);
+    }
+    internal void ResourceOrder(global::Nexa.Services.Resources.ResourceOrder value) => Int32((int)value);
+    internal void ResourceProject(global::Nexa.Services.Resources.ResourceProject? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Id);
+        String(value.Title);
+        String(value.Description);
+        String(value.Author);
+        Int64(value.Downloads);
+        String(value.Website);
+        String(value.ChineseDescription);
+        String(value.ChineseName);
+        String(value.IconUrl);
+        Boolean(value.IsLibrary);
+        ResourceKind(value.Kind);
+        String(value.Slug);
+        IReadOnlyList_ResourceReference(value.Sources);
+        Nullable_Int32(value.WikiId);
+    }
+    internal void ResourceProvider(global::Nexa.Services.Resources.ResourceProvider value) => Int32((int)value);
+    internal void ResourceReference(global::Nexa.Services.Resources.ResourceReference? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceProvider(value.Provider);
+        String(value.ProjectId);
+    }
+    internal void ResourceSearchQuery(global::Nexa.Services.Resources.ResourceSearchQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceKind(value.Kind);
+        String(value.Text);
+        String(value.GameVersion);
+        String(value.Loader);
+        ResourceOrder(value.Order);
+        Int32(value.Page);
+        Boolean(value.MirrorFirst);
+        Nullable_ResourceProvider(value.Provider);
+        Boolean(value.Refresh);
+        String(value.Tag);
+        Boolean(value.WaitForRefresh);
+    }
+    internal void ResourceSearchResult(global::Nexa.Services.Resources.ResourceSearchResult? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        IReadOnlyList_ResourceProject(value.Projects);
+        Int32(value.Total);
+        Int32(value.Page);
+        Nullable_Boolean(value.HasMore);
+        Boolean(value.IsStale);
+        String(value.Notice);
+    }
+    internal void ResourceSourceResolution(global::Nexa.Services.Resources.ResourceSourceResolution? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceProvider(value.Provider);
+        DateTimeOffset(value.ObservedAt);
+        String(value.Priority);
+        Boolean(value.RequestedMirrorFirst);
+        Boolean(value.EffectiveMirrorFirst);
+        IReadOnlyList_String(value.CandidateHosts);
+        String(value.SelectedHost);
+    }
+    internal void ResourceTranslation(global::Nexa.Services.Resources.ResourceTranslation? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Description);
+        String(value.Notice);
+    }
+    internal void ResourceTranslationQuery(global::Nexa.Services.Resources.ResourceTranslationQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        ResourceReference(value.Source);
+        String(value.Original);
+    }
+    internal void ResourceVersion(global::Nexa.Services.Resources.ResourceVersion? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Id);
+        String(value.Name);
+        String(value.Number);
+        String(value.Channel);
+        IReadOnlyList_String(value.Games);
+        IReadOnlyList_String(value.Loaders);
+        String(value.Published);
+        String(value.Website);
+        String(value.Changelog);
+        IReadOnlyList_ResourceDependency(value.Dependencies);
+        ResourceFile(value.File);
+        String(value.ProjectId);
+        ResourceProvider(value.Provider);
     }
     internal void SettingValueType(global::Nexa.Services.Settings.SettingValueType value) => Int32((int)value);
     internal void SettingsApplyTiming(global::Nexa.Services.Settings.SettingsApplyTiming value) => Int32((int)value);
@@ -1747,12 +3033,140 @@ internal sealed partial class ServiceWireReader
         for (int index = 0; index < count; index++) value[index] = InstallLoaderEligibility() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentConsumer>? IReadOnlyList_InstanceContentConsumer()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceContentConsumer[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceContentConsumer() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentDependency>? IReadOnlyList_InstanceContentDependency()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceContentDependency[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceContentDependency() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentEntry>? IReadOnlyList_InstanceContentEntry()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceContentEntry[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceContentEntry() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentNode>? IReadOnlyList_InstanceContentNode()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceContentNode[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceContentNode() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentRemoveCommand>? IReadOnlyList_InstanceContentRemoveCommand()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceContentRemoveCommand[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceContentRemoveCommand() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentSnapshot>? IReadOnlyList_InstanceContentSnapshot()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceContentSnapshot[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceContentSnapshot() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceContentUpdateRecord>? IReadOnlyList_InstanceContentUpdateRecord()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceContentUpdateRecord[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceContentUpdateRecord() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceExportCategory>? IReadOnlyList_InstanceExportCategory()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceExportCategory[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceExportCategory() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceExportFile>? IReadOnlyList_InstanceExportFile()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceExportFile[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceExportFile() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceFileEntry>? IReadOnlyList_InstanceFileEntry()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceFileEntry[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceFileEntry() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceManagementPage>? IReadOnlyList_InstanceManagementPage()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceManagementPage[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceManagementPage() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
     internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange>? IReadOnlyList_InstanceRecoveryChange()
     {
         int count = Count(); if (count == -1) return null;
         using var scope = EnterValue();
         var value = new global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange[count];
         for (int index = 0; index < count; index++) value[index] = InstanceRecoveryChange() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceRecoverySnapshotSummary>? IReadOnlyList_InstanceRecoverySnapshotSummary()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceRecoverySnapshotSummary[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceRecoverySnapshotSummary() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceServerEntry>? IReadOnlyList_InstanceServerEntry()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceServerEntry[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceServerEntry() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceTrashedContent>? IReadOnlyList_InstanceTrashedContent()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceTrashedContent[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceTrashedContent() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceWorldDataPack>? IReadOnlyList_InstanceWorldDataPack()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceWorldDataPack[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceWorldDataPack() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshot>? IReadOnlyList_InstanceWorldSnapshot()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshot[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceWorldSnapshot() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
     internal global::System.Collections.Generic.IReadOnlyList<global::System.Int32>? IReadOnlyList_Int32()
@@ -1865,6 +3279,86 @@ internal sealed partial class ServiceWireReader
         using var scope = EnterValue();
         var value = new global::Nexa.Native.Network.Services.NativeHttpHeader[count];
         for (int index = 0; index < count; index++) value[index] = NativeHttpHeader() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.OfflineArtifactFact>? IReadOnlyList_OfflineArtifactFact()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.OfflineArtifactFact[count];
+        for (int index = 0; index < count; index++) value[index] = OfflineArtifactFact() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceContentOnlineMatch>? IReadOnlyList_ResourceContentOnlineMatch()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Resources.ResourceContentOnlineMatch[count];
+        for (int index = 0; index < count; index++) value[index] = ResourceContentOnlineMatch() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceContentOnlineQuery>? IReadOnlyList_ResourceContentOnlineQuery()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Resources.ResourceContentOnlineQuery[count];
+        for (int index = 0; index < count; index++) value[index] = ResourceContentOnlineQuery() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceContentUpdateCommand>? IReadOnlyList_ResourceContentUpdateCommand()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Resources.ResourceContentUpdateCommand[count];
+        for (int index = 0; index < count; index++) value[index] = ResourceContentUpdateCommand() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceDependency>? IReadOnlyList_ResourceDependency()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Resources.ResourceDependency[count];
+        for (int index = 0; index < count; index++) value[index] = ResourceDependency() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceInstalledFile>? IReadOnlyList_ResourceInstalledFile()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Resources.ResourceInstalledFile[count];
+        for (int index = 0; index < count; index++) value[index] = ResourceInstalledFile() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceOptionalDependency>? IReadOnlyList_ResourceOptionalDependency()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Resources.ResourceOptionalDependency[count];
+        for (int index = 0; index < count; index++) value[index] = ResourceOptionalDependency() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceProject>? IReadOnlyList_ResourceProject()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Resources.ResourceProject[count];
+        for (int index = 0; index < count; index++) value[index] = ResourceProject() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceReference>? IReadOnlyList_ResourceReference()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Resources.ResourceReference[count];
+        for (int index = 0; index < count; index++) value[index] = ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Resources.ResourceVersion>? IReadOnlyList_ResourceVersion()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Resources.ResourceVersion[count];
+        for (int index = 0; index < count; index++) value[index] = ResourceVersion() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
     internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Settings.SettingsEffectiveValue>? IReadOnlyList_SettingsEffectiveValue()
@@ -2046,6 +3540,457 @@ internal sealed partial class ServiceWireReader
         var p2 = Boolean();
         return new global::Nexa.Services.Minecraft.Install.InstallLoaderEligibility(p0, p1, p2);
     }
+    internal global::Nexa.Services.Minecraft.Management.InstanceContentBaselineState InstanceContentBaselineState() { int value = Int32(); return value is 0 or 1 or 2 ? (global::Nexa.Services.Minecraft.Management.InstanceContentBaselineState)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Minecraft.Management.InstanceContentConsumer? InstanceContentConsumer()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int32();
+        var p1 = Int32();
+        return new global::Nexa.Services.Minecraft.Management.InstanceContentConsumer(p0, p1);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceContentDependency? InstanceContentDependency()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = InstanceDependencyState();
+        var p3 = IReadOnlyList_Int32() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceContentDependency(p0!, p1!, p2, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceContentEntry? InstanceContentEntry()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Boolean();
+        var p2 = Nullable_Int64();
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = Nullable_Boolean();
+        var p6 = PngImage();
+        var p7 = Nullable_Int32();
+        var p8 = Nullable_Int32();
+        var p9 = Int64();
+        var p10 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p11 = Nullable_Boolean();
+        var p12 = Nullable_Boolean();
+        var p13 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p14 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p15 = InstanceWorldMetadata();
+        return new global::Nexa.Services.Minecraft.Management.InstanceContentEntry(p0!, p1, p2) { Description = p3!, DisplayName = p4!, Enabled = p5, Icon = p6!, ImageHeight = p7, ImageWidth = p8, ModifiedUtcTicks = p9, PackageProblem = p10!, PackageReadable = p11, UpdateAvailable = p12, UpdateVersion = p13!, Version = p14!, World = p15! };
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceContentGraph? InstanceContentGraph()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = IReadOnlyList_InstanceContentNode() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Int32();
+        var p2 = Boolean();
+        var p3 = String();
+        return new global::Nexa.Services.Minecraft.Management.InstanceContentGraph(p0!, p1, p2, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceContentIntegrity? InstanceContentIntegrity()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = InstanceContentIntegrityQuery() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = DateTimeOffset();
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = InstanceContentBaselineState();
+        var p5 = String();
+        var p6 = Nullable_Guid();
+        var p7 = Nullable_Boolean();
+        return new global::Nexa.Services.Minecraft.Management.InstanceContentIntegrity(p0!, p1, p2!, p3!, p4, p5!, p6, p7);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceContentIntegrityQuery? InstanceContentIntegrityQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Int64();
+        var p4 = Int64();
+        return new global::Nexa.Services.Minecraft.Management.InstanceContentIntegrityQuery(p0!, p1!, p2!, p3, p4);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceContentNode? InstanceContentNode()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int32();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Boolean();
+        var p4 = Boolean();
+        var p5 = Boolean();
+        var p6 = Boolean();
+        var p7 = IReadOnlyList_InstanceContentDependency() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p8 = IReadOnlyList_InstanceContentConsumer() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceContentNode(p0, p1!, p2!, p3, p4, p5, p6, p7!) { Consumers = p8! };
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceContentRemoveCommand? InstanceContentRemoveCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Boolean();
+        var p4 = Nullable_Int64();
+        var p5 = Int64();
+        return new global::Nexa.Services.Minecraft.Management.InstanceContentRemoveCommand(p0!, p1!, p2!, p3, p4, p5);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceContentRestoreCommand? InstanceContentRestoreCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceContentRestoreCommand(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceContentSnapshot? InstanceContentSnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = IReadOnlyList_InstanceContentEntry() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Boolean();
+        var p3 = String();
+        return new global::Nexa.Services.Minecraft.Management.InstanceContentSnapshot(p0!, p1!, p2, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceContentUpdateRecord? InstanceContentUpdateRecord()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Guid();
+        var p1 = DateTimeOffset();
+        var p2 = Int32();
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceContentUpdateRecord(p0, p1, p2, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceContentUpdateRollbackCommand? InstanceContentUpdateRollbackCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Guid();
+        return new global::Nexa.Services.Minecraft.Management.InstanceContentUpdateRollbackCommand(p0!, p1);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceDependencyState InstanceDependencyState() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 or 6 ? (global::Nexa.Services.Minecraft.Management.InstanceDependencyState)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Minecraft.Management.InstanceExportCategory? InstanceExportCategory()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Int32();
+        var p3 = Int64();
+        return new global::Nexa.Services.Minecraft.Management.InstanceExportCategory(p0!, p1!, p2, p3);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceExportFile? InstanceExportFile()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Int64();
+        return new global::Nexa.Services.Minecraft.Management.InstanceExportFile(p0!, p1!, p2);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceExportFormat InstanceExportFormat() { int value = Int32(); return value is 0 or 1 ? (global::Nexa.Services.Minecraft.Management.InstanceExportFormat)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Minecraft.Management.InstanceExportOptions? InstanceExportOptions()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = InstanceExportFormat();
+        var p6 = Boolean();
+        var p7 = Boolean();
+        var p8 = Boolean();
+        return new global::Nexa.Services.Minecraft.Management.InstanceExportOptions(p0!, p1!, p2!, p3!, p4!) { Format = p5, IncludeAssets = p6, IncludeGameCore = p7, IncludeLibraries = p8 };
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceExportOptionsQuery? InstanceExportOptionsQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceExportOptionsQuery(p0!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceExportOptionsSave? InstanceExportOptionsSave()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = InstanceExportOptions() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceExportOptionsSave(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceFileDocument? InstanceFileDocument()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = InstanceFileReadQuery() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = Boolean();
+        return new global::Nexa.Services.Minecraft.Management.InstanceFileDocument(p0!, p1!, p2!, p3!, p4);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceFileEntry? InstanceFileEntry()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Boolean();
+        var p2 = Nullable_Int64();
+        var p3 = Int64();
+        return new global::Nexa.Services.Minecraft.Management.InstanceFileEntry(p0!, p1, p2, p3);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceFileListQuery? InstanceFileListQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceFileListQuery(p0!, p1!, p2!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceFileListing? InstanceFileListing()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = IReadOnlyList_InstanceFileEntry() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = Boolean();
+        return new global::Nexa.Services.Minecraft.Management.InstanceFileListing(p0!, p1!, p2!, p3!, p4!, p5);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceFileReadQuery? InstanceFileReadQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Int64();
+        var p4 = Int64();
+        return new global::Nexa.Services.Minecraft.Management.InstanceFileReadQuery(p0!, p1!, p2!, p3, p4);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceFileSaveCommand? InstanceFileSaveCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = InstanceFileSavePreview() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceFileSaveCommand(p0!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceFileSavePreview? InstanceFileSavePreview()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = InstanceFileDocument() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Int64();
+        var p4 = Int64();
+        var p5 = Int32();
+        var p6 = Int32();
+        return new global::Nexa.Services.Minecraft.Management.InstanceFileSavePreview(p0!, p1!, p2!, p3, p4, p5, p6);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceFileSavePreviewQuery? InstanceFileSavePreviewQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = InstanceFileDocument() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceFileSavePreviewQuery(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceIdentityFields? InstanceIdentityFields()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Boolean();
+        var p4 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p6 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p7 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p8 = Boolean();
+        var p9 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p10 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceIdentityFields(p0!, p1!, p2!, p3, p4!, p5!, p6!, p7!) { InstanceIsolation = p8, ModpackProject = p9!, ModpackVersion = p10! };
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceIdentityQuery? InstanceIdentityQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceIdentityQuery(p0!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceIdentitySaveCommand? InstanceIdentitySaveCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = InstanceIdentityFields() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = InstanceServerPolicyFields() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceIdentitySaveCommand(p0!, p1!, p2!, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceIdentitySnapshot? InstanceIdentitySnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = InstanceIdentityFields() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = InstanceServerPolicyFields() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = Boolean();
+        var p5 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p6 = Boolean();
+        var p7 = PngImage();
+        var p8 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p9 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p10 = Int32();
+        var p11 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceIdentitySnapshot(p0!, p1!, p2!, p3!, p4) { EnvironmentMismatches = p5!, EnvironmentRequirementsDeclared = p6, Icon = p7!, IconNotice = p8!, JavaPreference = p9!, LaunchCount = p10, Loader = p11! };
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceManagementPage? InstanceManagementPage()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String();
+        return new global::Nexa.Services.Minecraft.Management.InstanceManagementPage(p0!, p1!, p2!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceManagementQuery? InstanceManagementQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Boolean();
+        var p2 = Boolean();
+        var p3 = Boolean();
+        var p4 = Boolean();
+        return new global::Nexa.Services.Minecraft.Management.InstanceManagementQuery(p0!) { CheckModUpdates = p1, IncludeContentGraph = p2, IncludeRecoveryStorage = p3, IncludeTrash = p4 };
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceManagementSnapshot? InstanceManagementSnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = IReadOnlyList_InstallBuildSelection() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = IReadOnlyList_InstanceManagementPage() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = Boolean();
+        var p6 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p7 = InstanceContentGraph();
+        var p8 = IReadOnlyList_InstanceContentUpdateRecord() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p9 = IReadOnlyList_InstanceContentSnapshot() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p10 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p11 = InstanceRecoveryReport();
+        var p12 = InstanceRecoveryStorage();
+        var p13 = IReadOnlyList_InstanceTrashedContent() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceManagementSnapshot(p0!, p1!, p2!, p3!, p4!, p5, p6!) { ContentGraph = p7!, ContentUpdates = p8!, Contents = p9!, Description = p10!, RecoveryComparison = p11!, RecoveryStorage = p12!, Trash = p13! };
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceModEnabledCommand? InstanceModEnabledCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Boolean();
+        var p3 = Int64();
+        var p4 = Int64();
+        return new global::Nexa.Services.Minecraft.Management.InstanceModEnabledCommand(p0!, p1!, p2, p3, p4);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceModRemovalCommand? InstanceModRemovalCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = InstanceContentRemoveCommand() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = IReadOnlyList_InstanceContentRemoveCommand() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceModRemovalCommand(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceModRemovalPreview? InstanceModRemovalPreview()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = InstanceContentRemoveCommand() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = IReadOnlyList_InstanceContentRemoveCommand() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String();
+        return new global::Nexa.Services.Minecraft.Management.InstanceModRemovalPreview(p0!, p1!, p2!, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceModRemovalQuery? InstanceModRemovalQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = InstanceContentRemoveCommand() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceModRemovalQuery(p0!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceModpackExportCommand? InstanceModpackExportCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p6 = InstanceExportFormat();
+        var p7 = Boolean();
+        var p8 = Boolean();
+        var p9 = Boolean();
+        var p10 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceModpackExportCommand(p0!, p1!, p2!, p3!, p4!) { ExcludedPaths = p5!, Format = p6, IncludeAssets = p7, IncludeGameCore = p8, IncludeLibraries = p9, Summary = p10! };
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceModpackExportPreview? InstanceModpackExportPreview()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = IReadOnlyList_InstanceExportCategory() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = IReadOnlyList_InstanceExportFile() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceModpackExportPreview(p0!, p1!) { Files = p2! };
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceModpackExportQuery? InstanceModpackExportQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceModpackExportQuery(p0!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceOfflineReadinessQuery? InstanceOfflineReadinessQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceOfflineReadinessQuery(p0!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceOfflineReadinessReport? InstanceOfflineReadinessReport()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = DateTimeOffset();
+        var p2 = Boolean();
+        var p3 = Nullable_Boolean();
+        var p4 = String();
+        var p5 = IReadOnlyList_OfflineArtifactFact() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceOfflineReadinessReport(p0!, p1, p2, p3, p4!, p5!);
+    }
     internal global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange? InstanceRecoveryChange()
     {
         if (!Boolean()) return null;
@@ -2094,6 +4039,332 @@ internal sealed partial class ServiceWireReader
         using var scope = EnterValue();
         var p0 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         return new global::Nexa.Services.Minecraft.Management.InstanceRecoveryResumeCommand(p0!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceRecoverySnapshotSummary? InstanceRecoverySnapshotSummary()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Guid();
+        var p1 = DateTimeOffset();
+        var p2 = Int32();
+        var p3 = Int64();
+        return new global::Nexa.Services.Minecraft.Management.InstanceRecoverySnapshotSummary(p0, p1, p2, p3);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceRecoveryStorage? InstanceRecoveryStorage()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int64();
+        var p1 = Int64();
+        var p2 = Boolean();
+        var p3 = IReadOnlyList_InstanceRecoverySnapshotSummary() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = String();
+        return new global::Nexa.Services.Minecraft.Management.InstanceRecoveryStorage(p0, p1, p2, p3!, p4!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceScreenshot? InstanceScreenshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = PngImage() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceScreenshot(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceScreenshotCropCommand? InstanceScreenshotCropCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = InstanceScreenshotQuery() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Int32();
+        var p2 = Int32();
+        var p3 = Int32();
+        var p4 = Int32();
+        return new global::Nexa.Services.Minecraft.Management.InstanceScreenshotCropCommand(p0!, p1, p2, p3, p4);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceScreenshotQuery? InstanceScreenshotQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Int64();
+        var p3 = Int64();
+        return new global::Nexa.Services.Minecraft.Management.InstanceScreenshotQuery(p0!, p1!, p2, p3);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceServerEntry? InstanceServerEntry()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int32();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String();
+        var p4 = Nullable_Boolean();
+        return new global::Nexa.Services.Minecraft.Management.InstanceServerEntry(p0, p1!, p2!, p3!, p4);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceServerList? InstanceServerList()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = IReadOnlyList_InstanceServerEntry() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceServerList(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceServerListQuery? InstanceServerListQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceServerListQuery(p0!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceServerListSaveCommand? InstanceServerListSaveCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = IReadOnlyList_InstanceServerEntry() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceServerListSaveCommand(p0!, p1!, p2!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceServerPolicyFields? InstanceServerPolicyFields()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int32();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = Boolean();
+        var p6 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p7 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p8 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceServerPolicyFields(p0, p1!, p2!, p3!, p4!, p5, p6!, p7!, p8!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceServerStatus? InstanceServerStatus()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Boolean();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Nullable_Int32();
+        var p4 = Nullable_Int32();
+        var p5 = Int64();
+        var p6 = Nullable_Int32();
+        var p7 = Nullable_Int32();
+        return new global::Nexa.Services.Minecraft.Management.InstanceServerStatus(p0, p1!, p2!, p3, p4, p5) { ClientProtocol = p6, ServerProtocol = p7 };
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceServerStatusQuery? InstanceServerStatusQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Int32();
+        return new global::Nexa.Services.Minecraft.Management.InstanceServerStatusQuery(p0!, p1!, p2);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceTrashedContent? InstanceTrashedContent()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = DateTimeOffset();
+        return new global::Nexa.Services.Minecraft.Management.InstanceTrashedContent(p0!, p1!, p2!, p3);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldBackupCommand? InstanceWorldBackupCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldBackupCommand(p0!, p1!, p2!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldCopyCommand? InstanceWorldCopyCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldCopyCommand(p0!, p1!, p2!, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldDataPack? InstanceWorldDataPack()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Boolean();
+        var p3 = Boolean();
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = Boolean();
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldDataPack(p0!, p1!, p2, p3) { TrashName = p4!, Trashed = p5 };
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackCommand? InstanceWorldDataPackCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Boolean();
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackCommand(p0!, p1!, p2!, p3, p4!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackImportCommand? InstanceWorldDataPackImportCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackImportCommand(p0!, p1!, p2!, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackRemoveCommand? InstanceWorldDataPackRemoveCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackRemoveCommand(p0!, p1!, p2!, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackRestoreCommand? InstanceWorldDataPackRestoreCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackRestoreCommand(p0!, p1!, p2!, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldHealth? InstanceWorldHealth()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Boolean();
+        var p1 = Int32();
+        var p2 = Int32();
+        var p3 = Int32();
+        var p4 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldHealth(p0, p1, p2, p3, p4!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldHealthQuery? InstanceWorldHealthQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldHealthQuery(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldLockCommand? InstanceWorldLockCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Boolean();
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldLockCommand(p0!, p1!, p2, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldMetadata? InstanceWorldMetadata()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Nullable_Int32();
+        var p3 = Nullable_DateTimeOffset();
+        var p4 = Nullable_Int64();
+        var p5 = Nullable_Int32();
+        var p6 = Nullable_Int32();
+        var p7 = Boolean();
+        var p8 = Int64();
+        var p9 = Boolean();
+        var p10 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p11 = Boolean();
+        var p12 = IReadOnlyList_InstanceWorldDataPack() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p13 = Boolean();
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldMetadata(p0!, p1!, p2, p3, p4, p5, p6, p7, p8, p9, p10!, p11, p12!) { DataPacksSupported = p13 };
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldMetadataQuery? InstanceWorldMetadataQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldMetadataQuery(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshot? InstanceWorldSnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = DateTimeOffset();
+        var p2 = Int32();
+        var p3 = Int64();
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshot(p0!, p1, p2, p3);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotCaptureCommand? InstanceWorldSnapshotCaptureCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotCaptureCommand(p0!, p1!, p2!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotListQuery? InstanceWorldSnapshotListQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotListQuery(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotListing? InstanceWorldSnapshotListing()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = IReadOnlyList_InstanceWorldSnapshot() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotListing(p0!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotRestoreCommand? InstanceWorldSnapshotRestoreCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotRestoreCommand(p0!, p1!, p2!, p3!, p4!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotVerification? InstanceWorldSnapshotVerification()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Int32();
+        var p2 = Int32();
+        var p3 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotVerification(p0!, p1, p2, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotVerifyQuery? InstanceWorldSnapshotVerifyQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshotVerifyQuery(p0!, p1!, p2!);
     }
     internal global::Nexa.Services.Minecraft.Java.JavaArchitecture JavaArchitecture() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 ? (global::Nexa.Services.Minecraft.Java.JavaArchitecture)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Minecraft.Java.JavaBrand JavaBrand() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10 or 11 or 12 ? (global::Nexa.Services.Minecraft.Java.JavaBrand)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
@@ -3109,10 +5380,26 @@ internal sealed partial class ServiceWireReader
     {
         return Boolean() ? ProcessPriorityClass() : null;
     }
+    internal global::System.Nullable<global::Nexa.Services.Resources.ResourceProvider> Nullable_ResourceProvider()
+    {
+        return Boolean() ? ResourceProvider() : null;
+    }
     internal global::System.Nullable<global::System.TimeSpan> Nullable_TimeSpan()
     {
         return Boolean() ? TimeSpan() : null;
     }
+    internal global::Nexa.Services.Minecraft.Management.OfflineArtifactFact? OfflineArtifactFact()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = OfflineArtifactState();
+        var p3 = Nullable_Int64();
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.OfflineArtifactFact(p0!, p1!, p2, p3, p4!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.OfflineArtifactState OfflineArtifactState() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 ? (global::Nexa.Services.Minecraft.Management.OfflineArtifactState)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Capabilities.PreflightCertainty PreflightCertainty() { int value = Int32(); return value is 0 or 1 or 2 or 3 ? (global::Nexa.Services.Capabilities.PreflightCertainty)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Capabilities.PreflightSeverity PreflightSeverity() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 ? (global::Nexa.Services.Capabilities.PreflightSeverity)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::System.Diagnostics.ProcessPriorityClass ProcessPriorityClass() { int value = Int32(); return value is 32 or 64 or 128 or 256 or 16384 or 32768 ? (global::System.Diagnostics.ProcessPriorityClass)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
@@ -3145,6 +5432,317 @@ internal sealed partial class ServiceWireReader
         var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         return new global::Nexa.Services.Capabilities.RemediationResult(p0!, p1, p2!, p3!);
     }
+    internal global::Nexa.Services.Resources.ResourceChangelog? ResourceChangelog()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceChangelog(p0!);
+    }
+    internal global::Nexa.Services.Resources.ResourceChangelogQuery? ResourceChangelogQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceChangelogQuery(p0!, p1!, p2);
+    }
+    internal global::Nexa.Services.Resources.ResourceContentOnline? ResourceContentOnline()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceProject();
+        var p1 = String();
+        var p2 = IReadOnlyList_ResourceVersion() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String();
+        var p4 = IReadOnlyList_ResourceInstalledFile() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = Boolean();
+        var p6 = Nullable_Boolean();
+        var p7 = ResourceVersion();
+        return new global::Nexa.Services.Resources.ResourceContentOnline(p0!, p1!, p2!, p3!) { InstalledFiles = p4!, IsStale = p5, UpdateAvailable = p6, UpdateVersion = p7! };
+    }
+    internal global::Nexa.Services.Resources.ResourceContentOnlineBatch? ResourceContentOnlineBatch()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = IReadOnlyList_ResourceContentOnlineMatch() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceContentOnlineBatch(p0!);
+    }
+    internal global::Nexa.Services.Resources.ResourceContentOnlineBatchQuery? ResourceContentOnlineBatchQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = IReadOnlyList_ResourceContentOnlineQuery() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Boolean();
+        var p2 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceContentOnlineBatchQuery(p0!) { Refresh = p1, WaitForRefresh = p2 };
+    }
+    internal global::Nexa.Services.Resources.ResourceContentOnlineMatch? ResourceContentOnlineMatch()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceContentOnlineQuery() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = ResourceContentOnline() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceContentOnlineMatch(p0!, p1!);
+    }
+    internal global::Nexa.Services.Resources.ResourceContentOnlineQuery? ResourceContentOnlineQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Int64();
+        var p4 = Int64();
+        var p5 = Boolean();
+        var p6 = Boolean();
+        var p7 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceContentOnlineQuery(p0!, p1!, p2!, p3, p4) { MirrorFirst = p5, Refresh = p6, WaitForRefresh = p7 };
+    }
+    internal global::Nexa.Services.Resources.ResourceContentUpdateBatchCommand? ResourceContentUpdateBatchCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = IReadOnlyList_ResourceContentUpdateCommand() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceContentUpdateBatchCommand(p0!);
+    }
+    internal global::Nexa.Services.Resources.ResourceContentUpdateCommand? ResourceContentUpdateCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceContentOnlineQuery() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceContentUpdateCommand(p0!, p1!, p2!);
+    }
+    internal global::Nexa.Services.Resources.ResourceDependency? ResourceDependency()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String();
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceDependency(p0!, p1!, p2!);
+    }
+    internal global::Nexa.Services.Resources.ResourceDetail? ResourceDetail()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceProject() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = IReadOnlyList_ResourceVersion() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Boolean();
+        var p4 = String();
+        return new global::Nexa.Services.Resources.ResourceDetail(p0!, p1!, p2!) { IsStale = p3, Notice = p4! };
+    }
+    internal global::Nexa.Services.Resources.ResourceDetailQuery? ResourceDetailQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Boolean();
+        var p4 = Boolean();
+        var p5 = IReadOnlyList_ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p6 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceDetailQuery(p0!, p1!, p2!) { MirrorFirst = p3, Refresh = p4, Sources = p5!, WaitForRefresh = p6 };
+    }
+    internal global::Nexa.Services.Resources.ResourceDownloadCommand? ResourceDownloadCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceProvider();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = Boolean();
+        var p5 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceDownloadCommand(p0, p1!, p2!, p3!, p4) { Refresh = p5 };
+    }
+    internal global::Nexa.Services.Resources.ResourceFavoriteCommand? ResourceFavoriteCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceProject() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceFavoriteCommand(p0!, p1);
+    }
+    internal global::Nexa.Services.Resources.ResourceFavoritesQuery? ResourceFavoritesQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        return new global::Nexa.Services.Resources.ResourceFavoritesQuery();
+    }
+    internal global::Nexa.Services.Resources.ResourceFavoritesSnapshot? ResourceFavoritesSnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = IReadOnlyList_ResourceProject() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceFavoritesSnapshot(p0!);
+    }
+    internal global::Nexa.Services.Resources.ResourceFile? ResourceFile()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Int64();
+        var p3 = String();
+        var p4 = String();
+        return new global::Nexa.Services.Resources.ResourceFile(p0!, p1!, p2, p3!, p4!);
+    }
+    internal global::Nexa.Services.Resources.ResourceIconQuery? ResourceIconQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceIconQuery(p0!);
+    }
+    internal global::Nexa.Services.Resources.ResourceIconResult? ResourceIconResult()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = PngImage();
+        return new global::Nexa.Services.Resources.ResourceIconResult(p0!);
+    }
+    internal global::Nexa.Services.Resources.ResourceInstallPlan? ResourceInstallPlan()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = IReadOnlyList_ResourceVersion() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = IReadOnlyList_ResourceOptionalDependency() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceInstallPlan(p0!, p1!, p2);
+    }
+    internal global::Nexa.Services.Resources.ResourceInstalledFile? ResourceInstalledFile()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceInstalledFile(p0!, p1!, p2!, p3!, p4);
+    }
+    internal global::Nexa.Services.Resources.ResourceInstanceContext? ResourceInstanceContext()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = IReadOnlyList_ResourceInstalledFile() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String();
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceInstanceContext(p0!, p1!, p2!, p3!) { GameDirectory = p4! };
+    }
+    internal global::Nexa.Services.Resources.ResourceInstanceQuery? ResourceInstanceQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceInstanceQuery(p0!, p1!, p2);
+    }
+    internal global::Nexa.Services.Resources.ResourceKind ResourceKind() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 ? (global::Nexa.Services.Resources.ResourceKind)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Resources.ResourceModInstallCommand? ResourceModInstallCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String();
+        var p2 = ResourceInstanceQuery() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = IReadOnlyList_ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceModInstallCommand(p0!, p1!, p2!) { OptionalDependencies = p3! };
+    }
+    internal global::Nexa.Services.Resources.ResourceModPlanQuery? ResourceModPlanQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceModInstallCommand() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceModPlanQuery(p0!);
+    }
+    internal global::Nexa.Services.Resources.ResourceModpackInstallCommand? ResourceModpackInstallCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceModpackInstallCommand(p0!, p1!, p2!, p3);
+    }
+    internal global::Nexa.Services.Resources.ResourceModpackOnline? ResourceModpackOnline()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceModpackOnlineQuery() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String();
+        var p2 = ResourceProject();
+        var p3 = ResourceVersion();
+        var p4 = IReadOnlyList_ResourceVersion() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = String();
+        var p6 = Boolean();
+        var p7 = String();
+        var p8 = ResourceVersion();
+        return new global::Nexa.Services.Resources.ResourceModpackOnline(p0!, p1!, p2!, p3!, p4!, p5!) { IsStale = p6, OriginalArchivePath = p7!, UpdateVersion = p8! };
+    }
+    internal global::Nexa.Services.Resources.ResourceModpackOnlineQuery? ResourceModpackOnlineQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String();
+        var p2 = Boolean();
+        var p3 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceModpackOnlineQuery(p0!, p1!, p2, p3);
+    }
+    internal global::Nexa.Services.Resources.ResourceModpackPreview? ResourceModpackPreview()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceModpackPreviewQuery() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = ResourceVersion() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = MinecraftModpackUpdatePreview() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceModpackPreview(p0!, p1!, p2!);
+    }
+    internal global::Nexa.Services.Resources.ResourceModpackPreviewQuery? ResourceModpackPreviewQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceModpackOnlineQuery() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = Boolean();
+        var p5 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceModpackPreviewQuery(p0!, p1!, p2!, p3!, p4, p5);
+    }
+    internal global::Nexa.Services.Resources.ResourceModpackUpdateCommand? ResourceModpackUpdateCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceModpackPreview() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceModpackUpdateCommand(p0!);
+    }
+    internal global::Nexa.Services.Resources.ResourceNetworkPolicyQuery? ResourceNetworkPolicyQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        return new global::Nexa.Services.Resources.ResourceNetworkPolicyQuery();
+    }
+    internal global::Nexa.Services.Resources.ResourceNetworkPolicySnapshot? ResourceNetworkPolicySnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Boolean();
+        var p2 = ResourceSourceResolution();
+        return new global::Nexa.Services.Resources.ResourceNetworkPolicySnapshot(p0!, p1, p2!);
+    }
     internal global::Nexa.Services.Capabilities.ResourceObservationSample? ResourceObservationSample()
     {
         if (!Boolean()) return null;
@@ -3164,6 +5762,122 @@ internal sealed partial class ServiceWireReader
         var p12 = String();
         var p13 = String();
         return new global::Nexa.Services.Capabilities.ResourceObservationSample(p0!, p1!, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11) { ModFingerprint = p12!, SettingsFingerprint = p13! };
+    }
+    internal global::Nexa.Services.Resources.ResourceOptionalDependency? ResourceOptionalDependency()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String();
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceOptionalDependency(p0!, p1!, p2!);
+    }
+    internal global::Nexa.Services.Resources.ResourceOrder ResourceOrder() { int value = Int32(); return value is 0 or 1 or 2 ? (global::Nexa.Services.Resources.ResourceOrder)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Resources.ResourceProject? ResourceProject()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = Int64();
+        var p5 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p6 = String();
+        var p7 = String();
+        var p8 = String();
+        var p9 = Boolean();
+        var p10 = ResourceKind();
+        var p11 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p12 = IReadOnlyList_ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p13 = Nullable_Int32();
+        return new global::Nexa.Services.Resources.ResourceProject(p0!, p1!, p2!, p3!, p4, p5!) { ChineseDescription = p6!, ChineseName = p7!, IconUrl = p8!, IsLibrary = p9, Kind = p10, Slug = p11!, Sources = p12!, WikiId = p13 };
+    }
+    internal global::Nexa.Services.Resources.ResourceProvider ResourceProvider() { int value = Int32(); return value is 0 or 1 ? (global::Nexa.Services.Resources.ResourceProvider)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Resources.ResourceReference? ResourceReference()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceProvider();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceReference(p0, p1!);
+    }
+    internal global::Nexa.Services.Resources.ResourceSearchQuery? ResourceSearchQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceKind();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = ResourceOrder();
+        var p5 = Int32();
+        var p6 = Boolean();
+        var p7 = Nullable_ResourceProvider();
+        var p8 = Boolean();
+        var p9 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p10 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceSearchQuery(p0, p1!, p2!, p3!, p4, p5) { MirrorFirst = p6, Provider = p7, Refresh = p8, Tag = p9!, WaitForRefresh = p10 };
+    }
+    internal global::Nexa.Services.Resources.ResourceSearchResult? ResourceSearchResult()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = IReadOnlyList_ResourceProject() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Int32();
+        var p2 = Int32();
+        var p3 = Nullable_Boolean();
+        var p4 = Boolean();
+        var p5 = String();
+        return new global::Nexa.Services.Resources.ResourceSearchResult(p0!, p1, p2) { HasMore = p3, IsStale = p4, Notice = p5! };
+    }
+    internal global::Nexa.Services.Resources.ResourceSourceResolution? ResourceSourceResolution()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceProvider();
+        var p1 = DateTimeOffset();
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Boolean();
+        var p4 = Boolean();
+        var p5 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p6 = String();
+        return new global::Nexa.Services.Resources.ResourceSourceResolution(p0, p1, p2!, p3, p4, p5!, p6!);
+    }
+    internal global::Nexa.Services.Resources.ResourceTranslation? ResourceTranslation()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String();
+        var p1 = String();
+        return new global::Nexa.Services.Resources.ResourceTranslation(p0!) { Notice = p1! };
+    }
+    internal global::Nexa.Services.Resources.ResourceTranslationQuery? ResourceTranslationQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceTranslationQuery(p0!, p1!);
+    }
+    internal global::Nexa.Services.Resources.ResourceVersion? ResourceVersion()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p6 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p7 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p8 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p9 = IReadOnlyList_ResourceDependency() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p10 = ResourceFile();
+        var p11 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p12 = ResourceProvider();
+        return new global::Nexa.Services.Resources.ResourceVersion(p0!, p1!, p2!, p3!, p4!, p5!, p6!, p7!) { Changelog = p8!, Dependencies = p9!, File = p10!, ProjectId = p11!, Provider = p12 };
     }
     internal global::Nexa.Services.Settings.SettingValueType SettingValueType() { int value = Int32(); return value is 1 or 2 or 3 or 4 or 5 ? (global::Nexa.Services.Settings.SettingValueType)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Settings.SettingsApplyTiming SettingsApplyTiming() { int value = Int32(); return value is 0 or 1 or 2 or 3 ? (global::Nexa.Services.Settings.SettingsApplyTiming)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
@@ -3302,5 +6016,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "75FCF851396B5D8A2F124A32BADA92F76BCED43B979556D21484647C5C02F1BF";
+    internal const string Fingerprint = "D9149D04BFD73F00A2305CB2F0FC00FA5C0F415FBB2DAB2D67DB5D7AA2DEE99A";
 }

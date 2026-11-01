@@ -24,6 +24,10 @@ public static class InstanceScreenshotService
 
     public static async Task<XsrResult> CropAsync(InstanceScreenshotCropCommand command, XsrStateStore store,
         Func<ReadOnlyMemory<byte>, int, int, int, int, byte[]> encodeCrop, CancellationToken token = default)
+        => await CropWithEncoderAsync(command, store, (source, x, y, width, height, _) => Task.FromResult(encodeCrop(source, x, y, width, height)), token).ConfigureAwait(false);
+
+    public static async Task<XsrResult> CropWithEncoderAsync(InstanceScreenshotCropCommand command, XsrStateStore store,
+        Func<ReadOnlyMemory<byte>, int, int, int, int, CancellationToken, Task<byte[]>> encodeCrop, CancellationToken token = default)
     {
         string? stage = null;
         try
@@ -34,7 +38,7 @@ public static class InstanceScreenshotService
             if (command.X < 0 || command.Y < 0 || command.Width <= 0 || command.Height <= 0
                 || (long)command.X + command.Width > screenshot.Image.Width || (long)command.Y + command.Height > screenshot.Image.Height)
                 throw new InvalidDataException("裁剪区域超出截图尺寸。");
-            byte[] bytes = encodeCrop(screenshot.Image.Bytes, command.X, command.Y, command.Width, command.Height);
+            byte[] bytes = await encodeCrop(screenshot.Image.Bytes, command.X, command.Y, command.Width, command.Height, token).ConfigureAwait(false);
             var image = PngImage.TryCreatePreview(bytes);
             if (image is null || image.Width != command.Width || image.Height != command.Height) throw new InvalidDataException("裁剪结果不是有效 PNG。");
             string directory = Path.GetDirectoryName(screenshot.Path)!;

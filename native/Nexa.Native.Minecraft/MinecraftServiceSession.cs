@@ -139,6 +139,11 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
             return [];
         }
         if (_instances is null) throw new InvalidOperationException("Minecraft service has not initialized.");
+        if (operation is >= MinecraftServiceProtocol.ManageInstanceExportOptionsSave and <= MinecraftServiceProtocol.ManageInstanceWorldSnapshotVerifyQuery)
+            return await ExecuteManagementAsync(operation, reader, token).ConfigureAwait(false);
+        if (operation == MinecraftServiceProtocol.ResourceConfigure) return await ConfigureResourcesAsync(reader, token).ConfigureAwait(false);
+        if (operation is >= MinecraftServiceProtocol.ResourceResourceNetworkPolicyQuery and <= MinecraftServiceProtocol.ResourceResourceModpackUpdateCommand)
+            return await ExecuteResourceOperationAsync(operation, reader, token).ConfigureAwait(false);
         if (operation == MinecraftServiceProtocol.Remediation) return await ExecuteRemediationAsync(reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.CatalogConfigure and <= MinecraftServiceProtocol.CatalogDraft or MinecraftServiceProtocol.CatalogDraftReplace)
             return await ExecuteCatalogAsync(operation, reader, token).ConfigureAwait(false);
@@ -226,6 +231,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
                 writer.XsrError((await _javaInstaller!.RecoverAsync(recoveryRoot, token).ConfigureAwait(false)).Error); break;
             case MinecraftServiceProtocol.TaskRetry:
                 string retry = reader.String() ?? throw new InvalidDataException("Missing task identity."); reader.End();
+                if (_resourceSource is not null) await RefreshResourceSettingsAsync(token).ConfigureAwait(false);
                 writer.Boolean(_tasks.RequestRetry(retry)); break;
             case MinecraftServiceProtocol.TaskCancel:
                 string cancel = reader.String() ?? throw new InvalidDataException("Missing task identity."); reader.End();
@@ -305,12 +311,13 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         if (_launchExecutor is not null) await _launchExecutor.WaitForFinalizationAsync().ConfigureAwait(false);
         if (_jvmHost is not null) await _jvmHost.WaitForFinalizationAsync().ConfigureAwait(false);
         _completion?.Dispose(); _authlib?.Dispose(); _launchHttp?.Dispose();
+        await _cache.DisposeAsync().ConfigureAwait(false);
+        _resourceIcons?.Dispose(); _resourceInformation?.Dispose(); _resourceHttp?.Dispose();
         _metadataHttp.Dispose(); _http.Dispose(); await _hostHttp.DisposeAsync().ConfigureAwait(false);
         await _strictHostHttp.DisposeAsync().ConfigureAwait(false);
         _sessionDownloads.Dispose();
         _javaInstaller?.Dispose();
         _store.Changed -= Changed; await _publications.DisposeAsync().ConfigureAwait(false);
-        await _cache.DisposeAsync().ConfigureAwait(false);
         await _work.DisposeAsync().ConfigureAwait(false);
         await _endpoint.DisposeAsync().ConfigureAwait(false); _initialization.Dispose();
         _javaAdmission.Dispose();

@@ -3,6 +3,7 @@
   <Import Project="../ServiceProtocol/ServiceProtocol.props" />
   <ItemGroup>
     <InternalsVisibleTo Include="Nexa.Native.Minecraft.Services.Tests" />
+    <ProjectReference Include="../../Nexa.Services.Resources.Contracts/Nexa.Services.Resources.Contracts.csproj" />
     <ProjectReference Include="../../Nexa.Services.Minecraft.Library.Contracts/Nexa.Services.Minecraft.Library.Contracts.csproj" />
     <ProjectReference Include="../../Nexa.Services.Minecraft.Java.Contracts/Nexa.Services.Minecraft.Java.Contracts.csproj" />
     <ProjectReference Include="../../Nexa.Services.Minecraft.Process.Contracts/Nexa.Services.Minecraft.Process.Contracts.csproj" />

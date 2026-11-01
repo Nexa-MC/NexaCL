@@ -1,13 +1,21 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
+#if NEXA_UI_WORLD_LOCK
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
+#else
+namespace Nexa.Platform;
+#endif
 
 /// <summary>
 /// macOS bridge for Java's POSIX advisory world session lock. Services inject this port;
 /// the descriptor and exclusive write lock stay alive for the complete world transaction.
 /// </summary>
+#if NEXA_UI_WORLD_LOCK
 public static partial class AvaloniaUiWorldEditLease
+#else
+public static partial class MinecraftWorldSessionLease
+#endif
 {
     private const string SystemLibrary = "/usr/lib/libSystem.B.dylib";
     private const int ReadOnly = 0, ReadWrite = 2, NoFollow = 0x100, DirectoryOnly = 0x100000, CloseOnExec = 0x1000000;

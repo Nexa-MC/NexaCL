@@ -25,11 +25,12 @@ internal static class JavaInstallCases
         using var server = new TcpListener(IPAddress.Loopback, 0); server.Start();
         string address = $"http://127.0.0.1:{((IPEndPoint)server.LocalEndpoint).Port}/java";
         using var described = NativeHttpClients.CreateDescribed(new Metadata("https://piston-data.mojang.com/native-test/java"),
-            (_, cancellation) => NativeHttpClients.DescribeAsync(transport, address, cancellation));
-        minecraft.AttachDownloads(network, described);
+            (url, cancellation) => NativeHttpClients.DescribeAsync(transport,
+                url.Contains("cdn.modrinth.com/data/Native01/", StringComparison.Ordinal) ? url : address, cancellation));
+        minecraft.AttachDownloads(new ResourceCases.Downloads(network, address[..^5]), described);
         using var serverStop = CancellationTokenSource.CreateLinkedTokenSource(token);
         Task serving = ServeAsync(server, serverStop.Token);
-        minecraft.AttachHttp(described);
+        minecraft.AttachHttp(described, described);
         var registry = new Registry();
         minecraft.AttachJavaRegistry(registry, [Path.Combine(directory, "runtime")]);
         var registeredInventory = await minecraft.ReadJavaInventoryAsync(new(true), token);
@@ -87,6 +88,8 @@ internal static class JavaInstallCases
         if (!(await minecraft.ResumeRecoveryAsync(new([gameRoot]), token)).IsSuccess)
             throw new InvalidDataException("Native recovery replay rejected a clean installation.");
         await ImportCases.RunAsync(minecraft, directory, gameRoot, renamed.Value.InstanceDirectory, token);
+        await ManagementCases.RunAsync(minecraft, directory, renamed.Value.InstanceDirectory, token);
+        await ResourceCases.RunAsync(minecraft, directory, token);
         await LaunchCases.RunAsync(minecraft, gameRoot, renamed.Value.InstanceDirectory, replicas, javaExecutable, token);
         if (settings.JavaWrites != 1) throw new InvalidDataException("Native Java remediation bypassed canonical settings writes.");
         settings.Hold = true;
@@ -114,7 +117,11 @@ internal static class JavaInstallCases
                 int read = await stream.ReadAsync(bytes.AsMemory(received), token); if (read == 0) throw new IOException("Missing Java request.");
                 received += read; if (bytes.AsSpan(0, received).IndexOf("\r\n\r\n"u8) >= 0) break;
             }
-            await stream.WriteAsync("HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhello"u8.ToArray(), token);
+            string request = Encoding.ASCII.GetString(bytes, 0, received);
+            byte[] payload = request.StartsWith("GET /resource2 ", StringComparison.Ordinal) ? ResourceCases.SecondJar
+                : request.StartsWith("GET /resource1 ", StringComparison.Ordinal) ? ResourceCases.FirstJar : "hello"u8.ToArray();
+            await stream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: " + payload.Length.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\r\nConnection: close\r\n\r\n"), token);
+            await stream.WriteAsync(payload, token);
         }
     }
     private sealed class Metadata(string address) : HttpMessageHandler
@@ -139,6 +146,20 @@ internal static class JavaInstallCases
                 json = """{"versions":[{"id":"1.20.1","url":"https://piston-meta.mojang.com/v1/packages/native-version.json","sha1":"VERSION_HASH"}]}""".Replace("VERSION_HASH", Hash(VersionDocument), StringComparison.Ordinal);
             else if (request.RequestUri.AbsolutePath.EndsWith("native-version.json", StringComparison.Ordinal)) json = VersionDocument;
             else if (request.RequestUri.AbsolutePath.EndsWith("native-index.json", StringComparison.Ordinal)) json = Index;
+            string resourcePath = request.RequestUri.AbsolutePath;
+            if (request.RequestUri.Host == "api.modrinth.com")
+            {
+                json = resourcePath switch
+                {
+                    "/v2/search" => "{\"hits\":[" + ResourceCases.ProjectJson + "],\"total_hits\":1}",
+                    "/v2/project/Native01" => ResourceCases.ProjectJson,
+                    "/v2/project/Native01/version" => "[" + ResourceCases.VersionJson(true) + "," + ResourceCases.VersionJson(false) + "]",
+                    "/v2/version/NativeV1" => ResourceCases.VersionJson(false),
+                    "/v2/version/NativeV2" => ResourceCases.VersionJson(true),
+                    "/v2/version_files" => ResourceCases.IdentitiesJson,
+                    _ => throw new InvalidDataException("Unexpected resource fixture endpoint: " + resourcePath)
+                };
+            }
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") });
         }
     }

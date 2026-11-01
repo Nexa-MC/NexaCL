@@ -92,6 +92,12 @@ public static class FoundationRuntimeComposer
             commands.Register<StorageCleanupCommand>(StoragePreferencesContract.Cleanup,
                 async (command, token) => await storagePreferences.CleanupAsync(command, token).ConfigureAwait(false));
         }
+#if NEXA_NATIVE_SERVICES
+        NativeMinecraftManagementRouters.Register(commands, queries, host.NativeMinecraft);
+        commands.Register<InstanceRecoveryRestoreCommand>(InstanceRecoveryContract.Restore, host.NativeMinecraft.RestoreRecoveryAsync);
+        commands.Register<InstanceRecoveryResumeCommand>(InstanceRecoveryContract.Recover, host.NativeMinecraft.ResumeRecoveryAsync);
+        queries.Register<InstanceRecoveryQuery, InstanceRecoveryReport>(InstanceRecoveryContract.Query, host.NativeMinecraft.ReadRecoveryAsync);
+#else
         var recovery = new InstanceRecoveryService(host.SettingsPolicy, host.StateStore, host.Logging);
         var exporter = new InstanceModpackExportService(host.Tasks, host.StateStore);
         commands.Register<InstanceExportOptionsSave>(InstanceModpackExportContract.SaveOptions,
@@ -112,6 +118,7 @@ public static class FoundationRuntimeComposer
             async (command, token) => await InstanceModRemovalService.RemoveAsync(command, host.StateStore, token).ConfigureAwait(false));
         commands.Register<InstanceContentRestoreCommand>(InstanceManagementContract.RestoreContent,
             async (command, token) => await InstanceContentTrash.RestoreAsync(command, host.StateStore, token).ConfigureAwait(false));
+#endif
         commands.Register(
             FoundationRouteIds.SettingsSet,
             FoundationCommands.CreateSettingsSetHandler(host.Settings));
@@ -160,12 +167,14 @@ public static class FoundationRuntimeComposer
         var javaManagement = new Nexa.Services.Minecraft.Java.JavaRuntimeManagementService(host.JavaLocator, host.JavaRegistrations, host.JavaManagedRuntimeRoots);
         commands.Register<Nexa.Services.Minecraft.Java.JavaRuntimeManageCommand>(Nexa.Services.Minecraft.Java.JavaRuntimeInventoryContract.Manage, javaManagement.ManageAsync);
 #endif
+#if !NEXA_NATIVE_SERVICES
         ContentManagementRuntime.Register(commands, queries, host.StateStore, captureWorld, acquireWorldSessionLock);
         InstanceIdentityRuntime.Register(commands, queries);
         InstanceOfflineReadinessRuntime.Register(queries, host.JavaLocator, host.SettingsPolicy);
         if (screenshotCrop is not null)
             commands.Register<InstanceScreenshotCropCommand>(InstanceScreenshotContract.Crop,
                 (command, token) => new(InstanceScreenshotService.CropAsync(command, host.StateStore, screenshotCrop, token)));
+#endif
         if (storagePreferences is not null)
         {
             queries.Register<StoragePreferencesQuery, StoragePreferencesStatus>(StoragePreferencesContract.Status,
@@ -185,6 +194,7 @@ public static class FoundationRuntimeComposer
         queries.Register<Nexa.Services.Minecraft.Java.JavaRuntimeInventoryQuery, Nexa.Services.Minecraft.Java.JavaRuntimeInventorySnapshot>(
             Nexa.Services.Minecraft.Java.JavaRuntimeInventoryContract.Query, javaInventory.ReadAsync);
 #endif
+#if !NEXA_NATIVE_SERVICES
         queries.Register<InstanceModpackExportQuery, InstanceModpackExportPreview>(InstanceModpackExportContract.Preview,
             async (query, token) => Nexa.Xsr.XsrResult.Success(await InstanceModpackExportService.PreviewAsync(query, token).ConfigureAwait(false)));
         queries.Register<InstanceExportOptionsQuery, InstanceExportOptions>(InstanceModpackExportContract.LoadOptions,
@@ -212,6 +222,7 @@ public static class FoundationRuntimeComposer
             });
         queries.Register<InstanceRecoveryQuery, InstanceRecoveryReport>(InstanceRecoveryContract.Query,
             async (query, token) => await recovery.ReadAsync(query, token).ConfigureAwait(false));
+#endif
         queries.Register(
             FoundationRouteIds.SettingsGet,
             FoundationQueries.CreateSettingsGetHandler(host.Settings));

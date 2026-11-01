@@ -1,3 +1,4 @@
+#if !NEXA_NATIVE_SERVICES
 using Nexa.Services.Foundation;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Install;
@@ -151,3 +152,5 @@ public static class ResourceCatalogRuntimeComposer
     }
     private sealed class Observer : IXsrDispatchObserver { public void OnCompleted(XsrDispatchObservation observation) { } }
 }
+
+#endif

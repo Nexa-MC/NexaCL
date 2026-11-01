@@ -434,6 +434,13 @@ internal static partial class Program
         using var themeService = new ThemePackageService(folders.Root,
             Path.Combine(AppContext.BaseDirectory, "Themes", "BuiltIn"), DesktopThemeSession.SupportedCapabilities(),
             snapshot => watchedThemes?.NotifyWatch(snapshot));
+#if NEXA_NATIVE_SERVICES
+        host.NativeMinecraft.AttachManagementHost(AvaloniaUiScreenshotCodec.Crop, async (path, token) =>
+        {
+            await contentBackups.CaptureAsync(path, Path.GetFileName(path),
+                new HashSet<string>(StringComparer.Ordinal) { "session.lock", ".nexa-world-readonly" }, token).ConfigureAwait(false);
+        }, new WorldSnapshotCasStore(contentBackups));
+#endif
         FoundationRuntime runtime = FoundationRuntimeComposer.ComposeWithStorageAndMedia(host, storagePreferences, AvaloniaUiScreenshotCodec.Crop, dispatchObservation,
             configureRoutes: (commands, queries) =>
             {
@@ -450,7 +457,9 @@ internal static partial class Program
                         host.StateStore.Resolve(MinecraftLibraryService.StateKey)).Value!.Directories.Any(directory =>
                             !receipt.Instances.Any(instance => Nexa.Core.PathIdentity.Comparer.Equals(
                                 instance.MinecraftRootDirectory, directory.Path))));
+#if !NEXA_NATIVE_SERVICES
                 WorldSnapshotRuntime.Register(commands, queries, host.StateStore, contentBackups, OperatingSystem.IsMacOS() ? AvaloniaUiWorldEditLease.Acquire : null);
+#endif
             },
             captureWorld: async (path, token) =>
             {
@@ -702,6 +711,9 @@ internal static partial class Program
         using var resourcesRuntime = ResourceCatalogRuntimeComposer.ComposeWithInstallation(source: null, observer: dispatchObservation, host: host,
             favoritesPath: Path.Combine(settingsFolder, "resources-favorites.json"), installer: installRun.Service,
             packagedCurseForgeApiKey: packagedCurseForgeApiKey);
+#if NEXA_NATIVE_SERVICES
+        await resourcesRuntime.Initialization.ConfigureAwait(false);
+#endif
         settingsPage.ConfigureOnlineContent(resourcesRuntime.Queries, platformActions.OpenHttpsUri, resourcesRuntime.Commands);
         using var resourcesPage = new ResourcesPageController(shell, uiIntents, resourcesRuntime.Queries,
             host.StateStore, platformActions.OpenHttpsUri, functionPatches, sidecarSignals, sidecarUi);

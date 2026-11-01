@@ -9,7 +9,7 @@ namespace Nexa.Native.Minecraft.Client;
 
 public sealed partial class NativeMinecraftClient
 {
-    private NativeNetworkClient? _downloads;
+    private INativeDownloadPort? _downloads;
     private HttpClient? _downloadHttp;
     private ServiceStatePublisher? _hostPublications;
     private readonly SemaphoreSlim _downloadAdmission = new(64, 64);
@@ -17,6 +17,8 @@ public sealed partial class NativeMinecraftClient
     private long _downloadRevision;
 
     public void AttachDownloads(NativeNetworkClient network, HttpClient http)
+        => AttachDownloads((INativeDownloadPort)network, http);
+    public void AttachDownloads(INativeDownloadPort network, HttpClient http)
     {
         ArgumentNullException.ThrowIfNull(network); ArgumentNullException.ThrowIfNull(http);
         lock (_gate)

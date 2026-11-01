@@ -4,6 +4,7 @@
   <Import Project="../ServiceProtocol/ServiceProtocol.props" />
   <PropertyGroup><DefineConstants>$(DefineConstants);NEXA_MINECRAFT_HTTP_BRIDGE</DefineConstants></PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../Nexa.Services.Resources/Nexa.Services.Resources.csproj" />
     <ProjectReference Include="../../Nexa.Services.Minecraft.Metadata/Nexa.Services.Minecraft.Metadata.csproj" />
     <ProjectReference Include="../../Nexa.Services.Minecraft.Java/Nexa.Services.Minecraft.Java.csproj" />
     <ProjectReference Include="../../Nexa.Services.Minecraft.Process/Nexa.Services.Minecraft.Process.csproj" />

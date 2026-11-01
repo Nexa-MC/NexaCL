@@ -32,7 +32,7 @@ public static class WorldSnapshotRuntime
     }
 }
 
-internal sealed class WorldSnapshotCasStore(ContentBackupService backups) : IInstanceWorldSnapshotStore
+public sealed class WorldSnapshotCasStore(ContentBackupService backups) : IInstanceWorldSnapshotStore
 {
     private const string Namespace = "world-snapshot-v1:";
     private static readonly HashSet<string> ExcludedFiles = new(StringComparer.Ordinal) { "session.lock", ".nexa-world-readonly" };
