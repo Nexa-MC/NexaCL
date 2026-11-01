@@ -340,7 +340,7 @@ internal static partial class Program
         bool consoleAttached = Console.IsOutputRedirected
             || (OperatingSystem.IsWindows() && GetConsoleWindow() != IntPtr.Zero);
         setStage("compose_foundation");
-        using FoundationHost host = FoundationComposer.ComposeWithJavaRuntimeRootAndCacheDirectory(
+        await using FoundationHost host = FoundationComposer.ComposeWithJavaRuntimeRootAndCacheDirectory(
             new LauncherSettingsJsonPort(System.IO.Path.Combine(settingsFolder, "settings.json"), settingsSchema),
             settingsSchema,
             new ProtectedLaunchProfilePort(System.IO.Path.Combine(profilesFolder, "profiles.json")),
@@ -932,7 +932,11 @@ internal static partial class Program
         using var setupExtensions = setupNxml.Attach(shell, intents, store, message => setupLog.Warn("Sidecar", message), controller.Page,
             openLink: platform.OpenHttpsUri, copyText: platform.CopyTextAsync,
             firstRun: controller);
+#if NEXA_NATIVE_SERVICES
+        using var setupSidecarHttp = Nexa.Native.Network.Client.NativeHttpClients.CreateDefault();
+#else
         using var setupSidecarHttp = new HttpClient();
+#endif
         using var setupSidecarUpdates = SidecarStartup.CreateUpdater(setupSidecarHttp, status.Value!.DataDirectory, ResolveBuildInfo().ProductVersion);
         var setupOverrides = SidecarStartup.ResolveUpdatesAsync(setupSidecarUpdates, setupLog).GetAwaiter().GetResult();
         var setupSidecars = SidecarStartup.Create(setupLog, nxmlModules: setupNxml.Runtime, packageOverrides: setupOverrides);

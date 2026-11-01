@@ -212,6 +212,7 @@ internal static partial class Program
         ("DNS over HTTPS bounds records caches and regional fallback", DnsOverHttpsBoundsRecordsCachesAndUsesRegionalFallback),
         ("download bandwidth captures generations and serializes reads", DownloadBandwidthCapturesGenerationsAndSerializesBodyReads),
         ("download engine captures bandwidth and cleans cancellation", DownloadEngineUsesCapturedBandwidthAndCleansUpOnCancellation),
+        ("downloads await disk feedback before commit and physical cancellation", DownloadsAwaitAsynchronousDiskFeedback),
         ("loader and modpack transfers consume retry concurrency settings", LoaderAndModpackTransfersConsumeRetryAndConcurrencySettings),
         ("storage migration queues copies before startup consumers", StorageMigrationQueuesAndCopiesBeforeStartupConsumers),
         ("storage migration rejects stale occupied locked cancelled requests", StorageMigrationRejectsStaleOccupiedLockedAndCancelledRequests),

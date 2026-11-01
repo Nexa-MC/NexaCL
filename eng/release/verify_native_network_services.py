@@ -18,11 +18,11 @@ def verify(rid, output, payload=None):
         subprocess.run(["dotnet", "publish", str(ROOT / "native/Nexa.Native.Network"), *common, "--output", str(owner)], check=True)
     subprocess.run(["dotnet", "publish", str(ROOT / "tests/Nexa.Native.Network.Services.Tests"), *common, "--output", str(caller)], check=True)
     subprocess.run([sys.executable, str(ROOT / "eng/xsr/generate_service_wire.py"),
-                    "--assembly", str(ROOT / "Nexa.Services.Network.Contracts/bin/Release/net10.0/Nexa.Services.Network.Contracts.dll"),
+                    "--assembly", str(ROOT / "native/Nexa.Native.Network.Client/bin/Release/net10.0/Nexa.Native.Network.Client.dll"),
                     "--roots", str(ROOT / "native/NetworkServiceProtocol/ServiceWire.roots"),
                     "--output", str(ROOT / "native/NetworkServiceProtocol/ServiceWire.Generated.cs"), "--check"], check=True)
     libraries = json.loads((ROOT / "tests/Nexa.Native.Network.Services.Tests/obj/project.assets.json").read_text())["libraries"]
-    if any(name.split("/")[0] in {"Nexa.Native.Network", "Nexa.Services.Network"} for name in libraries):
+    if any(name.split("/")[0] in {"Nexa.Native.Network", "Nexa.Services.Network", "Nexa.Services.Common"} for name in libraries):
         raise RuntimeError("Network service caller embedded its owner")
     owner_libraries = json.loads((ROOT / "native/Nexa.Native.Network/obj/project.assets.json").read_text())["libraries"]
     for name in owner_libraries:

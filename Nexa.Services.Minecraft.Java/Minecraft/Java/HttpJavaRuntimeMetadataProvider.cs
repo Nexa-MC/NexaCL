@@ -57,7 +57,12 @@ public sealed class HttpJavaRuntimeMetadataProvider : IJavaRuntimeMetadataProvid
 
     private static HttpClient CreateDefaultClient(LogService? log)
     {
+#if NEXA_NATIVE_SERVICES
+        HttpClient client = Nexa.Native.Network.Client.NativeHttpClients.CreateDefault(wrap: log is null ? null : handler => new DiagnosticHttpHandler(log, handler));
+        client.Timeout = TimeSpan.FromMinutes(2);
+#else
         HttpClient client = new(log is null ? new HttpClientHandler() : new DiagnosticHttpHandler(log, new HttpClientHandler())) { Timeout = TimeSpan.FromMinutes(2) };
+#endif
         client.DefaultRequestHeaders.UserAgent.ParseAdd("NexaCL/2.0");
         return client;
     }

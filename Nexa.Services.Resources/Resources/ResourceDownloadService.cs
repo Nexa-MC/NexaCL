@@ -110,7 +110,14 @@ public sealed class ResourceDownloadService(IResourceCatalogSource catalog, Down
         return mirrorFirst ? [mirror, url] : [url, mirror];
     }
     private sealed class Connection(HttpClient client, string url, long expected, RegionalPolicy country) : IDownloadConnection
+#if NEXA_NATIVE_SERVICES
+        , Nexa.Native.Network.Client.INativeDownloadConnectionDescriptor
+#endif
     {
+#if NEXA_NATIVE_SERVICES
+        public async ValueTask<Nexa.Native.Network.Services.NativeDownloadSource> DescribeDownloadAsync(CancellationToken token = default)
+        { return (await Nexa.Native.Network.Client.NativeHttpClients.DescribeAsync(client, url, token).ConfigureAwait(false)) with { ResourceHostsOnly = true, MainlandChina = country.IsMainlandChina, ExactLength = expected, MaximumRedirects = 4 }; }
+#endif
         private HttpResponseMessage? _response;
         private Stream? _stream;
         private long _read;

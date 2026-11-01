@@ -1,3 +1,4 @@
+#if !NEXA_NATIVE_SERVICES
 using System.Security.Cryptography.X509Certificates;
 using Nexa.Services.Network;
 
@@ -67,3 +68,4 @@ public sealed class CloudflareApiClient : IDisposable
 
     public void Dispose() { Client.Dispose(); _pool?.Dispose(); _certificate.Dispose(); }
 }
+#endif

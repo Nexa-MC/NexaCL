@@ -104,3 +104,24 @@ instrumentation, media, artwork, Minecraft algorithms, XML and compression contr
 The network image also passes a clean rebuild with different Git/release metadata.
 The four-platform native CI now includes the service fixture. Full production HTTP
 adoption and the download lifecycle remain open as described above.
+
+## Production HTTP and download adoption
+
+The next stage completes production adoption. Foundation creates one native network
+session for HTTP, PFX identities, diagnostics and downloads. Production no longer
+references the concrete Network assembly. Common compiles a descriptor facade in
+place of its download execution/cache sources; the native owner compiles the existing
+engine and uses the canonical host scheduler through asynchronous work leases.
+Minecraft, Java, Authlib, modpack and resource adapters preserve origin/host policies,
+default headers, header timeouts, resume, size limits and temporary-file extensions.
+The managed development APIs retain their existing implementations.
+
+The 29-shape generated schema and independent Linux AOT caller cover real resume and
+404 failover, 416 recovery, coalesced destinations with one canceled waiter, verified
+cache reuse, bounded lengths/hosts, revision-preserving transfer state, host scheduler
+priority/budgets and asynchronous disk feedback. Download logs and operation samples
+cross bounded worker queues and drain on shutdown. Existing streaming, cancellation,
+certificate and resource-retirement cases also pass against the distributed image.
+The complete native payload passes headless shell validation, command listing, and
+real X11 window startup followed by OS-requested closure with exit code zero.
+The detailed lease and descriptor contract is in `native-download-work-leases.md`.

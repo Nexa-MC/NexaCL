@@ -12,6 +12,12 @@ public interface IWorkResourceFeedback
     void ObserveDiskWrite(int bytes, TimeSpan elapsed);
 }
 
+/// <summary>Awaitable feedback for a scheduler owned by another runtime.</summary>
+public interface IAsyncWorkResourceFeedback
+{
+    ValueTask ObserveDiskWriteAsync(int bytes, TimeSpan elapsed, CancellationToken token = default);
+}
+
 public interface IWorkQuietLease : IDisposable
 {
     void ReleaseAfter(TimeSpan gracePeriod);

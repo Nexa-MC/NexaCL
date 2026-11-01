@@ -451,7 +451,9 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.SystemMinecraftProcessPort))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Network.NetworkEndpointProbe))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Network.NetworkProbeResult))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Network.NetworkProbeService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Processes.OwnedInstallerProcess))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.RegionalPolicy))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.CurseForgeResourceCatalog))]

@@ -656,7 +656,7 @@ internal static partial class Program
         {
             var uiRuntime = new XsrUiRuntimeContext();
             var observation = new Nexa.Services.Composition.XsrCompositeStateObserver(uiRuntime.StateBridge, null);
-            using var host = Nexa.Services.Foundation.FoundationComposer.Compose(
+            await using var host = Nexa.Services.Foundation.FoundationComposer.Compose(
                 new Nexa.Services.Settings.InMemorySettingsPort(), Nexa.Services.Settings.LauncherDefaults.CreateSchema(),
                 new LaunchInstallValidationProfiles(), observer: observation,
                 declareHostState: LaunchPageState.DeclareState, minecraftRootDirectory: directory);

@@ -177,6 +177,7 @@
     "Nexa.Xsr.State"
   ],
   "Nexa.Services.Common": [
+    "Nexa.Native.Network.Client",
     "Nexa.Contracts",
     "Nexa.Core",
     "Nexa.Domain",

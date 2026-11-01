@@ -9,7 +9,10 @@ public sealed partial class DownloadService
     {
         long started = Stopwatch.GetTimestamp();
         await target.WriteAsync(buffer, token).ConfigureAwait(false);
-        if (WorkScheduler is IWorkResourceFeedback feedback)
-            feedback.ObserveDiskWrite(buffer.Length, Stopwatch.GetElapsedTime(started));
+        TimeSpan elapsed = Stopwatch.GetElapsedTime(started);
+        if (WorkScheduler is IAsyncWorkResourceFeedback asynchronous)
+            await asynchronous.ObserveDiskWriteAsync(buffer.Length, elapsed, token).ConfigureAwait(false);
+        else if (WorkScheduler is IWorkResourceFeedback feedback)
+            feedback.ObserveDiskWrite(buffer.Length, elapsed);
     }
 }

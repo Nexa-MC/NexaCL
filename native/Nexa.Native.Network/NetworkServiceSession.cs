@@ -12,6 +12,7 @@ internal sealed class NetworkServiceSession : IAsyncDisposable
     private sealed record RequestPolicy(NetworkPreferences Preferences, bool Redirects);
     private readonly ServiceEndpoint _endpoint;
     private readonly NetworkHttpStreamServer _http;
+    private readonly NativeDownloadOwner _downloads;
     private readonly NativeUiAsyncResources<NetworkCertificatePool> _certificates = new(32);
     private readonly AsyncLocal<RequestPolicy?> _current = new();
     private readonly SemaphoreSlim _initialization = new(1, 1);
@@ -23,7 +24,7 @@ internal sealed class NetworkServiceSession : IAsyncDisposable
     internal NetworkServiceSession(NativeUiCallTable peer)
     {
         _endpoint = new(ExecuteAsync, _ => throw new InvalidDataException("Unexpected network publication."), Report, Rejected);
-        _endpoint.Connect(peer); _http = new(SendAsync);
+        _endpoint.Connect(peer); _http = new(SendAsync); _downloads = new(_endpoint, SendDownloadAsync);
     }
     internal NativeUiCallTable Table => _endpoint.Table;
     private static void Report(Exception error) => Console.Error.WriteLine("Native network operation failed: " + error.GetType().Name);
@@ -48,6 +49,7 @@ internal sealed class NetworkServiceSession : IAsyncDisposable
             return [];
         }
         if (_pool is null) throw new InvalidOperationException("Network session has not initialized.");
+        if (operation == DownloadProtocol.Download) return await _downloads.ExecuteAsync(reader, token).ConfigureAwait(false);
         if (operation is NetworkProtocol.CreateCertificate or NetworkProtocol.ClaimCertificate or NetworkProtocol.ReleaseCertificate)
         {
             using var writer = new ServiceWireWriter();
@@ -108,6 +110,14 @@ internal sealed class NetworkServiceSession : IAsyncDisposable
         }
         finally { borrow?.Dispose(); _current.Value = null; }
     }
+    private Task<HttpResponseMessage> SendDownloadAsync(HttpRequestMessage request, NativeDownloadSource source, bool redirects, CancellationToken token)
+    {
+        if (source.Certificate != 0 && source.CertificateContext != Table.Context)
+            throw new InvalidDataException("Download certificate belongs to another network context.");
+        using var writer = new ServiceWireWriter(); writer.NetworkPreferences(source.Preferences);
+        writer.Boolean(redirects); writer.Boolean(false); writer.Int64(source.Certificate);
+        return SendAsync(request, writer.Finish(), token);
+    }
     private void Rejected(long id, ReadOnlyMemory<byte> request, ReadOnlyMemory<byte> result)
     {
         using var reader = NetworkProtocol.Read(request, out int operation);
@@ -121,6 +131,7 @@ internal sealed class NetworkServiceSession : IAsyncDisposable
     {
         await _endpoint.StopAsync().ConfigureAwait(false);
         await _http.DisposeAsync().ConfigureAwait(false);
+        await _downloads.DisposeAsync().ConfigureAwait(false);
         await _certificates.DisposeAsync().ConfigureAwait(false);
         _direct?.Dispose(); _redirecting?.Dispose(); _pool?.Dispose();
         if (_pool is not null) await _pool.WhenDrained.ConfigureAwait(false);

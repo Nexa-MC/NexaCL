@@ -9,6 +9,9 @@ namespace Nexa.Services.Downloads;
 /// renames with bounded retries.
 /// </summary>
 public sealed class FileDownloadWriter : IDownloadWriter, IDisposable, IAsyncDisposable
+#if NEXA_NATIVE_SERVICES
+    , Nexa.Native.Network.Client.INativeDownloadWriterDescriptor
+#endif
 {
     private const int RetryCount = 5;
     private const string LogModuleName = "Download";
@@ -34,6 +37,9 @@ public sealed class FileDownloadWriter : IDownloadWriter, IDisposable, IAsyncDis
     public long ExistingLength => File.Exists(_tempPath) ? new FileInfo(_tempPath).Length : 0L;
 
     public string TempPath => _tempPath;
+#if NEXA_NATIVE_SERVICES
+    string Nexa.Native.Network.Client.INativeDownloadWriterDescriptor.TemporaryExtension => _tempPath[_finalPath.Length..];
+#endif
 
     public async ValueTask<Stream> CreateStreamAsync(long startOffset, CancellationToken cancellationToken = default)
     {

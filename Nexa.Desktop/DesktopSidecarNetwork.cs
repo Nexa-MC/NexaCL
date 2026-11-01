@@ -39,6 +39,13 @@ internal sealed class DesktopSidecarNetwork : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _pump.DisposeAsync().ConfigureAwait(false);
-        if (_identity.IsValueCreated) _identity.Value?.Dispose();
+        if (_identity.IsValueCreated)
+        {
+#if NEXA_NATIVE_SERVICES
+            if (_identity.Value is { } identity) await identity.DisposeAsync().ConfigureAwait(false);
+#else
+            _identity.Value?.Dispose();
+#endif
+        }
     }
 }

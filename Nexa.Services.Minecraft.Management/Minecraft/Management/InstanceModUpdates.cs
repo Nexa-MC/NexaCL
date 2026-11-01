@@ -9,6 +9,11 @@ namespace Nexa.Services.Minecraft.Management;
 internal static class InstanceModUpdates
 {
     // Process-owned pool; per-call cancellation must never dispose another caller's connections.
+#if NEXA_NATIVE_SERVICES
+    internal static HttpClient SharedHttp { get; } = CreateNativeHttp();
+    private static HttpClient CreateNativeHttp()
+    { var client = Nexa.Native.Network.Client.NativeHttpClients.CreateDefault(); client.Timeout = TimeSpan.FromSeconds(30); return client; }
+#else
     internal static HttpClient SharedHttp { get; } = new(new SocketsHttpHandler
     {
         PooledConnectionLifetime = TimeSpan.FromMinutes(5),
@@ -16,6 +21,7 @@ internal static class InstanceModUpdates
         MaxConnectionsPerServer = 4
     })
     { Timeout = TimeSpan.FromSeconds(30) };
+#endif
 
     internal static async Task<InstanceContentSnapshot> CheckAsync(HttpClient http, InstanceContentSnapshot source,
         string directory, string game, IReadOnlyList<InstallBuildSelection> components, CancellationToken token)

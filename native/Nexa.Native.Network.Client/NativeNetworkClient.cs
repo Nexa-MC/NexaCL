@@ -9,7 +9,7 @@ using Nexa.Services.Network;
 namespace Nexa.Native.Network.Client;
 
 /// <summary>Async binary network admission and local streaming HTTP handlers.</summary>
-public sealed class NativeNetworkClient : IAsyncDisposable
+public sealed partial class NativeNetworkClient : IAsyncDisposable
 {
     private readonly ServiceEndpoint _endpoint;
     private readonly nint _close;
@@ -26,8 +26,7 @@ public sealed class NativeNetworkClient : IAsyncDisposable
     public NativeNetworkClient(bool mainlandChina = false, Action<Exception>? failure = null)
     {
         _failure = failure;
-        _endpoint = new((_, _) => throw new InvalidDataException("Unexpected network reverse operation."),
-            _ => throw new InvalidDataException("Unexpected network publication."), Report);
+        _endpoint = new(ExecuteReverseAsync, ApplyPublication, Report, RejectReverse);
         try { (_context, _close) = Open(_endpoint); }
         catch { _ = _endpoint.DisposeAsync().AsTask(); throw; }
         _initialization = InitializeAsync(mainlandChina);
@@ -69,6 +68,11 @@ public sealed class NativeNetworkClient : IAsyncDisposable
     public async Task<HttpMessageHandler> CreateCertifiedHandlerAsync(byte[] pfx, string? password,
         Func<NetworkPreferences> preferences, CancellationToken token = default)
     {
+        long certificate = await AdmitCertificate(pfx, password, preferences, token).ConfigureAwait(false);
+        return CreateHandler(preferences, allowAutoRedirect: false, certificate);
+    }
+    private Task<long> AdmitCertificate(byte[] pfx, string? password, Func<NetworkPreferences> preferences, CancellationToken token)
+    {
         ArgumentNullException.ThrowIfNull(preferences); ArgumentNullException.ThrowIfNull(pfx);
         if (pfx.Length is < 1 or > 1024 * 1024) throw new ArgumentOutOfRangeException(nameof(pfx));
         Task<long> creation;
@@ -79,8 +83,7 @@ public sealed class NativeNetworkClient : IAsyncDisposable
             if (_certificates.Count >= 32) throw new InvalidOperationException("Native client certificate budget exceeded.");
             creation = CreateCertificateAsync(pfx, password, token); _certificates.Add(creation);
         }
-        long certificate = await creation.ConfigureAwait(false);
-        return CreateHandler(preferences, allowAutoRedirect: false, certificate);
+        return creation;
     }
     private async Task<long> CreateCertificateAsync(byte[] pfx, string? password, CancellationToken token)
     {
@@ -167,6 +170,7 @@ public sealed class NativeNetworkClient : IAsyncDisposable
             if (status != 0) throw new IOException("Native network shutdown failed; callbacks remain retained.");
             await Task.Delay(delay).ConfigureAwait(false); delay = Math.Min(delay * 2, 32);
         }
+        await DrainDownloadsAsync().ConfigureAwait(false);
         await _endpoint.DisposeAsync().ConfigureAwait(false);
         if (failed is not null) throw new IOException("Native HTTP handler cleanup failed.", failed);
     }

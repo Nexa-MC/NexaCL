@@ -58,7 +58,14 @@ public sealed class AuthlibInjectorProvider(HttpClient http, DownloadService dow
     public void Dispose() => _gate.Dispose();
 
     private sealed class HttpConnection(HttpClient client, string source) : IDownloadConnection
+#if NEXA_NATIVE_SERVICES
+        , Nexa.Native.Network.Client.INativeDownloadConnectionDescriptor
+#endif
     {
+#if NEXA_NATIVE_SERVICES
+        public async ValueTask<Nexa.Native.Network.Services.NativeDownloadSource> DescribeDownloadAsync(CancellationToken token = default)
+        { return await Nexa.Native.Network.Client.NativeHttpClients.DescribeAsync(client, source, token).ConfigureAwait(false); }
+#endif
         private HttpResponseMessage? _response;
         private Stream? _stream;
         public async ValueTask<DownloadConnectionInfo> StartAsync(long beginOffset, CancellationToken cancellationToken = default)

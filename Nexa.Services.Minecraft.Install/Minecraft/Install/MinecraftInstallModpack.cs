@@ -341,7 +341,14 @@ public sealed partial class MinecraftInstallService
         return hash.AsSpan().SequenceEqual(other);
     }
     private sealed class PackSizeConnection(IDownloadConnection inner, long size) : IDownloadConnection
+#if NEXA_NATIVE_SERVICES
+        , Nexa.Native.Network.Client.INativeDownloadConnectionDescriptor
+#endif
     {
+#if NEXA_NATIVE_SERVICES
+        public async ValueTask<Nexa.Native.Network.Services.NativeDownloadSource> DescribeDownloadAsync(CancellationToken token = default)
+        { var described = inner as Nexa.Native.Network.Client.INativeDownloadConnectionDescriptor ?? throw new NotSupportedException("Undescribed modpack connection."); var source = await described.DescribeDownloadAsync(token).ConfigureAwait(false); return source with { MaximumLength = Math.Min(source.MaximumLength ?? long.MaxValue, size) }; }
+#endif
         private long _received;
         public async ValueTask<DownloadConnectionInfo> StartAsync(long beginOffset, CancellationToken cancellationToken = default)
         {
@@ -359,7 +366,14 @@ public sealed partial class MinecraftInstallService
         public ValueTask StopAsync(CancellationToken cancellationToken = default) => inner.StopAsync(cancellationToken);
     }
     private sealed class PackHttpConnection(HttpClient client, string url) : IDownloadConnection
+#if NEXA_NATIVE_SERVICES
+        , Nexa.Native.Network.Client.INativeDownloadConnectionDescriptor
+#endif
     {
+#if NEXA_NATIVE_SERVICES
+        public async ValueTask<Nexa.Native.Network.Services.NativeDownloadSource> DescribeDownloadAsync(CancellationToken token = default)
+        { return (await Nexa.Native.Network.Client.NativeHttpClients.DescribeAsync(client, url, token).ConfigureAwait(false)) with { ModpackHostsOnly = true, MaximumRedirects = 5 }; }
+#endif
         private HttpResponseMessage? _response;
         public async ValueTask<DownloadConnectionInfo> StartAsync(long beginOffset, CancellationToken cancellationToken = default)
         {

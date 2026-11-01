@@ -5,6 +5,11 @@ namespace Nexa.Services.Downloads;
 /// <summary>Public HTTP clients share sockets, but never cookies or mutable client headers.</summary>
 internal static class PooledHttpClient
 {
+#if NEXA_NATIVE_SERVICES
+    internal static HttpClient Create(bool allowAutoRedirect = true, LogService? log = null) =>
+        Nexa.Native.Network.Client.NativeHttpClients.CreateDefault(allowAutoRedirect,
+            log is null ? null : handler => new DiagnosticHttpHandler(log, handler));
+#else
     private static readonly HttpMessageInvoker Redirecting = CreatePool(true);
     private static readonly HttpMessageInvoker NoRedirects = CreatePool(false);
     private static HttpMessageInvoker CreatePool(bool redirects) => new(new SocketsHttpHandler
@@ -29,4 +34,5 @@ internal static class PooledHttpClient
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token) =>
             pool.SendAsync(request, token);
     }
+#endif
 }

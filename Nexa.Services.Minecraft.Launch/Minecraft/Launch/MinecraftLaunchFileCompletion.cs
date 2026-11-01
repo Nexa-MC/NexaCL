@@ -329,7 +329,14 @@ public sealed class MinecraftLaunchFileCompletion : IDisposable
 
     /// <summary>Adapts one HttpClient GET to the download engine's connection port.</summary>
     private sealed class HttpConnectionAdapter(HttpClient client, string source) : IDownloadConnection
+#if NEXA_NATIVE_SERVICES
+        , Nexa.Native.Network.Client.INativeDownloadConnectionDescriptor
+#endif
     {
+#if NEXA_NATIVE_SERVICES
+        public async ValueTask<Nexa.Native.Network.Services.NativeDownloadSource> DescribeDownloadAsync(CancellationToken token = default)
+        { return await Nexa.Native.Network.Client.NativeHttpClients.DescribeAsync(client, source, token).ConfigureAwait(false); }
+#endif
         private HttpResponseMessage? _response;
 
         public async ValueTask<DownloadConnectionInfo> StartAsync(

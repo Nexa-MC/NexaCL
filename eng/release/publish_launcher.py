@@ -32,7 +32,7 @@ def module_names(rid):
 
 def verify_ui_engine_isolation(assets):
     libraries = json.loads(assets.read_text())["libraries"]
-    forbidden = {"jint", "bouncycastle.cryptography", "zstdsharp.port", "nexa.services.accounts", "nexa.native.accounts"}
+    forbidden = {"jint", "bouncycastle.cryptography", "zstdsharp.port", "nexa.services.accounts", "nexa.services.network", "nexa.native.accounts"}
     forbidden.update("nexa.native." + engine.lower() for engine in ENGINES)
     embedded = sorted(name for name in libraries if name.split("/", 1)[0].lower() in forbidden)
     if embedded:

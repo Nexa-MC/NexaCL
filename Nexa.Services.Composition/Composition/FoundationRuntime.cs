@@ -229,12 +229,19 @@ public static class FoundationRuntimeComposer
             });
         queries.Register<Nexa.Services.Network.NetworkTraceQuery, IReadOnlyList<Nexa.Services.Network.NetworkRequestTrace>>(
             Nexa.Services.Network.NetworkDiagnosticsContract.Trace,
+#if NEXA_NATIVE_SERVICES
+            async (_, token) => Nexa.Xsr.XsrResult.Success(await host.NetworkHttp.TraceAsync(token).ConfigureAwait(false)));
+        queries.Register<Nexa.Services.Network.NetworkManualProbeQuery, Nexa.Services.Network.NetworkManualProbeSnapshot>(
+            Nexa.Services.Network.NetworkDiagnosticsContract.Probe,
+            async (_, token) => Nexa.Xsr.XsrResult.Success(await host.NetworkHttp.ProbeAsync(token).ConfigureAwait(false)));
+#else
             (_, _) => ValueTask.FromResult(Nexa.Xsr.XsrResult.Success(host.NetworkHttp.TraceSnapshot())));
         var networkProbe = new Nexa.Services.Network.NetworkManualProbeService(() => host.CreateHttpClient(false),
             Nexa.Services.RegionalPolicy.Current.IsMainlandChina);
         queries.Register<Nexa.Services.Network.NetworkManualProbeQuery, Nexa.Services.Network.NetworkManualProbeSnapshot>(
             Nexa.Services.Network.NetworkDiagnosticsContract.Probe,
             async (_, token) => Nexa.Xsr.XsrResult.Success(await networkProbe.ProbeAsync(token).ConfigureAwait(false)));
+#endif
         configureRoutes?.Invoke(commands, queries);
         XsrCommandRouter commandRouter = commands.Build(dispatchObserver, timeProvider);
         XsrQueryRouter queryRouter = queries.Build(dispatchObserver, timeProvider);

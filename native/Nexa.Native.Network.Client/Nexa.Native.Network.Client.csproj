@@ -9,5 +9,11 @@
     <Compile Include="../NetworkServiceProtocol/NetworkProtocol.cs" Link="Wire/NetworkProtocol.cs" />
     <Compile Include="../NetworkServiceProtocol/NetworkHttpWire.cs" Link="Wire/NetworkHttpWire.cs" />
     <Compile Include="../NetworkServiceProtocol/NetworkHttpStreamHandler.cs" Link="Wire/NetworkHttpStreamHandler.cs" />
+    <Compile Include="../DownloadServiceProtocol/DownloadDescriptors.cs" Link="Wire/DownloadDescriptors.cs" />
+    <Compile Include="../DownloadServiceProtocol/DownloadProtocol.cs" Link="Wire/DownloadProtocol.cs" />
+    <Compile Include="../DownloadServiceProtocol/HostWorkLeaseServer.cs" Link="Downloads/HostWorkLeaseServer.cs" />
+    <Compile Include="../DownloadServiceProtocol/DownloadProgressSink.cs" Link="Downloads/DownloadProgressSink.cs" />
+    <Compile Include="../DownloadServiceProtocol/NativeLogPipe.cs" Link="Downloads/NativeLogPipe.cs" />
+    <Compile Include="../DownloadServiceProtocol/NativeNetworkClient.Downloads.cs" Link="Downloads/NativeNetworkClient.Downloads.cs" />
   </ItemGroup>
 </Project>

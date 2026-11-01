@@ -69,6 +69,7 @@ var probe = await network.ProbeAsync(new()
 }, deadline.Token);
 if (probe.Endpoints.Count != 3 || probe.Endpoints.Any(endpoint => endpoint.StatusCode is not null || endpoint.ErrorKind != "HttpRequestException"))
     throw new InvalidDataException("Native manual probes did not preserve provider admission.");
+await NativeDownloadCases.RunAsync(network, deadline.Token);
 await CancellationCases.RunAsync(http, network, deadline.Token);
 http.Dispose(); await network.DisposeAsync();
 Console.WriteLine("Independent NativeAOT network owner streamed a 20 MiB HTTP upload and response, then physically retired the session.");
@@ -110,8 +111,10 @@ static class CancellationCases
             var enrollment = new CertificateRequest("CN=Nexa network native contract", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
             using var certificate = enrollment.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddHours(1));
             byte[] pfx = certificate.Export(X509ContentType.Pfx, "native-contract-only");
-            using var certified = new HttpClient(await network.CreateCertifiedHandlerAsync(pfx, "native-contract-only",
-                () => new() { ProxyMode = 0, DnsOverHttps = false }, deadline));
+            using var certified = network.CreateCertifiedClient(pfx, "native-contract-only", () => new() { ProxyMode = 0, DnsOverHttps = false });
+            var identity = await NativeHttpClients.DescribeAsync(certified, "https://example.test", deadline);
+            if (identity.Certificate <= 0 || identity.CertificateContext <= 0 || identity.AllowAutoRedirect)
+                throw new InvalidDataException("Certified HTTP description lost native identity or redirect policy.");
             await using var fixture = new PendingServer(headers: true, deadline, length: 0);
             using var response = await certified.GetAsync(fixture.Uri, HttpCompletionOption.ResponseHeadersRead, deadline);
             if (response.Content.Headers.ContentLength != 0) throw new InvalidDataException("Certified transport lost content headers.");

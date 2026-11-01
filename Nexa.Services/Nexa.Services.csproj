@@ -39,7 +39,7 @@
     <ProjectReference Include="../Nexa.Services.Minecraft.Metadata/Nexa.Services.Minecraft.Metadata.csproj" />
     <ProjectReference Include="../Nexa.Services.Minecraft.Process/Nexa.Services.Minecraft.Process.csproj" />
     <ProjectReference Include="../Nexa.Services.Minecraft.Process.Contracts/Nexa.Services.Minecraft.Process.Contracts.csproj" />
-    <ProjectReference Include="../Nexa.Services.Network/Nexa.Services.Network.csproj" />
+    <ProjectReference Include="../Nexa.Services.Network/Nexa.Services.Network.csproj" Condition="'$(NexaNativeServices)' != 'true'" />
     <ProjectReference Include="../Nexa.Services.Network.Contracts/Nexa.Services.Network.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Services.Recovery.Storage/Nexa.Services.Recovery.Storage.csproj" />
     <ProjectReference Include="../Nexa.Services.Resources/Nexa.Services.Resources.csproj" />

@@ -295,7 +295,14 @@ public sealed partial class JavaRuntimeInstaller : IConfirmedJavaRuntimeInstalle
     }
 
     private sealed class RuntimeConnection(HttpClient client, string url) : Nexa.Services.Downloads.IDownloadConnection
+#if NEXA_NATIVE_SERVICES
+        , Nexa.Native.Network.Client.INativeDownloadConnectionDescriptor
+#endif
     {
+#if NEXA_NATIVE_SERVICES
+        public async ValueTask<Nexa.Native.Network.Services.NativeDownloadSource> DescribeDownloadAsync(CancellationToken token = default)
+        { return await Nexa.Native.Network.Client.NativeHttpClients.DescribeAsync(client, url, token).ConfigureAwait(false); }
+#endif
         private HttpResponseMessage? _response;
         private Stream? _stream;
         public async ValueTask<Nexa.Services.Downloads.DownloadConnectionInfo> StartAsync(long beginOffset, CancellationToken cancellationToken = default)

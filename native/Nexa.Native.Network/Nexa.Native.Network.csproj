@@ -10,6 +10,7 @@
     <Compile Include="../NativeUiAsyncResources.cs" Link="NativeUiAsyncResources.cs" />
     <Compile Include="../../Nexa.Services.Network/Network/*.cs" Exclude="../../Nexa.Services.Network/Network/DnsOverHttpsResolver.cs" Link="Implementation/%(Filename)%(Extension)" />
     <Compile Include="../NetworkServiceProtocol/*.cs" Exclude="../NetworkServiceProtocol/NetworkHttpStreamHandler.cs" Link="Wire/%(Filename)%(Extension)" />
+    <Compile Include="../DownloadServiceProtocol/*.cs" Exclude="../DownloadServiceProtocol/HostWorkLeaseServer.cs;../DownloadServiceProtocol/DownloadProgressSink.cs;../DownloadServiceProtocol/NativeNetworkClient.Downloads.cs" Link="Downloads/%(Filename)%(Extension)" />
     <Compile Include="../../Nexa.Services.Network/Network/DnsOverHttpsResolver.cs" Link="DnsOverHttpsResolver.cs" />
   </ItemGroup>
 </Project>

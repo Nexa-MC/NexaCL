@@ -1,5 +1,6 @@
 #if NEXA_NATIVE_SERVICES
 using AccountService = Nexa.Native.Accounts.Client.NativeAccountService;
+using NetworkHttpClientPool = Nexa.Native.Network.Client.NativeNetworkHttpClientPool;
 #endif
 using System.Globalization;
 using Nexa.Services.Accounts;
@@ -67,7 +68,7 @@ public static class FoundationState
 /// state bridge is the store observer, so every foundation publication reaches the renderer
 /// drain without extra wiring.
 /// </summary>
-public sealed class FoundationHost : IDisposable
+public sealed class FoundationHost : IDisposable, IAsyncDisposable
 {
     private readonly IReadOnlyList<object> _services;
     private readonly SettingsLoggingSession _loggingSettings;
@@ -106,6 +107,11 @@ public sealed class FoundationHost : IDisposable
                 && FoundationNetworkCost.AllowsBackground(_networkCost.Current,
                     values?.FirstOrDefault(item => item.Key == "network.metered-download")?.Value.Value ?? "auto");
         };
+#if NEXA_NATIVE_SERVICES
+        NetworkHttp.Client.AttachDownloads(Work, StateStore, () => Downloads.BackgroundDownloadsEnabled?.Invoke() != false,
+            Logging, Logging.ObserveOperation);
+        Downloads.AttachNative(NetworkHttp.Client);
+#endif
         _loggingSettings = new(Settings, SettingsPolicy, Logging);
         InputUsage = new InputUsageTracker();
         ObservationHistory = new ResourceObservationHistory();
@@ -187,12 +193,22 @@ public sealed class FoundationHost : IDisposable
     public Task StartNetworkCostMonitoringAsync() => _networkCost.StartAsync();
 
     public void Dispose() { _powerPressure.Dispose(); _networkCost.Dispose(); Tasks.Dispose(); Downloads.Dispose(); SharedStateCache.Dispose(); _loggingSettings.Dispose(); NetworkHttp.Dispose(); Work.Dispose(); }
+#if NEXA_NATIVE_SERVICES
+    public async ValueTask DisposeAsync()
+    { await Accounts.DisposeAsync().ConfigureAwait(false); await NetworkHttp.DisposeAsync().ConfigureAwait(false); Dispose(); }
+#else
+    public ValueTask DisposeAsync() { Dispose(); return ValueTask.CompletedTask; }
+#endif
 
     public NetworkHttpClientPool NetworkHttp { get; }
     public IReadOnlyList<string> JavaManagedRuntimeRoots { get; }
 
     public HttpClient CreateHttpClient(bool allowAutoRedirect = true) =>
+#if NEXA_NATIVE_SERVICES
+        NetworkHttp.CreateClient(allowAutoRedirect, handler => new DiagnosticHttpHandler(Logging, handler));
+#else
         new(new DiagnosticHttpHandler(Logging, NetworkHttp.CreateHandler(allowAutoRedirect)));
+#endif
 
     private NetworkPreferences CaptureNetworkPreferences() => CaptureNetworkPreferences(RegionalPolicy.Current);
 
