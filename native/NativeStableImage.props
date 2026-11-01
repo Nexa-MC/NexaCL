@@ -1,0 +1,31 @@
+<Project>
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <InformationalVersion>1.0.0</InformationalVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <EnableSourceLink>false</EnableSourceLink>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+    <EmbedUntrackedSources>false</EmbedUntrackedSources>
+    <PublishRepositoryUrl>false</PublishRepositoryUrl>
+    <NexaEngineSourceRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))/</NexaEngineSourceRoot>
+    <PathMap>$(NexaEngineSourceRoot)=/_/</PathMap>
+  </PropertyGroup>
+  <ItemGroup>
+    <SourceRoot Include="$(NexaEngineSourceRoot)" MappedPath="/_/" />
+  </ItemGroup>
+  <Target Name="ConfigureDeterministicNativeEngineLink" BeforeTargets="LinkNative" Condition="'$(PublishAot)' == 'true'">
+    <ItemGroup>
+      <LinkerArg Include="/Brepro" Condition="'$(_targetOS)' == 'win'" />
+      <LinkerArg Include="/PDBALTPATH:%_PDB%" Condition="'$(_targetOS)' == 'win'" />
+      <LinkerArg Include="-Wl,-reproducible" Condition="'$(_targetOS)' == 'osx'" />
+      <LinkerArg Include="-Wl,-objc_stubs_small" Condition="'$(_targetOS)' == 'osx' and '$(_targetArchitecture)' == 'arm64'" />
+    </ItemGroup>
+  </Target>
+  <Target Name="ResetNativeEnginePdbBeforeRelink" BeforeTargets="LinkNative"
+          Inputs="$(NativeObject);@(NativeLibrary)" Outputs="$(NativeBinary)"
+          Condition="'$(PublishAot)' == 'true' and '$(_targetOS)' == 'win'">
+    <Delete Files="$([System.IO.Path]::ChangeExtension('$(NativeBinary)', '.pdb'))" />
+  </Target>
+</Project>

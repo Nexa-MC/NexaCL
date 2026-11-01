@@ -27,8 +27,12 @@ internal static partial class Program
     [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
     private static extern IntPtr GetConsoleWindow();
 
-    private static string ResolveInformationalVersion() => typeof(Program).Assembly
-        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
+    private static string ResolveInformationalVersion() =>
+#if NEXA_NATIVE_MODULE
+        NativeUiBuildIdentity.ProductVersion ?? throw new InvalidOperationException("The native UI has no admitted product identity.");
+#else
+        typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
+#endif
 
     /// <summary>The one version truth: informational version, channel, and semantic core.</summary>
 

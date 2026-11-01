@@ -82,6 +82,9 @@
     <Project Path="Nexa.Xsr.Renderer.Backend.Avalonia/Nexa.Xsr.Renderer.Backend.Avalonia.csproj" />
     <Project Path="Nexa.Xsr.Renderer.Benchmarks/Nexa.Xsr.Renderer.Benchmarks.csproj" />
   </Folder>
+  <Folder Name="/Native/">
+    <Project Path="native/Nexa.Native.Host/Nexa.Native.Host.csproj" />
+  </Folder>
   <Folder Name="/NXML/">
     <Project Path="Nexa.Xsr.Renderer.Nxml.Compiler/Nexa.Xsr.Renderer.Nxml.Compiler.csproj" />
     <Project Path="Nexa.Xsr.Renderer.Nxml.Runtime/Nexa.Xsr.Renderer.Nxml.Runtime.csproj" />

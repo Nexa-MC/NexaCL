@@ -100,7 +100,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y clang zlib1g-dev libfontconfig1-dev libx11-dev libice6 libsm6 rpm ruby-dev build-essential desktop-file-utils squashfs-tools
+          sudo apt-get install -y clang zlib1g-dev libfontconfig1-dev libx11-dev libice6 libsm6 rpm ruby-dev build-essential desktop-file-utils squashfs-tools xvfb xauth
           sudo gem install fpm -v 1.16.0 --no-document
           arch=x86_64
           if [[ '${{ matrix.rid }}' == linux-arm64 ]]; then arch=aarch64; fi
@@ -154,7 +154,7 @@ jobs:
           elif os.environ.get("GITHUB_REF", "").startswith("refs/tags/"):
               raise SystemExit("Cloudflare API identity is required for release builds")
           PY
-      - name: Publish NativeAOT bootstrap and Host module
+      - name: Publish NativeAOT bootstrap, admission Host and UI runtime
         shell: bash
         env:
           NexaCurseForgeApiKey: ${{ secrets.CURSEFORGE_API_KEY }}
@@ -188,7 +188,7 @@ jobs:
           sys.path.insert(0, "eng/release")
           from publish_launcher import module_names
           for name in module_names(sys.argv[3]):
-              if name.startswith("nexa-host."):
+              if name.startswith(("nexa-host.", "nexa-ui.")):
                   continue
               shutil.copy2(pathlib.Path(sys.argv[1]) / name, pathlib.Path(sys.argv[2]) / name)
           PYMODULES
@@ -209,6 +209,13 @@ jobs:
       - name: Verify native engine reproducibility across release stamps
         shell: bash
         run: python eng/release/verify_engine_reproducibility.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/launcher"
+      - name: Verify UI bytes are independent of product and Git versions
+        shell: bash
+        env:
+          NexaCurseForgeApiKey: ${{ secrets.CURSEFORGE_API_KEY }}
+        run: |
+          python eng/release/verify_ui_reproducibility.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/launcher" \
+            "-p:NexaMicrosoftClientId=$NEXA_MS_CLIENT_ID" "-p:NexaLittleSkinClientId=$NEXA_LITTLESKIN_CLIENT_ID"
       - name: Smoke macOS platform helper
         if: startsWith(matrix.rid, 'osx-')
         shell: bash
@@ -252,6 +259,15 @@ jobs:
           if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
           "$binary" --validate-shell
           "$binary" --validate-setup
+      - name: Open and close the real distributed native UI
+        if: runner.os == 'Linux' || runner.os == 'Windows'
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            xvfb-run -a python eng/release/smoke_native_ui.py --payload "$RUNNER_TEMP/launcher"
+          else
+            python eng/release/smoke_native_ui.py --payload "$RUNNER_TEMP/launcher"
+          fi
       - name: Verify Windows game window integration under NativeAOT
         if: runner.os == 'Windows'
         shell: bash

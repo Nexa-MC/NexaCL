@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace Nexa.Bootstrap;
@@ -11,18 +12,22 @@ internal static class Program
         string module = Path.Combine(AppContext.BaseDirectory, "nexa-host" + extension);
         nint[] arguments = new nint[args.Length];
         nint baseDirectory = 0;
+        nint productVersion = 0;
         try
         {
             // Absolute path: never resolve executable code against the working directory or PATH.
             nint library = NativeLibrary.Load(module);
             // NativeAOT shared libraries must remain loaded for the process lifetime.
-            nint entry = NativeLibrary.GetExport(library, "nexa_host_main_v1");
+            nint entry = NativeLibrary.GetExport(library, "nexa_host_main_v2");
             for (int i = 0; i < args.Length; i++) arguments[i] = Marshal.StringToCoTaskMemUTF8(args[i]);
             baseDirectory = Marshal.StringToCoTaskMemUTF8(AppContext.BaseDirectory);
+            string version = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+                ?? throw new InvalidDataException("The bootstrap has no product version.");
+            productVersion = Marshal.StringToCoTaskMemUTF8(version);
             fixed (nint* argv = arguments)
             {
-                var run = (delegate* unmanaged[Cdecl]<int, nint*, nint, int>)entry;
-                return run(args.Length, argv, baseDirectory);
+                var run = (delegate* unmanaged[Cdecl]<int, nint*, nint, nint, int>)entry;
+                return run(args.Length, argv, baseDirectory, productVersion);
             }
         }
         catch (Exception error)
@@ -40,6 +45,7 @@ internal static class Program
         {
             foreach (nint argument in arguments) Marshal.FreeCoTaskMem(argument);
             Marshal.FreeCoTaskMem(baseDirectory);
+            Marshal.FreeCoTaskMem(productVersion);
         }
     }
 

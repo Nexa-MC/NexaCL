@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../NativeEngine.props" />
+  <PropertyGroup>
+    <Description>Native module admission and main-thread UI entry; no presentation or service implementation dependencies.</Description>
+  </PropertyGroup>
+</Project>

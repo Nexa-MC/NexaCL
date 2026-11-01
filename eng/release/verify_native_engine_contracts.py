@@ -16,7 +16,7 @@ def test(rid, payload, output):
         "--output", str(output),
     ], check=True)
     for name in module_names(rid):
-        if not name.startswith("nexa-host."):
+        if not name.startswith(("nexa-host.", "nexa-ui.")):
             shutil.copy2(payload / name, output / name)
     executable = output / ("Nexa.Native.Network.Tests" + (".exe" if rid.startswith("win-") else ""))
     subprocess.run([str(executable)], check=True, timeout=90)

@@ -1,4 +1,4 @@
-"""Publish the NativeAOT Host module and its matching minimal executable."""
+"""Publish the NativeAOT admission Host, complete UI runtime and matching executable."""
 import argparse
 import json
 from pathlib import Path
@@ -10,6 +10,13 @@ ROOT = Path(__file__).resolve().parents[2]
 ENGINES = ("Pac", "Crypto", "Network", "Updates", "Media", "Minecraft", "Markup", "Artwork")
 
 
+def stable_ui_properties(properties):
+    return [*properties, "-p:XsrVersionChannel=stable", "-p:XsrVersionPrefix=1.0.0",
+            "-p:IncludeSourceRevisionInInformationalVersion=false", "-p:EnableSourceLink=false",
+            "-p:EnableSourceControlManagerQueries=false", "-p:EmbedUntrackedSources=false",
+            "-p:PublishRepositoryUrl=false", "-p:PathMap=" + ROOT.as_posix() + "/=/_/"]
+
+
 def module_name(rid):
     platform, arch = rid.split("-")
     if platform not in ("win", "linux", "osx") or arch not in ("x64", "arm64"):
@@ -19,16 +26,26 @@ def module_name(rid):
 
 def module_names(rid):
     suffix = Path(module_name(rid)).suffix
-    return ["nexa-" + name + suffix for name in ("host", *(engine.lower() for engine in ENGINES))]
+    return ["nexa-" + name + suffix for name in ("host", "ui", *(engine.lower() for engine in ENGINES))]
 
 
-def verify_host_engine_isolation(assets):
+def verify_ui_engine_isolation(assets):
     libraries = json.loads(assets.read_text())["libraries"]
     forbidden = {"jint", "bouncycastle.cryptography", "zstdsharp.port"}
     forbidden.update("nexa.native." + engine.lower() for engine in ENGINES)
     embedded = sorted(name for name in libraries if name.split("/", 1)[0].lower() in forbidden)
     if embedded:
-        raise RuntimeError(f"Stable engines leaked back into the Host dependency closure: {embedded}")
+        raise RuntimeError(f"Stable engines leaked back into the UI dependency closure: {embedded}")
+
+
+def verify_host_module_isolation(assets):
+    libraries = json.loads(assets.read_text())["libraries"]
+    allowed = {"nexa.native.host", "nexa.xsr.patch.compiler"}
+    embedded = sorted(name for name in libraries
+                      if (stem := name.split("/", 1)[0].lower()) not in allowed
+                      and (stem.startswith(("nexa.", "avalonia")) or stem in {"skiasharp", "harfbuzzsharp"}))
+    if embedded:
+        raise RuntimeError(f"UI or service implementation leaked back into the Host dependency closure: {embedded}")
 
 
 def publish(rid, output, properties):
@@ -39,7 +56,7 @@ def publish(rid, output, properties):
               "-m:1", "-nodeReuse:false", "-p:PublishAot=true", "-p:StripSymbols=true"]
     with tempfile.TemporaryDirectory(prefix="nexa-native-") as temporary:
         stage = Path(temporary)
-        host, bootstrap = stage / "host", stage / "bootstrap"
+        host, ui, bootstrap = stage / "host", stage / "ui", stage / "bootstrap"
         engines = []
         # Stable engines never inherit the launcher release/commit stamp.
         for engine in ENGINES:
@@ -52,19 +69,25 @@ def publish(rid, output, properties):
                 raise RuntimeError(f"Missing native {engine} engine")
             engines.append((binary, f"nexa-{engine.lower()}" + Path(module).suffix))
         subprocess.run(["dotnet", "publish", str(ROOT / "Nexa.Desktop/Nexa.Desktop.csproj"),
-                        *common, *properties, "-p:NexaNativeModule=true", "-p:NexaExternalModules=true", "-p:NexaNetworkTestInternals=false", "--output", str(host)], check=True)
-        verify_host_engine_isolation(ROOT / "Nexa.Desktop/obj/project.assets.json")
+                        *common, *stable_ui_properties(properties), "-p:NexaNativeModule=true", "-p:NexaExternalModules=true", "-p:NexaNetworkTestInternals=false", "--output", str(ui)], check=True)
+        verify_ui_engine_isolation(ROOT / "Nexa.Desktop/obj/project.assets.json")
+        subprocess.run(["dotnet", "publish", str(ROOT / "native/Nexa.Native.Host/Nexa.Native.Host.csproj"),
+                        *common, "-p:XsrVersionChannel=stable", "-p:XsrVersionPrefix=1.0.0", "--output", str(host)], check=True)
+        verify_host_module_isolation(ROOT / "native/Nexa.Native.Host/obj/project.assets.json")
         subprocess.run(["dotnet", "publish", str(ROOT / "Nexa.Bootstrap/Nexa.Bootstrap.csproj"),
                         *common, *[p for p in properties if p.startswith(("-p:Xsr", "/p:Xsr"))],
                         "--output", str(bootstrap)], check=True)
-        native = host / ("Nexa.Desktop" + Path(module).suffix)
+        native = host / ("Nexa.Native.Host" + Path(module).suffix)
+        native_ui = ui / ("Nexa.Desktop" + Path(module).suffix)
         executable = "Nexa.Desktop.exe" if rid.startswith("win-") else "Nexa.Desktop"
         boot_executable = "Nexa.Bootstrap.exe" if rid.startswith("win-") else "Nexa.Bootstrap"
-        if not native.is_file() or not (bootstrap / boot_executable).is_file():
-            raise RuntimeError("Native publish did not produce both the Host and bootstrap")
+        if not native.is_file() or not native_ui.is_file() or not (bootstrap / boot_executable).is_file():
+            raise RuntimeError("Native publish did not produce the Host, UI and bootstrap")
         native.rename(host / module)
+        native_ui.rename(ui / ("nexa-ui" + Path(module).suffix))
         # Do not merge bootstrap managed dependencies into the Host's resource directory.
-        shutil.copytree(host, output, dirs_exist_ok=True)
+        shutil.copytree(ui, output, dirs_exist_ok=True)
+        shutil.copy2(host / module, output / module)
         shutil.copy2(bootstrap / boot_executable, output / executable)
         for binary, name in engines:
             shutil.copy2(binary, output / name)

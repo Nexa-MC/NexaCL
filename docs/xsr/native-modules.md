@@ -1,19 +1,21 @@
 # Native module distribution
 
-The launcher retains NativeAOT. The desktop composition root, renderer and in-process
-services form one native Host module: `nexa-host.dll` (Windows), `nexa-host.so`
-(Linux), or `nexa-host.dylib` (macOS). Names of Nexa-owned distribution modules are
+The launcher retains NativeAOT. The native Host admits modules and enters the complete
+UI runtime on the original OS main thread. The UI tree, controllers, renderer and
+backend live in `nexa-ui.dll` (Windows), `nexa-ui.so` (Linux), or `nexa-ui.dylib`
+(macOS). Business composition remains inside that UI runtime until its service ports
+are extracted. Names of Nexa-owned distribution modules are
 lowercase `nexa-<module>`. Upstream native dependencies retain their supported names.
 
 `Nexa.Desktop[.exe]` becomes a small NativeAOT bootstrap with no Host project
 references. It loads the Host from its own directory using an absolute path and
-calls the versioned `nexa_host_main_v1` C ABI on the original OS main thread.
-Arguments are UTF-8, caller-owned, valid for the duration of the call. Only integer
+calls the versioned `nexa_host_main_v2` C ABI on the original OS main thread.
+Arguments and the canonical product version are UTF-8, caller-owned, valid for the duration of the call. Only integer
 exit codes and unmanaged pointers cross this boundary. Exceptions are caught by
 the callee. The Host is never unloaded. There is no managed assembly loading or
 shared CLR-object ownership between the two NativeAOT runtimes.
 
-The module owns its embedded credentials, resources and version metadata. It
+The UI module owns its embedded credentials, resources and version metadata. It
 initializes its base directory and Windows apartment before starting the existing
 entry point. Existing workers, protocol arguments and CLI validation commands
 continue through that entry point. Direct managed development builds remain valid.
@@ -22,8 +24,11 @@ This is a distribution boundary, not a claim that Renderer and Services have
 independent native ABIs. Such a split would require explicit state, callback,
 resource lifetime and buffer contracts before removing project references.
 
-Publish builds both binaries for the same RID/version. Packaging rejects a missing
-or empty Host library. Existing signed complete payload manifests and differential
+Publish builds the bootstrap, Host and UI for the same RID. Host retains a fixed ABI
+identity. The bootstrap supplies the canonical product version to the UI at runtime;
+UI and its linked dependencies use fixed image versions and deterministic source
+mapping so a product-version/Git-only change cannot rewrite the UI image. Packaging rejects a missing
+or empty Host or UI library. Existing signed complete payload manifests and differential
 packages cover the library like every other runtime file; modules must not be
 updated independently of their matching launcher release. Native smoke tests must
 exercise the distributed bootstrap, including a working directory outside the
@@ -31,7 +36,7 @@ installation and a missing-module failure.
 
 ## Current release inventory
 
-The publisher emits the bootstrap, `nexa-host`, and eight independent native engines.
+The publisher emits the bootstrap, `nexa-host`, `nexa-ui`, and eight independent native engines.
 Extensions are `.dll` / `.so` / `.dylib` for Windows / Linux / macOS respectively.
 
 | Engine | Extracted implementation |
@@ -46,8 +51,8 @@ Extensions are `.dll` / `.so` / `.dylib` for Windows / Linux / macOS respectivel
 | `nexa-artwork` | Product icons, brand artwork and controller sprite images |
 
 The names identify ownership groups; the service lifecycle portions of network,
-updates and Minecraft remain in Host. UI and Accounts have not yet become
-independent native modules. The complete business-module acceptance criteria below
+updates and Minecraft remain in UI. Accounts has not yet become an independent
+native module. The complete business-module acceptance criteria below
 remain open.
 
 ## Stable engine boundaries
@@ -112,13 +117,23 @@ the same business implementations.
 
 ### Acceptance for the complete split
 
-The completion pass must adopt the existing Window ABI through a production client
-before removing the Desktop backend reference. That client owns its local callback
-registry, renderer/shell endpoints, cancellation and continuation context. The
-window runtime owns native effects, prepared resources and input leases. Missing
-exports and incompatible wire schemas fail before startup; native images remain
-loaded until process exit. The managed development backend remains available while
-the release compilation closure is checked independently.
+The production UI boundary moves the complete Desktop entry, UI tree, controllers,
+renderer and backend together into `nexa-ui`. A backend-only replacement would leave
+the tree and renderer in Host and require another ownership migration. The Host
+instead admits the UI image by a fixed identity and calls `nexa_ui_main_v2` on the
+original OS main thread. Its arguments and base directory are caller-owned UTF-8
+buffers valid until return. The fourth argument carries the canonical product
+version; the UI copies and validates it before entering any product initialization.
+Missing exports or an incompatible identity fail before
+entering the UI. Native images remain loaded until process exit. Managed development
+still uses the same Desktop entry and backend without the distribution loader.
+
+The independently tested Window ABI remains a regression reference for typed
+effects, resource ownership and independent-runtime rendering. It does not add a
+second shipped `nexa-window` module alongside `nexa-ui`. The UI root initially retains
+the business composition until each service moves behind its native ports; moving
+those services from Host into UI is not their completed business extraction. Final
+dependency checks must exclude service implementations from UI as well as Host.
 
 Public immutable platform values have one managed definition in
 `Nexa.Xsr.Renderer.Platform.Contracts`. The existing backend forwards its public

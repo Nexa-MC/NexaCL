@@ -19,10 +19,11 @@ python3 -m unittest discover -s eng/release -p 'test_*.py'
 
 ## NativeAOT 多文件发布
 
-正式构建使用同一 RID 的小型 `Nexa.Desktop[.exe]` 入口与独立 Host 模块。
-模块文件名全小写：Windows 为 `nexa-host.dll`，Linux 为 `nexa-host.so`，
-macOS 为 `nexa-host.dylib`。渲染与服务目前仍在 Host 的同一托管调用边界内，
-尚未完成业务模块的独立拆分。PAC、GPG 验签、DNS/DoH 与连接引擎分别使用
+正式构建使用同一 RID 的小型 `Nexa.Desktop[.exe]`、独立 Host 与完整 UI 模块。
+模块文件名全小写，分别为 `nexa-host` 与 `nexa-ui`，扩展名按系统使用
+`.dll`、`.so` 或 `.dylib`。Host 校验 UI 模块身份后，在原进程主线程进入 UI。
+UI 树、控制器、渲染器和原生后端归入 UI 模块；待迁出的业务服务组合也暂留其中，
+完整业务拆分仍需各服务的原生端口。PAC、GPG 验签、DNS/DoH 与连接引擎分别使用
 `nexa-pac`、`nexa-crypto`、`nexa-network` 动态库。引擎采用独立模块版本，
 未修改的引擎不随 Alpha 版本号重编版本信息。第三方原生依赖保留上游名称。
 

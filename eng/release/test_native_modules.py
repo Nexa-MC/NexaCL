@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from package import copy_runtime_payload, validate_payload
-from publish_launcher import module_names, verify_host_engine_isolation
+from publish_launcher import module_names, verify_host_module_isolation, verify_ui_engine_isolation
 
 
 class NativeModulePayloadTests(unittest.TestCase):
@@ -51,11 +51,23 @@ class NativeModulePayloadTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             assets = Path(temp) / "project.assets.json"
             assets.write_text(json.dumps({"libraries": {"Nexa.Services.Network/2.0.0": {}}}))
-            verify_host_engine_isolation(assets)
+            verify_ui_engine_isolation(assets)
             for name in ("Jint/4.17.0", "BouncyCastle.Cryptography/2.6.2", "Nexa.Native.Pac/1.0.0", "Nexa.Native.Crypto/1.0.0", "Nexa.Native.Network/1.0.0", "Nexa.Native.Updates/1.0.0", "Nexa.Native.Media/1.0.0", "Nexa.Native.Minecraft/1.0.0", "Nexa.Native.Markup/1.0.0", "Nexa.Native.Artwork/1.0.0", "ZstdSharp.Port/0.8.6"):
                 assets.write_text(json.dumps({"libraries": {name: {}}}))
                 with self.assertRaisesRegex(RuntimeError, "leaked back"):
-                    verify_host_engine_isolation(assets)
+                    verify_ui_engine_isolation(assets)
+
+    def test_host_cannot_embed_ui_contracts_or_service_implementations(self):
+        with tempfile.TemporaryDirectory() as temp:
+            assets = Path(temp) / "project.assets.json"
+            assets.write_text(json.dumps({"libraries": {"Nexa.Xsr.Patch.Compiler/1.0": {}}}))
+            verify_host_module_isolation(assets)
+            for name in ("Nexa.Desktop", "Nexa.Services", "Nexa.Services.Accounts", "Nexa.Xsr.Renderer",
+                         "Nexa.Xsr.Renderer.Backend.Avalonia", "Avalonia", "SkiaSharp"):
+                with self.subTest(name=name):
+                    assets.write_text(json.dumps({"libraries": {name + "/1.0": {}}}))
+                    with self.assertRaisesRegex(RuntimeError, "leaked back"):
+                        verify_host_module_isolation(assets)
 
     def test_host_change_reuses_stable_engines_without_new_data(self):
         from measure_module_delta import measure
@@ -72,7 +84,7 @@ class NativeModulePayloadTests(unittest.TestCase):
             result = measure(before, after, root / "report", "linux-x64", "2.0.0.alpha.18", "2.0.0.alpha.19")
             engines = [m for m in result["modules"] if m["name"] != "nexa-host.so"]
             self.assertTrue(result["roundTripVerified"])
-            self.assertEqual(8, len(engines))
+            self.assertEqual(len(module_names("linux-x64")) - 1, len(engines))
             self.assertTrue(all(m["identical"] and m["newDataBytes"] == 0 for m in engines))
 
     def test_first_content_modules_are_carried_by_a_verified_delta(self):

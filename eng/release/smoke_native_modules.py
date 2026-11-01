@@ -28,7 +28,19 @@ def verify(payload):
                                 capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
         if result.returncode != 1 or "nexa-host" not in result.stderr:
             raise RuntimeError(f"Missing Host did not fail cleanly: {result.returncode}\n{result.stderr}")
-    print("Native Host ABI, independent working directory and missing-module smoke passed.")
+        suffix = ".dll" if executable.suffix == ".exe" else ".dylib" if (payload / "nexa-host.dylib").exists() else ".so"
+        shutil.copy2(payload / ("nexa-host" + suffix), detached / ("nexa-host" + suffix))
+        result = subprocess.run([str(detached / executable.name), "--list-commands"], cwd=payload,
+                                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
+        if result.returncode != 1 or "nexa-ui" not in result.stderr:
+            raise RuntimeError(f"Missing UI did not fail cleanly: {result.returncode}\n{result.stderr}")
+        # A loadable library from the same release still cannot impersonate the UI entry.
+        shutil.copy2(payload / ("nexa-pac" + suffix), detached / ("nexa-ui" + suffix))
+        result = subprocess.run([str(detached / executable.name), "--list-commands"], cwd=payload,
+                                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
+        if result.returncode != 1 or "nexa-ui" not in result.stderr:
+            raise RuntimeError(f"Invalid UI exports did not fail cleanly: {result.returncode}\n{result.stderr}")
+    print("Native Host/UI ABI, independent working directory and missing/incompatible-module smoke passed.")
 
 
 if __name__ == "__main__":

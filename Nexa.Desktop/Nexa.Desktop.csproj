@@ -4,13 +4,14 @@
     <OutputType Condition="'$(NexaNativeModule)' != 'true'">WinExe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationIcon>Assets/icon.ico</ApplicationIcon>
-    <Description>Nexa Host composition root and desktop runtime.</Description>
+    <Description>Nexa UI tree, controllers, renderer and desktop runtime; managed development entry.</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(NexaNativeModule)' == 'true'">
     <NativeLib>Shared</NativeLib>
     <DefineConstants>$(DefineConstants);NEXA_NATIVE_MODULE</DefineConstants>
   </PropertyGroup>
+  <Import Project="../native/NativeStableImage.props" Condition="'$(NexaNativeModule)' == 'true'" />
 
   <ItemGroup>
     <AssemblyMetadata Include="NexaMicrosoftClientId" Condition="'$(NexaMicrosoftClientId)' != ''" Value="$(NexaMicrosoftClientId)" />
