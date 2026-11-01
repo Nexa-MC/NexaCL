@@ -1,7 +1,7 @@
+using Nexa.Native.Services.Wire;
 using Nexa.Services.Accounts;
 using Nexa.Xsr;
 using Nexa.Xsr.State;
-using Nexa.Native.Services.Wire;
 
 namespace Nexa.Native.Accounts.Wire;
 
