@@ -674,6 +674,9 @@ internal static partial class Program
             using var library = Nexa.Services.Composition.MinecraftLibraryRuntimeComposer.Compose(host, directory,
                 new LaunchInstallValidationInstances());
             using var catalogs = Nexa.Services.Composition.InstallCatalogRuntimeComposer.Compose(host, new LaunchInstallValidationCatalog());
+#if NEXA_NATIVE_SERVICES
+            await catalogs.Initialization.ConfigureAwait(false);
+#endif
             var intents = new DesktopUiIntentSink();
             var shell = NxmlShellComposer.Compose(host.StateStore, uiRuntime, intentSink: intents);
             shell.Renderer.ReducedMotion = true;
@@ -809,7 +812,15 @@ internal static partial class Program
                 || shell.Tree.GetComponent<XsrUiText>(Find("CatalogDetail:loader:0.16.0")) is not { Localize: false } loaderText
                 || loaderText.Content != detail || !shell.Renderer.Activate(loader))
                 throw new InvalidOperationException("Loader catalogue failed literal owned-row projection or selection.");
+            await controller.WaitUntilIdle().WaitAsync(timeout.Token).ConfigureAwait(false);
             scene = shell.Render(narrow);
+            while (shell.Tree.GetComponent<XsrUiSelection>(loader)?.IsSelected != true
+                || shell.Tree.GetComponent<XsrUiSegmentReveal>(Find("JavaFabricApiTab"))?.Expanded != true)
+            {
+                await controller.WaitUntilIdle().WaitAsync(timeout.Token).ConfigureAwait(false);
+                await Task.Delay(1, timeout.Token).ConfigureAwait(false);
+                scene = shell.Render(narrow);
+            }
             if (shell.Tree.GetComponent<XsrUiSelection>(loader)?.IsSelected != true
                 || !ReferenceEquals(track, shell.Tree.GetComponent<XsrUiSegmentedTrack>(Find("JavaInstallPagerTabs")))
                 || shell.Tree.GetComponent<XsrUiSegmentReveal>(Find("JavaFabricApiTab"))?.Expanded != true)

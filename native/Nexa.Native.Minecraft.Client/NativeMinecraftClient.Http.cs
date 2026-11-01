@@ -35,6 +35,7 @@ public sealed partial class NativeMinecraftClient
     private Task<byte[]> ExecuteReverseAsync(ReadOnlyMemory<byte> bytes, CancellationToken token)
     {
         using var reader = MinecraftServiceProtocol.Read(bytes, out int operation);
+        if (operation == MinecraftHostOperations.CatalogSource) return ExecuteCatalogSourceAsync(bytes, token);
         if (operation is >= NetworkHttpWire.Create and <= NetworkHttpWire.Release)
             return ExecuteHttpAsync(operation, bytes, token);
         if (operation is MinecraftHostOperations.DescribeDownload or MinecraftHostOperations.Download)

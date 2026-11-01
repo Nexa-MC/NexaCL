@@ -36,6 +36,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
     private MinecraftProcessService? _processes;
     private JavaRuntimeInventoryService? _java;
     private JavaRuntimeInstaller? _javaInstaller;
+    private string? _catalogCacheDirectory;
     private long _javaProgressRevision;
     private readonly SemaphoreSlim _javaAdmission = new(32, 32);
     private readonly System.Collections.Concurrent.ConcurrentQueue<int> _javaSlots = new(Enumerable.Range(3, 32));
@@ -59,7 +60,8 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         _http.Timeout = TimeSpan.FromMinutes(10);
         _metadataHttp = new(_hostHttp, disposeHandler: false) { Timeout = TimeSpan.FromMinutes(2) };
         _metadataHttp.DefaultRequestHeaders.UserAgent.ParseAdd("NexaCL/2.0");
-        XsrStateStoreBuilder builder = new(); MinecraftProcessStateComposition.DeclareState(builder); TaskCenterStateContract.DeclareState(builder); DownloadService.DeclareState(builder); MinecraftLaunchProgressState.DeclareState(builder); _store = builder.Build();
+        XsrStateStoreBuilder builder = new(); MinecraftProcessStateComposition.DeclareState(builder); TaskCenterStateContract.DeclareState(builder); DownloadService.DeclareState(builder); MinecraftLaunchProgressState.DeclareState(builder);
+        Nexa.Services.Minecraft.Install.InstallCatalogStateContract.DeclareState(builder); Nexa.Services.Minecraft.Install.MinecraftInstallDraftContract.DeclareState(builder); _store = builder.Build();
         _sessionDownloads = new(_store);
 #if NEXA_NATIVE_SERVICES
         _sessionDownloads.AttachNative(_downloads);
@@ -121,6 +123,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
                 if (_instances is not null) throw new InvalidOperationException("Minecraft service is already initialized.");
                 AppContext.SetData("APP_CONTEXT_BASE_DIRECTORY", directory);
                 _instances = new(_cache, cache, versionDiscovery: _versions);
+                _catalogCacheDirectory = cache is null ? null : Path.Combine(cache, "install-catalogs");
                 _processes = new(hostStore: _store, jvmHostExecutable: jvmHost)
                 { ArchitectureValidator = new Nexa.Platform.PlatformJvmArchitectureValidator() };
                 _javaRuntimeRoot = java; _javaLocator = new(java); _java = new(_javaLocator);
@@ -132,6 +135,8 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         }
         if (_instances is null) throw new InvalidOperationException("Minecraft service has not initialized.");
         if (operation == MinecraftServiceProtocol.Remediation) return await ExecuteRemediationAsync(reader, token).ConfigureAwait(false);
+        if (operation is >= MinecraftServiceProtocol.CatalogConfigure and <= MinecraftServiceProtocol.CatalogDraft or MinecraftServiceProtocol.CatalogDraftReplace)
+            return await ExecuteCatalogAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.JavaConfigure and <= MinecraftServiceProtocol.JavaModules)
             return await ExecuteJavaManagementAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.InstallConfigure and <= MinecraftServiceProtocol.InstallEditRead)
@@ -247,6 +252,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
     {
         if (PublishLaunchState(change)) return;
         if (PublishObservationState(change)) return;
+        if (PublishCatalogState(change)) return;
         bool processes = change.SemanticId == MinecraftProcessStateComposition.SessionsKey;
         bool tasks = change.SemanticId == TaskCenterStateContract.EntriesKey;
         if (!processes && !tasks && change.SemanticId != MinecraftProcessStateComposition.FailuresKey) return;
@@ -279,6 +285,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         await _initialization.WaitAsync().ConfigureAwait(false);
         _initialization.Release();
         _launch?.CancelActiveLaunch();
+        _catalog?.Dispose();
         await RetireInstallationAsync().ConfigureAwait(false);
         await _endpoint.StopAsync().ConfigureAwait(false);
         _manualJava?.Dispose();

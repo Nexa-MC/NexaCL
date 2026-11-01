@@ -1,3 +1,4 @@
+#if !NEXA_NATIVE_SERVICES
 using Nexa.Services.Foundation;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Xsr.Runtime;
@@ -23,6 +24,8 @@ public static class InstallCatalogRuntimeComposer
         { WorkScheduler = host.Work };
         XsrCommandRouterBuilder commands = new();
         MinecraftInstallDraftService draft = new(host.StateStore);
+        commands.Register<InstallDraftReplace>(MinecraftInstallDraftContract.Replace, (change, token) =>
+        { token.ThrowIfCancellationRequested(); return ValueTask.FromResult(draft.Replace(change)); });
         commands.Register<InstallDraftChange>(MinecraftInstallDraftContract.Change, (change, token) =>
         { token.ThrowIfCancellationRequested(); return ValueTask.FromResult(draft.Apply(change)); });
         commands.Register<InstallCatalogReadCommand>(InstallCatalogRoutes.Read, async (command, token) => await service.ReadAsync(command, token).ConfigureAwait(false));
@@ -39,3 +42,5 @@ public static class InstallCatalogRuntimeComposer
     }
     private sealed class Observer : IXsrDispatchObserver { public void OnCompleted(XsrDispatchObservation observation) { } }
 }
+
+#endif

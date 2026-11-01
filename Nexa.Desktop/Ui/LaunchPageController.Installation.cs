@@ -14,7 +14,6 @@ internal sealed partial class LaunchPageController
     private void SelectInstallVersion(string version, string key)
     {
         if (_editingInstall) return;
-        _selectedInstallVersion = version;
         ChooseInstallGame(version);
         _ = _shell.Renderer.SetTextInputValue(_javaInstallEntities["JavaInstallVersionInput"], version);
 
@@ -24,11 +23,7 @@ internal sealed partial class LaunchPageController
     private void SelectInstallLoader(string loader, string key)
     {
         if (loader == "OptiFine" && !_region.IsMainlandChina) return;
-        _selectedInstallLoader = loader;
-        if (loader == LaunchInstallText.Raw("loader.vanilla")) _selectedInstallBuilds.Clear();
-        _selectedInstallAddons.Clear();
-        foreach (InstallLoader addon in _selectedInstallBuilds.Keys.Where(kind => QueryInstallEligibility()?.Loaders.Any(item => item.Loader == kind && item.IsAddon) == true))
-            _selectedInstallAddons.Add(addon == InstallLoader.FabricApi ? "Fabric API" : addon == InstallLoader.Qsl ? "QSL" : "OptiFabric");
+        ChangeDraft(new(InstallDraftChangeKind.SelectPrimary, Loader: ParseInstallLoader(loader)));
         foreach (string choice in JavaInstallLoaderKeys) ProjectInstallChoice(choice, choice == key);
         ProjectInstallAddon("Fabric API", "JavaFabricApiSelect", selected: false);
         ProjectInstallAddon("QSL", "JavaQslSelect", selected: false);
@@ -39,28 +34,54 @@ internal sealed partial class LaunchPageController
 
     private void ToggleInstallAddon(string addon, string key)
     {
-        string requiredLoader = addon == "Fabric API" ? "Fabric" : "Quilt";
-        if (_selectedInstallLoader != requiredLoader)
-        {
-            return;
-        }
-
-        bool selected = _selectedInstallAddons.Add(addon);
-        if (!selected)
-        {
-            _selectedInstallAddons.Remove(addon);
-        }
-
-        ProjectInstallAddon(addon, key, selected);
+        ChangeDraft(new(InstallDraftChangeKind.ToggleAddon, Loader: ParseInstallLoader(addon)));
     }
 
 
+    private bool _installCommitPending;
+    private string? _installCommitText;
+    private Task? _installCommitFence;
     private void NotifyInstallUnavailable()
+    {
+        _installCommitPending = true;
+        _installCommitText = _shell.Tree.GetComponent<XsrUiTextInput>(_javaInstallEntities["JavaInstallVersionInput"])?.ReadDraft().Trim() ?? "";
+        lock (_refreshGate) _installCommitFence = _draftChanges;
+        TryCompleteInstallCommit();
+    }
+    private void TryCompleteInstallCommit()
+    {
+        if (!_installCommitPending) return;
+        string current = _shell.Tree.GetComponent<XsrUiTextInput>(_javaInstallEntities["JavaInstallVersionInput"])?.ReadDraft().Trim() ?? "";
+        if (_shell.Stage.Navigation.Current != _javaInstallPage || current != _installCommitText || !ReferenceEquals(_installCommitFence, _draftChanges))
+        { _installCommitPending = false; return; }
+        if (_installCommitFence is not { IsCompleted: true }) return;
+        if (!_installCommitFence.IsCompletedSuccessfully)
+        { _installCommitPending = false; _ = _installCommitFence.Exception; return; }
+        if (_installCatalogQueries is null || !_installCatalogQueries.TryResolve(InstallEligibilityContract.Query, out _))
+        {
+            _installCommitPending = false;
+            _feedback.Warn(InstallFormat("InstallUnavailable", ("version", _selectedInstallVersion), ("selection", _selectedInstallLoader)));
+            return;
+        }
+        var eligibility = QueryInstallEligibility();
+        if (eligibility is null)
+        {
+            if (_eligibilityQueryFailed)
+            {
+                _installCommitPending = false;
+                _feedback.Warn(InstallFormat("InstallUnavailable", ("version", _selectedInstallVersion), ("selection", _selectedInstallLoader)));
+            }
+            return;
+        }
+        _installCommitPending = false;
+        CommitConfirmedInstallation(eligibility);
+    }
+    private void CommitConfirmedInstallation(InstallEligibilityResult eligibility)
     {
         if (!_editingInstall && !_region.AllowMinecraftDownloads) { _feedback.Warn(_shell.Renderer.LocalizeText(Nexa.Services.RegionalPolicy.MinecraftDownloadUnavailable)); return; }
         if (_editingInstall && _installEdit is null) { _feedback.Warn(InstallCopy("copy.8599bb4a4f3b")); return; }
         if (!_installGameChosen) { _feedback.Warn(InstallCopy("copy.26a1214b777a")); return; }
-        if (QueryInstallEligibility()?.CommitError is { } conflict) { _feedback.Warn(conflict); return; }
+        if (eligibility.CommitError is { } conflict) { _feedback.Warn(conflict); return; }
         string requested = _shell.Tree.GetComponent<XsrUiTextInput>(_javaInstallEntities["JavaInstallVersionInput"])
             ?.ReadDraft().Trim() ?? string.Empty;
         if (_editingInstall && requested.Length == 0) { _feedback.Warn(InstallCopy("copy.ff4c49f3fa06")); return; }
@@ -68,7 +89,7 @@ internal sealed partial class LaunchPageController
         string version = requested.Length == 0 ? _selectedInstallVersion : requested;
         string selection = _selectedInstallBuilds.Count == 0 ? _selectedInstallLoader : string.Join(LaunchInstallText.Raw("selection.separator"), _selectedInstallBuilds.Select(pair => InstallFormat("SelectionBuild", ("loader", pair.Key.ToString()), ("build", pair.Value))));
         // The selection is real: dispatch the install run and follow it in the task center.
-        if (!BeginInstallRun(version)) { _feedback.Warn(InstallFormat("InstallUnavailable", ("version", version), ("selection", selection))); }
+        if (!BeginInstallRun(version, eligibility)) { _feedback.Warn(InstallFormat("InstallUnavailable", ("version", version), ("selection", selection))); }
     }
 
 
@@ -78,7 +99,7 @@ internal sealed partial class LaunchPageController
     /// other selected build rides along as an addon jar. Returns false when the install route
     /// is unavailable (tests without the runtime) or the selection is empty.
     /// </summary>
-    private bool BeginInstallRun(string version)
+    private bool BeginInstallRun(string version, InstallEligibilityResult eligibility)
     {
         if (_installRunCommands is null
             || !_installRunCommands.TryResolve(MinecraftInstallRoutes.Run, out XsrCommandId route))
@@ -86,7 +107,6 @@ internal sealed partial class LaunchPageController
             return false;
         }
 
-        InstallEligibilityResult? eligibility = QueryInstallEligibility();
         (InstallLoader Kind, string Build)? primary = null;
         List<MinecraftInstallAddon> addons = [];
         foreach (KeyValuePair<InstallLoader, string> build in _selectedInstallBuilds)
@@ -239,12 +259,10 @@ internal sealed partial class LaunchPageController
 
         if (_selectedInstallLoader != "Fabric")
         {
-            _selectedInstallAddons.Remove("Fabric API");
             ProjectInstallAddon("Fabric API", "JavaFabricApiSelect", selected: false);
         }
         if (_selectedInstallLoader != "Quilt")
         {
-            _selectedInstallAddons.Remove("QSL");
             ProjectInstallAddon("QSL", "JavaQslSelect", selected: false);
         }
 
@@ -274,7 +292,9 @@ internal sealed partial class LaunchPageController
             "JavaQslPage" => InstallLoader.Qsl,
             _ => ParseInstallLoader(subpage.Loader)
         };
-        return QueryInstallEligibility()?.Loaders.Any(item => item.Loader == loader && item.Visible) == true;
+        var eligibility = QueryInstallEligibility();
+        return eligibility is not null ? eligibility.Loaders.Any(item => item.Loader == loader && item.Visible)
+            : _javaInstallEntities.TryGetValue(subpage.PageKey, out var current) && IsInstallEntityVisible(current);
     }
 
 

@@ -17,6 +17,7 @@ internal sealed partial class LaunchPageController
 {
     private void OnFramePreparing(object? sender, EventArgs e)
     {
+        TryCompleteInstallCommit();
         string copyStamp = HomeCopy("account.title");
         bool homeRefresh = Interlocked.Exchange(ref _homeRefreshRequested, 0) == 1;
         if (copyStamp != _homeCopyStamp || homeRefresh)
@@ -53,6 +54,7 @@ internal sealed partial class LaunchPageController
         }
         RefreshWidgetPresentation();
         bool installLocaleChanged = RefreshInstallLocalization();
+        if (Interlocked.Exchange(ref _installationQueryCompleted, 0) != 0) _catalogRevision = -1;
         bool completed = _installEditRead?.IsCompleted ?? false;
         bool queryChanged = _observedEditRead != _installEditRead || _editReadCompleted != completed;
         _observedEditRead = _installEditRead; _editReadCompleted = completed;
@@ -70,6 +72,7 @@ internal sealed partial class LaunchPageController
         if (!wake) return;
         ProjectionPasses++;
         ProjectInstallEditor();
+        ProjectConfirmedInstallDraft();
         ProjectProcessFeedback();
         Publish(LaunchPageState.LaunchingVisibleKey, LaunchBusy && currentPage != _launchingPage);
         ProjectLibrary();

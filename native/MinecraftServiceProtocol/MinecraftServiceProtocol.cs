@@ -22,6 +22,9 @@ internal static class MinecraftServiceProtocol
     internal const int LaunchState = 110;
     internal const int ObservationState = 120, SampleState = 121, ContextState = 122;
     internal const int Remediation = 130;
+    internal const int CatalogConfigure = 140, CatalogRead = 141, CatalogPrefetch = 142, CatalogEligibility = 143, CatalogEditPlan = 144, CatalogDraft = 145;
+    internal const int CatalogState = 146, DraftState = 147;
+    internal const int CatalogDraftReplace = 148;
 
     internal static ServiceWireWriter Request(int operation)
     {

@@ -26,6 +26,7 @@ while (pending.TryDequeue(out var type))
     if (!types.TryAdd(Id(type), type) || Special(type)) continue;
     if (Nullable.GetUnderlyingType(type) is { } nullable) pending.Enqueue(nullable);
     else if (StringMap(type)) pending.Enqueue(typeof(string));
+    else if (TypedMap(type)) { pending.Enqueue(type.GetGenericArguments()[0]); pending.Enqueue(type.GetGenericArguments()[1]); }
     else if (Element(type) is { } element) pending.Enqueue(element);
     else foreach (var property in Shape(type).Properties) pending.Enqueue(property.PropertyType);
 }
@@ -52,6 +53,8 @@ static bool Special(Type t) => t.IsPrimitive || t.IsEnum || t == typeof(string) 
     || t == typeof(ReadOnlyMemory<byte>) || t.FullName is "Nexa.Core.Media.PngImage" or "Nexa.Xsr.XsrSemanticId";
 static Type? Element(Type t) => t.IsArray ? t.GetElementType() : t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IReadOnlyList<>) ? t.GetGenericArguments()[0] : null;
 static bool StringMap(Type t) => t == typeof(IReadOnlyDictionary<string, string>);
+static bool TypedMap(Type t) => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>)
+    && (t.GetGenericArguments()[0] == typeof(string) || t.GetGenericArguments()[0].IsEnum);
 static (PropertyInfo[] Properties, int Positional) Shape(Type t)
 {
     var properties = t.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.GetIndexParameters().Length == 0).ToArray();
@@ -95,6 +98,17 @@ void Emit(Type type, bool write)
         if (write) schema.AppendLine(id + ":map String=String");
         code.Append(write ? "        if (value is null) { Int32(-1); return; }\n        using var scope = EnterValue();\n        Count(value.Count);\n        foreach (var item in value) { String(item.Key); String(item.Value); }\n"
             : "        int count = Count(); if (count == -1) return null;\n        using var scope = EnterValue();\n        var value = new global::System.Collections.Generic.Dictionary<string, string>(count, global::System.StringComparer.Ordinal);\n        for (int index = 0; index < count; index++)\n        {\n            string key = String() ?? throw new global::System.IO.InvalidDataException(\"Missing service map key.\");\n            string item = String() ?? throw new global::System.IO.InvalidDataException(\"Missing service map value.\");\n            if (!value.TryAdd(key, item)) throw new global::System.IO.InvalidDataException(\"Duplicate service map key.\");\n        }\n        return new global::System.Collections.ObjectModel.ReadOnlyDictionary<string, string>(value);\n");
+    }
+    else if (TypedMap(type))
+    {
+        Type key = type.GetGenericArguments()[0], value = type.GetGenericArguments()[1];
+        if (write) schema.AppendLine(id + ":map " + Id(key) + "=" + Id(value));
+        string comparer = key == typeof(string) ? ", global::System.StringComparer.Ordinal" : "";
+        string missingKey = key.IsValueType ? "" : " ?? throw new global::System.IO.InvalidDataException(\"Missing service map key.\")";
+        string missingValue = value.IsValueType ? "" : " ?? throw new global::System.IO.InvalidDataException(\"Missing service map value.\")";
+        code.Append(write
+            ? $"        if (value is null) {{ Int32(-1); return; }}\n        using var scope = EnterValue();\n        Count(value.Count);\n        foreach (var item in value) {{ {Id(key)}(item.Key); {Id(value)}(item.Value); }}\n"
+            : $"        int count = Count(); if (count == -1) return null;\n        using var scope = EnterValue();\n        var value = new global::System.Collections.Generic.Dictionary<{Name(key)}, {Name(value)}>(count{comparer});\n        for (int index = 0; index < count; index++)\n        {{\n            var key = {Id(key)}(){missingKey};\n            var item = {Id(value)}(){missingValue};\n            if (!value.TryAdd(key, item)) throw new global::System.IO.InvalidDataException(\"Duplicate service map key.\");\n        }}\n        return new global::System.Collections.ObjectModel.ReadOnlyDictionary<{Name(key)}, {Name(value)}>(value);\n");
     }
     else if (Element(type) is { } element)
     {

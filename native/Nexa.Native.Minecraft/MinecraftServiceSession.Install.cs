@@ -14,6 +14,8 @@ internal sealed partial class MinecraftServiceSession
     private MinecraftInstallService? _installation;
     private HttpClient? _installationHttp;
     private bool _installationStopped;
+    private IInstallCatalogSource? _installationCatalogSource;
+    private Nexa.Services.RegionalPolicy? _installationRegion;
     private HttpClient CreateInstallationHttp(bool redirects)
     {
         var handler = redirects ? _hostHttp : _strictHostHttp;
@@ -42,7 +44,9 @@ internal sealed partial class MinecraftServiceSession
                 if (_installation is not null) throw new InvalidOperationException("Minecraft installation is already configured.");
                 _installationHttp = CreateInstallationHttp(true);
                 var region = Nexa.Services.RegionalPolicy.Resolve(country);
-                _installation = new(_tasks, _sessionDownloads, new HttpInstallCatalogSource(_installationHttp, apiKey, region),
+                _installationRegion = region;
+                _installationCatalogSource = new HttpInstallCatalogSource(_installationHttp, apiKey, region);
+                _installation = new(_tasks, _sessionDownloads, _installationCatalogSource,
                     _installationHttp, loaderInstaller: new ForgeInstallService(_sessionDownloads, _installationHttp, regionalPolicy: region), hostStore: _store)
                 { SettingsPolicies = _settings, SettingsTransactions = _settings, HttpClientFactory = CreateInstallationHttp, CountryPolicy = region, CurseForgeApiKey = apiKey };
                 Remediations.BindInstall(_installation);

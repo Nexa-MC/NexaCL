@@ -5,12 +5,36 @@ namespace Nexa.Desktop.Ui;
 
 internal sealed partial class LaunchPageController
 {
+    private Task _draftChanges = Task.CompletedTask;
+    private MinecraftInstallDraftSnapshot? _projectedInstallDraft;
     private MinecraftInstallDraftSnapshot InstallDraft => _store.TryResolve(MinecraftInstallDraftContract.StateKey, out var id)
         && _store.ReadAppliedValue(id) is MinecraftInstallDraftSnapshot snapshot ? snapshot : MinecraftInstallDraftSnapshot.Empty;
     private void ChangeDraft(InstallDraftChange change)
     {
         if (_installCatalogCommands?.TryResolve(MinecraftInstallDraftContract.Change, out var route) == true)
-            _ = _installCatalogCommands.Dispatch(route, change, cancellationToken: _lifetimeCancellation.Token);
+            QueueDraftUpdate(() => _installCatalogCommands.Dispatch(route, change, cancellationToken: _lifetimeCancellation.Token).Completion);
+    }
+    private Task QueueDraftUpdate(Func<Task<Nexa.Xsr.XsrResult>> send)
+    {
+        lock (_refreshGate)
+        {
+            _draftChanges = SendAfterAsync(_draftChanges); WakeAfterInstallationQuery(_draftChanges); return _draftChanges;
+        }
+        async Task SendAfterAsync(Task previous)
+        {
+            try { await previous.ConfigureAwait(false); }
+            catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
+            { _ = previous.Exception; }
+            _lifetimeCancellation.Token.ThrowIfCancellationRequested();
+            var result = await send().ConfigureAwait(false);
+            if (!result.IsSuccess) throw new InvalidOperationException(result.Error?.Message ?? "Installation draft update failed.");
+        }
+    }
+    private Task ReplaceDraft(InstallDraftReplace change)
+    {
+        if (_installCatalogCommands?.TryResolve(MinecraftInstallDraftContract.Replace, out var route) == true)
+            return QueueDraftUpdate(() => _installCatalogCommands.Dispatch(route, change, cancellationToken: _lifetimeCancellation.Token).Completion);
+        return Task.CompletedTask;
     }
     private bool _installGameChosen { get => InstallDraft.Chosen; set => ChangeDraft(new(InstallDraftChangeKind.SetChosen, Chosen: value)); }
     private string _selectedInstallVersion { get => InstallDraft.GameVersion; set => ChangeDraft(new(InstallDraftChangeKind.SetVersion, value)); }
@@ -18,6 +42,20 @@ internal sealed partial class LaunchPageController
     private DraftBuildView _selectedInstallBuilds => new(this);
     private DraftAddonView _selectedInstallAddons => new(this);
     private static string AddonLabel(InstallLoader loader) => loader == InstallLoader.FabricApi ? "Fabric API" : loader == InstallLoader.Qsl ? "QSL" : loader.ToString();
+    private void ProjectConfirmedInstallDraft()
+    {
+        if (_shell.Stage.Navigation.Current != _javaInstallPage) return;
+        var draft = InstallDraft;
+        if (!ReferenceEquals(draft, _projectedInstallDraft))
+        {
+            _projectedInstallDraft = draft;
+            foreach (string key in JavaInstallLoaderKeys)
+                ProjectInstallChoice(key, ParseInstallLoader(key["JavaLoader".Length..]) == draft.PrimaryLoader);
+            ProjectInstallAddon("Fabric API", "JavaFabricApiSelect", draft.Addons.Contains(InstallLoader.FabricApi));
+            ProjectInstallAddon("QSL", "JavaQslSelect", draft.Addons.Contains(InstallLoader.Qsl));
+        }
+        UpdateJavaInstallSubpageVisibility();
+    }
 
     private sealed class DraftBuildView(LaunchPageController owner) : IReadOnlyDictionary<InstallLoader, string>
     {

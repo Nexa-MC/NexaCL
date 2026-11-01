@@ -62,6 +62,7 @@ public static class FoundationState
         builder.Replica(MinecraftProcessStateComposition.FailuresKey);
         Nexa.Native.Minecraft.Client.NativeMinecraftClient.DeclareLaunchReplicas(builder);
         Nexa.Native.Minecraft.Client.NativeMinecraftClient.DeclareObservationReplicas(builder);
+        Nexa.Native.Minecraft.Client.NativeMinecraftClient.DeclareCatalogReplicas(builder);
 #endif
         return builder;
     }

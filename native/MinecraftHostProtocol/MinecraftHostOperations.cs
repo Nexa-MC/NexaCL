@@ -10,5 +10,6 @@ internal static class MinecraftHostOperations
     internal const int AccountProfile = 2300, AccountIdentity = 2301;
     internal const int WindowProbe = 2400, PreflightEvaluate = 2401;
     internal const int RecordObservation = 2402;
+    internal const int CatalogSource = 2500;
     internal const int JavaRegistryRead = 2200, JavaRegistryWrite = 2201;
 }

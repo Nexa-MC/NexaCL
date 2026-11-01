@@ -54,6 +54,7 @@ public sealed partial class NativeMinecraftClient : IAsyncDisposable
     {
         using var reader = MinecraftServiceProtocol.Read(bytes, out int operation);
         if (operation == MinecraftServiceProtocol.JavaProgress) return ReceiveJavaProgress(reader);
+        if (operation is MinecraftServiceProtocol.CatalogState or MinecraftServiceProtocol.DraftState) return ApplyCatalogState(operation, reader);
         if (operation is >= MinecraftServiceProtocol.LaunchState and < MinecraftServiceProtocol.LaunchState + 7)
             return ApplyLaunchState(operation - MinecraftServiceProtocol.LaunchState, reader);
         long revision = reader.Int64(); var availability = (XsrStateAvailability)reader.Int32(); int count = reader.Count();

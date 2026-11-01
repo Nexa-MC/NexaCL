@@ -61,6 +61,7 @@ internal static class JavaInstallCases
             throw new InvalidDataException("Native Java management accepted a stale revision.");
         var settings = new InstallSettings(); minecraft.AttachSettings(settings, settings);
         await minecraft.ConfigureInstallationAsync("US", token: token);
+        await CatalogCases.RunAsync(minecraft, replicas, token);
         string gameRoot = Path.Combine(directory, "native-installed-game");
         var game = await minecraft.InstallMinecraftAsync(new(gameRoot, "1.20.1"), token);
         if (!game.IsSuccess) throw new InvalidDataException("Native game installation failed: " + game.Error!.Message);

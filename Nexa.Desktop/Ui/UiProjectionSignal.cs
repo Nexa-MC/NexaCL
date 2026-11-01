@@ -21,5 +21,6 @@ internal sealed class UiProjectionSignal : IDisposable
     }
     private void OnIntent(object? sender, DesktopUiIntentEventArgs args) => Interlocked.Exchange(ref _pending, 1);
     internal bool Consume() => Interlocked.Exchange(ref _pending, 0) != 0;
+    internal void Signal() => Interlocked.Exchange(ref _pending, 1);
     public void Dispose() { _store.Changed -= OnChanged; _intents.IntentEmitted -= OnIntent; }
 }

@@ -9,6 +9,8 @@ internal sealed partial class LaunchPageController
     private bool _editingInstall;
     private MinecraftInstallEditPlan? _editPlan;
     private string? _editPlanKey;
+    private string? _editPlanRequestKey;
+    private Task<XsrResult<MinecraftInstallEditPlan>>? _editPlanRead;
     private MinecraftInstallEditSnapshot? _installEdit;
     private Task<XsrResult<MinecraftInstallEditSnapshot>>? _installEditRead;
 
@@ -33,6 +35,7 @@ internal sealed partial class LaunchPageController
         Publish(LaunchPageState.JavaInstallTitleKey, InstallCopy(editing ? "edit.title" : "install.title"));
         _editPlan = null;
         _editPlanKey = null;
+        _editPlanRequestKey = null; _editPlanRead = null;
         ReloadInstall(_installWorkspace, ("startEnabled", InstallFlag(!editing && _region.AllowMinecraftDownloads)),
             ("startText", InstallCopy(editing ? "edit.save" : _region.AllowMinecraftDownloads ? "install.start" : "install.download-unavailable")),
             ("startLabel", editing || _region.AllowMinecraftDownloads ? InstallCopy(editing ? "edit.save-label" : "install.start-label") : _shell.Renderer.LocalizeText(Nexa.Services.RegionalPolicy.MinecraftDownloadUnavailable)));
@@ -45,10 +48,8 @@ internal sealed partial class LaunchPageController
         if (!PendingQuery.Succeeded(read))
         { _feedback.Warn(InstallCopy("copy.7a8cf0d72095")); return; }
         _installEdit = read.Result.Value!;
-        _installGameChosen = true;
-        _selectedInstallVersion = _installEdit.GameVersion;
-        foreach (var selection in _installEdit.Selection) _selectedInstallBuilds[selection.Loader] = selection.Version;
-        _selectedInstallLoader = _installEdit.Selection.Count > 0 ? _installEdit.Selection[0].Loader.ToString() : LaunchInstallText.Raw("loader.vanilla");
+        _ = ReplaceDraft(new(true, _installEdit.GameVersion, _installEdit.Selection.Count > 0 ? _installEdit.Selection[0].Loader : null,
+            _installEdit.Selection, []));
         PrefetchInstallCatalog(_installEdit.GameVersion);
         UpdateJavaInstallSubpageVisibility("JavaMinecraftPage");
         _catalogRevision = -1;
@@ -62,10 +63,15 @@ internal sealed partial class LaunchPageController
         string name = _shell.Tree.GetComponent<XsrUiTextInput>(_javaInstallEntities["JavaInstallVersionInput"])!.ReadDraft().Trim();
         string key = name + "\n" + string.Join(";", _selectedInstallBuilds.OrderBy(pair => pair.Key).Select(pair => pair.Key + "=" + pair.Value));
         if (key == _editPlanKey) return;
-        var pending = _installCatalogQueries.QueryAsync<MinecraftInstallEditPlanQuery, MinecraftInstallEditPlan>(route,
-            new(_installEdit, _selectedInstallBuilds.Select(pair => new InstallBuildSelection(pair.Key, pair.Value)).ToArray()));
-        if (!pending.IsCompletedSuccessfully) return;
-        var completed = pending.Result;
+        if (_editPlanRequestKey != key || _editPlanRead is null)
+        {
+            _editPlanRequestKey = key;
+            _editPlanRead = _installCatalogQueries.QueryAsync<MinecraftInstallEditPlanQuery, MinecraftInstallEditPlan>(route,
+                new(_installEdit, _selectedInstallBuilds.Select(pair => new InstallBuildSelection(pair.Key, pair.Value)).ToArray()),
+                cancellationToken: _lifetimeCancellation.Token).AsTask();
+            WakeAfterInstallationQuery(_editPlanRead);
+        }
+        if (!new PendingQuery<MinecraftInstallEditPlan>(_editPlanRead).TryRead(out var completed)) return;
         if (!completed.IsSuccess) return;
         _editPlan = completed.Value!;
         _editPlanKey = key;

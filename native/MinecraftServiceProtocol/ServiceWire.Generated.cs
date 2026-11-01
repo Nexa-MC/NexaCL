@@ -59,6 +59,20 @@ internal sealed partial class ServiceWireWriter
         Int64(value.BytesPerSecond);
     }
     internal void DownloadStage(global::Nexa.Services.Downloads.DownloadStage value) => Int32((int)value);
+    internal void IReadOnlyDictionary_InstallLoader_String(global::System.Collections.Generic.IReadOnlyDictionary<global::Nexa.Services.Minecraft.Install.InstallLoader, global::System.String>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) { InstallLoader(item.Key); String(item.Value); }
+    }
+    internal void IReadOnlyDictionary_String_InstallBuildEligibility(global::System.Collections.Generic.IReadOnlyDictionary<global::System.String, global::Nexa.Services.Minecraft.Install.InstallBuildEligibility>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) { String(item.Key); InstallBuildEligibility(item.Value); }
+    }
     internal void IReadOnlyDictionary_String_String(global::System.Collections.Generic.IReadOnlyDictionary<global::System.String, global::System.String>? value)
     {
         if (value is null) { Int32(-1); return; }
@@ -87,12 +101,40 @@ internal sealed partial class ServiceWireWriter
         Count(value.Count);
         foreach (var item in value) InstallBuildSelection(item);
     }
+    internal void IReadOnlyList_InstallCatalogSnapshot(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallCatalogSnapshot>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstallCatalogSnapshot(item);
+    }
+    internal void IReadOnlyList_InstallCatalogVersion(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallCatalogVersion>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstallCatalogVersion(item);
+    }
     internal void IReadOnlyList_InstallDownload(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallDownload>? value)
     {
         if (value is null) { Int32(-1); return; }
         using var scope = EnterValue();
         Count(value.Count);
         foreach (var item in value) InstallDownload(item);
+    }
+    internal void IReadOnlyList_InstallLoader(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallLoader>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstallLoader(item);
+    }
+    internal void IReadOnlyList_InstallLoaderEligibility(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallLoaderEligibility>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstallLoaderEligibility(item);
     }
     internal void IReadOnlyList_InstanceRecoveryChange(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange>? value)
     {
@@ -234,12 +276,69 @@ internal sealed partial class ServiceWireWriter
         Count(value.Count);
         foreach (var item in value) TaskCenterStep(item);
     }
+    internal void InstallBuildEligibility(global::Nexa.Services.Minecraft.Install.InstallBuildEligibility? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Conflict);
+        String(value.Notice);
+    }
     internal void InstallBuildSelection(global::Nexa.Services.Minecraft.Install.InstallBuildSelection? value)
     {
         Boolean(value is not null); if (value is null) return;
         using var scope = EnterValue();
         InstallLoader(value.Loader);
         String(value.Version);
+    }
+    internal void InstallCatalogPrefetchCommand(global::Nexa.Services.Minecraft.Install.InstallCatalogPrefetchCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.GameVersion);
+    }
+    internal void InstallCatalogReadCommand(global::Nexa.Services.Minecraft.Install.InstallCatalogReadCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.GameVersion);
+        Nullable_InstallLoader(value.Loader);
+        Boolean(value.Refresh);
+    }
+    internal void InstallCatalogSnapshot(global::Nexa.Services.Minecraft.Install.InstallCatalogSnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int64(value.Revision);
+        String(value.GameVersion);
+        Nullable_InstallLoader(value.Loader);
+        IReadOnlyList_InstallCatalogVersion(value.Versions);
+        Boolean(value.Loading);
+        String(value.Error);
+        String(value.Unsupported);
+        Nullable_Boolean(value.CacheHit);
+        Nullable_Int32(value.InputCount);
+        Boolean(value.IsStale);
+        Nullable_Double(value.NormalizeMilliseconds);
+    }
+    internal void InstallCatalogState(global::Nexa.Services.Minecraft.Install.InstallCatalogState? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int64(value.Revision);
+        String(value.GameVersion);
+        IReadOnlyList_InstallCatalogSnapshot(value.Catalogs);
+    }
+    internal void InstallCatalogVersion(global::Nexa.Services.Minecraft.Install.InstallCatalogVersion? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Id);
+        String(value.Detail);
+        Boolean(value.Stable);
+        IReadOnlyList_InstallDownload(value.Downloads);
+        String(value.Warning);
+        String(value.ForgeRequirement);
+        String(value.FabricRequirement);
     }
     internal void InstallDownload(global::Nexa.Services.Minecraft.Install.InstallDownload? value)
     {
@@ -251,7 +350,58 @@ internal sealed partial class ServiceWireWriter
         String(value.Sha1);
         Int64(value.Size);
     }
+    internal void InstallDraftChange(global::Nexa.Services.Minecraft.Install.InstallDraftChange? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        InstallDraftChangeKind(value.Kind);
+        String(value.Value);
+        Nullable_InstallLoader(value.Loader);
+        Boolean(value.Chosen);
+    }
+    internal void InstallDraftChangeKind(global::Nexa.Services.Minecraft.Install.InstallDraftChangeKind value) => Int32((int)value);
+    internal void InstallDraftReplace(global::Nexa.Services.Minecraft.Install.InstallDraftReplace? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Boolean(value.Chosen);
+        String(value.GameVersion);
+        Nullable_InstallLoader(value.PrimaryLoader);
+        IReadOnlyList_InstallBuildSelection(value.Builds);
+        IReadOnlyList_InstallLoader(value.Addons);
+    }
+    internal void InstallEligibilityQuery(global::Nexa.Services.Minecraft.Install.InstallEligibilityQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.GameVersion);
+        IReadOnlyList_InstallBuildSelection(value.Selection);
+        Nullable_InstallLoader(value.PrimaryLoader);
+        Nullable_InstallLoader(value.Catalog);
+        IReadOnlyList_String(value.Candidates);
+        String(value.ToggleVersion);
+        IReadOnlyList_InstallBuildSelection(value.InstalledSelection);
+    }
+    internal void InstallEligibilityResult(global::Nexa.Services.Minecraft.Install.InstallEligibilityResult? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        IReadOnlyList_InstallBuildSelection(value.Selection);
+        Nullable_InstallLoader(value.PrimaryLoader);
+        IReadOnlyList_InstallLoaderEligibility(value.Loaders);
+        IReadOnlyDictionary_String_InstallBuildEligibility(value.Builds);
+        String(value.CommitError);
+        String(value.Rejection);
+    }
     internal void InstallLoader(global::Nexa.Services.Minecraft.Install.InstallLoader value) => Int32((int)value);
+    internal void InstallLoaderEligibility(global::Nexa.Services.Minecraft.Install.InstallLoaderEligibility? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        InstallLoader(value.Loader);
+        Boolean(value.IsAddon);
+        Boolean(value.Visible);
+    }
     internal void InstanceRecoveryChange(global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -680,6 +830,32 @@ internal sealed partial class ServiceWireWriter
         LocalJarArtifact(value.LocalInstaller);
         String(value.NewInstanceName);
     }
+    internal void MinecraftInstallDraftSnapshot(global::Nexa.Services.Minecraft.Install.MinecraftInstallDraftSnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Boolean(value.Chosen);
+        String(value.GameVersion);
+        Nullable_InstallLoader(value.PrimaryLoader);
+        IReadOnlyDictionary_InstallLoader_String(value.Builds);
+        IReadOnlyList_InstallLoader(value.Addons);
+    }
+    internal void MinecraftInstallEditKind(global::Nexa.Services.Minecraft.Install.MinecraftInstallEditKind value) => Int32((int)value);
+    internal void MinecraftInstallEditPlan(global::Nexa.Services.Minecraft.Install.MinecraftInstallEditPlan? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        MinecraftInstallEditKind(value.Kind);
+        IReadOnlyList_InstallLoader(value.ChangedLoaders);
+        String(value.ActionLabel);
+    }
+    internal void MinecraftInstallEditPlanQuery(global::Nexa.Services.Minecraft.Install.MinecraftInstallEditPlanQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        MinecraftInstallEditSnapshot(value.Original);
+        IReadOnlyList_InstallBuildSelection(value.Selection);
+    }
     internal void MinecraftInstallEditSnapshot(global::Nexa.Services.Minecraft.Install.MinecraftInstallEditSnapshot? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -1104,6 +1280,10 @@ internal sealed partial class ServiceWireWriter
     {
         Boolean(value.HasValue); if (value.HasValue) DateTimeOffset(value.Value);
     }
+    internal void Nullable_Double(global::System.Nullable<global::System.Double> value)
+    {
+        Boolean(value.HasValue); if (value.HasValue) Double(value.Value);
+    }
     internal void Nullable_Guid(global::System.Nullable<global::System.Guid> value)
     {
         Boolean(value.HasValue); if (value.HasValue) Guid(value.Value);
@@ -1370,6 +1550,32 @@ internal sealed partial class ServiceWireReader
         return new global::Nexa.Services.Downloads.DownloadProgress(p0, p1!, p2, p3, p4);
     }
     internal global::Nexa.Services.Downloads.DownloadStage DownloadStage() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 or 6 ? (global::Nexa.Services.Downloads.DownloadStage)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::System.Collections.Generic.IReadOnlyDictionary<global::Nexa.Services.Minecraft.Install.InstallLoader, global::System.String>? IReadOnlyDictionary_InstallLoader_String()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::System.Collections.Generic.Dictionary<global::Nexa.Services.Minecraft.Install.InstallLoader, global::System.String>(count);
+        for (int index = 0; index < count; index++)
+        {
+            var key = InstallLoader();
+            var item = String() ?? throw new global::System.IO.InvalidDataException("Missing service map value.");
+            if (!value.TryAdd(key, item)) throw new global::System.IO.InvalidDataException("Duplicate service map key.");
+        }
+        return new global::System.Collections.ObjectModel.ReadOnlyDictionary<global::Nexa.Services.Minecraft.Install.InstallLoader, global::System.String>(value);
+    }
+    internal global::System.Collections.Generic.IReadOnlyDictionary<global::System.String, global::Nexa.Services.Minecraft.Install.InstallBuildEligibility>? IReadOnlyDictionary_String_InstallBuildEligibility()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::System.Collections.Generic.Dictionary<global::System.String, global::Nexa.Services.Minecraft.Install.InstallBuildEligibility>(count, global::System.StringComparer.Ordinal);
+        for (int index = 0; index < count; index++)
+        {
+            var key = String() ?? throw new global::System.IO.InvalidDataException("Missing service map key.");
+            var item = InstallBuildEligibility() ?? throw new global::System.IO.InvalidDataException("Missing service map value.");
+            if (!value.TryAdd(key, item)) throw new global::System.IO.InvalidDataException("Duplicate service map key.");
+        }
+        return new global::System.Collections.ObjectModel.ReadOnlyDictionary<global::System.String, global::Nexa.Services.Minecraft.Install.InstallBuildEligibility>(value);
+    }
     internal global::System.Collections.Generic.IReadOnlyDictionary<global::System.String, global::System.String>? IReadOnlyDictionary_String_String()
     {
         int count = Count(); if (count == -1) return null;
@@ -1407,12 +1613,44 @@ internal sealed partial class ServiceWireReader
         for (int index = 0; index < count; index++) value[index] = InstallBuildSelection() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallCatalogSnapshot>? IReadOnlyList_InstallCatalogSnapshot()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Install.InstallCatalogSnapshot[count];
+        for (int index = 0; index < count; index++) value[index] = InstallCatalogSnapshot() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallCatalogVersion>? IReadOnlyList_InstallCatalogVersion()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Install.InstallCatalogVersion[count];
+        for (int index = 0; index < count; index++) value[index] = InstallCatalogVersion() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
     internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallDownload>? IReadOnlyList_InstallDownload()
     {
         int count = Count(); if (count == -1) return null;
         using var scope = EnterValue();
         var value = new global::Nexa.Services.Minecraft.Install.InstallDownload[count];
         for (int index = 0; index < count; index++) value[index] = InstallDownload() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallLoader>? IReadOnlyList_InstallLoader()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Install.InstallLoader[count];
+        for (int index = 0; index < count; index++) value[index] = InstallLoader();
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallLoaderEligibility>? IReadOnlyList_InstallLoaderEligibility()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Install.InstallLoaderEligibility[count];
+        for (int index = 0; index < count; index++) value[index] = InstallLoaderEligibility() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
     internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange>? IReadOnlyList_InstanceRecoveryChange()
@@ -1575,6 +1813,14 @@ internal sealed partial class ServiceWireReader
         for (int index = 0; index < count; index++) value[index] = TaskCenterStep() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
+    internal global::Nexa.Services.Minecraft.Install.InstallBuildEligibility? InstallBuildEligibility()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String();
+        var p1 = String();
+        return new global::Nexa.Services.Minecraft.Install.InstallBuildEligibility(p0!, p1!);
+    }
     internal global::Nexa.Services.Minecraft.Install.InstallBuildSelection? InstallBuildSelection()
     {
         if (!Boolean()) return null;
@@ -1582,6 +1828,61 @@ internal sealed partial class ServiceWireReader
         var p0 = InstallLoader();
         var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         return new global::Nexa.Services.Minecraft.Install.InstallBuildSelection(p0, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.Install.InstallCatalogPrefetchCommand? InstallCatalogPrefetchCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Install.InstallCatalogPrefetchCommand(p0!);
+    }
+    internal global::Nexa.Services.Minecraft.Install.InstallCatalogReadCommand? InstallCatalogReadCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Nullable_InstallLoader();
+        var p2 = Boolean();
+        return new global::Nexa.Services.Minecraft.Install.InstallCatalogReadCommand(p0!, p1, p2);
+    }
+    internal global::Nexa.Services.Minecraft.Install.InstallCatalogSnapshot? InstallCatalogSnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int64();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Nullable_InstallLoader();
+        var p3 = IReadOnlyList_InstallCatalogVersion() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = Boolean();
+        var p5 = String();
+        var p6 = String();
+        var p7 = Nullable_Boolean();
+        var p8 = Nullable_Int32();
+        var p9 = Boolean();
+        var p10 = Nullable_Double();
+        return new global::Nexa.Services.Minecraft.Install.InstallCatalogSnapshot(p0, p1!, p2, p3!, p4, p5!, p6!) { CacheHit = p7, InputCount = p8, IsStale = p9, NormalizeMilliseconds = p10 };
+    }
+    internal global::Nexa.Services.Minecraft.Install.InstallCatalogState? InstallCatalogState()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int64();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = IReadOnlyList_InstallCatalogSnapshot() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Install.InstallCatalogState(p0, p1!, p2!);
+    }
+    internal global::Nexa.Services.Minecraft.Install.InstallCatalogVersion? InstallCatalogVersion()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Boolean();
+        var p3 = IReadOnlyList_InstallDownload();
+        var p4 = String();
+        var p5 = String();
+        var p6 = String();
+        return new global::Nexa.Services.Minecraft.Install.InstallCatalogVersion(p0!, p1!, p2, p3!, p4!, p5!, p6!);
     }
     internal global::Nexa.Services.Minecraft.Install.InstallDownload? InstallDownload()
     {
@@ -1594,7 +1895,63 @@ internal sealed partial class ServiceWireReader
         var p4 = Int64();
         return new global::Nexa.Services.Minecraft.Install.InstallDownload(p0!, p1!, p2!, p3!, p4);
     }
+    internal global::Nexa.Services.Minecraft.Install.InstallDraftChange? InstallDraftChange()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = InstallDraftChangeKind();
+        var p1 = String();
+        var p2 = Nullable_InstallLoader();
+        var p3 = Boolean();
+        return new global::Nexa.Services.Minecraft.Install.InstallDraftChange(p0, p1!, p2, p3);
+    }
+    internal global::Nexa.Services.Minecraft.Install.InstallDraftChangeKind InstallDraftChangeKind() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10 ? (global::Nexa.Services.Minecraft.Install.InstallDraftChangeKind)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Minecraft.Install.InstallDraftReplace? InstallDraftReplace()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Boolean();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Nullable_InstallLoader();
+        var p3 = IReadOnlyList_InstallBuildSelection() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = IReadOnlyList_InstallLoader() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Install.InstallDraftReplace(p0, p1!, p2, p3!, p4!);
+    }
+    internal global::Nexa.Services.Minecraft.Install.InstallEligibilityQuery? InstallEligibilityQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = IReadOnlyList_InstallBuildSelection() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Nullable_InstallLoader();
+        var p3 = Nullable_InstallLoader();
+        var p4 = IReadOnlyList_String();
+        var p5 = String();
+        var p6 = IReadOnlyList_InstallBuildSelection();
+        return new global::Nexa.Services.Minecraft.Install.InstallEligibilityQuery(p0!, p1!, p2, p3, p4!, p5!, p6!);
+    }
+    internal global::Nexa.Services.Minecraft.Install.InstallEligibilityResult? InstallEligibilityResult()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = IReadOnlyList_InstallBuildSelection() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Nullable_InstallLoader();
+        var p2 = IReadOnlyList_InstallLoaderEligibility() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = IReadOnlyDictionary_String_InstallBuildEligibility() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = String();
+        var p5 = String();
+        return new global::Nexa.Services.Minecraft.Install.InstallEligibilityResult(p0!, p1, p2!, p3!, p4!, p5!);
+    }
     internal global::Nexa.Services.Minecraft.Install.InstallLoader InstallLoader() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10 or 11 ? (global::Nexa.Services.Minecraft.Install.InstallLoader)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Minecraft.Install.InstallLoaderEligibility? InstallLoaderEligibility()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = InstallLoader();
+        var p1 = Boolean();
+        var p2 = Boolean();
+        return new global::Nexa.Services.Minecraft.Install.InstallLoaderEligibility(p0, p1, p2);
+    }
     internal global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange? InstanceRecoveryChange()
     {
         if (!Boolean()) return null;
@@ -2059,6 +2416,35 @@ internal sealed partial class ServiceWireReader
         var p11 = String();
         return new global::Nexa.Services.Minecraft.Install.MinecraftInstallCommand(p0!, p1!, p2, p3!, p4!, p5!, p6!) { DefaultIsolationMode = p7!, ForceReinstall = p8, InheritVanilla = p9, LocalInstaller = p10!, NewInstanceName = p11! };
     }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftInstallDraftSnapshot? MinecraftInstallDraftSnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Boolean();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Nullable_InstallLoader();
+        var p3 = IReadOnlyDictionary_InstallLoader_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = IReadOnlyList_InstallLoader() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Install.MinecraftInstallDraftSnapshot(p0, p1!, p2, p3!, p4!);
+    }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftInstallEditKind MinecraftInstallEditKind() { int value = Int32(); return value is 0 or 1 or 2 ? (global::Nexa.Services.Minecraft.Install.MinecraftInstallEditKind)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftInstallEditPlan? MinecraftInstallEditPlan()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = MinecraftInstallEditKind();
+        var p1 = IReadOnlyList_InstallLoader() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Install.MinecraftInstallEditPlan(p0, p1!, p2!);
+    }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftInstallEditPlanQuery? MinecraftInstallEditPlanQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = MinecraftInstallEditSnapshot() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = IReadOnlyList_InstallBuildSelection() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Install.MinecraftInstallEditPlanQuery(p0!, p1!);
+    }
     internal global::Nexa.Services.Minecraft.Install.MinecraftInstallEditSnapshot? MinecraftInstallEditSnapshot()
     {
         if (!Boolean()) return null;
@@ -2512,6 +2898,10 @@ internal sealed partial class ServiceWireReader
     {
         return Boolean() ? DateTimeOffset() : null;
     }
+    internal global::System.Nullable<global::System.Double> Nullable_Double()
+    {
+        return Boolean() ? Double() : null;
+    }
     internal global::System.Nullable<global::System.Guid> Nullable_Guid()
     {
         return Boolean() ? Guid() : null;
@@ -2737,5 +3127,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "BEE5CDD5919A68FFCBA02FA8D27908660C3EF0814C53ED4ABE63D83C229B0508";
+    internal const string Fingerprint = "2E31063E7D37DDC46DD91DDD90935312BE2070C2DDE9E16F9C3C0E6AEB25DEE4";
 }

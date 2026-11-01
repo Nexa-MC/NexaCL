@@ -593,6 +593,9 @@ internal static partial class Program
         string? packagedCurseForgeApiKey = ResolveEmbeddedSetting("NexaCurseForgeApiKey");
         using InstallCatalogRuntime installCatalog = InstallCatalogRuntimeComposer.Compose(host, observer: dispatchObservation,
             packagedCurseForgeApiKey: packagedCurseForgeApiKey);
+#if NEXA_NATIVE_SERVICES
+        await installCatalog.Initialization.ConfigureAwait(false);
+#endif
         using MinecraftInstallRuntime installRun = MinecraftInstallRuntimeComposer.Compose(host, observer: dispatchObservation,
             packagedCurseForgeApiKey: packagedCurseForgeApiKey);
         migrationInstaller = installRun.Service;

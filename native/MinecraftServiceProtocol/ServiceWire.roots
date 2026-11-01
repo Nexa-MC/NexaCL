@@ -50,3 +50,13 @@ Nexa.Services.Minecraft.Process.Contracts|Nexa.Services.Minecraft.Process.JvmRun
 Nexa.Services.Minecraft.Process.Contracts|Nexa.Services.Minecraft.Process.JvmRunContext
 Nexa.Services.Capabilities.Contracts|Nexa.Services.Capabilities.RemediationRequest
 Nexa.Services.Capabilities.Contracts|Nexa.Services.Capabilities.RemediationResult
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.InstallCatalogReadCommand
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.InstallCatalogPrefetchCommand
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.InstallCatalogState
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallDraftSnapshot
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.InstallDraftChange
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.InstallEligibilityQuery
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.InstallEligibilityResult
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallEditPlanQuery
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallEditPlan
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.InstallDraftReplace

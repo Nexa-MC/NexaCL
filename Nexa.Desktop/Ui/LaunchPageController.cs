@@ -260,7 +260,8 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
     {
         lock (_refreshGate)
         {
-            return Task.WhenAll(_refreshTask, _installCatalogTask, _installPrefetchTask, _installEditRead ?? Task.CompletedTask);
+            return Task.WhenAll(new[] { _refreshTask, _installCatalogTask, _installPrefetchTask, _installEditRead ?? Task.CompletedTask,
+                _editPlanRead ?? Task.CompletedTask, _draftChanges }.Concat(_installationQueries).Concat(_eligibilityReads.Values));
         }
     }
 

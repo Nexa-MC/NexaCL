@@ -24,11 +24,7 @@ internal sealed partial class LaunchPageController
         _installEdit = null;
         _installEditRead = null;
         SetInstallEditorLabels(false);
-        _installGameChosen = false;
-        _selectedInstallVersion = "";
-        _selectedInstallBuilds.Clear();
-        _selectedInstallAddons.Clear();
-        _selectedInstallLoader = LaunchInstallText.Raw("loader.vanilla");
+        _ = ReplaceDraft(new(false, "", null, [], []));
         _activeJavaInstallPage = "JavaMinecraftPage";
         _catalogRequest = "";
         _catalogSearch = "";
@@ -39,10 +35,7 @@ internal sealed partial class LaunchPageController
     private void ChooseInstallGame(string version)
     {
         if (_editingInstall) return;
-        _installGameChosen = true;
-        _selectedInstallVersion = version;
-        _selectedInstallBuilds.Clear();
-        SelectInstallLoader(LaunchInstallText.Raw("loader.vanilla"), string.Empty);
+        _ = ReplaceDraft(new(true, version, null, [], []));
         UpdateJavaInstallSubpageVisibility();
         PrefetchInstallCatalog(version);
         _locateCatalogSelection = true;
@@ -161,48 +154,93 @@ internal sealed partial class LaunchPageController
             if (_editingInstall) return true;
             if (_installGameChosen && _selectedInstallVersion == version.Id)
             {
-                _installGameChosen = false;
+                _ = ReplaceDraft(new(false, version.Id, null, [], []));
                 PrefetchInstallCatalog("");
-                _selectedInstallBuilds.Clear();
-                SelectInstallLoader(LaunchInstallText.Raw("loader.vanilla"), string.Empty);
                 _shell.Renderer.SetTextInputValue(_javaInstallEntities["JavaInstallVersionInput"], "");
                 _catalogRevision = -1;
                 return true;
             }
             ChooseInstallGame(version.Id);
             _shell.Renderer.SetTextInputValue(_javaInstallEntities["JavaInstallVersionInput"], version.Id);
-            SelectInstallLoader(LaunchInstallText.Raw("loader.vanilla"), string.Empty);
         }
         else
         {
-            var result = QueryInstallEligibility(ActiveCatalogLoader, [version.Id], version.Id);
-            if (result is null || result.Rejection is not null) return true;
-            _selectedInstallLoader = result.PrimaryLoader is { } primary
-                ? JavaInstallSubpages.First(page => ParseInstallLoader(page.Loader) == primary).Loader! : LaunchInstallText.Raw("loader.vanilla");
-            _selectedInstallBuilds.Clear();
-            _selectedInstallAddons.Clear();
-            foreach (var item in result.Selection)
-            {
-                _selectedInstallBuilds[item.Loader] = item.Version;
-                if (result.Loaders.Any(loader => loader.Loader == item.Loader && loader.IsAddon))
-                    _selectedInstallAddons.Add(item.Loader == InstallLoader.FabricApi ? "Fabric API" : item.Loader == InstallLoader.Qsl ? "QSL" : item.Loader.ToString());
-            }
-            UpdateJavaInstallSubpageVisibility();
+            QueueCatalogBuildSelection(ActiveCatalogLoader, version.Id);
         }
         _catalogRevision = -1;
         return true;
     }
+    private void QueueCatalogBuildSelection(InstallLoader? loader, string version)
+    {
+        if (_installCatalogQueries is null || _installCatalogCommands is null
+            || !_installCatalogQueries.TryResolve(InstallEligibilityContract.Query, out XsrQueryId queryRoute)
+            || !_installCatalogCommands.TryResolve(MinecraftInstallDraftContract.Replace, out XsrCommandId replaceRoute)) return;
+        var installed = _installEdit?.Selection;
+        _ = QueueDraftUpdate(async () =>
+        {
+            var draft = InstallDraft;
+            var query = new InstallEligibilityQuery(draft.Chosen ? draft.GameVersion : "",
+                draft.Builds.Select(item => new InstallBuildSelection(item.Key, item.Value)).ToArray(), draft.PrimaryLoader,
+                loader, [version], version, installed);
+            var result = await _installCatalogQueries.QueryAsync<InstallEligibilityQuery, InstallEligibilityResult>(queryRoute,
+                query, cancellationToken: _lifetimeCancellation.Token).ConfigureAwait(false);
+            if (!result.IsSuccess) return XsrResult.Failure(result.Error!);
+            if (result.Value!.Rejection is not null) return XsrResult.Success();
+            var selected = result.Value;
+            return await _installCatalogCommands.Dispatch(replaceRoute, new InstallDraftReplace(draft.Chosen, draft.GameVersion,
+                selected.PrimaryLoader, selected.Selection,
+                selected.Selection.Where(item => selected.Loaders.Any(fact => fact.Loader == item.Loader && fact.IsAddon)).Select(item => item.Loader).ToArray()),
+                cancellationToken: _lifetimeCancellation.Token).Completion.ConfigureAwait(false);
+        });
+    }
     private InstallEligibilityResult? QueryInstallEligibility(InstallLoader? catalog = null, IReadOnlyList<string>? candidates = null, string? toggle = null)
     {
+        _eligibilityQueryFailed = false;
         if (_installCatalogQueries is null || !_installCatalogQueries.TryResolve(InstallEligibilityContract.Query, out XsrQueryId id)) return null;
         var query = new InstallEligibilityQuery(_installGameChosen ? _selectedInstallVersion : "",
             Array.AsReadOnly(_selectedInstallBuilds.Select(pair => new InstallBuildSelection(pair.Key, pair.Value)).ToArray()),
             ParseInstallLoader(_selectedInstallLoader), catalog, candidates, toggle, _installEdit?.Selection);
-        var result = _installCatalogQueries.QueryAsync<InstallEligibilityQuery, InstallEligibilityResult>(id, query);
-        // This route is a bounded in-memory projection. Never synchronously wait for an incomplete query.
-        if (!result.IsCompletedSuccessfully) return null;
-        var completed = result.Result;
+        string key = InstallationEligibilityKey(query);
+        Task<XsrResult<InstallEligibilityResult>> result;
+        lock (_refreshGate)
+        {
+            if (!_eligibilityReads.TryGetValue(key, out result!))
+            {
+                if (_eligibilityReads.Count >= 32) _eligibilityReads.Clear();
+                result = _installCatalogQueries.QueryAsync<InstallEligibilityQuery, InstallEligibilityResult>(id, query,
+                    cancellationToken: _lifetimeCancellation.Token).AsTask();
+                _eligibilityReads[key] = result; WakeAfterInstallationQuery(result);
+            }
+        }
+        if (!new PendingQuery<InstallEligibilityResult>(result).TryRead(out var completed))
+        { _eligibilityQueryFailed = result.IsCompleted; return null; }
+        _eligibilityQueryFailed = !completed.IsSuccess;
         return completed.IsSuccess ? completed.Value : null;
+    }
+    private readonly Dictionary<string, Task<XsrResult<InstallEligibilityResult>>> _eligibilityReads = new(StringComparer.Ordinal);
+    private readonly HashSet<Task> _installationQueries = [];
+    private bool _eligibilityQueryFailed;
+    private int _installationQueryCompleted;
+    private string InstallationEligibilityKey(InstallEligibilityQuery query)
+    {
+        static string Text(string? value) => value is null ? "-1:" : value.Length.ToString(System.Globalization.CultureInfo.InvariantCulture) + ":" + value;
+        static string Selections(IEnumerable<InstallBuildSelection>? values) => values is null ? "-1:"
+            : string.Concat(values.Select(item => Text(item.Loader.ToString()) + Text(item.Version)));
+        return Text((_store.ReadAppliedValue(_installCatalogId) as InstallCatalogState)?.Revision.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            + Text(query.GameVersion) + Text(query.PrimaryLoader?.ToString()) + Text(query.Catalog?.ToString())
+            + Text(query.ToggleVersion) + Text(Selections(query.Selection)) + Text(Selections(query.InstalledSelection))
+            + Text(query.Candidates is null ? null : string.Concat(query.Candidates.Select(Text)));
+    }
+    private void WakeAfterInstallationQuery(Task task)
+    {
+        lock (_refreshGate) _installationQueries.Add(task);
+        _ = task.ContinueWith(completed =>
+        {
+            if (completed.IsFaulted) _ = completed.Exception;
+            lock (_refreshGate) _installationQueries.Remove(completed);
+            Interlocked.Exchange(ref _installationQueryCompleted, 1);
+            _projections.Signal();
+        }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     }
     private void ProjectInstallCatalog()
     {
