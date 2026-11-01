@@ -41,7 +41,13 @@ foreach (var components in new[] { new[] { 21, 0, -1, 1 }, new[] { -1, 0, -1, -1
     try { _ = reader.Version(); } catch (InvalidDataException) { rejected = true; }
     if (!rejected) throw new InvalidDataException("Malformed optional version components were accepted.");
 }
-string root = Path.Combine(Path.GetTempPath(), "nexa-native-minecraft-实例-" + Guid.NewGuid().ToString("N"));
+string temporary = Path.GetPathRoot(Path.GetTempPath())!;
+foreach (string segment in Path.GetRelativePath(temporary, Path.GetTempPath()).Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+{
+    var directory = new DirectoryInfo(Path.Combine(temporary, segment));
+    temporary = directory.ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? directory.FullName;
+}
+string root = Path.Combine(temporary, "nexa-native-minecraft-实例-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 try
 {
