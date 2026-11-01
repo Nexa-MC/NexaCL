@@ -131,3 +131,26 @@ redaction/cancellation and physical shutdown cases with 83 generated DTO shapes
 The fixture uses an HTTPS manifest identity and an explicitly described loopback
 transport; production journal URL checks remain intact. All 107 release-script
 tests pass.
+
+## Java inventory, manual acquisition and management
+
+The next port set moves manual previews/receipts, license-confirmed acquisition,
+registration management and bounded executable diagnostics into the Minecraft
+owner. Foundation uses a caller-local Java locator that emits asynchronous native
+queries; its synchronous invalidation only marks the next query for refresh.
+Canonical settings retain registration persistence through asynchronous reverse
+snapshot/conditional-write operations. Native inventory preserves stale-revision
+errors and manual acquisition shares its task handle with the underlying installer,
+so verification/registration adds no second task card. Public managed constructors
+and synchronous registration stores remain available for managed composition.
+
+Validation: 58 Java service tests pass, including delayed asynchronous registry
+reads, stale inventory rejection and failed conditional persistence after verified
+acquisition. The independent NativeAOT caller passes the 100-shape schema
+`977DDB7A9311B8E2F2566829A611882751792C3A49BE467BF7C700481023266C`:
+canonical inventory revision, diagnostic admission, trusted license preview,
+refusal without license confirmation, actual executable rejection, zero registry
+writes for unverified Java, one manual task card and stale management rejection.
+Existing discovery/process cancellation and physical retirement cases also pass.
+Production native-service UI compilation has zero warnings/errors, and the
+architecture gate passes for all 97 projects.

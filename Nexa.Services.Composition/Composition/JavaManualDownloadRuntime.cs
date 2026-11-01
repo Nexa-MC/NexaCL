@@ -5,6 +5,16 @@ namespace Nexa.Services.Composition;
 
 public static class JavaManualDownloadRuntime
 {
+#if NEXA_NATIVE_SERVICES
+    public static void Register(XsrQueryRouterBuilder queries, XsrCommandRouterBuilder commands,
+        Nexa.Native.Minecraft.Client.NativeMinecraftClient minecraft)
+    {
+        queries.Register<JavaManualPreviewQuery, JavaManualPreview>(JavaManualDownloadContract.Preview, minecraft.PreviewJavaAsync);
+        queries.Register<JavaManualStatusQuery, JavaManualReceipt>(JavaManualDownloadContract.Status, minecraft.JavaManualStatusAsync);
+        commands.Register<JavaManualInstallCommand>(JavaManualDownloadContract.Install, minecraft.InstallManualJavaAsync);
+        commands.Register<JavaManualCancelCommand>(JavaManualDownloadContract.Cancel, minecraft.CancelManualJavaAsync);
+    }
+#endif
     public static JavaManualDownloadService Register(XsrQueryRouterBuilder queries, XsrCommandRouterBuilder commands,
         IJavaRuntimeMetadataProvider metadata, IConfirmedJavaRuntimeInstaller installer, IJavaRuntimeLocator locator,
         IJavaRuntimeRegistrationStore registrations, string runtimeRoot)

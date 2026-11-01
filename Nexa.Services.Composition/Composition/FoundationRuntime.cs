@@ -154,8 +154,12 @@ public static class FoundationRuntimeComposer
                     Nexa.Xsr.XsrSemanticId.Parse("machine.capabilities.remediation.rejected"),
                     result.Message));
         });
+#if NEXA_NATIVE_SERVICES
+        commands.Register<Nexa.Services.Minecraft.Java.JavaRuntimeManageCommand>(Nexa.Services.Minecraft.Java.JavaRuntimeInventoryContract.Manage, host.NativeMinecraft.ManageJavaAsync);
+#else
         var javaManagement = new Nexa.Services.Minecraft.Java.JavaRuntimeManagementService(host.JavaLocator, host.JavaRegistrations, host.JavaManagedRuntimeRoots);
         commands.Register<Nexa.Services.Minecraft.Java.JavaRuntimeManageCommand>(Nexa.Services.Minecraft.Java.JavaRuntimeInventoryContract.Manage, javaManagement.ManageAsync);
+#endif
         ContentManagementRuntime.Register(commands, queries, host.StateStore, captureWorld, acquireWorldSessionLock);
         InstanceIdentityRuntime.Register(commands, queries);
         InstanceOfflineReadinessRuntime.Register(queries, host.JavaLocator, host.SettingsPolicy);
@@ -172,9 +176,15 @@ public static class FoundationRuntimeComposer
                 async (query, token) => await storagePreferences.PreviewCleanupAsync(query, token).ConfigureAwait(false));
         }
         JavaDiagnosticsRuntime.Register(queries, host);
+#if NEXA_NATIVE_SERVICES
+        queries.Register<Nexa.Services.Minecraft.Java.JavaRuntimeInventoryQuery, Nexa.Services.Minecraft.Java.JavaRuntimeInventorySnapshot>(
+            Nexa.Services.Minecraft.Java.JavaRuntimeInventoryContract.Query,
+            host.NativeMinecraft.ReadJavaInventoryAsync);
+#else
         var javaInventory = new Nexa.Services.Minecraft.Java.JavaRuntimeInventoryService(host.JavaLocator, host.JavaRegistrations, host.JavaManagedRuntimeRoots);
         queries.Register<Nexa.Services.Minecraft.Java.JavaRuntimeInventoryQuery, Nexa.Services.Minecraft.Java.JavaRuntimeInventorySnapshot>(
             Nexa.Services.Minecraft.Java.JavaRuntimeInventoryContract.Query, javaInventory.ReadAsync);
+#endif
         queries.Register<InstanceModpackExportQuery, InstanceModpackExportPreview>(InstanceModpackExportContract.Preview,
             async (query, token) => Nexa.Xsr.XsrResult.Success(await InstanceModpackExportService.PreviewAsync(query, token).ConfigureAwait(false)));
         queries.Register<InstanceExportOptionsQuery, InstanceExportOptions>(InstanceModpackExportContract.LoadOptions,

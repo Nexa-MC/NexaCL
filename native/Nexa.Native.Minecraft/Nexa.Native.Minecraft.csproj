@@ -12,6 +12,7 @@
     <Compile Include="../MinecraftHostProtocol/NetworkProtocol.cs" Link="Host/NetworkProtocol.cs" />
     <Compile Include="../MinecraftHostProtocol/MinecraftHostOperations.cs" Link="Host/MinecraftHostOperations.cs" />
     <Compile Include="../MinecraftHostProtocol/RemoteMinecraftDownloads.cs" Link="Host/RemoteMinecraftDownloads.cs" />
+    <Compile Include="../MinecraftHostProtocol/RemoteJavaRegistry.cs" Link="Host/RemoteJavaRegistry.cs" />
     <Compile Include="../DownloadServiceProtocol/DownloadProgressSink.cs" Link="Host/DownloadProgressSink.cs" />
     <Compile Include="../NetworkServiceProtocol/NetworkHttpWire.cs" Link="Host/NetworkHttpWire.cs" />
     <Compile Include="../NetworkServiceProtocol/NetworkHttpStreamHandler.cs" Link="Host/NetworkHttpStreamHandler.cs" />

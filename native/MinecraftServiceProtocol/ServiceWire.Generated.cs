@@ -71,6 +71,13 @@ internal sealed partial class ServiceWireWriter
         Count(value.Count);
         foreach (var item in value) JavaRuntimeManagedEntry(item);
     }
+    internal void IReadOnlyList_JavaRuntimeModule(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Java.JavaRuntimeModule>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) JavaRuntimeModule(item);
+    }
     internal void IReadOnlyList_JavaRuntimeRegistration(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Java.JavaRuntimeRegistration>? value)
     {
         if (value is null) { Int32(-1); return; }
@@ -149,6 +156,64 @@ internal sealed partial class ServiceWireWriter
         Boolean(value.Is64Bit);
         Boolean(value.IsJre);
     }
+    internal void JavaManualCancelCommand(global::Nexa.Services.Minecraft.Java.JavaManualCancelCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Guid(value.PreviewId);
+    }
+    internal void JavaManualInstallCommand(global::Nexa.Services.Minecraft.Java.JavaManualInstallCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Guid(value.PreviewId);
+        Boolean(value.AcceptLicense);
+    }
+    internal void JavaManualInstallStatus(global::Nexa.Services.Minecraft.Java.JavaManualInstallStatus value) => Int32((int)value);
+    internal void JavaManualPreview(global::Nexa.Services.Minecraft.Java.JavaManualPreview? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Guid(value.Id);
+        Int32(value.Major);
+        String(value.Provider);
+        String(value.Version);
+        String(value.Platform);
+        String(value.TargetDirectory);
+        Int32(value.Files);
+        Int64(value.Bytes);
+        String(value.PlanFingerprint);
+        IReadOnlyList_String(value.LicenseUrls);
+        DateTimeOffset(value.ExpiresAt);
+    }
+    internal void JavaManualPreviewQuery(global::Nexa.Services.Minecraft.Java.JavaManualPreviewQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int32(value.Major);
+        Int64(value.ExpectedRegistryRevision);
+    }
+    internal void JavaManualReceipt(global::Nexa.Services.Minecraft.Java.JavaManualReceipt? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Guid(value.PreviewId);
+        JavaManualInstallStatus(value.Status);
+        Double(value.Progress);
+        Int32(value.CompletedFiles);
+        Int32(value.TotalFiles);
+        String(value.Detail);
+        String(value.Executable);
+        String(value.ActualVersion);
+        Nullable_JavaBrand(value.ActualBrand);
+        Nullable_JavaArchitecture(value.ActualArchitecture);
+    }
+    internal void JavaManualStatusQuery(global::Nexa.Services.Minecraft.Java.JavaManualStatusQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Guid(value.PreviewId);
+    }
     internal void JavaRuntimeCandidate(global::Nexa.Services.Minecraft.Java.JavaRuntimeCandidate? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -157,6 +222,31 @@ internal sealed partial class ServiceWireWriter
         Boolean(value.IsEnabled);
         Boolean(value.IsAvailable);
         JavaSource(value.Source);
+    }
+    internal void JavaRuntimeDiagnosticFacts(global::Nexa.Services.Minecraft.Java.JavaRuntimeDiagnosticFacts? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Version);
+        String(value.Vendor);
+        String(value.Architecture);
+        String(value.VirtualMachine);
+        String(value.VirtualMachineVersion);
+        Int32(value.MajorVersion);
+        Boolean(value.MatchesInventory);
+    }
+    internal void JavaRuntimeDiagnosticStatus(global::Nexa.Services.Minecraft.Java.JavaRuntimeDiagnosticStatus value) => Int32((int)value);
+    internal void JavaRuntimeDiagnosticsSnapshot(global::Nexa.Services.Minecraft.Java.JavaRuntimeDiagnosticsSnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        JavaRuntimeDiagnosticStatus(value.Status);
+        String(value.Executable);
+        String(value.Fingerprint);
+        JavaRuntimeDiagnosticFacts(value.Facts);
+        IReadOnlyList_JavaRuntimeModule(value.Modules);
+        String(value.RedactedRaw);
+        Int32(value.RawUtf8Bytes);
     }
     internal void JavaRuntimeInstallProgress(global::Nexa.Services.Minecraft.Java.JavaRuntimeInstallProgress? value)
     {
@@ -177,6 +267,15 @@ internal sealed partial class ServiceWireWriter
         IReadOnlyList_JavaRuntimeRegistration(value.Registrations);
         Int64(value.RegistryRevision);
     }
+    internal void JavaRuntimeManageCommand(global::Nexa.Services.Minecraft.Java.JavaRuntimeManageCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Executable);
+        JavaRuntimeManagementAction(value.Action);
+        Int64(value.ExpectedRevision);
+        String(value.ExpectedManagedIdentity);
+    }
     internal void JavaRuntimeManagedEntry(global::Nexa.Services.Minecraft.Java.JavaRuntimeManagedEntry? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -185,6 +284,14 @@ internal sealed partial class ServiceWireWriter
         String(value.Directory);
         String(value.Identity);
     }
+    internal void JavaRuntimeManagementAction(global::Nexa.Services.Minecraft.Java.JavaRuntimeManagementAction value) => Int32((int)value);
+    internal void JavaRuntimeModule(global::Nexa.Services.Minecraft.Java.JavaRuntimeModule? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Name);
+        String(value.Version);
+    }
     internal void JavaRuntimeRegistration(global::Nexa.Services.Minecraft.Java.JavaRuntimeRegistration? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -192,6 +299,13 @@ internal sealed partial class ServiceWireWriter
         String(value.Executable);
         Boolean(value.Enabled);
         Boolean(value.Custom);
+    }
+    internal void JavaRuntimeRegistrySnapshot(global::Nexa.Services.Minecraft.Java.JavaRuntimeRegistrySnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int64(value.Revision);
+        IReadOnlyList_JavaRuntimeRegistration(value.Registrations);
     }
     internal void JavaSource(global::Nexa.Services.Minecraft.Java.JavaSource value) => Int32((int)value);
     internal void MinecraftAprilFoolsDescriptor(global::Nexa.Services.Minecraft.MinecraftAprilFoolsDescriptor value)
@@ -521,6 +635,14 @@ internal sealed partial class ServiceWireWriter
     {
         Boolean(value.HasValue); if (value.HasValue) Int64(value.Value);
     }
+    internal void Nullable_JavaArchitecture(global::System.Nullable<global::Nexa.Services.Minecraft.Java.JavaArchitecture> value)
+    {
+        Boolean(value.HasValue); if (value.HasValue) JavaArchitecture(value.Value);
+    }
+    internal void Nullable_JavaBrand(global::System.Nullable<global::Nexa.Services.Minecraft.Java.JavaBrand> value)
+    {
+        Boolean(value.HasValue); if (value.HasValue) JavaBrand(value.Value);
+    }
     internal void Nullable_MinecraftAprilFoolsDescriptor(global::System.Nullable<global::Nexa.Services.Minecraft.MinecraftAprilFoolsDescriptor> value)
     {
         Boolean(value.HasValue); if (value.HasValue) MinecraftAprilFoolsDescriptor(value.Value);
@@ -666,6 +788,14 @@ internal sealed partial class ServiceWireReader
         for (int index = 0; index < count; index++) value[index] = JavaRuntimeManagedEntry() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Java.JavaRuntimeModule>? IReadOnlyList_JavaRuntimeModule()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Java.JavaRuntimeModule[count];
+        for (int index = 0; index < count; index++) value[index] = JavaRuntimeModule() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
     internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Java.JavaRuntimeRegistration>? IReadOnlyList_JavaRuntimeRegistration()
     {
         int count = Count(); if (count == -1) return null;
@@ -754,6 +884,70 @@ internal sealed partial class ServiceWireReader
         var p7 = Boolean();
         return new global::Nexa.Services.Minecraft.Java.JavaInstallation(p0!, p1!, p2!, p3!, p4, p5, p6, p7);
     }
+    internal global::Nexa.Services.Minecraft.Java.JavaManualCancelCommand? JavaManualCancelCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Guid();
+        return new global::Nexa.Services.Minecraft.Java.JavaManualCancelCommand(p0);
+    }
+    internal global::Nexa.Services.Minecraft.Java.JavaManualInstallCommand? JavaManualInstallCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Guid();
+        var p1 = Boolean();
+        return new global::Nexa.Services.Minecraft.Java.JavaManualInstallCommand(p0, p1);
+    }
+    internal global::Nexa.Services.Minecraft.Java.JavaManualInstallStatus JavaManualInstallStatus() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 ? (global::Nexa.Services.Minecraft.Java.JavaManualInstallStatus)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Minecraft.Java.JavaManualPreview? JavaManualPreview()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Guid();
+        var p1 = Int32();
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p6 = Int32();
+        var p7 = Int64();
+        var p8 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p9 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p10 = DateTimeOffset();
+        return new global::Nexa.Services.Minecraft.Java.JavaManualPreview(p0, p1, p2!, p3!, p4!, p5!, p6, p7, p8!, p9!, p10);
+    }
+    internal global::Nexa.Services.Minecraft.Java.JavaManualPreviewQuery? JavaManualPreviewQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int32();
+        var p1 = Int64();
+        return new global::Nexa.Services.Minecraft.Java.JavaManualPreviewQuery(p0, p1);
+    }
+    internal global::Nexa.Services.Minecraft.Java.JavaManualReceipt? JavaManualReceipt()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Guid();
+        var p1 = JavaManualInstallStatus();
+        var p2 = Double();
+        var p3 = Int32();
+        var p4 = Int32();
+        var p5 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p6 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p7 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p8 = Nullable_JavaBrand();
+        var p9 = Nullable_JavaArchitecture();
+        return new global::Nexa.Services.Minecraft.Java.JavaManualReceipt(p0, p1, p2, p3, p4, p5!, p6!, p7!, p8, p9);
+    }
+    internal global::Nexa.Services.Minecraft.Java.JavaManualStatusQuery? JavaManualStatusQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Guid();
+        return new global::Nexa.Services.Minecraft.Java.JavaManualStatusQuery(p0);
+    }
     internal global::Nexa.Services.Minecraft.Java.JavaRuntimeCandidate? JavaRuntimeCandidate()
     {
         if (!Boolean()) return null;
@@ -763,6 +957,33 @@ internal sealed partial class ServiceWireReader
         var p2 = Boolean();
         var p3 = JavaSource();
         return new global::Nexa.Services.Minecraft.Java.JavaRuntimeCandidate(p0!, p1, p2, p3);
+    }
+    internal global::Nexa.Services.Minecraft.Java.JavaRuntimeDiagnosticFacts? JavaRuntimeDiagnosticFacts()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = Int32();
+        var p6 = Boolean();
+        return new global::Nexa.Services.Minecraft.Java.JavaRuntimeDiagnosticFacts(p0!, p1!, p2!, p3!, p4!, p5, p6);
+    }
+    internal global::Nexa.Services.Minecraft.Java.JavaRuntimeDiagnosticStatus JavaRuntimeDiagnosticStatus() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 ? (global::Nexa.Services.Minecraft.Java.JavaRuntimeDiagnosticStatus)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Minecraft.Java.JavaRuntimeDiagnosticsSnapshot? JavaRuntimeDiagnosticsSnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = JavaRuntimeDiagnosticStatus();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = JavaRuntimeDiagnosticFacts();
+        var p4 = IReadOnlyList_JavaRuntimeModule() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p6 = Int32();
+        return new global::Nexa.Services.Minecraft.Java.JavaRuntimeDiagnosticsSnapshot(p0, p1!, p2!, p3!, p4!, p5!, p6);
     }
     internal global::Nexa.Services.Minecraft.Java.JavaRuntimeInstallProgress? JavaRuntimeInstallProgress()
     {
@@ -785,6 +1006,16 @@ internal sealed partial class ServiceWireReader
         var p3 = Int64();
         return new global::Nexa.Services.Minecraft.Java.JavaRuntimeInventorySnapshot(p0!) { ManagedRuntimes = p1!, Registrations = p2!, RegistryRevision = p3 };
     }
+    internal global::Nexa.Services.Minecraft.Java.JavaRuntimeManageCommand? JavaRuntimeManageCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = JavaRuntimeManagementAction();
+        var p2 = Int64();
+        var p3 = String();
+        return new global::Nexa.Services.Minecraft.Java.JavaRuntimeManageCommand(p0!, p1, p2) { ExpectedManagedIdentity = p3! };
+    }
     internal global::Nexa.Services.Minecraft.Java.JavaRuntimeManagedEntry? JavaRuntimeManagedEntry()
     {
         if (!Boolean()) return null;
@@ -794,6 +1025,15 @@ internal sealed partial class ServiceWireReader
         var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         return new global::Nexa.Services.Minecraft.Java.JavaRuntimeManagedEntry(p0!, p1!, p2!);
     }
+    internal global::Nexa.Services.Minecraft.Java.JavaRuntimeManagementAction JavaRuntimeManagementAction() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 ? (global::Nexa.Services.Minecraft.Java.JavaRuntimeManagementAction)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Minecraft.Java.JavaRuntimeModule? JavaRuntimeModule()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Java.JavaRuntimeModule(p0!, p1!);
+    }
     internal global::Nexa.Services.Minecraft.Java.JavaRuntimeRegistration? JavaRuntimeRegistration()
     {
         if (!Boolean()) return null;
@@ -802,6 +1042,14 @@ internal sealed partial class ServiceWireReader
         var p1 = Boolean();
         var p2 = Boolean();
         return new global::Nexa.Services.Minecraft.Java.JavaRuntimeRegistration(p0!, p1, p2);
+    }
+    internal global::Nexa.Services.Minecraft.Java.JavaRuntimeRegistrySnapshot? JavaRuntimeRegistrySnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int64();
+        var p1 = IReadOnlyList_JavaRuntimeRegistration() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Java.JavaRuntimeRegistrySnapshot(p0, p1!);
     }
     internal global::Nexa.Services.Minecraft.Java.JavaSource JavaSource() { int value = Int32(); return value is 0 or 1 or 2 ? (global::Nexa.Services.Minecraft.Java.JavaSource)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Minecraft.MinecraftAprilFoolsDescriptor MinecraftAprilFoolsDescriptor()
@@ -1151,6 +1399,14 @@ internal sealed partial class ServiceWireReader
     {
         return Boolean() ? Int64() : null;
     }
+    internal global::System.Nullable<global::Nexa.Services.Minecraft.Java.JavaArchitecture> Nullable_JavaArchitecture()
+    {
+        return Boolean() ? JavaArchitecture() : null;
+    }
+    internal global::System.Nullable<global::Nexa.Services.Minecraft.Java.JavaBrand> Nullable_JavaBrand()
+    {
+        return Boolean() ? JavaBrand() : null;
+    }
     internal global::System.Nullable<global::Nexa.Services.Minecraft.MinecraftAprilFoolsDescriptor> Nullable_MinecraftAprilFoolsDescriptor()
     {
         return Boolean() ? MinecraftAprilFoolsDescriptor() : null;
@@ -1223,5 +1479,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "D88410677A41EACF99AC1F6912B3EE974C12B823392DBDC9C40A74C7E5971B87";
+    internal const string Fingerprint = "977DDB7A9311B8E2F2566829A611882751792C3A49BE467BF7C700481023266C";
 }

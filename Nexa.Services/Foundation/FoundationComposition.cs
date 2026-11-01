@@ -131,8 +131,12 @@ public sealed partial class FoundationHost : IDisposable, IAsyncDisposable
         JavaManagedRuntimeRoots = Array.AsReadOnly(new[] { defaultJavaRoot, javaRuntimeRootDirectory }
             .Where(root => !string.IsNullOrWhiteSpace(root)).Select(root => Path.GetFullPath(root!))
             .Distinct(Nexa.Core.PathIdentity.Comparer).ToArray());
+#if NEXA_NATIVE_SERVICES
+        JavaLocator = new Nexa.Native.Minecraft.Client.NativeJavaRuntimeLocator(() => NativeMinecraft);
+#else
         JavaLocator = new Minecraft.Java.LocalJavaRuntimeLocator(string.IsNullOrWhiteSpace(javaRuntimeRootDirectory) ? defaultJavaRoot : Path.GetFullPath(javaRuntimeRootDirectory), logging)
         { RegisteredRuntimes = () => JavaRegistrations.Read().Registrations };
+#endif
         CapabilityRegistry capabilityRegistry = new CapabilityRegistry(
         [
             .. ModCatalog.Definitions(),

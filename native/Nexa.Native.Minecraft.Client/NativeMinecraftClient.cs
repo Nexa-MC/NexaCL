@@ -136,9 +136,17 @@ public sealed partial class NativeMinecraftClient : IAsyncDisposable
     }
     public async Task<JavaRuntimeInventorySnapshot> JavaInventoryAsync(bool refresh = false, CancellationToken token = default)
     {
-        byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.JavaInventory, writer => writer.Boolean(refresh), token).ConfigureAwait(false);
+        var result = await ReadJavaInventoryAsync(new(refresh), token).ConfigureAwait(false);
+        return result.IsSuccess ? result.Value! : throw new InvalidOperationException(result.Error!.Message);
+    }
+    public async ValueTask<XsrResult<JavaRuntimeInventorySnapshot>> ReadJavaInventoryAsync(JavaRuntimeInventoryQuery query, CancellationToken token = default)
+    {
+        await _javaConfiguration.WaitAsync(token).ConfigureAwait(false);
+        byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.JavaInventory, writer => writer.Boolean(query.Refresh), token).ConfigureAwait(false);
         using var reader = new ServiceWireReader(bytes);
-        var result = reader.JavaRuntimeInventorySnapshot() ?? throw new InvalidDataException("Missing Java inventory."); reader.End(); return result;
+        var error = reader.XsrError();
+        var result = error is null ? XsrResult.Success(reader.JavaRuntimeInventorySnapshot() ?? throw new InvalidDataException("Missing Java inventory."))
+            : XsrResult.Failure<JavaRuntimeInventorySnapshot>(error); reader.End(); return result;
     }
     public async Task<MinecraftProcessSnapshot> StartProcessAsync(MinecraftLaunchPlan plan, string instanceId, CancellationToken token = default)
     {

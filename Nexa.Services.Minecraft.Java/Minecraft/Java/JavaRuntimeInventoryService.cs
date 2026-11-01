@@ -5,6 +5,8 @@ namespace Nexa.Services.Minecraft.Java;
 public sealed class JavaRuntimeInventoryService(IJavaRuntimeLocator locator, IJavaRuntimeRegistrationStore? registry,
     IReadOnlyList<string>? managedRuntimeRoots)
 {
+    public IAsyncJavaRuntimeRegistrationStore? RegistrationPort { get; init; }
+
     public JavaRuntimeInventoryService(IJavaRuntimeLocator locator, IJavaRuntimeRegistrationStore? registry = null)
         : this(locator, registry, null) { }
 
@@ -13,11 +15,12 @@ public sealed class JavaRuntimeInventoryService(IJavaRuntimeLocator locator, IJa
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (query.Refresh) locator.Invalidate();
-            var registered = registry?.Read();
+            var registered = registry is null && RegistrationPort is null ? null
+                : await JavaRuntimeRegistryAccess.ReadAsync(RegistrationPort, registry, cancellationToken).ConfigureAwait(false);
             var candidates = await locator.FindAllAsync(cancellationToken).ConfigureAwait(false);
             var managed = await new JavaRuntimeManagedStore(managedRuntimeRoots ?? []).ReadAsync(cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
-            if (registered is not null && registry!.Read().Revision != registered.Revision)
+            if (registered is not null && (await JavaRuntimeRegistryAccess.ReadAsync(RegistrationPort, registry, cancellationToken).ConfigureAwait(false)).Revision != registered.Revision)
                 return XsrResult.Failure<JavaRuntimeInventorySnapshot>(new(XsrErrorKind.Rejected,
                     XsrSemanticId.Parse("java.runtime.inventory.stale"), "Java 列表已变化，请重新扫描。"));
             var runtimes = candidates.Select(candidate => managed.Any(entry => Nexa.Core.PathIdentity.Comparer.Equals(entry.Executable, candidate.Installation.JavaExecutablePath))

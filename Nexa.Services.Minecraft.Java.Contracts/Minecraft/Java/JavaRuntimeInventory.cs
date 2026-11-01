@@ -28,3 +28,11 @@ public interface IJavaRuntimeRegistrationStore
     JavaRuntimeRegistrySnapshot Read();
     XsrResult Write(long expectedRevision, IReadOnlyList<JavaRuntimeRegistration> registrations);
 }
+
+/// <summary>Canonical registration access for owners hosted in a separate runtime.</summary>
+public interface IAsyncJavaRuntimeRegistrationStore
+{
+    ValueTask<JavaRuntimeRegistrySnapshot> ReadAsync(CancellationToken token = default);
+    ValueTask<XsrResult> WriteAsync(long expectedRevision, IReadOnlyList<JavaRuntimeRegistration> registrations,
+        CancellationToken token = default);
+}

@@ -18,7 +18,8 @@ public sealed partial class FoundationHost
             {
                 ObjectDisposedException.ThrowIf(_nativeMinecraftClosed, this);
                 if (_nativeMinecraft is not null) return _nativeMinecraft;
-                var client = new NativeMinecraftClient(JavaManagedRuntimeRoots.Count == 0 ? Path.Combine(AppContext.BaseDirectory, "runtime") : JavaManagedRuntimeRoots[^1],
+                string javaRoot = JavaManagedRuntimeRoots.Count == 0 ? Path.Combine(AppContext.BaseDirectory, "runtime") : JavaManagedRuntimeRoots[^1];
+                var client = new NativeMinecraftClient(javaRoot,
                     CacheDirectory is null ? null : Path.Combine(CacheDirectory, "native-minecraft"),
                     Path.Combine(AppContext.BaseDirectory, "Nexa.Jvm.Host" + (OperatingSystem.IsWindows() ? ".exe" : "")),
                     failure: error => Logging.Warn("Minecraft", "Native Minecraft callback failed: " + error.GetType().Name));
@@ -27,6 +28,7 @@ public sealed partial class FoundationHost
                 _nativeMinecraftHttp = CreateHttpClient(); _nativeMinecraftHttp.Timeout = Timeout.InfiniteTimeSpan;
                 client.AttachHttp(_nativeMinecraftHttp);
                 client.AttachDownloads(NetworkHttp.Client, _nativeMinecraftHttp);
+                client.AttachJavaRegistry(JavaRegistrations, JavaManagedRuntimeRoots.Count == 0 ? [javaRoot] : JavaManagedRuntimeRoots);
                 return client;
             }
         }

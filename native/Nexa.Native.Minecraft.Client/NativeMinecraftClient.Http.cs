@@ -28,6 +28,8 @@ public sealed partial class NativeMinecraftClient
             return ExecuteHttpAsync(operation, bytes, token);
         if (operation is MinecraftHostOperations.DescribeDownload or MinecraftHostOperations.Download)
             return ExecuteDownloadAsync(operation, bytes, token);
+        if (operation is MinecraftHostOperations.JavaRegistryRead or MinecraftHostOperations.JavaRegistryWrite)
+            return ExecuteJavaRegistryAsync(operation, bytes, token);
         throw new InvalidDataException("Unknown Minecraft host operation.");
     }
     private async Task<byte[]> ExecuteHttpAsync(int operation, ReadOnlyMemory<byte> bytes, CancellationToken token)

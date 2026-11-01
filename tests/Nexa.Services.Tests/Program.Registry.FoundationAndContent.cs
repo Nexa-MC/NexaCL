@@ -46,6 +46,8 @@ internal static partial class Program
         ("ContentIntegrityRejectsStaleLinksTraversalBudgetAndCancellation", ContentIntegrityRejectsStaleLinksTraversalBudgetAndCancellation),
         ("SystemGlfwPoliciesReachExecutorNativeFilteringAndSafeLaunch", SystemGlfwPoliciesReachExecutorNativeFilteringAndSafeLaunch),
         ("ManualJavaRequiresReviewedLicenseAndRegistersActualFacts", ManualJavaRequiresReviewedLicenseAndRegistersActualFacts),
+        ("Java async registry preserves canonical commit failures", JavaAsyncRegistryPreservesCanonicalCommitFailures),
+        ("Java async inventory rejects changed registry", JavaAsyncInventoryRejectsChangedRegistry),
         ("ManualJavaRetryCompletesVerificationAndRegistration", ManualJavaRetryCompletesVerificationAndRegistration),
         ("ManualJavaChangedPlanCannotCreateRecoveryIntentOrDownload", ManualJavaChangedPlanCannotCreateRecoveryIntentOrDownload),
         ("ManualJavaCancellationAndRegistrationRacesKeepDistinctReceipts", ManualJavaCancellationAndRegistrationRacesKeepDistinctReceipts),

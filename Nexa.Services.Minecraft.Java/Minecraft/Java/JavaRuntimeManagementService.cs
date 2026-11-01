@@ -6,6 +6,8 @@ namespace Nexa.Services.Minecraft.Java;
 public sealed class JavaRuntimeManagementService(IJavaRuntimeLocator locator, IJavaRuntimeRegistrationStore registry,
     IReadOnlyList<string>? managedRuntimeRoots)
 {
+    public IAsyncJavaRuntimeRegistrationStore? RegistrationPort { get; init; }
+
     public JavaRuntimeManagementService(IJavaRuntimeLocator locator, IJavaRuntimeRegistrationStore registry)
         : this(locator, registry, null) { }
 
@@ -18,7 +20,7 @@ public sealed class JavaRuntimeManagementService(IJavaRuntimeLocator locator, IJ
                 if (!Enum.IsDefined(command.Action) || string.IsNullOrWhiteSpace(command.Executable) || command.Executable.Length > 4096 || command.Executable.Any(char.IsControl) || !Path.IsPathFullyQualified(command.Executable))
                     return Rejected("请选择有效的 Java 可执行文件。");
                 string executable = Path.GetFullPath(command.Executable);
-                var snapshot = registry.Read();
+                var snapshot = await JavaRuntimeRegistryAccess.ReadAsync(RegistrationPort, registry, cancellationToken).ConfigureAwait(false);
                 if (snapshot.Revision != command.ExpectedRevision) return Rejected("Java 列表已变化，请刷新后重试。");
                 if (command.Action == JavaRuntimeManagementAction.DeleteManaged)
                     return await DeleteManagedAsync(command, snapshot, cancellationToken).ConfigureAwait(false);
@@ -52,7 +54,7 @@ public sealed class JavaRuntimeManagementService(IJavaRuntimeLocator locator, IJ
                 }
                 if (entries.Count > 64) return Rejected("最多登记 64 个 Java 运行时。");
                 cancellationToken.ThrowIfCancellationRequested();
-                var result = registry.Write(snapshot.Revision, entries.AsReadOnly());
+                var result = await JavaRuntimeRegistryAccess.WriteAsync(RegistrationPort, registry, snapshot.Revision, entries.AsReadOnly(), cancellationToken).ConfigureAwait(false);
                 if (result.IsSuccess) locator.Invalidate();
                 return result;
             }
@@ -70,7 +72,7 @@ public sealed class JavaRuntimeManagementService(IJavaRuntimeLocator locator, IJ
         using var rootLease = JavaRuntimeManagedStore.AcquireRoot(root);
         // Resolve again while holding the install lease: ownership can change during an async preview.
         (_, plan) = await owned.ResolveAsync(executable, identity, token).ConfigureAwait(false);
-        if (registry.Read().Revision != snapshot.Revision) return Rejected("Java 列表已变化，请刷新后重试。");
+        if ((await JavaRuntimeRegistryAccess.ReadAsync(RegistrationPort, registry, token).ConfigureAwait(false)).Revision != snapshot.Revision) return Rejected("Java 列表已变化，请刷新后重试。");
         JavaRuntimeManagedStore.CheckUnused(root, plan.ComponentName);
         await JavaRuntimeManagedStore.CheckNoPendingInstallAsync(root, plan.ComponentName, token).ConfigureAwait(false);
         await JavaRuntimeManagedStore.VerifyTreeAsync(plan, token).ConfigureAwait(false);
@@ -95,7 +97,7 @@ public sealed class JavaRuntimeManagementService(IJavaRuntimeLocator locator, IJ
             await JavaRuntimeManagedStore.VerifyTreeAsync(stagedPlan, token).ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
             var entries = snapshot.Registrations.Where(entry => !PathIdentity.Comparer.Equals(entry.Executable, executable)).ToArray();
-            var result = registry.Write(snapshot.Revision, Array.AsReadOnly(entries));
+            var result = await JavaRuntimeRegistryAccess.WriteAsync(RegistrationPort, registry, snapshot.Revision, Array.AsReadOnly(entries), token).ConfigureAwait(false);
             if (!result.IsSuccess) return result;
             committed = true;
             locator.Invalidate();

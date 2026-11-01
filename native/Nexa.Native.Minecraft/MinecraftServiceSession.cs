@@ -15,7 +15,7 @@ using Nexa.Xsr.State;
 
 namespace Nexa.Native.Minecraft;
 
-internal sealed class MinecraftServiceSession : IAsyncDisposable
+internal sealed partial class MinecraftServiceSession : IAsyncDisposable
 {
     private readonly ServiceEndpoint _endpoint;
     private readonly SemaphoreSlim _initialization = new(1, 1);
@@ -51,6 +51,7 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
 #endif
         _http.Timeout = TimeSpan.FromMinutes(10);
         _metadataHttp = new(_hostHttp, disposeHandler: false) { Timeout = TimeSpan.FromMinutes(2) };
+        _metadataHttp.DefaultRequestHeaders.UserAgent.ParseAdd("NexaCL/2.0");
         XsrStateStoreBuilder builder = new(); MinecraftProcessStateComposition.DeclareState(builder); TaskCenterStateContract.DeclareState(builder); DownloadService.DeclareState(builder); _store = builder.Build();
         _sessionDownloads = new(_store);
 #if NEXA_NATIVE_SERVICES
@@ -113,7 +114,7 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
                 _instances = new(_cache, cache, versionDiscovery: _versions);
                 _processes = new(hostStore: _store, jvmHostExecutable: jvmHost)
                 { ArchitectureValidator = new Nexa.Platform.PlatformJvmArchitectureValidator() };
-                _java = new(new LocalJavaRuntimeLocator(java));
+                _javaRuntimeRoot = java; _javaLocator = new(java); _java = new(_javaLocator);
                 _javaInstaller = new(new JavaRuntimeDownloadPlanService(new HttpJavaRuntimeMetadataProvider(_metadataHttp)), _http, tasks: _tasks)
                 { SessionDownloads = _sessionDownloads };
             }
@@ -121,6 +122,8 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
             return [];
         }
         if (_instances is null) throw new InvalidOperationException("Minecraft service has not initialized.");
+        if (operation is >= MinecraftServiceProtocol.JavaConfigure and <= MinecraftServiceProtocol.JavaModules)
+            return await ExecuteJavaManagementAsync(operation, reader, token).ConfigureAwait(false);
         switch (operation)
         {
             case MinecraftServiceProtocol.Versions:
@@ -162,8 +165,7 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
             case MinecraftServiceProtocol.JavaInventory:
                 bool refresh = reader.Boolean(); reader.End();
                 var inventory = await _java!.ReadAsync(new(refresh), token).ConfigureAwait(false);
-                if (!inventory.IsSuccess) throw new InvalidOperationException("Java inventory is unavailable.");
-                writer.JavaRuntimeInventorySnapshot(inventory.Value); break;
+                writer.XsrError(inventory.Error); if (inventory.IsSuccess) writer.JavaRuntimeInventorySnapshot(inventory.Value); break;
             case MinecraftServiceProtocol.JavaInstall:
                 long call = reader.Int64(); string component = reader.String() ?? throw new InvalidDataException("Missing Java component.");
                 string runtimeRoot = reader.String() ?? throw new InvalidDataException("Missing runtime root."); string? fingerprint = reader.String(); reader.End();
@@ -255,6 +257,7 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _endpoint.StopAsync().ConfigureAwait(false);
+        _manualJava?.Dispose();
         if (_javaInstaller is not null) await _javaInstaller.StopAsync(new(Pause: true)).ConfigureAwait(false);
         await _tasks.DisposeAsync().ConfigureAwait(false);
         if (_processes is not null) await _processes.DisposeAsync().ConfigureAwait(false);

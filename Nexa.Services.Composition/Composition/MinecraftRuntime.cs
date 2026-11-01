@@ -142,17 +142,17 @@ public static class MinecraftRuntimeComposer
         IJavaRuntimeMetadataProvider? manualJavaMetadata = null;
         if (javaInstaller is null)
         {
+#if NEXA_NATIVE_SERVICES
+            installer = host.NativeMinecraft;
+            host.NativeMinecraft.RuntimesChanged += locator.Invalidate;
+            owned.Add(new JavaInvalidationLease(host.NativeMinecraft, locator));
+#else
             HttpClient javaMetadataHttp = host.CreateHttpClient();
             javaMetadataHttp.Timeout = TimeSpan.FromMinutes(2);
             javaMetadataHttp.DefaultRequestHeaders.UserAgent.ParseAdd("NexaCL/2.0");
             HttpJavaRuntimeMetadataProvider metadata = new(javaMetadataHttp, ownsClient: true);
             manualJavaMetadata = metadata;
             owned.Add(metadata);
-#if NEXA_NATIVE_SERVICES
-            installer = host.NativeMinecraft;
-            host.NativeMinecraft.RuntimesChanged += locator.Invalidate;
-            owned.Add(new JavaInvalidationLease(host.NativeMinecraft, locator));
-#else
             HttpClient javaDownloadHttp = host.CreateHttpClient();
             javaDownloadHttp.Timeout = TimeSpan.FromMinutes(10);
             JavaRuntimeInstaller concreteInstaller = new(new JavaRuntimeDownloadPlanService(metadata), javaDownloadHttp,
@@ -259,6 +259,11 @@ public static class MinecraftRuntimeComposer
         queryBuilder.Register<MinecraftProcessOutputQuery, MinecraftProcessOutputSnapshot>(MinecraftProcessOutputContract.Query,
             (query, token) => processService.ReadOutputAsync(query.SessionId, token));
         MinecraftSafeLaunchSessionRuntime.Register(commandBuilder, queryBuilder, coordinator);
+#if NEXA_NATIVE_SERVICES
+        if (installer is Nexa.Native.Minecraft.Client.NativeMinecraftClient nativeManual)
+            JavaManualDownloadRuntime.Register(queryBuilder, commandBuilder, nativeManual);
+        else
+#endif
         if (manualJavaMetadata is not null && installer is IConfirmedJavaRuntimeInstaller confirmedInstaller)
         {
             var manual = new JavaManualDownloadService(manualJavaMetadata, confirmedInstaller, locator,

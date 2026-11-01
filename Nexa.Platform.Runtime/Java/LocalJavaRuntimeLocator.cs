@@ -16,6 +16,9 @@ public sealed class LocalJavaRuntimeLocator : IJavaRuntimeLocator
     private readonly LogService? _log;
     private readonly IJavaRuntimeLocator? _inspectionPort;
     public Func<IReadOnlyList<JavaRuntimeRegistration>>? RegisteredRuntimes { get; init; }
+    public Func<CancellationToken, ValueTask<IReadOnlyList<JavaRuntimeRegistration>>>? RegisteredRuntimesAsync { get; init; }
+    private ValueTask<IReadOnlyList<JavaRuntimeRegistration>> ReadRegistrationsAsync(CancellationToken token) =>
+        RegisteredRuntimesAsync is { } read ? read(token) : ValueTask.FromResult(RegisteredRuntimes?.Invoke() ?? (IReadOnlyList<JavaRuntimeRegistration>)[]);
 
     public LocalJavaRuntimeLocator(string? launcherRuntimeRoot = null, LogService? log = null, IJavaRuntimeLocator? inspectionPort = null)
     {
@@ -80,7 +83,8 @@ public sealed class LocalJavaRuntimeLocator : IJavaRuntimeLocator
         // direct-executable directory (Oracle javapath shims). Collapsing both into "home +
         // /bin/java" dropped every shim the earlier stage had just accepted.
         HashSet<string> executables = new(GetPathComparer());
-        foreach (var entry in RegisteredRuntimes?.Invoke() ?? [])
+        var registrations = await ReadRegistrationsAsync(cancellationToken).ConfigureAwait(false);
+        foreach (var entry in registrations)
             if (entry.Custom && File.Exists(entry.Executable)) executables.Add(entry.Executable);
         foreach (JavaSearchRoot root in EnumerateSearchRoots())
         {
@@ -115,7 +119,7 @@ public sealed class LocalJavaRuntimeLocator : IJavaRuntimeLocator
             await concurrency.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                return await InspectAsync(path, cancellationToken).ConfigureAwait(false);
+                return await InspectRegisteredAsync(path, registrations, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -432,10 +436,17 @@ public sealed class LocalJavaRuntimeLocator : IJavaRuntimeLocator
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var registrations = await ReadRegistrationsAsync(cancellationToken).ConfigureAwait(false);
+        return await InspectRegisteredAsync(javaExecutablePath, registrations, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<JavaRuntimeCandidate?> InspectRegisteredAsync(string javaExecutablePath,
+        IReadOnlyList<JavaRuntimeRegistration> registrations, CancellationToken cancellationToken)
+    {
         var candidate = await InspectCoreAsync(javaExecutablePath, cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         if (candidate is null) return null;
-        var entry = RegisteredRuntimes?.Invoke().FirstOrDefault(item => GetPathComparer().Equals(item.Executable, candidate.Installation.JavaExecutablePath));
+        var entry = registrations.FirstOrDefault(item => GetPathComparer().Equals(item.Executable, candidate.Installation.JavaExecutablePath));
         return candidate with
         {
             IsEnabled = entry?.Enabled ?? candidate.IsEnabled,

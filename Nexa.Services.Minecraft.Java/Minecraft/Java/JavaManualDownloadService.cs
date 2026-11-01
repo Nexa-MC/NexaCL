@@ -10,6 +10,7 @@ public sealed class JavaManualDownloadService(IJavaRuntimeMetadataProvider metad
     IJavaRuntimeLocator locator, IJavaRuntimeRegistrationStore registry, string runtimeRoot, JavaRuntimePlatform platform) : IDisposable
 {
     public TaskCenterService? Tasks { get; init; }
+    public IAsyncJavaRuntimeRegistrationStore? RegistrationPort { get; init; }
     private sealed record PreviewEntry(JavaManualPreview Preview, JavaRuntimeDownloadPlan Plan, long Revision);
     private readonly object _gate = new();
     private readonly Dictionary<Guid, PreviewEntry> _previews = [];
@@ -22,7 +23,7 @@ public sealed class JavaManualDownloadService(IJavaRuntimeMetadataProvider metad
     public async ValueTask<XsrResult<JavaManualPreview>> PreviewAsync(JavaManualPreviewQuery query, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        if (query.Major is not (8 or 17 or 21 or 25) || registry.Read().Revision != query.ExpectedRegistryRevision)
+        if (query.Major is not (8 or 17 or 21 or 25) || (await JavaRuntimeRegistryAccess.ReadAsync(RegistrationPort, registry, token).ConfigureAwait(false)).Revision != query.ExpectedRegistryRevision)
             return Reject<JavaManualPreview>("Java 下载选择或登记已变化，请重新预览。");
         if (platform is { OperatingSystem: JavaRuntimeOperatingSystem.Linux, Architecture: JavaRuntimeArchitecture.Arm64 })
             return Reject<JavaManualPreview>("Mojang 未提供此平台的原生 Java 分发。");
@@ -49,9 +50,10 @@ public sealed class JavaManualDownloadService(IJavaRuntimeMetadataProvider metad
             token.ThrowIfCancellationRequested();
             var preview = new JavaManualPreview(Guid.NewGuid(), query.Major, "Mojang distribution", plan.VersionName, platform.ToMojangKey(), plan.TargetDirectory,
                 plan.Files.Count, bytes, JavaRuntimePlanIdentity.Fingerprint(plan), Array.AsReadOnly(licenses), DateTimeOffset.UtcNow.AddMinutes(10));
+            var currentRegistry = await JavaRuntimeRegistryAccess.ReadAsync(RegistrationPort, registry, token).ConfigureAwait(false);
             lock (_gate)
             {
-                if (_disposed || registry.Read().Revision != query.ExpectedRegistryRevision) return Reject<JavaManualPreview>("Java 下载选择或登记已变化，请重新预览。");
+                if (_disposed || currentRegistry.Revision != query.ExpectedRegistryRevision) return Reject<JavaManualPreview>("Java 下载选择或登记已变化，请重新预览。");
                 foreach (var expired in _previews.Where(entry => entry.Value.Preview.ExpiresAt <= DateTimeOffset.UtcNow).Select(entry => entry.Key).ToArray()) _previews.Remove(expired);
                 if (_previews.Count >= 8) _previews.Remove(_previews.OrderBy(entry => entry.Value.Preview.ExpiresAt).First().Key);
                 _previews.Add(preview.Id, new(preview, plan, query.ExpectedRegistryRevision));
@@ -68,11 +70,12 @@ public sealed class JavaManualDownloadService(IJavaRuntimeMetadataProvider metad
         PreviewEntry? retryEntry = null, ITaskCenterTask? retryTask = null)
     {
         token.ThrowIfCancellationRequested(); PreviewEntry entry; CancellationTokenSource stop;
+        var admittedRegistry = await JavaRuntimeRegistryAccess.ReadAsync(RegistrationPort, registry, token).ConfigureAwait(false);
         lock (_gate)
         {
             entry = retryEntry!;
             if (_disposed || !command.AcceptLicense || _active != Guid.Empty || retryEntry is null && !_previews.TryGetValue(command.PreviewId, out entry!)
-                || retryEntry is null && entry.Preview.ExpiresAt <= DateTimeOffset.UtcNow || registry.Read().Revision != entry.Revision)
+                || retryEntry is null && entry.Preview.ExpiresAt <= DateTimeOffset.UtcNow || admittedRegistry.Revision != entry.Revision)
             {
                 retryTask?.Fail("请重新预览并确认许可证后安装 Java。");
                 return Reject("请重新预览并确认许可证后安装 Java。");
@@ -109,9 +112,9 @@ public sealed class JavaManualDownloadService(IJavaRuntimeMetadataProvider metad
             stop.Token.ThrowIfCancellationRequested();
             if (candidate is not { IsAvailable: true } || candidate.Installation.MajorVersion != entry.Preview.Major
                 || !PathIdentity.Comparer.Equals(candidate.Installation.JavaExecutablePath, executable)) return Finish(JavaManualInstallStatus.InstalledUnverified, executable);
-            var before = registry.Read();
+            var before = await JavaRuntimeRegistryAccess.ReadAsync(RegistrationPort, registry, stop.Token).ConfigureAwait(false);
             var registrations = before.Registrations.Where(item => !PathIdentity.Comparer.Equals(item.Executable, executable)).Append(new JavaRuntimeRegistration(executable, Custom: false)).ToArray();
-            var registered = before.Revision == entry.Revision && registrations.Length <= 64 && registry.Write(before.Revision, Array.AsReadOnly(registrations)).IsSuccess;
+            var registered = before.Revision == entry.Revision && registrations.Length <= 64 && (await JavaRuntimeRegistryAccess.WriteAsync(RegistrationPort, registry, before.Revision, Array.AsReadOnly(registrations), stop.Token).ConfigureAwait(false)).IsSuccess;
             locator.Invalidate(); return Finish(registered ? JavaManualInstallStatus.Installed : JavaManualInstallStatus.InstalledUnregistered, executable, candidate.Installation);
         }
         catch (OperationCanceledException) when (stop.IsCancellationRequested) { return Finish(JavaManualInstallStatus.Canceled); }
