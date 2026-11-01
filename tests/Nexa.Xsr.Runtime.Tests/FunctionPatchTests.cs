@@ -297,12 +297,22 @@ internal static partial class Program
                 hello.CorrelationId, SidecarHandshake.EncodeWelcome(SidecarProtocol.Version, Guid.NewGuid(), null, features)));
             await handshake;
             var registration = session.AcceptRegistrationAsync();
-            await plugin.SendAsync(new(SidecarProtocol.Version, SidecarMessageType.RegisterBegin, SidecarFrameTraits.None,
-                SidecarCorrelationId.Create(), SidecarRegistration.EncodeBegin((uint)items.Length)));
-            foreach (var item in items) await plugin.SendAsync(new(SidecarProtocol.Version, SidecarMessageType.RegisterItem,
-                SidecarFrameTraits.None, SidecarCorrelationId.Create(), SidecarRegistration.EncodeItem(item)));
-            await plugin.SendAsync(new(SidecarProtocol.Version, SidecarMessageType.RegisterEnd, SidecarFrameTraits.Final,
-                SidecarCorrelationId.Create(), SidecarRegistration.EncodeEnd()));
+            try
+            {
+                await plugin.SendAsync(new(SidecarProtocol.Version, SidecarMessageType.RegisterBegin, SidecarFrameTraits.None,
+                    SidecarCorrelationId.Create(), SidecarRegistration.EncodeBegin((uint)items.Length)));
+                foreach (var item in items) await plugin.SendAsync(new(SidecarProtocol.Version, SidecarMessageType.RegisterItem,
+                    SidecarFrameTraits.None, SidecarCorrelationId.Create(), SidecarRegistration.EncodeItem(item)));
+                await plugin.SendAsync(new(SidecarProtocol.Version, SidecarMessageType.RegisterEnd, SidecarFrameTraits.Final,
+                    SidecarCorrelationId.Create(), SidecarRegistration.EncodeEnd()));
+            }
+            catch (IOException) when (session.State == SidecarSessionState.Failed)
+            {
+                // Rejection can close the peer before it finishes sending. Observe the host's
+                // protocol error rather than letting the resulting write failure mask it.
+                await registration;
+                throw;
+            }
             await registration;
             return (session, plugin);
         }
