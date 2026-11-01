@@ -74,6 +74,7 @@ internal static partial class Program
         XsrUiShell shell = fixture.Shell;
         shell.Renderer.ReducedMotion = true;
         XsrUiScene scene = shell.Render(AccountTestSize);
+        XsrUiRect versionBounds = FindByKey(shell, scene, "VersionName").Rect;
         shell.Renderer.ReducedMotion = false;
         shell.Renderer.Activate(FindByKey(shell, scene, "AccountWardrobe").Entity);
         scene = shell.Render(AccountTestSize);
@@ -83,18 +84,25 @@ internal static partial class Program
         AssertTrue(shell.Renderer.GetTransitionOffset(title) > 0);
         AssertTrue(shell.Renderer.GetTransitionOffset(backEntity) > 0);
         AssertClose(0, shell.Renderer.GetTransitionOffsetY(shell.Content));
-        // Navigation must leave every control at its final hit rectangle immediately.
+        // Entry tracks belong to leaves; visible controls remain immediately clickable.
         for (int iteration = 0; iteration < 12; iteration++)
         {
             var back = FindByKey(shell, scene, "TitleBack");
             AssertEqual(back.Entity, shell.Renderer.HitTest(new(back.Rect.X + 15, back.Rect.Y + 15)));
-            AssertTrue(scene.Nodes.All(node => node.TransitionEntryOrder < 0));
+            var entering = scene.Nodes.Where(node => node.TransitionEntryOrder >= 0).ToArray();
+            AssertTrue(entering.Length > 0);
+            AssertTrue(entering.All(node => shell.Tree.Children(node.Entity).Count == 0));
             shell.Renderer.Activate(back.Entity);
             scene = shell.Render(AccountTestSize);
             var version = FindByKey(shell, scene, "VersionName");
-            AssertClose(0, shell.Renderer.GetTransitionOffsetY(version.Entity));
-            AssertEqual(1d, version.PresentationOpacity);
-            AssertTrue(shell.Tree.GetComponent<XsrUiTransition>(version.Entity) is null);
+            AssertRectClose(versionBounds, version.Rect with
+            {
+                X = version.Rect.X - version.TransitionPresentedOffsetX,
+                Y = version.Rect.Y - version.TransitionPresentedOffsetY,
+            });
+            AssertClose(8, shell.Renderer.GetTransitionOffsetY(version.Entity));
+            AssertTrue(version.PresentationOpacity < 1d);
+            AssertTrue(shell.Tree.GetComponent<XsrUiTransition>(version.Entity) is { StaggerEntry: true, MovesSelf: true });
             AssertTrue(shell.Tree.GetComponent<XsrUiTransition>(FindByKey(shell, scene, "AccountBody").Entity) is { StaggerEntry: false });
             shell.Renderer.Activate(FindByKey(shell, scene, "AccountWardrobe").Entity);
             scene = shell.Render(AccountTestSize);

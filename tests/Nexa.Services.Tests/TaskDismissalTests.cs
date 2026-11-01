@@ -1,6 +1,6 @@
-using Nexa.Services.Tasks;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Minecraft.Java;
+using Nexa.Services.Tasks;
 
 namespace Nexa.Services.Tests;
 

@@ -104,6 +104,7 @@ public sealed record NxmlIrNode
     public bool? Checked { get; init; }
     public bool? SelectionRequired { get; init; }
     public bool? TransitionMovesSelf { get; init; }
+    public bool? TransitionIndependentChildren { get; init; }
     public XsrUiOverlayMotionKind? OverlayMotion { get; init; }
     public XsrUiLiveSetting? LiveSetting { get; init; }
     public XsrSemanticId? DismissCommand { get; init; }

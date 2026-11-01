@@ -65,10 +65,10 @@ internal static partial class LauncherMigrationFormats
                 if (rawLoaders.ValueKind != JsonValueKind.Array || rawLoaders.GetArrayLength() > 1)
                     unsupported = "GDLauncher 加载器配置无效或含多个加载器。";
                 else foreach (JsonElement entry in rawLoaders.EnumerateArray())
-                {
-                    string type = Text(entry, "type") ?? ""; loader = KnownLoader(type); build = Text(entry, "version");
-                    if (loader is null) unsupported = "未支持的 GDLauncher 加载器：" + SafeLabel(type);
-                }
+                    {
+                        string type = Text(entry, "type") ?? ""; loader = KnownLoader(type); build = Text(entry, "version");
+                        if (loader is null) unsupported = "未支持的 GDLauncher 加载器：" + SafeLabel(type);
+                    }
             }
         }
         else

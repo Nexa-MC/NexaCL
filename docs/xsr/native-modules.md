@@ -1018,9 +1018,11 @@ dependency. The Release solution built without warnings/errors; 47 backend tests
 nine Desktop gamepad tests, changed-source formatting and both unchanged generated schemas
 passed. Windows/macOS execution remains a CI check.
 
-The architecture gate reports only the existing settings-page
-`XsrUiTransition.IndependentChildren` write at `SettingsPageController.cs:394`.
-Release tooling passed 103/104 tests; the existing Windows install-scope test
-raises `KeyError: 'Root'` for nested WiX registry values. Both failures reproduce
-against unchanged source archived from baseline `69331638a`; neither is waived
-or changed by this input-lifetime migration.
+Follow-up CI closure fixes the settings-page ownership violation through an
+authored `TransitionIndependentChildren` contract, and makes the Windows scope
+test follow inherited WiX registry hives while still rejecting per-user overrides.
+Both original failures reproduced against archived baseline `69331638a`.
+The architecture gate now passes for 86 projects and release tooling passes
+105 tests. Service fixtures retain byte-preserving index checks using the
+published content-addressed ID and explicitly cover the added export-option
+routes; the complete managed service suite passes 851 tests.

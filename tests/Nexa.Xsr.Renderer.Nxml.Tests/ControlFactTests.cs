@@ -107,7 +107,11 @@ internal static partial class Program
             "<Text SegmentThumb=\"thumb\" />", "<Button SegmentWidth=\"0\" />",
             "<Button SegmentWidth=\"NaN\" />", "<StackPanel SegmentWidth=\"4\" />",
             "<Button Checked=\"true\" />", "<CheckBox Checked=\"yes\" />",
-            "<ContentHost TransitionMovesSelf=\"true\" />"
+            "<ContentHost TransitionMovesSelf=\"true\" />",
+            "<ContentHost TransitionIndependentChildren=\"true\" />",
+            "<ContentHost TransitionKey=\"page\" TransitionIndependentChildren=\"invalid\" />",
+            "<ContentHost TransitionKey=\"page\" TransitionMovesSelf=\"true\" TransitionIndependentChildren=\"true\" />",
+            "<Text TransitionKey=\"page\" TransitionIndependentChildren=\"true\" />"
         }) AssertThrows<NxmlCompileException>(() => Compile(xml));
         var tree = new XsrUiTree(); var store = new XsrStateStoreBuilder().Build();
         var slot = NxmlUiLoader.LoadDetached(Compile("<Dynamic Key=\"slot\" />"), tree, store);
@@ -179,5 +183,41 @@ internal static partial class Program
         var children = tree.Children(root);
         AssertEqual(children[0], tree.GetComponent<XsrUiSegmentedTrack>(children[1])!.Thumb);
         AssertTrue(tree.GetComponent<XsrUiTransition>(children[1])!.MovesSelf);
+    }
+
+    private static void DeclarativeIndependentEntryPreservesControls()
+    {
+        var tree = new XsrUiTree(); var store = new XsrStateStoreBuilder().Build();
+        var program = new NxmlExtensionProgram("main.nxml", new Dictionary<string, string>
+        {
+            ["main.nxml"] = """
+                <StackPanel Key="Fields" TransitionKey="{data stage}" TransitionMovesSelf="false"
+                    TransitionIndependentChildren="{data independent}">
+                  <TextInput Key="Draft" Label="Draft" Height="32" /><Text Content="Details" Height="20" />
+                </StackPanel>
+                """,
+        });
+        var data = new Dictionary<string, string> { ["stage"] = "first", ["independent"] = "true" };
+        using var document = new NxmlDocumentInstance(tree, store, program.Compile(data));
+        var renderer = new XsrUiRenderer(tree, store); renderer.SetRoot(document.Root); renderer.Viewport = new(300, 200);
+        renderer.Render();
+        var children = tree.Children(document.Root).ToArray();
+        var input = tree.GetComponent<XsrUiTextInput>(children[0])!;
+        renderer.SetTextInputValue(children[0], "retained draft"); renderer.Focus(children[0]);
+        data["stage"] = "second"; document.Reload(program.Compile(data));
+        var scene = renderer.Render();
+        AssertTrue(tree.GetComponent<XsrUiTransition>(document.Root)!.IndependentChildren);
+        AssertFalse(tree.GetComponent<XsrUiTransition>(document.Root)!.MovesSelf);
+        AssertEqual(0d, renderer.GetTransitionOffsetY(document.Root));
+        for (int i = 0; i < children.Length; i++)
+        {
+            AssertEqual(8d, renderer.GetTransitionOffsetY(children[i]));
+            AssertEqual(i, scene.Nodes.Single(node => node.Entity == children[i]).TransitionEntryOrder);
+        }
+        data["stage"] = "must not apply"; data["independent"] = "false";
+        AssertThrows<NxmlLoadException>(() => document.Reload(program.Compile(data)));
+        AssertEqual("second", tree.GetComponent<XsrUiTransition>(document.Root)!.Key);
+        AssertTrue(ReferenceEquals(input, tree.GetComponent<XsrUiTextInput>(children[0])));
+        AssertEqual("retained draft", input.ReadDraft()); AssertEqual(children[0], renderer.Focused);
     }
 }

@@ -35,9 +35,13 @@ internal static partial class Program
         AssertTrue(rows.Length > 5);
         foreach (var row in rows)
         {
-            var surface = fixture.Shell.Tree.Parent(fixture.Shell.Tree.Parent(row.Entity));
+            var surface = fixture.Shell.Tree.Parent(row.Entity);
+            while (surface.IsAssigned && fixture.Shell.Tree.GetComponent<XsrUiVisualStyle>(surface)?.Surface != XsrUiSurfaceKind.Solid)
+                surface = fixture.Shell.Tree.Parent(surface);
+            AssertTrue(surface.IsAssigned);
             var card = scene.Nodes.Single(n => n.Entity == surface);
-            AssertTrue(row.Rect.X >= card.Rect.X + 12 && row.Rect.X + row.Rect.Width <= card.Rect.X + card.Rect.Width - 12 + .1);
+            if (row.Rect.X < card.Rect.X + 12 || row.Rect.X + row.Rect.Width > card.Rect.X + card.Rect.Width - 12 + .1)
+                throw new InvalidOperationException($"Settings row {fixture.Shell.Tree.Name(row.Entity)} {row.Rect} exceeds card {fixture.Shell.Tree.Name(card.Entity)} {card.Rect}.");
         }
         AssertTrue(fixture.Shell.Renderer.Focus(toggle.Entity));
         AssertTrue(fixture.Shell.Renderer.HandleKey(XsrUiKey.Space));

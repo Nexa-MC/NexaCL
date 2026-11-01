@@ -1,4 +1,8 @@
 [
+  {"source":"简介","en":"Summary","zh-Hant":"簡介"},
+  {"source":"全不选","en":"Deselect all","zh-Hant":"全不選"},
+  {"source":"作为整合包安装","en":"Install as a modpack","zh-Hant":"作為整合包安裝"},
+  {"source":"作为主题包安装","en":"Install as a theme pack","zh-Hant":"作為主題包安裝"},
   {"source":"导出未完成，请重试。","en":"Export did not finish. Try again.","zh-Hant":"匯出未完成，請重試。"},
   {"source":"导出已保存。","en":"Export saved.","zh-Hant":"匯出已儲存。"},
   {"source":"导出格式","en":"Export format","zh-Hant":"匯出格式"},

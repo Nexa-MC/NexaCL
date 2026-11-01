@@ -107,7 +107,11 @@ internal static partial class Program
             { CountryPolicy = new("US") };
             var result = await service.InstallAsync(new(root, "1.20.1", InstanceName: "test"));
             AssertTrue(result.IsSuccess);
-            AssertEqual(index, await File.ReadAllTextAsync(Path.Combine(root, "assets", "indexes", "5.json")));
+            string indexId = "5-" + Sha1Hex(index).ToLowerInvariant();
+            var installedVersion = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(
+                result.Value!.InstanceDirectory, result.Value.InstanceId + ".json")))!.AsObject();
+            AssertEqual(indexId, installedVersion["assetIndex"]!["id"]!.GetValue<string>());
+            AssertEqual(index, await File.ReadAllTextAsync(Path.Combine(root, "assets", "indexes", indexId + ".json")));
             AssertEqual(1, handler.Requests.Count(url => url == indexUrl));
             AssertFalse(transfers.Any(url => url.EndsWith("5.json", StringComparison.Ordinal)));
             var source = new MinecraftInstallService.HttpMinecraftInstallMetadataSource(http);

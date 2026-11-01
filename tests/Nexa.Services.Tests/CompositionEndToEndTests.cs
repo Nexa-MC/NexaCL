@@ -81,7 +81,7 @@ internal static partial class Program
             remediationHandlers: [remediationHandler]);
         FoundationRuntime runtime = FoundationRuntimeComposer.Compose(host, observer);
 
-        AssertEqual(34, runtime.Commands.Count);
+        AssertEqual(35, runtime.Commands.Count);
         foreach (var route in new[]
         {
             SettingsLaunchProfileContract.Save, SettingsLaunchProfileContract.Delete, SettingsLaunchProfileContract.Select,
@@ -96,10 +96,11 @@ internal static partial class Program
         AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Java.JavaRuntimeInventoryContract.Manage, out _));
         AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Management.InstanceServerListContract.Save, out _));
         AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Management.InstanceModpackExportContract.Export, out _));
+        AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Management.InstanceModpackExportContract.SaveOptions, out _));
         AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Management.InstanceManagementContract.RemoveMod, out _));
         AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Management.InstanceRecoveryContract.Restore, out _));
         AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Management.InstanceRecoveryContract.Recover, out _));
-        AssertEqual(30, runtime.Queries.Count);
+        AssertEqual(31, runtime.Queries.Count);
         foreach (var route in new[]
         {
             SettingsLaunchProfileContract.Query, Nexa.Services.Minecraft.Management.InstanceIdentityContract.Query,
@@ -113,6 +114,7 @@ internal static partial class Program
         AssertTrue(runtime.Queries.TryResolve(Nexa.Services.Minecraft.Management.InstanceServerListContract.Read, out _));
         AssertTrue(runtime.Queries.TryResolve(Nexa.Services.Minecraft.Management.InstanceServerListContract.Status, out _));
         AssertTrue(runtime.Queries.TryResolve(Nexa.Services.Minecraft.Management.InstanceModpackExportContract.Preview, out _));
+        AssertTrue(runtime.Queries.TryResolve(Nexa.Services.Minecraft.Management.InstanceModpackExportContract.LoadOptions, out _));
         AssertTrue(runtime.Queries.TryResolve(Nexa.Services.Minecraft.Management.InstanceManagementContract.ModRemovalPreview, out _));
         AssertTrue(runtime.Queries.TryResolve(Nexa.Services.Minecraft.Management.InstanceRecoveryContract.Query, out var recoveryQuery));
         var recovery = await runtime.Queries.QueryAsync<Nexa.Services.Minecraft.Management.InstanceRecoveryQuery, Nexa.Services.Minecraft.Management.InstanceRecoveryReport>(

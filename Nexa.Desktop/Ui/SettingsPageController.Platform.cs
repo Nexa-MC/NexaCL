@@ -201,8 +201,8 @@ internal sealed partial class SettingsPageController
             if (devices.Value is not { Count: > 0 })
                 _dynamic.Append(list, DesktopMarkup.Dynamic("SettingsPlatformDevicesEmpty.d.nxml"));
             else foreach (var device in devices.Value)
-                _dynamic.Append(list, DesktopMarkup.Dynamic(device.Available ? "SettingsPlatformDeviceAvailable.d.nxml" : "SettingsPlatformDeviceUnavailable.d.nxml",
-                    new Dictionary<string, string> { ["name"] = device.DeviceName }, _shell.Renderer.LocalizeText));
+                    _dynamic.Append(list, DesktopMarkup.Dynamic(device.Available ? "SettingsPlatformDeviceAvailable.d.nxml" : "SettingsPlatformDeviceUnavailable.d.nxml",
+                        new Dictionary<string, string> { ["name"] = device.DeviceName }, _shell.Renderer.LocalizeText));
             return;
         }
         if (value is Capability<IReadOnlyList<string>> items && value.Id == "minecraft.settings.resource_packs")
@@ -212,7 +212,7 @@ internal sealed partial class SettingsPageController
             if (items.Value is not { Count: > 0 })
                 _dynamic.Append(list, DesktopMarkup.Dynamic("SettingsPlatformResourceDefault.d.nxml"));
             else foreach (string item in items.Value)
-                _dynamic.Append(list, DesktopMarkup.Dynamic("SettingsPlatformListEntry.d.nxml", new Dictionary<string, string> { ["value"] = item }));
+                    _dynamic.Append(list, DesktopMarkup.Dynamic("SettingsPlatformListEntry.d.nxml", new Dictionary<string, string> { ["value"] = item }));
             return;
         }
         _dynamic.Append(card, DesktopMarkup.Dynamic("SettingsPlatformCapability.d.nxml", new Dictionary<string, string>

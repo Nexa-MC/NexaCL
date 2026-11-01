@@ -126,6 +126,8 @@ internal static partial class Program
         AssertEqual(10, fixture.Shell.Tree.Children(FindEntity(fixture.Shell, "SettingsNavigation")).Count(item => fixture.Shell.Tree.Name(item).StartsWith("SettingsNav.", StringComparison.Ordinal)));
         var nav = FindByKey(fixture.Shell, scene, "SettingsNavigation");
         var body = FindByKey(fixture.Shell, scene, "SettingsSections");
+        AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiTransition>(body.Entity)!.IndependentChildren);
+        AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiTransition>(body.Entity)!.MovesSelf);
         AssertEqual(36d, nav.Rect.Height);
         var surface = FindByKey(fixture.Shell, scene, "SettingsNavigationSurface");
         AssertEqual(44d, surface.Rect.Height);
@@ -146,6 +148,9 @@ internal static partial class Program
             Emit(fixture.Intents, "ui.settings.section", button);
             scene = fixture.Shell.Render(new(1000, 650));
             AssertEqual(page.Id, settings.SelectedSection);
+            var pageBody = FindByKey(fixture.Shell, scene, "SettingsSections").Entity;
+            AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiTransition>(pageBody)!.IndependentChildren);
+            AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiTransition>(pageBody)!.MovesSelf);
             if (page.Id == "about")
             {
                 AssertTrue(scene.Nodes.Any(item => item.Text?.Contains("Copyright © 2025 muxue", StringComparison.Ordinal) == true));

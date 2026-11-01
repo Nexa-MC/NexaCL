@@ -215,10 +215,10 @@ internal sealed partial class DesktopThemeSession
                                 if (optionalFallbackResources.Contains(CanonicalResourceExpression(expression, candidate))) continue;
                                 if (kind == ThemeResourceKind.Audio) await AddAudio(expression).ConfigureAwait(false);
                                 else foreach (var payload in await Prepare(expression, kind).ConfigureAwait(false))
-                                {
-                                    if (builtIn) await ValidateOptionalVisual(expression, payload).ConfigureAwait(false);
-                                    Native(CanonicalResourceExpression(expression, candidate), payload);
-                                }
+                                    {
+                                        if (builtIn) await ValidateOptionalVisual(expression, payload).ConfigureAwait(false);
+                                        Native(CanonicalResourceExpression(expression, candidate), payload);
+                                    }
                             }
                     }
                     else if (!string.IsNullOrWhiteSpace(option.Value))

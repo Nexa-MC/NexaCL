@@ -35,6 +35,7 @@ internal static partial class Program
         ("literal input placeholders respect reloaded localization policy", LiteralInputPlaceholdersRespectReloadedLocalizationPolicy),
         ("mixed input placeholders localize formats before literal data", MixedInputPlaceholdersLocalizeFormatsBeforeLiteralData),
         ("declarative sibling thumb and self transition load", DeclarativeSiblingThumbAndSelfTransitionLoad),
+        ("declarative independent entry preserves controls and rejects contract changes", DeclarativeIndependentEntryPreservesControls),
         ("external components compose without generated CLR types", ExternalComponentsComposeWithoutGeneratedTypes),
         ("external components reject cycles and expansion bombs", ExternalComponentsRejectCyclesAndExpansionBombs),
         ("NSS cascade preserves explicit values", NssRulesPreserveCascadeAndExplicitValues),

@@ -49,8 +49,8 @@ internal static partial class LauncherMigrationFormats
                 if (Exists(container, "bin/version") && seen.Add(container))
                     Add(result, await ReadTechnicAsync(container, Path.GetFileName(container), settings, token).ConfigureAwait(false));
                 else foreach (string directory in CheckedDirectories(container))
-                    if (Exists(directory, "bin/version") && seen.Add(directory))
-                        Add(result, await ReadTechnicAsync(directory, Path.GetFileName(directory), settings, token).ConfigureAwait(false));
+                        if (Exists(directory, "bin/version") && seen.Add(directory))
+                            Add(result, await ReadTechnicAsync(directory, Path.GetFileName(directory), settings, token).ConfigureAwait(false));
             }
         }
     }
@@ -131,24 +131,24 @@ internal static partial class LauncherMigrationFormats
         {
             if (libraries.GetArrayLength() > 1024) unsupported = "Technic 版本的依赖数量超过读取预算。";
             else foreach (JsonElement library in libraries.EnumerateArray())
-            {
-                string coordinate = Text(library, "name") ?? ""; string[] parts = coordinate.Split(':');
-                if (parts.Length < 3) { unsupported ??= "Technic 依赖坐标无效。"; continue; }
-                if (!IsKnownTechnicLibraryGroup(parts[0])) unsupported ??= "Technic 版本含未支持的自定义运行依赖。";
-                string? type = (parts[0], parts[1]) switch
                 {
-                    ("net.minecraftforge", "forge" or "minecraftforge") => "Forge",
-                    ("net.neoforged", "neoforge") => "NeoForge",
-                    ("net.fabricmc", "fabric-loader") => "Fabric",
-                    ("org.quiltmc", "quilt-loader") => "Quilt",
-                    _ => null
-                };
-                if (type is null) continue;
-                string actual = parts[2];
-                if (type is "Forge" or "NeoForge" && actual.StartsWith(version + "-", StringComparison.Ordinal)) actual = actual[(version.Length + 1)..];
-                if (loader is not null && (loader != type || build != actual)) unsupported ??= "Technic 版本含多个加载器。";
-                loader = type; build = actual;
-            }
+                    string coordinate = Text(library, "name") ?? ""; string[] parts = coordinate.Split(':');
+                    if (parts.Length < 3) { unsupported ??= "Technic 依赖坐标无效。"; continue; }
+                    if (!IsKnownTechnicLibraryGroup(parts[0])) unsupported ??= "Technic 版本含未支持的自定义运行依赖。";
+                    string? type = (parts[0], parts[1]) switch
+                    {
+                        ("net.minecraftforge", "forge" or "minecraftforge") => "Forge",
+                        ("net.neoforged", "neoforge") => "NeoForge",
+                        ("net.fabricmc", "fabric-loader") => "Fabric",
+                        ("org.quiltmc", "quilt-loader") => "Quilt",
+                        _ => null
+                    };
+                    if (type is null) continue;
+                    string actual = parts[2];
+                    if (type is "Forge" or "NeoForge" && actual.StartsWith(version + "-", StringComparison.Ordinal)) actual = actual[(version.Length + 1)..];
+                    if (loader is not null && (loader != type || build != actual)) unsupported ??= "Technic 版本含多个加载器。";
+                    loader = type; build = actual;
+                }
         }
         bool knownMain = loader switch
         {

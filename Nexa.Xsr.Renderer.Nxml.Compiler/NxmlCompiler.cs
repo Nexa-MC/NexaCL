@@ -178,6 +178,13 @@ public static class NxmlCompiler
             : ParseBoolean(element.Name, "TransitionMovesSelf", Literal("TransitionMovesSelf", "false"));
         if (transitionMovesSelf is not null && element.FindProperty("TransitionKey") is null)
             throw Fail(element.Name, "TransitionMovesSelf", "requires a transition key");
+        bool? transitionIndependentChildren = element.FindProperty("TransitionIndependentChildren") is null ? null
+            : ParseBoolean(element.Name, "TransitionIndependentChildren", Literal("TransitionIndependentChildren", "false"));
+        if (transitionIndependentChildren is not null && element.FindProperty("TransitionKey") is null)
+            throw Fail(element.Name, "TransitionIndependentChildren", "requires a transition key");
+        if (transitionIndependentChildren == true && (transitionMovesSelf
+            ?? recipe is NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.CommandInput or NxmlRuntimeRecipe.Image))
+            throw Fail(element.Name, "TransitionIndependentChildren", "requires a transition container that does not move itself");
         NxmlControlModel model = new(Literal("Kind", "Node"), "Node", role, recipe, allowsChildren, NxmlNodeSchema.Properties);
         foreach (string required in Literal("Required", "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             if (element.FindProperty(required) is null) throw Fail(element.Name, required, "is required by this component");
@@ -203,7 +210,7 @@ public static class NxmlCompiler
                 NssStyleSheet.SetVisual(visual ??= new(), attribute.Name, attribute.Value.Text);
                 continue;
             }
-            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength" or "PreserveTabs" or "MaxLines" or "TrimOverflow" or "OverlayMotion" or "LiveSetting" or "DismissCommand" or "ScrollCommand" or "ShowsVerticalIndicator" or "ShowsHorizontalIndicator" or "UseVerticalWheelForHorizontalScroll" or "StickToEnd" or "ScrollGesture" or "StableContent" or "ModalLayer" or "Anchor" or "AnchorGap" or "SegmentThumb" or "SegmentWidth" or "Checked" or "SelectionRequired" or "TransitionMovesSelf" or "Minimum" or "Maximum" or "Step" or "RangeValue" or "Ring" or "Indeterminate") continue;
+            if (attribute.Name is "Recipe" or "Role" or "Kind" or "AcceptsChildren" or "Required" or "Class" or "Layout" or "MaximumLength" or "PreserveTabs" or "MaxLines" or "TrimOverflow" or "OverlayMotion" or "LiveSetting" or "DismissCommand" or "ScrollCommand" or "ShowsVerticalIndicator" or "ShowsHorizontalIndicator" or "UseVerticalWheelForHorizontalScroll" or "StickToEnd" or "ScrollGesture" or "StableContent" or "ModalLayer" or "Anchor" or "AnchorGap" or "SegmentThumb" or "SegmentWidth" or "Checked" or "SelectionRequired" or "TransitionMovesSelf" or "TransitionIndependentChildren" or "Minimum" or "Maximum" or "Step" or "RangeValue" or "Ring" or "Indeterminate") continue;
             if (!model.TryGetProperty(attribute.Name, out NxmlControlPropertyModel property))
             {
                 throw Fail(element.Name, attribute.Name, "is not declared by this control model");
@@ -289,7 +296,8 @@ public static class NxmlCompiler
             SegmentWidth = segmentWidth,
             Checked = checkedValue,
             SelectionRequired = selectionRequired,
-            TransitionMovesSelf = transitionMovesSelf
+            TransitionMovesSelf = transitionMovesSelf,
+            TransitionIndependentChildren = transitionIndependentChildren
         };
     }
 

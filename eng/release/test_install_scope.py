@@ -136,7 +136,35 @@ class InstallScopeTests(unittest.TestCase):
         installer = ET.parse(root / "windows.wxs").find("w:Package", ns)
         self.assertEqual("perMachine", installer.attrib["Scope"])
         self.assertIsNotNone(installer.find("w:StandardDirectory[@Id='ProgramFiles6432Folder']", ns))
-        self.assertTrue(all(value.attrib["Root"] == "HKLM" for value in installer.findall(".//w:RegistryValue", ns)))
+        self._assert_machine_registry_hives(installer)
+
+    def _assert_machine_registry_hives(self, node, inherited_root=None):
+        tag = node.tag.rsplit("}", 1)[-1]
+        if tag == "RegistryKey":
+            inherited_root = node.get("Root", inherited_root)
+            self.assertEqual("HKLM", inherited_root, ET.tostring(node, encoding="unicode"))
+        elif tag == "RegistryValue":
+            self.assertEqual("HKLM", node.get("Root", inherited_root), ET.tostring(node, encoding="unicode"))
+        for child in node:
+            self._assert_machine_registry_hives(child, inherited_root)
+
+    def test_machine_registry_scope_follows_keys_and_rejects_user_overrides(self):
+        for markup in (
+            '<Component><RegistryValue Root="HKLM" /></Component>',
+            '<Component><RegistryKey Root="HKLM"><RegistryKey><RegistryValue /></RegistryKey></RegistryKey></Component>',
+        ):
+            with self.subTest(markup=markup):
+                self._assert_machine_registry_hives(ET.fromstring(markup))
+        for markup in (
+            '<Component><RegistryValue /></Component>',
+            '<Component><RegistryKey><RegistryValue /></RegistryKey></Component>',
+            '<Component><RegistryValue Root="HKCU" /></Component>',
+            '<Component><RegistryKey Root="HKLM"><RegistryKey Root="HKCU"><RegistryValue /></RegistryKey></RegistryKey></Component>',
+            '<Component><RegistryKey Root="HKLM"><RegistryValue Root="HKCU" /></RegistryKey></Component>',
+            '<Component Root="HKLM"><RegistryValue /></Component>',
+        ):
+            with self.subTest(markup=markup), self.assertRaises(AssertionError):
+                self._assert_machine_registry_hives(ET.fromstring(markup))
 
     def test_macos_dmg_contains_nonrelocatable_system_installer(self):
         distribution = ET.parse(Path(__file__).with_name("macos-distribution.xml"))

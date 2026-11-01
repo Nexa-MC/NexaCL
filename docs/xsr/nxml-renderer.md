@@ -28,6 +28,14 @@ CheckBox or Switch. Loading creates the existing renderer toggle; reload updates
 its value while retaining input and toggle identity. `TransitionMovesSelf` optionally
 declares the existing transition behavior and requires `TransitionKey`; it is an
 immutable reload contract. No script, service lookup or new plugin wire shape is added.
+`TransitionIndependentChildren` declares per-control entry motion for a transition
+container, also as an immutable literal/data-projected reload contract. It requires
+`TransitionKey` and, when true, a transition that does not move itself. Settings
+sections declare this mode in their external template so the page container stays
+stationary while its controls enter independently.
+The 90-scenario NXML suite passes in managed and Linux-x64 NativeAOT executables,
+including unchanged layout/draft/focus ownership across key reloads, rejection of
+changing the independent-entry contract, and invalid or self-moving declarations.
 `SelectionRequired` declares the existing group policy on a stack or stack-layout
 Dynamic group, including an inventory that permits no selected row. Group identity
 and policy remain fixed across reload.

@@ -323,6 +323,7 @@ public sealed partial class NxmlUiLoader
                 OffsetX = node.TransitionOffsetX,
                 OffsetY = node.TransitionOffsetY,
                 MovesSelf = node.TransitionMovesSelf ?? node.Recipe is NxmlRuntimeRecipe.Text or NxmlRuntimeRecipe.CommandInput or NxmlRuntimeRecipe.Image,
+                IndependentChildren = node.TransitionIndependentChildren ?? false,
                 BoundKey = transitionBinding is null ? default : ResolveState(state, transitionBinding.State),
             });
 
