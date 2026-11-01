@@ -41,6 +41,11 @@ int wmain(int argc, wchar_t** argv) {
         Require(argc == 2, "DLL argument"); Require(SUCCEEDED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED)), "COM");
         auto root = std::filesystem::temp_directory_path() / (L"nexacl-shell-test-" + std::to_wstring(GetCurrentProcessId()) + L"-" + std::to_wstring(GetTickCount64()));
         std::filesystem::create_directories(root / L"ShellIntegration");
+        // The Shell returns long paths even when the runner's TEMP contains an 8.3 alias.
+        wchar_t longRoot[32768];
+        DWORD rootLength = GetLongPathNameW(root.c_str(), longRoot, ARRAYSIZE(longRoot));
+        Require(rootLength > 0 && rootLength < ARRAYSIZE(longRoot), "expand temporary root");
+        root = std::filesystem::path(longRoot);
         auto dll = root / L"ShellIntegration/Nexa.ExplorerCommand.dll";
         std::filesystem::copy_file(argv[1], dll);
         wchar_t own[32768]; GetModuleFileNameW(nullptr, own, ARRAYSIZE(own));
@@ -78,7 +83,10 @@ int wmain(int argc, wchar_t** argv) {
                     std::ifstream input(capture, std::ios::binary); actual.resize(expected.size()); input.read(reinterpret_cast<char*>(actual.data()), static_cast<std::streamsize>(actual.size() * sizeof(wchar_t)));
                     if (actual == expected) break;
                 }
-                Require(actual == expected, "exact mode and Unicode argument delivery");
+                if (actual != expected) {
+                    std::wcerr << L"Expected: " << expected << L"\nActual: " << actual << L'\n';
+                    throw std::runtime_error("exact mode and Unicode argument delivery");
+                }
                 DWORD pid{}; std::ifstream(std::filesystem::path(capture.wstring() + L".pid")) >> pid;
                 HANDLE childProcess = OpenProcess(SYNCHRONIZE, FALSE, pid);
                 if (childProcess) { Require(WaitForSingleObject(childProcess, 5000) == WAIT_OBJECT_0, "fixture exit"); CloseHandle(childProcess); }

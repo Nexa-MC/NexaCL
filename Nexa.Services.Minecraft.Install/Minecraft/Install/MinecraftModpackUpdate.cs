@@ -209,8 +209,11 @@ public sealed partial class MinecraftInstallService
                 if (Directory.Exists(stage))
                 {
                     if (!prepared) Directory.Delete(stage, recursive: true);
-                    else foreach (string directory in Directory.EnumerateDirectories(stage).Where(path => Path.GetFileName(path) is not (".publication" or ".task")))
+                    else
+                    {
+                        foreach (string directory in Directory.EnumerateDirectories(stage).Where(path => Path.GetFileName(path) is not (".publication" or ".task")))
                         { RecoveryBlobStore.CheckLinks(directory); Directory.Delete(directory, recursive: true); }
+                    }
                 }
             }
             catch (IOException) { }

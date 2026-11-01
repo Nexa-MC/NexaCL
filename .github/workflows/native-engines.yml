@@ -40,6 +40,17 @@ concurrency:
   group: native-engines-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  explorer-contracts:
+    name: Windows Explorer native contracts
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Configure native Explorer contracts
+        run: cmake -S native/Nexa.ExplorerCommand -B "${{ runner.temp }}/explorer-contracts" -A x64
+      - name: Build native Explorer contracts
+        run: cmake --build "${{ runner.temp }}/explorer-contracts" --config Release
+      - name: Verify native Explorer argument delivery and lifetime
+        run: ctest --test-dir "${{ runner.temp }}/explorer-contracts" -C Release --output-on-failure
   contracts:
     strategy:
       fail-fast: false

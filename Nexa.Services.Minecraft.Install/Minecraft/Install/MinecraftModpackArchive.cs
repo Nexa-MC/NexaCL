@@ -140,7 +140,8 @@ public static class MinecraftModpackArchive
     internal static void CheckPath(string path)
     {
         for (string? current = Path.GetFullPath(path); current is not null; current = Path.GetDirectoryName(current))
-            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0) throw new IOException("整合包目标或来源不能包含符号链接。");
+            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0 && !Nexa.Core.PathIdentity.IsMacOSSystemDirectoryAlias(current))
+                throw new IOException("整合包目标或来源不能包含符号链接。");
     }
     internal static string RequireHash(string? hash, int length) => hash is not null && hash.Length == length && hash.All(char.IsAsciiHexDigit) ? hash : throw new InvalidDataException("文件校验信息无效。");
     private static InstallLoader ParseLoader(string name) => name switch

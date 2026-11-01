@@ -1025,4 +1025,18 @@ Both original failures reproduced against archived baseline `69331638a`.
 The architecture gate now passes for 86 projects and release tooling passes
 105 tests. Service fixtures retain byte-preserving index checks using the
 published content-addressed ID and explicitly cover the added export-option
-routes; the complete managed service suite passes 851 tests.
+routes; the complete managed service suite passes 852 tests after the platform-path
+regression below is added.
+
+Archive and local-JAR admission use the same verified macOS root-alias policy as
+discovery/recovery: only `/var`, `/tmp` and `/etc` resolving to their fixed
+link-free `/private` targets may occur as aliases in source ancestry. Application
+directory and file links remain rejected. Explorer contract fixtures expand a
+Windows 8.3 temporary-root alias before asserting exact Unicode argument delivery;
+the Shell's canonical filesystem selection must not be mistaken for a changed
+argument. These are platform-path compatibility fixes, not general link admission.
+The new archive/JAR regression admits ordinary files and rejects both file and
+application-directory links on Unix. Explicit blocks around embedded loops keep
+source formatting identical under local SDK 10.0.100 and CI SDK 10.0.403; both
+format gates pass. A separate Windows Explorer CI job exercises the native command
+fixture before full installer packaging.

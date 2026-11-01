@@ -259,11 +259,14 @@ public sealed partial class ThemePackageService : IThemePackageService
     private Dictionary<string, ThemeOptionValue> ValuesFor(Installation installation)
     {
         var values = installation.Manifest.Options.ToDictionary(o => o.Id, o => o.Default, StringComparer.Ordinal);
-        if (_options.TryGetValue(installation.Identity, out var stored)) foreach (var option in installation.Manifest.Options)
+        if (_options.TryGetValue(installation.Identity, out var stored))
+        {
+            foreach (var option in installation.Manifest.Options)
             {
                 if (stored.Values.TryGetValue(option.Id, out var value))
                 { try { ThemeManifestReader.ValidateValue(option, value); values[option.Id] = value; } catch (InvalidDataException) { } }
             }
+        }
         return values;
     }
     private void EnsureBuiltin()

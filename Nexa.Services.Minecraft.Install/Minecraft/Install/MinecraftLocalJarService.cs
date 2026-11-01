@@ -232,6 +232,7 @@ public sealed class MinecraftLocalJarService(TaskCenterService tasks, XsrStateSt
     private static void CheckPath(string path)
     {
         for (string? current = Path.GetFullPath(path); current is not null; current = Path.GetDirectoryName(current))
-            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0) throw new IOException("不能通过符号链接修改游戏文件。");
+            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0 && !Nexa.Core.PathIdentity.IsMacOSSystemDirectoryAlias(current))
+                throw new IOException("不能通过符号链接修改游戏文件。");
     }
 }

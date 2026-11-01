@@ -44,6 +44,7 @@ internal static partial class Program
         ("online modpacks identify cache preview and publish verified updates", OnlineModpackUpdatesIdentifyDownloadPreviewAndPublish),
         ("modpack failures never publish instance", ModpackFailuresNeverPublishInstance),
         ("modpack asset index snapshots coexist", ModpackAssetIndexesCoexist),
+        ("asset archive paths preserve system aliases and reject application links", AssetArchivePathsRetainLinkAdmission),
         ("modpack failed task retries pinned archive", () => ModpackFailedTaskRetriesPinnedArchive(new("US"))),
         ("mainland modpack failed task retries pinned archive", () => ModpackFailedTaskRetriesPinnedArchive(new("CN"))),
         ("archive actual byte limits and stored length mismatch", ArchiveActualByteLimits),

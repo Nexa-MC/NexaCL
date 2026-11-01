@@ -6,6 +6,39 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask AssetArchivePathsRetainLinkAdmission()
+    {
+        string temporary = CreateTempDirectory();
+        try
+        {
+            string physical = Path.Combine(temporary, "physical"); Directory.CreateDirectory(physical);
+            string pack = Path.Combine(physical, "pack.mrpack"), jar = Path.Combine(physical, "patch.jar");
+            WriteLocalJar(pack, ("modrinth.index.json", MrpackIndex().ToJsonString()));
+            WriteLocalJar(jar, ("example.class", "class"));
+            _ = await MinecraftModpackArchive.InspectAsync(pack);
+            _ = await MinecraftLocalJarService.InspectAsync(jar);
+            if (OperatingSystem.IsMacOS())
+            {
+                foreach (string alias in new[] { "/var", "/tmp", "/etc" })
+                {
+                    AssertTrue(Nexa.Core.PathIdentity.IsMacOSSystemDirectoryAlias(alias));
+                }
+            }
+            if (!OperatingSystem.IsWindows())
+            {
+                string directoryLink = Path.Combine(temporary, "linked"), packLink = Path.Combine(temporary, "linked.mrpack"), jarLink = Path.Combine(temporary, "linked.jar");
+                Directory.CreateSymbolicLink(directoryLink, physical);
+                File.CreateSymbolicLink(packLink, pack); File.CreateSymbolicLink(jarLink, jar);
+                AssertFalse(Nexa.Core.PathIdentity.IsMacOSSystemDirectoryAlias(directoryLink));
+                await TrustRejectsAsync<IOException>(() => MinecraftModpackArchive.InspectAsync(Path.Combine(directoryLink, "pack.mrpack")));
+                await TrustRejectsAsync<IOException>(() => MinecraftLocalJarService.InspectAsync(Path.Combine(directoryLink, "patch.jar")));
+                await TrustRejectsAsync<IOException>(() => MinecraftModpackArchive.InspectAsync(packLink));
+                await TrustRejectsAsync<IOException>(() => MinecraftLocalJarService.InspectAsync(jarLink));
+            }
+        }
+        finally { Directory.Delete(temporary, true); }
+    }
+
     private static async ValueTask ModpackAssetIndexesCoexist()
     {
         string temporary = CreateTempDirectory();

@@ -48,9 +48,14 @@ internal static partial class LauncherMigrationFormats
                 CheckPath(container); if (!Directory.Exists(container)) continue;
                 if (Exists(container, "bin/version") && seen.Add(container))
                     Add(result, await ReadTechnicAsync(container, Path.GetFileName(container), settings, token).ConfigureAwait(false));
-                else foreach (string directory in CheckedDirectories(container))
+                else
+                {
+                    foreach (string directory in CheckedDirectories(container))
+                    {
                         if (Exists(directory, "bin/version") && seen.Add(directory))
                             Add(result, await ReadTechnicAsync(directory, Path.GetFileName(directory), settings, token).ConfigureAwait(false));
+                    }
+                }
             }
         }
     }
@@ -130,7 +135,9 @@ internal static partial class LauncherMigrationFormats
         if (TryArray(root, "libraries", out JsonElement libraries))
         {
             if (libraries.GetArrayLength() > 1024) unsupported = "Technic 版本的依赖数量超过读取预算。";
-            else foreach (JsonElement library in libraries.EnumerateArray())
+            else
+            {
+                foreach (JsonElement library in libraries.EnumerateArray())
                 {
                     string coordinate = Text(library, "name") ?? ""; string[] parts = coordinate.Split(':');
                     if (parts.Length < 3) { unsupported ??= "Technic 依赖坐标无效。"; continue; }
@@ -149,6 +156,7 @@ internal static partial class LauncherMigrationFormats
                     if (loader is not null && (loader != type || build != actual)) unsupported ??= "Technic 版本含多个加载器。";
                     loader = type; build = actual;
                 }
+            }
         }
         bool knownMain = loader switch
         {
