@@ -32,6 +32,7 @@ internal sealed class NativeUiAsyncClient(Func<ReadOnlyMemory<byte>, byte[]> sen
     private readonly Dictionary<long, Pending> _pending = [];
     private long _next;
     private bool _closed;
+    private readonly TaskCompletionSource _retired = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     internal Task<byte[]> InvokeAsync(ReadOnlyMemory<byte> body, CancellationToken token = default)
     {
@@ -56,7 +57,11 @@ internal sealed class NativeUiAsyncClient(Func<ReadOnlyMemory<byte>, byte[]> sen
             while (true)
             {
                 token.ThrowIfCancellationRequested();
-                lock (_gate) { if (_closed || !_pending.ContainsKey(id)) return; }
+                lock (_gate)
+                {
+                    if (_closed) { Remove(id)?.Dispose(); return; }
+                    if (!_pending.ContainsKey(id)) return;
+                }
                 try { _ = send(message); break; }
                 catch (NativeUiCallBusyException)
                 {
@@ -102,7 +107,28 @@ internal sealed class NativeUiAsyncClient(Func<ReadOnlyMemory<byte>, byte[]> sen
 
     private Pending? Remove(long id)
     {
-        lock (_gate) return _pending.Remove(id, out var pending) ? pending : null;
+        lock (_gate)
+        {
+            _pending.Remove(id, out var pending);
+            if (_closed && _pending.Count == 0) _retired.TrySetResult();
+            return pending;
+        }
+    }
+    // Service peers retain their completion endpoints until every admitted request has
+    // physically completed. Caller cancellation alone does not retire a peer callback.
+    internal Task RetireAsync()
+    {
+        KeyValuePair<long, Pending>[] pending;
+        lock (_gate)
+        {
+            _closed = true; pending = _pending.ToArray();
+            if (_pending.Count == 0) _retired.TrySetResult();
+        }
+        foreach (var (id, operation) in pending)
+        {
+            operation.Source.TrySetCanceled(); operation.Dispose(); CancelRemote(id);
+        }
+        return _retired.Task;
     }
     private void CancelRemote(long id) => _ = SendCancellationAsync(id);
     private async Task SendCancellationAsync(long id)
@@ -123,6 +149,7 @@ internal sealed class NativeUiAsyncClient(Func<ReadOnlyMemory<byte>, byte[]> sen
         {
             if (_closed) return;
             _closed = true; pending = _pending.ToArray(); _pending.Clear();
+            _retired.TrySetResult();
         }
         foreach (var (id, operation) in pending)
         {

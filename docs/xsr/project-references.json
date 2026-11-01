@@ -131,7 +131,8 @@
     "Nexa.Services.Updates",
     "Nexa.Services.Updates.Contracts",
     "Nexa.Xsr.Abstractions",
-    "Nexa.Xsr.State"
+    "Nexa.Xsr.State",
+    "Nexa.Native.Accounts.Client"
   ],
   "Nexa.Services.Accounts": [
     "Nexa.Contracts",
@@ -631,5 +632,18 @@
   ],
   "Nexa.Xsr.Renderer.Backend.Native.Tests": [
     "Nexa.Xsr.Renderer.Backend.Native"
+  ],
+  "Nexa.Native.Accounts": [
+    "Nexa.Services.Accounts",
+    "Nexa.Services.Foundation.Contracts"
+  ],
+  "Nexa.Native.Accounts.Client": [
+    "Nexa.Services.Accounts.Contracts",
+    "Nexa.Services.Common.Contracts",
+    "Nexa.Services.Common",
+    "Nexa.Services.Foundation.Contracts"
+  ],
+  "Nexa.Native.Accounts.Tests": [
+    "Nexa.Native.Accounts.Client"
   ]
 }

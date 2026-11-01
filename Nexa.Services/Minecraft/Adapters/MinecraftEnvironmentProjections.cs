@@ -1,3 +1,6 @@
+#if NEXA_NATIVE_SERVICES
+using AccountService = Nexa.Native.Accounts.Client.NativeAccountService;
+#endif
 using System.Text.Json.Nodes;
 using Nexa.Services.Accounts;
 using Nexa.Services.Caching;

@@ -660,6 +660,10 @@ internal static partial class Program
                 new Nexa.Services.Settings.InMemorySettingsPort(), Nexa.Services.Settings.LauncherDefaults.CreateSchema(),
                 new LaunchInstallValidationProfiles(), observer: observation,
                 declareHostState: LaunchPageState.DeclareState, minecraftRootDirectory: directory);
+            await using var validationAccounts = host.Accounts;
+#if NEXA_NATIVE_SERVICES
+            await host.Accounts.Initialization.ConfigureAwait(false);
+#endif
             var foundation = Nexa.Services.Composition.FoundationRuntimeComposer.Compose(host);
             using var minecraft = Nexa.Services.Composition.MinecraftRuntimeComposer.Compose();
             using var library = Nexa.Services.Composition.MinecraftLibraryRuntimeComposer.Compose(host, directory,
@@ -831,7 +835,14 @@ internal static partial class Program
     }
 
     private sealed class LaunchInstallValidationProfiles : Nexa.Services.Accounts.ILaunchProfilePort
+#if NEXA_NATIVE_SERVICES
+        , Nexa.Native.Accounts.Client.INativeAccountProfileStore
+#endif
     {
+#if NEXA_NATIVE_SERVICES
+        public string? NativeProfilePath => null;
+        public Nexa.Services.Accounts.LaunchProfileSet NativeInitialProfiles => _profiles;
+#endif
         private Nexa.Services.Accounts.LaunchProfileSet _profiles = new()
         {
             Profiles =

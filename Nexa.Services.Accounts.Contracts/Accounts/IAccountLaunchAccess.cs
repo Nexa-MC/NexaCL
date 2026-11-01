@@ -10,4 +10,10 @@ namespace Nexa.Services.Accounts;
 public interface IAccountLaunchAccess : IAccountLaunchIdentityResolver
 {
     XsrResult<LaunchProfile> GetProfile(int index);
+
+    ValueTask<XsrResult<LaunchProfile>> GetProfileAsync(int index, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(GetProfile(index));
+    }
 }

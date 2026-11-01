@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)ServiceWire.cs" Link="Wire/ServiceWire.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ServiceStatePublisher.cs" Link="Wire/ServiceStatePublisher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ServiceHttp.cs" Link="Wire/ServiceHttp.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ServiceEndpoint.cs" Link="Wire/ServiceEndpoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../NativeUiCallGate.cs" Link="Wire/NativeCallGate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../NativeUiAsyncCalls.cs" Link="Wire/NativeAsyncCalls.cs" />
+  </ItemGroup>
+</Project>

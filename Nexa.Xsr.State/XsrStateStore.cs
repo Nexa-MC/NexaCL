@@ -5,7 +5,7 @@ namespace Nexa.Xsr.State;
 /// assign the next revision per entry. Derived entries recompute only after an input revision
 /// changes, and availability is carried separately from the last value.
 /// </summary>
-public sealed class XsrStateStore
+public sealed partial class XsrStateStore
 {
     private readonly XsrRegistrySnapshot<XsrStateDescriptor> _registry;
     private XsrStateNode[] _nodes;
@@ -83,7 +83,7 @@ public sealed class XsrStateStore
                 {
                     XsrStateNode target = original[index];
                     XsrStateNode value = source[index];
-                    if (target is not IXsrStateCellNode cell || !cell.IsUnpublished
+                    if (target.IsReplica || target is not IXsrStateCellNode cell || !cell.IsUnpublished
                         || target.SemanticId != value.SemanticId || target.RuntimeId != value.RuntimeId
                         || target.Descriptor != value.Descriptor)
                         throw new InvalidOperationException("The initial snapshot requires matching unpublished cell topology and ownership.");
@@ -174,6 +174,7 @@ public sealed class XsrStateStore
             throw MismatchedContract(stateId, node, typeof(TValue));
         }
 
+        RequireLocalWriter(node);
         XsrStateChange change = cell.Publish(
             stateId,
             value,
@@ -200,6 +201,7 @@ public sealed class XsrStateStore
             throw MismatchedContract(stateId, node, typeof(TValue));
         }
 
+        RequireLocalWriter(node);
         cell.PublishCoalesced(value);
         Notify(new XsrStateChange(
             stateId,
@@ -309,6 +311,7 @@ public sealed class XsrStateStore
             throw MismatchedContract(stateId, node, typeof(TItem));
         }
 
+        RequireLocalWriter(node);
         XsrCollectionApplyResult result = collection.PublishDelta(
             stateId,
             delta,
@@ -327,6 +330,7 @@ public sealed class XsrStateStore
         AdmitOrdinaryMutation();
         XsrStateNode node = RequireNode(stateId);
 
+        RequireLocalWriter(node);
         if (node is IXsrStateDerivedNode)
         {
             throw new InvalidOperationException(

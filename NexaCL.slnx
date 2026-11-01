@@ -83,6 +83,8 @@
     <Project Path="Nexa.Xsr.Renderer.Benchmarks/Nexa.Xsr.Renderer.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/Native/">
+    <Project Path="native/Nexa.Native.Accounts.Client/Nexa.Native.Accounts.Client.csproj" />
+    <Project Path="native/Nexa.Native.Accounts/Nexa.Native.Accounts.csproj" />
     <Project Path="native/Nexa.Native.Host/Nexa.Native.Host.csproj" />
   </Folder>
   <Folder Name="/NXML/">
@@ -106,6 +108,7 @@
     <Project Path="tests/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj" />
     <Project Path="tests/Nexa.Sidecar.Tests/Nexa.Sidecar.Tests.csproj" />
     <Project Path="tests/Nexa.Services.Tests/Nexa.Services.Tests.csproj" />
+    <Project Path="tests/Nexa.Native.Accounts.Tests/Nexa.Native.Accounts.Tests.csproj" />
   <Project Path="tests/Nexa.Native.Network.Tests/Nexa.Native.Network.Tests.csproj" />
     <Project Path="tests/Nexa.Services.Themes.Tests/Nexa.Services.Themes.Tests.csproj" />
     <Project Path="tests/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj" />

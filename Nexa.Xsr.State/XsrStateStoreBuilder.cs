@@ -85,7 +85,17 @@ public sealed class XsrStateStoreBuilder
 {
     private readonly List<XsrStateDeclaration> _declarations = [];
     private readonly Dictionary<XsrSemanticId, XsrStateDeclaration> _declarationsById = new();
+    private readonly HashSet<XsrSemanticId> _replicas = [];
     private bool _built;
+
+    /// <summary>Reserves an already declared cell or collection for source-revision replication.</summary>
+    public void Replica(XsrSemanticId semanticId)
+    {
+        if (_built) throw new InvalidOperationException("The XSR state store builder has already been built.");
+        if (!_declarationsById.TryGetValue(semanticId, out var declaration) || declaration is IXsrDerivedDeclarationInfo)
+            throw new InvalidOperationException("A replica requires a declared, non-derived state entry.");
+        _replicas.Add(semanticId);
+    }
 
     /// <summary>
     /// Declares one typed value cell. The key identity of a collection uses the default equality
@@ -189,11 +199,13 @@ public sealed class XsrStateStoreBuilder
         {
             XsrStateId stateId = stateIds[declaration.SemanticId];
             nodes[stateId.Value.Value - 1] = declaration.CreateNode(stateId.Value);
+            nodes[stateId.Value.Value - 1].IsReplica = _replicas.Contains(declaration.SemanticId);
         }
 
         _built = true;
         _declarations.Clear();
         _declarationsById.Clear();
+        _replicas.Clear();
         return new XsrStateStore(snapshot, nodes, observer);
     }
 

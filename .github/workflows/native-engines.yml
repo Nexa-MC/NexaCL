@@ -20,6 +20,12 @@ on:
       - 'Nexa.Core/Media/**'
       - 'Nexa.Core/Xml/**'
       - 'Nexa.Services.Accounts/**'
+      - 'Nexa.Services.Accounts.Contracts/**'
+      - 'Nexa.Xsr.State/**'
+      - 'tests/Nexa.Native.Accounts.Tests/**'
+      - 'eng/xsr/generate_account_routes.py'
+      - 'eng/xsr/generate_service_wire.*'
+      - 'eng/release/verify_native_account_contracts.py'
       - 'Nexa.Services.Minecraft.Metadata/**'
       - 'Nexa.Services.Minecraft.Library.Contracts/**'
       - 'Nexa.Services.Minecraft.Assets.Contracts/**'
@@ -72,6 +78,11 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: '10.0.x'
+      - name: Verify generated account routes
+        run: python eng/xsr/generate_account_routes.py --check
+      - name: Verify independent account runtimes and drained callbacks
+        shell: bash
+        run: python eng/release/verify_native_account_contracts.py --rid '${{ matrix.rid }}' --output "$RUNNER_TEMP/account-contracts"
       - name: Publish isolated native engines
         shell: bash
         run: |

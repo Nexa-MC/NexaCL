@@ -1,3 +1,6 @@
+#if NEXA_NATIVE_SERVICES
+using AccountService = Nexa.Native.Accounts.Client.NativeAccountService;
+#endif
 using Nexa.Services.Accounts;
 using Nexa.Services.Settings;
 using Nexa.Services.Telemetry;
@@ -14,15 +17,23 @@ namespace Nexa.Services.Foundation;
 public static class FoundationCommands
 {
     public static XsrCommandHandler<AccountRemoveProfileCommand> CreateAccountRemoveHandler(AccountService accounts) =>
+#if NEXA_NATIVE_SERVICES
+        accounts.RemoveAsync;
+#else
         (command, _) => ValueTask.FromResult(accounts.RemoveProfile(command.Index, command.ExpectedRosterRevision));
+#endif
 
     public static XsrCommandHandler<AccountSelectProfileCommand> CreateAccountSelectHandler(AccountService accounts)
     {
         ArgumentNullException.ThrowIfNull(accounts);
+#if NEXA_NATIVE_SERVICES
+        return accounts.SelectAsync;
+#else
         return (command, _) => ValueTask.FromResult(
             accounts.SelectProfile(command.Index, command.ExpectedRosterRevision) is { } error
                 ? XsrResult.Failure(error)
                 : XsrResult.Success());
+#endif
     }
 
     /// <summary>Sets one setting by semantic key with a raw schema-encoded value.</summary>
@@ -49,6 +60,9 @@ public static class FoundationCommands
     public static XsrCommandHandler<AccountUpsertProfileCommand> CreateAccountUpsertHandler(AccountService accounts)
     {
         ArgumentNullException.ThrowIfNull(accounts);
+#if NEXA_NATIVE_SERVICES
+        return accounts.UpsertAsync;
+#else
         return (command, _) =>
         {
             XsrResult<int> result = AccountLoginProfiles.Upsert(accounts, command.Profile);
@@ -56,6 +70,7 @@ public static class FoundationCommands
                 ? XsrResult.Success()
                 : XsrResult.Failure(result.Error!));
         };
+#endif
     }
 }
 

@@ -70,7 +70,10 @@ internal static partial class Program
         AssertTrue(SpinWait.SpinUntil(() => handler.Calls > 0, TimeSpan.FromSeconds(2)));
         accounts.RemoveProfile(0);
         skins.Refresh(); await skins.WhenIdle;
+        Task drained = skins.WhenDrained;
+        AssertFalse(drained.IsCompleted);
         handler.Paused.SetResult(SkinFixture()); await old;
+        await drained;
         AssertEqual(0, accounts.StateStore.ReadCollection<AccountSkinSnapshot>(accounts.StateStore.Resolve(AccountSkinService.SkinsKey)).Count);
     }
 

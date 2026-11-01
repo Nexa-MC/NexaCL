@@ -3,8 +3,9 @@
 The launcher retains NativeAOT. The native Host admits modules and enters the complete
 UI runtime on the original OS main thread. The UI tree, controllers, renderer and
 backend live in `nexa-ui.dll` (Windows), `nexa-ui.so` (Linux), or `nexa-ui.dylib`
-(macOS). Business composition remains inside that UI runtime until its service ports
-are extracted. Names of Nexa-owned distribution modules are
+(macOS). Account storage, login and wardrobe are owned by `nexa-accounts` through binary
+async ports. The remaining business composition moves out through the same service
+port and state-replica boundary. Names of Nexa-owned distribution modules are
 lowercase `nexa-<module>`. Upstream native dependencies retain their supported names.
 
 `Nexa.Desktop[.exe]` becomes a small NativeAOT bootstrap with no Host project
@@ -36,11 +37,12 @@ installation and a missing-module failure.
 
 ## Current release inventory
 
-The publisher emits the bootstrap, `nexa-host`, `nexa-ui`, and eight independent native engines.
+The publisher emits the bootstrap, `nexa-host`, `nexa-ui`, `nexa-accounts`, and eight independent native engines.
 Extensions are `.dll` / `.so` / `.dylib` for Windows / Linux / macOS respectively.
 
 | Engine | Extracted implementation |
 | --- | --- |
+| `nexa-accounts` | Encrypted account storage, login/provider sessions, refresh, wardrobe and catalogs |
 | `nexa-pac` | PAC interpreter |
 | `nexa-crypto` | OpenPGP verification |
 | `nexa-network` | Connection/socket/TLS engine |
@@ -51,8 +53,9 @@ Extensions are `.dll` / `.so` / `.dylib` for Windows / Linux / macOS respectivel
 | `nexa-artwork` | Product icons, brand artwork and controller sprite images |
 
 The names identify ownership groups; the service lifecycle portions of network,
-updates and Minecraft remain in UI. Accounts has not yet become an independent
-native module. The complete business-module acceptance criteria below
+updates and Minecraft remain in UI. The UI account closure includes the typed
+client and contracts, with the concrete account implementation rejected by publication.
+The complete business-module acceptance criteria below
 remain open.
 
 ## Stable engine boundaries
@@ -83,7 +86,7 @@ The privileged update helper retains a statically linked verifier: its protected
 installation and macOS helper-root layout must not acquire a new dynamic dependency
 from an application update slot. The interactive Host uses the external engine.
 
-## Business-module split: target, not current implementation
+## Business-module split: remaining acceptance criteria
 
 The engine extraction above does **not** complete the requested business-module
 split. The target distribution is a bootstrap plus the following ownership groups:

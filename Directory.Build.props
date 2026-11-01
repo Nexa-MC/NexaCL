@@ -2,6 +2,7 @@
   <Import Project="$(MSBuildThisFileDirectory)eng/xsr/Xsr.Version.props" />
 
   <PropertyGroup>
+    <DefineConstants Condition="'$(NexaNativeServices)' == 'true'">$(DefineConstants);NEXA_NATIVE_SERVICES</DefineConstants>
     <TargetFramework Condition="'$(TargetFramework)' == ''">net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

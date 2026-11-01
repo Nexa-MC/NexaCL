@@ -39,6 +39,7 @@ class InstallScopeTests(unittest.TestCase):
                         "host": root / "programs/NexaCL/Nexa.Jvm.Host.exe",
                         "module": root / "programs/NexaCL/nexa-host.dll",
                         "ui": root / "programs/NexaCL/nexa-ui.dll",
+                        "accounts": root / "programs/NexaCL/nexa-accounts.dll",
                         "pac": root / "programs/NexaCL/nexa-pac.dll",
                         "crypto": root / "programs/NexaCL/nexa-crypto.dll",
                         "network": root / "programs/NexaCL/nexa-network.dll",

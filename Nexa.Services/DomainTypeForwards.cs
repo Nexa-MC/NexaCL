@@ -30,21 +30,33 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountErrors))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountImportCandidate))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountImportCommand))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountLaunchIdentityResolver))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountLoginCancelCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountLoginPhase))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountLoginProfiles))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountLoginProvider))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountLoginSnapshot))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountLoginStartCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountOnboardingOptions))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountOnboardingRoutes))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountOnboardingService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountOnboardingState))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountProviderId))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountRefreshSkinsCommand))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountService))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountSkinService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.AccountSkinSnapshot))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.IAccountLaunchIdentityResolver))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.ILaunchProfilePort))]
@@ -52,33 +64,49 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.IMicrosoftMinecraftAuthService))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.IProfileDataProtector))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LaunchProfile))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LaunchProfileFilePort))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LaunchProfileKind))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LaunchProfileSet))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LaunchProfileView))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LegacyProfileImport))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LittleSkinAuthorizationRequest))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LittleSkinClosetItem))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LittleSkinDeviceCodeInfo))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LittleSkinMinecraftSession))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LittleSkinOAuthConfiguration))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LittleSkinOAuthService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LittleSkinOAuthTokens))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LittleSkinPlayer))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LittleSkinProfile))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LittleSkinTextureKind))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.LittleSkinTextureUploadResult))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.MicrosoftDeviceCodeInfo))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.MicrosoftMinecraftAuthService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.MicrosoftMinecraftLoginResult))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.MinecraftCapeService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.MinecraftOwnedCape))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.MinecraftSkinService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.MinecraftSkinUploadResult))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.ProtectedLaunchProfilePort))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.YggdrasilAuthLoginRequest))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.YggdrasilAuthLoginResult))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Accounts.YggdrasilAuthService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Capabilities.Capability<>))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Capabilities.CapabilityAvailability))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Capabilities.CapabilityConfidence))]

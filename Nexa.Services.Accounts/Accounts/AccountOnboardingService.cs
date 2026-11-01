@@ -21,6 +21,7 @@ public sealed class AccountOnboardingService : IDisposable
     private Operation? _active;
     private long _generation;
     private Task _running = Task.CompletedTask;
+    private Task _draining = Task.CompletedTask;
     private AccountLoginSnapshot _snapshot = new(0, AccountLoginPhase.Idle, "");
     private bool _disposed;
 
@@ -46,6 +47,7 @@ public sealed class AccountOnboardingService : IDisposable
     }
 
     public Task WhenIdle { get { lock (_gate) return _running; } }
+    internal Task WhenDrained { get { lock (_gate) return _draining; } }
 
     public XsrResult Start(AccountLoginStartCommand command)
     {
@@ -55,6 +57,7 @@ public sealed class AccountOnboardingService : IDisposable
             ObjectDisposedException.ThrowIf(_disposed, this);
             Operation operation = Begin("AccountLogin", $"provider={command.Provider}");
             _running = Task.Run(() => RunLogin(operation, command));
+            _draining = Task.WhenAll(_draining, _running);
             return XsrResult.Success();
         }
     }
@@ -67,6 +70,7 @@ public sealed class AccountOnboardingService : IDisposable
             ObjectDisposedException.ThrowIf(_disposed, this);
             Operation operation = Begin("ImportProfiles");
             _running = Task.Run(() => RunImport(operation, command.Path));
+            _draining = Task.WhenAll(_draining, _running);
             return XsrResult.Success();
         }
     }

@@ -112,6 +112,7 @@ internal static partial class Program
         ("handler exceptions do not escape routing", HandlerExceptionsDoNotEscapeRouting),
         ("command dispatch supports concurrent callers", CommandDispatchSupportsConcurrentCallers),
         ("state assigns deterministic identifiers and ownership", Sync(StateAssignsDeterministicIdentifiersAndOwnership)),
+        ("native state replicas retain source revisions and reject competing writers", Sync(StateReplicasRetainRevisionsAndOwnership)),
         ("state cells start unavailable until published", Sync(StateCellsStartUnavailableUntilPublished)),
         ("state revisions are monotonic per entry", Sync(StateRevisionsAreMonotonicPerEntry)),
         ("state reads see coherent snapshots", Sync(StateReadsSeeCoherentSnapshots)),

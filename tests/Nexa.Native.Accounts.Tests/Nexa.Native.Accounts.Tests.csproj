@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><IsAotCompatible>true</IsAotCompatible></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../native/Nexa.Native.Accounts.Client/Nexa.Native.Accounts.Client.csproj" />
+  </ItemGroup>
+</Project>

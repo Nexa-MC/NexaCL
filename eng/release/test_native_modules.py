@@ -52,7 +52,7 @@ class NativeModulePayloadTests(unittest.TestCase):
             assets = Path(temp) / "project.assets.json"
             assets.write_text(json.dumps({"libraries": {"Nexa.Services.Network/2.0.0": {}}}))
             verify_ui_engine_isolation(assets)
-            for name in ("Jint/4.17.0", "BouncyCastle.Cryptography/2.6.2", "Nexa.Native.Pac/1.0.0", "Nexa.Native.Crypto/1.0.0", "Nexa.Native.Network/1.0.0", "Nexa.Native.Updates/1.0.0", "Nexa.Native.Media/1.0.0", "Nexa.Native.Minecraft/1.0.0", "Nexa.Native.Markup/1.0.0", "Nexa.Native.Artwork/1.0.0", "ZstdSharp.Port/0.8.6"):
+            for name in ("Nexa.Services.Accounts/1.0.0", "Nexa.Native.Accounts/1.0.0", "Jint/4.17.0", "BouncyCastle.Cryptography/2.6.2", "Nexa.Native.Pac/1.0.0", "Nexa.Native.Crypto/1.0.0", "Nexa.Native.Network/1.0.0", "Nexa.Native.Updates/1.0.0", "Nexa.Native.Media/1.0.0", "Nexa.Native.Minecraft/1.0.0", "Nexa.Native.Markup/1.0.0", "Nexa.Native.Artwork/1.0.0", "ZstdSharp.Port/0.8.6"):
                 assets.write_text(json.dumps({"libraries": {name: {}}}))
                 with self.assertRaisesRegex(RuntimeError, "leaked back"):
                     verify_ui_engine_isolation(assets)

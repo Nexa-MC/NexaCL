@@ -1,3 +1,6 @@
+#if NEXA_NATIVE_SERVICES
+using ProtectedLaunchProfilePort = Nexa.Native.Accounts.Client.NativeProfileStore;
+#endif
 using System.Reflection;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Accounts;
@@ -62,7 +65,7 @@ internal static partial class Program
             littleSkin = new LittleSkinOAuthConfiguration(
                 embeddedLittleSkinClientId.Trim(),
                 string.Empty,
-                new Uri(LittleSkinOAuthService.DeviceFlowRedirectUri));
+                new Uri(AccountOnboardingOptions.DeviceFlowRedirectUri));
         }
 
         return runtime with
@@ -457,6 +460,9 @@ internal static partial class Program
             folders.Root,
             options: ComposeAccountOnboardingOptions(),
             observer: dispatchObservation);
+#if NEXA_NATIVE_SERVICES
+        await accounts.Initialization.ConfigureAwait(false);
+#endif
         string jvmHostPath = Path.Combine(AppContext.BaseDirectory, OperatingSystem.IsWindows() ? "Nexa.Jvm.Host.exe" : "Nexa.Jvm.Host");
         using MinecraftRuntime minecraft = MinecraftRuntimeComposer.Compose(
             host,

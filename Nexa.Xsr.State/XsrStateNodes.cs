@@ -28,6 +28,9 @@ internal abstract class XsrStateNode
 
     public XsrStateKind Kind => Descriptor.Kind;
 
+    // Assigned once by the builder before the store is exposed.
+    public bool IsReplica { get; set; }
+
     protected object Gate => _gate;
 
     public long Revision => Volatile.Read(ref _revision);
@@ -41,6 +44,13 @@ internal abstract class XsrStateNode
     protected long CurrentRevisionLocked => _revision;
 
     protected XsrStateAvailability AvailabilityLocked => _availability;
+
+    protected void ReplicateLocked(long revision, long changeStamp, XsrStateAvailability availability)
+    {
+        _revision = revision;
+        _changeStamp = changeStamp;
+        _availability = availability;
+    }
 
     protected void AdvanceLocked(long changeStamp, XsrStateAvailability availability)
     {
@@ -140,7 +150,7 @@ internal interface IXsrStateDerivedNode
     object? ReadAppliedObject(XsrStateStore store, XsrStateId id, CancellationToken cancellationToken, out XsrStateChange? change);
 }
 
-internal sealed class XsrStateCellNode<TValue> : XsrStateNode, IXsrStateCellNode
+internal sealed partial class XsrStateCellNode<TValue> : XsrStateNode, IXsrStateCellNode
 {
     private TValue? _value;
     private bool _hasValue;
@@ -296,7 +306,7 @@ internal sealed class XsrStateCellNode<TValue> : XsrStateNode, IXsrStateCellNode
     protected override object? CaptureValueLocked() => _hasValue ? _value : null;
 }
 
-internal sealed class XsrStateCollectionNode<TItem, TKey> : XsrStateNode, IXsrStateCollectionNode
+internal sealed partial class XsrStateCollectionNode<TItem, TKey> : XsrStateNode, IXsrStateCollectionNode
     where TKey : notnull
 {
     private readonly Func<TItem, TKey> _keySelector;

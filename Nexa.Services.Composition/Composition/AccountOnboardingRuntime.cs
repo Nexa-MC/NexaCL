@@ -1,3 +1,4 @@
+#if !NEXA_NATIVE_SERVICES
 using Nexa.Services.Accounts;
 using Nexa.Services.Foundation;
 using Nexa.Services.Logging;
@@ -82,3 +83,5 @@ public static class AccountOnboardingRuntimeComposer
     }
     private sealed class Observer : IXsrDispatchObserver { public void OnCompleted(XsrDispatchObservation observation) { } }
 }
+
+#endif

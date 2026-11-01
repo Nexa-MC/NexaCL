@@ -1,3 +1,6 @@
+#if NEXA_NATIVE_SERVICES
+using AccountService = Nexa.Native.Accounts.Client.NativeAccountService;
+#endif
 using System.Globalization;
 using Nexa.Services.Accounts;
 using Nexa.Services.Caching;
@@ -52,6 +55,9 @@ public static class FoundationState
         Minecraft.MinecraftLibraryService.DeclareState(builder);
         Minecraft.Install.InstallCatalogStateContract.DeclareState(builder);
         Minecraft.Install.MinecraftInstallDraftContract.DeclareState(builder);
+#if NEXA_NATIVE_SERVICES
+        AccountService.DeclareReplicas(builder);
+#endif
         return builder;
     }
 }
@@ -165,6 +171,9 @@ public sealed class FoundationHost : IDisposable
         Tasks = tasks ?? throw new ArgumentNullException(nameof(tasks));
         _services = Array.AsReadOnly<object>([Logging, Downloads, Accounts, Telemetry, Settings, SettingsPolicy, NetworkHttp, Tasks, Work,
             InputUsage, ObservationHistory, MachineCapabilities, ResourceEstimator, Preflight, Remediations]);
+#if NEXA_NATIVE_SERVICES
+        Accounts.AttachHttp(CreateHttpClient(allowAutoRedirect: false));
+#endif
     }
 
     public WorkScheduler Work { get; }

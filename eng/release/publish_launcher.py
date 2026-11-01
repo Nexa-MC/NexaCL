@@ -8,6 +8,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 ENGINES = ("Pac", "Crypto", "Network", "Updates", "Media", "Minecraft", "Markup", "Artwork")
+SERVICES = ("Accounts",)
 
 
 def stable_ui_properties(properties):
@@ -26,12 +27,12 @@ def module_name(rid):
 
 def module_names(rid):
     suffix = Path(module_name(rid)).suffix
-    return ["nexa-" + name + suffix for name in ("host", "ui", *(engine.lower() for engine in ENGINES))]
+    return ["nexa-" + name + suffix for name in ("host", "ui", *(engine.lower() for engine in (*ENGINES, *SERVICES)))]
 
 
 def verify_ui_engine_isolation(assets):
     libraries = json.loads(assets.read_text())["libraries"]
-    forbidden = {"jint", "bouncycastle.cryptography", "zstdsharp.port"}
+    forbidden = {"jint", "bouncycastle.cryptography", "zstdsharp.port", "nexa.services.accounts", "nexa.native.accounts"}
     forbidden.update("nexa.native." + engine.lower() for engine in ENGINES)
     embedded = sorted(name for name in libraries if name.split("/", 1)[0].lower() in forbidden)
     if embedded:
@@ -68,8 +69,16 @@ def publish(rid, output, properties):
             if not binary.is_file():
                 raise RuntimeError(f"Missing native {engine} engine")
             engines.append((binary, f"nexa-{engine.lower()}" + Path(module).suffix))
+        for service in SERVICES:
+            destination = stage / service.lower()
+            subprocess.run(["dotnet", "publish", str(ROOT / f"native/Nexa.Native.{service}/Nexa.Native.{service}.csproj"),
+                            *common, *stable_ui_properties(properties), "-p:NexaExternalModules=true", "-p:NexaNativeServices=false", "--output", str(destination)], check=True)
+            binary = destination / (f"Nexa.Native.{service}" + Path(module).suffix)
+            if not binary.is_file() or binary.stat().st_size == 0:
+                raise RuntimeError(f"Missing native {service} service")
+            engines.append((binary, f"nexa-{service.lower()}" + Path(module).suffix))
         subprocess.run(["dotnet", "publish", str(ROOT / "Nexa.Desktop/Nexa.Desktop.csproj"),
-                        *common, *stable_ui_properties(properties), "-p:NexaNativeModule=true", "-p:NexaExternalModules=true", "-p:NexaNetworkTestInternals=false", "--output", str(ui)], check=True)
+                        *common, *stable_ui_properties(properties), "-p:NexaNativeModule=true", "-p:NexaExternalModules=true", "-p:NexaNativeServices=true", "-p:NexaNetworkTestInternals=false", "--output", str(ui)], check=True)
         verify_ui_engine_isolation(ROOT / "Nexa.Desktop/obj/project.assets.json")
         subprocess.run(["dotnet", "publish", str(ROOT / "native/Nexa.Native.Host/Nexa.Native.Host.csproj"),
                         *common, "-p:XsrVersionChannel=stable", "-p:XsrVersionPrefix=1.0.0", "--output", str(host)], check=True)

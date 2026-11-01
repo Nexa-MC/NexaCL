@@ -14,8 +14,10 @@ public sealed class AccountSkinService(AccountService accounts, HttpClient clien
     private readonly object _gate = new();
     private CancellationTokenSource? _active;
     private Task _running = Task.CompletedTask;
+    private Task _draining = Task.CompletedTask;
     private bool _disposed;
     public Task WhenIdle { get { lock (_gate) return _running; } }
+    internal Task WhenDrained { get { lock (_gate) return _draining; } }
     public static void DeclareState(XsrStateStoreBuilder builder) => AccountSkinContract.DeclareState(builder);
 
     public static string ProfileKey(LaunchProfileView profile) => AccountSkinContract.ProfileKey(profile);
@@ -30,6 +32,7 @@ public sealed class AccountSkinService(AccountService accounts, HttpClient clien
             _active = operation;
             LaunchProfileView[] profiles = accounts.GetViews().OrderByDescending(profile => profile.Index == accounts.SelectedIndex).Take(64).ToArray();
             _running = Task.Run(() => ResolveAll(profiles, operation, force));
+            _draining = Task.WhenAll(_draining, _running);
             return XsrResult.Success();
         }
     }

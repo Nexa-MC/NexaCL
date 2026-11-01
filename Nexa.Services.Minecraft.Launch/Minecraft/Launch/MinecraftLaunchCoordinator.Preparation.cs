@@ -72,7 +72,7 @@ public sealed partial class MinecraftLaunchCoordinator
                 method,
                 async token =>
                 {
-                    profileResult = _accounts.GetProfile(accountIndex);
+                    profileResult = await _accounts.GetProfileAsync(accountIndex, token).ConfigureAwait(false);
                     if (!profileResult.IsSuccess)
                     {
                         return;

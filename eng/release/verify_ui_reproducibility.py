@@ -24,7 +24,7 @@ def verify(rid, payload, properties):
               *stable_ui_properties([*properties, "-p:XsrVersionChannel=beta", "-p:XsrVersionPrefix=9.8.7",
                                      "-p:XsrVersionSequence=999", "-p:XsrCommitShort=ffffff"]),
               "-p:SourceRevisionId=" + "f" * 40, "-p:RepositoryCommit=" + "f" * 40,
-              "-p:NexaNativeModule=true", "-p:NexaExternalModules=true", "-p:NexaNetworkTestInternals=false"]
+              "-p:NexaNativeModule=true", "-p:NexaExternalModules=true", "-p:NexaNativeServices=true", "-p:NexaNetworkTestInternals=false"]
     with tempfile.TemporaryDirectory(prefix="nexa-ui-repro-") as temporary:
         output = Path(temporary)
         subprocess.run(["dotnet", "clean", str(project), *common], check=True, cwd=ROOT)

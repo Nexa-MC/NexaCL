@@ -58,3 +58,9 @@ python3 eng/release/smoke_native_modules.py --payload artifacts/launcher
 构建使用 Actions Secrets，包括发布签名、OAuth 客户端配置、CurseForge API Key 与需要的 API 客户端身份。源码不携带秘密，日志不得输出其值；详情以工作流引用为准。环境中的 `GH_TOKEN` 与 Actions 自己的令牌互相独立：本地 401 不会终止已经启动的工作流，但会阻止本地查询私有草稿、触发重试或公开发布。
 
 构建失败先区分编译／测试失败、缺少发布说明、缺失 Secrets 与运行器失联。只对未成功的任务重试，保留原始结果，不通过删门禁来发布。
+
+Native account publication adds `nexa-accounts` to every complete payload. The UI
+closure must exclude the concrete account implementation. The native contract matrix
+checks independent AOT callers, source revisions, privileged launch values, reverse
+HTTP cancellation, superseded workers and callback retirement; the six-RID launcher
+matrix continues verifying the complete UI and stable service images.
