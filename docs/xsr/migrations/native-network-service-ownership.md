@@ -59,6 +59,17 @@ pools, avoiding a self-loading socket ABI or differently configured service buil
 writing to the same managed output directory. The public NetworkConnector and old
 socket-transfer exports remain available. No legacy implementation is imported.
 
+`Nexa.NativeEngineAbi` continues to mark the native ABI. A separate
+`Nexa.NativeEngineKind` distinguishes standalone engines from service owners which
+share the instrumented Core runtime. The coverage verifier validates Network and
+Accounts service owners without classifying them as standalone engines. It still
+requires their native exports and Core reference, rejects presentation/composition
+dependencies and verifies every executable body and function catalog. Unmarked older
+ABI-1 engines retain the original standalone dependency rule.
+Entry verification selects the runtime namespace from the actual local Patch type,
+so static native clients and shared-runtime owners verify their Core calls. Native
+probe types remain infrastructure in both modes.
+
 The first implemented stage adds `nexa_network_service_*_v1` admission and asynchronous
 streaming HTTP ports to the existing network image. The independent caller references
 only its static client and contracts. Uploads and reads use 64 KiB credits, provisional

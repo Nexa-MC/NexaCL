@@ -31,6 +31,26 @@ internal sealed partial class AssemblyInstrumenter
             && attribute.ConstructorArguments[0].Value is "Nexa.NativeEngineAbi"
             && attribute.ConstructorArguments[1].Value is "1");
         if (!marked) return false;
+        string? kind = module.Assembly.CustomAttributes.Where(attribute =>
+            attribute.AttributeType.FullName == "System.Reflection.AssemblyMetadataAttribute"
+            && attribute.ConstructorArguments.Count == 2
+            && attribute.ConstructorArguments[0].Value is "Nexa.NativeEngineKind")
+            .Select(attribute => attribute.ConstructorArguments[1].Value as string).SingleOrDefault();
+        if (kind == "Service")
+        {
+            string? servicePrefix = module.Assembly.Name.Name switch
+            { "Nexa.Native.Network" => "nexa_network_", "Nexa.Native.Accounts" => "nexa_accounts_", _ => null };
+            if (servicePrefix is null || !module.AssemblyReferences.Any(reference => reference.Name == "Nexa.Core")
+                || module.GetType("Nexa.Native.Instrumentation.Patch") is not null
+                || module.GetType("Nexa.Core.Patching.Patch") is not null
+                || module.AssemblyReferences.Any(reference => reference.Name is "Nexa.Desktop" or "Nexa.Services" or "Nexa.Services.Composition"
+                    || reference.Name.StartsWith("Avalonia", StringComparison.Ordinal)
+                    || reference.Name.StartsWith("Nexa.Xsr.Renderer", StringComparison.Ordinal))
+                || !HasNativeExport(module, servicePrefix))
+                throw new InvalidDataException("Invalid native service owner boundary: " + path);
+            return false;
+        }
+        if (kind is not (null or "Standalone")) throw new InvalidDataException("Unknown native engine kind: " + path);
         string? prefix = module.Assembly.Name.Name switch
         {
             "Nexa.Native.Pac" => "nexa_pac_",
@@ -41,14 +61,17 @@ internal sealed partial class AssemblyInstrumenter
         };
         if (prefix is null
             || module.AssemblyReferences.Any(reference => reference.Name.StartsWith("Nexa.", StringComparison.Ordinal))
-            || !module.GetTypes().SelectMany(type => type.Methods).Any(method => method.IsStatic
-                && method.CustomAttributes.Any(attribute =>
-                    attribute.AttributeType.FullName == "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"
-                    && attribute.Fields.Any(field => field.Name == "EntryPoint" && field.Argument.Value is string entry
-                        && entry.StartsWith(prefix, StringComparison.Ordinal) && entry.EndsWith("_v1", StringComparison.Ordinal)))))
+            || !HasNativeExport(module, prefix))
             throw new InvalidDataException("Invalid standalone native engine boundary: " + path);
         return true;
     }
+
+    private static bool HasNativeExport(ModuleDefinition module, string prefix) =>
+        module.GetTypes().SelectMany(type => type.Methods).Any(method => method.IsStatic
+                && method.CustomAttributes.Any(attribute =>
+                    attribute.AttributeType.FullName == "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"
+                    && attribute.Fields.Any(field => field.Name == "EntryPoint" && field.Argument.Value is string entry
+                        && entry.StartsWith(prefix, StringComparison.Ordinal) && entry.EndsWith("_v1", StringComparison.Ordinal))));
 
     internal static int Verify(string path)
     {

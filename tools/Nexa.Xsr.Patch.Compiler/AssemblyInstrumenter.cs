@@ -145,12 +145,14 @@ internal sealed partial class AssemblyInstrumenter
     private static string ShapeKey(TypeReference type) => Unmodified(type) is ByReferenceType reference ? ShapeKey(reference.ElementType) + "&" : Key(Unmodified(type));
     private static string RuntimeNamespace(ModuleDefinition module) =>
         module.Assembly.Name.Name.StartsWith("Nexa.Native.", StringComparison.Ordinal)
+            && module.GetType("Nexa.Native.Instrumentation.Patch") is not null
             ? "Nexa.Native.Instrumentation" : "Nexa.Core.Patching";
 
     private static bool Infrastructure(TypeDefinition type)
     {
         if (type.Module.Assembly.Name.Name != "Nexa.Core" && !type.Module.Assembly.Name.Name.StartsWith("Nexa.Native.", StringComparison.Ordinal)) return false;
-        string runtimeNamespace = RuntimeNamespace(type.Module);
+        string runtimeNamespace = type.Module.Assembly.Name.Name.StartsWith("Nexa.Native.", StringComparison.Ordinal)
+            ? "Nexa.Native.Instrumentation" : "Nexa.Core.Patching";
         for (var current = type; current is not null; current = current.DeclaringType)
             if (current.Namespace == runtimeNamespace || current.Namespace.StartsWith(runtimeNamespace + ".", StringComparison.Ordinal)) return true;
         return false;
