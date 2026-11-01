@@ -25,6 +25,7 @@ while (pending.TryDequeue(out var type))
     if (types.TryGetValue(Id(type), out var previous) && previous != type) throw new InvalidOperationException("Ambiguous DTO name: " + type);
     if (!types.TryAdd(Id(type), type) || Special(type)) continue;
     if (Nullable.GetUnderlyingType(type) is { } nullable) pending.Enqueue(nullable);
+    else if (StringMap(type)) pending.Enqueue(typeof(string));
     else if (Element(type) is { } element) pending.Enqueue(element);
     else foreach (var property in Shape(type).Properties) pending.Enqueue(property.PropertyType);
 }
@@ -50,6 +51,7 @@ static bool Special(Type t) => t.IsPrimitive || t.IsEnum || t == typeof(string) 
     || t == typeof(Uri) || t == typeof(Guid) || t == typeof(DateTimeOffset) || t == typeof(TimeSpan)
     || t == typeof(ReadOnlyMemory<byte>) || t.FullName is "Nexa.Core.Media.PngImage" or "Nexa.Xsr.XsrSemanticId";
 static Type? Element(Type t) => t.IsArray ? t.GetElementType() : t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IReadOnlyList<>) ? t.GetGenericArguments()[0] : null;
+static bool StringMap(Type t) => t == typeof(IReadOnlyDictionary<string, string>);
 static (PropertyInfo[] Properties, int Positional) Shape(Type t)
 {
     var properties = t.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.GetIndexParameters().Length == 0).ToArray();
@@ -79,6 +81,12 @@ void Emit(Type type, bool write)
         if (write) schema.AppendLine(id + ":nullable " + Id(underlying));
         code.Append(write ? $"        Boolean(value.HasValue); if (value.HasValue) {Id(underlying)}(value.Value);\n"
             : $"        return Boolean() ? {Id(underlying)}() : null;\n");
+    }
+    else if (StringMap(type))
+    {
+        if (write) schema.AppendLine(id + ":map String=String");
+        code.Append(write ? "        if (value is null) { Int32(-1); return; }\n        using var scope = EnterValue();\n        Count(value.Count);\n        foreach (var item in value) { String(item.Key); String(item.Value); }\n"
+            : "        int count = Count(); if (count == -1) return null;\n        using var scope = EnterValue();\n        var value = new global::System.Collections.Generic.Dictionary<string, string>(count, global::System.StringComparer.Ordinal);\n        for (int index = 0; index < count; index++)\n        {\n            string key = String() ?? throw new global::System.IO.InvalidDataException(\"Missing service map key.\");\n            string item = String() ?? throw new global::System.IO.InvalidDataException(\"Missing service map value.\");\n            if (!value.TryAdd(key, item)) throw new global::System.IO.InvalidDataException(\"Duplicate service map key.\");\n        }\n        return new global::System.Collections.ObjectModel.ReadOnlyDictionary<string, string>(value);\n");
     }
     else if (Element(type) is { } element)
     {

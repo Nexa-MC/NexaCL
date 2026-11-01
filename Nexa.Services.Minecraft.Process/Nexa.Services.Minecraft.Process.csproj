@@ -6,6 +6,7 @@
     <RootNamespace>Nexa.Services</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Nexa.Native.Minecraft" />
     <ProjectReference Include="../Nexa.Services.Capabilities/Nexa.Services.Capabilities.csproj" />
     <ProjectReference Include="../Nexa.Services.Capabilities.Contracts/Nexa.Services.Capabilities.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Services.Common/Nexa.Services.Common.csproj" />

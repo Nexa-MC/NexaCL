@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><IsAotCompatible>true</IsAotCompatible><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
+  <Import Project="../ServiceProtocol/ServiceProtocol.props" />
+  <ItemGroup>
+    <ProjectReference Include="../../Nexa.Services.Minecraft.Library.Contracts/Nexa.Services.Minecraft.Library.Contracts.csproj" />
+    <ProjectReference Include="../../Nexa.Services.Minecraft.Java.Contracts/Nexa.Services.Minecraft.Java.Contracts.csproj" />
+    <ProjectReference Include="../../Nexa.Services.Minecraft.Process.Contracts/Nexa.Services.Minecraft.Process.Contracts.csproj" />
+    <ProjectReference Include="../../Nexa.Services.Minecraft.Crash.Contracts/Nexa.Services.Minecraft.Crash.Contracts.csproj" />
+    <Compile Include="../MinecraftServiceProtocol/*.cs" Link="Wire/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

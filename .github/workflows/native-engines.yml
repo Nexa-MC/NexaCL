@@ -28,10 +28,16 @@ on:
       - 'tests/Nexa.Native.Accounts.Tests/**'
       - 'tests/Nexa.Native.Network.Services.Tests/**'
       - 'eng/release/verify_native_network_services.py'
+      - 'tests/Nexa.Native.Minecraft.Services.Tests/**'
+      - 'eng/release/verify_native_minecraft_services.py'
       - 'eng/xsr/generate_account_routes.py'
       - 'eng/xsr/generate_service_wire.*'
       - 'eng/release/verify_native_account_contracts.py'
       - 'Nexa.Services.Minecraft.Metadata/**'
+      - 'Nexa.Services.Minecraft.Java/**'
+      - 'Nexa.Services.Minecraft.Process/**'
+      - 'Nexa.Services.Minecraft.Java.Contracts/**'
+      - 'Nexa.Services.Minecraft.Process.Contracts/**'
       - 'Nexa.Services.Minecraft.Library.Contracts/**'
       - 'Nexa.Services.Minecraft.Assets.Contracts/**'
       - 'Nexa.Domain/Minecraft/MinecraftLibraryModels.cs'
@@ -109,6 +115,9 @@ jobs:
       - name: Verify independent network streaming and physical cancellation
         shell: bash
         run: python eng/release/verify_native_network_services.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/engines" --output "$RUNNER_TEMP/network-service-contracts"
+      - name: Verify independent Minecraft processes and physical retirement
+        shell: bash
+        run: python eng/release/verify_native_minecraft_services.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/engines" --output "$RUNNER_TEMP/minecraft-service-contracts"
       - name: Verify reproducibility
         shell: bash
         run: |

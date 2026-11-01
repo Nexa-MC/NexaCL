@@ -1,6 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><NexaLocalPatchRuntime>false</NexaLocalPatchRuntime></PropertyGroup>
   <Import Project="../NativeEngine.props" />
+  <Import Project="../ServiceProtocol/ServiceProtocol.props" />
   <ItemGroup>
+    <ProjectReference Include="../../Nexa.Services.Minecraft.Metadata/Nexa.Services.Minecraft.Metadata.csproj" />
+    <ProjectReference Include="../../Nexa.Services.Minecraft.Java/Nexa.Services.Minecraft.Java.csproj" />
+    <ProjectReference Include="../../Nexa.Services.Minecraft.Process/Nexa.Services.Minecraft.Process.csproj" />
+    <Compile Include="../MinecraftServiceProtocol/*.cs" Link="Wire/%(Filename)%(Extension)" />
     <Compile Include="../NativeBufferResults.cs" Link="NativeBufferResults.cs" />
     <Compile Include="../MinecraftProtocol.cs" Link="MinecraftProtocol.cs" />
     <Compile Include="../../Nexa.Domain/Minecraft/MinecraftLibraryModels.cs" Link="MinecraftLibraryModels.cs" />

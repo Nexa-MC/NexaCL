@@ -1,0 +1,9 @@
+Nexa.Domain|Nexa.Services.Minecraft.MinecraftVersionDescriptor
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftInstanceDescriptor
+Nexa.Services.Minecraft.Process.Contracts|Nexa.Services.Minecraft.Process.MinecraftProcessSnapshot
+Nexa.Services.Minecraft.Process.Contracts|Nexa.Services.Minecraft.Process.MinecraftProcessOutputSnapshot
+Nexa.Services.Minecraft.Java.Contracts|Nexa.Services.Minecraft.Java.JavaRuntimeInventorySnapshot
+Nexa.Domain|Nexa.Services.Minecraft.Launch.MinecraftLaunchPlan
+Nexa.Services.Minecraft.Process.Contracts|Nexa.Services.Minecraft.Process.MinecraftProcessFailure
+Nexa.Services.Minecraft.Crash.Contracts|Nexa.Services.Minecraft.Crash.MinecraftLaunchFaultReport
+Nexa.Xsr.Abstractions|Nexa.Xsr.XsrError
