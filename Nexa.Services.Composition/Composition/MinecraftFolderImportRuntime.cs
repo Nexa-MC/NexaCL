@@ -12,7 +12,7 @@ public sealed record MinecraftFolderImportRuntime(XsrCommandRouter Commands, Xsr
 public static class MinecraftFolderImportRuntimeComposer
 {
 #if NEXA_NATIVE_SERVICES
-    public static MinecraftFolderImportRuntime Compose(FoundationHost host, MinecraftLibraryService library,
+    public static MinecraftFolderImportRuntime Compose(FoundationHost host, IMinecraftLibraryPort library,
         Nexa.Native.Minecraft.Client.NativeMinecraftClient installer, IXsrDispatchObserver observer)
     {
         XsrCommandRouterBuilder commands = new(); XsrQueryRouterBuilder queries = new();

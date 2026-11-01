@@ -321,6 +321,20 @@ internal sealed partial class ServiceWireWriter
         Count(value.Count);
         foreach (var item in value) MinecraftInstallManagedFile(item);
     }
+    internal void IReadOnlyList_MinecraftInstanceDescriptor(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.MinecraftInstanceDescriptor>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) MinecraftInstanceDescriptor(item);
+    }
+    internal void IReadOnlyList_MinecraftLibraryDirectory(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.MinecraftLibraryDirectory>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) MinecraftLibraryDirectory(item);
+    }
     internal void IReadOnlyList_MinecraftLibraryToken(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Libraries.MinecraftLibraryToken>? value)
     {
         if (value is null) { Int32(-1); return; }
@@ -1816,6 +1830,14 @@ internal sealed partial class ServiceWireWriter
         PngImage(value.Icon);
         String(value.MetadataError);
     }
+    internal void MinecraftInstanceDiscoverySnapshot(global::Nexa.Services.Minecraft.MinecraftInstanceDiscoverySnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.RootDirectory);
+        DateTimeOffset(value.CapturedAt);
+        IReadOnlyList_MinecraftInstanceDescriptor(value.Instances);
+    }
     internal void MinecraftInstanceMetadata(global::Nexa.Services.Minecraft.MinecraftInstanceMetadata? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -1979,6 +2001,92 @@ internal sealed partial class ServiceWireWriter
         String(value.MinecraftRootDirectory);
     }
     internal void MinecraftLauncherVisibility(global::Nexa.Services.Minecraft.Launch.MinecraftLauncherVisibility value) => Int32((int)value);
+    internal void MinecraftLibraryConfiguration(global::Nexa.Services.Minecraft.MinecraftLibraryConfiguration? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int32(value.SchemaVersion);
+        String(value.ActiveDirectory);
+        IReadOnlyList_MinecraftLibraryDirectory(value.Directories);
+    }
+    internal void MinecraftLibraryDeleteCommand(global::Nexa.Services.Minecraft.MinecraftLibraryDeleteCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.RootDirectory);
+        String(value.InstanceId);
+    }
+    internal void MinecraftLibraryDirectory(global::Nexa.Services.Minecraft.MinecraftLibraryDirectory? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Path);
+        String(value.SelectedInstanceId);
+        String(value.Name);
+    }
+    internal void MinecraftLibraryDirectoryCommand(global::Nexa.Services.Minecraft.MinecraftLibraryDirectoryCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Path);
+        Boolean(value.Add);
+    }
+    internal void MinecraftLibraryForgetCommand(global::Nexa.Services.Minecraft.MinecraftLibraryForgetCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Path);
+    }
+    internal void MinecraftLibraryRememberRenamedCommand(global::Nexa.Services.Minecraft.MinecraftLibraryRememberRenamedCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Root);
+        String(value.Previous);
+        String(value.Current);
+    }
+    internal void MinecraftLibraryRenameCommand(global::Nexa.Services.Minecraft.MinecraftLibraryRenameCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Path);
+        String(value.Name);
+    }
+    internal void MinecraftLibrarySave(global::Nexa.Services.Minecraft.MinecraftLibrarySave? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.ExpectedRevision);
+        MinecraftLibraryConfiguration(value.Configuration);
+    }
+    internal void MinecraftLibrarySelectCommand(global::Nexa.Services.Minecraft.MinecraftLibrarySelectCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.RootDirectory);
+        String(value.InstanceId);
+    }
+    internal void MinecraftLibrarySnapshot(global::Nexa.Services.Minecraft.MinecraftLibrarySnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int64(value.Revision);
+        IReadOnlyList_MinecraftLibraryDirectory(value.Directories);
+        String(value.RootDirectory);
+        IReadOnlyList_MinecraftInstanceDescriptor(value.Instances);
+        String(value.SelectedInstanceId);
+        Boolean(value.IsLoading);
+        XsrError(value.Error);
+        Boolean(value.IsProvisional);
+    }
+    internal void MinecraftLibraryStoredConfiguration(global::Nexa.Services.Minecraft.MinecraftLibraryStoredConfiguration? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Revision);
+        MinecraftLibraryConfiguration(value.Configuration);
+        XsrError(value.Error);
+    }
     internal void MinecraftLibraryToken(global::Nexa.Services.Minecraft.Libraries.MinecraftLibraryToken? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -3231,6 +3339,22 @@ internal sealed partial class ServiceWireReader
         using var scope = EnterValue();
         var value = new global::Nexa.Services.Minecraft.Install.MinecraftInstallManagedFile[count];
         for (int index = 0; index < count; index++) value[index] = MinecraftInstallManagedFile() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.MinecraftInstanceDescriptor>? IReadOnlyList_MinecraftInstanceDescriptor()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.MinecraftInstanceDescriptor[count];
+        for (int index = 0; index < count; index++) value[index] = MinecraftInstanceDescriptor() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.MinecraftLibraryDirectory>? IReadOnlyList_MinecraftLibraryDirectory()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.MinecraftLibraryDirectory[count];
+        for (int index = 0; index < count; index++) value[index] = MinecraftLibraryDirectory() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
     internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Libraries.MinecraftLibraryToken>? IReadOnlyList_MinecraftLibraryToken()
@@ -4881,6 +5005,15 @@ internal sealed partial class ServiceWireReader
         var p6 = String();
         return new global::Nexa.Services.Minecraft.MinecraftInstanceDescriptor(p0!, p1!, p2!, p3!, p4!) { Icon = p5!, MetadataError = p6! };
     }
+    internal global::Nexa.Services.Minecraft.MinecraftInstanceDiscoverySnapshot? MinecraftInstanceDiscoverySnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = DateTimeOffset();
+        var p2 = IReadOnlyList_MinecraftInstanceDescriptor() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.MinecraftInstanceDiscoverySnapshot(p0!, p1, p2!);
+    }
     internal global::Nexa.Services.Minecraft.MinecraftInstanceMetadata? MinecraftInstanceMetadata()
     {
         if (!Boolean()) return null;
@@ -5051,6 +5184,103 @@ internal sealed partial class ServiceWireReader
         return new global::Nexa.Services.Minecraft.Launch.MinecraftLaunchProgressSnapshot(p0, p1!, p2, p3!, p4!, p5, p6) { InstanceId = p7!, MinecraftRootDirectory = p8! };
     }
     internal global::Nexa.Services.Minecraft.Launch.MinecraftLauncherVisibility MinecraftLauncherVisibility() { int value = Int32(); return value is 0 or 1 or 2 or 3 ? (global::Nexa.Services.Minecraft.Launch.MinecraftLauncherVisibility)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Minecraft.MinecraftLibraryConfiguration? MinecraftLibraryConfiguration()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int32();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = IReadOnlyList_MinecraftLibraryDirectory() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.MinecraftLibraryConfiguration(p0, p1!, p2!);
+    }
+    internal global::Nexa.Services.Minecraft.MinecraftLibraryDeleteCommand? MinecraftLibraryDeleteCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.MinecraftLibraryDeleteCommand(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.MinecraftLibraryDirectory? MinecraftLibraryDirectory()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.MinecraftLibraryDirectory(p0!, p1!, p2!);
+    }
+    internal global::Nexa.Services.Minecraft.MinecraftLibraryDirectoryCommand? MinecraftLibraryDirectoryCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Boolean();
+        return new global::Nexa.Services.Minecraft.MinecraftLibraryDirectoryCommand(p0!, p1);
+    }
+    internal global::Nexa.Services.Minecraft.MinecraftLibraryForgetCommand? MinecraftLibraryForgetCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.MinecraftLibraryForgetCommand(p0!);
+    }
+    internal global::Nexa.Services.Minecraft.MinecraftLibraryRememberRenamedCommand? MinecraftLibraryRememberRenamedCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.MinecraftLibraryRememberRenamedCommand(p0!, p1!, p2!);
+    }
+    internal global::Nexa.Services.Minecraft.MinecraftLibraryRenameCommand? MinecraftLibraryRenameCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.MinecraftLibraryRenameCommand(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.MinecraftLibrarySave? MinecraftLibrarySave()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = MinecraftLibraryConfiguration() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.MinecraftLibrarySave(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.MinecraftLibrarySelectCommand? MinecraftLibrarySelectCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.MinecraftLibrarySelectCommand(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.MinecraftLibrarySnapshot? MinecraftLibrarySnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int64();
+        var p1 = IReadOnlyList_MinecraftLibraryDirectory() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = IReadOnlyList_MinecraftInstanceDescriptor() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = Boolean();
+        var p6 = XsrError();
+        var p7 = Boolean();
+        return new global::Nexa.Services.Minecraft.MinecraftLibrarySnapshot(p0, p1!, p2!, p3!, p4!, p5, p6!) { IsProvisional = p7 };
+    }
+    internal global::Nexa.Services.Minecraft.MinecraftLibraryStoredConfiguration? MinecraftLibraryStoredConfiguration()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = MinecraftLibraryConfiguration();
+        var p2 = XsrError();
+        return new global::Nexa.Services.Minecraft.MinecraftLibraryStoredConfiguration(p0!, p1!, p2!);
+    }
     internal global::Nexa.Services.Minecraft.Libraries.MinecraftLibraryToken? MinecraftLibraryToken()
     {
         if (!Boolean()) return null;
@@ -6016,5 +6246,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "D9149D04BFD73F00A2305CB2F0FC00FA5C0F415FBB2DAB2D67DB5D7AA2DEE99A";
+    internal const string Fingerprint = "E2785C00C6CE451BABCCD588E26051E293B891F0DBEFF1AD847B40F596D6A654";
 }

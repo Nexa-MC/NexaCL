@@ -1,3 +1,4 @@
+#if !NEXA_NATIVE_SERVICES
 using Nexa.Services.Foundation;
 using Nexa.Services.Minecraft;
 using Nexa.Xsr.Runtime;
@@ -42,3 +43,5 @@ public static class MinecraftLibraryRuntimeComposer
     }
     private sealed class Observer : IXsrDispatchObserver { public void OnCompleted(XsrDispatchObservation observation) { } }
 }
+
+#endif

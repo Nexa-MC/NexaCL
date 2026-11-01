@@ -33,6 +33,7 @@ public sealed partial class FoundationHost
                 client.AttachDownloads(NetworkHttp.Client, _nativeMinecraftHttp);
                 client.AttachJavaRegistry(JavaRegistrations, JavaManagedRuntimeRoots.Count == 0 ? [javaRoot] : JavaManagedRuntimeRoots);
                 client.AttachSettings(Settings, SettingsPolicy);
+                client.AttachLibraryPersistence(new MinecraftLibraryPersistence(Settings));
                 client.AttachWork(Work);
                 client.AttachAccounts(Accounts);
                 client.AttachObservations(ObservationHistory);

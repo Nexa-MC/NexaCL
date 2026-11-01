@@ -56,6 +56,7 @@ try
         """{"id":"1.20.1","type":"release","mainClass":"net.minecraft.client.main.Main","releaseTime":"2023-06-12T13:25:51Z"}""", token);
     await File.WriteAllBytesAsync(Path.Combine(instance, "1.20.1.jar"), [0], token);
     XsrStateStoreBuilder builder = new(); NativeMinecraftClient.DeclareProcessState(builder); NativeMinecraftClient.DeclareLaunchState(builder);
+    Nexa.Services.Minecraft.MinecraftLibraryContract.DeclareState(builder); builder.Replica(Nexa.Services.Minecraft.MinecraftLibraryContract.StateKey);
     Nexa.Services.Minecraft.Install.InstallCatalogStateContract.DeclareState(builder); Nexa.Services.Minecraft.Install.MinecraftInstallDraftContract.DeclareState(builder); NativeMinecraftClient.DeclareCatalogReplicas(builder); var store = builder.Build();
     string executable = Environment.ProcessPath ?? throw new InvalidOperationException("Missing native caller executable.");
     string javaExecutable = executable;

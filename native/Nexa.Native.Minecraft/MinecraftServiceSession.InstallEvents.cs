@@ -28,6 +28,11 @@ internal sealed partial class MinecraftServiceSession
         {
             await foreach (var item in _installEvents.Reader.ReadAllAsync().ConfigureAwait(false))
             {
+                if (!Volatile.Read(ref _closing) && item.Previous is { } previous && item.Current is { } current && _library is { } library)
+                {
+                    var remembered = await library.RememberRenamedAsync(item.Root, previous, current, CancellationToken.None).ConfigureAwait(false);
+                    if (!remembered.IsSuccess) Console.Error.WriteLine("Minecraft library rename reconciliation failed: " + remembered.Error!.Code.Value);
+                }
                 using var request = MinecraftServiceProtocol.Request(MinecraftHostOperations.InstallationEvent);
                 request.Int64(item.Sequence); request.String(item.Root); request.String(item.Previous); request.String(item.Current);
                 byte[] bytes = await _endpoint.InvokeAsync(request.Finish()).ConfigureAwait(false);

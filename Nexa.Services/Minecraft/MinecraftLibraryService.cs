@@ -11,7 +11,7 @@ internal sealed record MinecraftLibraryDocument(int SchemaVersion, string Active
 internal sealed partial class MinecraftLibraryJsonContext : JsonSerializerContext;
 
 /// <summary>Durable directory-qualified selection and generation-safe discovery over existing capabilities.</summary>
-public sealed class MinecraftLibraryService : IDisposable
+public sealed class MinecraftLibraryService : IDisposable, IMinecraftLibraryPort
 {
     public const string SettingKey = "MinecraftLibrary";
     public static readonly XsrSemanticId StateKey = XsrSemanticId.Parse("minecraft.library");
@@ -288,6 +288,8 @@ public sealed class MinecraftLibraryService : IDisposable
 
     private XsrResult Remember(string root, string id) => Save(_document with
     { Directories = [.. _document.Directories.Select(item => PathComparer.Equals(item.Path, root) ? item with { SelectedInstanceId = id } : item)] });
+    public Task<XsrResult> RememberRenamedAsync(string root, string previous, string current, CancellationToken cancellationToken = default)
+    { cancellationToken.ThrowIfCancellationRequested(); return Task.FromResult(RememberRenamedInstance(root, previous, current)); }
     public XsrResult RememberRenamedInstance(string root, string oldName, string newName)
     {
         lock (_gate)

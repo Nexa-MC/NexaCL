@@ -67,6 +67,9 @@ internal static class JavaInstallCases
         minecraft.Installed += root => installationEvents.Add("installed:" + root);
         minecraft.Renamed += (root, previous, current) => installationEvents.Add("renamed:" + previous + ":" + current);
         string gameRoot = Path.Combine(directory, "native-installed-game");
+        var libraryPersistence = new LibraryCases.Persistence(); var librarySource = new LibraryCases.Source(minecraft);
+        minecraft.AttachLibraryPersistence(libraryPersistence); minecraft.AttachLibrarySource(librarySource);
+        await minecraft.ConfigureLibraryAsync(gameRoot, token);
         var game = await minecraft.InstallMinecraftAsync(new(gameRoot, "1.20.1"), token);
         if (!game.IsSuccess) throw new InvalidDataException("Native game installation failed: " + game.Error!.Message);
         if (installationEvents.Count != 1 || installationEvents[0] != "installed:" + gameRoot)
@@ -75,6 +78,7 @@ internal static class JavaInstallCases
             || (await minecraft.InstancesAsync(gameRoot, token: token)).Count != 1 || settings.Reads < 2)
             throw new InvalidDataException("Native game installation lost committed bytes, discovery or canonical policy reads.");
         var edit = await minecraft.ReadInstallationAsync(new(gameRoot, "1.20.1"), token);
+        if (!(await minecraft.RefreshAsync(token)).IsSuccess) throw new InvalidDataException("Native library could not remember the installed instance.");
         var renamed = await minecraft.InstallMinecraftAsync(new(gameRoot, "1.20.1", InstanceName: "1.20.1", EditFingerprint: edit.Fingerprint)
         { NewInstanceName = "renamed-game" }, token);
         if (!renamed.IsSuccess || !File.Exists(Path.Combine(renamed.Value!.InstanceDirectory, "renamed-game.jar"))
@@ -89,12 +93,16 @@ internal static class JavaInstallCases
             throw new InvalidDataException("Native recovery replay rejected a clean installation.");
         await ImportCases.RunAsync(minecraft, directory, gameRoot, renamed.Value.InstanceDirectory, token);
         await ManagementCases.RunAsync(minecraft, directory, renamed.Value.InstanceDirectory, token);
+        await LibraryCases.RunAsync(minecraft, replicas, gameRoot, renamed.Value.InstanceDirectory, libraryPersistence, librarySource, token);
         await ResourceCases.RunAsync(minecraft, directory, token);
         await LaunchCases.RunAsync(minecraft, gameRoot, renamed.Value.InstanceDirectory, replicas, javaExecutable, token);
         if (settings.JavaWrites != 1) throw new InvalidDataException("Native Java remediation bypassed canonical settings writes.");
         settings.Hold = true;
         var waitingInstall = minecraft.InstallMinecraftAsync(new(Path.Combine(directory, "waiting-install"), "1.20.1"), token);
         await settings.Entered.Task.WaitAsync(token);
+        librarySource.Hold = gameRoot; librarySource.Entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task<XsrResult> waitingLibrary = minecraft.RefreshAsync(token);
+        await librarySource.Entered.Task.WaitAsync(token);
         await minecraft.DisposeAsync();
         try
         {
@@ -102,6 +110,8 @@ internal static class JavaInstallCases
         }
         catch (OperationCanceledException) { }
         if (settings.Active != 0) throw new InvalidDataException("Minecraft close returned before its host policy query retired.");
+        try { if ((await waitingLibrary).IsSuccess) throw new InvalidDataException("Shutdown completed a retired library scan."); } catch (OperationCanceledException) { }
+        if (librarySource.Active != 0) throw new InvalidDataException("Minecraft close returned before library discovery physically retired.");
         await serverStop.CancelAsync();
         try { await serving; } catch (OperationCanceledException) when (serverStop.IsCancellationRequested) { }
         Console.WriteLine("Native Java installation used host HTTP, canonical native downloads/work and imported task controls.");

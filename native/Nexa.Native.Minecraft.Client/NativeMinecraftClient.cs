@@ -53,6 +53,7 @@ public sealed partial class NativeMinecraftClient : IAsyncDisposable
     private byte[] ApplyPublication(ReadOnlyMemory<byte> bytes)
     {
         using var reader = MinecraftServiceProtocol.Read(bytes, out int operation);
+        if (operation == MinecraftServiceProtocol.LibraryState) return ApplyLibraryState(reader);
         if (operation == MinecraftServiceProtocol.JavaProgress) return ReceiveJavaProgress(reader);
         if (operation is MinecraftServiceProtocol.CatalogState or MinecraftServiceProtocol.DraftState) return ApplyCatalogState(operation, reader);
         if (operation is >= MinecraftServiceProtocol.LaunchState and < MinecraftServiceProtocol.LaunchState + 7)

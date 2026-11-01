@@ -162,6 +162,7 @@ internal static partial class Program
         ("the json port treats a missing file as empty", JsonPortMissingFileIsEmpty),
         ("the json port preserves unknown fields and keys", JsonPortPreservesUnknownContent),
         ("settings over the json port persist end to end", SettingsOverJsonPortEndToEnd),
+        ("settings conditional text saves reject concurrent writers", ConditionalTextSaveRejectsConcurrentWriters),
         // XSR-504: download capability contract.
     ];
 }

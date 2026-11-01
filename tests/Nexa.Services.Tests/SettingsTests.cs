@@ -12,6 +12,20 @@ namespace Nexa.Services.Tests;
 /// </summary>
 internal static partial class Program
 {
+    private static async ValueTask ConditionalTextSaveRejectsConcurrentWriters()
+    {
+        var (service, _) = CreateService(new InMemorySettingsPort());
+        AssertTrue(service.SetValue(KeyCount, 19).IsSuccess);
+        var attempts = await Task.WhenAll(Enumerable.Range(0, 16).Select(index => Task.Run(() =>
+            service.CompareExchangeText(KeyLabel, "default", "writer-" + index.ToString(CultureInfo.InvariantCulture)))));
+        AssertEqual(1, attempts.Count(result => result.IsSuccess));
+        string winner = service.GetValue<string>(KeyLabel).Value!;
+        AssertTrue(winner.StartsWith("writer-", StringComparison.Ordinal));
+        AssertFalse(service.CompareExchangeText(KeyLabel, "default", "stale").IsSuccess);
+        AssertEqual(winner, service.GetValue<string>(KeyLabel).Value);
+        AssertEqual(19, service.GetValue<int>(KeyCount).Value);
+        AssertEqual(SettingsErrors.TypeMismatchCode, service.CompareExchangeText(KeyCount, "19", "20").Error!.Code);
+    }
     private static void CapturedSettingsPreserveTypesDefaultsAndRequestIsolation()
     {
         var (service, _) = CreateService(new InMemorySettingsPort());

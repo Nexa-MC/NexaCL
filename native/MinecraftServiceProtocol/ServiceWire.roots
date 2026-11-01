@@ -155,3 +155,14 @@ Nexa.Services.Resources.Contracts|Nexa.Services.Resources.ResourceModInstallComm
 Nexa.Services.Resources.Contracts|Nexa.Services.Resources.ResourceDownloadCommand
 Nexa.Services.Resources.Contracts|Nexa.Services.Resources.ResourceModpackInstallCommand
 Nexa.Services.Resources.Contracts|Nexa.Services.Resources.ResourceModpackUpdateCommand
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibraryConfiguration
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibraryStoredConfiguration
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibrarySave
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibrarySnapshot
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibraryDirectoryCommand
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibraryForgetCommand
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibrarySelectCommand
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibraryRenameCommand
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibraryDeleteCommand
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibraryRememberRenamedCommand
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftInstanceDiscoverySnapshot

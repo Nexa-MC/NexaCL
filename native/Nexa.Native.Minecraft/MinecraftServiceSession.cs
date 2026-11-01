@@ -61,6 +61,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         _metadataHttp = new(_hostHttp, disposeHandler: false) { Timeout = TimeSpan.FromMinutes(2) };
         _metadataHttp.DefaultRequestHeaders.UserAgent.ParseAdd("NexaCL/2.0");
         XsrStateStoreBuilder builder = new(); MinecraftProcessStateComposition.DeclareState(builder); TaskCenterStateContract.DeclareState(builder); DownloadService.DeclareState(builder); MinecraftLaunchProgressState.DeclareState(builder);
+        Nexa.Services.Minecraft.MinecraftLibraryContract.DeclareState(builder);
         Nexa.Services.Minecraft.Install.InstallCatalogStateContract.DeclareState(builder); Nexa.Services.Minecraft.Install.MinecraftInstallDraftContract.DeclareState(builder); _store = builder.Build();
         _sessionDownloads = new(_store);
 #if NEXA_NATIVE_SERVICES
@@ -144,6 +145,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         if (operation == MinecraftServiceProtocol.ResourceConfigure) return await ConfigureResourcesAsync(reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.ResourceResourceNetworkPolicyQuery and <= MinecraftServiceProtocol.ResourceResourceModpackUpdateCommand)
             return await ExecuteResourceOperationAsync(operation, reader, token).ConfigureAwait(false);
+        if (operation is >= MinecraftServiceProtocol.LibraryConfigure and <= MinecraftServiceProtocol.LibraryRememberRenamed) return await ExecuteLibraryAsync(operation, reader, token).ConfigureAwait(false);
         if (operation == MinecraftServiceProtocol.Remediation) return await ExecuteRemediationAsync(reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.CatalogConfigure and <= MinecraftServiceProtocol.CatalogDraft or MinecraftServiceProtocol.CatalogDraftReplace)
             return await ExecuteCatalogAsync(operation, reader, token).ConfigureAwait(false);
@@ -263,6 +265,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
     }
     private void Changed(XsrStateChange change)
     {
+        if (PublishLibraryState(change)) return;
         if (PublishLaunchState(change)) return;
         if (PublishObservationState(change)) return;
         if (PublishCatalogState(change)) return;
@@ -306,6 +309,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         await _tasks.DisposeAsync().ConfigureAwait(false);
         _installEvents.Writer.TryComplete();
         if (_installEventPump is { } events) await events.ConfigureAwait(false);
+        if (_library is not null) await _library.DisposeAsync().ConfigureAwait(false);
         _installation?.Dispose(); _installationHttp?.Dispose();
         if (_processes is not null) await _processes.DisposeAsync().ConfigureAwait(false);
         if (_launchExecutor is not null) await _launchExecutor.WaitForFinalizationAsync().ConfigureAwait(false);

@@ -14,18 +14,13 @@ namespace Nexa.Services.Composition;
 public sealed class MinecraftRuntime : IDisposable
 {
     internal MinecraftRuntime(NativeMinecraftClient client, Task initialization, XsrCommandRouter commands, XsrQueryRouter queries)
-    { LaunchCoordinator = client; Initialization = initialization; Commands = commands; Queries = queries; Instances = new InstanceSource(client); }
+    { LaunchCoordinator = client; Initialization = initialization; Commands = commands; Queries = queries; Instances = new NativeMinecraftInstanceSource(client); }
     public NativeMinecraftClient LaunchCoordinator { get; }
     public Task Initialization { get; }
     public IMinecraftInstanceSource Instances { get; }
     public XsrCommandRouter Commands { get; }
     public XsrQueryRouter Queries { get; }
     public void Dispose() { }
-    private sealed class InstanceSource(NativeMinecraftClient client) : IMinecraftInstanceSource
-    {
-        public async ValueTask<IReadOnlyList<MinecraftInstanceDescriptor>> DiscoverAsync(string minecraftRootDirectory, CancellationToken cancellationToken = default)
-            => await client.InstancesAsync(minecraftRootDirectory, token: cancellationToken).ConfigureAwait(false);
-    }
 }
 
 public static class MinecraftRuntimeComposer

@@ -72,6 +72,8 @@ internal static class LaunchCases
         if (visible != 1 || progress.Value.SessionId is not { } session)
             throw new InvalidDataException("Native launch lost its visible window or session identity.");
         if (!client.HasPendingFinalization) throw new InvalidDataException("Native post-exit finalization was not replicated.");
+        if ((await client.DeleteLibraryInstanceAsync(new(root, "renamed-game"), token)).IsSuccess || !Directory.Exists(instanceDirectory))
+            throw new InvalidDataException("Native library deleted a running instance.");
         var servers = (await client.QueryInstanceServerListQueryAsync(new(instanceDirectory), token)).Value!;
         if ((await client.DispatchInstanceServerListSaveCommandAsync(new(instanceDirectory, servers.Revision, servers.Entries), token)).IsSuccess)
             throw new InvalidDataException("Native management ignored the launch owner's active process guard.");

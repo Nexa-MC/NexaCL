@@ -53,7 +53,10 @@ public static class FoundationState
         Rollouts.RolloutStateContract.DeclareState(builder);
         MinecraftProcessStateComposition.DeclareState(builder);
         Minecraft.Launch.MinecraftLaunchProgressState.DeclareState(builder);
-        Minecraft.MinecraftLibraryService.DeclareState(builder);
+        Minecraft.MinecraftLibraryContract.DeclareState(builder);
+#if NEXA_NATIVE_SERVICES
+        builder.Replica(Minecraft.MinecraftLibraryContract.StateKey);
+#endif
         Minecraft.Install.InstallCatalogStateContract.DeclareState(builder);
         Minecraft.Install.MinecraftInstallDraftContract.DeclareState(builder);
 #if NEXA_NATIVE_SERVICES

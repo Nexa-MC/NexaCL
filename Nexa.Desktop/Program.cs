@@ -411,7 +411,7 @@ internal static partial class Program
         };
         var legacyMigration = new LegacyMigrationService(StorageIdle);
         Nexa.Services.Minecraft.Install.IMinecraftInstallationPort? migrationInstaller = null;
-        MinecraftLibraryService? migrationLibrary = null;
+        IMinecraftLibraryPort? migrationLibrary = null;
         using var launcherMigration = LauncherMigrationRuntime.CreateService((request, token) => LauncherMigrationRuntime.InstallAsync(
             migrationInstaller ?? throw new InvalidOperationException("游戏安装服务尚未就绪。"), request, token), LauncherMigrationIdle);
         IAsyncDisposable? launcherMigrationLifetime = null;
@@ -598,6 +598,9 @@ internal static partial class Program
             _ => InputUsageKind.Unknown,
         });
         using MinecraftLibraryRuntime library = MinecraftLibraryRuntimeComposer.Compose(host, minecraftRootDirectory, minecraft.Instances, dispatchObservation);
+#if NEXA_NATIVE_SERVICES
+        await library.Initialization.ConfigureAwait(false);
+#endif
         migrationLibrary = library.Service;
         string? packagedCurseForgeApiKey = ResolveEmbeddedSetting("NexaCurseForgeApiKey");
         using InstallCatalogRuntime installCatalog = InstallCatalogRuntimeComposer.Compose(host, observer: dispatchObservation,
@@ -615,11 +618,12 @@ internal static partial class Program
         using MinecraftDropController dropController = new(platformActions, folderImports, library.Commands, host.StateStore, feedback);
         // A committed install grows the version library immediately: rescan the active root.
         installRun.Service.Installed += root => _ = library.Service.RefreshAsync();
-        installRun.Service.Renamed += (root, previous, current) =>
+        installRun.Service.Renamed += (root, previous, current) => _ = RememberLibraryRenameAsync(root, previous, current);
+        async Task RememberLibraryRenameAsync(string root, string previous, string current)
         {
-            var remembered = library.Service.RememberRenamedInstance(root, previous, current);
+            var remembered = await library.Service.RememberRenamedAsync(root, previous, current).ConfigureAwait(false);
             if (!remembered.IsSuccess) feedback.Warn(ProductPresentationText.Raw("program.copy.274e2484303728dc"));
-        };
+        }
         await using LaunchPageController launchPage = new(
             shell,
             uiIntents,
