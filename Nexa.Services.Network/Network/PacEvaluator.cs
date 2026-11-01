@@ -17,11 +17,15 @@ internal static partial class PacEvaluator
         token.ThrowIfCancellationRequested();
         if (source.Length > MaximumSourceBytes) throw new InvalidDataException("PAC source exceeds its limit.");
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
-        deadline.CancelAfter(TimeSpan.FromSeconds(2));
+        // Setup, helper initialization and DNS replay share a separate total budget.
+        // Jint still limits each execution to two seconds independently.
+        deadline.CancelAfter(TimeSpan.FromSeconds(10));
         var resolved = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         while (true)
         {
             try { return Evaluate(source, destination, resolved, deadline.Token); }
+            catch (OperationCanceledException error) when (!token.IsCancellationRequested && deadline.IsCancellationRequested)
+            { throw new InvalidDataException("PAC evaluation exceeded its total time budget.", error); }
             catch (LookupRequired lookup)
             {
                 if (resolved.Count == 8) throw new InvalidDataException("PAC DNS lookup limit exceeded.");
@@ -31,6 +35,8 @@ internal static partial class PacEvaluator
                     resolved[lookup.Host] = addresses.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork)?.ToString();
                 }
                 catch (SocketException) { resolved[lookup.Host] = null; }
+                catch (OperationCanceledException error) when (!token.IsCancellationRequested && deadline.IsCancellationRequested)
+                { throw new InvalidDataException("PAC DNS resolution exceeded its total time budget.", error); }
             }
         }
     }

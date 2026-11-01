@@ -125,3 +125,10 @@ certificate and resource-retirement cases also pass against the distributed imag
 The complete native payload passes headless shell validation, command listing, and
 real X11 window startup followed by OS-requested closure with exit code zero.
 The detailed lease and descriptor contract is in `native-download-work-leases.md`.
+
+PAC evaluation has a ten-second overall budget including interpreter setup, helper
+initialization and asynchronous DNS replay. Each interpreter execution retains its
+two-second timeout, memory, statement and recursion limits. Expiration of the
+internal overall budget is a configuration failure; only cancellation requested
+by the caller propagates as caller cancellation. This avoids treating cold native
+interpreter initialization as user cancellation on macOS runners.
