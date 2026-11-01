@@ -12,8 +12,11 @@ from publish_launcher import ENGINES, ROOT, module_name
 
 def verify(rid, payload):
     suffix = Path(module_name(rid)).suffix
+    # The isolated-engine job publishes only the eight engines. Full launcher payloads
+    # additionally carry the admission Host and must prove its reproducibility too.
+    modules = (*ENGINES, *(("Host",) if (payload / ("nexa-host" + suffix)).is_file() else ()))
     with tempfile.TemporaryDirectory(prefix="nexa-engine-repro-") as temporary:
-        for engine in (*ENGINES, "Host"):
+        for engine in modules:
             project = ROOT / f"native/Nexa.Native.{engine}/Nexa.Native.{engine}.csproj"
             output = Path(temporary) / engine.lower()
             common = ["--configuration", "Release", "-r", rid, "-m:1", "-nodeReuse:false",
