@@ -8,12 +8,17 @@ using System.Text;
 using Nexa.Native.Interop;
 #endif
 
+#if NEXA_NETWORK_SERVICE_OWNER
+using Nexa.Services.Network;
+namespace Nexa.Native.Network.Implementation;
+#else
 namespace Nexa.Services.Network;
+#endif
 
 /// <summary>One connection-engine lifetime for a committed HTTP transport generation.</summary>
 internal sealed class NetworkConnection : IDisposable
 {
-#if !NEXA_EXTERNAL_MODULES
+#if !NEXA_EXTERNAL_MODULES || NEXA_NETWORK_SERVICE_OWNER
     private readonly Nexa.Native.Network.NetworkConnector _connector;
     internal NetworkConnection(NetworkPreferences policy, bool mainlandChina) =>
         _connector = new(mainlandChina, policy.ProxyMode, policy.DnsOverHttps, policy.IpStack);

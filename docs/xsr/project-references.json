@@ -2,7 +2,10 @@
   "Nexa.Native.Host": [],
   "Nexa.Native.Pac": [],
   "Nexa.Native.Crypto": [],
-  "Nexa.Native.Network": [],
+  "Nexa.Native.Network": [
+    "Nexa.Services.Network.Contracts",
+    "Nexa.Services.Common"
+  ],
   "Nexa.Native.Updates": [],
   "Nexa.Native.Media": [],
   "Nexa.Native.Minecraft": [],
@@ -645,5 +648,10 @@
   ],
   "Nexa.Native.Accounts.Tests": [
     "Nexa.Native.Accounts.Client"
+  ],
+  "Nexa.Native.Network.Services.Tests": ["Nexa.Native.Network.Client"],
+  "Nexa.Native.Network.Client": [
+    "Nexa.Services.Network.Contracts",
+    "Nexa.Services.Common.Contracts"
   ]
 }

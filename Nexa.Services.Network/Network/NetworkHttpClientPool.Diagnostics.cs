@@ -1,6 +1,11 @@
 using System.Diagnostics;
 
+#if NEXA_NETWORK_SERVICE_OWNER
+using Nexa.Services.Network;
+namespace Nexa.Native.Network.Implementation;
+#else
 namespace Nexa.Services.Network;
+#endif
 
 public sealed partial class NetworkHttpClientPool
 {
@@ -8,6 +13,9 @@ public sealed partial class NetworkHttpClientPool
     private readonly Queue<NetworkRequestTrace> _trace = new();
     private readonly CancellationTokenSource _diagnosticStop = new();
     private readonly object _traceGate = new();
+    private readonly object _diagnosticGate = new();
+    private Task _diagnostics = Task.CompletedTask;
+    private Task? _diagnosticRetirement;
     private long _traceSequence, _lastProbeTick;
     private int _probing;
     public IReadOnlyList<NetworkRequestTrace> TraceSnapshot()
@@ -33,11 +41,34 @@ public sealed partial class NetworkHttpClientPool
 
     private void StartDiagnosticProbe(Uri uri)
     {
-        long now = Environment.TickCount64;
-        long prior = Volatile.Read(ref _lastProbeTick);
-        if (prior != 0 && now - prior < 30000 || Interlocked.CompareExchange(ref _probing, 1, 0) != 0) return;
-        Volatile.Write(ref _lastProbeTick, now);
-        _ = ProbeAsync(new Uri(uri.GetLeftPart(UriPartial.Authority)));
+        lock (_diagnosticGate)
+        {
+            if (_diagnosticRetirement is not null) return;
+            long now = Environment.TickCount64;
+            long prior = Volatile.Read(ref _lastProbeTick);
+            if (prior != 0 && now - prior < 30000 || Interlocked.CompareExchange(ref _probing, 1, 0) != 0) return;
+            Volatile.Write(ref _lastProbeTick, now);
+            // A probe is a new anonymous request. In a native service the initiating
+            // request's AsyncLocal policy must not override the latest committed policy.
+            using (ExecutionContext.SuppressFlow())
+                _diagnostics = Task.Run(() => ProbeAsync(new Uri(uri.GetLeftPart(UriPartial.Authority))));
+        }
+    }
+    /// <summary>Physical retirement of automatic probes, after the pool is disposed.</summary>
+    public Task WhenDrained { get { lock (_diagnosticGate) return _diagnosticRetirement ?? _diagnostics; } }
+    private void StopDiagnostics()
+    {
+        lock (_diagnosticGate)
+        {
+            if (_diagnosticRetirement is not null) return;
+            _diagnosticStop.Cancel();
+            _diagnosticRetirement = DrainDiagnosticsAsync();
+        }
+    }
+    private async Task DrainDiagnosticsAsync()
+    {
+        try { await _diagnostics.ConfigureAwait(false); }
+        finally { _diagnosticStop.Dispose(); }
     }
     private async Task ProbeAsync(Uri endpoint)
     {

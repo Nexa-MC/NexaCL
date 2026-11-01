@@ -1,6 +1,11 @@
 using System.Diagnostics;
 
+#if NEXA_NETWORK_SERVICE_OWNER
+using Nexa.Services.Network;
+namespace Nexa.Native.Network.Implementation;
+#else
 namespace Nexa.Services.Network;
+#endif
 
 /// <summary>Fixed anonymous endpoint observations, without arbitrary URL input or response bodies.</summary>
 public sealed class NetworkManualProbeService(Func<HttpClient> createClient, bool mainlandChina)

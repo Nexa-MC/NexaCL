@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
-using Nexa.Services.Network;
+using Nexa.Native.Network.Implementation;
 
 namespace Nexa.Native.Network;
 

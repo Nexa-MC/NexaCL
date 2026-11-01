@@ -30,8 +30,9 @@ def verify(rid, payload, selected=None):
                       "-p:XsrVersionChannel=stable", "-p:XsrVersionPrefix=1.0.0",
                       "-p:XsrVersionSequence=999", "-p:XsrCommitShort=ffffff",
                       "-p:SourceRevisionId=" + "f" * 40, "-p:RepositoryCommit=" + "f" * 40]
+            common = stable_ui_properties(common)
             if engine in SERVICES:
-                common = [*stable_ui_properties(common), "-p:NexaExternalModules=true", "-p:NexaNativeServices=false"]
+                common = [*common, "-p:NexaExternalModules=true", "-p:NexaNativeServices=false"]
             intermediate = project.parent / "obj" / "Release" / "net10.0" / rid
             inputs = [intermediate / f"Nexa.Native.{engine}.dll",
                       intermediate / "native" / (f"Nexa.Native.{engine}" + (".obj" if rid.startswith("win-") else ".o"))]

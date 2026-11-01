@@ -63,7 +63,7 @@ def publish(rid, output, properties):
         for engine in ENGINES:
             directory = stage / engine.lower()
             subprocess.run(["dotnet", "publish", str(ROOT / f"native/Nexa.Native.{engine}/Nexa.Native.{engine}.csproj"),
-                            *common, "-p:XsrVersionChannel=stable", "-p:XsrVersionPrefix=1.0.0",
+                            *common, *stable_ui_properties([]),
                             "--output", str(directory)], check=True)
             binary = directory / (f"Nexa.Native.{engine}" + Path(module).suffix)
             if not binary.is_file():

@@ -45,7 +45,7 @@ Extensions are `.dll` / `.so` / `.dylib` for Windows / Linux / macOS respectivel
 | `nexa-accounts` | Encrypted account storage, login/provider sessions, refresh, wardrobe and catalogs |
 | `nexa-pac` | PAC interpreter |
 | `nexa-crypto` | OpenPGP verification |
-| `nexa-network` | Connection/socket/TLS engine |
+| `nexa-network` | Connection/socket/TLS engine; asynchronous HTTP service ports under integration |
 | `nexa-updates` | Streaming compression and delta codecs |
 | `nexa-media` | Image metadata and wardrobe PNG validation |
 | `nexa-minecraft` | Library/classpath/rule and asset metadata algorithms |
@@ -57,6 +57,11 @@ updates and Minecraft remain in UI. The UI account closure includes the typed
 client and contracts, with the concrete account implementation rejected by publication.
 The complete business-module acceptance criteria below
 remain open.
+
+The network HTTP service ports are exercised by an independent AOT caller, including
+large uploads/responses and physical cancellation. Their current ownership and
+remaining production/download integration are recorded in
+[the network migration note](migrations/native-network-service-ownership.md).
 
 ## Stable engine boundaries
 

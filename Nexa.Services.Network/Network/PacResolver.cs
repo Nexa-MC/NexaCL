@@ -1,6 +1,11 @@
 using System.Text;
 
+#if NEXA_NETWORK_SERVICE_OWNER
+using Nexa.Services.Network;
+namespace Nexa.Native.Network.Implementation;
+#else
 namespace Nexa.Services.Network;
+#endif
 
 /// <summary>Owned, bounded bootstrap client. PAC downloads never inherit proxy credentials.</summary>
 internal sealed class PacResolver : IDisposable

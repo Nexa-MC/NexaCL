@@ -71,6 +71,8 @@ internal static partial class Program
         ("OrdinaryGamesPreventOverlayChangesWithoutBlockingLauncherExit", OrdinaryGamesPreventOverlayChangesWithoutBlockingLauncherExit),
         ("BackgroundDownloadPolicyKeepsInteractiveTransfersAvailable", BackgroundDownloadPolicyKeepsInteractiveTransfersAvailable),
         ("NetworkAutomaticDiagnosticsUseBoundedAnonymousEndpointProbe", NetworkAutomaticDiagnosticsUseBoundedAnonymousEndpointProbe),
+        ("NetworkAutomaticDiagnosticsDrainPhysicalCancellation", NetworkAutomaticDiagnosticsDrainPhysicalCancellation),
+        ("NetworkAutomaticDiagnosticsCaptureLatestPolicy", NetworkAutomaticDiagnosticsCaptureLatestPolicy),
         ("InstanceOfflineReadinessPreservesUnknownIntegrityRejectsCyclesAndCancels", InstanceOfflineReadinessPreservesUnknownIntegrityRejectsCyclesAndCancels),
         ("InstanceOfflineReadinessChecksInheritanceNativesAssetsAndCompatibleJava", InstanceOfflineReadinessChecksInheritanceNativesAssetsAndCompatibleJava),
         ("FileWorkspaceRejectsTraversalBinaryLogsAndRunningWrites", FileWorkspaceRejectsTraversalBinaryLogsAndRunningWrites),

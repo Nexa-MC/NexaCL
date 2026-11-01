@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><IsAotCompatible>true</IsAotCompatible><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
+  <Import Project="../ServiceProtocol/ServiceProtocol.props" />
+  <ItemGroup>
+    <ProjectReference Include="../../Nexa.Services.Network.Contracts/Nexa.Services.Network.Contracts.csproj" />
+    <ProjectReference Include="../../Nexa.Services.Common.Contracts/Nexa.Services.Common.Contracts.csproj" />
+    <Compile Include="../NativeUiAsyncResources.cs" Link="NativeUiAsyncResources.cs" />
+    <Compile Include="../NetworkServiceProtocol/ServiceWire.Generated.cs" Link="Wire/ServiceWire.Generated.cs" />
+    <Compile Include="../NetworkServiceProtocol/NetworkProtocol.cs" Link="Wire/NetworkProtocol.cs" />
+    <Compile Include="../NetworkServiceProtocol/NetworkHttpWire.cs" Link="Wire/NetworkHttpWire.cs" />
+    <Compile Include="../NetworkServiceProtocol/NetworkHttpStreamHandler.cs" Link="Wire/NetworkHttpStreamHandler.cs" />
+  </ItemGroup>
+</Project>

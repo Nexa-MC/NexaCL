@@ -3,7 +3,12 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
 
+#if NEXA_NETWORK_SERVICE_OWNER
+using Nexa.Services.Network;
+namespace Nexa.Native.Network.Implementation;
+#else
 namespace Nexa.Services.Network;
+#endif
 
 /// <summary>Bounded HTTPS JSON DNS queries, with system bootstrap and system-DNS fallback.</summary>
 internal sealed class DnsOverHttpsResolver : IDisposable

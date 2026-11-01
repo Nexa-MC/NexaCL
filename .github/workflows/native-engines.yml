@@ -16,6 +16,9 @@ on:
       - 'eng/release/verify_native_window_contracts.py'
       - 'Nexa.Services.Updates/**'
       - 'Nexa.Services.Network/**'
+      - 'Nexa.Services.Network.Contracts/**'
+      - 'Nexa.Services.Common/**'
+      - 'Nexa.Services.Common.Contracts/**'
       - 'Nexa.Core/Patching/**'
       - 'Nexa.Core/Media/**'
       - 'Nexa.Core/Xml/**'
@@ -23,6 +26,8 @@ on:
       - 'Nexa.Services.Accounts.Contracts/**'
       - 'Nexa.Xsr.State/**'
       - 'tests/Nexa.Native.Accounts.Tests/**'
+      - 'tests/Nexa.Native.Network.Services.Tests/**'
+      - 'eng/release/verify_native_network_services.py'
       - 'eng/xsr/generate_account_routes.py'
       - 'eng/xsr/generate_service_wire.*'
       - 'eng/release/verify_native_account_contracts.py'
@@ -89,18 +94,21 @@ jobs:
           python - '${{ matrix.rid }}' "$RUNNER_TEMP/engines" <<'PY'
           import pathlib, shutil, subprocess, sys
           sys.path.insert(0, 'eng/release')
-          from publish_launcher import ENGINES, module_name
+          from publish_launcher import ENGINES, module_name, stable_ui_properties
           rid, output = sys.argv[1], pathlib.Path(sys.argv[2])
           output.mkdir(parents=True, exist_ok=True)
           for engine in ENGINES:
               stage = output / engine
               subprocess.run(['dotnet', 'publish', f'native/Nexa.Native.{engine}', '-c', 'Release', '-r', rid,
                               '--self-contained', 'true', '-m:1', '-nr:false', '-p:PublishAot=true',
-                              '-p:StripSymbols=true', '-p:XsrVersionChannel=stable', '-p:XsrVersionPrefix=1.0.0',
+                              '-p:StripSymbols=true', *stable_ui_properties([]),
                               '-o', str(stage)], check=True)
               suffix = pathlib.Path(module_name(rid)).suffix
               shutil.copy2(stage / (f'Nexa.Native.{engine}' + suffix), output / ('nexa-' + engine.lower() + suffix))
           PY
+      - name: Verify independent network streaming and physical cancellation
+        shell: bash
+        run: python eng/release/verify_native_network_services.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/engines" --output "$RUNNER_TEMP/network-service-contracts"
       - name: Verify reproducibility
         shell: bash
         run: |

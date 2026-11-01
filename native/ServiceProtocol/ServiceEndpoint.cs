@@ -13,11 +13,12 @@ internal sealed class ServiceEndpoint : IAsyncDisposable
     private readonly Func<ReadOnlyMemory<byte>, byte[]> _publication;
 
     internal ServiceEndpoint(Func<ReadOnlyMemory<byte>, CancellationToken, Task<byte[]>> execute,
-        Func<ReadOnlyMemory<byte>, byte[]> publication, Action<Exception> failure)
+        Func<ReadOnlyMemory<byte>, byte[]> publication, Action<Exception> failure,
+        Action<long, ReadOnlyMemory<byte>, ReadOnlyMemory<byte>>? rejectedResult = null)
     {
         _publication = publication;
         _client = new(bytes => Send(0, bytes));
-        _server = new((bytes, token) => Task.Run(() => execute(bytes, token), token), bytes => Send(1, bytes), failure);
+        _server = new((bytes, token) => Task.Run(() => execute(bytes, token), token), bytes => Send(1, bytes), failure, rejectedResult);
         _registration = new(Receive, failure);
     }
 

@@ -1,6 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><NexaLocalPatchRuntime>false</NexaLocalPatchRuntime></PropertyGroup>
   <Import Project="../NativeEngine.props" />
+  <Import Project="../ServiceProtocol/ServiceProtocol.props" />
+  <PropertyGroup><DefineConstants>$(DefineConstants);NEXA_EXTERNAL_MODULES;NEXA_NETWORK_SERVICE_OWNER</DefineConstants></PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../Nexa.Services.Network.Contracts/Nexa.Services.Network.Contracts.csproj" />
+    <ProjectReference Include="../../Nexa.Services.Common/Nexa.Services.Common.csproj" />
+    <Compile Include="../NativeEngineClient.cs" Link="NativeEngineClient.cs" />
+    <Compile Include="../NativeUiAsyncResources.cs" Link="NativeUiAsyncResources.cs" />
+    <Compile Include="../../Nexa.Services.Network/Network/*.cs" Exclude="../../Nexa.Services.Network/Network/DnsOverHttpsResolver.cs" Link="Implementation/%(Filename)%(Extension)" />
+    <Compile Include="../NetworkServiceProtocol/*.cs" Exclude="../NetworkServiceProtocol/NetworkHttpStreamHandler.cs" Link="Wire/%(Filename)%(Extension)" />
     <Compile Include="../../Nexa.Services.Network/Network/DnsOverHttpsResolver.cs" Link="DnsOverHttpsResolver.cs" />
   </ItemGroup>
 </Project>

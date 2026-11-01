@@ -3,7 +3,12 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Nexa.Native.Interop;
 
+#if NEXA_NETWORK_SERVICE_OWNER
+using Nexa.Services.Network;
+namespace Nexa.Native.Network.Implementation;
+#else
 namespace Nexa.Services.Network;
+#endif
 
 internal static partial class PacEvaluator
 {

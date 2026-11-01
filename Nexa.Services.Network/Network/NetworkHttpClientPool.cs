@@ -2,7 +2,12 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 
+#if NEXA_NETWORK_SERVICE_OWNER
+using Nexa.Services.Network;
+namespace Nexa.Native.Network.Implementation;
+#else
 namespace Nexa.Services.Network;
+#endif
 
 /// <summary>Host-owned socket pools selected from the committed policy for every new request.</summary>
 public sealed partial class NetworkHttpClientPool : IDisposable
@@ -130,8 +135,7 @@ public sealed partial class NetworkHttpClientPool : IDisposable
             foreach (Generation generation in _current.Values) generation.Retire();
             _current.Clear();
         }
-        _diagnosticStop.Cancel();
-        _diagnosticStop.Dispose();
+        StopDiagnostics();
     }
 
     private sealed class RoutingHandler(NetworkHttpClientPool owner, bool redirects) : HttpMessageHandler

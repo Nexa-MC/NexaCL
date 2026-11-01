@@ -1,6 +1,11 @@
 using System.Net;
 
+#if NEXA_NETWORK_SERVICE_OWNER
+using Nexa.Services.Network;
+namespace Nexa.Native.Network.Implementation;
+#else
 namespace Nexa.Services.Network;
+#endif
 
 /// <summary>Evaluates PAC again for every redirect and keeps route selection separate from credentials.</summary>
 internal sealed class PacTransportHandler : HttpMessageHandler

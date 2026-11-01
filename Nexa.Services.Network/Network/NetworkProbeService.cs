@@ -1,6 +1,11 @@
 using System.Diagnostics;
 
+#if NEXA_NETWORK_SERVICE_OWNER
+using Nexa.Services.Network;
+namespace Nexa.Native.Network.Implementation;
+#else
 namespace Nexa.Services.Network;
+#endif
 
 /// <summary>
 /// Network reachability probing over a caller-owned HttpClient: every configured endpoint is

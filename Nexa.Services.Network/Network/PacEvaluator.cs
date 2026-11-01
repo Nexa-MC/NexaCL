@@ -1,7 +1,12 @@
 using System.Net;
 using System.Net.Sockets;
 
+#if NEXA_NETWORK_SERVICE_OWNER
+using Nexa.Services.Network;
+namespace Nexa.Native.Network.Implementation;
+#else
 namespace Nexa.Services.Network;
+#endif
 
 /// <summary>Portable PAC interpreter. Only strings cross the JS boundary; CLR access stays disabled.</summary>
 internal static partial class PacEvaluator

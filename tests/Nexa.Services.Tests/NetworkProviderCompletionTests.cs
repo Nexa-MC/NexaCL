@@ -69,6 +69,63 @@ internal static partial class Program
         AssertEqual(1, probes);
         AssertTrue(pool.TraceSnapshot().All(trace => !trace.ToString().Contains("secret", StringComparison.Ordinal)));
     }
+    private static async ValueTask NetworkAutomaticDiagnosticsCaptureLatestPolicy()
+    {
+        var original = new NetworkPreferences { ProxyMode = 0, AutoDiagnose = true };
+        var next = original with { ProxyMode = 1 };
+        var latest = original;
+        AsyncLocal<NetworkPreferences?> current = new() { Value = original };
+        TaskCompletionSource completed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var pool = new NetworkHttpClientPool(() => current.Value ?? latest, (policy, _) => new NetworkDnsTestHandler(request =>
+        {
+            if (request.Method == HttpMethod.Head)
+            {
+                if (policy == next) completed.TrySetResult();
+                else completed.TrySetException(new InvalidDataException("Probe retained its initiating request's stale ambient policy."));
+                return new(HttpStatusCode.OK) { Content = new StringContent("") };
+            }
+            latest = next;
+            return new(HttpStatusCode.ServiceUnavailable) { Content = new StringContent("") };
+        }));
+        using var client = pool.CreateClient();
+        using var response = await client.GetAsync("https://example.test/private");
+        await completed.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        pool.Dispose(); await pool.WhenDrained.WaitAsync(TimeSpan.FromSeconds(3));
+    }
+    private static async ValueTask NetworkAutomaticDiagnosticsDrainPhysicalCancellation()
+    {
+        TaskCompletionSource started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource canceled = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        var transport = new PendingDiagnosticHandler(started, canceled, release);
+        using var pool = new NetworkHttpClientPool(() => new() { AutoDiagnose = true }, (_, _) => transport);
+        using var client = pool.CreateClient();
+        try
+        {
+            using var response = await client.GetAsync("https://example.test/private?token=secret");
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            response.Dispose();
+            pool.Dispose(); await canceled.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            AssertFalse(pool.WhenDrained.IsCompleted);
+            release.TrySetResult(); await pool.WhenDrained.WaitAsync(TimeSpan.FromSeconds(3));
+            AssertTrue(transport.Disposed);
+        }
+        finally { release.TrySetResult(); }
+    }
+    private sealed class PendingDiagnosticHandler(TaskCompletionSource started, TaskCompletionSource canceled,
+        TaskCompletionSource release) : HttpMessageHandler
+    {
+        internal bool Disposed { get; private set; }
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        {
+            if (request.Method != HttpMethod.Head) return new(HttpStatusCode.ServiceUnavailable) { Content = new StringContent("") };
+            started.TrySetResult();
+            try { await Task.Delay(Timeout.Infinite, token); throw new InvalidOperationException("Probe did not cancel."); }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            { canceled.TrySetResult(); await release.Task; throw; }
+        }
+        protected override void Dispose(bool disposing) { if (disposing) Disposed = true; base.Dispose(disposing); }
+    }
     private static async ValueTask BackgroundDownloadPolicyKeepsInteractiveTransfersAvailable()
     {
         string directory = CreateTempDirectory();
