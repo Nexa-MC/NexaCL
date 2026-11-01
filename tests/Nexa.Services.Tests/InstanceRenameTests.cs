@@ -9,43 +9,81 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask RenameIdentityPreservesUnknownSettingsAndRejectsChangedContent()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            var (store, settings) = PolicyFixture();
+            string source = Path.Combine(root, "versions", "old"), target = Path.Combine(root, "versions", "new");
+            string from = OperatingSystem.IsWindows() ? source.ToUpperInvariant() : source;
+            string to = OperatingSystem.IsWindows() ? target.ToUpperInvariant() : target;
+            AssertTrue(settings.Set(new("game.width", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "1440"), source)).IsSuccess);
+            var document = JsonNode.Parse(store.ReadBatch().Values[SettingsPolicySchema.StorageKey])!.AsObject();
+            document["instances"]![from]!["future-setting"] = JsonNode.Parse("""{"items":[true,"preserved"],"number":1.0}""");
+            AssertTrue(store.SetRawValue(SettingsPolicySchema.StorageKey, document.ToJsonString()).IsSuccess);
+            var prepared = await settings.PrepareRenameAsync(source, target); AssertTrue(prepared.IsSuccess);
+            AssertTrue((await settings.ApplyRenameAsync(prepared.Value, false)).IsSuccess);
+            var moved = JsonNode.Parse(store.ReadBatch().Values[SettingsPolicySchema.StorageKey])!;
+            AssertEqual("preserved", moved["instances"]![to]!["future-setting"]!["items"]![1]!.GetValue<string>());
+            AssertTrue((await settings.ApplyRenameAsync(prepared.Value, true)).IsSuccess);
+            AssertTrue(settings.Set(new("game.width", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "1600"), source)).IsSuccess);
+            AssertFalse((await settings.ApplyRenameAsync(prepared.Value, false)).IsSuccess);
+            AssertEqual("1600", Effective(settings, "game.width", source).Value.Value!);
+            AssertEqual(SettingsRenameIdentity.Capture("""{"b":100,"a":1.0}""", null),
+                SettingsRenameIdentity.Capture("""{"a":1,"b":1e2}""", null));
+            AssertFalse(SettingsRenameIdentity.Capture("[1,2]", null) == SettingsRenameIdentity.Capture("[2,1]", null));
+        }
+        finally { Directory.Delete(root, true); }
+    }
     private static async ValueTask RenameJournalResumesEveryInterruptedPrefixAndRollsBack()
     {
-        foreach (int stop in Enumerable.Range(1, 8))
-        {
-            string root = CreateTempDirectory();
-            try
+        foreach (bool remote in new[] { false, true })
+            foreach (int stop in Enumerable.Range(1, 8))
             {
-                var (_, settings) = PolicyFixture();
-                string source = Path.Combine(root, "versions", "old"), target = Path.Combine(root, "versions", "new");
-                Directory.CreateDirectory(source);
-                byte[] before = "{\"id\":\"old\"}"u8.ToArray(), after = "{\"id\":\"new\"}"u8.ToArray();
-                await File.WriteAllBytesAsync(Path.Combine(source, "old.json"), before);
-                await File.WriteAllTextAsync(Path.Combine(source, "old.jar"), "core");
-                await File.WriteAllTextAsync(Path.Combine(source, "options.txt"), "user settings");
-                AssertTrue(settings.Set(new("game.width", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "1440"), source)).IsSuccess);
-                string transaction = Path.Combine(root, ".nexa-rename", Guid.NewGuid().ToString("N"));
-                var journal = await InstanceRenameJournal.PrepareAsync(root, transaction, source, target, "old", "new", true,
-                    [(Path.Combine(source, "old.json"), Path.Combine(target, "new.json"), before, after)], settings, default);
-                using var cancellation = new CancellationTokenSource();
-                try { await journal.ApplyAsync(settings, cancellation.Token, count => { if (count == stop) cancellation.Cancel(); }); }
-                catch (OperationCanceledException) { }
-                var reopened = await InstanceRenameJournal.OpenAsync(root, transaction, default);
-                try { await reopened.ApplyAsync(settings, default); }
-                catch (IOException error) { throw new InvalidOperationException("Interrupted prefix " + stop, error); }
-                AssertFalse(Directory.Exists(source));
-                AssertEqual("core", await File.ReadAllTextAsync(Path.Combine(target, "new.jar")));
-                AssertEqual("user settings", await File.ReadAllTextAsync(Path.Combine(target, "options.txt")));
-                AssertEqual("1440", Effective(settings, "game.width", target).Value.Value!);
-                await reopened.RollbackAsync(settings, default);
-                AssertFalse(Directory.Exists(target));
-                AssertEqual("core", await File.ReadAllTextAsync(Path.Combine(source, "old.jar")));
-                AssertEqual("1440", Effective(settings, "game.width", source).Value.Value!);
-                byte[] restored = await File.ReadAllBytesAsync(Path.Combine(source, "old.json"));
-                AssertTrue(before.AsSpan().SequenceEqual(restored));
+                string root = CreateTempDirectory();
+                try
+                {
+                    var (_, settings) = PolicyFixture();
+                    ISettingsRenameTransactions transactions = remote ? new AsyncRenamePort(settings) : settings;
+                    string source = Path.Combine(root, "versions", "old"), target = Path.Combine(root, "versions", "new");
+                    Directory.CreateDirectory(source);
+                    byte[] before = "{\"id\":\"old\"}"u8.ToArray(), after = "{\"id\":\"new\"}"u8.ToArray();
+                    await File.WriteAllBytesAsync(Path.Combine(source, "old.json"), before);
+                    await File.WriteAllTextAsync(Path.Combine(source, "old.jar"), "core");
+                    await File.WriteAllTextAsync(Path.Combine(source, "options.txt"), "user settings");
+                    AssertTrue(settings.Set(new("game.width", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "1440"), source)).IsSuccess);
+                    string transaction = Path.Combine(root, ".nexa-rename", Guid.NewGuid().ToString("N"));
+                    var journal = await InstanceRenameJournal.PrepareAsync(root, transaction, source, target, "old", "new", true,
+                        [(Path.Combine(source, "old.json"), Path.Combine(target, "new.json"), before, after)], transactions, default);
+                    var disk = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(transaction, "plan.json")))!;
+                    AssertEqual(remote ? 2 : 1, disk["Schema"]!.GetValue<int>());
+                    using var cancellation = new CancellationTokenSource();
+                    try { await journal.ApplyAsync(transactions, cancellation.Token, count => { if (count == stop) cancellation.Cancel(); }); }
+                    catch (OperationCanceledException) { }
+                    var reopened = await InstanceRenameJournal.OpenAsync(root, transaction, default);
+                    try { await reopened.ApplyAsync(transactions, default); }
+                    catch (IOException error) { throw new InvalidOperationException("Interrupted prefix " + stop, error); }
+                    AssertFalse(Directory.Exists(source));
+                    AssertEqual("core", await File.ReadAllTextAsync(Path.Combine(target, "new.jar")));
+                    AssertEqual("user settings", await File.ReadAllTextAsync(Path.Combine(target, "options.txt")));
+                    AssertEqual("1440", Effective(settings, "game.width", target).Value.Value!);
+                    await reopened.RollbackAsync(transactions, default);
+                    AssertFalse(Directory.Exists(target));
+                    AssertEqual("core", await File.ReadAllTextAsync(Path.Combine(source, "old.jar")));
+                    AssertEqual("1440", Effective(settings, "game.width", source).Value.Value!);
+                    byte[] restored = await File.ReadAllBytesAsync(Path.Combine(source, "old.json"));
+                    AssertTrue(before.AsSpan().SequenceEqual(restored));
+                }
+                finally { Directory.Delete(root, true); }
             }
-            finally { Directory.Delete(root, true); }
-        }
+    }
+    private sealed class AsyncRenamePort(SettingsPolicyService settings) : ISettingsRenameTransactions
+    {
+        public async ValueTask<Nexa.Xsr.XsrResult<SettingsRenameReceipt>> PrepareRenameAsync(string source, string destination, CancellationToken token = default)
+        { await Task.Yield(); return await settings.PrepareRenameAsync(source, destination, token); }
+        public async ValueTask<Nexa.Xsr.XsrResult> ApplyRenameAsync(SettingsRenameReceipt receipt, bool reverse, CancellationToken token = default)
+        { await Task.Yield(); return await settings.ApplyRenameAsync(receipt, reverse, token); }
     }
 
     private static async ValueTask RenameOnlyPendingInstallResumesWithoutReinstalling()

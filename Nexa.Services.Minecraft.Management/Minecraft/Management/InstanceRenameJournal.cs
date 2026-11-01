@@ -19,7 +19,7 @@ internal sealed class InstanceRenameJournal
     internal static async Task<InstanceRenameJournal> PrepareAsync(string root, string transaction, string source, string destination,
         string oldName, string newName, bool hasJar,
         IReadOnlyList<(string OriginalPath, string TargetPath, byte[] Before, byte[] After)> edits,
-        SettingsPolicyService settings, CancellationToken token)
+        ISettingsRenameTransactions settings, CancellationToken token)
     {
         RecoveryBlobStore.CheckLinks(transaction); Directory.CreateDirectory(transaction);
         string marker = ".nexa-rename-" + Guid.NewGuid().ToString("N");
@@ -41,7 +41,17 @@ internal sealed class InstanceRenameJournal
             if (edit.Before.Length > 4 * 1024 * 1024 || edit.After.Length > 4 * 1024 * 1024) throw new InvalidDataException("改名清单过大。");
             steps.Add(new("write", "", edit.TargetPath, Nexa.Core.PathIdentity.Comparer.Equals(edit.OriginalPath, primary) ? null : edit.Before, edit.After, null));
         }
-        var plan = new RenamePlan(1, root, source, destination, transaction, marker, steps.ToArray(), settings.PrepareRenameSettings(source, destination));
+        RenameSettingsPlan settingsPlan;
+        if (settings is SettingsPolicyService local) settingsPlan = local.PrepareRenameSettings(source, destination);
+        else
+        {
+            var prepared = await settings.PrepareRenameAsync(source, destination, token).ConfigureAwait(false);
+            if (!prepared.IsSuccess) throw new IOException(prepared.Error!.Message);
+            var receipt = prepared.Value!;
+            if (receipt.Source != source || receipt.Destination != destination) throw new InvalidDataException("Rename settings receipt changed identity.");
+            settingsPlan = new(source, destination, null) { Identity = receipt.Identity };
+        }
+        var plan = new RenamePlan(settingsPlan.Identity is null ? 1 : 2, root, source, destination, transaction, marker, steps.ToArray(), settingsPlan);
         byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(plan, RenameJson.Default.RenamePlan);
         if (bytes.Length > 192 * 1024 * 1024) throw new InvalidDataException("改名记录过大。");
         await RecoveryRecordAuthority.AuthorizeAsync(Path.Combine(transaction, "plan.json"), bytes, token).ConfigureAwait(false);
@@ -57,7 +67,7 @@ internal sealed class InstanceRenameJournal
         bool standalone = parent == Path.Combine(root, ".nexa-rename") && Guid.TryParseExact(Path.GetFileName(transaction), "N", out _);
         bool nested = Path.GetFileName(transaction) == ".rename" && Path.GetDirectoryName(parent) == Path.Combine(root, ".nexa-modify")
             && Guid.TryParseExact(Path.GetFileName(parent), "N", out _);
-        if ((!standalone && !nested) || plan.Schema != 1 || plan.Root != root || plan.Directory != transaction || plan.Steps.Length is < 4 or > 10010
+        if ((!standalone && !nested) || plan.Schema is not (1 or 2) || (plan.Schema == 2) != (plan.Settings.Identity is not null) || plan.Root != root || plan.Directory != transaction || plan.Steps.Length is < 4 or > 10010
             || Path.GetDirectoryName(plan.Source) != Path.Combine(root, "versions") || Path.GetDirectoryName(plan.Destination) != Path.Combine(root, "versions")
             || !MinecraftVersionPaths.IsSafeReference(Path.GetFileName(plan.Source)) || !MinecraftVersionPaths.IsSafeReference(Path.GetFileName(plan.Destination))
             || !plan.Marker.StartsWith(".nexa-rename-", StringComparison.Ordinal) || !Guid.TryParseExact(plan.Marker[13..], "N", out _)
@@ -104,7 +114,13 @@ internal sealed class InstanceRenameJournal
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
     }
-    internal async Task ApplyAsync(SettingsPolicyService settings, CancellationToken token, Action<int>? progressObserver = null)
+    private async Task ApplySettingsAsync(ISettingsRenameTransactions settings, bool reverse, CancellationToken token)
+    {
+        string identity = _plan.Settings.Identity ?? SettingsRenameIdentity.Capture(_plan.Settings.Value, _plan.Settings.Profiles);
+        var result = await settings.ApplyRenameAsync(new(_plan.Settings.Source, _plan.Settings.Destination, identity), reverse, token).ConfigureAwait(false);
+        if (!result.IsSuccess) throw new IOException(result.Error!.Message);
+    }
+    internal async Task ApplyAsync(ISettingsRenameTransactions settings, CancellationToken token, Action<int>? progressObserver = null)
     {
         var progress = await ProgressAsync(token).ConfigureAwait(false);
         if (progress.Phase == "committed") return;
@@ -112,20 +128,20 @@ internal sealed class InstanceRenameJournal
         for (int i = Math.Max(0, progress.Attempted - 1); i <= _plan.Steps.Length; i++)
         {
             await SaveProgressAsync("applying", i + 1, token).ConfigureAwait(false);
-            if (i == _plan.Steps.Length) settings.ApplyRenameSettings(_plan.Settings, false);
+            if (i == _plan.Steps.Length) await ApplySettingsAsync(settings, false, token).ConfigureAwait(false);
             else await StepAsync(_plan.Steps[i], false, token).ConfigureAwait(false);
             progressObserver?.Invoke(i + 1);
         }
         await SaveProgressAsync("committed", _plan.Steps.Length + 1, CancellationToken.None).ConfigureAwait(false);
     }
-    internal async Task RollbackAsync(SettingsPolicyService settings, CancellationToken token)
+    internal async Task RollbackAsync(ISettingsRenameTransactions settings, CancellationToken token)
     {
         var progress = await ProgressAsync(token).ConfigureAwait(false);
         if (progress.Phase == "rolled-back") return;
         await SaveProgressAsync("rolling-back", progress.Attempted, token).ConfigureAwait(false);
         for (int i = progress.Attempted - 1; i >= 0; i--)
         {
-            if (i == _plan.Steps.Length) settings.ApplyRenameSettings(_plan.Settings, true);
+            if (i == _plan.Steps.Length) await ApplySettingsAsync(settings, true, token).ConfigureAwait(false);
             else await StepAsync(_plan.Steps[i], true, token).ConfigureAwait(false);
             await SaveProgressAsync("rolling-back", i, token).ConfigureAwait(false);
         }

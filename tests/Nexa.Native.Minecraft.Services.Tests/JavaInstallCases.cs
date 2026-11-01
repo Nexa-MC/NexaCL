@@ -66,6 +66,12 @@ internal static class JavaInstallCases
         if (await File.ReadAllTextAsync(Path.Combine(game.Value!.InstanceDirectory, "1.20.1.jar"), token) != "hello"
             || (await minecraft.InstancesAsync(gameRoot, token: token)).Count != 1 || settings.Reads < 2)
             throw new InvalidDataException("Native game installation lost committed bytes, discovery or canonical policy reads.");
+        var edit = await minecraft.ReadInstallationAsync(new(gameRoot, "1.20.1"), token);
+        var renamed = await minecraft.InstallMinecraftAsync(new(gameRoot, "1.20.1", InstanceName: "1.20.1", EditFingerprint: edit.Fingerprint)
+        { NewInstanceName = "renamed-game" }, token);
+        if (!renamed.IsSuccess || !File.Exists(Path.Combine(renamed.Value!.InstanceDirectory, "renamed-game.jar"))
+            || Directory.Exists(game.Value.InstanceDirectory) || settings.RenameWrites != 1)
+            throw new InvalidDataException("Native game rename did not coordinate files with the canonical settings transaction.");
         settings.Hold = true;
         var waitingInstall = minecraft.InstallMinecraftAsync(new(Path.Combine(directory, "waiting-install"), "1.20.1"), token);
         await settings.Entered.Task.WaitAsync(token);
@@ -119,9 +125,23 @@ internal static class JavaInstallCases
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") });
         }
     }
-    private sealed class InstallSettings : ISettingsSnapshotReader, ISettingsPolicyReader
+    private sealed class InstallSettings : ISettingsSnapshotReader, ISettingsPolicyReader, ISettingsRenameTransactions
     {
         internal int Reads;
+        internal int RenameWrites;
+        private SettingsRenameReceipt? _rename;
+        public async ValueTask<XsrResult<SettingsRenameReceipt>> PrepareRenameAsync(string source, string destination, CancellationToken token = default)
+        {
+            await Task.Yield(); token.ThrowIfCancellationRequested();
+            _rename = new(source, destination, SettingsRenameIdentity.Capture("""{"future-setting":"preserved"}""", null));
+            return XsrResult.Success(_rename);
+        }
+        public async ValueTask<XsrResult> ApplyRenameAsync(SettingsRenameReceipt receipt, bool reverse, CancellationToken token = default)
+        {
+            await Task.Yield(); token.ThrowIfCancellationRequested();
+            if (receipt != _rename || reverse) throw new InvalidDataException("Unexpected native rename transaction.");
+            RenameWrites++; return XsrResult.Success();
+        }
         internal volatile bool Hold;
         internal int Active;
         internal TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);

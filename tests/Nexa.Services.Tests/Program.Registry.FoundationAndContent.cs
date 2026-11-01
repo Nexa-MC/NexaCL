@@ -396,6 +396,7 @@ internal static partial class Program
         ("instance rename preserves data settings and dependencies", InstanceRenamePreservesDataSettingsAndDependencies),
         ("instance rename rejects active games and rolls back settings failure", InstanceRenameRejectsActiveGamesAndRollsBackSettingsFailure),
         ("rename journal resumes every interrupted prefix and rolls back", RenameJournalResumesEveryInterruptedPrefixAndRollsBack),
+        ("rename identity preserves unknown settings and rejects changed content", RenameIdentityPreservesUnknownSettingsAndRejectsChangedContent),
         ("rename only pending install resumes without reinstalling", RenameOnlyPendingInstallResumesWithoutReinstalling),
         ("component publication and rename recover as one task", ComponentPublicationAndRenameRecoverAsOneTask),
         ("recovery plans include dependencies and protect worlds", RecoveryPlanIncludesDependenciesAndProtectsUserWorlds),

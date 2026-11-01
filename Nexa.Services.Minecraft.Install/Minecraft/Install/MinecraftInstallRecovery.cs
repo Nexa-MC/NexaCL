@@ -67,9 +67,9 @@ public sealed partial class MinecraftInstallService
                 string renameDirectory = Path.Combine(stage, ".rename");
                 if (renaming && File.Exists(Path.Combine(renameDirectory, "plan.json")))
                 {
-                    if (_settingsPolicy is null) throw new InvalidOperationException("恢复改名需要实例设置服务。");
+                    if (SettingsTransactions is null) throw new InvalidOperationException("恢复改名需要实例设置服务。");
                     var rename = await InstanceRenameJournal.OpenAsync(root, renameDirectory, linked.Token).ConfigureAwait(false);
-                    await rename.ApplyAsync(_settingsPolicy, linked.Token).ConfigureAwait(false);
+                    await rename.ApplyAsync(SettingsTransactions, linked.Token).ConfigureAwait(false);
                     result = new(saved.Command.NewInstanceName!, rename.Destination);
                 }
                 else if (!Directory.Exists(publication))
@@ -88,10 +88,10 @@ public sealed partial class MinecraftInstallService
                 }
                 if (renaming && result.InstanceId != saved.Command.NewInstanceName)
                 {
-                    if (_settingsPolicy is null) throw new InvalidOperationException("恢复改名需要实例设置服务。");
+                    if (SettingsTransactions is null) throw new InvalidOperationException("恢复改名需要实例设置服务。");
                     var current = await MinecraftInstallEditService.ReadAsync(new(root, result.InstanceId), linked.Token).ConfigureAwait(false);
                     await MinecraftInstanceRenamer.RenameAsync(root, result.InstanceId, saved.Command.NewInstanceName!, current.GameVersion,
-                        current.Fingerprint, _settingsPolicy, _hostStore, linked.Token, renameDirectory, acquireOperation: false).ConfigureAwait(false);
+                        current.Fingerprint, SettingsTransactions, _hostStore, linked.Token, renameDirectory, acquireOperation: false).ConfigureAwait(false);
                     result = new(saved.Command.NewInstanceName!, Path.Combine(root, "versions", saved.Command.NewInstanceName!));
                 }
                 await InstallTaskJournal.WriteStatusAsync(stage, saved, InstallTaskStatus.Completed, CancellationToken.None).ConfigureAwait(false);
@@ -137,9 +137,9 @@ public sealed partial class MinecraftInstallService
                 string renameDirectory = Path.Combine(stage, ".rename");
                 if (File.Exists(Path.Combine(renameDirectory, "plan.json")))
                 {
-                    if (_settingsPolicy is null) throw new InvalidOperationException("回滚改名需要实例设置服务。");
+                    if (SettingsTransactions is null) throw new InvalidOperationException("回滚改名需要实例设置服务。");
                     var rename = await InstanceRenameJournal.OpenAsync(root, renameDirectory, token).ConfigureAwait(false);
-                    await rename.RollbackAsync(_settingsPolicy, token).ConfigureAwait(false);
+                    await rename.RollbackAsync(SettingsTransactions, token).ConfigureAwait(false);
                 }
             }
             string publication = Path.Combine(stage, ".publication"); RecoveryBlobStore.CheckLinks(publication);

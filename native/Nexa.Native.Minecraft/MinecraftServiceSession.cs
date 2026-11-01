@@ -130,7 +130,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         if (_instances is null) throw new InvalidOperationException("Minecraft service has not initialized.");
         if (operation is >= MinecraftServiceProtocol.JavaConfigure and <= MinecraftServiceProtocol.JavaModules)
             return await ExecuteJavaManagementAsync(operation, reader, token).ConfigureAwait(false);
-        if (operation is >= MinecraftServiceProtocol.InstallConfigure and <= MinecraftServiceProtocol.InstallModpack)
+        if (operation is >= MinecraftServiceProtocol.InstallConfigure and <= MinecraftServiceProtocol.InstallEditRead)
             return await ExecuteInstallationAsync(operation, reader, token).ConfigureAwait(false);
         switch (operation)
         {

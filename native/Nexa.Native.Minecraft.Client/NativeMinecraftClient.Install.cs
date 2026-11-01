@@ -7,6 +7,13 @@ namespace Nexa.Native.Minecraft.Client;
 
 public sealed partial class NativeMinecraftClient
 {
+    public async Task<MinecraftInstallEditSnapshot> ReadInstallationAsync(MinecraftInstallEditQuery query, CancellationToken token = default)
+    {
+        byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.InstallEditRead, writer =>
+        { writer.String(query.RootDirectory); writer.String(query.InstanceId); }, token).ConfigureAwait(false);
+        using var reader = new ServiceWireReader(bytes); var result = reader.MinecraftInstallEditSnapshot() ?? throw new InvalidDataException("Missing Minecraft edit snapshot.");
+        reader.End(); return result;
+    }
     public async Task ConfigureInstallationAsync(string countryCode, string? curseForgeApiKey = null, CancellationToken token = default)
     {
         byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.InstallConfigure, writer =>

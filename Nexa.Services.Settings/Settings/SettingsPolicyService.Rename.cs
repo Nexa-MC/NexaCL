@@ -5,6 +5,8 @@ namespace Nexa.Services.Settings;
 internal sealed record RenameSettingsPlan(string Source, string Destination, string? Value)
 {
     public string? Profiles { get; init; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? Identity { get; init; }
 }
 
 public sealed partial class SettingsPolicyService
@@ -26,6 +28,12 @@ public sealed partial class SettingsPolicyService
 
     internal void ApplyRenameSettings(RenameSettingsPlan plan, bool reverse)
     {
+        if (plan.Identity is { } identity)
+        {
+            var result = ApplyRenameIdentity(new(plan.Source, plan.Destination, identity), reverse);
+            if (!result.IsSuccess) throw new IOException(result.Error!.Message);
+            return;
+        }
         lock (_profileGate)
         {
             var snapshot = _settings.ReadBatch();

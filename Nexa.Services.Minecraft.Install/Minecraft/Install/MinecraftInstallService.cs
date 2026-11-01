@@ -38,6 +38,8 @@ public sealed partial class MinecraftInstallService : IDisposable
     private readonly IMinecraftLoaderInstaller _loaderInstaller;
     private readonly Func<bool>? _inheritVanilla;
     private readonly SettingsPolicyService? _settingsPolicy;
+    private readonly ISettingsRenameTransactions? _settingsTransactions;
+    public ISettingsRenameTransactions? SettingsTransactions { get => _settingsTransactions ?? _settingsPolicy; init => _settingsTransactions = value; }
     private readonly ISettingsPolicyReader? _policyReader;
     public ISettingsPolicyReader? SettingsPolicies
     {
@@ -134,7 +136,7 @@ public sealed partial class MinecraftInstallService : IDisposable
             }
             if (!SettingsInstanceIsolationPolicy.IsValidMode(command.DefaultIsolationMode)) throw new InvalidDataException("默认实例隔离设置无效。");
             bool renaming = command.NewInstanceName is { } requested && requested != command.InstanceName;
-            if (renaming && (command.EditFingerprint is null || _settingsPolicy is null || _hostStore is null
+            if (renaming && (command.EditFingerprint is null || SettingsTransactions is null || _hostStore is null
                 || !MinecraftVersionPaths.IsSafeReference(command.NewInstanceName)
                 || Path.Exists(Path.Combine(command.RootDirectory, "versions", command.NewInstanceName!))
                     && !Nexa.Core.PathIdentity.Comparer.Equals(command.NewInstanceName, command.InstanceName)))
@@ -148,7 +150,7 @@ public sealed partial class MinecraftInstallService : IDisposable
             {
                 var current = await MinecraftInstallEditService.ReadAsync(new(command.RootDirectory, result.InstanceId), linked.Token).ConfigureAwait(false);
                 await MinecraftInstanceRenamer.RenameAsync(command.RootDirectory, result.InstanceId, command.NewInstanceName!,
-                    current.GameVersion, current.Fingerprint, _settingsPolicy!, _hostStore!, linked.Token, Path.Combine(execution.Stage!, ".rename")).ConfigureAwait(false);
+                    current.GameVersion, current.Fingerprint, SettingsTransactions!, _hostStore!, linked.Token, Path.Combine(execution.Stage!, ".rename")).ConfigureAwait(false);
                 var saved = await InstallTaskJournal.ReadAsync(Path.GetFullPath(command.RootDirectory), execution.Stage!, CancellationToken.None).ConfigureAwait(false);
                 await InstallTaskJournal.WriteStatusAsync(execution.Stage!, saved, InstallTaskStatus.Completed, CancellationToken.None).ConfigureAwait(false);
                 var renameJournal = await InstanceRenameJournal.OpenAsync(Path.GetFullPath(command.RootDirectory), Path.Combine(execution.Stage!, ".rename"), CancellationToken.None).ConfigureAwait(false);

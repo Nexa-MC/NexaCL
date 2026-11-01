@@ -58,3 +58,27 @@ native identity-only journal uses a new schema version so older readers reject i
 instead of treating absent inline values as an instruction to discard settings.
 Current managed recovery understands both representations. Durable progress and
 the file/settings rollback order remain unchanged.
+
+Rename implementation validation: nine related service tests pass. The interrupted
+journal test replays and reverses each of eight prefixes using both legacy inline
+settings and an asynchronous identity-only port. New assertions verify schema 1/2
+selection, unknown settings preservation, stale-content rejection, object ordering,
+exact numeric identity and array ordering. Public managed APIs remain available;
+internal rename/recovery paths now await the canonical transaction interface.
+The independent NativeAOT caller also passes actual game-directory rename with
+one host settings transaction, using 128 DTO shapes
+(`3559B4C3D2B431814EB59362EC403EE88122EDDA7A27C2413310B9B4838268A9`).
+It reads the native edit fingerprint, renames the installed client/manifest,
+checks the old directory is gone and verifies the canonical transaction call.
+Production native-service composition compiles without warnings/errors, and the
+architecture gate passes for all 97 projects.
+
+## Recovery baseline
+
+Recovery snapshot capture and planning exchange typed setting rows (key, original
+override and effective override) and typed before/after mutation plans. Existing
+local JSON baseline/journal representations remain disk formats with explicit
+conversion; they are not native messages. The canonical host validates the same
+settings scope, selected keys, temporary-profile restrictions, current revision and
+conditional persistence. File/settings compensation keeps its existing order and
+awaits settings commit or rollback before recording the transaction outcome.

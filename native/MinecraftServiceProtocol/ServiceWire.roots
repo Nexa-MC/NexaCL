@@ -28,3 +28,5 @@ Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.Minecr
 Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallResult
 Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallRecoveryCommand
 Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftModpackCommand
+Nexa.Services.Settings.Contracts|Nexa.Services.Settings.SettingsRenameReceipt
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallEditSnapshot

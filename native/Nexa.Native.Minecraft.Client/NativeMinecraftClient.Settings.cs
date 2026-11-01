@@ -8,6 +8,7 @@ public sealed partial class NativeMinecraftClient
 {
     private ISettingsSnapshotReader? _settingsSnapshots;
     private ISettingsPolicyReader? _settingsPolicies;
+    private ISettingsRenameTransactions? _settingsTransactions;
     public void AttachSettings(ISettingsSnapshotReader snapshots, ISettingsPolicyReader policies)
     {
         ArgumentNullException.ThrowIfNull(snapshots); ArgumentNullException.ThrowIfNull(policies);
@@ -15,7 +16,7 @@ public sealed partial class NativeMinecraftClient
         {
             ObjectDisposedException.ThrowIf(_closed, this);
             if (_settingsSnapshots is not null) throw new InvalidOperationException("Canonical settings are already attached.");
-            _settingsSnapshots = snapshots; _settingsPolicies = policies;
+            _settingsSnapshots = snapshots; _settingsPolicies = policies; _settingsTransactions = policies as ISettingsRenameTransactions;
         }
     }
     private async Task<byte[]> ExecuteSettingsAsync(int operation, ReadOnlyMemory<byte> bytes, CancellationToken token)
@@ -27,12 +28,27 @@ public sealed partial class NativeMinecraftClient
             var source = Volatile.Read(ref _settingsSnapshots) ?? throw new InvalidOperationException("Canonical settings snapshots are not attached.");
             writer.CapturedSettingsSnapshot(await source.CaptureAsync(token).ConfigureAwait(false));
         }
-        else
+        else if (operation == MinecraftHostOperations.SettingsPolicyRead)
         {
             var query = reader.SettingsEffectiveQuery() ?? throw new InvalidDataException("Missing settings policy query."); reader.End();
             var source = Volatile.Read(ref _settingsPolicies) ?? throw new InvalidOperationException("Canonical settings policies are not attached.");
             var result = await source.ReadAsync(query, token).ConfigureAwait(false);
             writer.XsrError(result.Error); if (result.IsSuccess) writer.SettingsEffectiveSnapshot(result.Value);
+        }
+        else if (operation == MinecraftHostOperations.SettingsRenamePrepare)
+        {
+            string source = reader.String() ?? throw new InvalidDataException("Missing rename source.");
+            string destination = reader.String() ?? throw new InvalidDataException("Missing rename destination."); reader.End();
+            var transactions = Volatile.Read(ref _settingsTransactions) ?? throw new InvalidOperationException("Canonical rename transactions are not attached.");
+            var result = await transactions.PrepareRenameAsync(source, destination, token).ConfigureAwait(false);
+            writer.XsrError(result.Error); if (result.IsSuccess) writer.SettingsRenameReceipt(result.Value);
+        }
+        else
+        {
+            var receipt = reader.SettingsRenameReceipt() ?? throw new InvalidDataException("Missing rename receipt.");
+            bool reverse = reader.Boolean(); reader.End();
+            var transactions = Volatile.Read(ref _settingsTransactions) ?? throw new InvalidOperationException("Canonical rename transactions are not attached.");
+            writer.XsrError((await transactions.ApplyRenameAsync(receipt, reverse, token).ConfigureAwait(false)).Error);
         }
         return writer.Finish();
     }

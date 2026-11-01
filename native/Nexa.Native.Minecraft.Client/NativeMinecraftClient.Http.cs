@@ -41,7 +41,8 @@ public sealed partial class NativeMinecraftClient
             return ExecuteDownloadAsync(operation, bytes, token);
         if (operation is MinecraftHostOperations.JavaRegistryRead or MinecraftHostOperations.JavaRegistryWrite)
             return ExecuteJavaRegistryAsync(operation, bytes, token);
-        if (operation is MinecraftHostOperations.SettingsSnapshot or MinecraftHostOperations.SettingsPolicyRead)
+        if (operation is MinecraftHostOperations.SettingsSnapshot or MinecraftHostOperations.SettingsPolicyRead
+            or MinecraftHostOperations.SettingsRenamePrepare or MinecraftHostOperations.SettingsRenameApply)
             return ExecuteSettingsAsync(operation, bytes, token);
         throw new InvalidDataException("Unknown Minecraft host operation.");
     }

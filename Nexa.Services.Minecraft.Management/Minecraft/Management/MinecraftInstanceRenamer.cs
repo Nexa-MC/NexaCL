@@ -23,7 +23,7 @@ internal static class MinecraftInstanceRenamer
     }
 
     internal static async Task RenameAsync(string root, string oldName, string newName, string gameVersion, string fingerprint,
-        SettingsPolicyService settings, XsrStateStore store, CancellationToken token, string? durableDirectory = null, bool acquireOperation = true)
+        ISettingsRenameTransactions settings, XsrStateStore store, CancellationToken token, string? durableDirectory = null, bool acquireOperation = true)
     {
         if (!MinecraftVersionPaths.IsSafeReference(oldName) || !MinecraftVersionPaths.IsSafeReference(newName)
             || newName.TrimEnd(' ', '.') != newName || newName.Any(c => c is '<' or '>' or '"' or '|' or '?' or '*'))

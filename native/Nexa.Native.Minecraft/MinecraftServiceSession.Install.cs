@@ -44,7 +44,7 @@ internal sealed partial class MinecraftServiceSession
                 var region = Nexa.Services.RegionalPolicy.Resolve(country);
                 _installation = new(_tasks, _sessionDownloads, new HttpInstallCatalogSource(_installationHttp, apiKey, region),
                     _installationHttp, loaderInstaller: new ForgeInstallService(_sessionDownloads, _installationHttp, regionalPolicy: region), hostStore: _store)
-                { SettingsPolicies = _settings, HttpClientFactory = CreateInstallationHttp, CountryPolicy = region, CurseForgeApiKey = apiKey };
+                { SettingsPolicies = _settings, SettingsTransactions = _settings, HttpClientFactory = CreateInstallationHttp, CountryPolicy = region, CurseForgeApiKey = apiKey };
             }
             finally { _initialization.Release(); }
             return writer.Finish();
@@ -52,6 +52,10 @@ internal sealed partial class MinecraftServiceSession
         var installation = _installation ?? throw new InvalidOperationException("Minecraft installation is not configured.");
         switch (operation)
         {
+            case MinecraftServiceProtocol.InstallEditRead:
+                string editRoot = reader.String() ?? throw new InvalidDataException("Missing Minecraft edit root.");
+                string editInstance = reader.String() ?? throw new InvalidDataException("Missing Minecraft instance."); reader.End();
+                writer.MinecraftInstallEditSnapshot(await MinecraftInstallEditService.ReadAsync(new(editRoot, editInstance), token).ConfigureAwait(false)); break;
             case MinecraftServiceProtocol.InstallRun:
                 var command = reader.MinecraftInstallCommand() ?? throw new InvalidDataException("Missing Minecraft install command."); reader.End();
                 var result = await installation.InstallAsync(command, token).ConfigureAwait(false);

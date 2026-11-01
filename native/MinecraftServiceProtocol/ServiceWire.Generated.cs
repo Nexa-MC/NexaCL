@@ -50,6 +50,13 @@ internal sealed partial class ServiceWireWriter
         Count(value.Count);
         foreach (var item in value) CapturedSettingValue(item);
     }
+    internal void IReadOnlyList_InstallBuildSelection(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallBuildSelection>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstallBuildSelection(item);
+    }
     internal void IReadOnlyList_InstallDownload(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallDownload>? value)
     {
         if (value is null) { Int32(-1); return; }
@@ -98,6 +105,13 @@ internal sealed partial class ServiceWireWriter
         using var scope = EnterValue();
         Count(value.Count);
         foreach (var item in value) MinecraftInstallAddon(item);
+    }
+    internal void IReadOnlyList_MinecraftInstallManagedFile(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.MinecraftInstallManagedFile>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) MinecraftInstallManagedFile(item);
     }
     internal void IReadOnlyList_MinecraftLibraryToken(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Libraries.MinecraftLibraryToken>? value)
     {
@@ -161,6 +175,13 @@ internal sealed partial class ServiceWireWriter
         using var scope = EnterValue();
         Count(value.Count);
         foreach (var item in value) TaskCenterStep(item);
+    }
+    internal void InstallBuildSelection(global::Nexa.Services.Minecraft.Install.InstallBuildSelection? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        InstallLoader(value.Loader);
+        String(value.Version);
     }
     internal void InstallDownload(global::Nexa.Services.Minecraft.Install.InstallDownload? value)
     {
@@ -380,6 +401,26 @@ internal sealed partial class ServiceWireWriter
         Nullable_Boolean(value.InheritVanilla);
         LocalJarArtifact(value.LocalInstaller);
         String(value.NewInstanceName);
+    }
+    internal void MinecraftInstallEditSnapshot(global::Nexa.Services.Minecraft.Install.MinecraftInstallEditSnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.RootDirectory);
+        String(value.InstanceId);
+        String(value.GameVersion);
+        IReadOnlyList_InstallBuildSelection(value.Selection);
+        String(value.Fingerprint);
+        IReadOnlyList_MinecraftInstallManagedFile(value.ManagedMods);
+        String(value.ModsRelativeDirectory);
+    }
+    internal void MinecraftInstallManagedFile(global::Nexa.Services.Minecraft.Install.MinecraftInstallManagedFile? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Path);
+        String(value.Sha256);
+        Nullable_InstallLoader(value.Loader);
     }
     internal void MinecraftInstallRecoveryCommand(global::Nexa.Services.Minecraft.Install.MinecraftInstallRecoveryCommand? value)
     {
@@ -805,6 +846,14 @@ internal sealed partial class ServiceWireWriter
         String(value.Value);
     }
     internal void SettingsOverrideMode(global::Nexa.Services.Settings.SettingsOverrideMode value) => Int32((int)value);
+    internal void SettingsRenameReceipt(global::Nexa.Services.Settings.SettingsRenameReceipt? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Source);
+        String(value.Destination);
+        String(value.Identity);
+    }
     internal void TaskCenterEntry(global::Nexa.Services.Tasks.TaskCenterEntry? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -912,6 +961,14 @@ internal sealed partial class ServiceWireReader
         for (int index = 0; index < count; index++) value[index] = CapturedSettingValue() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallBuildSelection>? IReadOnlyList_InstallBuildSelection()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Install.InstallBuildSelection[count];
+        for (int index = 0; index < count; index++) value[index] = InstallBuildSelection() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
     internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.InstallDownload>? IReadOnlyList_InstallDownload()
     {
         int count = Count(); if (count == -1) return null;
@@ -966,6 +1023,14 @@ internal sealed partial class ServiceWireReader
         using var scope = EnterValue();
         var value = new global::Nexa.Services.Minecraft.Install.MinecraftInstallAddon[count];
         for (int index = 0; index < count; index++) value[index] = MinecraftInstallAddon() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Install.MinecraftInstallManagedFile>? IReadOnlyList_MinecraftInstallManagedFile()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Install.MinecraftInstallManagedFile[count];
+        for (int index = 0; index < count; index++) value[index] = MinecraftInstallManagedFile() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
     internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Libraries.MinecraftLibraryToken>? IReadOnlyList_MinecraftLibraryToken()
@@ -1039,6 +1104,14 @@ internal sealed partial class ServiceWireReader
         var value = new global::Nexa.Services.Tasks.TaskCenterStep[count];
         for (int index = 0; index < count; index++) value[index] = TaskCenterStep() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
+    }
+    internal global::Nexa.Services.Minecraft.Install.InstallBuildSelection? InstallBuildSelection()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = InstallLoader();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Install.InstallBuildSelection(p0, p1!);
     }
     internal global::Nexa.Services.Minecraft.Install.InstallDownload? InstallDownload()
     {
@@ -1280,6 +1353,28 @@ internal sealed partial class ServiceWireReader
         var p10 = LocalJarArtifact();
         var p11 = String();
         return new global::Nexa.Services.Minecraft.Install.MinecraftInstallCommand(p0!, p1!, p2, p3!, p4!, p5!, p6!) { DefaultIsolationMode = p7!, ForceReinstall = p8, InheritVanilla = p9, LocalInstaller = p10!, NewInstanceName = p11! };
+    }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftInstallEditSnapshot? MinecraftInstallEditSnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = IReadOnlyList_InstallBuildSelection() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = IReadOnlyList_MinecraftInstallManagedFile() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p6 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Install.MinecraftInstallEditSnapshot(p0!, p1!, p2!, p3!, p4!) { ManagedMods = p5!, ModsRelativeDirectory = p6! };
+    }
+    internal global::Nexa.Services.Minecraft.Install.MinecraftInstallManagedFile? MinecraftInstallManagedFile()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = Nullable_InstallLoader();
+        return new global::Nexa.Services.Minecraft.Install.MinecraftInstallManagedFile(p0!, p1!, p2);
     }
     internal global::Nexa.Services.Minecraft.Install.MinecraftInstallRecoveryCommand? MinecraftInstallRecoveryCommand()
     {
@@ -1732,6 +1827,15 @@ internal sealed partial class ServiceWireReader
         return new global::Nexa.Services.Settings.SettingsOverride(p0, p1!);
     }
     internal global::Nexa.Services.Settings.SettingsOverrideMode SettingsOverrideMode() { int value = Int32(); return value is 0 or 1 or 2 ? (global::Nexa.Services.Settings.SettingsOverrideMode)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Settings.SettingsRenameReceipt? SettingsRenameReceipt()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Settings.SettingsRenameReceipt(p0!, p1!, p2!);
+    }
     internal global::Nexa.Services.Tasks.TaskCenterEntry? TaskCenterEntry()
     {
         if (!Boolean()) return null;
@@ -1790,5 +1894,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "BA71C3B6D5ED70AEBFE3D71E4657B442775E2B044ABA05DAFCC62B225C531D6E";
+    internal const string Fingerprint = "3559B4C3D2B431814EB59362EC403EE88122EDDA7A27C2413310B9B4838268A9";
 }
