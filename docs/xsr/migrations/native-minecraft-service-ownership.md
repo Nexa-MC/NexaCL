@@ -55,3 +55,14 @@ Core-port validation: warning-free Release build, 97-project architecture gate,
 automatic coverage over 28 assemblies/14,964 executable bodies, and a clean native
 rebuild with different Git/release metadata. The Minecraft image SHA-256 remains
 `7045f6a422353d65e90e5a71a0c758ef00f0779ebad829e429b1f54b0972db1f`.
+
+### Optional Java version components
+
+Cross-platform CI discovered real Java installations represented by two- or
+three-component System.Version values. The generated four-component constructor
+rejected their omitted build/revision components (-1). The version codec keeps the
+existing nullable/four-integer wire layout, validates component combinations and
+chooses the matching two-, three- or four-component local constructor. Its schema
+fingerprint changes so an outdated caller cannot silently decode a new owner.
+The independent caller explicitly covers all three arities, null and malformed
+negative/omitted components before inspecting any machine-specific Java runtimes.

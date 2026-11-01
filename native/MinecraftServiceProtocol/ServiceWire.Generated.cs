@@ -379,10 +379,7 @@ internal sealed partial class ServiceWireWriter
     {
         Boolean(value is not null); if (value is null) return;
         using var scope = EnterValue();
-        Int32(value.Major);
-        Int32(value.Minor);
-        Int32(value.Build);
-        Int32(value.Revision);
+        Int32(value.Major); Int32(value.Minor); Int32(value.Build); Int32(value.Revision);
     }
     internal void XsrError(global::Nexa.Xsr.XsrError? value)
     {
@@ -806,11 +803,12 @@ internal sealed partial class ServiceWireReader
     {
         if (!Boolean()) return null;
         using var scope = EnterValue();
-        var p0 = Int32();
-        var p1 = Int32();
-        var p2 = Int32();
-        var p3 = Int32();
-        return new global::System.Version(p0, p1, p2, p3);
+        int major = Int32(), minor = Int32(), build = Int32(), revision = Int32();
+        if (major < 0 || minor < 0 || build < -1 || revision < -1 || build == -1 && revision != -1)
+            throw new global::System.IO.InvalidDataException("Invalid service version components.");
+        return build == -1 ? new global::System.Version(major, minor)
+            : revision == -1 ? new global::System.Version(major, minor, build)
+            : new global::System.Version(major, minor, build, revision);
     }
     internal global::Nexa.Xsr.XsrError? XsrError()
     {
@@ -826,5 +824,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "E4292C7C9EDEA536EBE3783B4D42C1DB2A86F78D638B92A6783581988F86EF89";
+    internal const string Fingerprint = "3C83D3500DDE6BC047C2F274FEC6D8E5D0C1B7CADB037E471867D08C491EAF60";
 }

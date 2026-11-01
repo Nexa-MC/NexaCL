@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Nexa.Native.Minecraft.Client;
+using Nexa.Native.Services.Wire;
 using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.ModLoaders;
 using Nexa.Services.Minecraft.Process;
@@ -16,6 +17,20 @@ if (args is ["--jvm-host"])
 }
 
 using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(90)); var token = deadline.Token;
+foreach (Version? version in new Version?[] { null, new(8, 0), new(17, 0, 12), new(21, 0, 5, 9) })
+{
+    using var writer = new ServiceWireWriter(); writer.Version(version);
+    using var reader = new ServiceWireReader(writer.Finish());
+    if (!Equals(version, reader.Version())) throw new InvalidDataException("Native version components were not preserved."); reader.End();
+}
+foreach (var components in new[] { new[] { 21, 0, -1, 1 }, new[] { -1, 0, -1, -1 }, new[] { 21, -1, 0, -1 }, new[] { 21, 0, -2, -1 } })
+{
+    using var writer = new ServiceWireWriter(); writer.Boolean(true);
+    foreach (int component in components) writer.Int32(component);
+    using var reader = new ServiceWireReader(writer.Finish()); bool rejected = false;
+    try { _ = reader.Version(); } catch (InvalidDataException) { rejected = true; }
+    if (!rejected) throw new InvalidDataException("Malformed optional version components were accepted.");
+}
 string root = Path.Combine(Path.GetTempPath(), "nexa-native-minecraft-实例-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 try

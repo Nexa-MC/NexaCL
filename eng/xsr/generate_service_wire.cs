@@ -48,7 +48,7 @@ static string Id(Type t) => t.IsGenericType ? t.Name.Split('`')[0] + "_" + strin
 static string Name(Type t) => t.IsGenericType ? "global::" + t.GetGenericTypeDefinition().FullName!.Split('`')[0] + "<" + string.Join(", ", t.GetGenericArguments().Select(Name)) + ">"
     : t.IsArray ? Name(t.GetElementType()!) + "[]" : "global::" + t.FullName!.Replace('+', '.');
 static bool Special(Type t) => t.IsPrimitive || t.IsEnum || t == typeof(string) || t == typeof(byte[])
-    || t == typeof(Uri) || t == typeof(Guid) || t == typeof(DateTimeOffset) || t == typeof(TimeSpan)
+    || t == typeof(Uri) || t == typeof(Guid) || t == typeof(DateTimeOffset) || t == typeof(TimeSpan) || t == typeof(Version)
     || t == typeof(ReadOnlyMemory<byte>) || t.FullName is "Nexa.Core.Media.PngImage" or "Nexa.Xsr.XsrSemanticId";
 static Type? Element(Type t) => t.IsArray ? t.GetElementType() : t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IReadOnlyList<>) ? t.GetGenericArguments()[0] : null;
 static bool StringMap(Type t) => t == typeof(IReadOnlyDictionary<string, string>);
@@ -63,6 +63,14 @@ static (PropertyInfo[] Properties, int Positional) Shape(Type t)
 void Emit(Type type, bool write)
 {
     string id = Id(type), name = Name(type);
+    if (type == typeof(Version))
+    {
+        if (write) schema.AppendLine("System.Version:nullable scalar-components-v1");
+        code.Append(write
+            ? "    internal void Version(global::System.Version? value)\n    {\n        Boolean(value is not null); if (value is null) return;\n        using var scope = EnterValue();\n        Int32(value.Major); Int32(value.Minor); Int32(value.Build); Int32(value.Revision);\n    }\n"
+            : "    internal global::System.Version? Version()\n    {\n        if (!Boolean()) return null;\n        using var scope = EnterValue();\n        int major = Int32(), minor = Int32(), build = Int32(), revision = Int32();\n        if (major < 0 || minor < 0 || build < -1 || revision < -1 || build == -1 && revision != -1)\n            throw new global::System.IO.InvalidDataException(\"Invalid service version components.\");\n        return build == -1 ? new global::System.Version(major, minor)\n            : revision == -1 ? new global::System.Version(major, minor, build)\n            : new global::System.Version(major, minor, build, revision);\n    }\n");
+        return;
+    }
     if (Special(type) && !type.IsEnum) { if (write) schema.AppendLine(type.FullName + ":scalar"); return; }
     if (type.IsEnum)
     {
