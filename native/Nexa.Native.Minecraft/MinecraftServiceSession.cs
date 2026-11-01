@@ -1,9 +1,11 @@
 using Nexa.Native.Minecraft.Http;
 using Nexa.Native.Minecraft.Services;
+using Nexa.Native.Network.Client;
 using Nexa.Native.Services;
 using Nexa.Native.Services.Wire;
 using Nexa.Native.Ui;
 using Nexa.Services.Caching;
+using Nexa.Services.Downloads;
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Crash;
 using Nexa.Services.Minecraft.Java;
@@ -24,10 +26,16 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
     private readonly TaskCenterService _tasks;
     private readonly NetworkHttpStreamHandler _hostHttp;
     private readonly HttpClient _http;
+    private readonly HttpClient _metadataHttp;
     private readonly RemoteMinecraftDownloads _downloads;
+    private readonly DownloadService _sessionDownloads;
     private MinecraftInstanceDiscovery? _instances;
     private MinecraftProcessService? _processes;
     private JavaRuntimeInventoryService? _java;
+    private JavaRuntimeInstaller? _javaInstaller;
+    private long _javaProgressRevision;
+    private readonly SemaphoreSlim _javaAdmission = new(32, 32);
+    private readonly System.Collections.Concurrent.ConcurrentQueue<int> _javaSlots = new(Enumerable.Range(3, 32));
 
     internal MinecraftServiceSession(NativeUiCallTable peer)
     {
@@ -36,8 +44,18 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
         _endpoint.Connect(peer);
         _downloads = new(_endpoint);
         _hostHttp = new((request, token) => _endpoint.InvokeAsync(request, token), _ => []);
-        _http = new(_hostHttp) { Timeout = Timeout.InfiniteTimeSpan };
-        XsrStateStoreBuilder builder = new(); MinecraftProcessStateComposition.DeclareState(builder); TaskCenterStateContract.DeclareState(builder); _store = builder.Build();
+#if NEXA_NATIVE_SERVICES
+        _http = NativeHttpClients.CreateDescribed(_hostHttp, _downloads.DescribeAsync);
+#else
+        _http = new(_hostHttp);
+#endif
+        _http.Timeout = TimeSpan.FromMinutes(10);
+        _metadataHttp = new(_hostHttp, disposeHandler: false) { Timeout = TimeSpan.FromMinutes(2) };
+        XsrStateStoreBuilder builder = new(); MinecraftProcessStateComposition.DeclareState(builder); TaskCenterStateContract.DeclareState(builder); DownloadService.DeclareState(builder); _store = builder.Build();
+        _sessionDownloads = new(_store);
+#if NEXA_NATIVE_SERVICES
+        _sessionDownloads.AttachNative(_downloads);
+#endif
         _tasks = new(_store); _publications = new(_endpoint); _store.Changed += Changed;
     }
     internal NativeUiCallTable Table => _endpoint.Table;
@@ -96,6 +114,8 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
                 _processes = new(hostStore: _store, jvmHostExecutable: jvmHost)
                 { ArchitectureValidator = new Nexa.Platform.PlatformJvmArchitectureValidator() };
                 _java = new(new LocalJavaRuntimeLocator(java));
+                _javaInstaller = new(new JavaRuntimeDownloadPlanService(new HttpJavaRuntimeMetadataProvider(_metadataHttp)), _http, tasks: _tasks)
+                { SessionDownloads = _sessionDownloads };
             }
             finally { _initialization.Release(); }
             return [];
@@ -144,6 +164,35 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
                 var inventory = await _java!.ReadAsync(new(refresh), token).ConfigureAwait(false);
                 if (!inventory.IsSuccess) throw new InvalidOperationException("Java inventory is unavailable.");
                 writer.JavaRuntimeInventorySnapshot(inventory.Value); break;
+            case MinecraftServiceProtocol.JavaInstall:
+                long call = reader.Int64(); string component = reader.String() ?? throw new InvalidDataException("Missing Java component.");
+                string runtimeRoot = reader.String() ?? throw new InvalidDataException("Missing runtime root."); string? fingerprint = reader.String(); reader.End();
+                if (call <= 0) throw new InvalidDataException("Invalid Java install call.");
+                await _javaAdmission.WaitAsync(token).ConfigureAwait(false);
+                if (!_javaSlots.TryDequeue(out int javaSlot)) { _javaAdmission.Release(); throw new InvalidOperationException("Java progress slot accounting failed."); }
+                try
+                {
+                    var progress = new JavaProgress(value => _publications.Post(javaSlot, Interlocked.Increment(ref _javaProgressRevision), () =>
+                    {
+                        using var publication = MinecraftServiceProtocol.Request(MinecraftServiceProtocol.JavaProgress);
+                        publication.Int64(call); publication.JavaRuntimeInstallProgress(value); return publication.Finish();
+                    }));
+                    string installed = fingerprint is null
+                        ? await _javaInstaller!.InstallAsync(component, runtimeRoot, progress, token).ConfigureAwait(false)
+                        : await _javaInstaller!.InstallConfirmedAsync(component, runtimeRoot, fingerprint, progress, token).ConfigureAwait(false);
+                    writer.String(installed);
+                }
+                finally
+                {
+                    try { await _publications.FlushAsync(CancellationToken.None).ConfigureAwait(false); }
+                    finally { _javaSlots.Enqueue(javaSlot); _javaAdmission.Release(); }
+                }
+                break;
+            case MinecraftServiceProtocol.JavaStop:
+                bool pause = reader.Boolean(); reader.End(); writer.XsrError((await _javaInstaller!.StopAsync(new(pause), token).ConfigureAwait(false)).Error); break;
+            case MinecraftServiceProtocol.JavaRecover:
+                string recoveryRoot = reader.String() ?? throw new InvalidDataException("Missing Java recovery root."); reader.End();
+                writer.XsrError((await _javaInstaller!.RecoverAsync(recoveryRoot, token).ConfigureAwait(false)).Error); break;
             case MinecraftServiceProtocol.TaskRetry:
                 string retry = reader.String() ?? throw new InvalidDataException("Missing task identity."); reader.End();
                 writer.Boolean(_tasks.RequestRetry(retry)); break;
@@ -206,11 +255,17 @@ internal sealed class MinecraftServiceSession : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _endpoint.StopAsync().ConfigureAwait(false);
+        if (_javaInstaller is not null) await _javaInstaller.StopAsync(new(Pause: true)).ConfigureAwait(false);
         await _tasks.DisposeAsync().ConfigureAwait(false);
         if (_processes is not null) await _processes.DisposeAsync().ConfigureAwait(false);
-        _http.Dispose(); await _hostHttp.DisposeAsync().ConfigureAwait(false);
+        _metadataHttp.Dispose(); _http.Dispose(); await _hostHttp.DisposeAsync().ConfigureAwait(false);
+        _sessionDownloads.Dispose();
+        _javaInstaller?.Dispose();
         _store.Changed -= Changed; await _publications.DisposeAsync().ConfigureAwait(false);
         await _cache.DisposeAsync().ConfigureAwait(false);
         await _endpoint.DisposeAsync().ConfigureAwait(false); _initialization.Dispose();
+        _javaAdmission.Dispose();
     }
+    private sealed class JavaProgress(Action<JavaRuntimeInstallProgress> report) : IProgress<JavaRuntimeInstallProgress>
+    { public void Report(JavaRuntimeInstallProgress value) => report(value); }
 }

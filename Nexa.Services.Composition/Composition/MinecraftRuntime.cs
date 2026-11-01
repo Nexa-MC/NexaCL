@@ -52,6 +52,10 @@ public sealed class MinecraftRuntime : IDisposable
 
 public static class MinecraftRuntimeComposer
 {
+#if NEXA_NATIVE_SERVICES
+    private sealed class JavaInvalidationLease(Nexa.Native.Minecraft.Client.NativeMinecraftClient minecraft, IJavaRuntimeLocator locator) : IDisposable
+    { public void Dispose() => minecraft.RuntimesChanged -= locator.Invalidate; }
+#endif
     private sealed class NullDispatchObserver : IXsrDispatchObserver
     {
         public static readonly NullDispatchObserver Instance = new();
@@ -143,15 +147,21 @@ public static class MinecraftRuntimeComposer
             javaMetadataHttp.DefaultRequestHeaders.UserAgent.ParseAdd("NexaCL/2.0");
             HttpJavaRuntimeMetadataProvider metadata = new(javaMetadataHttp, ownsClient: true);
             manualJavaMetadata = metadata;
+            owned.Add(metadata);
+#if NEXA_NATIVE_SERVICES
+            installer = host.NativeMinecraft;
+            host.NativeMinecraft.RuntimesChanged += locator.Invalidate;
+            owned.Add(new JavaInvalidationLease(host.NativeMinecraft, locator));
+#else
             HttpClient javaDownloadHttp = host.CreateHttpClient();
             javaDownloadHttp.Timeout = TimeSpan.FromMinutes(10);
             JavaRuntimeInstaller concreteInstaller = new(new JavaRuntimeDownloadPlanService(metadata), javaDownloadHttp,
                 ownsHttpClient: true, log: host.Logging, tasks: host.Tasks)
             { BandwidthLimiter = host.Downloads.BandwidthLimiter, SessionDownloads = host.Downloads };
-            owned.Add(metadata);
             concreteInstaller.RuntimesChanged += locator.Invalidate;
             owned.Add(concreteInstaller);
             installer = concreteInstaller;
+#endif
         }
         else
         {
@@ -211,6 +221,16 @@ public static class MinecraftRuntimeComposer
         { WorkScheduler = host.Work, JavaRegistrations = host.JavaRegistrations };
         IXsrDispatchObserver dispatchObserver = observer ?? NullDispatchObserver.Instance;
         XsrCommandRouterBuilder commandBuilder = new();
+#if NEXA_NATIVE_SERVICES
+        if (installer is Nexa.Native.Minecraft.Client.NativeMinecraftClient nativeJava)
+        {
+            commandBuilder.Register<JavaInstallStopCommand>(JavaInstallRoutes.Stop,
+                (command, token) => new(nativeJava.StopJavaAsync(command.Pause, token)));
+            commandBuilder.Register<JavaInstallRecoverCommand>(JavaInstallRoutes.Recover,
+                (_, token) => new(nativeJava.RecoverJavaAsync(runtimeRoot, token)));
+        }
+        else
+#endif
         if (installer is JavaRuntimeInstaller durableInstaller)
         {
             commandBuilder.Register<JavaInstallStopCommand>(JavaInstallRoutes.Stop,

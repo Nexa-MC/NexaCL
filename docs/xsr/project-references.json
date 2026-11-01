@@ -10,7 +10,7 @@
   "Nexa.Native.Media": [],
   "Nexa.Native.Minecraft": ["Nexa.Services.Minecraft.Metadata", "Nexa.Services.Minecraft.Java", "Nexa.Services.Minecraft.Process", "Nexa.Native.Network.Client"],
   "Nexa.Native.Minecraft.Client": ["Nexa.Services.Minecraft.Library.Contracts", "Nexa.Services.Minecraft.Java.Contracts", "Nexa.Services.Minecraft.Process.Contracts", "Nexa.Services.Minecraft.Crash.Contracts", "Nexa.Native.Network.Client", "Nexa.Services.Settings.Contracts"],
-  "Nexa.Native.Minecraft.Services.Tests": ["Nexa.Native.Minecraft.Client"],
+  "Nexa.Native.Minecraft.Services.Tests": ["Nexa.Native.Minecraft.Client", "Nexa.Services.Common"],
   "Nexa.Native.Markup": [],
   "Nexa.Native.Artwork": [],
   "Nexa.Xsr.Renderer.Artwork": ["Nexa.Core"],

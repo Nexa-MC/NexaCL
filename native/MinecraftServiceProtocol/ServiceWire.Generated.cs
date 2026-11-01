@@ -158,6 +158,16 @@ internal sealed partial class ServiceWireWriter
         Boolean(value.IsAvailable);
         JavaSource(value.Source);
     }
+    internal void JavaRuntimeInstallProgress(global::Nexa.Services.Minecraft.Java.JavaRuntimeInstallProgress? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Stage);
+        Double(value.Progress);
+        Int32(value.CompletedFiles);
+        Int32(value.TotalFiles);
+        String(value.Detail);
+    }
     internal void JavaRuntimeInventorySnapshot(global::Nexa.Services.Minecraft.Java.JavaRuntimeInventorySnapshot? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -754,6 +764,17 @@ internal sealed partial class ServiceWireReader
         var p3 = JavaSource();
         return new global::Nexa.Services.Minecraft.Java.JavaRuntimeCandidate(p0!, p1, p2, p3);
     }
+    internal global::Nexa.Services.Minecraft.Java.JavaRuntimeInstallProgress? JavaRuntimeInstallProgress()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Double();
+        var p2 = Int32();
+        var p3 = Int32();
+        var p4 = String();
+        return new global::Nexa.Services.Minecraft.Java.JavaRuntimeInstallProgress(p0!, p1, p2, p3, p4!);
+    }
     internal global::Nexa.Services.Minecraft.Java.JavaRuntimeInventorySnapshot? JavaRuntimeInventorySnapshot()
     {
         if (!Boolean()) return null;
@@ -1202,5 +1223,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "22BBBE9B5B411F9348AE4DA3F81983E88801C7893D42DC4077783395A9B486CD";
+    internal const string Fingerprint = "D88410677A41EACF99AC1F6912B3EE974C12B823392DBDC9C40A74C7E5971B87";
 }

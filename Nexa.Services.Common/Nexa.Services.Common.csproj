@@ -30,6 +30,7 @@
     <InternalsVisibleTo Include="Nexa.Services.Telemetry" />
     <InternalsVisibleTo Include="Nexa.Services.Tests" />
     <InternalsVisibleTo Include="Nexa.Native.Network" />
+    <InternalsVisibleTo Include="Nexa.Native.Minecraft" />
     <InternalsVisibleTo Include="Nexa.Services.Updates" />
   </ItemGroup>
 </Project>

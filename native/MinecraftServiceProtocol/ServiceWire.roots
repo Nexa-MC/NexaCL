@@ -12,3 +12,4 @@ Nexa.Native.Network.Client|Nexa.Native.Network.Services.NativeDownloadRequest
 Nexa.Native.Network.Client|Nexa.Native.Network.Services.NativeDownloadOutcome
 Nexa.Services.Common.Contracts|Nexa.Services.Downloads.DownloadProgress
 Nexa.Services.Settings.Contracts|Nexa.Services.Settings.CapturedSettingsSnapshot
+Nexa.Services.Minecraft.Java.Contracts|Nexa.Services.Minecraft.Java.JavaRuntimeInstallProgress

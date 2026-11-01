@@ -102,3 +102,32 @@ passes with the 82-shape schema
 `22BBBE9B5B411F9348AE4DA3F81983E88801C7893D42DC4077783395A9B486CD`.
 The full install/launch/management migration and actual production traffic through
 the new host bridge remain required before declaring Minecraft ownership complete.
+
+## Java acquisition ownership
+
+The production Java installer now runs in the Minecraft owner. Its generated
+asynchronous port carries component, absolute destination, optional reviewed-plan
+fingerprint and bounded progress. The UI adapter implements the existing confirmed
+installer contract; cancellation and close wait for the owner request and progress
+worker to retire. The owner keeps durable install/recovery journals and task retry
+actions. Task controls address the imported Minecraft partition in the canonical
+host task collection.
+
+Native Minecraft publishing, CI and reproducibility verification all select
+`NexaNativeServices=true`. The owner attaches its descriptor-only download facade to
+the reverse port and uses the host's existing native network session. Metadata
+retains its two-minute timeout, and Java file acquisition retains ten minutes.
+An independent NativeAOT caller installs a hash-verified file from a loopback server
+through this full chain, checks imported terminal task state and owner-side history
+dismissal, and closes Minecraft before retiring the host network dependency.
+
+Manual preview/registration, complete launch and instance management still need
+their remaining production routes moved before Minecraft ownership is complete.
+
+Java acquisition validation: the independent NativeAOT caller passes the real
+installation, canonical network/work admission, imported task cleanup, process
+redaction/cancellation and physical shutdown cases with 83 generated DTO shapes
+(`D88410677A41EACF99AC1F6912B3EE974C12B823392DBDC9C40A74C7E5971B87`).
+The fixture uses an HTTPS manifest identity and an explicitly described loopback
+transport; production journal URL checks remain intact. All 107 release-script
+tests pass.

@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-from publish_launcher import ENGINES, SERVICES, ROOT, module_name, stable_ui_properties
+from publish_launcher import ENGINES, SERVICES, ROOT, module_name, stable_ui_properties, engine_service_properties
 
 
 def verify(rid, payload, selected=None):
@@ -30,7 +30,7 @@ def verify(rid, payload, selected=None):
                       "-p:XsrVersionChannel=stable", "-p:XsrVersionPrefix=1.0.0",
                       "-p:XsrVersionSequence=999", "-p:XsrCommitShort=ffffff",
                       "-p:SourceRevisionId=" + "f" * 40, "-p:RepositoryCommit=" + "f" * 40]
-            common = stable_ui_properties(common)
+            common = [*stable_ui_properties(common), *engine_service_properties(engine)]
             if engine in SERVICES:
                 common = [*common, "-p:NexaExternalModules=true", "-p:NexaNativeServices=false"]
             intermediate = project.parent / "obj" / "Release" / "net10.0" / rid

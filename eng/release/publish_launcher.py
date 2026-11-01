@@ -11,6 +11,10 @@ ENGINES = ("Pac", "Crypto", "Network", "Updates", "Media", "Minecraft", "Markup"
 SERVICES = ("Accounts",)
 
 
+def engine_service_properties(engine):
+    return ["-p:NexaNativeServices=true"] if engine == "Minecraft" else []
+
+
 def stable_ui_properties(properties):
     return [*properties, "-p:XsrVersionChannel=stable", "-p:XsrVersionPrefix=1.0.0",
             "-p:IncludeSourceRevisionInInformationalVersion=false", "-p:EnableSourceLink=false",
@@ -63,7 +67,7 @@ def publish(rid, output, properties):
         for engine in ENGINES:
             directory = stage / engine.lower()
             subprocess.run(["dotnet", "publish", str(ROOT / f"native/Nexa.Native.{engine}/Nexa.Native.{engine}.csproj"),
-                            *common, *stable_ui_properties([]),
+                            *common, *stable_ui_properties([]), *engine_service_properties(engine),
                             "--output", str(directory)], check=True)
             binary = directory / (f"Nexa.Native.{engine}" + Path(module).suffix)
             if not binary.is_file():
