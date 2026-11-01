@@ -72,6 +72,11 @@ internal static class JavaInstallCases
         if (!renamed.IsSuccess || !File.Exists(Path.Combine(renamed.Value!.InstanceDirectory, "renamed-game.jar"))
             || Directory.Exists(game.Value.InstanceDirectory) || settings.RenameWrites != 1)
             throw new InvalidDataException("Native game rename did not coordinate files with the canonical settings transaction.");
+        var recovery = await minecraft.ReadRecoveryAsync(new(renamed.Value!.InstanceDirectory), token);
+        if (!recovery.IsSuccess || recovery.Value!.BaselineRevision is not null)
+            throw new InvalidDataException("Native recovery comparison invented a successful-run baseline.");
+        if (!(await minecraft.ResumeRecoveryAsync(new([gameRoot]), token)).IsSuccess)
+            throw new InvalidDataException("Native recovery replay rejected a clean installation.");
         settings.Hold = true;
         var waitingInstall = minecraft.InstallMinecraftAsync(new(Path.Combine(directory, "waiting-install"), "1.20.1"), token);
         await settings.Entered.Task.WaitAsync(token);

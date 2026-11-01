@@ -15,6 +15,7 @@ internal static class MinecraftServiceProtocol
     internal const int JavaInspect = 66, JavaProperties = 67, JavaModules = 68;
     internal const int InstallConfigure = 70, InstallRun = 71, InstallStop = 72, InstallRecover = 73, InstallModpack = 74;
     internal const int InstallEditRead = 75;
+    internal const int RecoveryRead = 80, RecoveryRestore = 81, RecoveryResume = 82;
 
     internal static ServiceWireWriter Request(int operation)
     {

@@ -11,35 +11,39 @@ internal static partial class Program
 {
     private static async ValueTask JvmHostSuccessfulExitAutomaticallyCreatesRecoveryBaseline()
     {
-        string root = CreateTempDirectory();
-        try
+        foreach (bool remote in new[] { false, true })
         {
-            string instance = Path.Combine(root, "versions", "test"); Directory.CreateDirectory(instance);
-            File.WriteAllText(Path.Combine(instance, "test.json"), """{"id":"test","_minecraftVersion":"1.20.1"}""");
-            string jar = Path.Combine(instance, "test.jar"); File.WriteAllText(jar, "client");
-            var (_, settings) = PolicyFixture();
-            var builder = new XsrStateStoreBuilder(); MinecraftProcessStateComposition.DeclareState(builder);
-            var state = builder.Build();
-            var processes = new MinecraftProcessService(new RecoveryExitPort(), hostStore: state);
-            var host = new JvmHostService(processes, recovery: new InstanceRecoveryService(settings, state));
-            MinecraftLaunchPlan plan = new("java", instance, ["example.Main"], [], [], new MinecraftModLoaderDescriptor(MinecraftModLoaderKind.Vanilla, null, "example.Main", []))
-            { MainClassIndex = 0, MinecraftRootDirectory = root, InstanceDirectory = instance, GameDirectory = instance, ClientJarPath = jar };
-            await using var session = await host.StartAsync(plan, "test");
-            session.ConfirmGameWindow();
-            session.Process.StandardInput.Close();
-            await session.WaitForExitAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
-            var store = new RecoverySnapshotStore(instance, instance);
-            RecoverySnapshot? snapshot = null;
-            long start = Environment.TickCount64;
-            while (snapshot is null && Environment.TickCount64 - start < 10000)
+            string root = CreateTempDirectory();
+            try
             {
-                snapshot = await store.ReadAsync();
-                if (snapshot is null) await Task.Delay(25);
+                string instance = Path.Combine(root, "versions", "test"); Directory.CreateDirectory(instance);
+                File.WriteAllText(Path.Combine(instance, "test.json"), """{"id":"test","_minecraftVersion":"1.20.1"}""");
+                string jar = Path.Combine(instance, "test.jar"); File.WriteAllText(jar, "client");
+                var (_, settings) = PolicyFixture();
+                ISettingsRecoveryTransactions transactions = remote ? new AsyncRecoveryPort(settings) : settings;
+                var builder = new XsrStateStoreBuilder(); MinecraftProcessStateComposition.DeclareState(builder);
+                var state = builder.Build();
+                var processes = new MinecraftProcessService(new RecoveryExitPort(), hostStore: state);
+                var host = new JvmHostService(processes, recovery: new InstanceRecoveryService(transactions, state));
+                MinecraftLaunchPlan plan = new("java", instance, ["example.Main"], [], [], new MinecraftModLoaderDescriptor(MinecraftModLoaderKind.Vanilla, null, "example.Main", []))
+                { MainClassIndex = 0, MinecraftRootDirectory = root, InstanceDirectory = instance, GameDirectory = instance, ClientJarPath = jar };
+                await using var session = await host.StartAsync(plan, "test");
+                session.ConfirmGameWindow();
+                session.Process.StandardInput.Close();
+                await session.WaitForExitAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+                var store = new RecoverySnapshotStore(instance, instance);
+                RecoverySnapshot? snapshot = null;
+                long start = Environment.TickCount64;
+                while (snapshot is null && Environment.TickCount64 - start < 10000)
+                {
+                    snapshot = await store.ReadAsync();
+                    if (snapshot is null) await Task.Delay(25);
+                }
+                AssertTrue(snapshot is not null);
+                AssertEqual(2, snapshot!.Files.Count);
             }
-            AssertTrue(snapshot is not null);
-            AssertEqual(2, snapshot!.Files.Count);
+            finally { Directory.Delete(root, true); }
         }
-        finally { Directory.Delete(root, true); }
     }
 
     private sealed class RecoveryExitPort : IMinecraftProcessPort

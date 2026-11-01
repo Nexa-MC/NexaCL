@@ -79,8 +79,8 @@ public sealed partial class InstanceRecoveryService
                     Nexa.Core.PathIdentity.Comparer.Equals(snapshotStore.ResolveSource(item.Source), path))?.Blob;
                 files.Add(new(source, before, after));
             }
-            var settingsPlan = settings.PlanRecoverySettings(instance, prepared.Snapshot.SettingsDocument,
-                selected.Where(item => item.SettingKey is not null).Select(item => item.SettingKey!).ToArray());
+            var settingsPlan = await PlanSettingsAsync(instance, prepared.Snapshot.SettingsDocument,
+                selected.Where(item => item.SettingKey is not null).Select(item => item.SettingKey!).ToArray(), token).ConfigureAwait(false);
             // Hash again after preparation: never silently incorporate an external edit into the transaction.
             comparison = await ReadInternalAsync(new(instance), true, token).ConfigureAwait(false);
             if (!comparison.IsSuccess || comparison.Value!.Fingerprint != command.Fingerprint)

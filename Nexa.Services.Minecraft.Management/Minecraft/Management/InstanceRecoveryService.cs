@@ -8,9 +8,25 @@ using Nexa.Xsr.State;
 namespace Nexa.Services.Minecraft.Management;
 
 /// <summary>Owns best-effort background capture after a confirmed successful game session.</summary>
-public sealed partial class InstanceRecoveryService(SettingsPolicyService settings, XsrStateStore store, LogService? log = null)
+public sealed partial class InstanceRecoveryService(ISettingsRecoveryTransactions settings, XsrStateStore store, LogService? log = null)
 {
+    public InstanceRecoveryService(SettingsPolicyService settings, XsrStateStore store, LogService? log = null)
+        : this((ISettingsRecoveryTransactions)settings, store, log) { }
     public IWorkScheduler? WorkScheduler { get; init; }
+    private async ValueTask<string> CaptureSettingsAsync(string instance, CancellationToken token)
+    {
+        if (settings is SettingsPolicyService local) return local.CaptureRecoverySettings(instance);
+        var result = await settings.CaptureRecoveryAsync(instance, token).ConfigureAwait(false);
+        if (!result.IsSuccess) throw new IOException(result.Error!.Message);
+        return SettingsRecoveryCodec.Encode(result.Value!);
+    }
+    private async ValueTask<RecoverySettingsPlan> PlanSettingsAsync(string instance, string baseline, IReadOnlyList<string> keys, CancellationToken token)
+    {
+        if (settings is SettingsPolicyService local) return local.PlanRecoverySettings(instance, baseline, keys);
+        var result = await settings.PlanRecoveryAsync(instance, SettingsRecoveryCodec.Decode(baseline), keys, token).ConfigureAwait(false);
+        if (!result.IsSuccess) throw new IOException(result.Error!.Message);
+        return result.Value!;
+    }
     internal Task<bool> RecordSuccessfulExitAsync(MinecraftLaunchPlan plan, MinecraftProcessSnapshot session,
         bool hasCrashEvidence, CancellationToken token = default) => Task.Run(async () =>
     {
@@ -27,9 +43,9 @@ public sealed partial class InstanceRecoveryService(SettingsPolicyService settin
             var stop = cancellation.Token;
             string instance = Path.GetFullPath(plan.InstanceDirectory), game = Path.GetFullPath(plan.GameDirectory);
             string manifest = Path.Combine(instance, Path.GetFileName(instance) + ".json");
-            bool KeepHistory()
+            async ValueTask<bool> KeepHistory(CancellationToken ct)
             {
-                var effective = settings.Read(new(instance));
+                var effective = await settings.ReadAsync(new(instance), ct).ConfigureAwait(false);
                 if (!effective.IsSuccess) throw new InvalidDataException("无法读取快照保留设置。");
                 var retention = effective.Value!.Values.Single(item => item.Key == "recovery.keep-history");
                 var development = effective.Value.Values.Single(item => item.Key == "instance.development-mode");
@@ -37,8 +53,8 @@ public sealed partial class InstanceRecoveryService(SettingsPolicyService settin
                     throw new InvalidDataException("快照保留设置无效。");
                 return bool.Parse(retention.Value.Value!) || bool.Parse(development.Value.Value!);
             }
-            bool keepHistory = KeepHistory();
-            string baselineSettings = settings.CaptureRecoverySettings(instance);
+            bool keepHistory = await KeepHistory(stop).ConfigureAwait(false);
+            string baselineSettings = await CaptureSettingsAsync(instance, stop).ConfigureAwait(false);
             async Task Validate(CancellationToken ct)
             {
                 ct.ThrowIfCancellationRequested();
@@ -51,7 +67,7 @@ public sealed partial class InstanceRecoveryService(SettingsPolicyService settin
                 var metadata = await new MinecraftInstanceMetadataStore().LoadAsync(instance, ct).ConfigureAwait(false);
                 string expectedGame = metadata.InstanceIsolation ? instance : Path.GetFullPath(root);
                 if (!Nexa.Core.PathIdentity.Comparer.Equals(expectedGame, game)
-                    || settings.CaptureRecoverySettings(instance) != baselineSettings || KeepHistory() != keepHistory)
+                    || await CaptureSettingsAsync(instance, ct).ConfigureAwait(false) != baselineSettings || await KeepHistory(ct).ConfigureAwait(false) != keepHistory)
                     throw new IOException("采集期间版本设置发生变化。");
             }
             IReadOnlyList<RecoverySource> sources;

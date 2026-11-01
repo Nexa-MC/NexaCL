@@ -49,3 +49,18 @@ window startup/OS closure. Clean rebuilds with changed product/Git metadata reta
 identical images: Network SHA-256
 `0b747f78a72e083dd1522bc5587627999c1c5d79559fbb262f7a95b5704c42bf`, UI
 `fe397d8b6629b55924fda79304918b82b73779d23477f649cf6226cd8609194c`.
+
+## Minecraft work scopes
+
+Minecraft links the same provisional work-lease implementation under its own
+protocol identity, as its credited HTTP bridge already does. Catalog prefetch,
+recovery and launch use the host's existing scheduler; they do not construct a
+second resource budget. Local priority scopes remain local AsyncLocal values.
+
+Launch quiet admission needs an additive asynchronous interface. Preserve the
+existing local synchronous APIs, while native launch awaits host quiet admission
+before proceeding. Quiet handles use provisional claim, bounded ownership and
+asynchronous release/grace operations. Confirmed-window grace and process exit keep
+their current semantics; retirement drains pending releases and host timers before
+callback tables can close. Never implement the old synchronous method by blocking
+on a native request.

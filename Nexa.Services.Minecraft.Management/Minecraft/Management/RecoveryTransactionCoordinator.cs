@@ -9,7 +9,7 @@ namespace Nexa.Services.Minecraft.Management;
 internal static class RecoveryTransactionCoordinator
 {
     internal static async Task ExecuteAsync(RecoveryPreparedRestore prepared, IReadOnlyList<RecoveryFileEdit> files,
-        RecoverySettingsPlan plan, SettingsPolicyService settings, Func<CancellationToken, Task> validate,
+        RecoverySettingsPlan plan, ISettingsRecoveryTransactions settings, Func<CancellationToken, Task> validate,
         bool restoreLeaseHeld = false, CancellationToken token = default)
     {
         RecoveryFileTransaction.Validate(prepared, new(prepared.Snapshot.InstanceDirectory, prepared.Snapshot.GameDirectory), files);
@@ -24,7 +24,7 @@ internal static class RecoveryTransactionCoordinator
             await validate(token).ConfigureAwait(false);
             await WriteStateAsync(prepared, hash, "settings-applying", true, token).ConfigureAwait(false);
             settingsAttempted = true;
-            var applied = settings.ApplyRecoverySettingsPlan(plan, reverse: false);
+            var applied = await settings.ApplyRecoveryAsync(plan, reverse: false, token).ConfigureAwait(false);
             if (!applied.IsSuccess) throw new IOException(applied.Error?.Message ?? "无法提交恢复设置。");
             // Settings may already be durable: finish the commit record even if the request was cancelled.
             await WriteStateAsync(prepared, hash, "committed", true, CancellationToken.None).ConfigureAwait(false);
@@ -38,11 +38,11 @@ internal static class RecoveryTransactionCoordinator
         }
     }
 
-    internal static async Task RecoverAsync(RecoveryPreparedRestore prepared, SettingsPolicyService settings,
+    internal static async Task RecoverAsync(RecoveryPreparedRestore prepared, ISettingsRecoveryTransactions settings,
         Func<CancellationToken, Task> validate, CancellationToken token = default) =>
         await RecoverUnderLeaseAsync(prepared, settings, validate, false, token).ConfigureAwait(false);
 
-    internal static async Task RecoverUnderLeaseAsync(RecoveryPreparedRestore prepared, SettingsPolicyService settings,
+    internal static async Task RecoverUnderLeaseAsync(RecoveryPreparedRestore prepared, ISettingsRecoveryTransactions settings,
         Func<CancellationToken, Task> validate, bool restoreLeaseHeld, CancellationToken token = default)
     {
         using var exclusive = restoreLeaseHeld ? null : await InstanceRecoveryOperationGate.EnterRestoreAsync(Root(prepared), token).ConfigureAwait(false);
@@ -79,10 +79,10 @@ internal static class RecoveryTransactionCoordinator
     }
 
     private static async Task RollbackCoreAsync(RecoveryPreparedRestore prepared, RecoverySettingsPlan plan, string hash,
-        bool settingsAttempted, SettingsPolicyService settings, CancellationToken token)
+        bool settingsAttempted, ISettingsRecoveryTransactions settings, CancellationToken token)
     {
         await WriteStateAsync(prepared, hash, "rolling-back", settingsAttempted, token).ConfigureAwait(false);
-        if (settingsAttempted && !settings.ApplyRecoverySettingsPlan(plan, reverse: true).IsSuccess)
+        if (settingsAttempted && !(await settings.ApplyRecoveryAsync(plan, reverse: true, token).ConfigureAwait(false)).IsSuccess)
             throw new IOException("启动设置发生冲突，已保留恢复记录。");
         string files = Path.Combine(prepared.Directory, "apply.json"); RecoveryBlobStore.CheckLinks(files);
         if (File.Exists(files)) await RecoveryFileTransaction.RollbackAsync(prepared, token).ConfigureAwait(false);

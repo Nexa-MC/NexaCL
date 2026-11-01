@@ -82,3 +82,20 @@ conversion; they are not native messages. The canonical host validates the same
 settings scope, selected keys, temporary-profile restrictions, current revision and
 conditional persistence. File/settings compensation keeps its existing order and
 awaits settings commit or rollback before recording the transaction outcome.
+
+Recovery service validation: all 59 related recovery/rename tests pass after the
+asynchronous adaptation. The successful-exit baseline and file/settings coordinator
+tests additionally run through a delayed settings interface as well as the local
+adapter; both pass. They cover stale revision compensation, successful commit,
+startup replay and automatic baseline capture after a confirmed successful session.
+Existing tests continue to preserve private arguments and inheritance, and reject
+wrong scopes and incomplete baselines.
+The independent NativeAOT caller passes the 142-shape protocol
+(`093F28C23C90CD533CA816276FEFFB4B072EDE4778B4C6E18AA5E72EBC71BAA7`),
+including recovery comparison without an invented baseline and clean startup
+replay. Existing real installation, rename, Java and physical-shutdown scenarios
+pass. Complete native successful-session capture remains part of full launch
+ownership, rather than being inferred from the empty-baseline protocol case.
+Production native-service composition compiles without warnings or errors after
+the recovery adaptation.
+The architecture gate passes for all 97 projects.

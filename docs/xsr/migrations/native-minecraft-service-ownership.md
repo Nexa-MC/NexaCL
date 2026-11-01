@@ -182,3 +182,9 @@ while installation is awaiting an asynchronous host policy query: shutdown first
 pauses installation, drains that query, rejects late success and then closes the
 remaining endpoint. Initialization/configuration admission closes before this
 sequence. This preserves pause semantics before the generic request cancellation.
+
+Instance recovery belongs to the same Minecraft owner: comparison, restore and
+startup replay operate over its process state and await canonical host settings
+capture/planning/commit/rollback. The owner references Management directly; its
+static caller references only Management.Contracts. Production routing moves once
+the shared work/process ownership required by this lifetime is present.

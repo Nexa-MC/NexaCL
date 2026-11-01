@@ -132,6 +132,8 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
             return await ExecuteJavaManagementAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.InstallConfigure and <= MinecraftServiceProtocol.InstallEditRead)
             return await ExecuteInstallationAsync(operation, reader, token).ConfigureAwait(false);
+        if (operation is >= MinecraftServiceProtocol.RecoveryRead and <= MinecraftServiceProtocol.RecoveryResume)
+            return await ExecuteRecoveryAsync(operation, reader, token).ConfigureAwait(false);
         switch (operation)
         {
             case MinecraftServiceProtocol.Versions:

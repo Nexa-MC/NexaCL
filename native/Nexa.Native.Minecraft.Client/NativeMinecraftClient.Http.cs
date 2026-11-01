@@ -44,6 +44,8 @@ public sealed partial class NativeMinecraftClient
         if (operation is MinecraftHostOperations.SettingsSnapshot or MinecraftHostOperations.SettingsPolicyRead
             or MinecraftHostOperations.SettingsRenamePrepare or MinecraftHostOperations.SettingsRenameApply)
             return ExecuteSettingsAsync(operation, bytes, token);
+        if (operation is MinecraftHostOperations.SettingsRecoveryCapture or MinecraftHostOperations.SettingsRecoveryPlan or MinecraftHostOperations.SettingsRecoveryApply)
+            return ExecuteSettingsRecoveryAsync(operation, bytes, token);
         throw new InvalidDataException("Unknown Minecraft host operation.");
     }
     private async Task<byte[]> ExecuteHttpAsync(int operation, ReadOnlyMemory<byte> bytes, CancellationToken token)

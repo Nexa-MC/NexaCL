@@ -64,6 +64,13 @@ internal sealed partial class ServiceWireWriter
         Count(value.Count);
         foreach (var item in value) InstallDownload(item);
     }
+    internal void IReadOnlyList_InstanceRecoveryChange(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceRecoveryChange(item);
+    }
     internal void IReadOnlyList_Int32(global::System.Collections.Generic.IReadOnlyList<global::System.Int32>? value)
     {
         if (value is null) { Int32(-1); return; }
@@ -162,6 +169,20 @@ internal sealed partial class ServiceWireWriter
         Count(value.Count);
         foreach (var item in value) SettingsEffectiveValue(item);
     }
+    internal void IReadOnlyList_SettingsMutation(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Settings.SettingsMutation>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) SettingsMutation(item);
+    }
+    internal void IReadOnlyList_SettingsRecoveryValue(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Settings.SettingsRecoveryValue>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) SettingsRecoveryValue(item);
+    }
     internal void IReadOnlyList_String(global::System.Collections.Generic.IReadOnlyList<global::System.String>? value)
     {
         if (value is null) { Int32(-1); return; }
@@ -194,6 +215,50 @@ internal sealed partial class ServiceWireWriter
         Int64(value.Size);
     }
     internal void InstallLoader(global::Nexa.Services.Minecraft.Install.InstallLoader value) => Int32((int)value);
+    internal void InstanceRecoveryChange(global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        InstanceRecoveryChangeKind(value.Kind);
+        String(value.Category);
+        String(value.Path);
+        String(value.SettingKey);
+        String(value.Area);
+        String(value.RelatedPath);
+    }
+    internal void InstanceRecoveryChangeKind(global::Nexa.Services.Minecraft.Management.InstanceRecoveryChangeKind value) => Int32((int)value);
+    internal void InstanceRecoveryQuery(global::Nexa.Services.Minecraft.Management.InstanceRecoveryQuery? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+    }
+    internal void InstanceRecoveryReport(global::Nexa.Services.Minecraft.Management.InstanceRecoveryReport? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        Nullable_Guid(value.BaselineRevision);
+        Nullable_DateTimeOffset(value.CapturedAt);
+        IReadOnlyList_InstanceRecoveryChange(value.Changes);
+        String(value.Fingerprint);
+        String(value.UnavailableReason);
+    }
+    internal void InstanceRecoveryRestoreCommand(global::Nexa.Services.Minecraft.Management.InstanceRecoveryRestoreCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        Guid(value.BaselineRevision);
+        String(value.Fingerprint);
+        IReadOnlyList_InstanceRecoveryChange(value.Changes);
+    }
+    internal void InstanceRecoveryResumeCommand(global::Nexa.Services.Minecraft.Management.InstanceRecoveryResumeCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        IReadOnlyList_String(value.Roots);
+    }
     internal void JavaArchitecture(global::Nexa.Services.Minecraft.Java.JavaArchitecture value) => Int32((int)value);
     internal void JavaBrand(global::Nexa.Services.Minecraft.Java.JavaBrand value) => Int32((int)value);
     internal void JavaInstallation(global::Nexa.Services.Minecraft.Java.JavaInstallation? value)
@@ -776,6 +841,10 @@ internal sealed partial class ServiceWireWriter
     {
         Boolean(value.HasValue); if (value.HasValue) DateTimeOffset(value.Value);
     }
+    internal void Nullable_Guid(global::System.Nullable<global::System.Guid> value)
+    {
+        Boolean(value.HasValue); if (value.HasValue) Guid(value.Value);
+    }
     internal void Nullable_InstallLoader(global::System.Nullable<global::Nexa.Services.Minecraft.Install.InstallLoader> value)
     {
         Boolean(value.HasValue); if (value.HasValue) InstallLoader(value.Value);
@@ -809,6 +878,15 @@ internal sealed partial class ServiceWireWriter
         Boolean(value.HasValue); if (value.HasValue) TimeSpan(value.Value);
     }
     internal void ProcessPriorityClass(global::System.Diagnostics.ProcessPriorityClass value) => Int32((int)value);
+    internal void RecoverySettingsPlan(global::Nexa.Services.Settings.RecoverySettingsPlan? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        Int64(value.Revision);
+        IReadOnlyList_SettingsMutation(value.Before);
+        IReadOnlyList_SettingsMutation(value.After);
+    }
     internal void SettingValueType(global::Nexa.Services.Settings.SettingValueType value) => Int32((int)value);
     internal void SettingsApplyTiming(global::Nexa.Services.Settings.SettingsApplyTiming value) => Int32((int)value);
     internal void SettingsEffectiveQuery(global::Nexa.Services.Settings.SettingsEffectiveQuery? value)
@@ -838,6 +916,17 @@ internal sealed partial class ServiceWireWriter
         String(value.ValidationError);
     }
     internal void SettingsLayer(global::Nexa.Services.Settings.SettingsLayer value) => Int32((int)value);
+    internal void SettingsMutation(global::Nexa.Services.Settings.SettingsMutation? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Key);
+        SettingsLayer(value.Layer);
+        SettingsOverride(value.Value);
+        String(value.InstanceId);
+        String(value.ProfileId);
+        String(value.TemporaryId);
+    }
     internal void SettingsOverride(global::Nexa.Services.Settings.SettingsOverride? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -846,6 +935,21 @@ internal sealed partial class ServiceWireWriter
         String(value.Value);
     }
     internal void SettingsOverrideMode(global::Nexa.Services.Settings.SettingsOverrideMode value) => Int32((int)value);
+    internal void SettingsRecoverySnapshot(global::Nexa.Services.Settings.SettingsRecoverySnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        IReadOnlyList_SettingsRecoveryValue(value.Values);
+    }
+    internal void SettingsRecoveryValue(global::Nexa.Services.Settings.SettingsRecoveryValue? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Key);
+        SettingsOverride(value.Override);
+        SettingsOverride(value.Effective);
+    }
     internal void SettingsRenameReceipt(global::Nexa.Services.Settings.SettingsRenameReceipt? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -977,6 +1081,14 @@ internal sealed partial class ServiceWireReader
         for (int index = 0; index < count; index++) value[index] = InstallDownload() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange>? IReadOnlyList_InstanceRecoveryChange()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceRecoveryChange() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
     internal global::System.Collections.Generic.IReadOnlyList<global::System.Int32>? IReadOnlyList_Int32()
     {
         int count = Count(); if (count == -1) return null;
@@ -1089,6 +1201,22 @@ internal sealed partial class ServiceWireReader
         for (int index = 0; index < count; index++) value[index] = SettingsEffectiveValue() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Settings.SettingsMutation>? IReadOnlyList_SettingsMutation()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Settings.SettingsMutation[count];
+        for (int index = 0; index < count; index++) value[index] = SettingsMutation() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Settings.SettingsRecoveryValue>? IReadOnlyList_SettingsRecoveryValue()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Settings.SettingsRecoveryValue[count];
+        for (int index = 0; index < count; index++) value[index] = SettingsRecoveryValue() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
     internal global::System.Collections.Generic.IReadOnlyList<global::System.String>? IReadOnlyList_String()
     {
         int count = Count(); if (count == -1) return null;
@@ -1125,6 +1253,55 @@ internal sealed partial class ServiceWireReader
         return new global::Nexa.Services.Minecraft.Install.InstallDownload(p0!, p1!, p2!, p3!, p4);
     }
     internal global::Nexa.Services.Minecraft.Install.InstallLoader InstallLoader() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10 or 11 ? (global::Nexa.Services.Minecraft.Install.InstallLoader)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange? InstanceRecoveryChange()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = InstanceRecoveryChangeKind();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String();
+        var p4 = String();
+        var p5 = String();
+        return new global::Nexa.Services.Minecraft.Management.InstanceRecoveryChange(p0, p1!, p2!, p3!) { Area = p4!, RelatedPath = p5! };
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceRecoveryChangeKind InstanceRecoveryChangeKind() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 ? (global::Nexa.Services.Minecraft.Management.InstanceRecoveryChangeKind)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Minecraft.Management.InstanceRecoveryQuery? InstanceRecoveryQuery()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceRecoveryQuery(p0!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceRecoveryReport? InstanceRecoveryReport()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Nullable_Guid();
+        var p2 = Nullable_DateTimeOffset();
+        var p3 = IReadOnlyList_InstanceRecoveryChange() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = String();
+        return new global::Nexa.Services.Minecraft.Management.InstanceRecoveryReport(p0!, p1, p2, p3!, p4!, p5!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceRecoveryRestoreCommand? InstanceRecoveryRestoreCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Guid();
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = IReadOnlyList_InstanceRecoveryChange() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceRecoveryRestoreCommand(p0!, p1, p2!, p3!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceRecoveryResumeCommand? InstanceRecoveryResumeCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceRecoveryResumeCommand(p0!);
+    }
     internal global::Nexa.Services.Minecraft.Java.JavaArchitecture JavaArchitecture() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 ? (global::Nexa.Services.Minecraft.Java.JavaArchitecture)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Minecraft.Java.JavaBrand JavaBrand() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10 or 11 or 12 ? (global::Nexa.Services.Minecraft.Java.JavaBrand)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Minecraft.Java.JavaInstallation? JavaInstallation()
@@ -1753,6 +1930,10 @@ internal sealed partial class ServiceWireReader
     {
         return Boolean() ? DateTimeOffset() : null;
     }
+    internal global::System.Nullable<global::System.Guid> Nullable_Guid()
+    {
+        return Boolean() ? Guid() : null;
+    }
     internal global::System.Nullable<global::Nexa.Services.Minecraft.Install.InstallLoader> Nullable_InstallLoader()
     {
         return Boolean() ? InstallLoader() : null;
@@ -1786,6 +1967,16 @@ internal sealed partial class ServiceWireReader
         return Boolean() ? TimeSpan() : null;
     }
     internal global::System.Diagnostics.ProcessPriorityClass ProcessPriorityClass() { int value = Int32(); return value is 32 or 64 or 128 or 256 or 16384 or 32768 ? (global::System.Diagnostics.ProcessPriorityClass)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Settings.RecoverySettingsPlan? RecoverySettingsPlan()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Int64();
+        var p2 = IReadOnlyList_SettingsMutation() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = IReadOnlyList_SettingsMutation() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Settings.RecoverySettingsPlan(p0!, p1, p2!, p3!);
+    }
     internal global::Nexa.Services.Settings.SettingValueType SettingValueType() { int value = Int32(); return value is 1 or 2 or 3 or 4 or 5 ? (global::Nexa.Services.Settings.SettingValueType)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Settings.SettingsApplyTiming SettingsApplyTiming() { int value = Int32(); return value is 0 or 1 or 2 or 3 ? (global::Nexa.Services.Settings.SettingsApplyTiming)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Settings.SettingsEffectiveQuery? SettingsEffectiveQuery()
@@ -1818,6 +2009,18 @@ internal sealed partial class ServiceWireReader
         return new global::Nexa.Services.Settings.SettingsEffectiveValue(p0!, p1!, p2, p3, p4!);
     }
     internal global::Nexa.Services.Settings.SettingsLayer SettingsLayer() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 ? (global::Nexa.Services.Settings.SettingsLayer)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Settings.SettingsMutation? SettingsMutation()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = SettingsLayer();
+        var p2 = SettingsOverride() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String();
+        var p4 = String();
+        var p5 = String();
+        return new global::Nexa.Services.Settings.SettingsMutation(p0!, p1, p2!, p3!) { ProfileId = p4!, TemporaryId = p5! };
+    }
     internal global::Nexa.Services.Settings.SettingsOverride? SettingsOverride()
     {
         if (!Boolean()) return null;
@@ -1827,6 +2030,23 @@ internal sealed partial class ServiceWireReader
         return new global::Nexa.Services.Settings.SettingsOverride(p0, p1!);
     }
     internal global::Nexa.Services.Settings.SettingsOverrideMode SettingsOverrideMode() { int value = Int32(); return value is 0 or 1 or 2 ? (global::Nexa.Services.Settings.SettingsOverrideMode)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Settings.SettingsRecoverySnapshot? SettingsRecoverySnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = IReadOnlyList_SettingsRecoveryValue() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Settings.SettingsRecoverySnapshot(p0!, p1!);
+    }
+    internal global::Nexa.Services.Settings.SettingsRecoveryValue? SettingsRecoveryValue()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = SettingsOverride();
+        var p2 = SettingsOverride() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Settings.SettingsRecoveryValue(p0!, p1!, p2!);
+    }
     internal global::Nexa.Services.Settings.SettingsRenameReceipt? SettingsRenameReceipt()
     {
         if (!Boolean()) return null;
@@ -1894,5 +2114,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "3559B4C3D2B431814EB59362EC403EE88122EDDA7A27C2413310B9B4838268A9";
+    internal const string Fingerprint = "093F28C23C90CD533CA816276FEFFB4B072EDE4778B4C6E18AA5E72EBC71BAA7";
 }

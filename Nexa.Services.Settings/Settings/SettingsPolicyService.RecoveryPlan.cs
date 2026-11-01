@@ -3,9 +3,6 @@ using Nexa.Xsr;
 
 namespace Nexa.Services.Settings;
 
-internal sealed record RecoverySettingsPlan(string InstanceDirectory, long Revision,
-    IReadOnlyList<SettingsMutation> Before, IReadOnlyList<SettingsMutation> After);
-
 public sealed partial class SettingsPolicyService
 {
     internal static JsonObject EncodeRecoverySettingsPlan(RecoverySettingsPlan plan)

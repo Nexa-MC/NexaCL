@@ -48,7 +48,7 @@ public sealed partial class InstanceRecoveryService
                     current.Add(path, (source, new(hash, length)));
                     stamps.Add((path, length, modified));
                 }
-                string currentSettings = settings.CaptureRecoverySettings(instance);
+                string currentSettings = await CaptureSettingsAsync(instance, stop).ConfigureAwait(false);
                 List<InstanceRecoveryChange> changes = [];
                 var previous = baseline.Files.ToDictionary(file => snapshotStore.ResolveSource(file.Source), Nexa.Core.PathIdentity.Comparer);
                 foreach (var file in baseline.Files)
@@ -88,7 +88,7 @@ public sealed partial class InstanceRecoveryService
                         "启动设置", title, key));
                 }
                 if (!sources.SequenceEqual(RecoveryCapturePlan.BuildComparison(root, baseline, stop))
-                    || currentSettings != settings.CaptureRecoverySettings(instance)
+                    || currentSettings != await CaptureSettingsAsync(instance, stop).ConfigureAwait(false)
                     || (await snapshotStore.ReadAsync(stop).ConfigureAwait(false))?.Revision != baseline.Revision)
                     throw new IOException("比较期间恢复范围发生变化。");
                 foreach (var stamp in stamps)

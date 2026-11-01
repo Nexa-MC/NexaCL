@@ -17,6 +17,7 @@ public sealed partial class NativeMinecraftClient
             ObjectDisposedException.ThrowIf(_closed, this);
             if (_settingsSnapshots is not null) throw new InvalidOperationException("Canonical settings are already attached.");
             _settingsSnapshots = snapshots; _settingsPolicies = policies; _settingsTransactions = policies as ISettingsRenameTransactions;
+            _settingsRecovery = policies as ISettingsRecoveryTransactions;
         }
     }
     private async Task<byte[]> ExecuteSettingsAsync(int operation, ReadOnlyMemory<byte> bytes, CancellationToken token)

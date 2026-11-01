@@ -8,45 +8,49 @@ internal static partial class Program
 {
     private static async ValueTask RecoveryCoordinatorCommitsAndCompensatesSettings()
     {
-        string root = CreateTempDirectory();
-        try
+        foreach (bool remote in new[] { false, true })
         {
-            string instance = Path.Combine(root, "versions", "test"); Directory.CreateDirectory(instance);
-            string file = Path.Combine(instance, "options.txt"); File.WriteAllText(file, "baseline");
-            var (_, settings) = PolicyFixture();
-            string settingsBaseline = settings.CaptureRecoverySettings(instance);
-            var snapshot = await new RecoverySnapshotStore(instance, instance).CaptureAsync([new("instance", "options.txt")], settingsBaseline);
-            File.WriteAllText(file, "current");
-            AssertTrue(settings.Set(new("game.arguments", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "current"), instance)).IsSuccess);
-            var plan = settings.PlanRecoverySettings(instance, settingsBaseline, ["game.arguments"]);
-            var decoded = SettingsPolicyService.DecodeRecoverySettingsPlan(SettingsPolicyService.EncodeRecoverySettingsPlan(plan));
-            AssertEqual(plan.Before.Single(), decoded.Before.Single()); AssertEqual(plan.After.Single(), decoded.After.Single());
-            var prepared = await RecoveryRestorePreparation.PrepareAsync(instance, instance, snapshot.Revision);
-            RecoveryFileEdit[] edits = [new(new("instance", "options.txt"), RecoveryTextBlob("current"), RecoveryTextBlob("baseline"))];
-            int validations = 0;
-            // A settings revision changes after the file phase: compensate files, preserve unrelated settings.
+            string root = CreateTempDirectory();
             try
             {
-                await RecoveryTransactionCoordinator.ExecuteAsync(prepared, edits, plan, settings, _ =>
+                string instance = Path.Combine(root, "versions", "test"); Directory.CreateDirectory(instance);
+                string file = Path.Combine(instance, "options.txt"); File.WriteAllText(file, "baseline");
+                var (_, settings) = PolicyFixture();
+                ISettingsRecoveryTransactions transactions = remote ? new AsyncRecoveryPort(settings) : settings;
+                string settingsBaseline = settings.CaptureRecoverySettings(instance);
+                var snapshot = await new RecoverySnapshotStore(instance, instance).CaptureAsync([new("instance", "options.txt")], settingsBaseline);
+                File.WriteAllText(file, "current");
+                AssertTrue(settings.Set(new("game.arguments", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "current"), instance)).IsSuccess);
+                var plan = settings.PlanRecoverySettings(instance, settingsBaseline, ["game.arguments"]);
+                var decoded = SettingsPolicyService.DecodeRecoverySettingsPlan(SettingsPolicyService.EncodeRecoverySettingsPlan(plan));
+                AssertEqual(plan.Before.Single(), decoded.Before.Single()); AssertEqual(plan.After.Single(), decoded.After.Single());
+                var prepared = await RecoveryRestorePreparation.PrepareAsync(instance, instance, snapshot.Revision);
+                RecoveryFileEdit[] edits = [new(new("instance", "options.txt"), RecoveryTextBlob("current"), RecoveryTextBlob("baseline"))];
+                int validations = 0;
+                // A settings revision changes after the file phase: compensate files, preserve unrelated settings.
+                try
                 {
-                    if (++validations == 2) AssertTrue(settings.Set(new("game.width", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "1024"))).IsSuccess);
-                    return Task.CompletedTask;
-                });
-                throw new InvalidOperationException("Stale settings committed.");
+                    await RecoveryTransactionCoordinator.ExecuteAsync(prepared, edits, plan, transactions, _ =>
+                    {
+                        if (++validations == 2) AssertTrue(settings.Set(new("game.width", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "1024"))).IsSuccess);
+                        return Task.CompletedTask;
+                    });
+                    throw new InvalidOperationException("Stale settings committed.");
+                }
+                catch (IOException) { }
+                AssertEqual("current", File.ReadAllText(file));
+                AssertEqual("current", Effective(settings, "game.arguments", instance).Value.Value);
+                AssertEqual("rolled-back", JsonNode.Parse(File.ReadAllText(Path.Combine(prepared.Directory, "transaction.json")))!["phase"]!.GetValue<string>());
+                prepared = await RecoveryRestorePreparation.PrepareAsync(instance, instance, snapshot.Revision);
+                plan = settings.PlanRecoverySettings(instance, settingsBaseline, ["game.arguments"]);
+                await RecoveryTransactionCoordinator.ExecuteAsync(prepared, edits, plan, transactions, _ => Task.CompletedTask);
+                AssertEqual("baseline", File.ReadAllText(file));
+                AssertFalse(settings.PreviewRecoverySettings(instance, settingsBaseline).Changes.Any(item => item.Key == "game.arguments"));
+                await RecoveryTransactionCoordinator.RecoverAsync(prepared, transactions, _ => Task.CompletedTask);
+                AssertEqual("baseline", File.ReadAllText(file));
             }
-            catch (IOException) { }
-            AssertEqual("current", File.ReadAllText(file));
-            AssertEqual("current", Effective(settings, "game.arguments", instance).Value.Value);
-            AssertEqual("rolled-back", JsonNode.Parse(File.ReadAllText(Path.Combine(prepared.Directory, "transaction.json")))!["phase"]!.GetValue<string>());
-            prepared = await RecoveryRestorePreparation.PrepareAsync(instance, instance, snapshot.Revision);
-            plan = settings.PlanRecoverySettings(instance, settingsBaseline, ["game.arguments"]);
-            await RecoveryTransactionCoordinator.ExecuteAsync(prepared, edits, plan, settings, _ => Task.CompletedTask);
-            AssertEqual("baseline", File.ReadAllText(file));
-            AssertFalse(settings.PreviewRecoverySettings(instance, settingsBaseline).Changes.Any(item => item.Key == "game.arguments"));
-            await RecoveryTransactionCoordinator.RecoverAsync(prepared, settings, _ => Task.CompletedTask);
-            AssertEqual("baseline", File.ReadAllText(file));
+            finally { Directory.Delete(root, true); }
         }
-        finally { Directory.Delete(root, true); }
     }
 
     private static async ValueTask RecoveryCoordinatorReopensInterruptedSettingsCommit()
