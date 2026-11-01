@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 import subprocess
 
-from publish_launcher import ROOT, module_names
+from publish_launcher import ENGINES, ROOT, module_name
 
 
 def test(rid, payload, output):
@@ -15,9 +15,10 @@ def test(rid, payload, output):
         "-p:PublishAot=true", "-p:NexaExternalModules=true", "-p:NexaNetworkTestInternals=false",
         "--output", str(output),
     ], check=True)
-    for name in module_names(rid):
-        if not name.startswith(("nexa-host.", "nexa-ui.")):
-            shutil.copy2(payload / name, output / name)
+    suffix = Path(module_name(rid)).suffix
+    for engine in ENGINES:
+        name = "nexa-" + engine.lower() + suffix
+        shutil.copy2(payload / name, output / name)
     executable = output / ("Nexa.Native.Network.Tests" + (".exe" if rid.startswith("win-") else ""))
     subprocess.run([str(executable)], check=True, timeout=90)
 

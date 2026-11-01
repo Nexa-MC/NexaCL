@@ -37,7 +37,7 @@ foreach (bool write in new[] { true, false })
     foreach (Type type in types.Values.OrderBy(Id, StringComparer.Ordinal)) Emit(type, write);
     code.Append("}\n\n");
 }
-string fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(schema.ToString())));
+string fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(schema.ToString().ReplaceLineEndings("\n"))));
 code.Append("internal static class ServiceWireSchema\n{\n    internal const string Fingerprint = \"" + fingerprint + "\";\n}\n");
 File.WriteAllText(args[2], code.ToString());
 Console.WriteLine($"Generated {types.Count} service DTO shapes: {fingerprint}");

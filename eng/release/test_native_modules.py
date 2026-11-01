@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from package import copy_runtime_payload, validate_payload
@@ -8,6 +9,20 @@ from publish_launcher import module_names, verify_host_module_isolation, verify_
 
 
 class NativeModulePayloadTests(unittest.TestCase):
+    def test_isolated_contract_caller_accepts_the_eight_engine_payload(self):
+        from publish_launcher import ENGINES
+        from verify_native_engine_contracts import test
+        with tempfile.TemporaryDirectory() as temporary:
+            payload, output = Path(temporary) / "engines", Path(temporary) / "caller"
+            payload.mkdir(); output.mkdir()
+            for engine in ENGINES:
+                (payload / ("nexa-" + engine.lower() + ".so")).write_bytes(engine.encode())
+            with patch("verify_native_engine_contracts.subprocess.run") as run:
+                test("linux-x64", payload, output)
+            self.assertEqual(2, run.call_count)
+            self.assertEqual({file.name: file.read_bytes() for file in payload.iterdir()},
+                             {file.name: file.read_bytes() for file in output.iterdir()})
+
     def test_each_platform_requires_all_nonempty_matching_native_modules(self):
         for platform in ("win", "linux", "osx"):
             for arch in ("x64", "arm64"):
