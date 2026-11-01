@@ -1,3 +1,4 @@
+#if !NEXA_NATIVE_SERVICES
 using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Management;
 using Nexa.Xsr;
@@ -26,3 +27,5 @@ public static class MinecraftSafeLaunchSessionRuntime
             (query, _) => ValueTask.FromResult(XsrResult.Success(coordinator.ReadSafeLaunchSession(query))));
     }
 }
+
+#endif

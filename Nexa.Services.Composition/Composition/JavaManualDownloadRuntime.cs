@@ -15,6 +15,7 @@ public static class JavaManualDownloadRuntime
         commands.Register<JavaManualCancelCommand>(JavaManualDownloadContract.Cancel, minecraft.CancelManualJavaAsync);
     }
 #endif
+#if !NEXA_NATIVE_SERVICES
     public static JavaManualDownloadService Register(XsrQueryRouterBuilder queries, XsrCommandRouterBuilder commands,
         IJavaRuntimeMetadataProvider metadata, IConfirmedJavaRuntimeInstaller installer, IJavaRuntimeLocator locator,
         IJavaRuntimeRegistrationStore registrations, string runtimeRoot)
@@ -30,4 +31,5 @@ public static class JavaManualDownloadRuntime
         commands.Register<JavaManualInstallCommand>(JavaManualDownloadContract.Install, service.InstallAsync);
         commands.Register<JavaManualCancelCommand>(JavaManualDownloadContract.Cancel, service.CancelAsync);
     }
+#endif
 }

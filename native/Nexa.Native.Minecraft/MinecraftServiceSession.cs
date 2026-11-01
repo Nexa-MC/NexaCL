@@ -146,6 +146,10 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         if (operation is >= MinecraftServiceProtocol.ResourceResourceNetworkPolicyQuery and <= MinecraftServiceProtocol.ResourceResourceModpackUpdateCommand)
             return await ExecuteResourceOperationAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.LibraryConfigure and <= MinecraftServiceProtocol.LibraryRememberRenamed) return await ExecuteLibraryAsync(operation, reader, token).ConfigureAwait(false);
+        if (operation == MinecraftServiceProtocol.EnvironmentFacts) return await ReadEnvironmentFactsAsync(reader, token).ConfigureAwait(false);
+        if (operation == MinecraftServiceProtocol.LocalDocuments) return await ReadLocalDocumentsAsync(reader, token).ConfigureAwait(false);
+        if (operation is MinecraftServiceProtocol.MigrationReceiptAuthorize or MinecraftServiceProtocol.MigrationReceiptVerify)
+            return await MigrationReceiptAsync(operation, reader, token).ConfigureAwait(false);
         if (operation == MinecraftServiceProtocol.Remediation) return await ExecuteRemediationAsync(reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.CatalogConfigure and <= MinecraftServiceProtocol.CatalogDraft or MinecraftServiceProtocol.CatalogDraftReplace)
             return await ExecuteCatalogAsync(operation, reader, token).ConfigureAwait(false);

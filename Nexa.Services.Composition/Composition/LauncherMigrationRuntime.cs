@@ -13,6 +13,7 @@ public static class LauncherMigrationRuntime
 {
     public const string TaskPrefix = "launcher-migrate:";
 
+#if !NEXA_NATIVE_SERVICES
     public static LauncherMigrationService CreateService(
         Func<LauncherMigrationInstallRequest, CancellationToken, Task>? install = null, Func<bool>? isIdle = null) =>
         new(install, isIdle, new ReceiptAuthority());
@@ -25,6 +26,16 @@ public static class LauncherMigrationRuntime
         public void Verify(string receiptPath, ReadOnlyMemory<byte> bytes) =>
             RecoveryRecordAuthority.Verify(receiptPath, bytes.Span);
     }
+#else
+    public static LauncherMigrationService CreateService(Func<LauncherMigrationInstallRequest, CancellationToken, Task>? install,
+        Func<bool>? isIdle, Func<Nexa.Native.Minecraft.Client.NativeMinecraftClient> minecraft) => new(install, isIdle, new ReceiptAuthority(minecraft));
+    private sealed class ReceiptAuthority(Func<Nexa.Native.Minecraft.Client.NativeMinecraftClient> minecraft) : ILauncherMigrationReceiptAuthority
+    {
+        public Task AuthorizeAsync(string receiptPath, ReadOnlyMemory<byte> bytes, CancellationToken token) => minecraft().AuthorizeMigrationReceiptAsync(receiptPath, bytes, token);
+        public void Verify(string receiptPath, ReadOnlyMemory<byte> bytes) => throw new NotSupportedException("Use asynchronous receipt verification.");
+        public Task VerifyAsync(string receiptPath, ReadOnlyMemory<byte> bytes, CancellationToken token) => minecraft().VerifyMigrationReceiptAsync(receiptPath, bytes, token);
+    }
+#endif
 
     public static IAsyncDisposable Register(XsrCommandRouterBuilder commands, XsrQueryRouterBuilder queries,
         LauncherMigrationService service, TaskCenterService tasks, Func<LauncherMigrationReceipt, bool>? canUndo = null)
@@ -66,9 +77,11 @@ public static class LauncherMigrationRuntime
         return await ExecuteAsync(tasks, title, action, operation.Token).ConfigureAwait(false);
     }
 
+#if !NEXA_NATIVE_SERVICES
     public static Task InstallAsync(MinecraftInstallService installer,
         LauncherMigrationInstallRequest request, CancellationToken token) => InstallAsync((IMinecraftInstallationPort)installer, request, token);
 
+#endif
     public static async Task InstallAsync(IMinecraftInstallationPort installer,
         LauncherMigrationInstallRequest request, CancellationToken token)
     {

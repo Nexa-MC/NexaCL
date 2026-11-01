@@ -27,6 +27,8 @@ public interface ILauncherMigrationReceiptAuthority
 {
     Task AuthorizeAsync(string receiptPath, ReadOnlyMemory<byte> bytes, CancellationToken token);
     void Verify(string receiptPath, ReadOnlyMemory<byte> bytes);
+    Task VerifyAsync(string receiptPath, ReadOnlyMemory<byte> bytes, CancellationToken token)
+    { token.ThrowIfCancellationRequested(); Verify(receiptPath, bytes); return Task.CompletedTask; }
 }
 
 public static class LauncherMigrationContract

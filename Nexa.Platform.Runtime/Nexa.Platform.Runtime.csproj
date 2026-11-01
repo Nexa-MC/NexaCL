@@ -14,6 +14,5 @@
     <InternalsVisibleTo Include="Nexa.Services.Minecraft.Process" />
     <InternalsVisibleTo Include="Nexa.Services.Composition" />
     <ProjectReference Include="../Nexa.Services.Capabilities.Contracts/Nexa.Services.Capabilities.Contracts.csproj" />
-    <ProjectReference Include="../Nexa.Services.Minecraft.Metadata/Nexa.Services.Minecraft.Metadata.csproj" />
   </ItemGroup>
 </Project>

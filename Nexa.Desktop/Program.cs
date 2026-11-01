@@ -413,7 +413,11 @@ internal static partial class Program
         Nexa.Services.Minecraft.Install.IMinecraftInstallationPort? migrationInstaller = null;
         IMinecraftLibraryPort? migrationLibrary = null;
         using var launcherMigration = LauncherMigrationRuntime.CreateService((request, token) => LauncherMigrationRuntime.InstallAsync(
-            migrationInstaller ?? throw new InvalidOperationException("游戏安装服务尚未就绪。"), request, token), LauncherMigrationIdle);
+            migrationInstaller ?? throw new InvalidOperationException("游戏安装服务尚未就绪。"), request, token), LauncherMigrationIdle
+#if NEXA_NATIVE_SERVICES
+            , () => host.NativeMinecraft
+#endif
+            );
         IAsyncDisposable? launcherMigrationLifetime = null;
         await using var diagnosticHistory = new DurableDiagnosticHistorySink(Path.Combine(folders.Root, "diagnostic-history"));
         host.Logging.AddSink(diagnosticHistory);
@@ -454,7 +458,7 @@ internal static partial class Program
                 ContentWorkspaceRuntime.Register(commands, queries, contentBackups, legacyMigration, diagnosticHistory, diagnosticAi);
                 launcherMigrationLifetime = LauncherMigrationRuntime.Register(commands, queries, launcherMigration, host.Tasks, receipt =>
                     migrationLibrary is not null && host.StateStore.Read<MinecraftLibrarySnapshot>(
-                        host.StateStore.Resolve(MinecraftLibraryService.StateKey)).Value!.Directories.Any(directory =>
+                        host.StateStore.Resolve(MinecraftLibraryContract.StateKey)).Value!.Directories.Any(directory =>
                             !receipt.Instances.Any(instance => Nexa.Core.PathIdentity.Comparer.Equals(
                                 instance.MinecraftRootDirectory, directory.Path))));
 #if !NEXA_NATIVE_SERVICES
@@ -647,7 +651,7 @@ internal static partial class Program
         using AccountFormController accountForm = new(shell, uiIntents, accounts.Commands,
             runtime.Host.StateStore, launchPage.AccountBody, feedback,
             new NativeAccountUiEffects(platformActions), runtime.Host.Logging);
-        var recoveryRoots = host.StateStore.Read<MinecraftLibrarySnapshot>(host.StateStore.Resolve(MinecraftLibraryService.StateKey)).Value?.Directories
+        var recoveryRoots = host.StateStore.Read<MinecraftLibrarySnapshot>(host.StateStore.Resolve(MinecraftLibraryContract.StateKey)).Value?.Directories
             .Select(directory => directory.Path).ToArray() ?? [minecraftRootDirectory];
         await using var installRecovery = new DesktopInstallRecoverySession(installRun.Commands, recoveryRoots,
             message => host.Logging.Warn("Install", message), minecraft.Commands, runtime.Commands);
@@ -723,15 +727,15 @@ internal static partial class Program
             host.StateStore, platformActions.OpenHttpsUri, functionPatches, sidecarSignals, sidecarUi);
         launchPage.ResourcesPage = resourcesPage.Page;
         resourcesPage.ConfigureDownloads(resourcesRuntime.Commands!, platformActions.PickDownloadDirectoryAsync, feedback);
-        resourcesPage.ConfigureModpackRoot(() => ((MinecraftLibrarySnapshot?)host.StateStore.ReadAppliedValue(host.StateStore.Resolve(MinecraftLibraryService.StateKey)))?.RootDirectory);
+        resourcesPage.ConfigureModpackRoot(() => ((MinecraftLibrarySnapshot?)host.StateStore.ReadAppliedValue(host.StateStore.Resolve(MinecraftLibraryContract.StateKey)))?.RootDirectory);
         resourcesPage.ConfigureInstanceFilter(installCatalog.Queries, () =>
         {
-            var selected = ((MinecraftLibrarySnapshot?)host.StateStore.ReadAppliedValue(host.StateStore.Resolve(MinecraftLibraryService.StateKey)))?.SelectedInstance;
+            var selected = ((MinecraftLibrarySnapshot?)host.StateStore.ReadAppliedValue(host.StateStore.Resolve(MinecraftLibraryContract.StateKey)))?.SelectedInstance;
             return selected is null ? null : new Nexa.Services.Minecraft.Install.MinecraftInstallEditQuery(
                 Path.GetDirectoryName(Path.GetDirectoryName(selected.DirectoryPath))!, selected.Id);
         }, installCatalog.Commands);
         using SettingsPageController versionSettings = new(shell, uiIntents, runtime.Queries, runtime.Commands, host.StateStore, feedback,
-            () => ((MinecraftLibrarySnapshot?)host.StateStore.ReadAppliedValue(host.StateStore.Resolve(MinecraftLibraryService.StateKey)))?.SelectedInstance?.DirectoryPath);
+            () => ((MinecraftLibrarySnapshot?)host.StateStore.ReadAppliedValue(host.StateStore.Resolve(MinecraftLibraryContract.StateKey)))?.SelectedInstance?.DirectoryPath);
         launchPage.VersionSettingsPage = versionSettings.Page;
         versionSettings.ExportDiagnostics = settingsPage.ExportDiagnostics;
         versionSettings.OpenManagementDirectory = platformActions.OpenDirectory;

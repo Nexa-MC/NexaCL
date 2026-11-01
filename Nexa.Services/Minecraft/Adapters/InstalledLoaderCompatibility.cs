@@ -8,8 +8,8 @@ namespace Nexa.Services.Capabilities;
 
 internal sealed class InstalledLoaderCompatibility(IInstallCatalogSource? source = null, ISharedStateCache? sharedCache = null)
 {
-    private static readonly HttpClient Http = new(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(8) };
-    private static readonly IInstallCatalogSource DefaultSource = new HttpInstallCatalogSource(Http);
+    private static readonly Lazy<IInstallCatalogSource> DefaultSource = new(() => new HttpInstallCatalogSource(
+        new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(8) }));
 
     internal async Task<bool?> EvaluateAsync(MinecraftResolvedVersionManifests manifests, MinecraftModLoaderDescriptor loader, CancellationToken token)
     {
@@ -61,7 +61,7 @@ internal sealed class InstalledLoaderCompatibility(IInstallCatalogSource? source
         {
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
             deadline.CancelAfter(TimeSpan.FromSeconds(8));
-            IReadOnlyList<InstallCatalogVersion> fetched = await (source ?? DefaultSource)
+            IReadOnlyList<InstallCatalogVersion> fetched = await (source ?? DefaultSource.Value)
                 .GetLoadersAsync(kind.Value, game, deadline.Token).ConfigureAwait(false);
             return Array.AsReadOnly(fetched.Where(item => !string.IsNullOrWhiteSpace(item.Id))
                 .DistinctBy(item => item.Id, StringComparer.Ordinal).ToArray());

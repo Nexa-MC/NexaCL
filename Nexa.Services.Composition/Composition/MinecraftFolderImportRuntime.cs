@@ -47,6 +47,7 @@ public static class MinecraftFolderImportRuntimeComposer
         return new(commands.Build(observer), queries.Build(observer));
     }
 #endif
+#if !NEXA_NATIVE_SERVICES
     public static MinecraftFolderImportRuntime Compose(FoundationHost host, MinecraftLibraryService library, MinecraftInstallService installer, IXsrDispatchObserver observer)
     {
         var service = new MinecraftFolderImportService(host.Tasks);
@@ -91,4 +92,5 @@ public static class MinecraftFolderImportRuntimeComposer
         });
         return new(commands.Build(observer), queries.Build(observer));
     }
+#endif
 }

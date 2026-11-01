@@ -1,4 +1,4 @@
-#if NEXA_NATIVE_SERVICES
+#if NEXA_NATIVE_SERVICES && !NEXA_MINECRAFT_FACT_OWNER
 using AccountService = Nexa.Native.Accounts.Client.NativeAccountService;
 #endif
 using System.Text.Json.Nodes;
@@ -8,10 +8,13 @@ using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Install;
 using Nexa.Services.Minecraft.Java;
 using Nexa.Services.Minecraft.Launch;
+#if !NEXA_NATIVE_SERVICES || NEXA_MINECRAFT_FACT_OWNER
 using Nexa.Services.Minecraft.ModLoaders;
+#endif
 
 namespace Nexa.Services.Capabilities;
 
+#if !NEXA_NATIVE_SERVICES || NEXA_MINECRAFT_FACT_OWNER
 /// <summary>
 /// Loader version fallback: Fabric-profile manifests carry no version string, but the loader
 /// jar in mods/ names it exactly — the edit page reads the same fact from there.
@@ -94,6 +97,7 @@ public static class LoaderVersionProjections
 public sealed class LoaderCapabilityProvider(string? minecraftRootDirectory) : IMachineCapabilityProvider
 {
     public ISharedStateCache? SharedStateCache { get; init; }
+    public IInstallCatalogSource? CatalogSource { get; init; }
     public string Id => MachineInstanceCatalog.LoaderProviderId;
 
     public async ValueTask<IReadOnlyList<ICapability>> CollectAsync(DateTimeOffset timestamp, CancellationToken cancellationToken)
@@ -117,7 +121,7 @@ public sealed class LoaderCapabilityProvider(string? minecraftRootDirectory) : I
             : null;
         string? loaderVersion = loader.Version ?? heuristicVersion;
         bool vanilla = loader.Kind is MinecraftModLoaderKind.Vanilla;
-        bool? compatible = await new InstalledLoaderCompatibility(sharedCache: SharedStateCache).EvaluateAsync(primary.Manifests, loader, cancellationToken).ConfigureAwait(false);
+        bool? compatible = await new InstalledLoaderCompatibility(CatalogSource, SharedStateCache).EvaluateAsync(primary.Manifests, loader, cancellationToken).ConfigureAwait(false);
         // The version reader THROWS on a missing inheritsFrom parent, so reaching here means
         // the chain resolved. Self-contained loader jsons (no inheritsFrom) are complete too —
         // treating them as broken fired LOADER_INCOMPATIBLE on healthy installs.
@@ -152,6 +156,9 @@ public sealed class LoaderCapabilityProvider(string? minecraftRootDirectory) : I
             CapabilityAvailability.DependencyMissing, timestamp, reason)).ToArray());
 }
 
+#endif
+
+#if !NEXA_MINECRAFT_FACT_OWNER
 /// <summary>account.* launch-capability facts from the real roster.</summary>
 public sealed class AccountCapabilityProvider(AccountService accounts) : IMachineCapabilityProvider
 {
@@ -187,6 +194,9 @@ public sealed class AccountCapabilityProvider(AccountService accounts) : IMachin
     }
 }
 
+#endif
+
+#if !NEXA_NATIVE_SERVICES || NEXA_MINECRAFT_FACT_OWNER
 /// <summary>
 /// Instance-scoped java facts: the requirement resolved from the primary manifest (XSR-608
 /// machinery) and whether an installed runtime satisfies it. Runs the real selection.
@@ -297,3 +307,5 @@ public static class JavaCompatibilityProjection
         return (null, null);
     }
 }
+
+#endif

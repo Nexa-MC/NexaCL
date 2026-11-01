@@ -23,7 +23,7 @@ def verify(rid, output, payload=None):
                     "--roots", str(ROOT / "native/MinecraftServiceProtocol/ServiceWire.roots"),
                     "--output", str(ROOT / "native/MinecraftServiceProtocol/ServiceWire.Generated.cs"), "--check"], check=True)
     libraries = json.loads((ROOT / "tests/Nexa.Native.Minecraft.Services.Tests/obj/project.assets.json").read_text())["libraries"]
-    if any(name.split("/")[0] == "Nexa.Native.Minecraft" or name.split("/")[0].startswith("Nexa.Services.Minecraft.")
+    if any(name.split("/")[0] in {"Nexa.Native.Minecraft", "Nexa.Services.Resources"} or name.split("/")[0].startswith("Nexa.Services.Minecraft.")
            and not name.split("/")[0].endswith(".Contracts") for name in libraries):
         raise RuntimeError("Minecraft caller embedded an owner implementation")
     owner_libraries = json.loads((ROOT / "native/Nexa.Native.Minecraft/obj/project.assets.json").read_text())["libraries"]

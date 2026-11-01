@@ -95,6 +95,7 @@ internal static class JavaInstallCases
         await ManagementCases.RunAsync(minecraft, directory, renamed.Value.InstanceDirectory, token);
         await LibraryCases.RunAsync(minecraft, replicas, gameRoot, renamed.Value.InstanceDirectory, libraryPersistence, librarySource, token);
         await ResourceCases.RunAsync(minecraft, directory, token);
+        await EnvironmentCases.RunAsync(minecraft, gameRoot, renamed.Value.InstanceDirectory, javaExecutable, token);
         await LaunchCases.RunAsync(minecraft, gameRoot, renamed.Value.InstanceDirectory, replicas, javaExecutable, token);
         if (settings.JavaWrites != 1) throw new InvalidDataException("Native Java remediation bypassed canonical settings writes.");
         settings.Hold = true;

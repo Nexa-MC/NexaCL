@@ -59,7 +59,7 @@ public sealed partial class LauncherMigrationService
             if (files[index].RelativePath != expected.Files[index].RelativePath || files[index].Bytes != expected.Files[index].Bytes
                 || files[index].Sha256 != expected.Files[index].Sha256)
                 throw new IOException("迁入文件在导入后发生变化，无法安全撤销。");
-        ReceiptAuthority().Verify(Path.Combine(expected.Receipt.DestinationDirectory, ReceiptName), expected.ReceiptBytes);
+        await ReceiptAuthority().VerifyAsync(Path.Combine(expected.Receipt.DestinationDirectory, ReceiptName), expected.ReceiptBytes, token).ConfigureAwait(false);
     }
 
     private async Task WriteReceiptAsync(string stage, LauncherMigrationReceipt receipt,
@@ -109,7 +109,7 @@ public sealed partial class LauncherMigrationService
             bytes = new byte[(int)input.Length]; await input.ReadExactlyAsync(bytes, token).ConfigureAwait(false);
             if (input.ReadByte() != -1) throw new IOException("迁移记录在读取期间发生变化。");
         }
-        authority.Verify(path, bytes);
+        await authority.VerifyAsync(path, bytes, token).ConfigureAwait(false);
         string sha = Convert.ToHexString(SHA256.HashData(bytes));
         using var json = JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 16 });
         var root = json.RootElement;

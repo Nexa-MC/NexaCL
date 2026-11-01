@@ -77,6 +77,8 @@ internal static class MinecraftServiceProtocol
     internal const int ManageInstanceWorldSnapshotListQuery = 235;
     internal const int ManageInstanceWorldSnapshotVerifyQuery = 236;
     internal const int LibraryConfigure = 400, LibraryRefresh = 401, LibraryDirectory = 402, LibraryForget = 403, LibrarySelect = 404, LibraryRename = 405, LibraryDelete = 406, LibraryRememberRenamed = 407, LibraryState = 408;
+    internal const int EnvironmentFacts = 450, LocalDocuments = 451;
+    internal const int MigrationReceiptAuthorize = 452, MigrationReceiptVerify = 453;
     internal const int ResourceConfigure = 300;
     internal const int ResourceResourceNetworkPolicyQuery = 310;
     internal const int ResourceResourceSearchQuery = 311;

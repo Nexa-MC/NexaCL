@@ -22,6 +22,7 @@
     <ProjectReference Include="../Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
     <InternalsVisibleTo Include="Nexa.Desktop.Tests" />
     <InternalsVisibleTo Include="Nexa.Services" />
+    <InternalsVisibleTo Include="Nexa.Native.Minecraft" />
     <InternalsVisibleTo Include="Nexa.Services.Capabilities" />
     <InternalsVisibleTo Include="Nexa.Services.Composition" />
     <InternalsVisibleTo Include="Nexa.Services.Minecraft.Install" />

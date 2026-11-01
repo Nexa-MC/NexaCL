@@ -7,6 +7,7 @@ using Nexa.Xsr.State;
 
 namespace Nexa.Services.Composition;
 
+#if !NEXA_NATIVE_SERVICES
 public static class WorldSnapshotRuntime
 {
     public static void Register(XsrCommandRouterBuilder commands, XsrQueryRouterBuilder queries, XsrStateStore store,
@@ -31,6 +32,8 @@ public static class WorldSnapshotRuntime
         { return XsrResult.Failure<T>(MinecraftErrors.InvalidRequest("无法读取此世界的快照，请检查世界目录和权限。")); }
     }
 }
+
+#endif
 
 public sealed class WorldSnapshotCasStore(ContentBackupService backups) : IInstanceWorldSnapshotStore
 {

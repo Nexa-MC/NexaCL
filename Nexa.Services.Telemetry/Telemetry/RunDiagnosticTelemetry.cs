@@ -73,8 +73,8 @@ internal static class RunDiagnosticTelemetry
             && digest.Length == 64 && digest.All(char.IsAsciiHexDigit))
         && item["nested"] is JsonValue nested && nested.TryGetValue<bool>(out _)
         && item["provided"] is JsonObject provided && provided.Count <= 4
-        && provided.All(pair => LaunchModInventoryReader.SafeId(pair.Key) && pair.Value is JsonValue value
-            && value.TryGetValue<string>(out string? version) && LaunchModInventoryReader.SafeVersion(version));
+        && provided.All(pair => LaunchModSyntax.SafeId(pair.Key) && pair.Value is JsonValue value
+            && value.TryGetValue<string>(out string? version) && LaunchModSyntax.SafeVersion(version));
 
     public static bool Valid(string name, IReadOnlyDictionary<string, string> p)
     {
@@ -85,9 +85,9 @@ internal static class RunDiagnosticTelemetry
                 && double.IsFinite(n) && n >= -2147483648 && n <= 1e12);
         bool extended = p.TryGetValue("schema", out string? schema);
         if (extended && schema != "2") return false;
-        if (p.Count != (extended ? 15 : 14) || !p.TryGetValue("game", out string? game) || !LaunchModInventoryReader.SafeGameVersion(game)
+        if (p.Count != (extended ? 15 : 14) || !p.TryGetValue("game", out string? game) || !LaunchModSyntax.SafeGameVersion(game)
             || !p.TryGetValue("components", out string? components) || components.Length > 2048
-            || !p.TryGetValue("loader_version", out string? version) || !LaunchModInventoryReader.SafeVersion(version)
+            || !p.TryGetValue("loader_version", out string? version) || !LaunchModSyntax.SafeVersion(version)
             || !p.TryGetValue("mods", out string? mods) || mods.Length > 4096
             || !p.TryGetValue("complete", out string? complete) || complete is not ("0" or "1")) return false;
         foreach (string key in new[] { "page", "pages", "unknown" })
@@ -96,18 +96,18 @@ internal static class RunDiagnosticTelemetry
         {
             if (JsonNode.Parse(components) is not JsonObject builds || builds.Count > 16 || builds.Any(pair =>
                 !Enum.TryParse<Nexa.Services.Minecraft.Install.InstallLoader>(pair.Key, out _) || pair.Value is not JsonValue build
-                || !build.TryGetValue<string>(out string? text) || !LaunchModInventoryReader.SafeVersion(text))) return false;
+                || !build.TryGetValue<string>(out string? text) || !LaunchModSyntax.SafeVersion(text))) return false;
             return JsonNode.Parse(mods) is JsonArray items && items.Count <= 32 && items.All(node =>
                 node is JsonObject item && item.Count == (extended ? 9 : 6)
                 && (!extended || ValidModDetails(item))
-                && item["id"] is JsonValue id && id.TryGetValue<string>(out string? idText) && LaunchModInventoryReader.SafeId(idText)
-                && item["version"] is JsonValue v && v.TryGetValue<string>(out string? vText) && LaunchModInventoryReader.SafeVersion(vText)
+                && item["id"] is JsonValue id && id.TryGetValue<string>(out string? idText) && LaunchModSyntax.SafeId(idText)
+                && item["version"] is JsonValue v && v.TryGetValue<string>(out string? vText) && LaunchModSyntax.SafeVersion(vText)
                 && item["format"]?.ToString() is "fabric.mod.json" or "quilt.mod.json" or "META-INF/mods.toml" or "META-INF/neoforge.mods.toml" or "mcmod.info"
                 && item["enabled"] is JsonValue enabled && enabled.TryGetValue<bool>(out _)
                 && item["complete"] is JsonValue full && full.TryGetValue<bool>(out _)
                 && item["dependencies"] is JsonObject dependencies && dependencies.Count <= 8
-                && dependencies.All(pair => LaunchModInventoryReader.SafeId(pair.Key) && pair.Value is JsonValue range
-                    && range.TryGetValue<string>(out string? text) && LaunchModInventoryReader.SafeRange(text)));
+                && dependencies.All(pair => LaunchModSyntax.SafeId(pair.Key) && pair.Value is JsonValue range
+                    && range.TryGetValue<string>(out string? text) && LaunchModSyntax.SafeRange(text)));
         }
         catch (System.Text.Json.JsonException) { return false; }
     }

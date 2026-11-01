@@ -217,34 +217,54 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Assets.MinecraftAssetIndexNameRequest))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Assets.MinecraftAssetIndexRequest))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Assets.MinecraftAssetIndexResolution))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Assets.MinecraftAssetIndexResolver))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Assets.MinecraftAssetListRequest))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Assets.MinecraftAssetListResolver))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Assets.MinecraftAssetToken))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Crash.MinecraftLaunchFaultAnalyzer))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Crash.MinecraftLaunchFaultCode))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Crash.MinecraftLaunchFaultReport))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Crash.MinecraftMissingDependency))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Crash.MinecraftMissingDependencyParser))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Crash.MinecraftRepairActionKind))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftAssetDownloadFile))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftAssetDownloadPlan))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftAssetDownloadPlanRequest))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftAssetDownloadPlanner))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftAssetFileState))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftAssetIndexDownloadPlan))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftAssetIndexDownloadPlanRequest))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftClientDownloadFailureReason))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftClientDownloadPlanner))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftClientJarDownloadFile))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftClientJarDownloadPlan))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftClientJarDownloadPlanRequest))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftDownloadSourcePlanner))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftExpectedFile))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Downloads.MinecraftFileVerifier))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.IMinecraftInstanceSource))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.ForgeInstallService))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.HttpInstallCatalogSource))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.IInstallCatalogSource))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.IMinecraftInstallMetadataSource))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.IMinecraftLoaderInstaller))]
@@ -253,12 +273,16 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.InstallCatalogPrefetchCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.InstallCatalogReadCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.InstallCatalogRoutes))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.InstallCatalogService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.InstallCatalogSnapshot))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.InstallCatalogState))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.InstallCatalogStateContract))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.InstallCatalogVersion))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.InstallCompatibility))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.InstallDownload))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.InstallEligibilityContract))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.InstallEligibilityQuery))]
@@ -269,7 +293,9 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.LocalJarArtifact))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftFolderImportCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftFolderImportContract))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftFolderImportService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftFolderInspectQuery))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftFolderInspection))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftFolderKind))]
@@ -280,27 +306,39 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftInstallEditPlan))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftInstallEditPlanContract))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftInstallEditPlanQuery))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftInstallEditPlanner))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftInstallEditQuery))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftInstallEditService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftInstallEditSnapshot))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftInstallManagedFile))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftInstallRecoveryCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftInstallResult))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftInstallRoutes))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftInstallService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftInstallStopCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftLoaderInstallRequest))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftLocalJarCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftLocalJarContract))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftLocalJarService))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftModpackArchive))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftModpackCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftModpackContract))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Install.MinecraftModpackPreview))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.AutoSelectJavaPreference))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.ExistingJavaPreference))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.HttpJavaRuntimeMetadataProvider))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.IJavaRuntimeInstaller))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.IJavaRuntimeLocator))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.IJavaRuntimeMetadataProvider))]
@@ -313,72 +351,118 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaInstallStopCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaInstallation))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaPreference))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaPreferenceParser))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRequirementFailureReason))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRequirementResolution))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRuntimeAcquisitionDecision))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRuntimeAcquisitionPlanner))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRuntimeArchitecture))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRuntimeCandidate))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRuntimeDownloadFile))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRuntimeDownloadPlan))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRuntimeDownloadPlanService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRuntimeInstallProgress))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRuntimeInstaller))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRuntimeOperatingSystem))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRuntimePackageDescriptor))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRuntimePackagePlanner))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaRuntimePlatform))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaSelectionFailureReason))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaSelectionResult))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaSelectionService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaSource))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.JavaVersionRange))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.LocalJavaRuntimeLocator))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.MinecraftJavaRequirementRequest))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.MinecraftJavaRequirementResolver))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.UseGlobalJavaPreference))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Java.UseRelativeJavaPreference))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.AuthlibInjectorProvider))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.IAuthlibInjectorProvider))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.LaunchPreflightDecision))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.LaunchPreflightGate))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.LaunchPreflightPrompt))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftClientJarResolution))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftClientJarResolutionRequest))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftClientJarResolver))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftLaunchCoordinator))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftLaunchExecutor))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftLaunchFileCompletion))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftLaunchPlanner))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftLaunchPlatform))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftLaunchPreparation))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftLaunchProgressPublisher))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftLaunchProgressSnapshot))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftLaunchProgressState))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftLaunchStageReport))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftLaunchStages))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftResolvedVersionManifests))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Launch.MinecraftVersionJsonReader))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Libraries.MinecraftClasspathPlanner))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Libraries.MinecraftLibraryResolver))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Libraries.MinecraftNativesExtractor))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceContentEntry))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceContentRemoveCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceContentRestoreCommand))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceContentService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceContentSnapshot))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceContentTrash))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceManagementContract))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceManagementPage))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceManagementQuery))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceManagementService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceManagementSnapshot))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceModEnabledCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceModRemovalCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceModRemovalPreview))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceModRemovalQuery))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceModRemovalService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceRecoveryChange))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceRecoveryChangeKind))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceRecoveryContract))]
@@ -386,7 +470,9 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceRecoveryReport))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceRecoveryRestoreCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceRecoveryResumeCommand))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceRecoveryService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceRecoverySnapshotSummary))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceRecoveryStorage))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Management.InstanceTrashedContent))]
@@ -396,9 +482,13 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftDecideJavaAcquisitionCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftGameVersion))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftInstanceDescriptor))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftInstanceDiscovery))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftInstanceMetadata))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftInstanceMetadataStore))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftInstancesQuery))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftLaunchCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftLibraryContract))]
@@ -410,44 +500,70 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftLibraryRenameCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftLibrarySelectCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftLibrarySnapshot))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftOptionsReader))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftOptionsSnapshot))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftRouteIds))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftRuleContext))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftRuleEvaluator))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftSelectJavaCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftSelectJavaVersionCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftStartCommand))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftVersionDiscovery))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftVersionPaths))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftVersionScheme))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftVersionsQuery))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.ModLoaders.MinecraftModLoaderDetector))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.IJvmHost))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.IMinecraftProcessPort))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.IMinecraftWindowProbe))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.JvmHostBootstrap))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.JvmHostCapabilityCatalog))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.JvmHostControlResult))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.JvmHostEnvironment))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.JvmHostObservation))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.JvmHostService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.JvmHostStateContract))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.JvmRunContext))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.JvmRunSample))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.JvmRunSettings))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.LaunchModIdentity))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.LaunchModInventory))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.LaunchModInventoryReader))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.MinecraftProcessFailure))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.MinecraftProcessService))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.MinecraftProcessSession))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.MinecraftProcessSnapshot))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.MinecraftProcessState))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.MinecraftProcessStateComposition))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.MinecraftWindowProbe))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.MinecraftWindowProbeResult))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.ObservationCapabilityCatalog))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.Process.SystemMinecraftProcessPort))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Network.NetworkEndpointProbe))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Network.NetworkProbeResult))]
@@ -456,50 +572,76 @@ using System.Runtime.CompilerServices;
 #endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Processes.OwnedInstallerProcess))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.RegionalPolicy))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.CurseForgeResourceCatalog))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.IResourceCatalogSource))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.IResourceFileSource))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.MergedResourceCatalog))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceCatalogContract))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceCatalogService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceContentOnline))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceContentOnlineQuery))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceContentOnlineService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceDependency))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceDependencyPlanner))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceDependencyVerifier))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceDetail))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceDetailQuery))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceDownloadCommand))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceDownloadService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceFavoriteCommand))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceFavoritesQuery))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceFavoritesService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceFavoritesSnapshot))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceFile))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceIconQuery))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceIconResult))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceIconService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceInstallPlan))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceInstalledFile))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceInstanceContext))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceInstanceQuery))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceInstanceService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceKind))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceModInstallCommand))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceModInstallService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceModPlanQuery))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceOptionalDependency))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceOrder))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceProject))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceProvider))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceProviderHttp))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceReference))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceSearchQuery))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceSearchResult))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceTranslation))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceTranslationQuery))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceTranslationService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceVersion))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Rollouts.RolloutService))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Rollouts.RolloutSnapshot))]
@@ -630,4 +772,8 @@ using System.Runtime.CompilerServices;
 
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftLibraryRoutes))]
 
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Capabilities.MinecraftPrimaryInstanceScope))]
+#endif
+
+[assembly: TypeForwardedTo(typeof(Nexa.Services.Capabilities.ModCatalog))]

@@ -167,13 +167,29 @@ public sealed partial class FoundationHost : IDisposable, IAsyncDisposable
             new DisplayCapabilityProvider(),
             new StorageCapabilityProvider(minecraftRootDirectory),
             new FilesystemCapabilityProvider(minecraftRootDirectory),
+#if NEXA_NATIVE_SERVICES
+            new NativeMinecraftEnvironmentProvider(() => NativeMinecraft, MinecraftEnvironmentProvider.Java, minecraftRootDirectory),
+#else
             new JavaEnvironmentCapabilityProvider(JavaLocator, minecraftRootDirectory) { SharedStateCache = SharedStateCache },
+#endif
             new GpuCapabilityProvider(),
             new ThermalCapabilityProvider(),
             new HardwarePowerCapabilityProvider(),
+#if NEXA_NATIVE_SERVICES
+            new NativeMinecraftEnvironmentProvider(() => NativeMinecraft, MinecraftEnvironmentProvider.Files, minecraftRootDirectory),
+#else
             new MinecraftEnvironmentCapabilityProvider(minecraftRootDirectory) { SharedStateCache = SharedStateCache },
+#endif
+#if NEXA_NATIVE_SERVICES
+            new NativeMinecraftEnvironmentProvider(() => NativeMinecraft, MinecraftEnvironmentProvider.Loader, minecraftRootDirectory),
+#else
             new LoaderCapabilityProvider(minecraftRootDirectory) { SharedStateCache = SharedStateCache },
+#endif
+#if NEXA_NATIVE_SERVICES
+            new NativeMinecraftEnvironmentProvider(() => NativeMinecraft, MinecraftEnvironmentProvider.Mods, minecraftRootDirectory),
+#else
             new ModCapabilityProvider(minecraftRootDirectory) { SharedStateCache = SharedStateCache },
+#endif
             new AccountCapabilityProvider(accounts),
             new FormFactorCapabilityProvider(),
             new InputCapabilityProvider(InputUsage),

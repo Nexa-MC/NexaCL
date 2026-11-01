@@ -13,9 +13,10 @@ public static class MinecraftLaunchDiagnosticsRuntime
         queries.Register<MinecraftLaunchPlanDiagnosticQuery, MinecraftLaunchPlanDiagnosticSnapshot>(MinecraftLaunchPlanDiagnosticContract.Query,
             async (query, token) => XsrResult.Success(await minecraft.ReadLaunchDiagnosticsAsync(query, token).ConfigureAwait(false)));
         queries.Register<InstanceLocalDocumentsQuery, InstanceLocalDocumentsSnapshot>(InstanceLocalDocumentsContract.Query,
-            async (query, token) => XsrResult.Success(await InstanceLocalDocumentsService.ReadAsync(query, token).ConfigureAwait(false)));
+            async (query, token) => XsrResult.Success(await minecraft.ReadLocalDocumentsAsync(query, token).ConfigureAwait(false)));
     }
 #endif
+#if !NEXA_NATIVE_SERVICES
     public static void Register(XsrQueryRouterBuilder queries, MinecraftLaunchPlanDiagnostics diagnostics)
     {
         queries.Register<MinecraftLaunchPlanDiagnosticQuery, MinecraftLaunchPlanDiagnosticSnapshot>(MinecraftLaunchPlanDiagnosticContract.Query,
@@ -23,4 +24,5 @@ public static class MinecraftLaunchDiagnosticsRuntime
         queries.Register<InstanceLocalDocumentsQuery, InstanceLocalDocumentsSnapshot>(InstanceLocalDocumentsContract.Query,
             async (query, token) => XsrResult.Success(await InstanceLocalDocumentsService.ReadAsync(query, token).ConfigureAwait(false)));
     }
+#endif
 }

@@ -1,3 +1,4 @@
+#if !NEXA_NATIVE_SERVICES
 using Nexa.Services.Minecraft.Management;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
@@ -44,3 +45,5 @@ public static class ContentManagementRuntime
             async (command, token) => await InstanceFileWorkspaceService.SaveAsync(command, store, token).ConfigureAwait(false));
     }
 }
+
+#endif

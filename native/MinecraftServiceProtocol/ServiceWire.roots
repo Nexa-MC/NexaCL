@@ -166,3 +166,7 @@ Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibra
 Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibraryDeleteCommand
 Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibraryRememberRenamedCommand
 Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftInstanceDiscoverySnapshot
+Nexa.Services.Capabilities.Contracts|Nexa.Services.Capabilities.MinecraftEnvironmentFactsQuery
+Nexa.Services.Capabilities.Contracts|Nexa.Services.Capabilities.MinecraftEnvironmentFacts
+Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceLocalDocumentsQuery
+Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceLocalDocumentsSnapshot

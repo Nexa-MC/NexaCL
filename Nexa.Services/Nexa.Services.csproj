@@ -7,6 +7,9 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Nexa.Services.Tests" />
+    <Compile Remove="Minecraft/MinecraftLibraryService.cs" Condition="'$(NexaNativeServices)' == 'true'" />
+    <Compile Remove="Minecraft/MinecraftRoutes.cs" Condition="'$(NexaNativeServices)' == 'true'" />
+    <Compile Remove="Minecraft/Adapters/MinecraftEnvironmentCapabilityProvider.cs;Minecraft/Adapters/MinecraftMachineFacts.cs;Minecraft/Adapters/InstalledLoaderCompatibility.cs;Minecraft/Adapters/ModCapabilityProvider.cs" Condition="'$(NexaNativeServices)' == 'true'" />
     <ProjectReference Include="../Nexa.Platform.Runtime/Nexa.Platform.Runtime.csproj" />
   </ItemGroup>
 
@@ -28,22 +31,22 @@
     <ProjectReference Include="../Nexa.Services.Minecraft.Assets.Contracts/Nexa.Services.Minecraft.Assets.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Services.Minecraft.Crash.Contracts/Nexa.Services.Minecraft.Crash.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Services.Minecraft.Downloads.Contracts/Nexa.Services.Minecraft.Downloads.Contracts.csproj" />
-    <ProjectReference Include="../Nexa.Services.Minecraft.Install/Nexa.Services.Minecraft.Install.csproj" />
+    <ProjectReference Include="../Nexa.Services.Minecraft.Install/Nexa.Services.Minecraft.Install.csproj" Condition="'$(NexaNativeServices)' != 'true'" />
     <ProjectReference Include="../Nexa.Services.Minecraft.Install.Contracts/Nexa.Services.Minecraft.Install.Contracts.csproj" />
-    <ProjectReference Include="../Nexa.Services.Minecraft.Java/Nexa.Services.Minecraft.Java.csproj" />
+    <ProjectReference Include="../Nexa.Services.Minecraft.Java/Nexa.Services.Minecraft.Java.csproj" Condition="'$(NexaNativeServices)' != 'true'" />
     <ProjectReference Include="../Nexa.Services.Minecraft.Java.Contracts/Nexa.Services.Minecraft.Java.Contracts.csproj" />
-    <ProjectReference Include="../Nexa.Services.Minecraft.Launch/Nexa.Services.Minecraft.Launch.csproj" />
+    <ProjectReference Include="../Nexa.Services.Minecraft.Launch/Nexa.Services.Minecraft.Launch.csproj" Condition="'$(NexaNativeServices)' != 'true'" />
     <ProjectReference Include="../Nexa.Services.Minecraft.Launch.Contracts/Nexa.Services.Minecraft.Launch.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Services.Minecraft.Library.Contracts/Nexa.Services.Minecraft.Library.Contracts.csproj" />
-    <ProjectReference Include="../Nexa.Services.Minecraft.Management/Nexa.Services.Minecraft.Management.csproj" />
+    <ProjectReference Include="../Nexa.Services.Minecraft.Management/Nexa.Services.Minecraft.Management.csproj" Condition="'$(NexaNativeServices)' != 'true'" />
     <ProjectReference Include="../Nexa.Services.Minecraft.Management.Contracts/Nexa.Services.Minecraft.Management.Contracts.csproj" />
-    <ProjectReference Include="../Nexa.Services.Minecraft.Metadata/Nexa.Services.Minecraft.Metadata.csproj" />
-    <ProjectReference Include="../Nexa.Services.Minecraft.Process/Nexa.Services.Minecraft.Process.csproj" />
+    <ProjectReference Include="../Nexa.Services.Minecraft.Metadata/Nexa.Services.Minecraft.Metadata.csproj" Condition="'$(NexaNativeServices)' != 'true'" />
+    <ProjectReference Include="../Nexa.Services.Minecraft.Process/Nexa.Services.Minecraft.Process.csproj" Condition="'$(NexaNativeServices)' != 'true'" />
     <ProjectReference Include="../Nexa.Services.Minecraft.Process.Contracts/Nexa.Services.Minecraft.Process.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Services.Network/Nexa.Services.Network.csproj" Condition="'$(NexaNativeServices)' != 'true'" />
     <ProjectReference Include="../Nexa.Services.Network.Contracts/Nexa.Services.Network.Contracts.csproj" />
-    <ProjectReference Include="../Nexa.Services.Recovery.Storage/Nexa.Services.Recovery.Storage.csproj" />
-    <ProjectReference Include="../Nexa.Services.Resources/Nexa.Services.Resources.csproj" />
+    <ProjectReference Include="../Nexa.Services.Recovery.Storage/Nexa.Services.Recovery.Storage.csproj" Condition="'$(NexaNativeServices)' != 'true'" />
+    <ProjectReference Include="../Nexa.Services.Resources/Nexa.Services.Resources.csproj" Condition="'$(NexaNativeServices)' != 'true'" />
     <ProjectReference Include="../Nexa.Services.Resources.Contracts/Nexa.Services.Resources.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Services.Rollouts/Nexa.Services.Rollouts.csproj" />
     <ProjectReference Include="../Nexa.Services.Rollouts.Contracts/Nexa.Services.Rollouts.Contracts.csproj" />

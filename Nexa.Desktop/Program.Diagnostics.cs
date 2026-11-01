@@ -19,7 +19,7 @@ internal static partial class Program
         token.ThrowIfCancellationRequested();
         if (directory is null) return false;
         var store = host.StateStore;
-        var selected = ((MinecraftLibrarySnapshot?)store.ReadAppliedValue(store.Resolve(MinecraftLibraryService.StateKey), token))?.SelectedInstance;
+        var selected = ((MinecraftLibrarySnapshot?)store.ReadAppliedValue(store.Resolve(MinecraftLibraryContract.StateKey), token))?.SelectedInstance;
         // Correlate JVM/Mod facts with the selected instance, never with an unrelated last session.
         var session = store.ReadCollection<MinecraftProcessSnapshot>(store.Resolve(MinecraftProcessStateComposition.SessionsKey), token).Items
             .Where(item => selected is not null && PathIdentity.Comparer.Equals(item.InstanceDirectory, selected.DirectoryPath))

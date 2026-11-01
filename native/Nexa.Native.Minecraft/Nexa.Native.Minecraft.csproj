@@ -2,7 +2,7 @@
   <PropertyGroup><NexaLocalPatchRuntime>false</NexaLocalPatchRuntime></PropertyGroup>
   <Import Project="../NativeEngine.props" />
   <Import Project="../ServiceProtocol/ServiceProtocol.props" />
-  <PropertyGroup><DefineConstants>$(DefineConstants);NEXA_MINECRAFT_HTTP_BRIDGE</DefineConstants></PropertyGroup>
+  <PropertyGroup><DefineConstants>$(DefineConstants);NEXA_MINECRAFT_HTTP_BRIDGE;NEXA_MINECRAFT_FACT_OWNER</DefineConstants></PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../Nexa.Services.Resources/Nexa.Services.Resources.csproj" />
     <ProjectReference Include="../../Nexa.Services.Minecraft.Metadata/Nexa.Services.Minecraft.Metadata.csproj" />
@@ -13,6 +13,11 @@
     <ProjectReference Include="../../Nexa.Services.Minecraft.Management/Nexa.Services.Minecraft.Management.csproj" />
     <ProjectReference Include="../../Nexa.Services.Accounts.Contracts/Nexa.Services.Accounts.Contracts.csproj" />
     <ProjectReference Include="../Nexa.Native.Network.Client/Nexa.Native.Network.Client.csproj" />
+    <Compile Include="../../Nexa.Services/Minecraft/Adapters/MinecraftEnvironmentCapabilityProvider.cs" Link="Environment/MinecraftEnvironmentCapabilityProvider.cs" />
+    <Compile Include="../../Nexa.Services/Minecraft/Adapters/MinecraftMachineFacts.cs" Link="Environment/MinecraftMachineFacts.cs" />
+    <Compile Include="../../Nexa.Services/Minecraft/Adapters/MinecraftEnvironmentProjections.cs" Link="Environment/MinecraftEnvironmentProjections.cs" />
+    <Compile Include="../../Nexa.Services/Minecraft/Adapters/InstalledLoaderCompatibility.cs" Link="Environment/InstalledLoaderCompatibility.cs" />
+    <Compile Include="../../Nexa.Services/Minecraft/Adapters/ModCapabilityProvider.cs" Link="Environment/ModCapabilityProvider.cs" />
     <Compile Include="../MinecraftServiceProtocol/*.cs" Link="Wire/%(Filename)%(Extension)" />
     <Compile Include="../MinecraftHostProtocol/NetworkProtocol.cs" Link="Host/NetworkProtocol.cs" />
     <Compile Include="../MinecraftHostProtocol/MinecraftHostOperations.cs" Link="Host/MinecraftHostOperations.cs" />

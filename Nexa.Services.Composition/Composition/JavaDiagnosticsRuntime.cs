@@ -18,10 +18,12 @@ public static class JavaDiagnosticsRuntime
         Register(queries, new JavaRuntimeDiagnosticsService(inventory, new PlatformJavaDiagnostics()));
 #endif
     }
+#if !NEXA_NATIVE_SERVICES
     public static void Register(XsrQueryRouterBuilder queries, JavaRuntimeDiagnosticsService diagnostics)
     {
         ArgumentNullException.ThrowIfNull(queries); ArgumentNullException.ThrowIfNull(diagnostics);
         queries.Register<JavaRuntimePropertiesQuery, JavaRuntimeDiagnosticsSnapshot>(JavaRuntimeDiagnosticsContract.Properties, diagnostics.ReadPropertiesAsync);
         queries.Register<JavaRuntimeModulesQuery, JavaRuntimeDiagnosticsSnapshot>(JavaRuntimeDiagnosticsContract.Modules, diagnostics.ReadModulesAsync);
     }
+#endif
 }

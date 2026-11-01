@@ -1,3 +1,4 @@
+#if !NEXA_NATIVE_SERVICES
 using Nexa.Services.Minecraft;
 using Nexa.Services.Minecraft.Java;
 using Nexa.Services.Minecraft.Launch;
@@ -32,3 +33,5 @@ public static class InstanceOfflineReadinessRuntime
             });
     }
 }
+
+#endif

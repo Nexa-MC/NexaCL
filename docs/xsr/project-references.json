@@ -65,14 +65,7 @@
   "Nexa.Platform.Abstractions": [
     "Nexa.Core"
   ],
-  "Nexa.Platform.Runtime": [
-    "Nexa.Platform.Abstractions",
-    "Nexa.Services.Capabilities.Contracts",
-    "Nexa.Services.Common",
-    "Nexa.Services.Minecraft.Java.Contracts",
-    "Nexa.Services.Minecraft.Metadata",
-    "Nexa.Services.Minecraft.Process.Contracts"
-  ],
+  "Nexa.Platform.Runtime": ["Nexa.Platform.Abstractions", "Nexa.Services.Capabilities.Contracts", "Nexa.Services.Common", "Nexa.Services.Minecraft.Java.Contracts", "Nexa.Services.Minecraft.Process.Contracts"],
   "Nexa.Xsr.Renderer.Nxml.Compiler": [
     "Nexa.Core",
     "Nexa.Xsr.Renderer",
@@ -495,20 +488,7 @@
     "Nexa.Xsr.Abstractions",
     "Nexa.Xsr.State"
   ],
-  "Nexa.Services.Telemetry": [
-    "Nexa.Contracts",
-    "Nexa.Core",
-    "Nexa.Domain",
-    "Nexa.Services.Common",
-    "Nexa.Services.Common.Contracts",
-    "Nexa.Services.Minecraft.Install.Contracts",
-    "Nexa.Services.Minecraft.Process",
-    "Nexa.Services.Minecraft.Process.Contracts",
-    "Nexa.Services.Settings",
-    "Nexa.Services.Telemetry.Contracts",
-    "Nexa.Xsr.Abstractions",
-    "Nexa.Xsr.State"
-  ],
+  "Nexa.Services.Telemetry": ["Nexa.Contracts", "Nexa.Core", "Nexa.Domain", "Nexa.Services.Common", "Nexa.Services.Common.Contracts", "Nexa.Services.Minecraft.Install.Contracts", "Nexa.Services.Minecraft.Process.Contracts", "Nexa.Services.Settings", "Nexa.Services.Telemetry.Contracts", "Nexa.Xsr.Abstractions", "Nexa.Xsr.State"],
   "Nexa.Services.Telemetry.Contracts": [
     "Nexa.Contracts",
     "Nexa.Core",
