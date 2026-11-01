@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="../NativeEngine.props" />
+  <Import Project="../ServiceProtocol/ServiceProtocol.props" Condition="'$(NexaExternalModules)' == 'true'" />
   <ItemGroup>
-    <PackageReference Include="ZstdSharp.Port" Version="0.8.6" />
+    <ProjectReference Include="../../Nexa.Services.Updates/Nexa.Services.Updates.csproj" Condition="'$(NexaExternalModules)' == 'true'" />
+    <Compile Remove="UpdatesServiceExports.cs;UpdatesServiceSession.cs;UpdatesServiceSession.Telemetry.cs" Condition="'$(NexaExternalModules)' != 'true'" />
+    <Compile Include="../UpdatesServiceProtocol/*.cs" Link="Wire/%(Filename)%(Extension)" Condition="'$(NexaExternalModules)' == 'true'" />
+    <Compile Include="../NetworkServiceProtocol/NetworkHttpWire.cs" Link="Wire/NetworkHttpWire.cs" Condition="'$(NexaExternalModules)' == 'true'" />
+    <Compile Include="../NetworkServiceProtocol/NetworkHttpStreamHandler.cs" Link="Wire/NetworkHttpStreamHandler.cs" Condition="'$(NexaExternalModules)' == 'true'" />
+    <Compile Include="../DownloadServiceProtocol/RemoteWorkScheduler.cs" Link="Wire/RemoteWorkScheduler.cs" Condition="'$(NexaExternalModules)' == 'true'" />
+    <Compile Include="../DownloadServiceProtocol/DownloadProtocol.cs" Link="Wire/DownloadProtocol.cs" />
+    <ProjectReference Include="../Nexa.Native.Updates.Codecs/Nexa.Native.Updates.Codecs.csproj" />
     <Compile Include="../NativeEngineAbi.cs" Link="NativeEngineAbi.cs" />
   </ItemGroup>
 </Project>

@@ -310,7 +310,7 @@ internal static partial class Program
             && !args.Contains("--validate-themes", StringComparer.OrdinalIgnoreCase) && setup.Read().Required))
         {
             setStage("first_run");
-            return RunFirstRun(args, setup, validateSetup, instance, disableHardwareAcceleration, startup, setStage);
+            return await RunFirstRunAsync(args, setup, validateSetup, instance, disableHardwareAcceleration, startup, setStage).ConfigureAwait(false);
         }
         bool safeMode = args.Contains("--safe-mode", StringComparer.OrdinalIgnoreCase);
         string logDirectory = sink is null ? folders.ResolveSafePath(FolderNames.Logs, string.Empty) : Path.GetDirectoryName(sink.FilePath)!;
@@ -369,7 +369,11 @@ internal static partial class Program
         DesktopSidecarUiPatches sidecarUi = new(host.StateStore);
         DesktopSidecarNxml sidecarNxml = new(host.StateStore);
         using var sidecarUpdateHttp = host.CreateHttpClient();
+#if NEXA_NATIVE_SERVICES
+        await using var sidecarUpdates = SidecarStartup.CreateUpdater(sidecarUpdateHttp, folders.Root, buildInfo.ProductVersion);
+#else
         using var sidecarUpdates = SidecarStartup.CreateUpdater(sidecarUpdateHttp, folders.Root, buildInfo.ProductVersion);
+#endif
         var sidecarOverrides = await SidecarStartup.ResolveUpdatesAsync(sidecarUpdates, host.Logging).ConfigureAwait(false);
         await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides);
         await using var sidecarNetwork = new DesktopSidecarNetwork(sidecars, host.StateStore);
@@ -696,14 +700,23 @@ internal static partial class Program
             token.ThrowIfCancellationRequested(); return path;
         }, library.Commands);
         settingsPage.TelemetryRequired = buildInfo.DiagnosticsRequired;
+#if NEXA_NATIVE_SERVICES
+        await using var networking = new LauncherNetworkRuntime(host, settingsFolder, buildInfo, SidecarStartup.ReadReleaseKey());
+        await networking.Initialization.ConfigureAwait(false);
+#else
         await using var networking = new LauncherNetworkRuntime(host, settingsFolder, buildInfo);
+#endif
         HttpClient updateHttp = networking.Http;
         string updateRid = networking.RuntimeId;
         string updateChannel = buildInfo.UpdateChannel;
         var rollouts = networking.Rollouts;
         var updateService = networking.Updates;
         var updateQueries = networking.Queries;
+#if NEXA_NATIVE_SERVICES
+        var automaticUpdate = await CreateNativeUpdateControlAsync(networking.Updates, buildInfo.ProductVersion, updateRid).ConfigureAwait(false);
+#else
         var automaticUpdate = CreateUpdateControl(updateHttp, buildInfo.ProductVersion, updateRid);
+#endif
         bool restartAfterUpdate = false;
         settingsPage.ConfigureUpdates(updateQueries, new(buildInfo.ProductVersion, updateRid, updateChannel), platformActions.OpenHttpsUri,
             automaticUpdate, () => { restartAfterUpdate = true; platformActions.RequestClose(); },
@@ -826,7 +839,11 @@ internal static partial class Program
         var telemetrySession = telemetry.Session;
         using IDisposable? telemetrySubscription = telemetrySession is null ? null : stateObservation.Subscribe(telemetrySession);
         operationLog.Diagnostics = telemetrySession;
+#if NEXA_NATIVE_SERVICES
+        await rollouts.StartAsync().ConfigureAwait(false);
+#else
         rollouts.Start();
+#endif
         var installExit = new DesktopInstallExitCoordinator(host.StateStore, installRun.Commands, feedback, platformActions.RequestClose, minecraft.Commands, localize: shell.Renderer.LocalizeText);
         using var launchExit = new DesktopLaunchExitCoordinator(() => minecraft.LaunchCoordinator!.HasPendingFinalization,
             minecraft.LaunchCoordinator!.WaitForFinalizationAsync, platformActions.PostToWindow, platformActions.RequestClose, feedback);
@@ -854,10 +871,19 @@ internal static partial class Program
                 resourcesPage, customAppearance, mediaSession, presentationSession, systemPreferences, setStage, host.Logging,
                 desktopIntegration, sidecarLifetime, host.StateStore, themes).ConfigureAwait(false);
             using var communityHttp = host.CreateHttpClient(allowAutoRedirect: false);
+#if NEXA_NATIVE_SERVICES
+            await networking.Updates.ConfigureCommunityAsync(Path.Combine(folders.Root, "community-state.json")).ConfigureAwait(false);
+            var community = networking.Updates;
+#else
             await using var community = new Nexa.Services.Community.LauncherCommunityService(Path.Combine(folders.Root, "community-state.json"), communityHttp);
+#endif
             try
             {
+#if NEXA_NATIVE_SERVICES
+                var messages = await community.StartCommunityAsync().ConfigureAwait(false);
+#else
                 var messages = await community.StartAsync().ConfigureAwait(false);
+#endif
                 foreach (var message in messages.Announcements)
                     feedback.ShowDialog("community." + message.Id, message.Title, message.Body, ProductPresentationText.Raw("native.community.read"), ProductPresentationText.Raw("native.community.later"),
                         accepted => { if (accepted) _ = AcknowledgeCommunityAsync(community, message, host.Logging); },
@@ -909,15 +935,26 @@ internal static partial class Program
         return exitCode;
     }
 
+#if NEXA_NATIVE_SERVICES
+    private static async Task AcknowledgeCommunityAsync(Nexa.Native.Updates.Client.NativeUpdatesClient service,
+#else
     private static async Task AcknowledgeCommunityAsync(Nexa.Services.Community.LauncherCommunityService service,
+#endif
         Nexa.Services.Community.LauncherAnnouncement message, LogService log)
     {
-        try { await service.AcknowledgeAsync(message).ConfigureAwait(false); }
+        try
+        {
+#if NEXA_NATIVE_SERVICES
+            await service.AcknowledgeCommunityAsync(message).ConfigureAwait(false);
+#else
+            await service.AcknowledgeAsync(message).ConfigureAwait(false);
+#endif
+        }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         { log.Error("Community", "无法保存公告已读状态。", ExceptionDiagnostics.Describe(error)); }
     }
 
-    private static int RunFirstRun(string[] args, FirstRunService service, bool validate, DesktopSingleInstance? instance,
+    private static async Task<int> RunFirstRunAsync(string[] args, FirstRunService service, bool validate, DesktopSingleInstance? instance,
         bool disableHardwareAcceleration, AvaloniaUiStartupSession? startup, Action<string> setStage)
     {
         XsrUiRuntimeContext context = new();
@@ -932,7 +969,7 @@ internal static partial class Program
         using var languageSession = new DesktopLanguageSession(shell, store);
         var runtime = FirstRunRuntimeComposer.Compose(service);
         runtime.Queries.TryResolve(FirstRunContract.Status, out var read);
-        var status = runtime.Queries.QueryAsync<FirstRunQuery, FirstRunStatus>(read, new()).AsTask().GetAwaiter().GetResult();
+        var status = await runtime.Queries.QueryAsync<FirstRunQuery, FirstRunStatus>(read, new()).ConfigureAwait(false);
         if (!status.IsSuccess) throw new IOException(status.Error?.Message ?? ProductPresentationText.Raw("program.copy.ee29f105c75ef61a"));
         AvaloniaUiPlatformActions platform = new() { LocalizeContentPicker = shell.Renderer.LocalizeText };
         List<string> nativeFiles = [];
@@ -977,14 +1014,18 @@ internal static partial class Program
 #else
         using var setupSidecarHttp = new HttpClient();
 #endif
+#if NEXA_NATIVE_SERVICES
+        await using var setupSidecarUpdates = SidecarStartup.CreateUpdater(setupSidecarHttp, status.Value!.DataDirectory, ResolveBuildInfo().ProductVersion);
+#else
         using var setupSidecarUpdates = SidecarStartup.CreateUpdater(setupSidecarHttp, status.Value!.DataDirectory, ResolveBuildInfo().ProductVersion);
-        var setupOverrides = SidecarStartup.ResolveUpdatesAsync(setupSidecarUpdates, setupLog).GetAwaiter().GetResult();
+#endif
+        var setupOverrides = await SidecarStartup.ResolveUpdatesAsync(setupSidecarUpdates, setupLog).ConfigureAwait(false);
         var setupSidecars = SidecarStartup.Create(setupLog, nxmlModules: setupNxml.Runtime, packageOverrides: setupOverrides);
         using var setupSidecarLifetime = SidecarStartup.StartLifetime(setupSidecars, setupLog, !args.Contains("--safe-mode", StringComparer.Ordinal));
         controller.ConfigureExtensions(setupSidecarLifetime.InitialReady);
-        try { setupSidecarLifetime.InitialReady.WaitAsync(TimeSpan.FromSeconds(15)).GetAwaiter().GetResult(); }
+        try { await setupSidecarLifetime.InitialReady.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false); }
         catch (TimeoutException) { setupLog.Warn("Sidecar", "First-run Sidecar discovery is continuing in the background."); }
-        PrepareFirstRunStartupAsync(startup, shell, platform, setStage).GetAwaiter().GetResult();
+        await PrepareFirstRunStartupAsync(startup, shell, platform, setStage).ConfigureAwait(false);
         setStage("first_run_lifetime");
         int result = startup is not null
             ? AvaloniaUiShellHost.Run(startup, shell, platform)

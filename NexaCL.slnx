@@ -11,6 +11,7 @@
   <Project Path="native/Nexa.Native.Minecraft/Nexa.Native.Minecraft.csproj" />
   <Project Path="native/Nexa.Native.Media/Nexa.Native.Media.csproj" />
   <Project Path="native/Nexa.Native.Updates/Nexa.Native.Updates.csproj" />
+  <Project Path="native/Nexa.Native.Updates.Codecs/Nexa.Native.Updates.Codecs.csproj" />
   <Project Path="native/Nexa.Native.Pac/Nexa.Native.Pac.csproj" />
   <Project Path="native/Nexa.Native.Crypto/Nexa.Native.Crypto.csproj" />
   <Project Path="native/Nexa.Native.Network/Nexa.Native.Network.csproj" />
@@ -87,6 +88,7 @@
     <Project Path="native/Nexa.Native.Accounts/Nexa.Native.Accounts.csproj" />
     <Project Path="native/Nexa.Native.Host/Nexa.Native.Host.csproj" />
     <Project Path="native/Nexa.Native.Network.Client/Nexa.Native.Network.Client.csproj" />
+    <Project Path="native/Nexa.Native.Updates.Client/Nexa.Native.Updates.Client.csproj" />
     <Project Path="native/Nexa.Native.Minecraft.Client/Nexa.Native.Minecraft.Client.csproj" />
   </Folder>
   <Folder Name="/NXML/">
@@ -113,6 +115,7 @@
     <Project Path="tests/Nexa.Native.Accounts.Tests/Nexa.Native.Accounts.Tests.csproj" />
     <Project Path="tests/Nexa.Native.Network.Services.Tests/Nexa.Native.Network.Services.Tests.csproj" />
     <Project Path="tests/Nexa.Native.Minecraft.Services.Tests/Nexa.Native.Minecraft.Services.Tests.csproj" />
+    <Project Path="tests/Nexa.Native.Updates.Services.Tests/Nexa.Native.Updates.Services.Tests.csproj" />
   <Project Path="tests/Nexa.Native.Network.Tests/Nexa.Native.Network.Tests.csproj" />
     <Project Path="tests/Nexa.Services.Themes.Tests/Nexa.Services.Themes.Tests.csproj" />
     <Project Path="tests/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj" />

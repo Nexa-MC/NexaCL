@@ -7,6 +7,7 @@ namespace Nexa.Services.Updates;
 /// <summary>Bounded corruption-detecting frames. Authentication is the protected namespace.</summary>
 public static class UpdateTransactionJournal
 {
+    public const string ActivationName = "active-update.journal";
     private const int MaximumBytes = 4 * 1024 * 1024, MaximumFrameBytes = 16 * 1024;
     public static string[]? Read(Stream stream) => Scan(stream).Fields;
     private static (string[]? Fields, long Length) Scan(Stream stream)

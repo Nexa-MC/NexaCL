@@ -13,7 +13,7 @@ public interface IUpdateReleaseSource
 public sealed class AutomaticUpdateTransaction(IUpdateDirectory installation, UpdateBuildIdentity baseline,
     IUpdateSignatureVerifier verifier, IUpdateReleaseSource source)
 {
-    public const string ActivationName = "active-update.journal", StatusName = "update-status.journal";
+    public const string ActivationName = UpdateTransactionJournal.ActivationName, StatusName = "update-status.journal";
     private const string PendingName = "pending-update.journal", HighWaterName = "highest-accepted-version.journal";
     internal Action<string>? FaultBoundary { get; init; }
 

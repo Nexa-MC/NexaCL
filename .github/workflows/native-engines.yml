@@ -29,7 +29,9 @@ on:
       - 'tests/Nexa.Native.Network.Services.Tests/**'
       - 'eng/release/verify_native_network_services.py'
       - 'tests/Nexa.Native.Minecraft.Services.Tests/**'
+      - 'tests/Nexa.Native.Updates.Services.Tests/**'
       - 'eng/release/verify_native_minecraft_services.py'
+      - 'eng/release/verify_native_updates_services.py'
       - 'eng/xsr/generate_account_routes.py'
       - 'eng/xsr/generate_service_wire.*'
       - 'eng/release/verify_native_account_contracts.py'
@@ -118,6 +120,9 @@ jobs:
       - name: Verify independent Minecraft processes and physical retirement
         shell: bash
         run: python eng/release/verify_native_minecraft_services.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/engines" --output "$RUNNER_TEMP/minecraft-service-contracts"
+      - name: Verify independent Updates transactions and physical retirement
+        shell: bash
+        run: python eng/release/verify_native_updates_services.py --rid '${{ matrix.rid }}' --payload "$RUNNER_TEMP/engines" --output "$RUNNER_TEMP/updates-service-contracts"
       - name: Verify reproducibility
         shell: bash
         run: |

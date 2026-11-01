@@ -3,9 +3,6 @@ using System.Text.Json.Nodes;
 
 namespace Nexa.Services.Community;
 
-public sealed record LauncherAnnouncement(string Id, long Revision, string Title, string Body);
-public sealed record LauncherCommunitySnapshot(bool SurveyDue, IReadOnlyList<LauncherAnnouncement> Announcements);
-
 /// <summary>Local startup cadence and bounded public announcements, independent of rendering.</summary>
 public sealed class LauncherCommunityService(string statePath, HttpClient http) : IAsyncDisposable
 {

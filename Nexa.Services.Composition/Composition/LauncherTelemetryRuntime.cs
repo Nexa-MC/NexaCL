@@ -11,7 +11,11 @@ public sealed class LauncherTelemetryRuntime : IDisposable, IAsyncDisposable
     private readonly HttpClient _http;
     public LauncherTelemetrySession? Session { get; }
 
+#if NEXA_NATIVE_SERVICES
+    public LauncherTelemetryRuntime(FoundationHost host, NativeLauncherRollouts rollouts, IUpdateTelemetrySource updates,
+#else
     public LauncherTelemetryRuntime(FoundationHost host, RolloutService rollouts, NexaUpdateService updates,
+#endif
         string version)
     {
         _http = host.CreateHttpClient(allowAutoRedirect: false);

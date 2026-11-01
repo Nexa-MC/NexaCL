@@ -12,7 +12,7 @@ SERVICES = ("Accounts",)
 
 
 def engine_service_properties(engine):
-    return ["-p:NexaNativeServices=true"] if engine == "Minecraft" else []
+    return ["-p:NexaNativeServices=true"] if engine == "Minecraft" else ["-p:NexaExternalModules=true"] if engine == "Updates" else []
 
 
 def stable_ui_properties(properties):
@@ -38,7 +38,7 @@ def verify_ui_engine_isolation(assets):
     libraries = json.loads(assets.read_text())["libraries"]
     forbidden = {"jint", "bouncycastle.cryptography", "zstdsharp.port", "nexa.services.accounts", "nexa.services.network", "nexa.native.accounts"}
     forbidden.update("nexa.services.minecraft." + name for name in ("metadata", "java", "process", "launch", "install", "management"))
-    forbidden.add("nexa.services.resources")
+    forbidden.update(("nexa.services.resources", "nexa.services.updates", "nexa.services.rollouts", "nexa.native.updates.codecs"))
     forbidden.update("nexa.native." + engine.lower() for engine in ENGINES)
     embedded = sorted(name for name in libraries if name.split("/", 1)[0].lower() in forbidden)
     if embedded:

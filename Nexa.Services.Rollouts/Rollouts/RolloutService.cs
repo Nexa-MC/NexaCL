@@ -18,6 +18,7 @@ public sealed class RolloutService(HttpClient http, XsrStateStore store, string 
     private DateTimeOffset _featureExpires;
     private bool _compact;
     public Action<string, string>? Record { get; set; }
+    public DateTimeOffset EffectiveUntil { get { lock (_gate) return _featureExpires; } }
     public bool CompactTelemetryBatches { get { lock (_gate) return _compact && _featureExpires > DateTimeOffset.UtcNow; } }
 
     private Task _run = Task.CompletedTask;

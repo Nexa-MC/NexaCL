@@ -6,6 +6,13 @@ namespace Nexa.Desktop;
 
 internal static class SidecarStartup
 {
+    internal static string ReadReleaseKey()
+    {
+        using Stream key = typeof(SidecarStartup).Assembly.GetManifestResourceStream("Nexa.Desktop.SidecarReleaseKey.asc")
+            ?? throw new InvalidDataException("The pinned update verification key is missing.");
+        using var reader = new StreamReader(key);
+        return reader.ReadToEnd();
+    }
     public static SidecarSupervisor Create(LogService log, XsrFunctionPatchAdmission? functionPatches = null,
         XsrSignalAdmission? signals = null, XsrUiPatchAdmission? uiPatches = null, XsrUiModuleAdmission? uiModules = null,
         XsrNxmlModuleRuntime? nxmlModules = null, IReadOnlyDictionary<string, string>? packageOverrides = null)
@@ -18,6 +25,33 @@ internal static class SidecarStartup
         { PackageOverrides = packageOverrides ?? new Dictionary<string, string>(), FunctionPatchAdmission = functionPatches, AutomaticFunctionAdmission = new(), SignalAdmission = signals, UiPatchAdmission = uiPatches, UiModuleAdmission = uiModules, NxmlModules = nxmlModules };
     }
 
+#if NEXA_NATIVE_SERVICES
+    public static NativeSidecarUpdates CreateUpdater(HttpClient client, string root, string version) => new(client, root, version);
+
+    internal sealed class NativeSidecarUpdates : ISidecarUpdateControl, IAsyncDisposable
+    {
+        private readonly Nexa.Native.Updates.Client.NativeUpdatesClient _client;
+        private readonly Task _ready;
+        public NativeSidecarUpdates(HttpClient http, string root, string version)
+        {
+            using Stream key = typeof(SidecarStartup).Assembly.GetManifestResourceStream("Nexa.Desktop.SidecarReleaseKey.asc")
+                ?? throw new InvalidDataException("The pinned Sidecar verification key is missing.");
+            using var reader = new StreamReader(key);
+            _client = new(new(AppContext.BaseDirectory, reader.ReadToEnd(), UpdateGpgVerifier.ReleaseKeyFingerprint), http);
+            string os = OperatingSystem.IsWindows() ? "win" : OperatingSystem.IsMacOS() ? "osx" : "linux";
+            string rid = os + "-" + System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+            _ready = _client.ConfigureSidecarsAsync(new(Path.Combine(root, "sidecar-updates"), AppContext.BaseDirectory, rid, version));
+        }
+        public SidecarUpdateSnapshot Snapshot => _client.SidecarSnapshot;
+        public async Task CheckAsync(string channel, CancellationToken token)
+        { await _ready.WaitAsync(token).ConfigureAwait(false); await _client.CheckSidecarsAsync(channel, token).ConfigureAwait(false); }
+        public async Task InstallAsync(string packageId, CancellationToken token)
+        { await _ready.WaitAsync(token).ConfigureAwait(false); await _client.InstallSidecarAsync(packageId, token).ConfigureAwait(false); }
+        public async Task<IReadOnlyDictionary<string, string>> ActivePackagesAsync()
+        { await _ready.ConfigureAwait(false); return await _client.ActivePackagesAsync().ConfigureAwait(false); }
+        public ValueTask DisposeAsync() => _client.DisposeAsync();
+    }
+#else
     public static SidecarUpdateService CreateUpdater(HttpClient client, string root, string version)
     {
         using Stream key = typeof(SidecarStartup).Assembly.GetManifestResourceStream("Nexa.Desktop.SidecarReleaseKey.asc")!;
@@ -26,8 +60,13 @@ internal static class SidecarStartup
         string rid = os + "-" + System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
         return new(client, new UpdateGpgVerifier(reader.ReadToEnd()), Path.Combine(root, "sidecar-updates"), AppContext.BaseDirectory, rid, version);
     }
+#endif
 
+#if NEXA_NATIVE_SERVICES
+    public static async Task<IReadOnlyDictionary<string, string>> ResolveUpdatesAsync(NativeSidecarUpdates updater, LogService log)
+#else
     public static async Task<IReadOnlyDictionary<string, string>> ResolveUpdatesAsync(SidecarUpdateService updater, LogService log)
+#endif
     {
         try { return await updater.ActivePackagesAsync().ConfigureAwait(false); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException)

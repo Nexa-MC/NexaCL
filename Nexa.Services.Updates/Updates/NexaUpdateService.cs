@@ -6,7 +6,7 @@ using Nexa.Xsr;
 namespace Nexa.Services.Updates;
 
 /// <summary>Only discovers Nexa 2 releases; the legacy patch and distribution contracts are separate.</summary>
-public sealed class NexaUpdateService(HttpClient http, Rollouts.RolloutService? rollouts = null)
+public sealed class NexaUpdateService(HttpClient http, Rollouts.RolloutService? rollouts = null) : IUpdateTelemetrySource
 {
     public IWorkScheduler? WorkScheduler { get; init; }
     public Action<string, string>? Record { get; set; }

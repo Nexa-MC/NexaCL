@@ -1,3 +1,4 @@
+#if !NEXA_NATIVE_SERVICES
 using Nexa.Services.Foundation;
 using Nexa.Services.Rollouts;
 using Nexa.Services.Updates;
@@ -27,3 +28,4 @@ public sealed class LauncherNetworkRuntime : IDisposable, IAsyncDisposable
     public void Dispose() { Rollouts.Dispose(); Http.Dispose(); }
     public async ValueTask DisposeAsync() { await Rollouts.DisposeAsync().ConfigureAwait(false); Http.Dispose(); }
 }
+#endif

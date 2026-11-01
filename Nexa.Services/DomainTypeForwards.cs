@@ -643,7 +643,9 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceTranslationService))]
 #endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Resources.ResourceVersion))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Rollouts.RolloutService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Rollouts.RolloutSnapshot))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Rollouts.RolloutStateContract))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Settings.ISettingsPort))]
@@ -709,7 +711,9 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Telemetry.TelemetryEventCatalog))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Telemetry.TelemetryLevel))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Telemetry.TelemetryService))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.HDiffPatchTool))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.IProcessLauncher))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.IProcessRunner))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.IUpdateSignatureVerifier))]
@@ -718,55 +722,105 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.NexaUpdateContract))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.NexaUpdateOffer))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.NexaUpdateQuery))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.NexaUpdateService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.NexaUpdateStatus))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.PreparedLauncherUpdate))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.ProcessLauncher))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.ProcessRunner))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateArchiveLimits))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateBlock))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateBlockCodec))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateBlockDelta))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateBlockFile))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateBlockFull))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateBlockMap))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateBuildIdentity))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateChannel))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateChunkProfile))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateChunkSlice))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateChunker))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateChunkingParameters))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateDiscoveryResult))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateDiscoveryService))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateDistributionLayout))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateDistributionOptions))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateEligibility))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateEligibilityDecision))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateEligibilityResult))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateFileEntry))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateGpgVerifier))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateInstallPlan))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateJsonContext))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateLocalBlockIndex))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdatePackage))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdatePackagePlanner))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdatePatchApplier))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdatePatchDto))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdatePatchIndexDto))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdatePatchIndexSource))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdatePatchStep))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdatePatchStrategyDto))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdatePatchVariantDto))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdatePayloadExtractor))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdatePlannerOptions))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateRestartScheduler))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateScatterPatchManifest))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateScatterPatchOperation))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateStaging))]
+#endif
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateVcdiff))]
+#endif
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateVersion))]
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.UpdateVersionStage))]
+#if !NEXA_NATIVE_SERVICES
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Updates.VerifiedUpdateInventory))]
+#endif
 
 [assembly: TypeForwardedTo(typeof(Nexa.Services.Minecraft.MinecraftErrors))]
 

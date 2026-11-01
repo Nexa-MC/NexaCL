@@ -18,11 +18,12 @@ public sealed class SidecarUpdateService : ISidecarUpdateControl, IDisposable
     private sealed record Candidate(string Id, string Version, string Hash, long Size, Uri Url, string Release, string MinimumHost, byte[] Catalog, byte[] Signature);
     public SidecarUpdateService(HttpClient http, IUpdateSignatureVerifier verifier, string root, string bundled, string rid, string hostVersion)
     { _http = http; _verify = verifier; _root = Path.GetFullPath(root); _bundled = Path.GetFullPath(bundled); _rid = rid; _hostVersion = hostVersion; }
+    public event Action<SidecarUpdateSnapshot>? SnapshotChanged;
     public SidecarUpdateSnapshot Snapshot { get { lock (_gate) return _snapshot; } }
     private void Publish(string phase, IReadOnlyList<SidecarUpdateItem>? items = null)
-    { lock (_gate) _snapshot = new(phase, items ?? _snapshot.Items); }
+    { SidecarUpdateSnapshot snapshot; lock (_gate) snapshot = _snapshot = new(phase, items ?? _snapshot.Items); SnapshotChanged?.Invoke(snapshot); }
     private void Item(string id, string phase, bool canInstall, double progress = 0)
-    { lock (_gate) _snapshot = _snapshot with { Items = _snapshot.Items.Select(i => i.Id == id ? i with { Phase = phase, CanInstall = canInstall, Progress = progress } : i).ToArray() }; }
+    { SidecarUpdateSnapshot snapshot; lock (_gate) snapshot = _snapshot = _snapshot with { Items = _snapshot.Items.Select(i => i.Id == id ? i with { Phase = phase, CanInstall = canInstall, Progress = progress } : i).ToArray() }; SnapshotChanged?.Invoke(snapshot); }
     public async Task CheckAsync(string channel, CancellationToken token)
     {
         if (channel is not ("alpha" or "beta" or "stable")) throw new ArgumentException("Invalid update channel.", nameof(channel));

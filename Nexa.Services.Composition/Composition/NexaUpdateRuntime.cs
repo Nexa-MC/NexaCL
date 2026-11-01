@@ -10,7 +10,11 @@ public static class NexaUpdateRuntimeComposer
     {
         public void OnCompleted(XsrDispatchObservation observation) { }
     }
+#if NEXA_NATIVE_SERVICES
+    public static XsrQueryRouter Compose(Nexa.Native.Updates.Client.NativeUpdatesClient service)
+#else
     public static XsrQueryRouter Compose(NexaUpdateService service)
+#endif
     {
         XsrQueryRouterBuilder queries = new();
         queries.Register<NexaUpdateQuery, NexaUpdateStatus>(NexaUpdateContract.Check,

@@ -45,23 +45,21 @@ Extensions are `.dll` / `.so` / `.dylib` for Windows / Linux / macOS respectivel
 | `nexa-accounts` | Encrypted account storage, login/provider sessions, refresh, wardrobe and catalogs |
 | `nexa-pac` | PAC interpreter |
 | `nexa-crypto` | OpenPGP verification |
-| `nexa-network` | Connection/socket/TLS engine; asynchronous HTTP service ports under integration |
-| `nexa-updates` | Streaming compression and delta codecs |
+| `nexa-network` | Canonical HTTP/socket/TLS, network policy, downloads, resume state and transfer tasks |
+| `nexa-updates` | Release/rollout discovery, signed portable transactions, protected-helper coordination, Sidecar updates, compression and delta codecs |
 | `nexa-media` | Image metadata and wardrobe PNG validation |
-| `nexa-minecraft` | Library/classpath/rule and asset metadata algorithms |
+| `nexa-minecraft` | Version/library state, Java, installation/modpacks, resources, instance management, environment facts and game lifecycle |
 | `nexa-markup` | NXML syntax and bounded XML parsing for SVG, Maven and events |
 | `nexa-artwork` | Product icons, brand artwork and controller sprite images |
 
-The names identify ownership groups; the service lifecycle portions of network,
-updates and Minecraft remain in UI. The UI account closure includes the typed
-client and contracts, with the concrete account implementation rejected by publication.
-The complete business-module acceptance criteria below
-remain open.
-
-The network HTTP service ports are exercised by an independent AOT caller, including
-large uploads/responses and physical cancellation. Their current ownership and
-remaining production/download integration are recorded in
-[the network migration note](migrations/native-network-service-ownership.md).
+The production UI uses typed asynchronous clients and state replicas for Accounts,
+Network, Minecraft and Updates. Publication rejects their concrete implementations
+from the UI closure. The current ownership and independent NativeAOT evidence are
+recorded in the [network](migrations/native-network-service-ownership.md),
+[Minecraft](migrations/native-minecraft-environment-facts.md) and
+[Updates](migrations/native-updates-service-ownership.md) migration notes.
+Host admission/composition and complete-payload measurements remain separate final
+acceptance work; the existence of these images alone is not completion evidence.
 
 ## Stable engine boundaries
 

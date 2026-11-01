@@ -1,0 +1,15 @@
+Nexa.Services.Updates.Contracts|Nexa.Services.Updates.NativeUpdatesInitialization
+Nexa.Services.Updates.Contracts|Nexa.Services.Updates.NativeSidecarUpdateConfiguration
+Nexa.Services.Updates.Contracts|Nexa.Services.Updates.NativeUpdateDiscoveryConfiguration
+Nexa.Services.Updates.Contracts|Nexa.Services.Updates.NativeAutomaticUpdateConfiguration
+Nexa.Services.Updates.Contracts|Nexa.Services.Updates.NativeUpdateInstallRequest
+Nexa.Services.Updates.Contracts|Nexa.Services.Updates.NativeSidecarPackages
+Nexa.Services.Updates.Contracts|Nexa.Services.Updates.NativeRolloutProjection
+Nexa.Services.Updates.Contracts|Nexa.Services.Updates.NexaUpdateQuery
+Nexa.Services.Updates.Contracts|Nexa.Services.Updates.NexaUpdateStatus
+Nexa.Services.Updates.Contracts|Nexa.Services.Updates.AutomaticUpdateStatus
+Nexa.Services.Updates.Contracts|Nexa.Services.Updates.SidecarUpdateSnapshot
+Nexa.Services.Updates.Contracts|Nexa.Services.Updates.UpdateBuildIdentity
+Nexa.Xsr.Abstractions|Nexa.Xsr.XsrError
+Nexa.Services.Updates.Contracts|Nexa.Services.Community.LauncherAnnouncement
+Nexa.Services.Updates.Contracts|Nexa.Services.Community.LauncherCommunitySnapshot

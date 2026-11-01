@@ -33,7 +33,7 @@ internal static partial class Program
     internal static bool RedirectSelectedLauncher(IUpdateDirectory root, string runningVersion, string[] args,
         Func<ProcessStartInfo, bool> startProcess)
     {
-        using FileStream journal = root.OpenRead(AutomaticUpdateTransaction.ActivationName);
+        using FileStream journal = root.OpenRead(UpdateTransactionJournal.ActivationName);
         string[]? active = UpdateTransactionJournal.Read(journal);
         if (active is not { Length: 4 } || active[1].Length == 0) return false;
         if (!UpdateVersion.TryParse(active[0], out var target) || !UpdateVersion.TryParse(runningVersion, out var baseline)
