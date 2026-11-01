@@ -112,6 +112,26 @@ the same business implementations.
 
 ### Acceptance for the complete split
 
+The completion pass must adopt the existing Window ABI through a production client
+before removing the Desktop backend reference. That client owns its local callback
+registry, renderer/shell endpoints, cancellation and continuation context. The
+window runtime owns native effects, prepared resources and input leases. Missing
+exports and incompatible wire schemas fail before startup; native images remain
+loaded until process exit. The managed development backend remains available while
+the release compilation closure is checked independently.
+
+Public immutable platform values have one managed definition in
+`Nexa.Xsr.Renderer.Platform.Contracts`. The existing backend forwards its public
+value types to that assembly, preserving managed consumers. Both independent AOT
+runtimes link their own copy and exchange only encoded values. This avoids duplicate
+public CLR type definitions in a managed composition without sharing objects across
+the native boundary.
+
+Remaining native media, screenshot, notification-action and world-edit operations
+must also cross explicit bounded protocols before the backend reference is removed.
+The Window prototype is the implementation basis for the UI ownership group; its
+existence alone does not complete the UI or business-module extraction.
+
 - Each module is absent from the Host's managed compilation closure; a renamed or
   copied assembly with the same code still linked into Host does not count.
 - Native builds exercise login/refresh, install/cancel/retry/resume, launch/exit,
@@ -1048,3 +1068,28 @@ next frame before asserting final settlement. A valid delayed frame can already
 be below half the previous sample; that ratio is not a continuity contract.
 A separate macOS Intel backend presentation gate runs the motion, input and
 resource-lifetime scenarios before the complete launcher packaging matrix.
+
+### Typed window client and canonical platform values
+
+`Nexa.Xsr.Renderer.Backend.Native` owns a typed client for the Window protocol.
+It checks the exported protocol identity before admitting Host callbacks, retains
+local exceptions in their original runtime, and enters and retires the native
+application on the process main thread. Shell invalidations are coalesced before
+delivery. Input callback leases and prepared theme handles retain their individual
+drain/claim/release contracts. Discarding a prepared shell also discards the native
+scene baseline and event subscriptions before a replacement can render.
+
+The public platform values now live in `Nexa.Xsr.Renderer.Platform.Contracts`;
+the Avalonia backend forwards all eighteen former public value types. A caller
+compiled against the prior backend binary successfully loaded its platform value
+through the new forwarder. No managed object is exchanged by the native protocol.
+
+Validation: the Release solution builds without warnings/errors; 89-project
+architecture, 388 Desktop and 47 backend tests pass. Both generated wire schemas
+are unchanged. The complete Linux-x64 NativeAOT probe passes the original raw ABI
+fixtures and the new client's headless and real-window modes, including a replaced
+shell, native theme/text installation, frame-rate/localization/facts, input polling
+under the Host context, self-release and normal native retirement. The new caller
+has neither Avalonia implementation dependencies nor CoreCLR. Windows/macOS client
+execution is a release CI gate. Desktop production adoption and the full business
+module extraction remain outstanding.

@@ -560,6 +560,7 @@
     "Nexa.Xsr.State"
   ],
   "Nexa.Xsr.Renderer.Backend.Avalonia": [
+    "Nexa.Xsr.Renderer.Platform.Contracts",
     "Nexa.Xsr.Renderer.Artwork",
     "Nexa.Xsr.Renderer"
   ],
@@ -608,14 +609,26 @@
     "Nexa.Xsr.Abstractions"
   ],
   "Nexa.Native.Ui.Peer": [
-    "Nexa.Xsr.Renderer"
+    "Nexa.Xsr.Renderer",
+    "Nexa.Xsr.Renderer.Platform.Contracts"
   ],
   "Nexa.Native.Ui.Tests": [
-    "Nexa.Xsr.Renderer"
+    "Nexa.Xsr.Renderer",
+    "Nexa.Xsr.Renderer.Platform.Contracts"
   ],
   "Nexa.Native.Window": [
     "Nexa.Core",
     "Nexa.Xsr.Renderer",
     "Nexa.Xsr.Renderer.Backend.Avalonia"
+  ],
+  "Nexa.Xsr.Renderer.Backend.Native": [
+    "Nexa.Xsr.Renderer",
+    "Nexa.Xsr.Renderer.Platform.Contracts"
+  ],
+  "Nexa.Xsr.Renderer.Platform.Contracts": [
+    "Nexa.Xsr.Renderer"
+  ],
+  "Nexa.Xsr.Renderer.Backend.Native.Tests": [
+    "Nexa.Xsr.Renderer.Backend.Native"
   ]
 }

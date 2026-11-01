@@ -5,7 +5,5 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)../../Nexa.Xsr.Renderer/Wire/UiWire.cs" Link="WindowProtocol/UiWire.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)*.cs" Link="WindowProtocol/%(Filename)%(Extension)" />
-    <Compile Include="$(MSBuildThisFileDirectory)../../Nexa.Xsr.Renderer.Backend.Avalonia/Contracts/*.cs"
-             Link="WindowContracts/%(Filename)%(Extension)" Condition="'$(NexaCompileWindowValues)' == 'true'" />
   </ItemGroup>
 </Project>

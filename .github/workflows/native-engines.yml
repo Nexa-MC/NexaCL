@@ -7,6 +7,8 @@ on:
       - 'native/**'
       - 'Nexa.Xsr.Renderer/**'
       - 'Nexa.Xsr.Renderer.Backend.Avalonia/**'
+      - 'Nexa.Xsr.Renderer.Backend.Native/**'
+      - 'tests/Nexa.Xsr.Renderer.Backend.Native.Tests/**'
       - 'eng/xsr/generate_ui_wire.*'
       - 'tests/Nexa.Native.Ui.Peer/**'
       - 'tests/Nexa.Native.Ui.Tests/**'

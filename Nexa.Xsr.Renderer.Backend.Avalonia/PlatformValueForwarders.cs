@@ -1,0 +1,21 @@
+using System.Runtime.CompilerServices;
+using Nexa.Xsr.Renderer.Backend.Avalonia;
+
+[assembly: TypeForwardedTo(typeof(AvaloniaUiInputKind))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiThemePickerKind))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiDesktopPolicy))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiMemoryPressure))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiMemoryObservation))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiRuntimeCapture))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiMediaStatus))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiMediaState))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiMediaFrame))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiStartupAppearance))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiThemeResource))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiThemeResizePolicy))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiThemeSplashMotion))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiThemeWindowMaterial))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiThemeMaterialPresentation))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiThemeStartupColors))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiThemeAppearance))]
+[assembly: TypeForwardedTo(typeof(AvaloniaUiThemeStartupSnapshot))]

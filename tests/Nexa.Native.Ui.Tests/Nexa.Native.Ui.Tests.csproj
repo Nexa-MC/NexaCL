@@ -3,7 +3,6 @@
     <OutputType>Exe</OutputType>
     <IsAotCompatible>true</IsAotCompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NexaCompileWindowValues>true</NexaCompileWindowValues>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../native/NativeUiCallGate.cs" Link="NativeUiCallGate.cs" />
@@ -11,6 +10,7 @@
     <Compile Include="../../native/NativeUiResources.cs" Link="NativeUiResources.cs" />
     <Compile Include="../../native/NativeUiSynchronizationContext.cs" Link="NativeUiSynchronizationContext.cs" />
     <ProjectReference Include="../../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
+    <ProjectReference Include="../../Nexa.Xsr.Renderer.Platform.Contracts/Nexa.Xsr.Renderer.Platform.Contracts.csproj" />
   </ItemGroup>
   <Import Project="../../native/WindowProtocol/WindowContracts.props" />
 </Project>

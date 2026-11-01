@@ -16,6 +16,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.0" />
     <ProjectReference Include="../Nexa.Xsr.Renderer.Artwork/Nexa.Xsr.Renderer.Artwork.csproj" />
     <ProjectReference Include="../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
+    <ProjectReference Include="../Nexa.Xsr.Renderer.Platform.Contracts/Nexa.Xsr.Renderer.Platform.Contracts.csproj" />
   </ItemGroup>
   <Import Project="../native/WindowProtocol/WindowContracts.props" />
 </Project>

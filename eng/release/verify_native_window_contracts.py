@@ -1,5 +1,6 @@
 """Paint a real window across independent NativeAOT runtimes (requires a desktop/display)."""
 import argparse
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -15,20 +16,41 @@ def verify(rid: str, output: Path):
         "-c", "Release", "-r", rid, "--self-contained", "true", "-m:1", "-nr:false",
         "-p:PublishAot=true", "-o", str(native),
     ], check=True, cwd=ROOT)
+    client = output / "client"
+    client_project = ROOT / "tests/Nexa.Xsr.Renderer.Backend.Native.Tests"
+    subprocess.run([
+        "dotnet", "publish", str(client_project), "-c", "Release", "-r", rid,
+        "--self-contained", "true", "-m:1", "-nr:false", "-p:PublishAot=true", "-o", str(client),
+    ], check=True, cwd=ROOT)
+    assets = json.loads((client_project / "obj/project.assets.json").read_text(encoding="utf-8"))
+    if any(name.split("/")[0].startswith("Avalonia")
+           or name.split("/")[0] == "Nexa.Xsr.Renderer.Backend.Avalonia"
+           for name in assets["libraries"]):
+        raise RuntimeError("Native window client embeds the backend implementation")
     forbidden = {"coreclr.dll", "libcoreclr.so", "libcoreclr.dylib", "System.Private.CoreLib.dll"}
     if any(path.name in forbidden for path in output.rglob("*")):
         raise RuntimeError("Native window carries CoreCLR")
-    for path in native.iterdir():
-        if path.is_file():
-            shutil.copy2(path, caller.parent / path.name)
     suffix = ".dll" if rid.startswith("win-") else ".dylib" if rid.startswith("osx-") else ".so"
-    window = caller.parent / ("nexa-window" + suffix)
-    (caller.parent / ("Nexa.Native.Window" + suffix)).rename(window)
-    command = [str(caller), str(peer), str(window)]
-    if rid.startswith("linux-"):
-        command = ["xvfb-run", "-a", *command]
+    for directory in (caller.parent, client):
+        for path in native.iterdir():
+            if path.is_file():
+                name = "nexa-window" + suffix if path.name == "Nexa.Native.Window" + suffix else path.name
+                shutil.copy2(path, directory / name)
+    client_executable = client / ("Nexa.Xsr.Renderer.Backend.Native.Tests" + (".exe" if rid.startswith("win-") else ""))
+    commands = [
+        ([str(caller), str(peer), str(caller.parent / ("nexa-window" + suffix))], caller.parent, True),
+        ([str(client_executable), str(client / ("nexa-window" + suffix)), "headless"], client, False),
+        ([str(client_executable), str(client / ("nexa-window" + suffix)), "window"], client, True),
+    ]
+    for command, directory, display in commands:
+        if rid.startswith("linux-") and display:
+            command = ["xvfb-run", "-a", *command]
+        run_window_probe(command, directory, rid, output)
+
+
+def run_window_probe(command, directory, rid, output):
     try:
-        subprocess.run(command, check=True, timeout=180, cwd=caller.parent)
+        subprocess.run(command, check=True, timeout=180, cwd=directory)
     except subprocess.CalledProcessError as error:
         # A successful managed test body does not prove native process teardown.
         # Keep the original failure while collecting a native stack on macOS runners.
@@ -40,7 +62,7 @@ def verify(rid: str, output: Path):
                         "lldb", "--batch", "-o", "settings set target.disable-aslr false",
                         "-o", "process handle -p true -s false -n false SIGUSR1 SIGUSR2",
                         "-k", "thread backtrace all", "-o", "run", "--", *command,
-                    ], cwd=caller.parent, stdout=log, stderr=subprocess.STDOUT, timeout=180, check=False)
+                    ], cwd=directory, stdout=log, stderr=subprocess.STDOUT, timeout=180, check=False)
                 except subprocess.TimeoutExpired:
                     log.write("\nNative debugger exceeded its diagnostic time budget.\n")
             print(diagnostic.read_text(encoding="utf-8", errors="replace")[-65536:], flush=True)

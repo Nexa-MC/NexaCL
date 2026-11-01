@@ -1,5 +1,8 @@
 <Solution>
   <Project Path="native/Nexa.Native.Window/Nexa.Native.Window.csproj" />
+  <Project Path="Nexa.Xsr.Renderer.Backend.Native/Nexa.Xsr.Renderer.Backend.Native.csproj" />
+  <Project Path="Nexa.Xsr.Renderer.Platform.Contracts/Nexa.Xsr.Renderer.Platform.Contracts.csproj" />
+  <Project Path="tests/Nexa.Xsr.Renderer.Backend.Native.Tests/Nexa.Xsr.Renderer.Backend.Native.Tests.csproj" />
   <Project Path="tests/Nexa.Native.Ui.Peer/Nexa.Native.Ui.Peer.csproj" />
   <Project Path="tests/Nexa.Native.Ui.Tests/Nexa.Native.Ui.Tests.csproj" />
   <Project Path="Nexa.Xsr.Renderer.Artwork/Nexa.Xsr.Renderer.Artwork.csproj" />

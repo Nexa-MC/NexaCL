@@ -6,9 +6,18 @@ namespace Nexa.Native.Window;
 
 internal static class WindowExports
 {
+    private static readonly byte[] IdentityBytes = System.Text.Encoding.UTF8.GetBytes(Nexa.Native.Window.Wire.WindowControlProtocol.Identity);
     private static WindowSession? _session;
     private static Task? _retirement;
     private static int _opened;
+
+    [UnmanagedCallersOnly(EntryPoint = "nexa_window_identity_v1", CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe int Identity(byte* buffer, int capacity)
+    {
+        if (capacity < 0 || buffer == null && capacity != 0) return -1;
+        if (buffer == null || capacity < IdentityBytes.Length) return IdentityBytes.Length;
+        IdentityBytes.CopyTo(new Span<byte>(buffer, IdentityBytes.Length)); return IdentityBytes.Length;
+    }
 
     [UnmanagedCallersOnly(EntryPoint = "nexa_window_open_v1", CallConvs = [typeof(CallConvCdecl)])]
     private static unsafe int Open(NativeUiCallTable* hostControl, NativeUiCallTable* hostUi,

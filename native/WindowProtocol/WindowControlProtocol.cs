@@ -15,6 +15,7 @@ internal enum WindowUiCommand : byte { Continuation = 0, Invalidate = 1, Text = 
 
 internal static class WindowControlProtocol
 {
+    internal static string Identity => "nexa-window/1/" + UiWireSchema.Fingerprint;
     internal static UiWireWriter Write(int kind, bool callback = false)
     {
         var writer = new UiWireWriter(new Dictionary<string, Nexa.Core.Media.PngImage>());

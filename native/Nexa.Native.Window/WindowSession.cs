@@ -221,7 +221,17 @@ internal sealed partial class WindowSession : IAsyncDisposable
                 }, token).ConfigureAwait(false);
                 return facts;
             case WindowCommand.DiscardShell:
-                reader.End(); await Startup.DiscardPreparedShellAsync().ConfigureAwait(false); return [];
+                reader.End();
+                await Startup.DiscardPreparedShellAsync().ConfigureAwait(false);
+                await NativeContext.RunAsync(() =>
+                {
+                    bool hadShell = _shell is not null;
+                    DetachPlatformEvents();
+                    _text = null; _shell = null;
+                    if (hadShell) _hostUi.Exchange(new byte[] { (byte)WindowUiCallback.InstallText, 0 });
+                    return Task.CompletedTask;
+                }, token).ConfigureAwait(false);
+                return [];
             case WindowCommand.WaitForRetry:
                 string retryMessage = Required(reader.String()); reader.End();
                 bool retry = false;

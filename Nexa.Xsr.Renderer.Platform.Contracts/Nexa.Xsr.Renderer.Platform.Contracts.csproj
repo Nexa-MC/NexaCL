@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+    <Description>Immutable window and appearance values shared as encoded data by independent native runtimes.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
+    <InternalsVisibleTo Include="Nexa.Xsr.Renderer.Backend.Avalonia" />
+    <InternalsVisibleTo Include="Nexa.Xsr.Renderer.Backend.Avalonia.Tests" />
+    <InternalsVisibleTo Include="Nexa.Xsr.Renderer.Backend.Native" />
+    <InternalsVisibleTo Include="Nexa.Native.Window" />
+    <InternalsVisibleTo Include="Nexa.Native.Ui.Tests" />
+    <InternalsVisibleTo Include="Nexa.Native.Ui.Peer" />
+  </ItemGroup>
+</Project>
