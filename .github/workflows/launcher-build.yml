@@ -60,7 +60,8 @@ jobs:
     needs: metadata
     name: Launcher ${{ matrix.rid }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    # Intel macOS performs the full NativeAOT build and regression suite before upload.
+    timeout-minutes: ${{ matrix.rid == 'osx-x64' && 60 || 45 }}
     strategy:
       fail-fast: false
       matrix:
