@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><NexaLocalPatchRuntime>false</NexaLocalPatchRuntime></PropertyGroup>
+  <Import Project="../../../../eng/build/NativeEngine.props" />
+  <Import Project="../../../interop/services/ServiceProtocol.props" />
+  <ItemGroup>
+    <ProjectReference Include="../Nexa.Services.Accounts/Nexa.Services.Accounts.csproj" />
+    <ProjectReference Include="../../foundation/Nexa.Services.Foundation.Contracts/Nexa.Services.Foundation.Contracts.csproj" />
+    <Compile Include="../protocol/*.cs" Link="Wire/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

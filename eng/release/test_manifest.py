@@ -17,7 +17,7 @@ class ReleaseManifestTests(unittest.TestCase):
             for name in expected_names(version):
                 (root / name).write_bytes(b"publisher fixture package\n")
             verify(root, version)
-            fixture = Path(__file__).resolve().parents[2] / "tests/Nexa.Services.Tests/Fixtures/ReleaseManifest.json"
+            fixture = Path(__file__).resolve().parents[2] / "tests/app/Nexa.Services.Tests/Fixtures/ReleaseManifest.json"
             self.assertEqual(json.loads((root / MANIFEST_NAME).read_bytes()), json.loads(fixture.read_bytes()))
 
     def seed(self, directory, version="2.0.0.alpha.6"):

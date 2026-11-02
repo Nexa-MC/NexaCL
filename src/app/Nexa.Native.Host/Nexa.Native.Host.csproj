@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../../eng/build/NativeEngine.props" />
+  <PropertyGroup>
+    <Description>Native module admission and main-thread UI entry; no presentation or service implementation dependencies.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../protocol/HostServiceCatalog.Generated.cs" Link="HostServiceCatalog.Generated.cs" />
+    <Compile Include="../../interop/ui/NativeUiCallGate.cs" Link="NativeUiCallGate.cs" />
+  </ItemGroup>
+</Project>

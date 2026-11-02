@@ -1,3 +1,0 @@
-﻿<nxml-dynamic>
-<ContentHost Key="{data key}" IsVisible="false" Class="settings-catalog-thumb" />
-</nxml-dynamic>

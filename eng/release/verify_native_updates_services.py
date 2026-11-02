@@ -6,11 +6,11 @@ import shutil
 import subprocess
 import tempfile
 
-from publish_launcher import ROOT, module_name, stable_ui_properties, engine_service_properties
+from publish_launcher import ROOT, module_name, stable_ui_properties, engine_service_properties, project_directory
 
 
 def create_fixture(directory, rid):
-    source = ROOT / "tests/Nexa.Native.Updates.Services.Tests/Fixtures" / rid
+    source = ROOT / "tests/modules/updates/Nexa.Native.Updates.Services.Tests/Fixtures" / rid
     for file in source.iterdir():
         shutil.copy2(file, directory / file.name)
 
@@ -21,16 +21,16 @@ def verify(rid, output, payload=None):
     common = ["-c", "Release", "-r", rid, "-m:1", "-nr:false", "-p:PublishAot=true", "-p:StripSymbols=true", *stable_ui_properties([])]
     if payload is None:
         for engine in ("Updates", "Crypto"):
-            subprocess.run(["dotnet", "publish", str(ROOT / ("native/Nexa.Native." + engine)), *common, *engine_service_properties(engine), "--output", str(output / engine.lower())], check=True)
-    subprocess.run(["dotnet", "publish", str(ROOT / "tests/Nexa.Native.Updates.Services.Tests"), *common, "--output", str(caller)], check=True)
+            subprocess.run(["dotnet", "publish", str(project_directory("Nexa.Native." + engine)), *common, *engine_service_properties(engine), "--output", str(output / engine.lower())], check=True)
+    subprocess.run(["dotnet", "publish", str(ROOT / "tests/modules/updates/Nexa.Native.Updates.Services.Tests"), *common, "--output", str(caller)], check=True)
     subprocess.run(["python", str(ROOT / "eng/xsr/generate_service_wire.py"),
-                    "--assembly", str(ROOT / "native/Nexa.Native.Updates.Client/bin/Release/net10.0/Nexa.Native.Updates.Client.dll"),
-                    "--roots", str(ROOT / "native/UpdatesServiceProtocol/ServiceWire.roots"),
-                    "--output", str(ROOT / "native/UpdatesServiceProtocol/ServiceWire.Generated.cs"), "--check"], check=True)
-    libraries = json.loads((ROOT / "tests/Nexa.Native.Updates.Services.Tests/obj/project.assets.json").read_text())["libraries"]
+                    "--assembly", str(ROOT / "src/modules/updates/Nexa.Native.Updates.Client/bin/Release/net10.0/Nexa.Native.Updates.Client.dll"),
+                    "--roots", str(ROOT / "src/modules/updates/protocol/ServiceWire.roots"),
+                    "--output", str(ROOT / "src/modules/updates/protocol/ServiceWire.Generated.cs"), "--check"], check=True)
+    libraries = json.loads((ROOT / "tests/modules/updates/Nexa.Native.Updates.Services.Tests/obj/project.assets.json").read_text())["libraries"]
     if any(name.split("/")[0] in {"Nexa.Services.Updates", "Nexa.Services.Rollouts", "Nexa.Native.Updates", "Nexa.Native.Updates.Codecs", "Nexa.Platform.Runtime"} for name in libraries):
         raise RuntimeError("Updates caller embedded business implementations")
-    libraries = json.loads((ROOT / "native/Nexa.Native.Updates/obj/project.assets.json").read_text())["libraries"]
+    libraries = json.loads((ROOT / "src/modules/updates/Nexa.Native.Updates/obj/project.assets.json").read_text())["libraries"]
     if any(name.split("/")[0] in {"Nexa.Desktop", "Nexa.Services", "Nexa.Services.Composition"}
            or name.startswith(("Avalonia", "Nexa.Xsr.Renderer")) for name in libraries):
         raise RuntimeError("Updates owner embedded presentation dependencies")

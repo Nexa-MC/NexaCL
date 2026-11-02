@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../src/rendering/Nexa.Xsr.Renderer.Backend.Native/Nexa.Xsr.Renderer.Backend.Native.csproj" />
+  </ItemGroup>
+</Project>

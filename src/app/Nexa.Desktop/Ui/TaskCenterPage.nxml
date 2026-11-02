@@ -1,0 +1,5 @@
+<nxml-page>
+  <Page Key="TaskCenterPage" Label="任务中心">
+    <Dynamic Key="TaskCenterWorkspace" Class="task-workspace-slot" />
+  </Page>
+</nxml-page>

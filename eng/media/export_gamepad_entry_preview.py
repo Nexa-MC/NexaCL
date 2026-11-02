@@ -9,7 +9,7 @@ from PIL import Image
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("capture", type=Path)
-parser.add_argument("--output", type=Path, default=Path(__file__).resolve().parents[2] / "docs/previews/gamepad-entry")
+parser.add_argument("--output", type=Path, default=Path(__file__).resolve().parents[2] / "artifacts/previews/gamepad-entry")
 args = parser.parse_args()
 frames = json.loads((args.capture / "frames.json").read_text())
 step = frames[1]["age"] - frames[0]["age"]

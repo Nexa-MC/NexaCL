@@ -32,8 +32,8 @@ jobs:
           java-version: '21'
       - name: Publish real launch and sampling hosts
         run: |
-          dotnet publish Nexa.Jvm.Host -c Release -p:PublishAot=true -o "$RUNNER_TEMP/jvm-host"
-          dotnet publish tools/Nexa.Minecraft.Benchmarks -c Release -p:PublishAot=true -o "$RUNNER_TEMP/benchmark"
+          dotnet publish src/app/Nexa.Jvm.Host -c Release -p:PublishAot=true -o "$RUNNER_TEMP/jvm-host"
+          dotnet publish tools/benchmarks/Nexa.Minecraft.Benchmarks -c Release -p:PublishAot=true -o "$RUNNER_TEMP/benchmark"
       - name: Verify artifact boundary
         run: python -m unittest discover -s eng/benchmarks -p 'test_*.py'
       - name: Download reviewed pack with pinned hashes

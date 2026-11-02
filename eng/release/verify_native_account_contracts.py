@@ -15,19 +15,19 @@ def verify(rid, output):
     common = ["-c", "Release", "-r", rid, "-m:1", "-nr:false", "-p:PublishAot=true", "-p:StripSymbols=true",
               "-p:XsrVersionChannel=stable", "-p:XsrVersionPrefix=1.0.0"]
     owner, caller = output / "accounts", output / "caller"
-    subprocess.run(["dotnet", "publish", str(ROOT / "native/Nexa.Native.Accounts"), *common, "-p:NexaExternalModules=true", "--output", str(owner)], check=True, cwd=ROOT)
-    libraries = json.loads((ROOT / "native/Nexa.Native.Accounts/obj/project.assets.json").read_text())["libraries"]
+    subprocess.run(["dotnet", "publish", str(ROOT / "src/modules/accounts/Nexa.Native.Accounts"), *common, "-p:NexaExternalModules=true", "--output", str(owner)], check=True, cwd=ROOT)
+    libraries = json.loads((ROOT / "src/modules/accounts/Nexa.Native.Accounts/obj/project.assets.json").read_text())["libraries"]
     forbidden = {"Nexa.Desktop", "Nexa.Services", "Nexa.Services.Composition", "Nexa.Native.Accounts.Client", "Nexa.Native.Window"}
     if any((name := library.split("/")[0]) in forbidden or name.startswith(("Avalonia", "Nexa.Xsr.Renderer")) for library in libraries):
         raise RuntimeError("Account owner embedded presentation or its own client")
-    subprocess.run(["dotnet", "publish", str(ROOT / "tests/Nexa.Native.Accounts.Tests"), *common, "--output", str(caller)], check=True, cwd=ROOT)
+    subprocess.run(["dotnet", "publish", str(ROOT / "tests/modules/accounts/Nexa.Native.Accounts.Tests"), *common, "--output", str(caller)], check=True, cwd=ROOT)
     subprocess.run(["python", str(ROOT / "eng/xsr/generate_service_wire.py"),
-                    "--assembly", str(ROOT / f"tests/Nexa.Native.Accounts.Tests/bin/Release/net10.0/{rid}/Nexa.Services.Accounts.Contracts.dll"),
-                    "--roots", str(ROOT / "native/AccountsProtocol/ServiceWire.roots"),
-                    "--output", str(ROOT / "native/AccountsProtocol/ServiceWire.Generated.cs"), "--check"], check=True, cwd=ROOT)
+                    "--assembly", str(ROOT / f"tests/modules/accounts/Nexa.Native.Accounts.Tests/bin/Release/net10.0/{rid}/Nexa.Services.Accounts.Contracts.dll"),
+                    "--roots", str(ROOT / "src/modules/accounts/protocol/ServiceWire.roots"),
+                    "--output", str(ROOT / "src/modules/accounts/protocol/ServiceWire.Generated.cs"), "--check"], check=True, cwd=ROOT)
     shutil.copy2(owner / ("Nexa.Native.Accounts" + suffix), caller / ("nexa-accounts" + suffix))
     # The caller's dependency closure must not contain the implementation it is testing.
-    libraries = json.loads((ROOT / "tests/Nexa.Native.Accounts.Tests/obj/project.assets.json").read_text())["libraries"]
+    libraries = json.loads((ROOT / "tests/modules/accounts/Nexa.Native.Accounts.Tests/obj/project.assets.json").read_text())["libraries"]
     if any(name.split("/")[0] in {"Nexa.Services.Accounts", "Nexa.Native.Accounts"} for name in libraries):
         raise RuntimeError("Account caller embedded the service implementation")
     executable = caller / ("Nexa.Native.Accounts.Tests.exe" if rid.startswith("win-") else "Nexa.Native.Accounts.Tests")

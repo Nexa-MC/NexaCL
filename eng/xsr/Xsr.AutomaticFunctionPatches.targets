@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <_NexaAutomaticCompilerProject>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'tools', 'Nexa.Xsr.Patch.Compiler', 'Nexa.Xsr.Patch.Compiler.csproj'))</_NexaAutomaticCompilerProject>
+    <_NexaAutomaticCompilerProject>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'tools', 'compiler', 'Nexa.Xsr.Patch.Compiler', 'Nexa.Xsr.Patch.Compiler.csproj'))</_NexaAutomaticCompilerProject>
     <_NexaAutomaticDotnet Condition="'$(DOTNET_HOST_PATH)' != ''">$(DOTNET_HOST_PATH)</_NexaAutomaticDotnet>
     <_NexaAutomaticDotnet Condition="'$(_NexaAutomaticDotnet)' == ''">dotnet</_NexaAutomaticDotnet>
   </PropertyGroup>

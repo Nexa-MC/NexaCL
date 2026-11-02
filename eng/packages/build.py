@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
+PROJECTS = json.loads((ROOT / 'eng/architecture/projects.json').read_text())
 SPEC = json.loads((ROOT / 'eng/packages/manifest.json').read_text())
 NS = 'http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd'
 
@@ -61,7 +62,7 @@ def build(output):
     if sdk != SPEC['sdk']:
         raise SystemExit(f"Shared package build requires SDK {SPEC['sdk']}; got {sdk}")
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
-    run('dotnet', 'build', 'Nexa.Xsr.Runtime/Nexa.Xsr.Runtime.csproj', '-c', 'Release', '-t:Rebuild', '-m:2',
+    run('dotnet', 'build', 'src/runtime/Nexa.Xsr.Runtime/Nexa.Xsr.Runtime.csproj', '-c', 'Release', '-t:Rebuild', '-m:2',
         '-p:DebugType=None', '-p:DebugSymbols=false', '-p:EnableSourceLink=false',
         '-p:PathMap=' + str(ROOT) + '=/_/nexacl', '-p:RestorePackagesWithLockFile=true', '-p:RestoreLockedMode=true')
     output.mkdir(parents=True, exist_ok=True)
@@ -69,9 +70,9 @@ def build(output):
     for name, dependencies in [*SPEC['projects'].items(), ('Nexa.Xsr.BuildTools', [])]:
         entries = {f'{name}.nuspec': package_metadata(name, dependencies, commit),
                    'LICENSE': (ROOT / 'LICENSE').read_bytes(),
-                   'README.md': (ROOT / 'docs/xsr/shared-packages.md').read_bytes()}
+                   'README.md': (ROOT / 'docs/packages.md').read_bytes()}
         if name == 'Nexa.Xsr.BuildTools':
-            tool = ROOT / 'tools/Nexa.Xsr.Patch.Compiler/bin/Release/net10.0'
+            tool = ROOT / 'tools/compiler/Nexa.Xsr.Patch.Compiler/bin/Release/net10.0'
             for file in sorted(tool.rglob('*')):
                 if file.is_file() and file.suffix in ('.dll', '.json'):
                     entries['tools/net10.0/' + file.relative_to(tool).as_posix()] = file.read_bytes()
@@ -79,14 +80,14 @@ def build(output):
             entries['tools/targets/Xsr.AutomaticFunctionPatches.targets'] = (ROOT / 'eng/xsr/Xsr.AutomaticFunctionPatches.targets').read_bytes()
             for file in (ROOT / 'eng/packages/licenses').glob('*.txt'):
                 entries['licenses/' + file.name] = file.read_bytes()
-            assets = json.loads((ROOT / 'tools/Nexa.Xsr.Patch.Compiler/obj/project.assets.json').read_text())
+            assets = json.loads((ROOT / 'tools/compiler/Nexa.Xsr.Patch.Compiler/obj/project.assets.json').read_text())
             folders = [Path(x) for x in assets['packageFolders']]
             for pkg in ('microsoft.codeanalysis.common/5.0.0', 'microsoft.codeanalysis.csharp/5.0.0'):
                 notice = next((f / pkg / 'ThirdPartyNotices.rtf' for f in folders if (f / pkg / 'ThirdPartyNotices.rtf').exists()), None)
                 if notice is None: raise RuntimeError(f'Missing third-party notice: {pkg}')
                 entries['licenses/' + pkg.replace('/', '-') + '-ThirdPartyNotices.rtf'] = notice.read_bytes()
         else:
-            built = ROOT / name / 'bin/Release/net10.0'
+            built = ROOT / PROJECTS[name] / 'bin/Release/net10.0'
             entries[f'lib/net10.0/{name}.dll'] = (built / f'{name}.dll').read_bytes()
             entries[f'catalogs/{name}.nfp'] = (built / f'{name}.nfp').read_bytes()
             target = f'''<Project><ItemGroup>

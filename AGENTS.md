@@ -22,7 +22,7 @@
 - **XSR-02 — Migrate contracts, not the legacy implementation.** This is a clean-slate branch. Do not restore, merge, copy wholesale, add a project reference to, or add a submodule for legacy implementation code. Inspect the `dev` worktree read-only and migrate only documented behavior, algorithms, data contracts, and compatibility requirements, not legacy type or assembly shapes. Every source project on this branch must be created intentionally for XSR; do not recreate the legacy solution or its assembly graph as migration scaffolding. Do not modify a legacy implementation merely to make an XSR migration diff smaller.
   **Why:** XSR must preserve required behavior without inheriting the legacy dependency graph or changing the reference implementation to simplify a migration.
 
-- **XSR-03 — Record boundary decisions first.** Treat `docs/xsr/` as the architecture lock. Update the relevant document before changing a boundary or compatibility promise.
+- **XSR-03 — Record boundary decisions first.** Treat `docs/architecture.md` as the architecture lock. Update the relevant document before changing a boundary or compatibility promise.
   **Why:** Documenting the decision first makes architectural and compatibility changes explicit and reviewable.
 
 - **XSR-04 — Keep services independent of presentation.** New services must not reference Avalonia, Desktop, renderer internals, ViewModels, or service locators. They receive commands/queries and publish state/events.
@@ -40,5 +40,5 @@
 - **XSR-08 — Do not bless breaks through baselines.** Updating an API baseline does not make a breaking change acceptable.
   **Why:** A baseline records an API surface; changing that record alone does not resolve compatibility obligations.
 
-- **XSR-09 — Keep the defined product-version format.** XSR product versions use the exact dotted forms defined in `docs/xsr/versioning.md`: `2.0.0`, `2.0.0.alpha.N`, `2.0.0.beta.N`, and `2.0.0.ci.ffffff`.
+- **XSR-09 — Keep the defined product-version format.** XSR product versions use the exact dotted forms defined in `docs/versioning.md`: `2.0.0`, `2.0.0.alpha.N`, `2.0.0.beta.N`, and `2.0.0.ci.ffffff`.
   **Why:** A single documented version format avoids inconsistent product identities across builds and release channels.

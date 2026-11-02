@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><IsAotCompatible>true</IsAotCompatible></PropertyGroup>
+  <Import Project="../../../interop/services/ServiceProtocol.props" />
+  <ItemGroup>
+    <ProjectReference Include="../Nexa.Services.Accounts.Contracts/Nexa.Services.Accounts.Contracts.csproj" />
+    <ProjectReference Include="../../common/Nexa.Services.Common.Contracts/Nexa.Services.Common.Contracts.csproj" />
+    <ProjectReference Include="../../common/Nexa.Services.Common/Nexa.Services.Common.csproj" />
+    <ProjectReference Include="../../foundation/Nexa.Services.Foundation.Contracts/Nexa.Services.Foundation.Contracts.csproj" />
+    <Compile Include="../protocol/*.cs" Link="Wire/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

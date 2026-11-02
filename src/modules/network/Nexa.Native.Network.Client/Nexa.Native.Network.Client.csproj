@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><IsAotCompatible>true</IsAotCompatible><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
+  <Import Project="../../../interop/services/ServiceProtocol.props" />
+  <ItemGroup>
+    <Compile Include="../protocol/downloads/NativeDownloadResults.cs" Link="Downloads/NativeDownloadResults.cs" />
+    <ProjectReference Include="../Nexa.Services.Network.Contracts/Nexa.Services.Network.Contracts.csproj" />
+    <ProjectReference Include="../../common/Nexa.Services.Common.Contracts/Nexa.Services.Common.Contracts.csproj" />
+    <Compile Include="../../../interop/ui/NativeUiAsyncResources.cs" Link="NativeUiAsyncResources.cs" />
+    <Compile Include="../protocol/ServiceWire.Generated.cs" Link="Wire/ServiceWire.Generated.cs" />
+    <Compile Include="../protocol/NetworkProtocol.cs" Link="Wire/NetworkProtocol.cs" />
+    <Compile Include="../protocol/NetworkHttpWire.cs" Link="Wire/NetworkHttpWire.cs" />
+    <Compile Include="../protocol/NetworkHttpStreamHandler.cs" Link="Wire/NetworkHttpStreamHandler.cs" />
+    <Compile Include="../protocol/downloads/DownloadDescriptors.cs" Link="Wire/DownloadDescriptors.cs" />
+    <Compile Include="../protocol/downloads/DownloadProtocol.cs" Link="Wire/DownloadProtocol.cs" />
+    <Compile Include="../protocol/downloads/HostWorkLeaseServer.cs" Link="Downloads/HostWorkLeaseServer.cs" />
+    <Compile Include="../protocol/downloads/DownloadProgressSink.cs" Link="Downloads/DownloadProgressSink.cs" />
+    <Compile Include="../protocol/downloads/NativeLogPipe.cs" Link="Downloads/NativeLogPipe.cs" />
+    <Compile Include="../protocol/downloads/NativeNetworkClient.Downloads.cs" Link="Downloads/NativeNetworkClient.Downloads.cs" />
+  </ItemGroup>
+</Project>

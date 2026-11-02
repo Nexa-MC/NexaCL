@@ -1,0 +1,6 @@
+<nxml-page>
+  <Page Key="VersionListPage" Label="选择版本">
+    <Dynamic Key="VersionSelectionWorkspace" Class="version-workspace-slot" />
+    <Dynamic Key="VersionDirectoryWorkspace" Layout="Overlay" ModalLayer="false" />
+  </Page>
+</nxml-page>

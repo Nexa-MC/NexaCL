@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NexaLocalPatchRuntime>false</NexaLocalPatchRuntime>
+  </PropertyGroup>
+  <Import Project="../../../eng/build/NativeEngine.props" />
+  <ItemGroup>
+    <Compile Include="../../interop/ui/NativeUiCallGate.cs" Link="NativeUiCallGate.cs" />
+    <Compile Include="../../interop/ui/NativeUiResources.cs" Link="NativeUiResources.cs" />
+    <Compile Include="../../interop/ui/NativeUiAsyncCalls.cs" Link="NativeUiAsyncCalls.cs" />
+    <Compile Include="../../interop/ui/NativeUiAsyncResources.cs" Link="NativeUiAsyncResources.cs" />
+    <Compile Include="../../interop/ui/NativeUiSynchronizationContext.cs" Link="NativeUiSynchronizationContext.cs" />
+    <ProjectReference Include="../../foundation/Nexa.Core/Nexa.Core.csproj" />
+    <ProjectReference Include="../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
+    <ProjectReference Include="../Nexa.Xsr.Renderer.Backend.Avalonia/Nexa.Xsr.Renderer.Backend.Avalonia.csproj" />
+  </ItemGroup>
+</Project>

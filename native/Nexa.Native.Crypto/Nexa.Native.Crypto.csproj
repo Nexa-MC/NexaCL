@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="../NativeEngine.props" />
-  <ItemGroup>
-    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
-    <Compile Include="../NativeEngineAbi.cs" Link="NativeEngineAbi.cs" />
-  </ItemGroup>
-</Project>

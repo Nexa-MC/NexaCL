@@ -42,3 +42,13 @@ Thumbs.db
 
 # CI-restored API Shield client identity
 **/api-client.pfx
+
+# Generated Python caches and local preview output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Editor recovery and patch leftovers
+*.orig
+*.rej
+*~

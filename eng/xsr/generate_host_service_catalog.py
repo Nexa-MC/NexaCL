@@ -12,10 +12,10 @@ def fingerprint(path):
 
 
 def generate():
-    accounts = fingerprint("native/AccountsProtocol/ServiceWire.Generated.cs") + "/" + fingerprint("native/AccountsProtocol/AccountRouteSchema.Generated.cs")
+    accounts = fingerprint("src/modules/accounts/protocol/ServiceWire.Generated.cs") + "/" + fingerprint("src/modules/accounts/protocol/AccountRouteSchema.Generated.cs")
     entries = [(1, "accounts", "nexa_accounts", "nexa-accounts/1/" + accounts)]
     for number, name in [(2, "Network"), (3, "Minecraft"), (4, "Updates")]:
-        schema = fingerprint("native/" + name + "ServiceProtocol/ServiceWire.Generated.cs")
+        schema = fingerprint("src/modules/" + name.lower() + "/protocol/ServiceWire.Generated.cs")
         identity = "nexa-" + name.lower() + "-service/1/" + ("error-envelope-1/" if number >= 3 else "") + schema
         entries.append((number, name.lower(), "nexa_" + name.lower() + "_service", identity))
     digest = hashlib.sha256("\n".join("|".join(map(str, entry)) for entry in entries).encode()).hexdigest().upper()
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    output = ROOT / "native/HostServiceProtocol/HostServiceCatalog.Generated.cs"
+    output = ROOT / "src/app/protocol/HostServiceCatalog.Generated.cs"
     content = generate()
     if args.check:
         if output.read_text() != content:

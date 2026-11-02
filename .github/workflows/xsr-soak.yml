@@ -30,9 +30,9 @@ jobs:
         with:
           global-json-file: global.json
       - name: Build composition harness
-        run: dotnet build tests/Nexa.Desktop.Tests -c Release -m:1
+        run: dotnet build tests/app/Nexa.Desktop.Tests -c Release -m:1
       - name: Run isolated composition soak
-        run: dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --soak ${{ matrix.mode }} --seconds ${{ inputs.seconds }} --output soak-output
+        run: dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --soak ${{ matrix.mode }} --seconds ${{ inputs.seconds }} --output soak-output
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

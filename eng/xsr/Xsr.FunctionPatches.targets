@@ -2,7 +2,7 @@
   <PropertyGroup>
     <_NexaPatchDotnet Condition="'$(DOTNET_HOST_PATH)' != ''">$(DOTNET_HOST_PATH)</_NexaPatchDotnet>
     <_NexaPatchDotnet Condition="'$(_NexaPatchDotnet)' == ''">dotnet</_NexaPatchDotnet>
-    <_NexaPatchCompilerProject>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'tools', 'Nexa.Xsr.Patch.Compiler', 'Nexa.Xsr.Patch.Compiler.csproj'))</_NexaPatchCompilerProject>
+    <_NexaPatchCompilerProject>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'tools', 'compiler', 'Nexa.Xsr.Patch.Compiler', 'Nexa.Xsr.Patch.Compiler.csproj'))</_NexaPatchCompilerProject>
   </PropertyGroup>
   <!-- IntermediateOutputPath is finalized by SDK targets after this import is evaluated. -->
   <Target Name="InitializeNexaFunctionPatchPaths">

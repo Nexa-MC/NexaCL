@@ -67,7 +67,7 @@ def build(payload, arch, version="1.0.0.0"):
         publisher = subprocess.check_output(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
             f"[Console]::OutputEncoding=[Text.Encoding]::UTF8; (Get-Item -LiteralPath 'Cert:\\CurrentUser\\My\\{thumb}' -ErrorAction Stop).Subject"], encoding="utf-8-sig").strip()
     with tempfile.TemporaryDirectory(prefix="nexacl-shell-build-") as temporary:
-        subprocess.run(["cmake", "-S", str(ROOT / "native/Nexa.ExplorerCommand"), "-B", temporary, "-A", "ARM64" if arch == "arm64" else "x64"], check=True)
+        subprocess.run(["cmake", "-S", str(ROOT / "src/platform/Nexa.ExplorerCommand"), "-B", temporary, "-A", "ARM64" if arch == "arm64" else "x64"], check=True)
         subprocess.run(["cmake", "--build", temporary, "--config", "Release"], check=True)
         if arch == "x64":
             subprocess.run(["ctest", "--test-dir", temporary, "-C", "Release", "--output-on-failure"], check=True)
@@ -75,7 +75,7 @@ def build(payload, arch, version="1.0.0.0"):
             shutil.copy2(Path(temporary) / "Release" / name, output / name)
     package = output / "package"
     (package / "Assets").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(ROOT / "Nexa.Desktop/Assets/icon.png", package / "Assets/Logo.png")
+    shutil.copy2(ROOT / "src/app/Nexa.Desktop/Assets/icon.png", package / "Assets/Logo.png")
     (package / "AppxManifest.xml").write_text(manifest(arch, publisher, version), encoding="utf-8")
     msix = output / f"{PACKAGE}.msix"
     # Sparse packages deliberately refer to executable/COM files in ExternalLocation.

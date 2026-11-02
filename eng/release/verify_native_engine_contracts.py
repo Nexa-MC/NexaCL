@@ -10,7 +10,7 @@ from publish_launcher import ENGINES, ROOT, module_name
 def test(rid, payload, output):
     output = output.resolve()
     subprocess.run([
-        "dotnet", "publish", str(ROOT / "tests/Nexa.Native.Network.Tests/Nexa.Native.Network.Tests.csproj"),
+        "dotnet", "publish", str(ROOT / "tests/modules/network/Nexa.Native.Network.Tests/Nexa.Native.Network.Tests.csproj"),
         "--configuration", "Release", "-r", rid, "--self-contained", "true", "-m:1", "-nodeReuse:false",
         "-p:PublishAot=true", "-p:NexaExternalModules=true", "-p:NexaNetworkTestInternals=false",
         "--output", str(output),

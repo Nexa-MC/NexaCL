@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><NexaLocalPatchRuntime>false</NexaLocalPatchRuntime></PropertyGroup>
+  <Import Project="../../../../eng/build/NativeEngine.props" />
+  <Import Project="../../../interop/services/ServiceProtocol.props" />
+  <PropertyGroup><DefineConstants>$(DefineConstants);NEXA_MINECRAFT_HTTP_BRIDGE;NEXA_MINECRAFT_FACT_OWNER</DefineConstants></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../resources/Nexa.Services.Resources/Nexa.Services.Resources.csproj" />
+    <ProjectReference Include="../Nexa.Services.Minecraft.Metadata/Nexa.Services.Minecraft.Metadata.csproj" />
+    <ProjectReference Include="../Nexa.Services.Minecraft.Java/Nexa.Services.Minecraft.Java.csproj" />
+    <ProjectReference Include="../Nexa.Services.Minecraft.Process/Nexa.Services.Minecraft.Process.csproj" />
+    <ProjectReference Include="../Nexa.Services.Minecraft.Install/Nexa.Services.Minecraft.Install.csproj" />
+    <ProjectReference Include="../Nexa.Services.Minecraft.Launch/Nexa.Services.Minecraft.Launch.csproj" />
+    <ProjectReference Include="../Nexa.Services.Minecraft.Management/Nexa.Services.Minecraft.Management.csproj" />
+    <ProjectReference Include="../../accounts/Nexa.Services.Accounts.Contracts/Nexa.Services.Accounts.Contracts.csproj" />
+    <ProjectReference Include="../../network/Nexa.Native.Network.Client/Nexa.Native.Network.Client.csproj" />
+    <Compile Include="../../../app/Nexa.Services/Minecraft/Adapters/MinecraftEnvironmentCapabilityProvider.cs" Link="Environment/MinecraftEnvironmentCapabilityProvider.cs" />
+    <Compile Include="../../../app/Nexa.Services/Minecraft/Adapters/MinecraftMachineFacts.cs" Link="Environment/MinecraftMachineFacts.cs" />
+    <Compile Include="../../../app/Nexa.Services/Minecraft/Adapters/MinecraftEnvironmentProjections.cs" Link="Environment/MinecraftEnvironmentProjections.cs" />
+    <Compile Include="../../../app/Nexa.Services/Minecraft/Adapters/InstalledLoaderCompatibility.cs" Link="Environment/InstalledLoaderCompatibility.cs" />
+    <Compile Include="../../../app/Nexa.Services/Minecraft/Adapters/ModCapabilityProvider.cs" Link="Environment/ModCapabilityProvider.cs" />
+    <Compile Include="../protocol/*.cs" Link="Wire/%(Filename)%(Extension)" />
+    <Compile Include="../protocol/host/NetworkProtocol.cs" Link="Host/NetworkProtocol.cs" />
+    <Compile Include="../protocol/host/MinecraftHostOperations.cs" Link="Host/MinecraftHostOperations.cs" />
+    <Compile Include="../protocol/host/RemoteMinecraftDownloads.cs" Link="Host/RemoteMinecraftDownloads.cs" />
+    <Compile Include="../protocol/host/RemoteJavaRegistry.cs" Link="Host/RemoteJavaRegistry.cs" />
+    <Compile Include="../protocol/host/RemoteMinecraftSettings.cs" Link="Host/RemoteMinecraftSettings.cs" />
+    <Compile Include="../protocol/host/RemoteMinecraftSettings.Recovery.cs" Link="Host/RemoteMinecraftSettings.Recovery.cs" />
+    <Compile Include="../protocol/host/RemoteMinecraftAccounts.cs" Link="Host/RemoteMinecraftAccounts.cs" />
+    <Compile Include="../protocol/host/RemoteMinecraftWindow.cs" Link="Host/RemoteMinecraftWindow.cs" />
+    <Compile Include="../../network/protocol/downloads/DownloadProgressSink.cs" Link="Host/DownloadProgressSink.cs" />
+    <Compile Include="../../network/protocol/downloads/RemoteWorkScheduler.cs" Link="Host/RemoteWorkScheduler.cs" />
+    <Compile Include="../../network/protocol/downloads/DownloadProtocol.cs" Link="Host/DownloadProtocol.cs" />
+    <Compile Include="../../network/protocol/NetworkHttpWire.cs" Link="Host/NetworkHttpWire.cs" />
+    <Compile Include="../../network/protocol/NetworkHttpStreamHandler.cs" Link="Host/NetworkHttpStreamHandler.cs" />
+    <Compile Include="../../../interop/buffers/NativeBufferResults.cs" Link="NativeBufferResults.cs" />
+    <Compile Include="../protocol/engine/MinecraftProtocol.cs" Link="MinecraftProtocol.cs" />
+    <Compile Include="../../../foundation/Nexa.Domain/Minecraft/MinecraftLibraryModels.cs" Link="MinecraftLibraryModels.cs" />
+    <Compile Include="../Nexa.Services.Minecraft.Library.Contracts/Minecraft/MinecraftRuleEvaluator.cs" Link="MinecraftRuleContext.cs" />
+    <Compile Include="../Nexa.Services.Minecraft.Assets.Contracts/Minecraft/Assets/MinecraftAssetContracts.cs" Link="MinecraftAssetModels.cs" />
+    <Compile Include="../Nexa.Services.Minecraft.Metadata/Minecraft/Libraries/MinecraftLibraryContracts.cs" Link="MinecraftLibraryResolver.cs" />
+    <Compile Include="../Nexa.Services.Minecraft.Metadata/Minecraft/MinecraftRuleEvaluator.cs" Link="MinecraftRuleEvaluator.cs" />
+    <Compile Include="../Nexa.Services.Minecraft.Metadata/Minecraft/Assets/MinecraftAssetContracts.cs" Link="MinecraftAssetResolver.cs" />
+  </ItemGroup>
+</Project>

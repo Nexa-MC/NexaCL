@@ -14,12 +14,12 @@ def main():
     parser.add_argument("--window", action="store_true", help="Generate native window value contracts without input dispatch.")
     options = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
-    default = ("tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.dll"
-               if options.window else "Nexa.Xsr.Renderer/bin/Release/net10.0/Nexa.Xsr.Renderer.dll")
+    default = ("tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.dll"
+               if options.window else "src/rendering/Nexa.Xsr.Renderer/bin/Release/net10.0/Nexa.Xsr.Renderer.dll")
     assembly = (options.assembly or root / default).resolve()
     if not assembly.is_file():
         parser.error("Build the renderer (or backend tests for --window) in Release before generating the wire codecs.")
-    target = root / ("native/WindowProtocol" if options.window else "Nexa.Xsr.Renderer/Wire")
+    target = root / ("src/rendering/protocol/window" if options.window else "src/rendering/Nexa.Xsr.Renderer/Wire")
     target.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="nexa-ui-wire-") as temporary:
         directory = Path(temporary)

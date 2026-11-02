@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><IsAotCompatible>true</IsAotCompatible><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../../src/modules/minecraft/Nexa.Native.Minecraft.Client/Nexa.Native.Minecraft.Client.csproj" />
+    <ProjectReference Include="../../../../src/modules/common/Nexa.Services.Common/Nexa.Services.Common.csproj" />
+    <Compile Include="../../../../src/platform/Nexa.Platform.Runtime/Processes/MinecraftLaunchHookWorker.cs" Link="Worker/MinecraftLaunchHookWorker.cs" />
+    <Compile Include="../../../../src/platform/Nexa.Platform.Runtime/Processes/MinecraftLaunchHookWorker.Native.cs" Link="Worker/MinecraftLaunchHookWorker.Native.cs" />
+  </ItemGroup>
+</Project>

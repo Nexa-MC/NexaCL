@@ -15,18 +15,18 @@ def verify(rid, output, payload=None):
     owner, caller = output / "minecraft", output / "caller"
     common = ["-c", "Release", "-r", rid, "-m:1", "-nr:false", "-p:PublishAot=true", "-p:StripSymbols=true", *stable_ui_properties([])]
     if payload is None:
-        subprocess.run(["dotnet", "publish", str(ROOT / "native/Nexa.Native.Network"), *common, "--output", str(output / "network")], check=True)
-        subprocess.run(["dotnet", "publish", str(ROOT / "native/Nexa.Native.Minecraft"), *common, *engine_service_properties("Minecraft"), "--output", str(owner)], check=True)
-    subprocess.run(["dotnet", "publish", str(ROOT / "tests/Nexa.Native.Minecraft.Services.Tests"), *common, "--output", str(caller)], check=True)
+        subprocess.run(["dotnet", "publish", str(ROOT / "src/modules/network/Nexa.Native.Network"), *common, "--output", str(output / "network")], check=True)
+        subprocess.run(["dotnet", "publish", str(ROOT / "src/modules/minecraft/Nexa.Native.Minecraft"), *common, *engine_service_properties("Minecraft"), "--output", str(owner)], check=True)
+    subprocess.run(["dotnet", "publish", str(ROOT / "tests/modules/minecraft/Nexa.Native.Minecraft.Services.Tests"), *common, "--output", str(caller)], check=True)
     subprocess.run([sys.executable, str(ROOT / "eng/xsr/generate_service_wire.py"),
-                    "--assembly", str(ROOT / "native/Nexa.Native.Minecraft.Client/bin/Release/net10.0/Nexa.Native.Minecraft.Client.dll"),
-                    "--roots", str(ROOT / "native/MinecraftServiceProtocol/ServiceWire.roots"),
-                    "--output", str(ROOT / "native/MinecraftServiceProtocol/ServiceWire.Generated.cs"), "--check"], check=True)
-    libraries = json.loads((ROOT / "tests/Nexa.Native.Minecraft.Services.Tests/obj/project.assets.json").read_text())["libraries"]
+                    "--assembly", str(ROOT / "src/modules/minecraft/Nexa.Native.Minecraft.Client/bin/Release/net10.0/Nexa.Native.Minecraft.Client.dll"),
+                    "--roots", str(ROOT / "src/modules/minecraft/protocol/ServiceWire.roots"),
+                    "--output", str(ROOT / "src/modules/minecraft/protocol/ServiceWire.Generated.cs"), "--check"], check=True)
+    libraries = json.loads((ROOT / "tests/modules/minecraft/Nexa.Native.Minecraft.Services.Tests/obj/project.assets.json").read_text())["libraries"]
     if any(name.split("/")[0] in {"Nexa.Native.Minecraft", "Nexa.Services.Resources"} or name.split("/")[0].startswith("Nexa.Services.Minecraft.")
            and not name.split("/")[0].endswith(".Contracts") for name in libraries):
         raise RuntimeError("Minecraft caller embedded an owner implementation")
-    owner_libraries = json.loads((ROOT / "native/Nexa.Native.Minecraft/obj/project.assets.json").read_text())["libraries"]
+    owner_libraries = json.loads((ROOT / "src/modules/minecraft/Nexa.Native.Minecraft/obj/project.assets.json").read_text())["libraries"]
     if any(name.split("/")[0] in {"Nexa.Desktop", "Nexa.Services", "Nexa.Services.Composition"}
            or name.startswith(("Avalonia", "Nexa.Xsr.Renderer")) for name in owner_libraries):
         raise RuntimeError("Minecraft owner embedded a presentation dependency")

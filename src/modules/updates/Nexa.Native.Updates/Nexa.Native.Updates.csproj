@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><NexaLocalPatchRuntime>false</NexaLocalPatchRuntime></PropertyGroup>
+  <Import Project="../../../../eng/build/NativeEngine.props" />
+  <Import Project="../../../interop/services/ServiceProtocol.props" Condition="'$(NexaExternalModules)' == 'true'" />
+  <ItemGroup>
+    <ProjectReference Include="../../../foundation/Nexa.Core/Nexa.Core.csproj" />
+    <ProjectReference Include="../Nexa.Services.Updates/Nexa.Services.Updates.csproj" Condition="'$(NexaExternalModules)' == 'true'" />
+    <Compile Remove="UpdatesServiceExports.cs;UpdatesServiceSession.cs;UpdatesServiceSession.Telemetry.cs" Condition="'$(NexaExternalModules)' != 'true'" />
+    <Compile Include="../protocol/*.cs" Link="Wire/%(Filename)%(Extension)" Condition="'$(NexaExternalModules)' == 'true'" />
+    <Compile Include="../../network/protocol/NetworkHttpWire.cs" Link="Wire/NetworkHttpWire.cs" Condition="'$(NexaExternalModules)' == 'true'" />
+    <Compile Include="../../network/protocol/NetworkHttpStreamHandler.cs" Link="Wire/NetworkHttpStreamHandler.cs" Condition="'$(NexaExternalModules)' == 'true'" />
+    <Compile Include="../../network/protocol/downloads/RemoteWorkScheduler.cs" Link="Wire/RemoteWorkScheduler.cs" Condition="'$(NexaExternalModules)' == 'true'" />
+    <Compile Include="../../network/protocol/downloads/DownloadProtocol.cs" Link="Wire/DownloadProtocol.cs" />
+    <ProjectReference Include="../Nexa.Native.Updates.Codecs/Nexa.Native.Updates.Codecs.csproj" />
+    <Compile Include="../../../interop/NativeEngineAbi.cs" Link="NativeEngineAbi.cs" />
+  </ItemGroup>
+</Project>

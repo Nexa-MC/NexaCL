@@ -11,7 +11,7 @@ import tempfile
 
 def build(output, arch):
     root = pathlib.Path(__file__).resolve().parents[2]
-    source = root / 'Nexa.Platform.Runtime/Native/macos/Actions.swift'
+    source = root / 'src/platform/Nexa.Platform.Runtime/Native/macos/Actions.swift'
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='nexa-actions-') as directory:
         scratch = pathlib.Path(directory)

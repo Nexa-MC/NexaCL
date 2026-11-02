@@ -15,7 +15,7 @@ def sha256(path):
 
 
 def verify(rid, payload, properties):
-    project = ROOT / "Nexa.Desktop/Nexa.Desktop.csproj"
+    project = ROOT / "src/app/Nexa.Desktop/Nexa.Desktop.csproj"
     suffix = Path(module_name(rid)).suffix
     baseline = payload / ("nexa-ui" + suffix)
     expected = sha256(baseline)

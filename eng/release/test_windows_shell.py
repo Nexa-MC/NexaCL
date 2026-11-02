@@ -33,7 +33,7 @@ class WindowsShellTests(unittest.TestCase):
         self.assertIn('--unregister-all', inno)
 
     def test_no_installer_enables_developer_mode_or_installs_trust(self):
-        for relative in ('eng/release/windows.iss', 'eng/release/windows.wxs', 'native/Nexa.ExplorerCommand/Registration.cpp'):
+        for relative in ('eng/release/windows.iss', 'eng/release/windows.wxs', 'src/platform/Nexa.ExplorerCommand/Registration.cpp'):
             source = (ROOT / relative).read_text(encoding='utf-8')
             for forbidden in ('AllowDevelopmentWithoutDevLicense', 'Import-Certificate', 'TrustedPeople', 'Root\\Certificates'):
                 self.assertNotIn(forbidden, source)

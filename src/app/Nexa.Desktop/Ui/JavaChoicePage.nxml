@@ -1,0 +1,5 @@
+<nxml-page>
+  <Page Key="JavaChoicePage" Label="选择 Java 版本">
+    <Dynamic Key="JavaChoiceContent" />
+  </Page>
+</nxml-page>

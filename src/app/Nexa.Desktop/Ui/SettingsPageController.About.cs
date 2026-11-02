@@ -1,0 +1,32 @@
+using Nexa.Xsr.Renderer;
+
+namespace Nexa.Desktop.Ui;
+
+internal sealed partial class SettingsPageController
+{
+    internal Action<Uri>? OpenAboutLink { get; set; }
+    internal Func<CancellationToken, Task<bool>>? ExportDiagnostics { get; set; }
+    private void BuildAboutPage()
+    {
+        var root = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsAbout.d.nxml", new Dictionary<string, string>
+        {
+            ["product"] = Program.ProductDisplayTitle(_shell.Version),
+            ["links"] = Flag(OpenAboutLink is not null),
+            ["diagnostics"] = Flag(ExportDiagnostics is not null),
+            ["mainland"] = Flag(_region.IsMainlandChina),
+        }));
+        var nodes = CatalogNodes(root);
+        if (OpenAboutLink is { } open)
+        {
+            _managementActions[nodes[ProductPresentationText.Raw("settings.about.sourceKey")]] = () => open(new Uri(Nexa.Services.LauncherRepository.Url));
+            _managementActions[nodes[ProductPresentationText.Raw("settings.about.licenseKey")]] = () => open(new Uri(Nexa.Services.LauncherRepository.Url + "/blob/refactor/xsr/LICENSE"));
+            _managementActions[nodes[ProductPresentationText.Raw("settings.about.contributorsKey")]] = () => open(new Uri(Nexa.Services.LauncherRepository.Url + "/graphs/contributors"));
+        }
+        if (ExportDiagnostics is not null) BuildDiagnosticExportControls(nodes["AboutDiagnosticActions"]);
+        var scroll = _shell.Tree.GetComponent<XsrUiScroll>(_sections)!;
+        scroll.OffsetY = _scrollPositions.GetValueOrDefault(_selected);
+        _shell.Tree.GetComponent<XsrUiTransition>(_sections)!.Key = _selected;
+        _shell.Tree.MarkDirty(_sections, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);
+    }
+
+}

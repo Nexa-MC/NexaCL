@@ -15,16 +15,16 @@ def verify(rid, output, payload=None):
     owner, caller = output / "network", output / "caller"
     common = ["-c", "Release", "-r", rid, "-m:1", "-nr:false", "-p:PublishAot=true", "-p:StripSymbols=true", *stable_ui_properties([])]
     if payload is None:
-        subprocess.run(["dotnet", "publish", str(ROOT / "native/Nexa.Native.Network"), *common, "--output", str(owner)], check=True)
-    subprocess.run(["dotnet", "publish", str(ROOT / "tests/Nexa.Native.Network.Services.Tests"), *common, "--output", str(caller)], check=True)
+        subprocess.run(["dotnet", "publish", str(ROOT / "src/modules/network/Nexa.Native.Network"), *common, "--output", str(owner)], check=True)
+    subprocess.run(["dotnet", "publish", str(ROOT / "tests/modules/network/Nexa.Native.Network.Services.Tests"), *common, "--output", str(caller)], check=True)
     subprocess.run([sys.executable, str(ROOT / "eng/xsr/generate_service_wire.py"),
-                    "--assembly", str(ROOT / "native/Nexa.Native.Network.Client/bin/Release/net10.0/Nexa.Native.Network.Client.dll"),
-                    "--roots", str(ROOT / "native/NetworkServiceProtocol/ServiceWire.roots"),
-                    "--output", str(ROOT / "native/NetworkServiceProtocol/ServiceWire.Generated.cs"), "--check"], check=True)
-    libraries = json.loads((ROOT / "tests/Nexa.Native.Network.Services.Tests/obj/project.assets.json").read_text())["libraries"]
+                    "--assembly", str(ROOT / "src/modules/network/Nexa.Native.Network.Client/bin/Release/net10.0/Nexa.Native.Network.Client.dll"),
+                    "--roots", str(ROOT / "src/modules/network/protocol/ServiceWire.roots"),
+                    "--output", str(ROOT / "src/modules/network/protocol/ServiceWire.Generated.cs"), "--check"], check=True)
+    libraries = json.loads((ROOT / "tests/modules/network/Nexa.Native.Network.Services.Tests/obj/project.assets.json").read_text())["libraries"]
     if any(name.split("/")[0] in {"Nexa.Native.Network", "Nexa.Services.Network", "Nexa.Services.Common"} for name in libraries):
         raise RuntimeError("Network service caller embedded its owner")
-    owner_libraries = json.loads((ROOT / "native/Nexa.Native.Network/obj/project.assets.json").read_text())["libraries"]
+    owner_libraries = json.loads((ROOT / "src/modules/network/Nexa.Native.Network/obj/project.assets.json").read_text())["libraries"]
     for name in owner_libraries:
         assembly = name.split("/")[0]
         if assembly in {"Nexa.Desktop", "Nexa.Services", "Nexa.Services.Network", "Jint", "BouncyCastle.Cryptography"} or assembly.startswith(("Avalonia", "Nexa.Xsr.Renderer")):

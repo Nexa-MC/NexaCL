@@ -1,0 +1,5 @@
+<nxml-page>
+  <Page Key="ProcessLogPage" Label="游戏日志">
+    <Dynamic Key="ProcessLogWorkspace" Weight="1" />
+  </Page>
+</nxml-page>

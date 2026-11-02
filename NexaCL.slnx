@@ -1,126 +1,184 @@
 <Solution>
-  <Project Path="native/Nexa.Native.Window/Nexa.Native.Window.csproj" />
-  <Project Path="Nexa.Xsr.Renderer.Backend.Native/Nexa.Xsr.Renderer.Backend.Native.csproj" />
-  <Project Path="Nexa.Xsr.Renderer.Platform.Contracts/Nexa.Xsr.Renderer.Platform.Contracts.csproj" />
-  <Project Path="tests/Nexa.Xsr.Renderer.Backend.Native.Tests/Nexa.Xsr.Renderer.Backend.Native.Tests.csproj" />
-  <Project Path="tests/Nexa.Native.Ui.Peer/Nexa.Native.Ui.Peer.csproj" />
-  <Project Path="tests/Nexa.Native.Ui.Tests/Nexa.Native.Ui.Tests.csproj" />
-  <Project Path="Nexa.Xsr.Renderer.Artwork/Nexa.Xsr.Renderer.Artwork.csproj" />
-  <Project Path="native/Nexa.Native.Artwork/Nexa.Native.Artwork.csproj" />
-  <Project Path="native/Nexa.Native.Markup/Nexa.Native.Markup.csproj" />
-  <Project Path="native/Nexa.Native.Minecraft/Nexa.Native.Minecraft.csproj" />
-  <Project Path="native/Nexa.Native.Media/Nexa.Native.Media.csproj" />
-  <Project Path="native/Nexa.Native.Updates/Nexa.Native.Updates.csproj" />
-  <Project Path="native/Nexa.Native.Updates.Codecs/Nexa.Native.Updates.Codecs.csproj" />
-  <Project Path="native/Nexa.Native.Pac/Nexa.Native.Pac.csproj" />
-  <Project Path="native/Nexa.Native.Crypto/Nexa.Native.Crypto.csproj" />
-  <Project Path="native/Nexa.Native.Network/Nexa.Native.Network.csproj" />
-  <Project Path="Nexa.Bootstrap/Nexa.Bootstrap.csproj" />
   <Configurations>
     <BuildType Name="Debug" />
     <BuildType Name="Release" />
     <Platform Name="AnyCPU" />
   </Configurations>
-  <Folder Name="/Foundation/">
-    <Project Path="Nexa.Core/Nexa.Core.csproj" />
-    <Project Path="Nexa.Domain/Nexa.Domain.csproj" />
-    <Project Path="Nexa.Contracts/Nexa.Contracts.csproj" />
+  <Folder Name="/src/app/">
+    <Project Path="src/app/Nexa.Bootstrap/Nexa.Bootstrap.csproj" />
+    <Project Path="src/app/Nexa.Desktop/Nexa.Desktop.csproj" />
+    <Project Path="src/app/Nexa.Jvm.Host/Nexa.Jvm.Host.csproj" />
+    <Project Path="src/app/Nexa.Native.Host/Nexa.Native.Host.csproj" />
+    <Project Path="src/app/Nexa.Services.Composition/Nexa.Services.Composition.csproj" />
+    <Project Path="src/app/Nexa.Services/Nexa.Services.csproj" />
+    <Project Path="src/app/Nexa.Update.Helper/Nexa.Update.Helper.csproj" />
   </Folder>
-  <Folder Name="/XSR/">
-    <Project Path="Nexa.Xsr.Abstractions/Nexa.Xsr.Abstractions.csproj" />
-    <Project Path="Nexa.Xsr.Runtime/Nexa.Xsr.Runtime.csproj" />
-    <Project Path="tools/Nexa.Xsr.Patch.Compiler/Nexa.Xsr.Patch.Compiler.csproj" />
-    <Project Path="Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
-    <Project Path="Nexa.Xsr.Diagnostics/Nexa.Xsr.Diagnostics.csproj" />
+  <Folder Name="/src/engines/artwork/">
+    <Project Path="src/engines/artwork/Nexa.Native.Artwork/Nexa.Native.Artwork.csproj" />
   </Folder>
-  <Folder Name="/Services/">
-    <Project Path="Nexa.Platform.Abstractions/Nexa.Platform.Abstractions.csproj" />
-    <Project Path="Nexa.Platform.Runtime/Nexa.Platform.Runtime.csproj" />
-    <Project Path="Nexa.Services/Nexa.Services.csproj" />
-    <Project Path="Nexa.Services.Composition/Nexa.Services.Composition.csproj" />
-    <Project Path="Nexa.Services.Accounts/Nexa.Services.Accounts.csproj" />
-    <Project Path="Nexa.Services.Accounts.Contracts/Nexa.Services.Accounts.Contracts.csproj" />
-    <Project Path="Nexa.Services.Capabilities/Nexa.Services.Capabilities.csproj" />
-    <Project Path="Nexa.Services.Capabilities.Contracts/Nexa.Services.Capabilities.Contracts.csproj" />
-    <Project Path="Nexa.Services.Common/Nexa.Services.Common.csproj" />
-    <Project Path="Nexa.Services.Common.Contracts/Nexa.Services.Common.Contracts.csproj" />
-    <Project Path="Nexa.Services.Foundation.Contracts/Nexa.Services.Foundation.Contracts.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Assets.Contracts/Nexa.Services.Minecraft.Assets.Contracts.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Crash.Contracts/Nexa.Services.Minecraft.Crash.Contracts.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Downloads.Contracts/Nexa.Services.Minecraft.Downloads.Contracts.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Install/Nexa.Services.Minecraft.Install.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Install.Contracts/Nexa.Services.Minecraft.Install.Contracts.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Java/Nexa.Services.Minecraft.Java.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Java.Contracts/Nexa.Services.Minecraft.Java.Contracts.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Launch/Nexa.Services.Minecraft.Launch.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Launch.Contracts/Nexa.Services.Minecraft.Launch.Contracts.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Library.Contracts/Nexa.Services.Minecraft.Library.Contracts.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Management/Nexa.Services.Minecraft.Management.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Management.Contracts/Nexa.Services.Minecraft.Management.Contracts.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Metadata/Nexa.Services.Minecraft.Metadata.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Process/Nexa.Services.Minecraft.Process.csproj" />
-    <Project Path="Nexa.Services.Minecraft.Process.Contracts/Nexa.Services.Minecraft.Process.Contracts.csproj" />
-    <Project Path="Nexa.Services.Network/Nexa.Services.Network.csproj" />
-    <Project Path="Nexa.Services.Network.Contracts/Nexa.Services.Network.Contracts.csproj" />
-    <Project Path="Nexa.Services.Recovery.Storage/Nexa.Services.Recovery.Storage.csproj" />
-    <Project Path="Nexa.Services.Resources/Nexa.Services.Resources.csproj" />
-    <Project Path="Nexa.Services.Resources.Contracts/Nexa.Services.Resources.Contracts.csproj" />
-    <Project Path="Nexa.Services.Rollouts/Nexa.Services.Rollouts.csproj" />
-    <Project Path="Nexa.Services.Rollouts.Contracts/Nexa.Services.Rollouts.Contracts.csproj" />
-    <Project Path="Nexa.Services.Settings/Nexa.Services.Settings.csproj" />
-    <Project Path="Nexa.Services.Settings.Contracts/Nexa.Services.Settings.Contracts.csproj" />
-    <Project Path="Nexa.Services.Setup/Nexa.Services.Setup.csproj" />
-    <Project Path="Nexa.Services.Setup.Contracts/Nexa.Services.Setup.Contracts.csproj" />
-    <Project Path="Nexa.Services.Telemetry/Nexa.Services.Telemetry.csproj" />
-    <Project Path="Nexa.Services.Telemetry.Contracts/Nexa.Services.Telemetry.Contracts.csproj" />
-    <Project Path="Nexa.Services.Themes/Nexa.Services.Themes.csproj" />
-    <Project Path="Nexa.Services.Themes.Contracts/Nexa.Services.Themes.Contracts.csproj" />
-    <Project Path="Nexa.Services.Updates/Nexa.Services.Updates.csproj" />
-    <Project Path="Nexa.Services.Updates.Contracts/Nexa.Services.Updates.Contracts.csproj" />
+  <Folder Name="/src/engines/crypto/">
+    <Project Path="src/engines/crypto/Nexa.Native.Crypto/Nexa.Native.Crypto.csproj" />
   </Folder>
-  <Folder Name="/Renderer/">
-    <Project Path="Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
-    <Project Path="Nexa.Xsr.Renderer.Backend.Avalonia/Nexa.Xsr.Renderer.Backend.Avalonia.csproj" />
-    <Project Path="Nexa.Xsr.Renderer.Benchmarks/Nexa.Xsr.Renderer.Benchmarks.csproj" />
+  <Folder Name="/src/engines/markup/">
+    <Project Path="src/engines/markup/Nexa.Native.Markup/Nexa.Native.Markup.csproj" />
   </Folder>
-  <Folder Name="/Native/">
-    <Project Path="native/Nexa.Native.Accounts.Client/Nexa.Native.Accounts.Client.csproj" />
-    <Project Path="native/Nexa.Native.Accounts/Nexa.Native.Accounts.csproj" />
-    <Project Path="native/Nexa.Native.Host/Nexa.Native.Host.csproj" />
-    <Project Path="native/Nexa.Native.Network.Client/Nexa.Native.Network.Client.csproj" />
-    <Project Path="native/Nexa.Native.Updates.Client/Nexa.Native.Updates.Client.csproj" />
-    <Project Path="native/Nexa.Native.Minecraft.Client/Nexa.Native.Minecraft.Client.csproj" />
+  <Folder Name="/src/engines/media/">
+    <Project Path="src/engines/media/Nexa.Native.Media/Nexa.Native.Media.csproj" />
   </Folder>
-  <Folder Name="/NXML/">
-    <Project Path="Nexa.Xsr.Renderer.Nxml.Compiler/Nexa.Xsr.Renderer.Nxml.Compiler.csproj" />
-    <Project Path="Nexa.Xsr.Renderer.Nxml.Runtime/Nexa.Xsr.Renderer.Nxml.Runtime.csproj" />
+  <Folder Name="/src/engines/pac/">
+    <Project Path="src/engines/pac/Nexa.Native.Pac/Nexa.Native.Pac.csproj" />
   </Folder>
-  <Folder Name="/Sidecar/">
-    <Project Path="Nexa.Sidecar.Protocol/Nexa.Sidecar.Protocol.csproj" />
-    <Project Path="Nexa.Sidecar.Transport/Nexa.Sidecar.Transport.csproj" />
+  <Folder Name="/src/foundation/">
+    <Project Path="src/foundation/Nexa.Contracts/Nexa.Contracts.csproj" />
+    <Project Path="src/foundation/Nexa.Core/Nexa.Core.csproj" />
+    <Project Path="src/foundation/Nexa.Domain/Nexa.Domain.csproj" />
   </Folder>
-  <Folder Name="/Host/">
-    <Project Path="Nexa.Update.Helper/Nexa.Update.Helper.csproj" />
-    <Project Path="Nexa.Jvm.Host/Nexa.Jvm.Host.csproj" />
-    <Project Path="Nexa.Desktop/Nexa.Desktop.csproj" />
+  <Folder Name="/src/modules/accounts/">
+    <Project Path="src/modules/accounts/Nexa.Native.Accounts.Client/Nexa.Native.Accounts.Client.csproj" />
+    <Project Path="src/modules/accounts/Nexa.Native.Accounts/Nexa.Native.Accounts.csproj" />
+    <Project Path="src/modules/accounts/Nexa.Services.Accounts.Contracts/Nexa.Services.Accounts.Contracts.csproj" />
+    <Project Path="src/modules/accounts/Nexa.Services.Accounts/Nexa.Services.Accounts.csproj" />
   </Folder>
-  <Folder Name="/Tests/">
-    <Project Path="tests/Nexa.Xsr.ArchitectureTests/Nexa.Xsr.ArchitectureTests.csproj" />
-    <Project Path="tests/Nexa.Xsr.Runtime.Tests/Nexa.Xsr.Runtime.Tests.csproj" />
-    <Project Path="tests/Nexa.Xsr.Renderer.Tests/Nexa.Xsr.Renderer.Tests.csproj" />
-    <Project Path="tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.csproj" />
-    <Project Path="tests/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj" />
-    <Project Path="tests/Nexa.Sidecar.Tests/Nexa.Sidecar.Tests.csproj" />
-    <Project Path="tests/Nexa.Services.Tests/Nexa.Services.Tests.csproj" />
-    <Project Path="tests/Nexa.Native.Accounts.Tests/Nexa.Native.Accounts.Tests.csproj" />
-    <Project Path="tests/Nexa.Native.Network.Services.Tests/Nexa.Native.Network.Services.Tests.csproj" />
-    <Project Path="tests/Nexa.Native.Minecraft.Services.Tests/Nexa.Native.Minecraft.Services.Tests.csproj" />
-    <Project Path="tests/Nexa.Native.Updates.Services.Tests/Nexa.Native.Updates.Services.Tests.csproj" />
-    <Project Path="tests/Nexa.Native.Host.Services.Tests/Nexa.Native.Host.Services.Tests.csproj" />
-  <Project Path="tests/Nexa.Native.Network.Tests/Nexa.Native.Network.Tests.csproj" />
-    <Project Path="tests/Nexa.Services.Themes.Tests/Nexa.Services.Themes.Tests.csproj" />
-    <Project Path="tests/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj" />
-    <Project Path="tools/CapabilityProbe/CapabilityProbe.csproj" />
-    <Project Path="tools/Nexa.Minecraft.Benchmarks/Nexa.Minecraft.Benchmarks.csproj" />
+  <Folder Name="/src/modules/capabilities/">
+    <Project Path="src/modules/capabilities/Nexa.Services.Capabilities.Contracts/Nexa.Services.Capabilities.Contracts.csproj" />
+    <Project Path="src/modules/capabilities/Nexa.Services.Capabilities/Nexa.Services.Capabilities.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/common/">
+    <Project Path="src/modules/common/Nexa.Services.Common.Contracts/Nexa.Services.Common.Contracts.csproj" />
+    <Project Path="src/modules/common/Nexa.Services.Common/Nexa.Services.Common.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/foundation/">
+    <Project Path="src/modules/foundation/Nexa.Services.Foundation.Contracts/Nexa.Services.Foundation.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/minecraft/">
+    <Project Path="src/modules/minecraft/Nexa.Native.Minecraft.Client/Nexa.Native.Minecraft.Client.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Native.Minecraft/Nexa.Native.Minecraft.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Assets.Contracts/Nexa.Services.Minecraft.Assets.Contracts.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Crash.Contracts/Nexa.Services.Minecraft.Crash.Contracts.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Downloads.Contracts/Nexa.Services.Minecraft.Downloads.Contracts.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Install.Contracts/Nexa.Services.Minecraft.Install.Contracts.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Install/Nexa.Services.Minecraft.Install.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Java.Contracts/Nexa.Services.Minecraft.Java.Contracts.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Java/Nexa.Services.Minecraft.Java.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Launch.Contracts/Nexa.Services.Minecraft.Launch.Contracts.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Launch/Nexa.Services.Minecraft.Launch.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Library.Contracts/Nexa.Services.Minecraft.Library.Contracts.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Management.Contracts/Nexa.Services.Minecraft.Management.Contracts.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Management/Nexa.Services.Minecraft.Management.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Metadata/Nexa.Services.Minecraft.Metadata.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Process.Contracts/Nexa.Services.Minecraft.Process.Contracts.csproj" />
+    <Project Path="src/modules/minecraft/Nexa.Services.Minecraft.Process/Nexa.Services.Minecraft.Process.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/network/">
+    <Project Path="src/modules/network/Nexa.Native.Network.Client/Nexa.Native.Network.Client.csproj" />
+    <Project Path="src/modules/network/Nexa.Native.Network/Nexa.Native.Network.csproj" />
+    <Project Path="src/modules/network/Nexa.Services.Network.Contracts/Nexa.Services.Network.Contracts.csproj" />
+    <Project Path="src/modules/network/Nexa.Services.Network/Nexa.Services.Network.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/recovery/">
+    <Project Path="src/modules/recovery/Nexa.Services.Recovery.Storage/Nexa.Services.Recovery.Storage.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/resources/">
+    <Project Path="src/modules/resources/Nexa.Services.Resources.Contracts/Nexa.Services.Resources.Contracts.csproj" />
+    <Project Path="src/modules/resources/Nexa.Services.Resources/Nexa.Services.Resources.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/rollouts/">
+    <Project Path="src/modules/rollouts/Nexa.Services.Rollouts.Contracts/Nexa.Services.Rollouts.Contracts.csproj" />
+    <Project Path="src/modules/rollouts/Nexa.Services.Rollouts/Nexa.Services.Rollouts.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/settings/">
+    <Project Path="src/modules/settings/Nexa.Services.Settings.Contracts/Nexa.Services.Settings.Contracts.csproj" />
+    <Project Path="src/modules/settings/Nexa.Services.Settings/Nexa.Services.Settings.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/setup/">
+    <Project Path="src/modules/setup/Nexa.Services.Setup.Contracts/Nexa.Services.Setup.Contracts.csproj" />
+    <Project Path="src/modules/setup/Nexa.Services.Setup/Nexa.Services.Setup.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/telemetry/">
+    <Project Path="src/modules/telemetry/Nexa.Services.Telemetry.Contracts/Nexa.Services.Telemetry.Contracts.csproj" />
+    <Project Path="src/modules/telemetry/Nexa.Services.Telemetry/Nexa.Services.Telemetry.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/themes/">
+    <Project Path="src/modules/themes/Nexa.Services.Themes.Contracts/Nexa.Services.Themes.Contracts.csproj" />
+    <Project Path="src/modules/themes/Nexa.Services.Themes/Nexa.Services.Themes.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/updates/">
+    <Project Path="src/modules/updates/Nexa.Native.Updates.Client/Nexa.Native.Updates.Client.csproj" />
+    <Project Path="src/modules/updates/Nexa.Native.Updates.Codecs/Nexa.Native.Updates.Codecs.csproj" />
+    <Project Path="src/modules/updates/Nexa.Native.Updates/Nexa.Native.Updates.csproj" />
+    <Project Path="src/modules/updates/Nexa.Services.Updates.Contracts/Nexa.Services.Updates.Contracts.csproj" />
+    <Project Path="src/modules/updates/Nexa.Services.Updates/Nexa.Services.Updates.csproj" />
+  </Folder>
+  <Folder Name="/src/platform/">
+    <Project Path="src/platform/Nexa.Platform.Abstractions/Nexa.Platform.Abstractions.csproj" />
+    <Project Path="src/platform/Nexa.Platform.Runtime/Nexa.Platform.Runtime.csproj" />
+  </Folder>
+  <Folder Name="/src/rendering/">
+    <Project Path="src/rendering/Nexa.Native.Window/Nexa.Native.Window.csproj" />
+    <Project Path="src/rendering/Nexa.Xsr.Renderer.Artwork/Nexa.Xsr.Renderer.Artwork.csproj" />
+    <Project Path="src/rendering/Nexa.Xsr.Renderer.Backend.Avalonia/Nexa.Xsr.Renderer.Backend.Avalonia.csproj" />
+    <Project Path="src/rendering/Nexa.Xsr.Renderer.Backend.Native/Nexa.Xsr.Renderer.Backend.Native.csproj" />
+    <Project Path="src/rendering/Nexa.Xsr.Renderer.Nxml.Compiler/Nexa.Xsr.Renderer.Nxml.Compiler.csproj" />
+    <Project Path="src/rendering/Nexa.Xsr.Renderer.Nxml.Runtime/Nexa.Xsr.Renderer.Nxml.Runtime.csproj" />
+    <Project Path="src/rendering/Nexa.Xsr.Renderer.Platform.Contracts/Nexa.Xsr.Renderer.Platform.Contracts.csproj" />
+    <Project Path="src/rendering/Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
+  </Folder>
+  <Folder Name="/src/runtime/">
+    <Project Path="src/runtime/Nexa.Xsr.Abstractions/Nexa.Xsr.Abstractions.csproj" />
+    <Project Path="src/runtime/Nexa.Xsr.Diagnostics/Nexa.Xsr.Diagnostics.csproj" />
+    <Project Path="src/runtime/Nexa.Xsr.Runtime/Nexa.Xsr.Runtime.csproj" />
+    <Project Path="src/runtime/Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
+  </Folder>
+  <Folder Name="/src/sidecar/">
+    <Project Path="src/sidecar/Nexa.Sidecar.Protocol/Nexa.Sidecar.Protocol.csproj" />
+    <Project Path="src/sidecar/Nexa.Sidecar.Transport/Nexa.Sidecar.Transport.csproj" />
+  </Folder>
+  <Folder Name="/tests/app/">
+    <Project Path="tests/app/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj" />
+    <Project Path="tests/app/Nexa.Native.Host.Services.Tests/Nexa.Native.Host.Services.Tests.csproj" />
+    <Project Path="tests/app/Nexa.Services.Tests/Nexa.Services.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/architecture/">
+    <Project Path="tests/architecture/Nexa.Xsr.ArchitectureTests/Nexa.Xsr.ArchitectureTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/modules/accounts/">
+    <Project Path="tests/modules/accounts/Nexa.Native.Accounts.Tests/Nexa.Native.Accounts.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/modules/minecraft/">
+    <Project Path="tests/modules/minecraft/Nexa.Native.Minecraft.Services.Tests/Nexa.Native.Minecraft.Services.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/modules/network/">
+    <Project Path="tests/modules/network/Nexa.Native.Network.Services.Tests/Nexa.Native.Network.Services.Tests.csproj" />
+    <Project Path="tests/modules/network/Nexa.Native.Network.Tests/Nexa.Native.Network.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/modules/themes/">
+    <Project Path="tests/modules/themes/Nexa.Services.Themes.Tests/Nexa.Services.Themes.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/modules/updates/">
+    <Project Path="tests/modules/updates/Nexa.Native.Updates.Services.Tests/Nexa.Native.Updates.Services.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/rendering/">
+    <Project Path="tests/rendering/Nexa.Native.Ui.Peer/Nexa.Native.Ui.Peer.csproj" />
+    <Project Path="tests/rendering/Nexa.Native.Ui.Tests/Nexa.Native.Ui.Tests.csproj" />
+    <Project Path="tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.csproj" />
+    <Project Path="tests/rendering/Nexa.Xsr.Renderer.Backend.Native.Tests/Nexa.Xsr.Renderer.Backend.Native.Tests.csproj" />
+    <Project Path="tests/rendering/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj" />
+    <Project Path="tests/rendering/Nexa.Xsr.Renderer.Tests/Nexa.Xsr.Renderer.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/runtime/">
+    <Project Path="tests/runtime/Nexa.Xsr.Runtime.Tests/Nexa.Xsr.Runtime.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/sidecar/">
+    <Project Path="tests/sidecar/Nexa.Sidecar.Tests/Nexa.Sidecar.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/benchmarks/">
+    <Project Path="tools/benchmarks/Nexa.Minecraft.Benchmarks/Nexa.Minecraft.Benchmarks.csproj" />
+    <Project Path="tools/benchmarks/Nexa.Xsr.Renderer.Benchmarks/Nexa.Xsr.Renderer.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/tools/compiler/">
+    <Project Path="tools/compiler/Nexa.Xsr.Patch.Compiler/Nexa.Xsr.Patch.Compiler.csproj" />
+  </Folder>
+  <Folder Name="/tools/probes/">
+    <Project Path="tools/probes/CapabilityProbe/CapabilityProbe.csproj" />
   </Folder>
 </Solution>

@@ -8,6 +8,13 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
+PROJECTS = json.loads((ROOT / "eng/architecture/projects.json").read_text())
+
+
+def project_directory(name):
+    return ROOT / PROJECTS[name]
+
+
 ENGINES = ("Pac", "Crypto", "Network", "Updates", "Media", "Minecraft", "Markup", "Artwork")
 SERVICES = ("Accounts",)
 
@@ -70,7 +77,7 @@ def publish(rid, output, properties):
         # Stable engines never inherit the launcher release/commit stamp.
         for engine in ENGINES:
             directory = stage / engine.lower()
-            subprocess.run(["dotnet", "publish", str(ROOT / f"native/Nexa.Native.{engine}/Nexa.Native.{engine}.csproj"),
+            subprocess.run(["dotnet", "publish", str(project_directory(f"Nexa.Native.{engine}") / f"Nexa.Native.{engine}.csproj"),
                             *common, *stable_ui_properties([]), *engine_service_properties(engine),
                             "--output", str(directory)], check=True)
             binary = directory / (f"Nexa.Native.{engine}" + Path(module).suffix)
@@ -79,19 +86,19 @@ def publish(rid, output, properties):
             engines.append((binary, f"nexa-{engine.lower()}" + Path(module).suffix))
         for service in SERVICES:
             destination = stage / service.lower()
-            subprocess.run(["dotnet", "publish", str(ROOT / f"native/Nexa.Native.{service}/Nexa.Native.{service}.csproj"),
+            subprocess.run(["dotnet", "publish", str(project_directory(f"Nexa.Native.{service}") / f"Nexa.Native.{service}.csproj"),
                             *common, *stable_ui_properties(properties), "-p:NexaExternalModules=true", "-p:NexaNativeServices=false", "--output", str(destination)], check=True)
             binary = destination / (f"Nexa.Native.{service}" + Path(module).suffix)
             if not binary.is_file() or binary.stat().st_size == 0:
                 raise RuntimeError(f"Missing native {service} service")
             engines.append((binary, f"nexa-{service.lower()}" + Path(module).suffix))
-        subprocess.run(["dotnet", "publish", str(ROOT / "Nexa.Desktop/Nexa.Desktop.csproj"),
+        subprocess.run(["dotnet", "publish", str(ROOT / "src/app/Nexa.Desktop/Nexa.Desktop.csproj"),
                         *common, *stable_ui_properties(properties), "-p:NexaNativeModule=true", "-p:NexaExternalModules=true", "-p:NexaNativeServices=true", "-p:NexaNetworkTestInternals=false", "--output", str(ui)], check=True)
-        verify_ui_engine_isolation(ROOT / "Nexa.Desktop/obj/project.assets.json")
-        subprocess.run(["dotnet", "publish", str(ROOT / "native/Nexa.Native.Host/Nexa.Native.Host.csproj"),
+        verify_ui_engine_isolation(ROOT / "src/app/Nexa.Desktop/obj/project.assets.json")
+        subprocess.run(["dotnet", "publish", str(ROOT / "src/app/Nexa.Native.Host/Nexa.Native.Host.csproj"),
                         *common, "-p:XsrVersionChannel=stable", "-p:XsrVersionPrefix=1.0.0", "--output", str(host)], check=True)
-        verify_host_module_isolation(ROOT / "native/Nexa.Native.Host/obj/project.assets.json")
-        subprocess.run(["dotnet", "publish", str(ROOT / "Nexa.Bootstrap/Nexa.Bootstrap.csproj"),
+        verify_host_module_isolation(ROOT / "src/app/Nexa.Native.Host/obj/project.assets.json")
+        subprocess.run(["dotnet", "publish", str(ROOT / "src/app/Nexa.Bootstrap/Nexa.Bootstrap.csproj"),
                         *common, *[p for p in properties if p.startswith(("-p:Xsr", "/p:Xsr"))],
                         "--output", str(bootstrap)], check=True)
         native = host / ("Nexa.Native.Host" + Path(module).suffix)

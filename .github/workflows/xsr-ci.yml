@@ -27,14 +27,14 @@ jobs:
           Get-Process -Id $PID | Select-Object ProcessName, SessionId
           Get-CimInstance Win32_VideoController | Select-Object Name, DriverVersion
       - name: Build native window probe
-        run: dotnet build tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release
+        run: dotnet build tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release
       - name: Verify native WinRT share package and stream ownership
-        run: dotnet tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll --native-share-package-smoke
+        run: dotnet tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll --native-share-package-smoke
       - name: Exercise actual Win32 decorations and tray restoration
         shell: pwsh
         run: |
           $log = Join-Path $env:RUNNER_TEMP 'windows-native-chrome.log'
-          & dotnet tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll --native-corner-smoke *> $log
+          & dotnet tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll --native-corner-smoke *> $log
           $probeExitCode = $LASTEXITCODE
           Get-Content $log
           exit $probeExitCode
@@ -57,7 +57,7 @@ jobs:
         with:
           global-json-file: global.json
       - name: Verify backend motion, input and resource lifetime before packaging
-        run: dotnet run --project tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release
+        run: dotnet run --project tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release
 
   sidecar-ipc:
     name: NativeAOT Sidecar full lifecycle (${{ matrix.os }})
@@ -73,7 +73,7 @@ jobs:
         with:
           global-json-file: global.json
       - name: Publish NativeAOT Sidecar tests
-        run: dotnet publish tests/Nexa.Sidecar.Tests -c Release -p:PublishAot=true -p:StripSymbols=true -o native-sidecar-tests
+        run: dotnet publish tests/sidecar/Nexa.Sidecar.Tests -c Release -p:PublishAot=true -p:StripSymbols=true -o native-sidecar-tests
       - name: Exercise native protocol and IPC without skips
         shell: pwsh
         run: |
@@ -81,7 +81,7 @@ jobs:
           & $binary
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Publish NativeAOT Sidecar Host tests
-        run: dotnet publish tests/Nexa.Xsr.Runtime.Tests -c Release -p:PublishAot=true -p:StripSymbols=true -o native-sidecar-host-tests
+        run: dotnet publish tests/runtime/Nexa.Xsr.Runtime.Tests -c Release -p:PublishAot=true -p:StripSymbols=true -o native-sidecar-host-tests
       - name: Exercise native Host API and physical package lifecycle
         shell: pwsh
         run: |
@@ -111,7 +111,7 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
       - name: Publish isolated JNI host
-        run: dotnet publish Nexa.Jvm.Host -c Release -p:PublishAot=true -o native-jvm-host
+        run: dotnet publish src/app/Nexa.Jvm.Host -c Release -p:PublishAot=true -o native-jvm-host
       - name: Exercise real JVM lifecycle
         shell: pwsh
         run: |
@@ -147,7 +147,7 @@ jobs:
           security set-keychain-settings -t 21600 "$RUNNER_TEMP/nexa-test.keychain-db"
           security default-keychain -s "$RUNNER_TEMP/nexa-test.keychain-db"
       - name: Publish NativeAOT account tests
-        run: dotnet publish tests/Nexa.Services.Tests -c Release -p:PublishAot=true -o native-account-tests
+        run: dotnet publish tests/app/Nexa.Services.Tests -c Release -p:PublishAot=true -o native-account-tests
       - name: Verify native launcher migration and SQLite source snapshots
         shell: pwsh
         run: |
@@ -265,7 +265,7 @@ jobs:
           fi
           ffmpeg -version
       - name: Publish NativeAOT NTP services
-        run: dotnet publish tests/Nexa.Services.Themes.Tests/Nexa.Services.Themes.Tests.csproj --configuration Release -p:PublishAot=true -p:StripSymbols=true --output native-theme-services
+        run: dotnet publish tests/modules/themes/Nexa.Services.Themes.Tests/Nexa.Services.Themes.Tests.csproj --configuration Release -p:PublishAot=true -p:StripSymbols=true --output native-theme-services
       - name: Exercise published source, transaction and resource contracts
         shell: pwsh
         run: |
@@ -276,12 +276,12 @@ jobs:
           Get-Content $log
           exit $probeExitCode
       - name: Publish NativeAOT Desktop theme host
-        run: dotnet publish Nexa.Desktop/Nexa.Desktop.csproj --configuration Release -p:XsrVersionChannel=ci -p:PublishAot=true -p:StripSymbols=true --output native-theme-desktop
+        run: dotnet publish src/app/Nexa.Desktop/Nexa.Desktop.csproj --configuration Release -p:XsrVersionChannel=ci -p:PublishAot=true -p:StripSymbols=true --output native-theme-desktop
       - name: Verify external author assets and execute actual published theme host
         shell: pwsh
         run: |
           $python = if ($IsWindows) { 'python' } else { 'python3' }
-          & $python eng/themes/pack.py Nexa.Desktop/Themes --verify-published native-theme-desktop/Themes
+          & $python eng/themes/pack.py src/app/Nexa.Desktop/Themes --verify-published native-theme-desktop/Themes
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $binary = if ($IsWindows) { './native-theme-desktop/Nexa.Desktop.exe' } else { './native-theme-desktop/Nexa.Desktop' }
           $log = Join-Path $env:RUNNER_TEMP 'ntp-native-publication.log'
@@ -290,14 +290,14 @@ jobs:
           Get-Content $log
           exit $probeExitCode
       - name: Build actual native NTP preview harness
-        run: dotnet build tests/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj --configuration Release
+        run: dotnet build tests/app/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj --configuration Release
       - name: Verify gamepad polling survives background composition
         shell: pwsh
         run: |
           if ($IsLinux) {
-            & xvfb-run -a dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-gamepad-polling-smoke
+            & xvfb-run -a dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-gamepad-polling-smoke
           } else {
-            & dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-gamepad-polling-smoke
+            & dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-gamepad-polling-smoke
           }
           exit $LASTEXITCODE
       - name: Capture native light and dark themes with actual runtime interactions
@@ -307,9 +307,9 @@ jobs:
           foreach ($mode in @('light', 'dark')) {
             $log = Join-Path $env:RUNNER_TEMP "ntp-native-preview-$mode.log"
             if ($IsLinux) {
-              & xvfb-run -a dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-theme-preview $mode $output *> $log
+              & xvfb-run -a dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-theme-preview $mode $output *> $log
             } else {
-              & dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-theme-preview $mode $output *> $log
+              & dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-theme-preview $mode $output *> $log
             }
             $probeExitCode = $LASTEXITCODE
             Get-Content $log
@@ -317,9 +317,9 @@ jobs:
             $migrationOutput = Join-Path $output 'launcher-migration'
             $migrationLog = Join-Path $env:RUNNER_TEMP "ntp-native-preview-migration-$mode.log"
             if ($IsLinux) {
-              & xvfb-run -a dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-launcher-migration-preview $mode $migrationOutput *> $migrationLog
+              & xvfb-run -a dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-launcher-migration-preview $mode $migrationOutput *> $migrationLog
             } else {
-              & dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-launcher-migration-preview $mode $migrationOutput *> $migrationLog
+              & dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-launcher-migration-preview $mode $migrationOutput *> $migrationLog
             }
             $probeExitCode = $LASTEXITCODE
             Get-Content $migrationLog
@@ -352,6 +352,8 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Verify repository layout and documentation
+        run: python3 eng/architecture/verify_layout.py
       - name: Restore
         run: dotnet restore NexaCL.slnx
 
@@ -361,31 +363,31 @@ jobs:
       - name: Validate external NXML component bundle
         shell: bash
         run: |
-          test -f Nexa.Desktop/bin/Release/net10.0/Ui/Shell.nxml
-          test -f Nexa.Desktop/bin/Release/net10.0/Ui/Components/Button.c.nxml
-          test -f Nexa.Desktop/bin/Release/net10.0/Ui/Styles/Desktop.nss
+          test -f src/app/Nexa.Desktop/bin/Release/net10.0/Ui/Shell.nxml
+          test -f src/app/Nexa.Desktop/bin/Release/net10.0/Ui/Components/Button.c.nxml
+          test -f src/app/Nexa.Desktop/bin/Release/net10.0/Ui/Styles/Desktop.nss
 
       - name: Test compile-time Function Patch rewriting
-        run: dotnet run --project tools/Nexa.Xsr.Patch.Compiler --configuration Release --no-build -- --self-test
+        run: dotnet run --project tools/compiler/Nexa.Xsr.Patch.Compiler --configuration Release --no-build -- --self-test
 
       - name: Test automatic function signatures and phases
-        run: dotnet run --project tools/Nexa.Xsr.Patch.Compiler --configuration Release --no-build -- --self-test-automatic --core Nexa.Core/bin/Release/net10.0/Nexa.Core.dll
+        run: dotnet run --project tools/compiler/Nexa.Xsr.Patch.Compiler --configuration Release --no-build -- --self-test-automatic --core src/foundation/Nexa.Core/bin/Release/net10.0/Nexa.Core.dll
 
       - name: Measure automatic function fast path
-        run: dotnet run --project tools/Nexa.Xsr.Patch.Compiler --configuration Release --no-build -- --benchmark-automatic --core Nexa.Core/bin/Release/net10.0/Nexa.Core.dll
+        run: dotnet run --project tools/compiler/Nexa.Xsr.Patch.Compiler --configuration Release --no-build -- --benchmark-automatic --core src/foundation/Nexa.Core/bin/Release/net10.0/Nexa.Core.dll
 
       - name: Verify automatic product function coverage
-        run: dotnet run --project tools/Nexa.Xsr.Patch.Compiler --configuration Release --no-build -- --verify-automatic Nexa.Desktop/bin/Release/net10.0
+        run: dotnet run --project tools/compiler/Nexa.Xsr.Patch.Compiler --configuration Release --no-build -- --verify-automatic src/app/Nexa.Desktop/bin/Release/net10.0
 
       - name: Test Function Patch compile-item path identity
         run: dotnet msbuild eng/xsr/Test.FunctionPatchItems.proj -nologo
 
       - name: Test XSR runtime kernel and Sidecar host data plane
-        run: dotnet run --project tests/Nexa.Xsr.Runtime.Tests/Nexa.Xsr.Runtime.Tests.csproj --configuration Release --no-build
+        run: dotnet run --project tests/runtime/Nexa.Xsr.Runtime.Tests/Nexa.Xsr.Runtime.Tests.csproj --configuration Release --no-build
 
       - name: Publish and run NativeAOT runtime tests
         run: |
-          dotnet publish tests/Nexa.Xsr.Runtime.Tests/Nexa.Xsr.Runtime.Tests.csproj \
+          dotnet publish tests/runtime/Nexa.Xsr.Runtime.Tests/Nexa.Xsr.Runtime.Tests.csproj \
             --configuration Release \
             -p:XsrVersionChannel=ci \
             -p:PublishAot=true \
@@ -394,17 +396,17 @@ jobs:
           "${{ runner.temp }}/xsr-runtime-aot/Nexa.Xsr.Runtime.Tests"
 
       - name: Test UI.Next renderer kernel
-        run: dotnet run --project tests/Nexa.Xsr.Renderer.Tests/Nexa.Xsr.Renderer.Tests.csproj --configuration Release --no-build
+        run: dotnet run --project tests/rendering/Nexa.Xsr.Renderer.Tests/Nexa.Xsr.Renderer.Tests.csproj --configuration Release --no-build
 
       - name: Test Avalonia scene backend
-        run: dotnet run --project tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.csproj --configuration Release --no-build
+        run: dotnet run --project tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.csproj --configuration Release --no-build
 
       - name: Verify theme animations yield to input
-        run: dotnet run --project tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release --no-build -- --theme-animation-smoke
+        run: dotnet run --project tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release --no-build -- --theme-animation-smoke
 
       - name: Publish and run NativeAOT renderer tests
         run: |
-          dotnet publish tests/Nexa.Xsr.Renderer.Tests/Nexa.Xsr.Renderer.Tests.csproj \
+          dotnet publish tests/rendering/Nexa.Xsr.Renderer.Tests/Nexa.Xsr.Renderer.Tests.csproj \
             --configuration Release \
             -p:XsrVersionChannel=ci \
             -p:PublishAot=true \
@@ -413,11 +415,11 @@ jobs:
           "${{ runner.temp }}/uinext-aot/Nexa.Xsr.Renderer.Tests"
 
       - name: Test NXML compiler pipeline
-        run: dotnet run --project tests/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj --configuration Release --no-build
+        run: dotnet run --project tests/rendering/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj --configuration Release --no-build
 
       - name: Publish and run NativeAOT NXML tests
         run: |
-          dotnet publish tests/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj \
+          dotnet publish tests/rendering/Nexa.Xsr.Renderer.Nxml.Tests/Nexa.Xsr.Renderer.Nxml.Tests.csproj \
             --configuration Release \
             -p:XsrVersionChannel=ci \
             -p:PublishAot=true \
@@ -426,31 +428,31 @@ jobs:
           "${{ runner.temp }}/pxml-aot/Nexa.Xsr.Renderer.Nxml.Tests"
 
       - name: Test Sidecar protocol and transport
-        run: dotnet run --project tests/Nexa.Sidecar.Tests/Nexa.Sidecar.Tests.csproj --configuration Release --no-build
+        run: dotnet run --project tests/sidecar/Nexa.Sidecar.Tests/Nexa.Sidecar.Tests.csproj --configuration Release --no-build
 
 
       - name: Install Xvfb for the X11 probe smoke
         run: sudo apt-get install -y xvfb libx11-6
 
       - name: Test foundation services
-        run: xvfb-run -a dotnet run --project tests/Nexa.Services.Tests/Nexa.Services.Tests.csproj --configuration Release --no-build
+        run: xvfb-run -a dotnet run --project tests/app/Nexa.Services.Tests/Nexa.Services.Tests.csproj --configuration Release --no-build
 
       - name: Test desktop composition
-        run: dotnet run --project tests/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj --configuration Release --no-build
+        run: dotnet run --project tests/app/Nexa.Desktop.Tests/Nexa.Desktop.Tests.csproj --configuration Release --no-build
 
       - name: Test NTP package and resource lifecycle
-        run: dotnet run --project tests/Nexa.Services.Themes.Tests/Nexa.Services.Themes.Tests.csproj --configuration Release --no-build
+        run: dotnet run --project tests/modules/themes/Nexa.Services.Themes.Tests/Nexa.Services.Themes.Tests.csproj --configuration Release --no-build
 
       - name: Test reproducible NTP author packages
         run: |
           python -m unittest discover -s eng/themes -p 'test_*.py'
-          python eng/themes/pack.py Nexa.Desktop/Themes/Minimal --output '${{ runner.temp }}/Nexa-Minimal.ntp'
-          python eng/themes/pack.py Nexa.Desktop/Themes/Advanced --output '${{ runner.temp }}/Nexa-Advanced.ntp'
-          python eng/themes/pack.py Nexa.Desktop/Themes --verify-published Nexa.Desktop/bin/Release/net10.0/Themes
+          python eng/themes/pack.py src/app/Nexa.Desktop/Themes/Minimal --output '${{ runner.temp }}/Nexa-Minimal.ntp'
+          python eng/themes/pack.py src/app/Nexa.Desktop/Themes/Advanced --output '${{ runner.temp }}/Nexa-Advanced.ntp'
+          python eng/themes/pack.py src/app/Nexa.Desktop/Themes --verify-published src/app/Nexa.Desktop/bin/Release/net10.0/Themes
 
       - name: Publish and run NativeAOT NTP services
         run: |
-          dotnet publish tests/Nexa.Services.Themes.Tests/Nexa.Services.Themes.Tests.csproj \
+          dotnet publish tests/modules/themes/Nexa.Services.Themes.Tests/Nexa.Services.Themes.Tests.csproj \
             --configuration Release \
             -p:XsrVersionChannel=ci \
             -p:PublishAot=true \
@@ -460,18 +462,18 @@ jobs:
 
       - name: Smoke composition soak harness (not two-hour acceptance)
         run: |
-          dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --soak idle --seconds 10 --output '${{ runner.temp }}/soak-idle'
-          dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --soak navigation --seconds 10 --output '${{ runner.temp }}/soak-navigation'
+          dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --soak idle --seconds 10 --output '${{ runner.temp }}/soak-idle'
+          dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --soak navigation --seconds 10 --output '${{ runner.temp }}/soak-navigation'
           python eng/acceptance/analyze_soak.py --run-dir '${{ runner.temp }}/soak-idle' --output '${{ runner.temp }}/soak-idle-observations.json'
           python eng/acceptance/analyze_soak.py --run-dir '${{ runner.temp }}/soak-navigation' --output '${{ runner.temp }}/soak-navigation-observations.json'
 
       - name: Publish and run NativeAOT foundation tests
         run: |
-          dotnet publish tests/Nexa.Services.Tests/Nexa.Services.Tests.csproj             --configuration Release             -p:XsrVersionChannel=ci             -p:PublishAot=true             -p:StripSymbols=true             --output "${{ runner.temp }}/foundation-aot"
+          dotnet publish tests/app/Nexa.Services.Tests/Nexa.Services.Tests.csproj             --configuration Release             -p:XsrVersionChannel=ci             -p:PublishAot=true             -p:StripSymbols=true             --output "${{ runner.temp }}/foundation-aot"
           xvfb-run -a "${{ runner.temp }}/foundation-aot/Nexa.Services.Tests"
 
       - name: Enforce UI.Next benchmark gates
-        run: dotnet run --project Nexa.Xsr.Renderer.Benchmarks/Nexa.Xsr.Renderer.Benchmarks.csproj --configuration Release --no-build
+        run: dotnet run --project tools/benchmarks/Nexa.Xsr.Renderer.Benchmarks/Nexa.Xsr.Renderer.Benchmarks.csproj --configuration Release --no-build
 
       - name: Validate real Minecraft evidence admission
         run: |
@@ -479,14 +481,14 @@ jobs:
           python eng/acceptance/verify.py --policy-only
 
       - name: Publish NativeAOT Minecraft benchmark harness
-        run: dotnet publish tools/Nexa.Minecraft.Benchmarks -c Release -p:PublishAot=true -o "${{ runner.temp }}/minecraft-benchmark-aot"
+        run: dotnet publish tools/benchmarks/Nexa.Minecraft.Benchmarks -c Release -p:PublishAot=true -o "${{ runner.temp }}/minecraft-benchmark-aot"
 
       - name: Check benchmark input boundaries
         shell: pwsh
         run: ./eng/xsr/Test-MinecraftBenchmark.ps1 -Executable '${{ runner.temp }}/minecraft-benchmark-aot/Nexa.Minecraft.Benchmarks'
 
       - name: Enforce architecture boundaries
-        run: dotnet run --project tests/Nexa.Xsr.ArchitectureTests/Nexa.Xsr.ArchitectureTests.csproj --configuration Release --no-build -- --repo-root .
+        run: dotnet run --project tests/architecture/Nexa.Xsr.ArchitectureTests/Nexa.Xsr.ArchitectureTests.csproj --configuration Release --no-build -- --repo-root .
 
       - name: Verify generated native UI wire schema
         run: |
@@ -500,7 +502,7 @@ jobs:
         env:
           NexaCurseForgeApiKey: '$2a$10$NexaCurseForgeFixtureKeyForPublishSmoke'
         run: |
-          dotnet publish Nexa.Desktop/Nexa.Desktop.csproj \
+          dotnet publish src/app/Nexa.Desktop/Nexa.Desktop.csproj \
             --configuration Release \
             -p:XsrVersionChannel=ci \
             -p:PublishAot=true \
@@ -516,14 +518,14 @@ jobs:
 
       - name: Run NativeAOT NTP activation smoke against published assets
         run: |
-          python eng/themes/pack.py Nexa.Desktop/Themes --verify-published '${{ runner.temp }}/pcl-desktop-aot/Themes'
+          python eng/themes/pack.py src/app/Nexa.Desktop/Themes --verify-published '${{ runner.temp }}/pcl-desktop-aot/Themes'
           "${{ runner.temp }}/pcl-desktop-aot/Nexa.Desktop" --validate-themes
 
       - name: Analyze trimmed desktop composition
         env:
           NexaCurseForgeApiKey: '$2a$10$NexaCurseForgeFixtureKeyForPublishSmoke'
         run: |
-          dotnet publish Nexa.Desktop/Nexa.Desktop.csproj \
+          dotnet publish src/app/Nexa.Desktop/Nexa.Desktop.csproj \
             --configuration Release \
             -p:XsrVersionChannel=ci \
             -p:PublishTrimmed=true \
@@ -539,5 +541,5 @@ jobs:
 
       - name: Run trimmed NTP activation smoke against published assets
         run: |
-          python eng/themes/pack.py Nexa.Desktop/Themes --verify-published '${{ runner.temp }}/pcl-desktop-trimmed/Themes'
+          python eng/themes/pack.py src/app/Nexa.Desktop/Themes --verify-published '${{ runner.temp }}/pcl-desktop-trimmed/Themes'
           "${{ runner.temp }}/pcl-desktop-trimmed/Nexa.Desktop" --validate-themes

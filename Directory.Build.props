@@ -1,4 +1,9 @@
 <Project>
+  <PropertyGroup>
+    <NexaRepositoryRoot>$(MSBuildThisFileDirectory)</NexaRepositoryRoot>
+    <NexaSourceRoot>$([MSBuild]::NormalizeDirectory('$(NexaRepositoryRoot)', 'src'))</NexaSourceRoot>
+    <NexaProductSource Condition="$([System.String]::Copy('$(MSBuildProjectDirectory)').StartsWith('$(NexaSourceRoot)'))">true</NexaProductSource>
+  </PropertyGroup>
   <Import Project="$(MSBuildThisFileDirectory)eng/xsr/Xsr.Version.props" />
 
   <PropertyGroup>

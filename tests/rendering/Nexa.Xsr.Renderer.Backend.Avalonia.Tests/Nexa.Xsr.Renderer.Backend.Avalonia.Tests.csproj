@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>Focused executable tests for the UI.Next Avalonia scene and accessibility bridge.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../../src/rendering/Nexa.Native.Window/MacPlatformRetirement.cs" Link="MacPlatformRetirement.cs" />
+    <EmbeddedResource Include="../../../src/app/Nexa.Desktop/Themes/Advanced/fonts/DejaVuSans.ttf" LogicalName="Nexa.Theme.Tests.DejaVuSans.ttf" />
+    <EmbeddedResource Include="../../../src/app/Nexa.Desktop/Assets/Brand/neon-n-light.png" LogicalName="Nexa.Brand.Tests.light.png" />
+    <EmbeddedResource Include="../../../src/app/Nexa.Desktop/Assets/Brand/neon-n-dark.png" LogicalName="Nexa.Brand.Tests.dark.png" />
+    <!-- Headless is a test-only platform: it runs the real desktop lifetime for regression
+         tests without a display and must never leak into product projects. -->
+    <PackageReference Include="Avalonia.Headless" Version="12.1.0" />
+    <ProjectReference Include="../../../src/rendering/Nexa.Xsr.Renderer.Backend.Avalonia/Nexa.Xsr.Renderer.Backend.Avalonia.csproj" />
+    <ProjectReference Include="../../../src/runtime/Nexa.Xsr.Abstractions/Nexa.Xsr.Abstractions.csproj" />
+    <ProjectReference Include="../../../src/runtime/Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
+  </ItemGroup>
+</Project>

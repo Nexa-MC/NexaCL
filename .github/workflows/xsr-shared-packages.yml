@@ -3,15 +3,17 @@ on:
   push:
     branches: [main]
     paths:
-      - 'Nexa.Core/**'
-      - 'Nexa.Contracts/**'
-      - 'Nexa.Sidecar.*/**'
-      - 'Nexa.Xsr.*/**'
+      - 'src/foundation/Nexa.Core/**'
+      - 'src/foundation/Nexa.Contracts/**'
+      - 'src/sidecar/**'
+      - 'src/runtime/**'
+      - 'src/interop/**'
+      - 'eng/architecture/**'
       - 'eng/packages/**'
       - 'eng/xsr/**'
-      - 'tools/Nexa.Xsr.Patch.Compiler/**'
+      - 'tools/compiler/Nexa.Xsr.Patch.Compiler/**'
       - 'Directory.Build.*'
-      - 'docs/xsr/shared-packages.md'
+      - 'docs/packages.md'
       - '.github/workflows/xsr-shared-packages.yml'
   pull_request:
   workflow_dispatch:

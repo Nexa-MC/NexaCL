@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType Condition="'$(NexaNativeModule)' == 'true'">Library</OutputType>
+    <OutputType Condition="'$(NexaNativeModule)' != 'true'">WinExe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationIcon>Assets/icon.ico</ApplicationIcon>
+    <Description>Nexa UI tree, controllers, renderer and desktop runtime; managed development entry.</Description>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(NexaNativeModule)' == 'true'">
+    <NativeLib>Shared</NativeLib>
+    <DefineConstants>$(DefineConstants);NEXA_NATIVE_MODULE</DefineConstants>
+  </PropertyGroup>
+  <Import Project="../../../eng/build/NativeStableImage.props" Condition="'$(NexaNativeModule)' == 'true'" />
+
+  <ItemGroup>
+    <Compile Include="../protocol/HostServiceCatalog.Generated.cs" Link="HostServiceCatalog.Generated.cs" Condition="'$(NexaNativeModule)' == 'true'" />
+    <AssemblyMetadata Include="NexaMicrosoftClientId" Condition="'$(NexaMicrosoftClientId)' != ''" Value="$(NexaMicrosoftClientId)" />
+    <AssemblyMetadata Include="NexaLittleSkinClientId" Condition="'$(NexaLittleSkinClientId)' != ''" Value="$(NexaLittleSkinClientId)" />
+    <AssemblyMetadata Include="NexaCurseForgeApiKey" Condition="'$(NexaCurseForgeApiKey)' != ''" Value="$(NexaCurseForgeApiKey)" />
+    <Content Include="Ui/**/*.nxml;Ui/**/*.nss;Ui/Localization/messages.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Themes/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Assets/api-client.pfx" Condition="Exists('Assets/api-client.pfx')" />
+    <Content Include="Assets/icon.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets/FileTypes/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="../../../GPG-PUBLIC-KEY.asc" LogicalName="Nexa.Desktop.SidecarReleaseKey.asc" />
+    <ProjectReference Include="../../rendering/Nexa.Xsr.Renderer.Nxml.Runtime/Nexa.Xsr.Renderer.Nxml.Runtime.csproj" />
+    <ProjectReference Include="../Nexa.Services/Nexa.Services.csproj" />
+    <ProjectReference Include="../Nexa.Services.Composition/Nexa.Services.Composition.csproj" />
+    <ProjectReference Include="../../sidecar/Nexa.Sidecar.Protocol/Nexa.Sidecar.Protocol.csproj" />
+    <ProjectReference Include="../../sidecar/Nexa.Sidecar.Transport/Nexa.Sidecar.Transport.csproj" />
+    <ProjectReference Include="../../rendering/Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
+    <ProjectReference Include="../../rendering/Nexa.Xsr.Renderer.Backend.Avalonia/Nexa.Xsr.Renderer.Backend.Avalonia.csproj" />
+    <ProjectReference Include="../../runtime/Nexa.Xsr.Runtime/Nexa.Xsr.Runtime.csproj" />
+    <NexaFunctionPatchSource Include="Ui/ResourceCaptions.cs" />
+    <ProjectReference Include="../../modules/themes/Nexa.Services.Themes.Contracts/Nexa.Services.Themes.Contracts.csproj" />
+  </ItemGroup>
+  <Import Project="../../../eng/xsr/Xsr.FunctionPatches.targets" />
+  <Import Project="../../../eng/xsr/Xsr.Pac.targets" Condition="'$(NexaExternalModules)' != 'true'" />
+  <Import Project="../../../eng/xsr/Xsr.PlatformHelper.targets" />
+</Project>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Revisioned state cells, collections, snapshots, deltas, and derived-state graph.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Nexa.Xsr.Runtime.Tests" />
+    <ProjectReference Include="../../foundation/Nexa.Core/Nexa.Core.csproj" />
+    <ProjectReference Include="../Nexa.Xsr.Abstractions/Nexa.Xsr.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

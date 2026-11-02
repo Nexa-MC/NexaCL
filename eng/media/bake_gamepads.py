@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parents[2] / "Nexa.Desktop/Assets/Gamepads"
+ROOT = Path(__file__).resolve().parents[2] / "src/app/Nexa.Desktop/Assets/Gamepads"
 NUMBER = re.compile(r"[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?")
 ET.register_namespace("", "http://www.w3.org/2000/svg")
 

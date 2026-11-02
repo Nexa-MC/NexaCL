@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><IsAotCompatible>true</IsAotCompatible><NexaAutomaticFunctionPatches>true</NexaAutomaticFunctionPatches><Description>Shared managed update codec algorithms; linked into the owning native image, never shipped as a CLR DLL.</Description></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../foundation/Nexa.Core/Nexa.Core.csproj" />
+    <PackageReference Include="ZstdSharp.Port" Version="0.8.6" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><IsAotCompatible>true</IsAotCompatible><AllowUnsafeBlocks>true</AllowUnsafeBlocks><DefineConstants>$(DefineConstants);NEXA_EXTERNAL_MODULES</DefineConstants></PropertyGroup>
+  <Import Project="../../../interop/services/ServiceProtocol.props" />
+  <ItemGroup>
+    <ProjectReference Include="../Nexa.Services.Updates.Contracts/Nexa.Services.Updates.Contracts.csproj" />
+    <ProjectReference Include="../../common/Nexa.Services.Common.Contracts/Nexa.Services.Common.Contracts.csproj" />
+    <ProjectReference Include="../../network/Nexa.Native.Network.Client/Nexa.Native.Network.Client.csproj" />
+    <Compile Include="../protocol/*.cs" Link="Wire/%(Filename)%(Extension)" />
+    <Compile Include="../../network/protocol/NetworkHttpWire.cs" Link="Wire/NetworkHttpWire.cs" />
+    <Compile Include="../../network/protocol/NetworkHttpStreamServer.cs" Link="Wire/NetworkHttpStreamServer.cs" />
+    <Compile Include="../../../interop/ui/NativeUiAsyncResources.cs" Link="Wire/NativeUiAsyncResources.cs" />
+    <Compile Include="../../network/protocol/downloads/HostWorkLeaseServer.cs" Link="Wire/HostWorkLeaseServer.cs" />
+    <Compile Include="../../network/protocol/downloads/DownloadProtocol.cs" Link="Wire/DownloadProtocol.cs" />
+    <Compile Include="../../../interop/NativeEngineClient.cs" Link="Crypto/NativeEngineClient.cs" />
+    <Compile Include="../Nexa.Services.Updates/Updates/UpdateGpgVerifier.cs" Link="Crypto/UpdateGpgVerifier.cs" />
+    <Compile Include="../Nexa.Services.Updates/Updates/NativeCryptoClient.cs" Link="Crypto/NativeCryptoClient.cs" />
+  </ItemGroup>
+</Project>

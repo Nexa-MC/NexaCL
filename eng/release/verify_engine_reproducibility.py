@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-from publish_launcher import ENGINES, SERVICES, ROOT, module_name, stable_ui_properties, engine_service_properties
+from publish_launcher import ENGINES, SERVICES, ROOT, module_name, stable_ui_properties, engine_service_properties, project_directory
 
 
 def verify(rid, payload, selected=None):
@@ -23,7 +23,7 @@ def verify(rid, payload, selected=None):
         modules = tuple(name for name in modules if name in selected)
     with tempfile.TemporaryDirectory(prefix="nexa-engine-repro-") as temporary:
         for engine in modules:
-            project = ROOT / f"native/Nexa.Native.{engine}/Nexa.Native.{engine}.csproj"
+            project = project_directory(f"Nexa.Native.{engine}") / f"Nexa.Native.{engine}.csproj"
             output = Path(temporary) / engine.lower()
             common = ["--configuration", "Release", "-r", rid, "-m:1", "-nodeReuse:false",
                       "-p:PublishAot=true", "-p:SelfContained=true", "-p:StripSymbols=true",

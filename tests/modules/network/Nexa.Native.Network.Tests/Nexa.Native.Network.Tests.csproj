@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../../src/rendering/Nexa.Xsr.Renderer.Artwork/Nexa.Xsr.Renderer.Artwork.csproj" />
+    <ProjectReference Include="../../../../src/rendering/Nexa.Xsr.Renderer.Nxml.Compiler/Nexa.Xsr.Renderer.Nxml.Compiler.csproj" />
+    <ProjectReference Include="../../../../src/modules/minecraft/Nexa.Services.Minecraft.Metadata/Nexa.Services.Minecraft.Metadata.csproj" />
+    <ProjectReference Include="../../../../src/modules/accounts/Nexa.Services.Accounts/Nexa.Services.Accounts.csproj" />
+    <ProjectReference Include="../../../../src/modules/updates/Nexa.Services.Updates/Nexa.Services.Updates.csproj" />
+    <PackageReference Include="ZstdSharp.Port" Version="0.8.6" />
+    <ProjectReference Include="../../../../src/modules/network/Nexa.Services.Network/Nexa.Services.Network.csproj" />
+    <Compile Include="../../../app/Nexa.Services.Tests/NativeNetworkTests.cs" Link="NativeNetworkTests.cs" />
+  </ItemGroup>
+  <Import Project="../../../../eng/build/ArtworkResources.props" />
+</Project>

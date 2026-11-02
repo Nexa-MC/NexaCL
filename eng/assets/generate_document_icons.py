@@ -6,7 +6,7 @@ import resvg_py
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "Nexa.Desktop/Assets/FileTypes"
+OUT = ROOT / "src/app/Nexa.Desktop/Assets/FileTypes"
 GLYPHS = {
     "N": "M0 28V0L20 28V0", "M": "M0 28V0L10 14L20 0V28",
     "P": "M0 28V0H13Q20 0 20 7Q20 14 13 14H0",

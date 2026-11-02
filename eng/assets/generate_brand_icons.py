@@ -18,7 +18,7 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[2]
-ASSETS = ROOT / "Nexa.Desktop" / "Assets"
+ASSETS = ROOT / "src/app/Nexa.Desktop" / "Assets"
 BRAND = ASSETS / "Brand"
 SOURCES = {
     "light": (

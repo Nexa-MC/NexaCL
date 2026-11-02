@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><OutputType>Exe</OutputType><IsAotCompatible>true</IsAotCompatible><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="../../native/Nexa.Native.Network.Client/Nexa.Native.Network.Client.csproj" />
-    <ProjectReference Include="../../native/Nexa.Native.Updates.Client/Nexa.Native.Updates.Client.csproj" />
-    <Compile Include="../../native/HostServiceProtocol/HostServiceCatalog.Generated.cs" Link="HostServiceCatalog.Generated.cs" />
-  </ItemGroup>
-</Project>

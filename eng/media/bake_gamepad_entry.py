@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from PIL import Image, ImageFilter
 
-ROOT = Path(__file__).resolve().parents[2] / "Nexa.Desktop/Assets/Brand"
+ROOT = Path(__file__).resolve().parents[2] / "src/app/Nexa.Desktop/Assets/Brand"
 
 with Image.open(ROOT / "neon-n-dark.png") as source:
     source = source.convert("RGBA")

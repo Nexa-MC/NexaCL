@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="../../Shared/LicensedAccountFixture.cs" Link="Fixtures/LicensedAccountFixture.cs" />
+    <Using Include="Nexa.Testing.LicensedAccountFixture" Static="true" />
+  </ItemGroup>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Description>Executable tests for the Desktop composition root: launch page routing, state binding, and intent dispatch.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/app/Nexa.Desktop/Nexa.Desktop.csproj" />
+    <ProjectReference Include="../../../src/app/Nexa.Services/Nexa.Services.csproj" />
+    <ProjectReference Include="../../../src/app/Nexa.Services.Composition/Nexa.Services.Composition.csproj" />
+    <ProjectReference Include="../../../src/rendering/Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
+    <ProjectReference Include="../../../src/runtime/Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
+  </ItemGroup>
+  <Import Project="../../../eng/xsr/Xsr.Pac.targets" />
+</Project>

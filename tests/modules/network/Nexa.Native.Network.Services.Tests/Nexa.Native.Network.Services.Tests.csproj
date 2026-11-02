@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><IsAotCompatible>true</IsAotCompatible></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../../../src/modules/network/Nexa.Native.Network.Client/Nexa.Native.Network.Client.csproj" /></ItemGroup>
+</Project>

@@ -14,12 +14,12 @@ def verify(rid: str, output: Path):
     caller, peer = test(rid, output, run_probe=False)
     native = output / "window"
     subprocess.run([
-        "dotnet", "publish", str(ROOT / "native/Nexa.Native.Window"),
+        "dotnet", "publish", str(ROOT / "src/rendering/Nexa.Native.Window"),
         "-c", "Release", "-r", rid, "--self-contained", "true", "-m:1", "-nr:false",
         "-p:PublishAot=true", "-o", str(native),
     ], check=True, cwd=ROOT)
     client = output / "client"
-    client_project = ROOT / "tests/Nexa.Xsr.Renderer.Backend.Native.Tests"
+    client_project = ROOT / "tests/rendering/Nexa.Xsr.Renderer.Backend.Native.Tests"
     subprocess.run([
         "dotnet", "publish", str(client_project), "-c", "Release", "-r", rid,
         "--self-contained", "true", "-m:1", "-nr:false", "-p:PublishAot=true", "-o", str(client),

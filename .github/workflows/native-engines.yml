@@ -4,59 +4,15 @@ on:
   push:
     branches: [main]
     paths:
-      - 'native/**'
-      - 'Nexa.Xsr.Renderer/**'
-      - 'Nexa.Xsr.Renderer.Backend.Avalonia/**'
-      - 'Nexa.Xsr.Renderer.Backend.Native/**'
-      - 'tests/Nexa.Xsr.Renderer.Backend.Native.Tests/**'
-      - 'eng/xsr/generate_ui_wire.*'
-      - 'tests/Nexa.Native.Ui.Peer/**'
-      - 'tests/Nexa.Native.Ui.Tests/**'
-      - 'eng/release/verify_native_ui_contracts.py'
-      - 'eng/release/verify_native_window_contracts.py'
-      - 'Nexa.Services.Updates/**'
-      - 'Nexa.Services.Network/**'
-      - 'Nexa.Services.Network.Contracts/**'
-      - 'Nexa.Services.Common/**'
-      - 'Nexa.Services.Common.Contracts/**'
-      - 'Nexa.Core/Patching/**'
-      - 'Nexa.Core/Media/**'
-      - 'Nexa.Core/Xml/**'
-      - 'Nexa.Services.Accounts/**'
-      - 'Nexa.Services.Accounts.Contracts/**'
-      - 'Nexa.Xsr.State/**'
-      - 'tests/Nexa.Native.Accounts.Tests/**'
-      - 'tests/Nexa.Native.Network.Services.Tests/**'
-      - 'eng/release/verify_native_network_services.py'
-      - 'tests/Nexa.Native.Minecraft.Services.Tests/**'
-      - 'tests/Nexa.Native.Updates.Services.Tests/**'
-      - 'tests/Nexa.Native.Host.Services.Tests/**'
-      - 'eng/release/verify_native_minecraft_services.py'
-      - 'eng/release/verify_native_updates_services.py'
-      - 'eng/release/verify_native_host_services.py'
-      - 'eng/xsr/generate_host_service_catalog.py'
-      - 'eng/xsr/generate_account_routes.py'
-      - 'eng/xsr/generate_service_wire.*'
-      - 'eng/release/verify_native_account_contracts.py'
-      - 'Nexa.Services.Minecraft.Metadata/**'
-      - 'Nexa.Services.Minecraft.Java/**'
-      - 'Nexa.Services.Minecraft.Process/**'
-      - 'Nexa.Services.Minecraft.Java.Contracts/**'
-      - 'Nexa.Services.Minecraft.Process.Contracts/**'
-      - 'Nexa.Services.Minecraft.Library.Contracts/**'
-      - 'Nexa.Services.Minecraft.Assets.Contracts/**'
-      - 'Nexa.Domain/Minecraft/MinecraftLibraryModels.cs'
-      - 'Nexa.Xsr.Renderer.Nxml.Compiler/**'
-      - 'Nexa.Xsr.Renderer.Artwork/**'
-      - 'Nexa.Desktop/Assets/Brand/**'
-      - 'Nexa.Desktop/Assets/Gamepads/**'
-      - 'Nexa.Desktop/Assets/icon.*'
-      - 'tools/Nexa.Xsr.Patch.Compiler/**'
-      - 'eng/xsr/Xsr.AutomaticFunctionPatches.targets'
-      - 'eng/release/verify_engine_reproducibility.py'
-      - 'eng/release/verify_native_engine_contracts.py'
-      - 'tests/Nexa.Native.Network.Tests/**'
-      - 'tests/Nexa.Services.Tests/NativeNetworkTests.cs'
+      - 'src/**'
+      - 'tests/**'
+      - 'eng/architecture/**'
+      - 'eng/build/**'
+      - 'eng/release/**'
+      - 'eng/xsr/**'
+      - 'tools/compiler/**'
+      - 'Directory.Build.*'
+      - 'global.json'
       - '.github/workflows/native-engines.yml'
 permissions:
   contents: read
@@ -70,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Configure native Explorer contracts
-        run: cmake -S native/Nexa.ExplorerCommand -B "${{ runner.temp }}/explorer-contracts" -A x64
+        run: cmake -S src/platform/Nexa.ExplorerCommand -B "${{ runner.temp }}/explorer-contracts" -A x64
       - name: Build native Explorer contracts
         run: cmake --build "${{ runner.temp }}/explorer-contracts" --config Release
       - name: Verify native Explorer argument delivery and lifetime
@@ -105,12 +61,12 @@ jobs:
           python - '${{ matrix.rid }}' "$RUNNER_TEMP/engines" <<'PY'
           import pathlib, shutil, subprocess, sys
           sys.path.insert(0, 'eng/release')
-          from publish_launcher import ENGINES, module_name, stable_ui_properties, engine_service_properties
+          from publish_launcher import ENGINES, module_name, stable_ui_properties, engine_service_properties, project_directory
           rid, output = sys.argv[1], pathlib.Path(sys.argv[2])
           output.mkdir(parents=True, exist_ok=True)
           for engine in ENGINES:
               stage = output / engine
-              subprocess.run(['dotnet', 'publish', f'native/Nexa.Native.{engine}', '-c', 'Release', '-r', rid,
+              subprocess.run(['dotnet', 'publish', str(project_directory(f'Nexa.Native.{engine}')), '-c', 'Release', '-r', rid,
                               '--self-contained', 'true', '-m:1', '-nr:false', '-p:PublishAot=true',
                               '-p:StripSymbols=true', *stable_ui_properties([]), *engine_service_properties(engine),
                               '-o', str(stage)], check=True)

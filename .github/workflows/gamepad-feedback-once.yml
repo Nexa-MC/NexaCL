@@ -21,6 +21,6 @@ jobs:
           cc -Wall -Wextra -Werror eng/diagnostics/gamepad_feedback_abi_probe.c -o "$RUNNER_TEMP/gamepad-abi"
           "$RUNNER_TEMP/gamepad-abi"
       - name: Build controller entry contracts
-        run: dotnet build tests/Nexa.Desktop.Tests -c Release -m:1 -nodeReuse:false
+        run: dotnet build tests/app/Nexa.Desktop.Tests -c Release -m:1 -nodeReuse:false
       - name: Verify native haptic API construction and gesture lifetimes
-        run: dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --filter gamepad
+        run: dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --filter gamepad

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Canonical framework-neutral semantic renderer for XSR.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../foundation/Nexa.Core/Nexa.Core.csproj" />
+    <ProjectReference Include="../../runtime/Nexa.Xsr.Abstractions/Nexa.Xsr.Abstractions.csproj" />
+    <ProjectReference Include="../../runtime/Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
+  </ItemGroup>
+</Project>

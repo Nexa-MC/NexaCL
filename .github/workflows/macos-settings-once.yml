@@ -28,14 +28,14 @@ jobs:
           clang -Wall -Wextra -Werror eng/diagnostics/macos_memory_abi_probe.c -o "$RUNNER_TEMP/memory-abi"
           "$RUNNER_TEMP/memory-abi" | tee "$PROBE_OUTPUT/memory-abi.log"
       - name: Publish native memory regression tests
-        run: dotnet publish tests/Nexa.Services.Tests -c Release -r '${{ matrix.rid }}' -m:1 -nodeReuse:false -p:PublishAot=true -p:StripSymbols=true -o "$RUNNER_TEMP/memory-tests"
+        run: dotnet publish tests/app/Nexa.Services.Tests -c Release -r '${{ matrix.rid }}' -m:1 -nodeReuse:false -p:PublishAot=true -p:StripSymbols=true -o "$RUNNER_TEMP/memory-tests"
       - name: Verify NativeAOT memory collection
         run: '"$RUNNER_TEMP/memory-tests/Nexa.Services.Tests" "Mac memory probe" | tee "$PROBE_OUTPUT/native-memory.log"'
       - name: Build actual settings navigation regression
-        run: dotnet build tests/Nexa.Desktop.Tests -c Release -m:1 -nodeReuse:false
+        run: dotnet build tests/app/Nexa.Desktop.Tests -c Release -m:1 -nodeReuse:false
       - name: Drag the actual native settings navigation rapidly
         run: |
-          dotnet tests/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll \
+          dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll \
             --native-settings-navigation-stress "$PROBE_OUTPUT" > "$PROBE_OUTPUT/settings-drag.log" 2>&1
           cat "$PROBE_OUTPUT/settings-drag.log"
       - name: Retain crash reports and evidence

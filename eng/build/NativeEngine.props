@@ -1,0 +1,19 @@
+<Project>
+  <Import Project="NativeStableImage.props" />
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NativeLib>Shared</NativeLib>
+    <NexaAutomaticFunctionPatches>true</NexaAutomaticFunctionPatches>
+    <NexaLocalPatchRuntime Condition="'$(NexaLocalPatchRuntime)' == ''">true</NexaLocalPatchRuntime>
+    <DefineConstants>$(DefineConstants);NEXA_NATIVE_ENGINE</DefineConstants>
+    <DefineConstants Condition="'$(NexaLocalPatchRuntime)' == 'false'">$(DefineConstants);NEXA_NATIVE_SHARED_PATCH_RUNTIME</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)../../src/interop/NativeInstrumentation.cs" Link="Instrumentation/NativeInstrumentation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../../src/foundation/Nexa.Core/Patching/Patch.cs" Link="Instrumentation/Patch.cs" Condition="'$(NexaLocalPatchRuntime)' == 'true'" />
+    <AssemblyMetadata Include="Nexa.NativeEngineAbi" Value="1" />
+    <AssemblyMetadata Include="Nexa.NativeEngineKind" Value="Standalone" Condition="'$(NexaLocalPatchRuntime)' != 'false'" />
+    <AssemblyMetadata Include="Nexa.NativeEngineKind" Value="Service" Condition="'$(NexaLocalPatchRuntime)' == 'false'" />
+  </ItemGroup>
+</Project>

@@ -1,5 +1,5 @@
 <Project>
-  <!-- Explicit host opt-in only. See docs/xsr/network-proxy.md for the pinned Jint boundary. -->
+  <!-- Explicit host opt-in only. See docs/security.md for the pinned Jint boundary. -->
   <PropertyGroup>
     <NexaPacSubstitutions>$(MSBuildThisFileDirectory)../../Nexa.Services.Network/Network/Pac.Substitutions.xml</NexaPacSubstitutions>
   </PropertyGroup>

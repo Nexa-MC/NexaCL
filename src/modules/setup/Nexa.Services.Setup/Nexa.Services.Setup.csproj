@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Owned Setup service boundary.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Nexa.Services</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../common/Nexa.Services.Common/Nexa.Services.Common.csproj" />
+    <ProjectReference Include="../../../foundation/Nexa.Contracts/Nexa.Contracts.csproj" />
+    <ProjectReference Include="../../../foundation/Nexa.Core/Nexa.Core.csproj" />
+    <ProjectReference Include="../../../foundation/Nexa.Domain/Nexa.Domain.csproj" />
+    <ProjectReference Include="../../../runtime/Nexa.Xsr.Abstractions/Nexa.Xsr.Abstractions.csproj" />
+    <ProjectReference Include="../../../runtime/Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
+    <ProjectReference Include="../../settings/Nexa.Services.Settings/Nexa.Services.Settings.csproj" />
+    <ProjectReference Include="../../settings/Nexa.Services.Settings.Contracts/Nexa.Services.Settings.Contracts.csproj" />
+    <ProjectReference Include="../Nexa.Services.Setup.Contracts/Nexa.Services.Setup.Contracts.csproj" />
+    <ProjectReference Include="../../telemetry/Nexa.Services.Telemetry.Contracts/Nexa.Services.Telemetry.Contracts.csproj" />
+    <InternalsVisibleTo Include="Nexa.Desktop.Tests" />
+    <InternalsVisibleTo Include="Nexa.Services" />
+    <InternalsVisibleTo Include="Nexa.Services.Composition" />
+    <InternalsVisibleTo Include="Nexa.Services.Tests" />
+  </ItemGroup>
+</Project>

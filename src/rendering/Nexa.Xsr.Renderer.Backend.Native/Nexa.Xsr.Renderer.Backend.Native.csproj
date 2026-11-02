@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <Description>Native window client, local callback ownership and immutable platform contracts.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../interop/ui/NativeUiCallGate.cs" Link="NativeUiCallGate.cs" />
+    <Compile Include="../../interop/ui/NativeUiAsyncCalls.cs" Link="NativeUiAsyncCalls.cs" />
+    <Compile Include="../../interop/ui/NativeUiResources.cs" Link="NativeUiResources.cs" />
+    <Compile Include="../../interop/ui/NativeUiAsyncResources.cs" Link="NativeUiAsyncResources.cs" />
+    <Compile Include="../../interop/ui/NativeUiSynchronizationContext.cs" Link="NativeUiSynchronizationContext.cs" />
+    <ProjectReference Include="../Nexa.Xsr.Renderer/Nexa.Xsr.Renderer.csproj" />
+    <ProjectReference Include="../Nexa.Xsr.Renderer.Platform.Contracts/Nexa.Xsr.Renderer.Platform.Contracts.csproj" />
+  </ItemGroup>
+  <Import Project="../protocol/window/WindowContracts.props" />
+</Project>

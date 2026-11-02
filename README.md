@@ -1,28 +1,40 @@
-# NexaCL Firefly
+# NexaCL Firefly — 衍生开发与贡献
 
-Minecraft Java 启动器，基于 .NET 10、NativeAOT 与 XSR 状态／意图架构，支持 Windows、macOS、Linux 的 x64 和 ARM64。
+本仓库面向 **NexaCL 衍生项目开发者、功能贡献者和维护者**。它包含基于 .NET 10、NativeAOT 与 XSR 的 Minecraft Java 启动器源码，支持 Windows、macOS、Linux 的 x64 和 ARM64。
 
-[下载与发布说明](https://github.com/Nexa-MC/NexaCL/releases) · [签名更新源](https://github.com/Nexa-MC/NexaCL-Update/releases) · [网站](https://pcln.top) · [用户与开发文档](docs/README.md)
+普通用户下载安装包及阅读版本说明请访问 [Releases](https://github.com/Nexa-MC/NexaCL/releases)；这里的说明用于理解、构建和修改源码。
 
-当前源码版本：**2.0.0.alpha.15**。源码版本不等于已公开发布状态，请以 Releases 为准。开发分支为 `Nexa-MC/NexaCL:main`；旧 `PCL-N` 仓库仅供历史参考。
+## 从哪里开始
 
-- 管理游戏实例、账户、Java、模组与整合包，支持跨启动器导入、安装重试、备份和在线更新。
-- 使用 NTP/1 主题包定制外观，通过独立进程 Sidecar 与共享 NXML 扩展界面和能力。
-- 提供各平台原生集成、显式进程资源策略、内存压力下的缓存回收和 Sidecar 协作停用。
-- 应用内更新校验发布签名，支持兼容版本差分与完整包回退。
+| 目标 | 入口 |
+| --- | --- |
+| 开发衍生版本 | [衍生开发说明](docs/derivative-development.md) |
+| 提交功能或修复 | [CONTRIBUTER.md](CONTRIBUTER.md) |
+| 查找功能代码 | [目录结构](docs/repository-layout.md)、[完整项目索引](docs/modules.md) |
+| 理解架构与 DLL 分工 | [架构](docs/architecture.md)、[原生模块](docs/native-modules.md) |
+| 验证、打包与发行 | [测试](docs/testing.md)、[构建](docs/building.md)、[发布](docs/releasing.md) |
+| 修改界面、主题或插件边界 | [呈现](docs/presentation.md)、[主题](docs/themes.md)、[Sidecar](docs/sidecar.md) |
 
-正版资格检查适用于全球。中国大陆不提供 Minecraft 本体下载；整合包安装复用完整本地原版，缺失时引导通过官方 Minecraft Launcher 获取。详见[区域规则](docs/xsr/nsc-and-regional-policy.md)。
+## 本地运行
 
-Minecraft 内存估算仍停用，不参与启动预检或自动分配 JVM 内存。局域网接力／串流、AI 后端及后续显示适配不在本轮交付范围。
-
-## 开发
-
-安装 `global.json` 指定的 .NET SDK，然后执行：
+安装 `global.json` 指定的 .NET SDK，准备 Python 3；原生编译还需要对应平台的工具链。以下命令从仓库根目录执行：
 
 ```sh
 dotnet restore NexaCL.slnx
-dotnet build NexaCL.slnx -c Release
-dotnet run --project Nexa.Desktop -c Release
+dotnet build NexaCL.slnx -c Release -m:1
+dotnet run --project src/app/Nexa.Desktop -c Release --no-build
 ```
 
-发布构建、原生依赖与验证入口见[构建和发布](docs/build-and-release.md)。架构约束见 [XSR 索引](docs/xsr/README.md)。
+直接运行 Desktop 是托管开发路径。正式发行使用 `eng/release/publish_launcher.py` 构建小型 Bootstrap、Host、UI 和独立业务／引擎模块，不能把一个开发 EXE 当作完整发布包。
+
+## 源码组织
+
+`src/app` 保存入口与组合；`foundation`、`runtime`、`rendering` 保存基础层、XSR 和呈现；`modules/<feature>` 将同一业务的契约、实现、客户端和原生入口放在一起；`engines`、`platform`、`sidecar`、`interop` 分别保存引擎、系统集成、进程通信和 ABI 基础。
+
+`tests` 对应功能分组，`tools` 保存编译器、探针和基准，`eng` 保存工程与发布脚本。项目位置由 `eng/architecture/projects.json` 记录，允许依赖由 `project-references.json` 锁定。项目身份、源码目录与最终 DLL 是不同层面的清单。
+
+## 开发边界
+
+遵循 [Apache License 2.0](LICENSE) 及第三方依赖的许可和通知要求。衍生发行应配置自己的产品身份、服务凭据、更新来源及签名体系；本仓库不会提供上游私钥或私人服务凭据。
+
+提交代码前阅读 [贡献说明](CONTRIBUTER.md)，修改信任或业务边界时同时维护 [项目文档](docs/README.md)。当前实现的正版资格、区域与更新信任规则见 [安全说明](docs/security.md)。不要将编译产物、缓存、个人配置或凭据提交到仓库。

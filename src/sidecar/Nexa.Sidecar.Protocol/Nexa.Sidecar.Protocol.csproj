@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Versioned, extensible binary protocol contracts for XSR Sidecar Fabric v2.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../foundation/Nexa.Core/Nexa.Core.csproj" />
+  </ItemGroup>
+</Project>

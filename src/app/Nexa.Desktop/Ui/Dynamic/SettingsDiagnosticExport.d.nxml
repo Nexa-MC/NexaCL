@@ -1,0 +1,10 @@
+<nxml-dynamic>
+  <SettingsForm Key="SettingsDiagnosticExport">
+    <Text Content="诊断包" Class="settings-form-label" />
+    <StackPanel Class="settings-form-surface">
+      <StackPanel Class="settings-form-body">
+        <Dynamic Key="SettingsDiagnosticExport.Actions" />
+      </StackPanel>
+    </StackPanel>
+  </SettingsForm>
+</nxml-dynamic>

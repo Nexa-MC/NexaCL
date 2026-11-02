@@ -20,15 +20,15 @@ jobs:
         with:
           global-json-file: global.json
       - name: Build native rendering probe
-        run: dotnet build tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release -m:1 -nodeReuse:false
+        run: dotnet build tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release -m:1 -nodeReuse:false
       - name: Verify native Splash failure log link, retry and cancellation
         shell: bash
         run: |
           mkdir -p "$PROBE_OUTPUT"
-          dotnet tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll \
+          dotnet tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll \
             --native-startup-smoke > "$PROBE_OUTPUT/startup-splash.log" 2>&1
           cat "$PROBE_OUTPUT/startup-splash.log"
-          dotnet tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll \
+          dotnet tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll \
             --native-startup-cancel-smoke > "$PROBE_OUTPUT/startup-cancel.log" 2>&1
           cat "$PROBE_OUTPUT/startup-cancel.log"
       - name: Capture native light and dark offscreen rendering
@@ -37,13 +37,13 @@ jobs:
           mkdir -p "$PROBE_OUTPUT"
           result=0
           for mode in light dark; do
-            dotnet tests/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll \
+            dotnet tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests/bin/Release/net10.0/Nexa.Xsr.Renderer.Backend.Avalonia.Tests.dll \
               --native-macos-render-probe "$mode" "$PROBE_OUTPUT" > "$PROBE_OUTPUT/render-$mode.log" 2>&1 || result=1
             cat "$PROBE_OUTPUT/render-$mode.log"
           done
           exit "$result"
       - name: Verify platform certificate import
-        run: dotnet run --project tests/Nexa.Services.Tests -c Release -- 'API client certificate'
+        run: dotnet run --project tests/app/Nexa.Services.Tests -c Release -- 'API client certificate'
       - name: Restore client identity for the normal startup path
         env:
           API_CLIENT_PFX: ${{ secrets.PCLN_API_CLIENT_PFX_BASE64 }}
@@ -53,14 +53,14 @@ jobs:
           encoded = os.environ.get('API_CLIENT_PFX', '')
           if not encoded:
               raise SystemExit('The normal-startup regression requires the release client identity')
-          pathlib.Path('Nexa.Desktop/Assets/api-client.pfx').write_bytes(base64.b64decode(encoded, validate=True))
+          pathlib.Path('src/app/Nexa.Desktop/Assets/api-client.pfx').write_bytes(base64.b64decode(encoded, validate=True))
           PY
       - name: Publish current NativeAOT launcher
         shell: bash
         env:
           NexaCurseForgeApiKey: ${{ secrets.CURSEFORGE_API_KEY }}
         run: |
-          dotnet publish Nexa.Desktop/Nexa.Desktop.csproj -c Release -r '${{ matrix.rid }}' \
+          dotnet publish src/app/Nexa.Desktop/Nexa.Desktop.csproj -c Release -r '${{ matrix.rid }}' \
             --self-contained true -m:1 -nodeReuse:false -p:PublishAot=true -p:StripSymbols=true \
             -p:XsrVersionChannel=ci -p:XsrCommitShort="${GITHUB_SHA:0:6}" --output "$RUNNER_TEMP/launcher"
           if [[ -n "$NexaCurseForgeApiKey" ]]; then

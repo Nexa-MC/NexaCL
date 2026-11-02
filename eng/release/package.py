@@ -92,7 +92,7 @@ def windows(payload, output, work, base, version, prefix, arch):
     from build_windows_shell import build as build_shell
     build_shell(payload, arch)
     iscc = required_tool("NEXA_ISCC")
-    icon = ROOT / "Nexa.Desktop/Assets/icon.ico"
+    icon = ROOT / "src/app/Nexa.Desktop/Assets/icon.ico"
     run(iscc, f"/DPayload={payload}", f"/DProductVersion={version}", f"/DNumericVersion={prefix}",
         f"/DInstallArch={'arm64' if arch == 'arm64' else 'x64compatible'}", f"/DOutputDir={output}",
         f"/DOutputName={base}.setup", f"/DIconPath={icon}", ROOT / "eng/release/windows.iss")
@@ -169,10 +169,10 @@ def macos(payload, output, work, base, version, prefix, arch):
     for size in (16, 32, 128, 256, 512):
         for scale in (1, 2):
             suffix = "@2x" if scale == 2 else ""
-            run("sips", "-z", size * scale, size * scale, ROOT / "Nexa.Desktop/Assets/icon.png",
+            run("sips", "-z", size * scale, size * scale, ROOT / "src/app/Nexa.Desktop/Assets/icon.png",
                 "--out", iconset / f"icon_{size}x{size}{suffix}.png", stdout=subprocess.DEVNULL)
     run("iconutil", "-c", "icns", iconset, "-o", resources / "Launcher.icns")
-    for document_icon in (ROOT / "Nexa.Desktop/Assets/FileTypes").glob("*.icns"):
+    for document_icon in (ROOT / "src/app/Nexa.Desktop/Assets/FileTypes").glob("*.icns"):
         shutil.copy2(document_icon, resources / document_icon.name)
     with (contents / "Info.plist").open("wb") as stream:
         plistlib.dump(bundle_info(version, prefix), stream)
@@ -233,7 +233,7 @@ def linux(payload, output, work, base, version, prefix, arch):
     for relative in ("nexacl.png", "usr/share/icons/hicolor/256x256/apps/nexacl.png"):
         path = appdir / relative
         path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(ROOT / "Nexa.Desktop/Assets/icon.png", path)
+        shutil.copy2(ROOT / "src/app/Nexa.Desktop/Assets/icon.png", path)
     (appdir / "AppRun").write_text('#!/bin/sh\nHERE="$(dirname "$(readlink -f "$0")")"\nexec "$HERE/usr/bin/nexacl" "$@"\n', encoding="utf-8")
     (appdir / "AppRun").chmod(0o755)
     run("desktop-file-validate", appdir / "nexacl.desktop")

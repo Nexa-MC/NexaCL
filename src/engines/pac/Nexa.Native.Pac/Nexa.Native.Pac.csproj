@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../../../eng/build/NativeEngine.props" />
+  <ItemGroup>
+    <PackageReference Include="Jint" Version="4.17.0" />
+    <Compile Include="../../../interop/NativeEngineAbi.cs" Link="NativeEngineAbi.cs" />
+  </ItemGroup>
+  <Import Project="../../../../eng/xsr/Xsr.Pac.targets" />
+</Project>

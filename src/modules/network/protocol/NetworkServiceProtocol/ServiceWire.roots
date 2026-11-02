@@ -1,0 +1,7 @@
+Nexa.Services.Network.Contracts|Nexa.Services.Network.NetworkPreferences
+Nexa.Services.Network.Contracts|Nexa.Services.Network.NetworkRequestTrace
+Nexa.Services.Network.Contracts|Nexa.Services.Network.NetworkManualProbeSnapshot
+Nexa.Services.Common.Contracts|Nexa.Services.Downloads.DownloadProgress
+Nexa.Services.Common.Contracts|Nexa.Services.Downloads.DownloadTransferView
+Nexa.Native.Network.Services.NativeDownloadRequest
+Nexa.Native.Network.Services.NativeDownloadOutcome

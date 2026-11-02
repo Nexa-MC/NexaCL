@@ -1,3 +1,0 @@
-﻿<nxml-dynamic>
-  <Button Scroll="true" ShowsHorizontalIndicator="true" UseVerticalWheelForHorizontalScroll="true" Key="{data key}" Class="desktop-bubble process-bubble capsule" IsVisible="false" Command="{data command}" Icon="lucide/menu" Content="{data caption}" Localize="false" Label="{data caption}" />
-</nxml-dynamic>
