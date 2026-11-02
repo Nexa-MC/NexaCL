@@ -26,6 +26,9 @@ internal static partial class Program
                 {
                     using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]), memoryPort: new CardMemoryPort());
                     fixture.Shell.Renderer.ReducedMotion = true;
+                    var localization = new UiLocalizationCatalog();
+                    localization.SetLanguage("en");
+                    fixture.Shell.Renderer.TextLocalizer = localization.Translate;
                     fixture.Store.Publish(fixture.Store.Resolve(MemoryOptimizationContract.Snapshot),
                         new MemoryOptimizationSnapshot(true, new(16L << 30, 3L << 30), false, "complete", new(18, 7, 2, 192L << 20, 128L << 20)));
                     Emit(fixture.Intents, "ui.launch.widget.memory");
@@ -40,6 +43,7 @@ internal static partial class Program
                             var deep = FindByKey(fixture.Shell, scene, "MemoryDeep").Rect;
                             AssertTrue(deep.Y >= pager.Y && deep.Y + deep.Height <= pager.Y + pager.Height);
                             AssertTrue(FindByKey(fixture.Shell, scene, "MemoryClean").IsClickable);
+                            AssertMemoryCardContrast(fixture.Shell, scene);
                         }
                     }
                 }

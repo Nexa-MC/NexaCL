@@ -2,13 +2,14 @@
 .launch-memory-page { Orientation: Vertical; Spacing: 4; }
 .launch-memory-row { Orientation: Horizontal; Spacing: 8; Height: 28; }
 .launch-memory-title { Weight: 1; FontSize: 14; FontWeight: 600; VerticalAlignment: Center; }
-.launch-memory-clean { Width: 88; Height: 28; FontSize: 12; }
+.launch-memory-clean { Width: 88; Height: 28; FontSize: 12; Background: #eef2f7; Foreground: #0b5bcb; CornerRadius: 8; Hover: #e0eafd; Surface: Solid; TextAlignment: Center; }
 .launch-memory-usage { Height: 20; FontSize: 12; }
 .launch-memory-toggle { Weight: 1; Height: 28; FontSize: 12; }
 .launch-memory-threshold-label { Width: 100; Height: 28; FontSize: 12; TextAlignment: End; VerticalAlignment: Center; }
-.launch-memory-threshold { Height: 24; }
+.launch-memory-threshold { Height: 24; Background: #cbd4e0; Foreground: #0b5bcb; CornerRadius: 2; Surface: None; }
 .launch-memory-deep { Height: 24; FontSize: 12; }
-.launch-memory-detail { Height: 36; FontSize: 11; }
+.launch-memory-detail { Height: 36; FontSize: 11; Foreground: #606c7c; }
+.launch-memory-title, .launch-memory-usage, .launch-memory-toggle, .launch-memory-threshold-label, .launch-memory-deep { Foreground: #343d4a; }
 .launch-install-home-slot { Weight: 1; }
 #LaunchHomeWorkspace { Weight: 1; }
 .launch-install-launching-host { Weight: 1; }

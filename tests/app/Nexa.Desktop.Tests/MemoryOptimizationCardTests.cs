@@ -6,6 +6,7 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static readonly string[] MemoryContrastKeys = ["MemoryTitle", "MemoryUsage", "MemoryAutomatic", "MemoryThresholdLabel", "MemoryDeep", "MemoryDetail"];
     private static void MemoryOptimizationCardRoutesSettingsAndManualCleanup()
     {
         var port = new CardMemoryPort();
@@ -41,13 +42,28 @@ internal static partial class Program
         using var persisted = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(fixture.TemporaryDirectory, "settings.json")));
         AssertTrue(persisted.RootElement.GetProperty("booleanOptions").GetProperty(MemoryOptimizationContract.DeepSetting).GetBoolean());
         AssertEqual(87, persisted.RootElement.GetProperty("integerOptions").GetProperty(MemoryOptimizationContract.ThresholdSetting).GetInt32());
-        foreach (var size in MemoryPreviewSizes)
+        foreach (bool dark in MemoryPreviewThemes)
         {
-            scene = fixture.Shell.Render(size);
-            var pager = FindByKey(fixture.Shell, scene, "LaunchWidgetPager").Rect;
-            var deep = FindByKey(fixture.Shell, scene, "MemoryDeep").Rect;
-            AssertTrue(deep.Y >= pager.Y && deep.Y + deep.Height <= pager.Y + pager.Height);
+            fixture.Shell.Renderer.ColorScheme = new(dark);
+            foreach (var size in MemoryPreviewSizes)
+            {
+                scene = fixture.Shell.Render(size);
+                var pager = FindByKey(fixture.Shell, scene, "LaunchWidgetPager").Rect;
+                var deep = FindByKey(fixture.Shell, scene, "MemoryDeep").Rect;
+                AssertTrue(deep.Y >= pager.Y && deep.Y + deep.Height <= pager.Y + pager.Height);
+                AssertMemoryCardContrast(fixture.Shell, scene);
+            }
         }
+    }
+
+    private static void AssertMemoryCardContrast(XsrUiShell shell, XsrUiScene scene)
+    {
+        var background = FindByKey(shell, scene, "CardAbout").VisualStyle.Background;
+        foreach (string key in MemoryContrastKeys)
+            AssertTrue(AppearanceContrast(FindByKey(shell, scene, key).VisualStyle.Foreground, background) >= 4.5);
+        var button = FindByKey(shell, scene, "MemoryClean").VisualStyle;
+        AssertTrue(AppearanceContrast(button.Foreground, button.Background) >= 4.5);
+        AssertTrue(AppearanceContrast(button.Foreground, button.Hover) >= 4.5);
     }
 
     private static void MemoryOptimizationCardUnsupportedPlatformIsExplicit()

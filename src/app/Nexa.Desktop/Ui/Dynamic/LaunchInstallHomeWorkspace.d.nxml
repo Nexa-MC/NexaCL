@@ -72,7 +72,7 @@
               </StackPanel>
               <StackPanel Key="MemoryPage" Scroll="true" Class="launch-memory-page">
                 <StackPanel Class="launch-memory-row">
-                  <Text Content="内存整理" Class="launch-memory-title" />
+                  <Text Key="MemoryTitle" Content="内存整理" Class="launch-memory-title" />
                   <Button Key="MemoryClean" Content="立即清理" Label="清理其他进程内存，排除游戏进程" Command="ui.launch.memory.clean" Clickable="{state launch.memory.can-clean}" Class="launch-memory-clean" />
                 </StackPanel>
                 <Text Key="MemoryUsage" Content="{state launch.memory.usage}" Localize="false" Class="launch-memory-usage" />
