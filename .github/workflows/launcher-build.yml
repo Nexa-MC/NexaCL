@@ -198,7 +198,8 @@ jobs:
             --output "$RUNNER_TEMP/native-engine-tests"
           dotnet "$RUNNER_TEMP/native-engine-tests/Nexa.Xsr.Renderer.Nxml.Tests.dll"
           for suite in Nexa.Services.Themes.Tests Nexa.Xsr.Renderer.Backend.Avalonia.Tests; do
-            dotnet publish "tests/$suite/$suite.csproj" --configuration Release \
+            project=$(python -c 'import json,sys; print(json.load(open("eng/architecture/projects.json"))[sys.argv[1]])' "$suite")
+            dotnet publish "$project/$suite.csproj" --configuration Release \
               --self-contained false -m:1 -nodeReuse:false -p:PublishAot=false -p:NexaExternalModules=true \
               --output "$RUNNER_TEMP/native-engine-tests"
             dotnet "$RUNNER_TEMP/native-engine-tests/$suite.dll"
