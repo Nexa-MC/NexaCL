@@ -32,6 +32,14 @@ def verify():
             value = element.attrib['Project']
             if '$(' not in value and not (expected.parent / value).is_file():
                 errors.append(f'{name}: missing import {value}')
+    # Source paths also appear in MSBuild property text and Exec commands, not just imports.
+    for directory in ('eng/build', 'eng/xsr'):
+        for file in (ROOT / directory).glob('*'):
+            if file.suffix not in ('.props', '.targets', '.proj'):
+                continue
+            for relative in re.findall(r'\$\(MSBuildThisFileDirectory\)([\w./*-]+)', file.read_text()):
+                if '*' not in relative and not (file.parent / relative).exists():
+                    errors.append(f'{file.relative_to(ROOT)}: missing MSBuild source path {relative}')
     listed = {x.attrib['Path'] for x in ET.parse(ROOT / 'NexaCL.slnx').iter('Project')}
     expected = {str(path.relative_to(ROOT)) for path in actual.values()}
     if listed != expected:

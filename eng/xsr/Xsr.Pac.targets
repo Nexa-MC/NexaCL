@@ -1,7 +1,7 @@
 <Project>
   <!-- Explicit host opt-in only. See docs/security.md for the pinned Jint boundary. -->
   <PropertyGroup>
-    <NexaPacSubstitutions>$(MSBuildThisFileDirectory)../../Nexa.Services.Network/Network/Pac.Substitutions.xml</NexaPacSubstitutions>
+    <NexaPacSubstitutions>$(MSBuildThisFileDirectory)../../src/modules/network/Nexa.Services.Network/Network/Pac.Substitutions.xml</NexaPacSubstitutions>
   </PropertyGroup>
   <Target Name="ConfigureNexaPacPublication" BeforeTargets="PrepareForILLink;ComputeIlcCompileInputs"
           Condition="'$(PublishAot)' == 'true' or '$(PublishTrimmed)' == 'true'">
