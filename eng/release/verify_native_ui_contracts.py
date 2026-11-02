@@ -4,18 +4,18 @@ import json
 from pathlib import Path
 import subprocess
 
-ROOT = Path(__file__).resolve().parents[2]
+from publish_launcher import ROOT, project_directory
 
 
 def test(rid: str, output: Path, *, run_probe: bool = True):
     output = output.resolve()
     for name, folder in (("Nexa.Native.Ui.Peer", "peer"), ("Nexa.Native.Ui.Tests", "caller")):
         subprocess.run([
-            "dotnet", "publish", str(ROOT / "tests" / name / (name + ".csproj")),
+            "dotnet", "publish", str(project_directory(name) / (name + ".csproj")),
             "-c", "Release", "-r", rid, "--self-contained", "true", "-m:1", "-nr:false",
             "-p:PublishAot=true", "-o", str(output / folder),
         ], check=True, cwd=ROOT)
-        assets = json.loads((ROOT / "tests" / name / "obj/project.assets.json").read_text(encoding="utf-8"))
+        assets = json.loads((project_directory(name) / "obj/project.assets.json").read_text(encoding="utf-8"))
         if any(library.split("/")[0].startswith("Avalonia")
                or library.split("/")[0] == "Nexa.Xsr.Renderer.Backend.Avalonia"
                for library in assets["libraries"]):
