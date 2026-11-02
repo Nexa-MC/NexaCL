@@ -535,7 +535,11 @@ internal static partial class Program
         try
         {
             var home = owner.Append(Find(account, "LaunchHomeWorkspaceSlot"), DesktopMarkup.Dynamic("LaunchInstallHomeWorkspace.d.nxml",
-                new Dictionary<string, string> { ["avatar"] = LaunchProfilePresentation.Avatar("") }));
+                new Dictionary<string, string>
+                {
+                    ["avatar"] = LaunchProfilePresentation.Avatar(""),
+                    ["memory_automatic"] = "false", ["memory_deep"] = "false", ["memory_threshold"] = "80"
+                }));
             var form = owner.Append(Find(home, "AccountFormSlot"), DesktopMarkup.Dynamic("AccountFormWorkspace.d.nxml"));
             var input = Find(form, "AuthPassword"); var draft = shell.Tree.GetComponent<XsrUiTextInput>(input)!; shell.Renderer.SetTextInputValue(input, "fixture-secret");
             var choice = owner.Append(Find(form, "ImportCandidates"), DesktopMarkup.Dynamic("AccountFormChoice.d.nxml", new Dictionary<string, string>

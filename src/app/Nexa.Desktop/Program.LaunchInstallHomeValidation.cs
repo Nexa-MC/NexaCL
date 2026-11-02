@@ -86,6 +86,7 @@ internal static partial class Program
             var about = Find(homePage, "WidgetAboutDot");
             var trivia = Find(homePage, "WidgetTriviaDot");
             var echo = Find(homePage, "WidgetEchoDot");
+            var memory = Find(homePage, "WidgetMemoryDot");
             var aboutButton = Find(homePage, "WidgetAboutIndicator");
             var aboutInput = shell.Tree.GetComponent<XsrUiInput>(aboutButton);
             var triviaMessage = Find(homePage, "TriviaMessage");
@@ -113,9 +114,17 @@ internal static partial class Program
             Close(SceneNode(scene, homePage, "WidgetAboutDot").Rect.Height, 6, "Inactive about dot height changed.");
             Close(SceneNode(scene, homePage, "WidgetTriviaDot").Rect.Height, 8.5, "Fractional trailing trivia dot height changed.");
             Close(SceneNode(scene, homePage, "WidgetEchoDot").Rect.Height, 13.5, "Fractional echo dot height changed.");
-            Close(SceneNode(scene, homePage, "WidgetIndicators").Rect.Height, 44, "Widget indicator extent changed.");
+            Close(SceneNode(scene, homePage, "WidgetMemoryDot").Rect.Height, 6, "Inactive memory dot height changed.");
+            Close(SceneNode(scene, homePage, "WidgetIndicators").Rect.Height, 58, "Four-page widget indicator extent changed.");
+            shell.Renderer.SetPagerPresentationPosition(pagerEntity, 2.75);
+            scene = shell.Render(size);
+            Close(SceneNode(scene, homePage, "WidgetEchoDot").Rect.Height, 8.5, "Fractional trailing echo dot height changed.");
+            Close(SceneNode(scene, homePage, "WidgetMemoryDot").Rect.Height, 13.5, "Fractional memory dot height changed.");
+            Close(SceneNode(scene, homePage, "WidgetMemoryIndicator").Rect.Height, 13.5, "Fractional memory hit geometry changed.");
+            Require(shell.Tree.GetComponent<XsrUiVisualStyle>(memory)!.Background.Alpha == 207,
+                "Fractional memory indicator alpha projection changed.");
             Require(Find(homePage, "WidgetAboutDot") == about && Find(homePage, "WidgetTriviaDot") == trivia
-                && Find(homePage, "WidgetEchoDot") == echo
+                && Find(homePage, "WidgetEchoDot") == echo && Find(homePage, "WidgetMemoryDot") == memory
                 && ReferenceEquals(pager, shell.Tree.GetComponent<XsrUiPager>(pagerEntity))
                 && ReferenceEquals(aboutInput, shell.Tree.GetComponent<XsrUiInput>(aboutButton))
                 && ReferenceEquals(triviaMotion, shell.Tree.GetComponent<XsrUiTransition>(triviaMessage))
