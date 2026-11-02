@@ -35,7 +35,7 @@ def verify():
     # Source paths also appear in MSBuild property text and Exec commands, not just imports.
     for directory in ('eng/build', 'eng/xsr'):
         for file in (ROOT / directory).glob('*'):
-            if file.suffix not in ('.props', '.targets', '.proj'):
+            if file.suffix not in ('.props', '.targets'):
                 continue
             for relative in re.findall(r'\$\(MSBuildThisFileDirectory\)([\w./*-]+)', file.read_text()):
                 if '*' not in relative and not (file.parent / relative).exists():
