@@ -1,6 +1,6 @@
 # 构建、验证与发布
 
-源码：`Nexa-MC/NexaCL:main`。SDK 以 `global.json` 为准，版本由 `eng/xsr/Xsr.Version.props` 和 CI 元数据决定。默认源码版本为 `2.0.0.alpha.17`；产品版本、NuGet 版本、Sidecar 协议版本与主题 style API 是不同版本轴。
+源码：`Nexa-MC/NexaCL:main`。SDK 以 `global.json` 为准，版本由 `eng/xsr/Xsr.Version.props` 和 CI 元数据决定。默认源码版本为 `2.0.0.alpha.19`；产品版本、NuGet 版本、Sidecar 协议版本与主题 style API 是不同版本轴。
 
 ## 本地检查
 
