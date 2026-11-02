@@ -22,16 +22,22 @@ internal static partial class Program
     internal static ValueTask LauncherSchemaMatchesLegacyDefaults()
     {
         SettingsSchema schema = LauncherDefaults.CreateSchema();
-        // Supported legacy defaults retain parity; low-power mode is retired and four desktop lifecycle preferences are additive.
+        // Legacy defaults retain parity; desktop lifecycle and memory cleanup preferences are additive.
         string[] desktopKeys = ["SystemSingleInstance", "UiTrayEnabled", "UiCloseToTray", "UiMinimizeToTray"];
-        AssertEqual(111, schema.Count);
-        AssertEqual(107, schema.Definitions.Count(definition => !desktopKeys.Contains(definition.Key.Value, StringComparer.Ordinal)));
+        string[] memoryKeys = ["SystemMemoryAutoClean", "SystemMemoryDeepClean", "SystemMemoryCleanThreshold"];
+        string[] additiveKeys = [.. desktopKeys, .. memoryKeys];
+        AssertEqual(114, schema.Count);
+        AssertEqual(107, schema.Definitions.Count(definition => !additiveKeys.Contains(definition.Key.Value, StringComparer.Ordinal)));
         AssertEqual(43, schema.Definitions.Count(definition => definition.ValueType == SettingValueType.Bool
-            && !desktopKeys.Contains(definition.Key.Value, StringComparer.Ordinal)));
+            && !additiveKeys.Contains(definition.Key.Value, StringComparer.Ordinal)));
         foreach (string key in desktopKeys)
             AssertTrue(schema.TryGetDefinition(XsrSemanticId.Parse(key)) is { ValueType: SettingValueType.Bool } item
                 && item.DefaultValue == (key is "SystemSingleInstance" or "UiTrayEnabled" ? "true" : "false"));
-        AssertEqual(43, schema.Definitions.Count(definition => definition.ValueType == SettingValueType.I32));
+        foreach (string key in memoryKeys.Take(2))
+            AssertTrue(schema.TryGetDefinition(XsrSemanticId.Parse(key)) is { ValueType: SettingValueType.Bool, DefaultValue: "false" });
+        AssertTrue(schema.TryGetDefinition(XsrSemanticId.Parse("SystemMemoryCleanThreshold")) is { ValueType: SettingValueType.I32, DefaultValue: "80" });
+        AssertEqual(43, schema.Definitions.Count(definition => definition.ValueType == SettingValueType.I32
+            && definition.Key.Value != "SystemMemoryCleanThreshold"));
         AssertEqual(18, schema.Definitions.Count(definition => definition.ValueType == SettingValueType.Text
             && definition.Key.Value != Nexa.Services.Minecraft.MinecraftLibraryService.SettingKey
             && definition.Key.Value != SettingsPolicySchema.StorageKey

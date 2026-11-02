@@ -167,11 +167,12 @@ internal sealed partial class LaunchPageController
                     _shell.Renderer.Focus(focus, IsKeyboardIntent(e.Intent.Source));
             }
         }
-        else if (command == WidgetAboutCommand || command == WidgetTriviaCommand || command == WidgetEchoCommand)
+        else if (command == WidgetAboutCommand || command == WidgetTriviaCommand || command == WidgetEchoCommand || command.Value == "ui.launch.widget.memory")
         {
             XsrUiEntityId pager = _pageEntities["LaunchWidgetPager"];
-            _ = _shell.Renderer.SelectPagerPage(pager, command == WidgetTriviaCommand ? 1 : command == WidgetEchoCommand ? 2 : 0);
+            _ = _shell.Renderer.SelectPagerPage(pager, command == WidgetTriviaCommand ? 1 : command == WidgetEchoCommand ? 2 : command.Value == "ui.launch.widget.memory" ? 3 : 0);
         }
+        else if (HandleMemoryIntent(command)) { }
         else if (command == WidgetHintCommand)
         {
             AdvanceHint();

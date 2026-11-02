@@ -36,6 +36,7 @@ public static class FoundationState
     {
         XsrStateStoreBuilder builder = new();
         WorkSchedulingContract.DeclareState(builder);
+        Nexa.Services.Memory.MemoryOptimizationContract.DeclareState(builder);
         if (settingsSchema is not null)
         {
             SettingsService.DeclareState(builder, settingsSchema);

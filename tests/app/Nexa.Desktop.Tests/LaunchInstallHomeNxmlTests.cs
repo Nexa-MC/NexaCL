@@ -99,7 +99,8 @@ internal static partial class Program
         AssertEqual((byte)207, shell.Tree.GetComponent<XsrUiVisualStyle>(about)!.Background.Alpha);
         AssertEqual((byte)112, shell.Tree.GetComponent<XsrUiVisualStyle>(trivia)!.Background.Alpha);
         AssertEqual((byte)64, shell.Tree.GetComponent<XsrUiVisualStyle>(echo)!.Background.Alpha);
-        AssertClose(44, FindByKey(shell, scene, "WidgetIndicators").Rect.Height);
+        AssertClose(58, FindByKey(shell, scene, "WidgetIndicators").Rect.Height);
+        AssertClose(6, FindByKey(shell, scene, "WidgetMemoryDot").Rect.Height);
         shell.Renderer.SetPagerPresentationPosition(pagerEntity, 1.75);
         scene = shell.Render(size);
         AssertClose(6, FindByKey(shell, scene, "WidgetAboutDot").Rect.Height);
@@ -113,5 +114,12 @@ internal static partial class Program
         AssertTrue(ReferenceEquals(transition, shell.Tree.GetComponent<XsrUiTransition>(transitionEntity)));
         AssertTrue(ReferenceEquals(progress, shell.Tree.GetComponent<XsrUiProgress>(progressEntity)));
         AssertClose(1.75, pager.Position);
+        AssertTrue(shell.Renderer.SelectPagerPage(pagerEntity, 3));
+        shell.Renderer.SetPagerPresentationPosition(pagerEntity, 2.5);
+        scene = shell.Render(size);
+        AssertClose(11, FindByKey(shell, scene, "WidgetEchoDot").Rect.Height);
+        AssertClose(11, FindByKey(shell, scene, "WidgetMemoryDot").Rect.Height);
+        AssertClose(58, FindByKey(shell, scene, "WidgetIndicators").Rect.Height);
+        AssertEqual(echo, FindByKey(shell, scene, "WidgetEchoDot").Entity);
     }
 }

@@ -62,4 +62,13 @@
   <Text Key="profile.style.selected" Content="layout-AccountProfileRow-AccountRow launch-install-home-profile launch-install-home-profile-selected" />
   <Text Key="profile.name-style.default" Content="layout-AccountProfileRow-ProfileName launch-install-home-profile-name" />
   <Text Key="profile.name-style.selected" Content="layout-AccountProfileRow-ProfileName launch-install-home-profile-name launch-install-home-profile-name-selected" />
+  <Text Key="widget.memory.current" Content="当前：内存整理" />
+  <Text Key="widget.memory.open" Content="打开内存整理" />
+  <Text Key="memory.unsupported" Content="内存整理仅支持 Windows" />
+  <Text Key="memory.waiting" Content="正在读取系统内存…" />
+  <Text Key="memory.unavailable" Content="无法读取系统内存，请稍后重试" />
+  <Text Key="memory.idle" Content="排除游戏及其子进程；每次清理后冷却 2 分钟。" />
+  <Text Key="memory.cleaning" Content="正在整理其他进程的工作集，游戏进程受保护…" />
+  <Text Key="memory.cancelled" Content="清理已取消" />
+  <Text Key="memory.elevation-cancelled" Content="已取消管理员授权，未执行深度清理。" />
 </StackPanel>

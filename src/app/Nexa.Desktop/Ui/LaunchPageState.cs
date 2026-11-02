@@ -39,6 +39,16 @@ internal static class LaunchPageState
     public static readonly XsrSemanticId WidgetAboutLabelKey = XsrSemanticId.Parse("launch.widget.about-label");
     public static readonly XsrSemanticId WidgetTriviaLabelKey = XsrSemanticId.Parse("launch.widget.trivia-label");
     public static readonly XsrSemanticId WidgetEchoLabelKey = XsrSemanticId.Parse("launch.widget.echo-label");
+    public static readonly XsrSemanticId WidgetMemoryLabelKey = XsrSemanticId.Parse("launch.widget.memory-label");
+    public static readonly XsrSemanticId MemorySupportedKey = XsrSemanticId.Parse("launch.memory.supported");
+    public static readonly XsrSemanticId MemoryDeepKey = XsrSemanticId.Parse("launch.memory.deep");
+    public static readonly XsrSemanticId MemoryAutomaticKey = XsrSemanticId.Parse("launch.memory.automatic");
+    public static readonly XsrSemanticId MemoryThresholdKey = XsrSemanticId.Parse("launch.memory.threshold");
+    public static readonly XsrSemanticId MemoryThresholdLabelKey = XsrSemanticId.Parse("launch.memory.threshold-label");
+    public static readonly XsrSemanticId MemoryUsageKey = XsrSemanticId.Parse("launch.memory.usage");
+    public static readonly XsrSemanticId MemoryDetailKey = XsrSemanticId.Parse("launch.memory.detail");
+    public static readonly XsrSemanticId MemoryCanCleanKey = XsrSemanticId.Parse("launch.memory.can-clean");
+
     public static readonly XsrSemanticId WidgetHintKey = XsrSemanticId.Parse("launch.widget.hint");
 
     // Launching overlay presentation, desktop-owned: services publishes stage tokens and
@@ -98,6 +108,16 @@ internal static class LaunchPageState
         builder.Cell<string>(WidgetTriviaLabelKey, OwnerName);
         builder.Cell<string>(WidgetEchoLabelKey, OwnerName);
         builder.Cell<string>(WidgetHintKey, OwnerName);
+        builder.Cell<string>(WidgetMemoryLabelKey, OwnerName);
+        builder.Cell<bool>(MemorySupportedKey, OwnerName);
+        builder.Cell<bool>(MemoryAutomaticKey, OwnerName);
+        builder.Cell<bool>(MemoryDeepKey, OwnerName);
+        builder.Cell<double>(MemoryThresholdKey, OwnerName);
+        builder.Cell<string>(MemoryThresholdLabelKey, OwnerName);
+        builder.Cell<string>(MemoryUsageKey, OwnerName);
+        builder.Cell<string>(MemoryDetailKey, OwnerName);
+        builder.Cell<bool>(MemoryCanCleanKey, OwnerName);
+
         builder.Cell<bool>(LaunchingVisibleKey, OwnerName);
         builder.Cell<string>(LaunchingTitleKey, OwnerName);
         builder.Cell<string>(LaunchingNameKey, OwnerName);

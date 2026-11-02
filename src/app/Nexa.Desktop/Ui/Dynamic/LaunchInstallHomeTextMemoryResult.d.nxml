@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="已整理 {data cleaned} 个进程，工作集减少约 {data amount} MiB；保护 {data skipped}，无权限或已退出 {data failed}。" /></nxml-dynamic>

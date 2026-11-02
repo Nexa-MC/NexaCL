@@ -70,12 +70,27 @@
                 <Text Key="EchoTitle" Content="回声洞" Class="layout-LaunchPage-EchoTitle" />
                 <Text Key="EchoMessage" Content="请等待本功能上线，到时你可以前往官网上投稿~" Class="layout-LaunchPage-EchoMessage" />
               </StackPanel>
+              <StackPanel Key="MemoryPage" Scroll="true" Class="launch-memory-page">
+                <StackPanel Class="launch-memory-row">
+                  <Text Content="内存整理" Class="launch-memory-title" />
+                  <Button Key="MemoryClean" Content="立即清理" Label="清理其他进程内存，排除游戏进程" Command="ui.launch.memory.clean" Clickable="{state launch.memory.can-clean}" Class="launch-memory-clean" />
+                </StackPanel>
+                <Text Key="MemoryUsage" Content="{state launch.memory.usage}" Localize="false" Class="launch-memory-usage" />
+                <StackPanel Class="launch-memory-row">
+                  <CheckBox Key="MemoryAutomatic" Content="自动清理" Label="内存超过阈值后自动清理" Checked="{data memory_automatic}" Enabled="{state launch.memory.supported}" Command="ui.launch.memory.automatic" Class="launch-memory-toggle" />
+                  <Text Key="MemoryThresholdLabel" Content="{state launch.memory.threshold-label}" Localize="false" Class="launch-memory-threshold-label" />
+                </StackPanel>
+                <Slider Key="MemoryThreshold" Label="自动清理阈值（百分比）" Minimum="50" Maximum="95" Step="1" RangeValue="{data memory_threshold}" Enabled="{state launch.memory.supported}" Command="ui.launch.memory.threshold" Class="launch-memory-threshold" />
+                <CheckBox Key="MemoryDeep" Content="深度清理（需管理员权限）" Label="深度清理，通过 UAC 提权，仍排除游戏进程" Checked="{data memory_deep}" Enabled="{state launch.memory.supported}" Command="ui.launch.memory.deep" Class="launch-memory-deep" />
+                <Text Key="MemoryDetail" Content="{state launch.memory.detail}" Localize="false" MaxLines="2" TrimOverflow="true" Class="launch-memory-detail" />
+              </StackPanel>
             </VerticalPager>
           </StackPanel>
           <StackPanel Key="WidgetIndicators" Class="layout-LaunchPage-WidgetIndicators">
             <Dynamic Key="WidgetAboutSlot" />
             <Dynamic Key="WidgetTriviaSlot" />
             <Dynamic Key="WidgetEchoSlot" />
+            <Dynamic Key="WidgetMemorySlot" />
           </StackPanel>
         </StackPanel>
       </StackPanel>

@@ -19,6 +19,8 @@ internal static partial class Program
 {
     public static void Main(string[] args)
     {
+        if (args is ["--native-memory-preview", var memoryPreview])
+        { Environment.ExitCode = RunNativeMemoryCleanupPreview(memoryPreview); return; }
         if (args is ["--update-onboarding-preview", var previewOutput])
         { UpdateOnboardingPreview(previewOutput).GetAwaiter().GetResult(); return; }
         if (args is ["--sidecar-ui-preview", var uiSource, var uiOutput])
@@ -171,6 +173,8 @@ internal static partial class Program
 
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("memory optimization card persists settings and routes elevated cleanup", MemoryOptimizationCardRoutesSettingsAndManualCleanup),
+        ("memory optimization card unsupported platform is explicit", MemoryOptimizationCardUnsupportedPlatformIsExplicit),
         ("Sidecar network grants reject untrusted requests", SidecarNetworkGrantRejectsUntrustedRequests),
         ("gamepad entry requires neutral same-device gesture and restores", GamepadEntryRequiresNeutralSameDeviceGestureAndRestores),
         ("gamepad entry cinematic timeline and stable lockup", GamepadEntryCinematicTimelineAndStableLockup),

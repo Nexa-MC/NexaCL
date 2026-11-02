@@ -90,6 +90,8 @@ internal static partial class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if (args is [Nexa.Platform.WindowsMemoryElevationPort.WorkerArgument, var memoryPipe, var memoryParent])
+            return Nexa.Platform.WindowsMemoryElevationPort.RunWorkerAsync(memoryPipe, memoryParent).GetAwaiter().GetResult();
         if (args is ["--validate-resource-credentials"])
         {
             string? embedded = ResolveEmbeddedSetting("NexaCurseForgeApiKey");
@@ -449,9 +451,12 @@ internal static partial class Program
                 new HashSet<string>(StringComparer.Ordinal) { "session.lock", ".nexa-world-readonly" }, token).ConfigureAwait(false);
         }, new WorldSnapshotCasStore(contentBackups));
 #endif
+        await using var memoryOptimization = new MemoryOptimizationRuntime(host);
+        memoryOptimization.Start();
         FoundationRuntime runtime = FoundationRuntimeComposer.ComposeWithStorageAndMedia(host, storagePreferences, AvaloniaUiScreenshotCodec.Crop, dispatchObservation,
             configureRoutes: (commands, queries) =>
             {
+                memoryOptimization.Register(commands);
                 runtimeTraces.Register(queries);
                 ThemesRuntime.Register(queries, commands, themeService);
 #if NEXA_NATIVE_SERVICES

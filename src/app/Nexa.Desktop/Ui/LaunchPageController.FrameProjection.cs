@@ -53,6 +53,7 @@ internal sealed partial class LaunchPageController
             UpdateTitleBar();
         }
         RefreshWidgetPresentation();
+        ProjectMemoryOptimization();
         bool installLocaleChanged = RefreshInstallLocalization();
         if (Interlocked.Exchange(ref _installationQueryCompleted, 0) != 0) _catalogRevision = -1;
         bool completed = _installEditRead?.IsCompleted ?? false;
@@ -92,14 +93,16 @@ internal sealed partial class LaunchPageController
             _presentedWidgetIndex = index;
             Publish(LaunchPageState.WidgetAboutLabelKey, HomeCopy(index == 0 ? "widget.about.current" : "widget.about.open"));
             Publish(LaunchPageState.WidgetTriviaLabelKey, HomeCopy(index == 1 ? "widget.trivia.current" : "widget.trivia.open"));
+            Publish(LaunchPageState.WidgetMemoryLabelKey, HomeCopy(index == 3 ? "widget.memory.current" : "widget.memory.open"));
             Publish(LaunchPageState.WidgetEchoLabelKey, HomeCopy(index == 2 ? "widget.echo.current" : "widget.echo.open"));
         }
-        double position = Math.Clamp(pager.Position, 0, 2);
+        double position = Math.Clamp(pager.Position, 0, 3);
         if (position == _indicatorPosition) return;
         _indicatorPosition = position;
         ReloadWidgetDot("About", Math.Max(0, 1 - position));
         ReloadWidgetDot("Trivia", Math.Max(0, 1 - Math.Abs(position - 1)));
-        ReloadWidgetDot("Echo", Math.Max(0, position - 1));
+        ReloadWidgetDot("Echo", Math.Max(0, 1 - Math.Abs(position - 2)));
+        ReloadWidgetDot("Memory", Math.Max(0, position - 2));
     }
 
     internal XsrUiEntityId VersionSettingsPage
@@ -136,7 +139,7 @@ internal sealed partial class LaunchPageController
         _homeWorkspace = HomeDynamic.Append(entities["LaunchHomeWorkspaceSlot"],
             DesktopMarkup.Dynamic("LaunchInstallHomeWorkspace.d.nxml", HomeWorkspaceData()));
         foreach (var node in HomeNodes(_homeWorkspace)) entities[node.Key] = node.Value;
-        foreach (string name in new[] { "About", "Trivia", "Echo" })
+        foreach (string name in new[] { "About", "Trivia", "Echo", "Memory" })
         {
             var root = HomeDynamic.Append(entities["Widget" + name + "Slot"],
                 DesktopMarkup.Dynamic("LaunchInstallHomeWidget" + name + ".d.nxml", WidgetDotData(name == "About" ? 1 : 0)));

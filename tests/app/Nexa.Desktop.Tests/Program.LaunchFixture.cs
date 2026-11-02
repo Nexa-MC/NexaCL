@@ -24,6 +24,7 @@ internal static partial class Program
         private IDisposable? _launchObserverSubscription;
         private readonly bool _ownsMinecraftRuntime;
         private readonly BedrockInstallPageController _bedrockInstall;
+        private readonly MemoryOptimizationRuntime? _memoryRuntime;
 
         public LaunchPageFixture(
             IMinecraftInstanceSource source,
@@ -40,7 +41,8 @@ internal static partial class Program
             IVersionDirectoryEffects? directoryEffects = null,
             IInstallCatalogSource? installSource = null,
             IXsrStateObserver? stateObserver = null,
-            Nexa.Services.RegionalPolicy? regionalPolicy = null)
+            Nexa.Services.RegionalPolicy? regionalPolicy = null,
+            Nexa.Services.Memory.IProcessMemoryPort? memoryPort = null)
         {
             _temporaryDirectory = Path.Combine(
                 Path.GetTempPath(),
@@ -62,7 +64,8 @@ internal static partial class Program
                 schema, profilePort,
                 observer: storeObservation, declareHostState: LaunchPageState.DeclareState,
                 minecraftRootDirectory: minecraftRoot);
-            Foundation = FoundationRuntimeComposer.Compose(host);
+            if (memoryPort is not null) _memoryRuntime = new(host, memoryPort);
+            Foundation = FoundationRuntimeComposer.ComposeWithRoutes(host, configureRoutes: (commands, _) => _memoryRuntime?.Register(commands));
             Onboarding = AccountOnboardingRuntimeComposer.Compose(host, accountHttp,
                 accountOptions ?? new AccountOnboardingOptions("fixture-client", null),
                 imports ?? new LegacyProfileImport(() => []), microsoft: microsoft);
@@ -116,6 +119,7 @@ internal static partial class Program
             Onboarding.Dispose();
             _launchObserverSubscription?.Dispose();
             Controller.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            _memoryRuntime?.DisposeAsync().AsTask().GetAwaiter().GetResult();
             InstallCatalog.Dispose();
             Library.Dispose();
             FeedbackPresenter.Dispose();

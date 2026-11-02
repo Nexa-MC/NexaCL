@@ -248,7 +248,7 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
         RefreshAccountPresentation();
         if (_store.TryResolve(XsrSemanticId.Parse("UiLaunchWidgetPage"), out XsrStateId widgetPage)
             && _store.ReadAppliedValue(widgetPage) is int savedPage)
-            _shell.Renderer.RebasePagerPage(_pageEntities["LaunchWidgetPager"], Math.Clamp(savedPage, 0, 2));
+            _shell.Renderer.RebasePagerPage(_pageEntities["LaunchWidgetPager"], Math.Clamp(savedPage, 0, 3));
         RefreshWidgetPresentation();
         Publish(LaunchPageState.WidgetHintKey, LaunchWidgetHints.BuiltIn[_hintIndex]);
         _hintTimer = _timeProvider.CreateTimer(_ => AdvanceHint(automatic: true), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
@@ -308,7 +308,11 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
 
     private async Task CompleteShutdownAsync(Task save)
     {
-        try { await Task.WhenAll(save, WaitUntilIdle(), _launchRequest).ConfigureAwait(false); }
+        try
+        {
+            await Task.WhenAll(save, WaitUntilIdle(), _launchRequest,
+            _memoryCommand ?? Task.CompletedTask, _memorySetting ?? Task.CompletedTask).ConfigureAwait(false);
+        }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested) { }
         finally { _lifetimeCancellation.Dispose(); }
     }

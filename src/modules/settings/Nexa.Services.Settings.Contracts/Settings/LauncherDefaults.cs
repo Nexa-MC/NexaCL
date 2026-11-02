@@ -12,6 +12,8 @@ public static class LauncherDefaults
     public static IReadOnlyDictionary<string, bool> BooleanDefaults { get; } = new Dictionary<string, bool>(StringComparer.Ordinal)
     {
         ["SystemDisableHardwareAcceleration"] = false,
+        ["SystemMemoryAutoClean"] = false,
+        ["SystemMemoryDeepClean"] = false,
         // Disable UI motion when compositor/GPU timers misbehave (OOBE / page transitions).
         ["SystemDisableUiAnimations"] = false,
         ["SystemSingleInstance"] = true,
@@ -64,6 +66,7 @@ public static class LauncherDefaults
     public static IReadOnlyDictionary<string, int> IntegerDefaults { get; } = new Dictionary<string, int>(StringComparer.Ordinal)
     {
         ["SystemLogLevel"] = 2,
+        ["SystemMemoryCleanThreshold"] = 80,
         ["SystemMaxLog"] = 13,
         ["UiAniFPS"] = 59,
         ["SystemHttpProxyType"] = 1,

@@ -148,6 +148,12 @@ jobs:
           security default-keychain -s "$RUNNER_TEMP/nexa-test.keychain-db"
       - name: Publish NativeAOT account tests
         run: dotnet publish tests/app/Nexa.Services.Tests -c Release -p:PublishAot=true -o native-account-tests
+      - name: Verify Windows memory cleanup and protected process identity under NativeAOT
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          ./native-account-tests/Nexa.Services.Tests.exe "memory cleanup" "memory deep cleanup"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Verify native launcher migration and SQLite source snapshots
         shell: pwsh
         run: |
@@ -298,6 +304,16 @@ jobs:
             & xvfb-run -a dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-gamepad-polling-smoke
           } else {
             & dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-gamepad-polling-smoke
+          }
+          exit $LASTEXITCODE
+      - name: Capture native memory cleanup card in light and dark themes
+        shell: pwsh
+        run: |
+          $output = Join-Path $env:RUNNER_TEMP 'ntp-native-previews'
+          if ($IsLinux) {
+            & xvfb-run -a dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-memory-preview $output
+          } else {
+            & dotnet tests/app/Nexa.Desktop.Tests/bin/Release/net10.0/Nexa.Desktop.Tests.dll --native-memory-preview $output
           }
           exit $LASTEXITCODE
       - name: Capture native light and dark themes with actual runtime interactions

@@ -1,4 +1,14 @@
 /* Owned launch-home and launching presentation variants. */
+.launch-memory-page { Orientation: Vertical; Spacing: 4; }
+.launch-memory-row { Orientation: Horizontal; Spacing: 8; Height: 28; }
+.launch-memory-title { Weight: 1; FontSize: 14; FontWeight: 600; VerticalAlignment: Center; }
+.launch-memory-clean { Width: 88; Height: 28; FontSize: 12; }
+.launch-memory-usage { Height: 20; FontSize: 12; }
+.launch-memory-toggle { Weight: 1; Height: 28; FontSize: 12; }
+.launch-memory-threshold-label { Width: 100; Height: 28; FontSize: 12; TextAlignment: End; VerticalAlignment: Center; }
+.launch-memory-threshold { Height: 24; }
+.launch-memory-deep { Height: 24; FontSize: 12; }
+.launch-memory-detail { Height: 36; FontSize: 11; }
 .launch-install-home-slot { Weight: 1; }
 #LaunchHomeWorkspace { Weight: 1; }
 .launch-install-launching-host { Weight: 1; }

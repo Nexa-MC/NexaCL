@@ -1,0 +1,5 @@
+<nxml-dynamic>
+  <Button Key="WidgetMemoryIndicator" Label="{state launch.widget.memory-label}" Command="ui.launch.widget.memory" Localize="false" Height="{data height}" Class="layout-LaunchPage-WidgetAboutIndicator">
+    <StackPanel Key="WidgetMemoryDot" Height="{data height}" Background="{data paint}" Class="layout-LaunchPage-WidgetAboutDot" />
+  </Button>
+</nxml-dynamic>

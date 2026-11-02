@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="内存使用 {data percent}% · 可用 {data available} / {data total} GiB" /></nxml-dynamic>

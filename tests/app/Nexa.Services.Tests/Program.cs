@@ -5,6 +5,11 @@ internal static partial class Program
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
         ..RegisterFoundationAndContent(),
+        ("memory cleanup threshold cooldown and manual requests", Async(MemoryThresholdCooldownAndManualCleanup)),
+        ("memory cleanup protects games descendants and late roots", Async(MemoryCleanupProtectsGamesAndLateRoots)),
+        ("memory cleanup exclusion and shutdown cancellation", Async(MemoryCleanupIsExclusiveAndCancelsOnShutdown)),
+        ("memory deep cleanup preserves protection and reports UAC rejection", Async(MemoryDeepCleanupKeepsProtectionAndReportsUacRejection)),
+        ("Windows native memory cleanup keeps process identity", Async(WindowsNativeMemoryCleanupKeepsProcessIdentity)),
         ("Steam shortcuts preserve entries and reject corruption", Sync(SteamShortcutsPreserveEntriesAndRejectCorruption)),
         ("native snapshot capture keeps immutable view and releases", NativeSnapshotCaptureKeepsImmutableViewAndReleases),
         ..RegisterProxy(),
@@ -18,6 +23,9 @@ internal static partial class Program
 
     private static async Task<int> Main(string[] args)
     {
+        if (args is ["--memory-cleanup-child"]) return RunMemoryCleanupChild();
+        if (args is [Nexa.Platform.WindowsMemoryElevationPort.WorkerArgument, var memoryPipe, var memoryParent])
+            return await Nexa.Platform.WindowsMemoryElevationPort.RunWorkerAsync(memoryPipe, memoryParent);
         if (args is ["--native-directory-snapshot", var snapshotRoot]) { await NativeDirectorySnapshotSmoke(snapshotRoot); return 0; }
         if (args is ["--scheduling-child"])
         {

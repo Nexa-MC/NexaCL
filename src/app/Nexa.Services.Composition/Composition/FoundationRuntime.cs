@@ -52,6 +52,13 @@ public static class FoundationRuntimeComposer
         IXsrDispatchObserver? observer = null,
         TimeProvider? timeProvider = null) => ComposeCore(host, observer, timeProvider, null);
 
+    public static FoundationRuntime ComposeWithRoutes(
+        FoundationHost host,
+        Action<XsrCommandRouterBuilder, XsrQueryRouterBuilder> configureRoutes,
+        IXsrDispatchObserver? observer = null,
+        TimeProvider? timeProvider = null) =>
+        ComposeCore(host, observer, timeProvider, null, configureRoutes: configureRoutes);
+
     public static FoundationRuntime ComposeWithStorage(
         FoundationHost host,
         StoragePreferencesService storagePreferences,
