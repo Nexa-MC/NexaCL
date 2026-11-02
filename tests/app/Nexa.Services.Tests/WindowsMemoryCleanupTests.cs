@@ -63,5 +63,18 @@ internal static partial class Program
             AssertEqual(0, child.ExitCode);
         }
         finally { if (!child.HasExited) child.Kill(entireProcessTree: true); }
+
+        // Hosted Windows CI is already elevated. Exercise the real runas worker/pipe path
+        // without a consent dialog and exclude every existing process from the sweep.
+        using var identity = WindowsIdentity.GetCurrent();
+        if (new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator))
+        {
+            var exclusions = port.CaptureProcesses().Where(item => item.Id > 0).Select(item => item.Id).ToHashSet();
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            var elevated = await new WindowsMemoryElevationPort().CleanElevatedAsync(exclusions, deadline.Token);
+            AssertEqual(0, elevated.Cleaned);
+            AssertTrue(elevated.Skipped > 0);
+            Console.WriteLine("Native elevated memory helper authenticated, preserved exclusions and exited.");
+        }
     }
 }
