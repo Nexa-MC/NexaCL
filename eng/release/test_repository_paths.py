@@ -1,4 +1,5 @@
 """Exercise NativeAOT UI publication's repository inputs without invoking a compiler."""
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -28,3 +29,14 @@ class RepositoryPublicationPaths(unittest.TestCase):
                 patch.object(verify_native_ui_contracts.subprocess, 'run', invoke):
             verify_native_ui_contracts.test('linux-x64', Path(directory), run_probe=False)
         self.assertCountEqual(publications, ['Nexa.Native.Ui.Peer', 'Nexa.Native.Ui.Tests'])
+
+    def test_signed_sidecar_fixtures_retain_catalogued_bytes_on_all_rids(self):
+        root = verify_native_ui_contracts.project_directory('Nexa.Native.Updates.Services.Tests') / 'Fixtures'
+        for rid in ('win-x64', 'win-arm64', 'linux-x64', 'linux-arm64', 'osx-x64', 'osx-arm64'):
+            with self.subTest(rid=rid):
+                directory = root / rid
+                catalog = json.loads((directory / f'Nexa-Sidecars-{rid}.json').read_text())
+                for package in catalog['packages']:
+                    payload = (directory / f"{package['id']}-{rid}.nsc").read_bytes()
+                    self.assertEqual(len(payload), package['size'])
+                    self.assertEqual(hashlib.sha256(payload).hexdigest(), package['sha256'])
