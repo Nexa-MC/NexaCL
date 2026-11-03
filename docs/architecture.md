@@ -57,3 +57,12 @@ endpoint, releases it with its runtime, and never redirects online identities to
 that endpoint. The generic inspection tool is read-only and the instance launch
 link preserves its target through the existing single-instance and first-run
 handoffs.
+
+Java policy supports an explicit version-local strategy. `java.runtime` retains its
+existing Auto/absolute-path representation and additionally accepts the reserved
+Custom value `@instance`; it resolves against the launched version directory, so
+global/profile choices remain portable. Minecraft.Java owns bounded local runtime
+discovery and compatibility selection through the existing inspection port. This
+strategy never scans global runtimes or silently downloads a replacement. Desktop
+exposes the strategy as “版本内 Java” without showing the stored token. Native DTO
+shapes and operation IDs remain unchanged.

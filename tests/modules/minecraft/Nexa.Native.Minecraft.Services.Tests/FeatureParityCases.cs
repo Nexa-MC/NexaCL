@@ -3,6 +3,29 @@ using Nexa.Services.Minecraft.Management;
 
 internal static class FeatureParityCases
 {
+    internal static async Task CheckInstanceJavaAsync(NativeMinecraftClient client, string instance, string executable, CancellationToken token)
+    {
+        var missing = await client.QueryInstanceOfflineReadinessQueryAsync(new(instance), token);
+        if (!missing.IsSuccess || missing.Value!.JavaCompatible != false) throw new InvalidDataException("Native instance Java silently selected a global runtime.");
+        string bin = Path.Combine(instance, "java", "bin"); Directory.CreateDirectory(bin);
+        string local = Path.Combine(bin, OperatingSystem.IsWindows() ? "java.exe" : "java");
+        File.Copy(executable, local);
+        if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(local, File.GetUnixFileMode(executable));
+        else
+        {
+            Directory.CreateDirectory(Path.Combine(bin, "server"));
+            File.Copy(executable, Path.Combine(bin, "server", "jvm.dll"));
+        }
+        try
+        {
+            var present = await client.QueryInstanceOfflineReadinessQueryAsync(new(instance), token);
+            if (!present.IsSuccess || present.Value!.JavaCompatible != true || present.Value.JavaVersion != "17.0.10")
+                throw new InvalidDataException("Native instance Java lost version-local probing or compatibility.");
+        }
+        finally { Directory.Delete(Path.Combine(instance, "java"), true); }
+        Console.WriteLine("PASS: native version-local Java policy, probing and missing-runtime isolation");
+    }
+
     internal static async Task RunAsync(NativeMinecraftClient client, string root, string instance, string executable, CancellationToken token)
     {
         string nbt = Path.Combine(root, "inspection.nbt");

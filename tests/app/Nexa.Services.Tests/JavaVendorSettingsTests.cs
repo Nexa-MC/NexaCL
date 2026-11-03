@@ -19,7 +19,7 @@ internal static partial class Program
         var requirement = JavaRequirementResolution.Valid(new(new Version(17, 0), new Version(17, 999)));
         var port = new InMemorySettingsPort(); var (_, policy) = PolicyFixture(port);
         string instance = Path.GetFullPath("vendor-instance");
-        JavaPreference Read() => MinecraftLaunchCoordinator.ApplyJavaPreference(new AutoSelectJavaPreference(), policy.Read(new(instance)).Value!);
+        JavaPreference Read() => MinecraftLaunchCoordinator.ApplyJavaPreference(new AutoSelectJavaPreference(), policy.Read(new(instance)).Value!, instance);
         AssertTrue(policy.Set(new("java.vendor", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "Microsoft"))).IsSuccess);
         AssertEqual(JavaBrand.Microsoft, (await selector.SelectAsync(requirement, Read())).SelectedJava!.Installation.Brand);
         AssertTrue(policy.Set(new("java.vendor", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "Oracle"), instance)).IsSuccess);

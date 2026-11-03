@@ -205,7 +205,7 @@ internal static partial class Program
         var (_, service) = PolicyFixture();
         string instance = Path.GetFullPath("java-policy-instance");
         var fallback = new Nexa.Services.Minecraft.Java.ExistingJavaPreference(Path.GetFullPath("legacy-java"));
-        Nexa.Services.Minecraft.Java.JavaPreference Read() => Nexa.Services.Minecraft.Launch.MinecraftLaunchCoordinator.ApplyJavaPreference(fallback, service.Read(new(instance)).Value!);
+        Nexa.Services.Minecraft.Java.JavaPreference Read() => Nexa.Services.Minecraft.Launch.MinecraftLaunchCoordinator.ApplyJavaPreference(fallback, service.Read(new(instance)).Value!, instance);
         AssertEqual(fallback, Read());
         string global = Path.GetFullPath("global-java");
         AssertTrue(service.Set(new("java.runtime", SettingsLayer.Global, new(SettingsOverrideMode.Custom, global))).IsSuccess);
@@ -217,6 +217,9 @@ internal static partial class Program
         AssertEqual(local, ((Nexa.Services.Minecraft.Java.ExistingJavaPreference)Read()).JavaExecutablePath);
         AssertTrue(service.Set(new("java.runtime", SettingsLayer.Instance, new(SettingsOverrideMode.Inherit), instance)).IsSuccess);
         AssertEqual(global, ((Nexa.Services.Minecraft.Java.ExistingJavaPreference)Read()).JavaExecutablePath);
+        AssertTrue(service.Set(new("java.runtime", SettingsLayer.Global, new(SettingsOverrideMode.Custom, SettingsPolicySchema.InstanceJavaRuntime))).IsSuccess);
+        AssertEqual(instance, ((Nexa.Services.Minecraft.Java.InstanceJavaPreference)Read()).InstanceDirectory);
+        AssertFalse(service.Set(new("java.runtime", SettingsLayer.Instance, new(SettingsOverrideMode.Custom, "@other"), instance)).IsSuccess);
     }
 
     private static void MigratedJavaAndMemorySettingsSurviveRestartAndRejectInvalidValues()

@@ -1,7 +1,7 @@
 using Nexa.Native.Minecraft.Services;
 using Nexa.Native.Services.Wire;
-using Nexa.Services.Resources;
 using Nexa.Services.Minecraft.Install;
+using Nexa.Services.Resources;
 using Nexa.Xsr;
 
 namespace Nexa.Native.Minecraft.Client;

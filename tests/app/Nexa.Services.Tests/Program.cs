@@ -4,6 +4,7 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("instance Java selection stays local and checks compatibility", InstanceJavaSelectionStaysLocalAndChecksCompatibility),
         ("parity legacy archives and optional file installation", ParityLegacyArchivesAndOptionalFiles),
         ("parity export formats scripts and target preservation", ParityExportFormatsAndScripts),
         ("parity portable bundle excludes accounts and includes runtimes", ParityPortableBundleExcludesAccountsAndIncludesRuntime),

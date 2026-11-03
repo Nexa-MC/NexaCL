@@ -30,7 +30,7 @@ internal sealed partial class MinecraftServiceSession
             if (!snapshot.IsSuccess) throw new IOException(snapshot.Error?.Message ?? "无法读取实例 Java 偏好。");
             JavaPreference fallback = metadata.JavaSelectionMode == 2 && metadata.SelectedJavaPath.Length > 0
                 ? new ExistingJavaPreference(metadata.SelectedJavaPath) : new AutoSelectJavaPreference();
-            return await selection.SelectAsync(requirement, MinecraftLaunchCoordinator.ApplyJavaPreference(fallback, snapshot.Value!), cancellation).ConfigureAwait(false);
+            return await selection.SelectAsync(requirement, MinecraftLaunchCoordinator.ApplyJavaPreference(fallback, snapshot.Value!, instance), cancellation).ConfigureAwait(false);
         });
         return service.ReadAsync(query, token);
     }

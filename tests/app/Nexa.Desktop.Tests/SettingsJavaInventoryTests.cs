@@ -82,6 +82,7 @@ internal static partial class Program
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         scene = fixture.Shell.Render(new(1000, 1700));
         var input = FindByKey(fixture.Shell, scene, "SettingsInput.java.runtime").Entity;
+        RevealJavaChoice();
         var choice = FindByKey(fixture.Shell, scene, "SettingsJavaChoose.0");
         AssertEqual(XsrUiSemanticRole.RadioButton, choice.Role);
         XsrUiEntityId inventoryBody = default;
@@ -105,12 +106,33 @@ internal static partial class Program
         AssertEqual(runtime.JavaExecutablePath, fixture.Foundation.Host.SettingsPolicy.Read(new(instance)).Value!.Values.Single(v => v.Key == "java.runtime").Value.Value);
         AssertEqual(global, fixture.Foundation.Host.SettingsPolicy.Read(new()).Value!.Values.Single(v => v.Key == "java.runtime").Value.Value);
         AssertEqual(input, FindByKey(fixture.Shell, scene, "SettingsInput.java.runtime").Entity);
+        Emit(fixture.Intents, "ui.settings.choice", FindByKey(fixture.Shell, scene, "SettingsInstanceJava.java.runtime").Entity);
+        AssertTrue(SpinWait.SpinUntil(() =>
+        {
+            scene = fixture.Shell.Render(new(810, 1700));
+            return FindByKey(fixture.Shell, scene, "SettingsInstanceJava.java.runtime").IsSelected;
+        }, TimeSpan.FromSeconds(5)));
+        AssertEqual(SettingsPolicySchema.InstanceJavaRuntime, fixture.Foundation.Host.SettingsPolicy.Read(new(instance)).Value!.Values.Single(v => v.Key == "java.runtime").Value.Value);
+        AssertEqual(global, fixture.Foundation.Host.SettingsPolicy.Read(new()).Value!.Values.Single(v => v.Key == "java.runtime").Value.Value);
+        AssertFalse(fixture.Shell.Tree.GetComponent<XsrUiTextInput>(input)!.ReadDraft().Contains(SettingsPolicySchema.InstanceJavaRuntime, StringComparison.Ordinal));
         instance = Path.GetFullPath("other-root/instance-java-two");
         scene = fixture.Shell.Render(new(1000, 1700));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.game").Entity);
         scene = fixture.Shell.Render(new(1000, 1700));
+        RevealJavaChoice();
         AssertFalse(FindByKey(fixture.Shell, scene, "SettingsJavaChoose.0").IsSelected);
         AssertEqual(global, fixture.Foundation.Host.SettingsPolicy.Read(new(instance)).Value!.Values.Single(v => v.Key == "java.runtime").Value.Value);
+
+        void RevealJavaChoice()
+        {
+            for (int i = 0; i < 20 && !HasKey(fixture.Shell, scene, "SettingsJavaChoose.0"); i++)
+            {
+                var viewport = FindByKey(fixture.Shell, scene, "SettingsSections");
+                fixture.Shell.Renderer.PointerScroll(new(viewport.Rect.X + 24, viewport.Rect.Y + 24), 120);
+                scene = fixture.Shell.Render(new(1000, 1700));
+            }
+            AssertTrue(HasKey(fixture.Shell, scene, "SettingsJavaChoose.0"));
+        }
     }
 
     private static void JavaInventoryPageRetiresLateReadsAndPersistsDefaultSelection()

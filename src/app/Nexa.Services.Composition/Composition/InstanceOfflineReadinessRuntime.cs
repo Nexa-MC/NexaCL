@@ -20,7 +20,7 @@ public static class InstanceOfflineReadinessRuntime
             if (!snapshot.IsSuccess) throw new IOException(snapshot.Error?.Message ?? "无法读取实例 Java 偏好。");
             JavaPreference fallback = metadata.JavaSelectionMode == 2 && metadata.SelectedJavaPath.Length > 0
                 ? new ExistingJavaPreference(metadata.SelectedJavaPath) : new AutoSelectJavaPreference();
-            var preference = MinecraftLaunchCoordinator.ApplyJavaPreference(fallback, snapshot.Value!);
+            var preference = MinecraftLaunchCoordinator.ApplyJavaPreference(fallback, snapshot.Value!, instance);
             return await selection.SelectAsync(requirement, preference, token).ConfigureAwait(false);
         });
         queries.Register<InstanceOfflineReadinessQuery, InstanceOfflineReadinessReport>(InstanceOfflineReadinessContract.Query,

@@ -89,12 +89,13 @@ public sealed partial class MinecraftLaunchCoordinator
         return MinecraftSafeLaunchPolicy.Apply(request);
     }
 
-    internal static JavaPreference ApplyJavaPreference(JavaPreference fallback, SettingsEffectiveSnapshot snapshot)
+    internal static JavaPreference ApplyJavaPreference(JavaPreference fallback, SettingsEffectiveSnapshot snapshot, string instanceDirectory)
     {
         var setting = snapshot.Values.Single(value => value.Key == "java.runtime");
         if (setting.ValidationError is not null) throw new InvalidDataException("首选 Java 设置无效。");
         JavaPreference preference = setting.Source == SettingsLayer.Builtin ? fallback
             : setting.Value.Mode == SettingsOverrideMode.Auto ? new AutoSelectJavaPreference()
+            : setting.Value.Value == SettingsPolicySchema.InstanceJavaRuntime ? new InstanceJavaPreference(instanceDirectory)
             : new ExistingJavaPreference(setting.Value.Value!);
         var vendor = snapshot.Values.Single(item => item.Key == "java.vendor");
         if (preference is AutoSelectJavaPreference auto && vendor.Source != SettingsLayer.Builtin)

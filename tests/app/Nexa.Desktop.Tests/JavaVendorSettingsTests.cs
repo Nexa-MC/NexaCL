@@ -16,6 +16,16 @@ internal static partial class Program
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.java").Entity);
         scene = fixture.Shell.Render(new(700, 650));
         var body = FindByKey(fixture.Shell, scene, "SettingsSections");
+        var instanceJava = FindByKey(fixture.Shell, scene, "SettingsInstanceJava.java.runtime");
+        AssertTrue(instanceJava.Rect.X + instanceJava.Rect.Width <= body.Rect.X + body.Rect.Width);
+        Emit(fixture.Intents, "ui.settings.choice", instanceJava.Entity);
+        AssertTrue(SpinWait.SpinUntil(() =>
+        {
+            scene = fixture.Shell.Render(new(700, 650));
+            return FindByKey(fixture.Shell, scene, "SettingsInstanceJava.java.runtime").IsSelected;
+        }, TimeSpan.FromSeconds(5)));
+        AssertEqual(Nexa.Services.Settings.SettingsPolicySchema.InstanceJavaRuntime,
+            fixture.Foundation.Host.SettingsPolicy.Read(new()).Value!.Values.Single(value => value.Key == "java.runtime").Value.Value);
         var selector = FindByKey(fixture.Shell, scene, "SettingsSelector.java.vendor");
         AssertTrue(selector.Rect.Width < 400);
         AssertTrue(selector.Rect.X + selector.Rect.Width <= body.Rect.X + body.Rect.Width);

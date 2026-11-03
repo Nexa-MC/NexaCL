@@ -95,7 +95,7 @@ internal sealed partial class SettingsPageController
         var definition = entry.Definition!;
         if (definition.Kind is SettingsValueKind.Enum or SettingsValueKind.Boolean || key == "general.region")
         { BuildShiftSelector(controls, entry); return; }
-        var inputRoot = AppendCatalog(controls, "SettingsCatalogInput.d.nxml", new()
+        var inputRoot = AppendCatalog(controls, key == "java.runtime" ? "SettingsJavaPolicyInput.d.nxml" : "SettingsCatalogInput.d.nxml", new()
         {
             ["input"] = "SettingsInput." + key,
             ["label"] = entry.Label,
@@ -108,6 +108,8 @@ internal sealed partial class SettingsPageController
             ["manual"] = "SettingsManual." + key,
             ["autoSelected"] = "false",
             ["manualSelected"] = "false",
+            ["instance"] = "SettingsInstanceJava." + key,
+            ["instanceSelected"] = "false",
         });
         nodes = CatalogNodes(inputRoot);
         var apply = nodes["SettingsEdit." + key];
@@ -118,7 +120,13 @@ internal sealed partial class SettingsPageController
             var track = nodes["SettingsMode." + key]; var thumb = nodes["SettingsModeThumb"];
             var automatic = nodes["SettingsAuto." + key]; var manual = nodes["SettingsManual." + key];
             _choices[automatic] = (editor, "auto"); _choices[manual] = (editor, "__manual__");
-            _autoModes[track] = (editor, automatic, manual); _autoModeViews[track] = inputRoot;
+            XsrUiEntityId instance = default;
+            if (key == "java.runtime")
+            {
+                instance = nodes["SettingsInstanceJava." + key];
+                _choices[instance] = (editor, SettingsPolicySchema.InstanceJavaRuntime);
+            }
+            _autoModes[track] = (editor, automatic, manual, instance); _autoModeViews[track] = inputRoot;
         }
     }
 

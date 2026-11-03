@@ -296,7 +296,11 @@ public sealed class JavaSelectionService(IJavaRuntimeLocator locator)
         IReadOnlyList<JavaRuntimeCandidate> candidates;
         try
         {
-            if (preference is ExistingJavaPreference existing)
+            if (preference is InstanceJavaPreference local)
+            {
+                candidates = await InstanceJavaRuntimeDiscovery.FindAsync(local.InstanceDirectory, _locator, cancellationToken).ConfigureAwait(false);
+            }
+            else if (preference is ExistingJavaPreference existing)
             {
                 JavaRuntimeCandidate? inspected = await _locator
                     .InspectAsync(existing.JavaExecutablePath, cancellationToken)

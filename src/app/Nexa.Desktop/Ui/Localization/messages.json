@@ -1,4 +1,7 @@
 [
+  {"source":"Java 选择方式","en":"Java selection","zh-Hant":"Java 選擇方式"},
+  {"source":"版本内 Java","en":"Instance Java","zh-Hant":"版本內 Java"},
+  {"source":"版本内 Java 仅使用当前版本目录中的运行时；缺失或不兼容时停止启动。","en":"Instance Java uses only runtimes inside the current version directory. Launch stops if none is compatible.","zh-Hant":"版本內 Java 僅使用目前版本目錄中的執行階段；缺失或不相容時停止啟動。"},
   {"source":"简介","en":"Summary","zh-Hant":"簡介"},
   {"source":"全不选","en":"Deselect all","zh-Hant":"全不選"},
   {"source":"作为整合包安装","en":"Install as a modpack","zh-Hant":"作為整合包安裝"},

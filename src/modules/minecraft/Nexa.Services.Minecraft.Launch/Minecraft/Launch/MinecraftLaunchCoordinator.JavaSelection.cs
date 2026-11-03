@@ -41,6 +41,9 @@ public sealed partial class MinecraftLaunchCoordinator
 
         // An explicit, incompatible Java choice is a user-visible error. Never replace it with
         // a downloaded runtime behind the user's back.
+        if (preference is InstanceJavaPreference)
+            return XsrResult.Failure<ResolvedJava>(MinecraftErrors.JavaUnavailable(
+                "版本内 Java 缺失、已停用或不兼容。请在当前版本目录的 java、jre、jdk 或 runtime 文件夹中放入兼容的 Java，或更改 Java 选择。"));
         if (preference is ExistingJavaPreference)
         {
             return XsrResult.Failure<ResolvedJava>(MinecraftErrors.JavaUnavailable(

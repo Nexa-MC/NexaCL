@@ -20,6 +20,7 @@ public sealed record SettingsPolicyDefinition(string Key, SettingsValueKind Kind
         if (value.Mode == SettingsOverrideMode.Auto) return SupportsAuto && value.Value is null ? null : "Auto is not supported or carries a payload.";
         if (value.Mode != SettingsOverrideMode.Custom || value.Value is null) return "A custom value is required.";
         string raw = value.Value;
+        if (Key == "java.runtime" && raw == SettingsPolicySchema.InstanceJavaRuntime) return null;
         if (Key == "general.region" && raw is not ("auto" or "follow-language" or "ui-language"))
         {
             if (string.IsNullOrWhiteSpace(raw) || raw.Length > 85 || raw.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '-'))
@@ -93,6 +94,7 @@ public sealed record SettingsPolicyDefinition(string Key, SettingsValueKind Kind
 
 public static class SettingsPolicySchema
 {
+    public const string InstanceJavaRuntime = "@instance";
     public const string StorageKey = "NexaSettingsLayers";
     public const string EmptyDocument = "{\"version\":1,\"global\":{},\"instances\":{}}";
     public static IReadOnlyList<SettingsPolicyDefinition> Definitions { get; } = Array.AsReadOnly<SettingsPolicyDefinition>([

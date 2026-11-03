@@ -161,7 +161,7 @@ public sealed partial class MinecraftLaunchCoordinator
             bool automaticallyInstallJava = false;
             if (effectiveSettings is not null)
             {
-                preference = ApplyJavaPreference(preference, effectiveSettings);
+                preference = ApplyJavaPreference(preference, effectiveSettings, instance.DirectoryPath);
                 automaticallyInstallJava = effectiveSettings.Values.Single(value => value.Key == "java.auto-install").Value.Value == "true";
             }
             operation?.Stage("select_java", $"os={_platform.OperatingSystem} os_version={_platform.OperatingSystemVersion} arm64={_platform.IsArm64Architecture} manifest_major={javaRequest.ManifestJavaMajorVersion}");
@@ -177,7 +177,7 @@ public sealed partial class MinecraftLaunchCoordinator
                     java = await _javaSelection
                         .SelectAsync(javaRequest, preference, token)
                         .ConfigureAwait(false);
-                    if (!java.Success && java.FailureReason == JavaSelectionFailureReason.NoCompatibleRuntime
+                    if (preference is not InstanceJavaPreference && !java.Success && java.FailureReason == JavaSelectionFailureReason.NoCompatibleRuntime
                         && !Nexa.Core.PathIdentity.Comparer.Equals(root, _minecraftRootDirectory))
                     {
                         JavaSelectionResult local = await new JavaSelectionService(new LocalJavaRuntimeLocator(javaRoot, _log)

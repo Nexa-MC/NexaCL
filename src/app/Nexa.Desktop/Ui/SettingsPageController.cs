@@ -411,7 +411,9 @@ internal sealed partial class SettingsPageController : IDisposable
             var value = _values?.Values.FirstOrDefault(item => item.Key == editor.Entry.SettingKey);
             if (value is null) continue;
             string raw = value.Value.Value ?? "";
-            if (editor.Input.IsAssigned && value.Value.Mode != SettingsOverrideMode.Auto && !_shell.Renderer.Focused.Equals(editor.Input))
+            if (editor.Input.IsAssigned && value.Value.Mode != SettingsOverrideMode.Auto
+                && !(editor.Entry.SettingKey == "java.runtime" && raw == SettingsPolicySchema.InstanceJavaRuntime)
+                && !_shell.Renderer.Focused.Equals(editor.Input))
                 _shell.Renderer.SetTextInputValue(editor.Input, raw);
         }
         foreach (var (button, key) in _inheritButtons)

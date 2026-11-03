@@ -6,7 +6,7 @@ namespace Nexa.Desktop.Ui;
 
 internal sealed partial class SettingsPageController
 {
-    private readonly Dictionary<XsrUiEntityId, (Editor Editor, XsrUiEntityId Auto, XsrUiEntityId Manual)> _autoModes = [];
+    private readonly Dictionary<XsrUiEntityId, (Editor Editor, XsrUiEntityId Auto, XsrUiEntityId Manual, XsrUiEntityId Instance)> _autoModes = [];
 
     private void UpdateAutomaticModes()
     {
@@ -14,9 +14,10 @@ internal sealed partial class SettingsPageController
         {
             var value = _values?.Values.FirstOrDefault(item => item.Key == mode.Editor.Entry.SettingKey)?.Value;
             bool auto = value?.Mode == SettingsOverrideMode.Auto || mode.Editor.Entry.SettingKey == "java.runtime" && string.IsNullOrWhiteSpace(value?.Value);
-            var selected = auto ? mode.Auto : mode.Manual;
+            bool instance = mode.Instance.IsAssigned && value?.Value == SettingsPolicySchema.InstanceJavaRuntime;
+            var selected = instance ? mode.Instance : auto ? mode.Auto : mode.Manual;
             _shell.Tree.GetComponent<XsrUiSegmentedTrack>(track)!.Selected = selected;
-            ReloadCatalog(_autoModeViews[track], ("autoSelected", Flag(auto)), ("manualSelected", Flag(!auto)));
+            ReloadCatalog(_autoModeViews[track], ("autoSelected", Flag(auto)), ("manualSelected", Flag(!auto && !instance)), ("instanceSelected", Flag(instance)));
         }
     }
 

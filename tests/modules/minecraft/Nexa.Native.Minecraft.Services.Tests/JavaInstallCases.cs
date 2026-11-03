@@ -92,6 +92,9 @@ internal static class JavaInstallCases
         if (!(await minecraft.ResumeRecoveryAsync(new([gameRoot]), token)).IsSuccess)
             throw new InvalidDataException("Native recovery replay rejected a clean installation.");
         await ImportCases.RunAsync(minecraft, directory, gameRoot, renamed.Value.InstanceDirectory, token);
+        settings.InstanceJava = true;
+        await FeatureParityCases.CheckInstanceJavaAsync(minecraft, renamed.Value.InstanceDirectory, javaExecutable, token);
+        settings.InstanceJava = false;
         await ManagementCases.RunAsync(minecraft, directory, renamed.Value.InstanceDirectory, token);
         await LibraryCases.RunAsync(minecraft, replicas, gameRoot, renamed.Value.InstanceDirectory, libraryPersistence, librarySource, token);
         await ResourceCases.RunAsync(minecraft, directory, token);
@@ -176,6 +179,7 @@ internal static class JavaInstallCases
     }
     private sealed class InstallSettings : ISettingsSnapshotReader, ISettingsRecoveryTransactions, ISettingsRenameTransactions, ISettingsPolicyWriter
     {
+        internal bool InstanceJava;
         internal int JavaWrites;
         public ValueTask<XsrResult> SetAsync(SettingsMutation command, CancellationToken cancellationToken = default)
         {
@@ -230,6 +234,7 @@ internal static class JavaInstallCases
             {
                 string? selected = definition.Key switch
                 {
+                    "java.runtime" when InstanceJava => SettingsPolicySchema.InstanceJavaRuntime,
                     "network.file-concurrency" => "2",
                     "network.file-retry" => "false",
                     "network.game-source" => "official-only",

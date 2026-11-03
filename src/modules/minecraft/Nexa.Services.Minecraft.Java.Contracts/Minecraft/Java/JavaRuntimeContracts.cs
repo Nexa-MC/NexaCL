@@ -141,6 +141,7 @@ public sealed record AutoSelectJavaPreference : JavaPreference
     public JavaBrand? PreferredBrand { get; init; }
 }
 public sealed record ExistingJavaPreference(string JavaExecutablePath) : JavaPreference;
+public sealed record InstanceJavaPreference(string InstanceDirectory) : JavaPreference;
 public sealed record UseGlobalJavaPreference : JavaPreference;
 public sealed record UseRelativeJavaPreference(string RelativePath) : JavaPreference;
 
