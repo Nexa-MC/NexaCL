@@ -30,7 +30,7 @@ await accounts.ConfigureRuntimeAsync(new("native-fixture-client", null), null);
 Console.WriteLine("PASS: native provider runtime configured");
 var offline = await accounts.GetProfileAsync(0);
 var identity = await accounts.ResolveAsync(0, offline.Value);
-Check(identity.IsSuccess && identity.Value.PlayerName == "FixturePlayer", "Offline launch resolution changed.");
+Check(identity.IsSuccess && identity.Value.PlayerName == "FixturePlayer" && identity.Value.PlayerUuid == Nexa.Services.Minecraft.Launch.MinecraftOfflineIdentity.LegacyMismatchedUuid("FixturePlayer") && identity.Value.OfflineSkinPng.Length == 65536 && identity.Value.OfflineSkinPng[0] == 42, "Offline launch resolution or its bounded binary texture payload changed.");
 var selected = await accounts.SelectAsync(new(1, profiles.Revision));
 Check(selected.IsSuccess && accounts.SelectedIndex == 1, "Selection completed before its state became visible.");
 var missing = await accounts.SelectAsync(new(99, profiles.Revision));
@@ -88,7 +88,7 @@ sealed class MemoryStore(string secret) : ILaunchProfilePort, INativeAccountProf
     public string? NativeProfilePath => null;
     public LaunchProfileSet NativeInitialProfiles => new()
     {
-        Profiles = [new() { Username = "FixturePlayer", Kind = LaunchProfileKind.Offline },
+        Profiles = [new() { Username = "FixturePlayer", Kind = LaunchProfileKind.Offline, OfflineCustomUuid = true, Uuid = Nexa.Services.Minecraft.Launch.MinecraftOfflineIdentity.LegacyMismatchedUuid("FixturePlayer"), OfflineSkinPng = Enumerable.Repeat((byte)42, 65536).ToArray() },
             new() { Username = "PrivatePlayer", Kind = LaunchProfileKind.ThirdParty, Uuid = "0123456789abcdef0123456789abcdef", AccessToken = secret }],
     };
     public LaunchProfileSet Load() => throw new InvalidOperationException("Caller must not load native storage.");

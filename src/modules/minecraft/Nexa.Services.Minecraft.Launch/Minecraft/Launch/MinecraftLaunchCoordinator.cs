@@ -16,7 +16,7 @@ namespace Nexa.Services.Minecraft.Launch;
 /// Product-level launch orchestration. Callers identify an instance and account; this service
 /// owns manifests, inheritance, platform, credentials, Java, settings, planning, and execution.
 /// </summary>
-public sealed partial class MinecraftLaunchCoordinator
+public sealed partial class MinecraftLaunchCoordinator : IDisposable
 {
     public bool HasPendingFinalization => _executor.HasPendingFinalization;
     public Task WaitForFinalizationAsync(CancellationToken cancellationToken = default)

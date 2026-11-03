@@ -54,11 +54,11 @@ internal sealed partial class SettingsPageController
         if (_modpackOnlinePreviewRead is { IsCompleted: true } prepared)
         {
             _modpackOnlinePreviewRead = null;
-            if (prepared.IsCompletedSuccessfully && prepared.Result.IsSuccess && _modpackOnlinePreviewQuery is { } selected && prepared.Result.Value!.Request == selected
+            if (prepared.IsCompletedSuccessfully && prepared.Result.IsSuccess && _modpackOnlinePreviewQuery is { } selected && (prepared.Result.Value!.Request == selected with { ExcludedOptionalFiles = prepared.Result.Value.Request.ExcludedOptionalFiles } && prepared.Result.Value.Request.ExcludedOptionalFiles.SequenceEqual(selected.ExcludedOptionalFiles))
                 && selected.Instance.InstanceDirectory == _instance && _modpackOptional == selected.IncludeOptional
-                && _modpackReplace == selected.ReplaceModifiedMods)
+                && _modpackReplace == selected.ReplaceModifiedMods && _modpackExcluded.Order(StringComparer.Ordinal).SequenceEqual(selected.ExcludedOptionalFiles))
             {
-                _modpackOnlinePreview = prepared.Result.Value; _modpackPreview = prepared.Result.Value.Installation;
+                _modpackOnlinePreview = prepared.Result.Value; _modpackPreview = prepared.Result.Value.Installation; _modpackOptionalEntries = _modpackPreview.Pack.OptionalEntries;
                 ShowModpackPreview(_modpackPreview);
             }
             else _modpackUpdateStatus = prepared.IsCompletedSuccessfully ? prepared.Result.Error?.Message ?? WorldTerm("modpack.update.changed")
@@ -110,7 +110,8 @@ internal sealed partial class SettingsPageController
                     || _modpackOnlinePreviewRead is not null || _resourceQueries?.TryResolve(ResourceModpackContract.Preview, out var route) != true) return;
                 InvalidateModpackPreview();
                 _modpackOnlinePreviewQuery = new(online.Request with { OriginalArchivePath = string.IsNullOrWhiteSpace(_modpackOriginal) ? online.OriginalArchivePath : _modpackOriginal.Trim() },
-                    new(version.Provider, version.ProjectId), version.Id, installed, _modpackOptional, _modpackReplace);
+                    new(version.Provider, version.ProjectId), version.Id, installed, _modpackOptional, _modpackReplace)
+                { ExcludedOptionalFiles = _modpackExcluded.Order(StringComparer.Ordinal).ToArray() };
                 _modpackOnlineStop ??= new();
                 _modpackOnlinePreviewRead = _resourceQueries.QueryAsync<ResourceModpackPreviewQuery, ResourceModpackPreview>(route,
                     _modpackOnlinePreviewQuery, cancellationToken: _modpackOnlineStop.Token).AsTask();

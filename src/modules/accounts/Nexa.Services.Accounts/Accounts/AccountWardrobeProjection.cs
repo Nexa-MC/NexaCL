@@ -6,13 +6,18 @@ namespace Nexa.Services.Accounts;
 
 public sealed partial class AccountWardrobeService
 {
+    private static Nexa.Core.Media.PngImage? OfflineImage(byte[] bytes) => bytes.Length is > 0 and <= 1_048_576
+        ? Nexa.Core.Media.PngImage.TryCreate(bytes) : null;
     private async Task<AccountWardrobeSnapshot> ProjectAsync(AccountWardrobeCapture capture,
         IReadOnlyList<AccountWardrobeCape> capes, IReadOnlyList<LittleSkinClosetItem> closetSkins,
         AccountWardrobeCapeState capeState, string? providerStatus, Operation operation)
     {
         var profiles = accounts.GetViews().OrderByDescending(view => view.Index == capture.Identity.Index).Take(64).ToArray();
         var index = Array.FindIndex(profiles, view => view.Index == capture.Identity.Index);
-        var current = await _textures.ResolveAsync(capture.View, operation.Token).ConfigureAwait(false);
+        var current = capture.Profile.Kind == LaunchProfileKind.Offline
+            ? new AccountWardrobeResolvedTextures(null, null, capture.Profile.OfflineSlim,
+                OfflineImage(capture.Profile.OfflineSkinPng), OfflineImage(capture.Profile.OfflineCapePng))
+            : await _textures.ResolveAsync(capture.View, operation.Token).ConfigureAwait(false);
         var resolved = profiles.Select(view => new AccountWardrobeResolvedTextures(
             WardrobeTextureResolver.SafeAddress(view.SkinAddress), null, false, null, null)).ToArray();
         if (index >= 0) resolved[index] = current;

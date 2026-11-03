@@ -18,8 +18,32 @@ internal sealed class ServerNbt(byte type, string name, byte[] payload)
         if (root.Type != 10 || offset != bytes.Length) throw new InvalidDataException("服务器 NBT 根节点无效。");
         return root;
     }
-    private static ServerNbt Read(byte[] bytes, ref int offset, bool named, int depth, ref int count, byte listType = 0)
+    internal static ServerNbt ParseDocument(byte[] bytes, CancellationToken token)
     {
+        int offset = 0, count = 0;
+        var root = Read(bytes, ref offset, true, 0, ref count, token: token);
+        if (offset != bytes.Length) throw new InvalidDataException("NBT 包含多余数据。");
+        return root;
+    }
+    internal string ScalarText()
+    {
+        var p = Payload.AsSpan();
+        if (Type == 8) { int offset = 0; return ReadString(Payload, ref offset); }
+        return Type switch
+        {
+            1 => unchecked((sbyte)p[0]).ToString(System.Globalization.CultureInfo.InvariantCulture),
+            2 => BinaryPrimitives.ReadInt16BigEndian(p).ToString(System.Globalization.CultureInfo.InvariantCulture),
+            3 => BinaryPrimitives.ReadInt32BigEndian(p).ToString(System.Globalization.CultureInfo.InvariantCulture),
+            4 => BinaryPrimitives.ReadInt64BigEndian(p).ToString(System.Globalization.CultureInfo.InvariantCulture),
+            5 => BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32BigEndian(p)).ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+            6 => BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64BigEndian(p)).ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+            7 or 11 or 12 => BinaryPrimitives.ReadInt32BigEndian(p).ToString(System.Globalization.CultureInfo.InvariantCulture) + " elements",
+            _ => Children.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) + " children"
+        };
+    }
+    private static ServerNbt Read(byte[] bytes, ref int offset, bool named, int depth, ref int count, byte listType = 0, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
         if (depth > 32 || ++count > 100000) throw new InvalidDataException("服务器 NBT 过于复杂。");
         byte type = named ? Take(bytes, ref offset, 1)[0] : listType;
         if (type is 0 or > 12) throw new InvalidDataException("服务器 NBT 类型无效。");
@@ -27,7 +51,7 @@ internal sealed class ServerNbt(byte type, string name, byte[] payload)
         var tag = new ServerNbt(type, name, []); int start = offset;
         if (type == 10)
         {
-            while (offset < bytes.Length && bytes[offset] != 0) tag.Children.Add(Read(bytes, ref offset, true, depth + 1, ref count));
+            while (offset < bytes.Length && bytes[offset] != 0) tag.Children.Add(Read(bytes, ref offset, true, depth + 1, ref count, token: token));
             if (Take(bytes, ref offset, 1)[0] != 0) throw new InvalidDataException("服务器 NBT 未结束。");
         }
         else if (type == 9)
@@ -35,7 +59,7 @@ internal sealed class ServerNbt(byte type, string name, byte[] payload)
             tag.ListType = Take(bytes, ref offset, 1)[0];
             int length = Length(bytes, ref offset);
             if (length > 100000 || tag.ListType > 12 || tag.ListType == 0 && length > 0) throw new InvalidDataException("服务器 NBT 列表无效。");
-            for (int i = 0; i < length; i++) tag.Children.Add(Read(bytes, ref offset, false, depth + 1, ref count, tag.ListType));
+            for (int i = 0; i < length; i++) tag.Children.Add(Read(bytes, ref offset, false, depth + 1, ref count, tag.ListType, token));
         }
         else
         {

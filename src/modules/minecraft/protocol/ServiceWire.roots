@@ -170,3 +170,10 @@ Nexa.Services.Capabilities.Contracts|Nexa.Services.Capabilities.MinecraftEnviron
 Nexa.Services.Capabilities.Contracts|Nexa.Services.Capabilities.MinecraftEnvironmentFacts
 Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceLocalDocumentsQuery
 Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceLocalDocumentsSnapshot
+
+Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.LanGameDiscoveryQuery
+Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.LanGameDiscoverySnapshot
+Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.ContentInspectionQuery
+Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.ContentInspectionSnapshot
+Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceLaunchScriptCommand
+Nexa.Services.Resources.Contracts|Nexa.Services.Resources.ResourceModpackInspectQuery

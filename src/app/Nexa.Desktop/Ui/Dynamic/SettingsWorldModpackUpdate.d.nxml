@@ -23,6 +23,7 @@
         </StackPanel>
         <Button Key="ModpackUpdate.PickOriginal" Content="选择原整合包" Command="ui.settings.management.action" Class="settings-catalog-action world-button-health" IsVisible="{data picker}" Enabled="{data enabled}" />
         <CheckBox Key="ModpackUpdate.Optional" Label="包含可选文件" Content="包含可选文件" Checked="{data optional}" Command="ui.settings.management.action" Class="world-category" Enabled="{data enabled}" />
+<Dynamic Key="ModpackUpdate.OptionalFiles" Class="world-rows" />
         <CheckBox Key="ModpackUpdate.Replace" Label="替换已修改的模组，保留原文件备份" Content="替换已修改的模组（原文件会备份）" Checked="{data replace}" Command="ui.settings.management.action" Class="world-category" Enabled="{data enabled}" />
         <Text Content="{data status}" Localize="false" Class="world-hint" />
         <StackPanel Orientation="{data actionDirection}" Class="world-stack">

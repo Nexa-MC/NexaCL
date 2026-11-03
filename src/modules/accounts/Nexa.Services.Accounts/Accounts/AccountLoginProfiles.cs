@@ -25,7 +25,7 @@ public static class AccountLoginProfiles
     public static LaunchProfile FromYggdrasil(YggdrasilAuthLoginResult login) => new()
     {
         Username = login.Username,
-        Kind = IsLittleSkinServer(login.AuthServer) ? LaunchProfileKind.LittleSkin : LaunchProfileKind.ThirdParty,
+        Kind = Nide8Account.ServerId(login.AuthServer) is not null ? LaunchProfileKind.Nide8 : IsLittleSkinServer(login.AuthServer) ? LaunchProfileKind.LittleSkin : LaunchProfileKind.ThirdParty,
         Uuid = login.Uuid,
         AuthServer = login.AuthServer,
         AccessToken = login.AccessToken,

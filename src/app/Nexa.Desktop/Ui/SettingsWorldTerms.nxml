@@ -83,4 +83,11 @@
 <Text Key="modpack.online.stale" Content="正在显示缓存资料，请刷新后再进行在线更新。" />
 <Text Key="modpack.online.latest" Content="未发现可直接下载的更新版本。" />
 <Text Key="modpack.online.preparing" Content="正在下载新版整合包并准备变更预览…" />
+<Text Key="inspect.unavailable" Content="内容查看服务不可用。" />
+<Text Key="inspect.failed" Content="无法查看此文件。" />
+<Text Key="inspect.reading" Content="正在读取…" />
+<Text Key="lan.failed" Content="局域网发现失败。" />
+<Text Key="lan.network-error" Content="局域网发现失败，请检查网络权限。" />
+<Text Key="lan.ready" Content="发现同一网络中开放的游戏" />
+<Text Key="lan.reading" Content="正在监听局域网广播…" />
 </StackPanel>

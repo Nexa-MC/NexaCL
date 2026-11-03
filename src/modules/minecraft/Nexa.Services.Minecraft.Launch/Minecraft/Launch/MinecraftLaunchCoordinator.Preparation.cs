@@ -14,6 +14,8 @@ namespace Nexa.Services.Minecraft.Launch;
 
 public sealed partial class MinecraftLaunchCoordinator
 {
+    private readonly OfflineTextureServer _offlineTextures = new();
+    public void Dispose() => _offlineTextures.Dispose();
 
     public ValueTask<XsrResult<MinecraftLaunchPreparation>> PrepareAsync(
         string instanceId,
@@ -207,12 +209,22 @@ public sealed partial class MinecraftLaunchCoordinator
                 loader,
                 identityResult.Value,
                 resolvedJava.Value, root, effectiveSettings);
-            if (identityResult.Value.AuthServer is { } authServer)
+            var identity = identityResult.Value;
+            if (identity.Mode == MinecraftLaunchIdentityMode.Offline && (identity.OfflineSkinPng.Length > 0 || identity.OfflineCapePng.Length > 0))
+            {
+                if (_authlib is null) throw new InvalidOperationException("Offline texture injection is unavailable.");
+                var local = _offlineTextures.Register(identity);
+                string injector = await _authlib.EnsureAsync(root, cancellationToken).ConfigureAwait(false);
+                request = request with { AuthlibServer = local.Server, AuthlibInjectorPath = injector, AuthlibPrefetchedMetadata = local.Metadata };
+            }
+            if (identity.AuthServer is { } authServer)
             {
                 if (_authlib is null) throw new InvalidOperationException("Authlib Injector preparation is not composed.");
                 operation?.Stage("prepare_authlib_injector");
-                string injector = await _authlib.EnsureAsync(root, cancellationToken).ConfigureAwait(false);
-                request = request with { AuthlibServer = authServer, AuthlibInjectorPath = injector };
+                string injector = identity.Nide8ServerId is { } serverId
+                    ? await _authlib.EnsureNide8Async(root, serverId, cancellationToken).ConfigureAwait(false)
+                    : await _authlib.EnsureAsync(root, cancellationToken).ConfigureAwait(false);
+                request = request with { AuthlibServer = identity.Nide8ServerId ?? authServer, AuthlibInjectorPath = injector };
             }
             operation?.Complete($"instance={instance.Id} memory_mb={request.MemoryMegabytes}");
             return XsrResult.Success(new MinecraftLaunchPreparation(

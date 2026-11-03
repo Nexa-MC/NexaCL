@@ -54,6 +54,8 @@ internal sealed class AccountFormController : IDisposable
     private readonly XsrUiEntityId _fallbackFocus;
     private bool _keyboardFocus, _disposed;
     private AccountLoginProvider _provider;
+    private XsrUiEntityId _offlineModelRoot;
+    private (bool Slim, bool Enabled)? _offlineModelProjection;
 
     public AccountFormController(XsrUiShell shell, DesktopUiIntentSink intents, XsrCommandRouter commands,
         XsrStateStore store, XsrUiEntityId accountBody, DesktopFeedbackService feedback,
@@ -127,19 +129,22 @@ internal sealed class AccountFormController : IDisposable
         else if (command == "ui.account.close") Close();
         else if (command == "ui.account.cancel")
             _ = Dispatch(AccountOnboardingRoutes.Cancel, new AccountLoginCancelCommand(Snapshot.Generation));
-        else if (command is "ui.account.microsoft" or "ui.account.littleskin" or "ui.account.third-party" or "ui.account.offline")
+        else if (command is "ui.account.microsoft" or "ui.account.littleskin" or "ui.account.third-party" or "ui.account.offline" or "ui.account.nide8")
         {
             _provider = command switch
             {
                 "ui.account.microsoft" => AccountLoginProvider.Microsoft,
                 "ui.account.littleskin" => AccountLoginProvider.LittleSkin,
                 "ui.account.third-party" => AccountLoginProvider.ThirdParty,
+                "ui.account.nide8" => AccountLoginProvider.Nide8,
                 _ => AccountLoginProvider.Offline,
             };
             Open(_provider is AccountLoginProvider.Microsoft or AccountLoginProvider.LittleSkin ? "device"
                 : _provider == AccountLoginProvider.Offline ? "offline" : "third-party");
             if (_provider is AccountLoginProvider.Microsoft or AccountLoginProvider.LittleSkin) Submit();
         }
+        else if (command == "ui.account.offline.appearance") Publish("appearance", !ReadBool("appearance"));
+        else if (command == "ui.account.offline.slim") Publish("slim", !ReadBool("slim"));
         else if (command == "ui.account.submit")
         {
             if (ReadBool("failed") && ReadText("mode") != "device") Open(ReadText("mode"));
@@ -160,11 +165,21 @@ internal sealed class AccountFormController : IDisposable
         }
     }
 
+    private void ProjectOfflineModel(bool slim, bool enabled)
+    {
+        if (_offlineModelProjection == (slim, enabled) && _shell.Tree.IsAlive(_offlineModelRoot)) return;
+        var fragment = DesktopMarkup.Dynamic("AccountFormOfflineModel.d.nxml", new Dictionary<string, string>
+        { ["slim"] = slim ? "true" : "false", ["enabled"] = enabled ? "true" : "false" }, _shell.Renderer.LocalizeText);
+        if (!_shell.Tree.IsAlive(_offlineModelRoot)) _offlineModelRoot = _dynamic.Append(_entities["OfflineModelSlot"], fragment);
+        else _dynamic.Reload(_offlineModelRoot, fragment);
+        _offlineModelProjection = (slim, enabled);
+    }
+
     private void Open(string mode)
     {
         if (Snapshot.IsBusy) _ = Dispatch(AccountOnboardingRoutes.Cancel, new AccountLoginCancelCommand(Snapshot.Generation));
         Interlocked.Increment(ref _viewEpoch);
-        ClearDrafts();
+        ClearDrafts(); Publish("slim", false); Publish("appearance", false);
         Publish("open", true); Publish("mode", mode);
         _seenCompletion = Snapshot.Generation;
         _pendingFocus = mode switch { "offline" => "OfflineName", "third-party" => "AuthServer", "import" => "ImportPath", "device" => "AccountBack", _ => "ProviderMicrosoft" };
@@ -191,7 +206,7 @@ internal sealed class AccountFormController : IDisposable
         }
         AccountLoginStartCommand command = new(_provider,
             _provider == AccountLoginProvider.Offline ? Draft("OfflineName") : Draft("AuthUsername"),
-            Draft("AuthServer"), Draft("AuthPassword"));
+            Draft("AuthServer"), Draft("AuthPassword"), Draft("OfflineUuid"), Draft("OfflineSkin"), Draft("OfflineCape"), ReadBool("slim"));
         _shell.Renderer.SetTextInputValue(_entities["AuthPassword"], string.Empty);
         _ = Dispatch(AccountOnboardingRoutes.Start, command);
     }
@@ -224,6 +239,7 @@ internal sealed class AccountFormController : IDisposable
         Publish("title", mode switch
         {
             "offline" => Copy("account.title.offline"),
+            "third-party" when _provider == AccountLoginProvider.Nide8 => ProductPresentationText.Term("feature.nide8", _shell.Renderer.LocalizeText),
             "third-party" => Copy("account.title.third-party"),
             "import" => Copy("account.title.import"),
             "device" when _provider == AccountLoginProvider.LittleSkin => Copy("account.title.littleskin"),
@@ -237,6 +253,7 @@ internal sealed class AccountFormController : IDisposable
         Publish("code", open && snapshot.Phase == AccountLoginPhase.AwaitingAuthorization);
         Publish("characters", open && snapshot.Phase == AccountLoginPhase.ChoosingProfile);
         Publish("submit", open && mode != "providers" && !snapshot.IsBusy);
+        ProjectOfflineModel(ReadBool("slim"), open && mode == "offline" && !snapshot.IsBusy);
         Publish("submit-label", mode == "import" ? Copy("account.submit.import") : mode == "offline" ? Copy("account.submit.offline") : mode == "device" ? Copy("account.submit.device") : Copy("account.submit.default"));
         if (open && mode == "device" && snapshot.Phase == AccountLoginPhase.AwaitingAuthorization
             && snapshot.Generation != _presentedChallengeGeneration)
@@ -382,7 +399,7 @@ internal sealed class AccountFormController : IDisposable
     }
     private void ClearDrafts()
     {
-        foreach (string key in new[] { "OfflineName", "AuthServer", "AuthUsername", "AuthPassword", "ImportPath" })
+        foreach (string key in new[] { "OfflineSkin", "OfflineCape", "OfflineUuid", "OfflineName", "AuthServer", "AuthUsername", "AuthPassword", "ImportPath" })
             _shell.Renderer.SetTextInputValue(_entities[key], string.Empty);
         _appliedPath = string.Empty;
         Publish("import-path", string.Empty);

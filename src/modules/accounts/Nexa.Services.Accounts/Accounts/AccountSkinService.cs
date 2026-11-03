@@ -92,6 +92,11 @@ public sealed class AccountSkinService(AccountService accounts, HttpClient clien
 
     private async Task<PngImage?> Resolve(LaunchProfileView profile, CancellationToken token)
     {
+        if (profile.Kind == LaunchProfileKind.Offline && accounts.GetProfile(profile.Index) is { IsSuccess: true, Value: { } offline } && offline.OfflineSkinPng.Length > 0)
+        {
+            if (offline.OfflineSkinPng.Length > 1_400_000) throw new InvalidDataException("离线皮肤超过大小限制。");
+            return PngImage.TryCreate(offline.OfflineSkinPng);
+        }
         string? source = profile.SkinAddress;
         if (string.IsNullOrWhiteSpace(source) || source.StartsWith("uuid:", StringComparison.OrdinalIgnoreCase))
         {

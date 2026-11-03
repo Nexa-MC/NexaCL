@@ -39,7 +39,7 @@ internal sealed partial class SettingsPageController
                 _exportFormat = options.Format; _exportCore = options.IncludeGameCore; _exportLibraries = options.IncludeLibraries; _exportAssets = options.IncludeAssets;
                 if (_exportPathDraft.Length > 0)
                 {
-                    _exportPathDraft = Path.ChangeExtension(_exportPathDraft, _exportFormat == InstanceExportFormat.Zip ? ".zip" : ".mrpack");
+                    _exportPathDraft = Path.ChangeExtension(_exportPathDraft, _exportFormat == InstanceExportFormat.Mrpack ? ".mrpack" : ".zip");
                     _shell.Renderer.SetTextInputValue(_exportPath, _exportPathDraft);
                 }
                 _exportCategories.Clear(); _exportCategories.UnionWith(options.Categories);

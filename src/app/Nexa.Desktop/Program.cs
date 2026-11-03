@@ -90,6 +90,17 @@ internal static partial class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        int runRoot = Array.IndexOf(args, "--run-root"), runInstance = Array.IndexOf(args, "--run-instance");
+        if (runRoot >= 0 || runInstance >= 0)
+        {
+            if (runRoot < 0 || runInstance < 0 || runRoot + 1 >= args.Length || runInstance + 1 >= args.Length) return 2;
+            try
+            {
+                string link = Nexa.Services.Minecraft.Management.InstanceLaunchScriptContract.Link(args[runRoot + 1], args[runInstance + 1]);
+                args = args.Where((_, i) => i != runRoot && i != runRoot + 1 && i != runInstance && i != runInstance + 1).Append(link).ToArray();
+            }
+            catch (ArgumentException) { return 2; }
+        }
         if (args is [Nexa.Platform.WindowsMemoryElevationPort.WorkerArgument, var memoryPipe, var memoryParent])
             return Nexa.Platform.WindowsMemoryElevationPort.RunWorkerAsync(memoryPipe, memoryParent).GetAwaiter().GetResult();
         if (args is ["--validate-resource-credentials"])
@@ -158,8 +169,8 @@ internal static partial class Program
             }
             if (!validation && (commandLine.SafeMode || SingleInstanceEnabled(folders.Root)))
             {
-                string? activationFile = destination == DesktopDestination.Extension
-                    ? args.First(argument => DesktopActivation.TryExtension(argument, out _, out _))
+                string? activationFile = destination is DesktopDestination.Extension or DesktopDestination.RunInstance
+                    ? args.First(argument => DesktopActivation.TryPayload(destination, argument, out _))
                     : args.FirstOrDefault(argument => DesktopActivation.TryFile(argument, out _));
                 instance = await DesktopSingleInstance.AcquireAsync(Path.GetDirectoryName(LauncherStorageLocation.LocatorPath)!, destination, activationFile, forwardActivation: !commandLine.SafeMode).ConfigureAwait(false);
                 if (instance is null)
@@ -854,7 +865,7 @@ internal static partial class Program
             minecraft.LaunchCoordinator!.WaitForFinalizationAsync, platformActions.PostToWindow, platformActions.RequestClose, feedback);
         platformActions.CloseRequested = () => installExit.CanClose() && launchExit.CanClose();
         await using var desktopIntegration = new DesktopIntegrationSession(shell, uiIntents, host.StateStore, platformActions, instance, args,
-            message => { host.Logging.Warn("Desktop", message); feedback.Warn(message); }, openFile: dropController.OpenFile, registerProtocol: !safeMode, notify: message => feedback.Info(message), openExtension: sidecarNxml.EnqueueExternal, openTheme: settingsPage.ImportThemeFile);
+            message => { host.Logging.Warn("Desktop", message); feedback.Warn(message); }, openFile: dropController.OpenFile, registerProtocol: !safeMode, notify: message => feedback.Info(message), openExtension: sidecarNxml.EnqueueExternal, openTheme: settingsPage.ImportThemeFile, openInstance: launchPage.RunInstance);
         using var commandPalette = new DesktopCommandPalette(shell, uiIntents, host.StateStore, platformActions,
             route => desktopIntegration.ActivateProtocol("nexacl://" + route.Id));
         using var gamepadEntry = new GamepadEntrySession(shell, uiIntents, host.StateStore, platformActions);
@@ -987,8 +998,8 @@ internal static partial class Program
         {
             if (DesktopActivation.TryParse(uri, out DesktopDestination requested))
             {
-                if (instance is not null) instance.QueueActivation(requested, requested == DesktopDestination.Extension ? uri : null);
-                else if (requested == DesktopDestination.Extension) { if (nativeFiles.Count < 16) nativeFiles.Add(uri); }
+                if (instance is not null) instance.QueueActivation(requested, requested is DesktopDestination.Extension or DesktopDestination.RunInstance ? uri : null);
+                else if (requested is DesktopDestination.Extension or DesktopDestination.RunInstance) { if (nativeFiles.Count < 16) nativeFiles.Add(uri); }
                 else _setupDestination = requested;
                 platform.RestoreWindow();
             }
@@ -1048,15 +1059,15 @@ internal static partial class Program
             {
                 while (instance.TryTakeActivation(out DesktopInstanceActivation requested))
                 {
-                    if (requested.Destination is not (DesktopDestination.Activate or DesktopDestination.Extension)) nextDestination = requested.Destination;
+                    if (requested.Destination is not (DesktopDestination.Activate or DesktopDestination.Extension or DesktopDestination.RunInstance)) nextDestination = requested.Destination;
                     if (requested.File is { } file && !args.Contains(file, StringComparer.Ordinal)) start.ArgumentList.Add(file);
                 }
             }
             foreach (string file in nativeFiles.Distinct(Nexa.Core.PathIdentity.Comparer))
                 if (!args.Contains(file, Nexa.Core.PathIdentity.Comparer)) start.ArgumentList.Add(file);
             foreach (string argument in args)
-                if (nextDestination == DesktopDestination.Activate || DesktopActivation.TryExtension(argument, out _, out _) || !argument.StartsWith("nexacl:", StringComparison.OrdinalIgnoreCase)) start.ArgumentList.Add(argument);
-            if (nextDestination != DesktopDestination.Activate) start.ArgumentList.Add("nexacl://" + nextDestination.ToString().ToLowerInvariant());
+                if (nextDestination == DesktopDestination.Activate || DesktopActivation.TryExtension(argument, out _, out _) || Nexa.Services.Minecraft.Management.InstanceLaunchScriptContract.TryLink(argument, out _, out _) || !argument.StartsWith("nexacl:", StringComparison.OrdinalIgnoreCase)) start.ArgumentList.Add(argument);
+            if (nextDestination is not (DesktopDestination.Activate or DesktopDestination.RunInstance)) start.ArgumentList.Add("nexacl://" + nextDestination.ToString().ToLowerInvariant());
             _restartAfterExit = () => System.Diagnostics.Process.Start(start)?.Dispose();
         }
         return result;

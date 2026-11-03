@@ -81,7 +81,7 @@ internal static partial class Program
             remediationHandlers: [remediationHandler]);
         FoundationRuntime runtime = FoundationRuntimeComposer.Compose(host, observer);
 
-        AssertEqual(35, runtime.Commands.Count);
+        AssertEqual(36, runtime.Commands.Count);
         foreach (var route in new[]
         {
             SettingsLaunchProfileContract.Save, SettingsLaunchProfileContract.Delete, SettingsLaunchProfileContract.Select,
@@ -91,7 +91,8 @@ internal static partial class Program
             Nexa.Services.Minecraft.Management.InstanceWorldContract.Copy, Nexa.Services.Minecraft.Management.InstanceWorldContract.SetLock,
             Nexa.Services.Minecraft.Management.InstanceWorldContract.SetDataPackEnabled, Nexa.Services.Minecraft.Management.InstanceWorldContract.ImportDataPack,
             Nexa.Services.Minecraft.Management.InstanceWorldContract.RemoveDataPack, Nexa.Services.Minecraft.Management.InstanceWorldContract.RestoreDataPack,
-            Nexa.Services.Minecraft.Management.InstanceFileWorkspaceContract.Save
+            Nexa.Services.Minecraft.Management.InstanceFileWorkspaceContract.Save,
+            Nexa.Services.Minecraft.Management.InstanceLaunchScriptContract.Export
         }) AssertTrue(runtime.Commands.TryResolve(route, out _));
         AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Java.JavaRuntimeInventoryContract.Manage, out _));
         AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Management.InstanceServerListContract.Save, out _));
@@ -100,10 +101,11 @@ internal static partial class Program
         AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Management.InstanceManagementContract.RemoveMod, out _));
         AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Management.InstanceRecoveryContract.Restore, out _));
         AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Management.InstanceRecoveryContract.Recover, out _));
-        AssertEqual(31, runtime.Queries.Count);
+        AssertEqual(33, runtime.Queries.Count);
         foreach (var route in new[]
         {
             SettingsLaunchProfileContract.Query, Nexa.Services.Minecraft.Management.InstanceIdentityContract.Query,
+            Nexa.Services.Minecraft.Management.LanGameDiscoveryContract.Discover, Nexa.Services.Minecraft.Management.ContentInspectionContract.Read,
             Nexa.Services.Minecraft.Management.InstanceContentIntegrityContract.Read, Nexa.Services.Minecraft.Management.InstanceWorldContract.Read,
             Nexa.Services.Minecraft.Management.InstanceWorldHealthContract.Read, Nexa.Services.Minecraft.Management.InstanceScreenshotContract.Read,
             Nexa.Services.Minecraft.Management.InstanceFileWorkspaceContract.List, Nexa.Services.Minecraft.Management.InstanceFileWorkspaceContract.Read,

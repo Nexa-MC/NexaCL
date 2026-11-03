@@ -9,13 +9,15 @@ public sealed record InstanceModpackExportPreview(string InstanceDirectory, IRea
     public IReadOnlyList<InstanceExportFile> Files { get; init; } = [];
 }
 public sealed record InstanceModpackExportQuery(string InstanceDirectory);
-public enum InstanceExportFormat { Mrpack, Zip }
+public enum InstanceExportFormat { Mrpack, Zip, CurseForge, Mcbbs, MultiMC }
 public sealed record InstanceExportOptions(string Name, string Version, string Summary, IReadOnlyList<string> Categories, IReadOnlyList<string> ExcludedPaths)
 {
     public InstanceExportFormat Format { get; init; }
     public bool IncludeGameCore { get; init; }
     public bool IncludeLibraries { get; init; }
     public bool IncludeAssets { get; init; }
+    public string LauncherDirectory { get; init; } = "";
+    public string JavaDirectory { get; init; } = "";
 }
 public sealed record InstanceExportOptionsQuery(string Path);
 public sealed record InstanceExportOptionsSave(string Path, InstanceExportOptions Options);
@@ -28,6 +30,8 @@ public sealed record InstanceModpackExportCommand(string InstanceDirectory, stri
     public bool IncludeGameCore { get; init; }
     public bool IncludeLibraries { get; init; }
     public bool IncludeAssets { get; init; }
+    public string LauncherDirectory { get; init; } = "";
+    public string JavaDirectory { get; init; } = "";
 }
 public static class InstanceModpackExportContract
 {

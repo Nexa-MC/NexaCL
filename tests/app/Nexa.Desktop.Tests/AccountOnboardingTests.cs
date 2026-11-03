@@ -52,10 +52,12 @@ internal static partial class Program
             AssertEqual("离线档案", FindByKey(fixture.Shell, scene, "AccountHeader").Text);
             AssertEqual(FindByKey(fixture.Shell, scene, "OfflineName").Entity, fixture.Shell.Renderer.Focused);
             AccountFill(fixture, "OfflineName", "New_Player");
+            AccountFill(fixture, "OfflineUuid", "00112233-4455-6677-8899-aabbccddeeff");
             AccountClick(fixture, "FormSubmit");
             fixture.Onboarding.Service.WhenIdle.GetAwaiter().GetResult();
             AssertTrue(AccountSnapshot(fixture).Message.Contains(RegionalPolicy.PurchaseReminder, StringComparison.Ordinal));
             scene = fixture.Shell.Render(AccountTestSize);
+            AssertEqual("00112233445566778899aabbccddeeff", fixture.Service.GetViews().First(p => p.Username == "New_Player").Uuid);
             AssertEqual("New_Player", FindByKey(fixture.Shell, scene, "AccountName").Text);
             AssertEqual("账户", FindByKey(fixture.Shell, scene, "AccountHeader").Text);
             AssertEqual(FindByKey(fixture.Shell, scene, "AccountAdd").Entity, fixture.Shell.Renderer.Focused);
@@ -148,6 +150,27 @@ internal static partial class Program
             "packaged-ls");
         AssertTrue(ReferenceEquals(runtimeLittleSkin, overridden.LittleSkin));
         AssertEqual("runtime-ms", overridden.MicrosoftClientId);
+    }
+
+    private static void Nide8OnboardingUsesDedicatedServerIdAndKeepsCredentialsPrivate()
+    {
+        string id = new('a', 32);
+        AccountHttp handler = new();
+        handler.Serve("https://auth.mc-user.com:233/" + id + "/authserver/authenticate",
+            "{\"accessToken\":\"PRIVATE-NIDE\",\"clientToken\":\"CLIENT\",\"selectedProfile\":{\"id\":\"00112233445566778899aabbccddeeff\",\"name\":\"NidePlayer\"}}");
+        using HttpClient client = new(handler);
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]), accountHttp: client);
+        using var language = new DesktopLanguageSession(fixture.Shell, fixture.Store, "en-US");
+        SeedFixtureOwner(fixture);
+        AccountClick(fixture, "AccountAdd"); AccountClick(fixture, "ProviderNide8");
+        AccountFill(fixture, "AuthServer", id); AccountFill(fixture, "AuthUsername", "player"); AccountFill(fixture, "AuthPassword", "PRIVATE-PASSWORD");
+        AccountClick(fixture, "FormSubmit"); fixture.Onboarding.Service.WhenIdle.GetAwaiter().GetResult();
+        AssertEqual(AccountLoginPhase.Completed, AccountSnapshot(fixture).Phase);
+        var profile = fixture.Service.GetViews().Single(p => p.Username == "NidePlayer");
+        AssertEqual(LaunchProfileKind.Nide8, profile.Kind); AssertEqual("https://auth.mc-user.com:233/" + id, profile.AuthServer);
+        fixture.Shell.Render(AccountTestSize);
+        AssertEqual("Nide8 Unified Pass", fixture.Store.Read<string>(fixture.Store.Resolve(LaunchPageState.ProfileKindKey)).Value);
+        AssertSceneHides(fixture, "PRIVATE-PASSWORD", "PRIVATE-NIDE");
     }
 
     private static void ThirdPartyOnboardingMasksPasswordsAndUsesConfiguredServer()

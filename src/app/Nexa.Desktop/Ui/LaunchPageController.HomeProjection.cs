@@ -99,7 +99,7 @@ internal sealed partial class LaunchPageController
     private void ReloadWidgetDot(string name, double activation) => ReloadHome(_homeWidgetDots[name],
         "LaunchInstallHomeWidget" + name + ".d.nxml", WidgetDotData(activation));
 
-    private string HomeProfileKind(LaunchProfileKind kind) => HomeCopy(kind switch
+    private string HomeProfileKind(LaunchProfileKind kind) => kind == LaunchProfileKind.Nide8 ? ProductPresentationText.Term("feature.nide8", _shell.Renderer.LocalizeText) : HomeCopy(kind switch
     {
         LaunchProfileKind.Microsoft => "account.microsoft",
         LaunchProfileKind.ThirdParty => "account.third-party",

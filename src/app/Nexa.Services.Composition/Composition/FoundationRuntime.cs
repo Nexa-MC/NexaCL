@@ -107,6 +107,8 @@ public static class FoundationRuntimeComposer
 #else
         var recovery = new InstanceRecoveryService(host.SettingsPolicy, host.StateStore, host.Logging);
         var exporter = new InstanceModpackExportService(host.Tasks, host.StateStore);
+        commands.Register<InstanceLaunchScriptCommand>(InstanceLaunchScriptContract.Export,
+            async (command, token) => await InstanceLaunchScriptService.ExportAsync(command, token).ConfigureAwait(false));
         commands.Register<InstanceExportOptionsSave>(InstanceModpackExportContract.SaveOptions,
             async (command, token) => await InstanceModpackExportService.SaveOptionsAsync(command, token).ConfigureAwait(false));
         commands.Register<InstanceModpackExportCommand>(InstanceModpackExportContract.Export,
@@ -206,6 +208,10 @@ public static class FoundationRuntimeComposer
             async (query, token) => Nexa.Xsr.XsrResult.Success(await InstanceModpackExportService.PreviewAsync(query, token).ConfigureAwait(false)));
         queries.Register<InstanceExportOptionsQuery, InstanceExportOptions>(InstanceModpackExportContract.LoadOptions,
             async (query, token) => Nexa.Xsr.XsrResult.Success(await InstanceModpackExportService.LoadOptionsAsync(query, token).ConfigureAwait(false)));
+        queries.Register<ContentInspectionQuery, ContentInspectionSnapshot>(ContentInspectionContract.Read,
+            async (query, token) => Nexa.Xsr.XsrResult.Success(await ContentInspectionService.ReadAsync(query, token).ConfigureAwait(false)));
+        queries.Register<LanGameDiscoveryQuery, LanGameDiscoverySnapshot>(LanGameDiscoveryContract.Discover,
+            async (query, token) => Nexa.Xsr.XsrResult.Success(await LanGameDiscoveryService.DiscoverAsync(query, token).ConfigureAwait(false)));
         queries.Register<InstanceServerListQuery, InstanceServerList>(InstanceServerListContract.Read,
             async (query, token) => Nexa.Xsr.XsrResult.Success(await InstanceServerListService.ReadAsync(query, token).ConfigureAwait(false)));
         queries.Register<InstanceServerStatusQuery, InstanceServerStatus>(InstanceServerListContract.Status,

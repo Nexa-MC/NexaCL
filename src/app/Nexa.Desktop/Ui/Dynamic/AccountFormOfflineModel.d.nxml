@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <CheckBox Key="OfflineSlim" Label="细胳膊模型（Slim）" Content="细胳膊模型（Slim）" Checked="{data slim}" Enabled="{data enabled}" Command="ui.account.offline.slim" Class="account-base" />
+</nxml-dynamic>

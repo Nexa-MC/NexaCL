@@ -25,3 +25,35 @@ Windows 内存整理由 Common 服务拥有调度、阈值、冷却与状态，P
 内存整理不结束或暂停进程，不调用无法排除游戏的全局工作集／待机缓存清理。保护已登记的游戏 PID 及其后代、Java／Bedrock 进程、前台应用和系统关键进程；使用进程创建时间及持有句柄防止 PID 复用。无法确定身份或没有权限的进程跳过。工作集减少量与系统可用内存变化分别记录，均不表示释放了相同数量的私有提交。自动模式默认关闭、默认阈值 80%（可调 50–95%）、每 5 秒采样，触发后至少冷却 2 分钟；手动与自动任务互斥，退出时取消并等待工作结束。
 
 深度清理默认关闭。开启后每次清理由独立的同版本启动器 worker 通过 UAC 请求管理员权限；该 worker 在常规启动、窗口与业务初始化之前分流。一次性命名管道只允许创建用户及本机管理员连接，并校验双方 PID，仅接受有界游戏排除 PID 集合并返回计数与内存测量，不接受程序路径、脚本或任意系统命令。游戏排除在提权后仍然生效；父进程退出、断管或超时取消后续清理。取消 UAC 或权限失败不报告成功，也不提权主 UI。worker 完成本次清理即退出，不安装常驻服务。
+
+## Launcher feature parity additions
+
+The current implementation scope and acceptance cases are tracked in
+[launcher-feature-parity.md](launcher-feature-parity.md). Minecraft.Install owns
+archive format normalization and per-file optional selection; Minecraft.Management
+owns bounded LAN discovery, NBT/content inspection and portable export preparation.
+Minecraft.Launch owns executable launch planning. Accounts owns offline identity,
+offline texture data and Nide8 authentication facts; Desktop owns explicit user
+consent, file pickers, tool views and renderer state projection. Native clients and
+Composition expose the same typed contracts in managed and NativeAOT deployments.
+New native operations use unused numeric IDs and generated binary DTO codecs; the
+private service schema fingerprint changes with the coherent module build. Existing
+operation IDs and public Sidecar protocol/SDK contracts remain unchanged.
+
+LAN discovery is an explicit, cancellable, bounded multicast listen for Minecraft
+LAN advertisements; it does not create an Internet lobby or tunnel. Archive/NBT
+inspection uses entry, byte, recursion and text budgets and treats payloads as data.
+Exports stage output before atomic publication and never include account/session
+stores. Launcher-mediated launch scripts refresh identity through the launcher
+rather than embedding account tokens. Embedded launcher/runtime selection must be
+explicit, bounded and reproducible; failures cannot produce a successful export.
+
+Online modpack inspection uses the existing Resources owner before installation;
+the confirmed archive SHA-256 and optional-file IDs travel in typed private
+contracts and are rechecked for installation and retry. Offline texture bytes use
+bounded binary fields rather than protocol strings. Accounts copies these bytes
+on ingress/egress; Minecraft.Launch owns the random-path, loopback-only texture
+endpoint, releases it with its runtime, and never redirects online identities to
+that endpoint. The generic inspection tool is read-only and the instance launch
+link preserves its target through the existing single-instance and first-run
+handoffs.

@@ -24,7 +24,7 @@ internal sealed partial class LaunchPageController
         _launchRequest = StartLaunchAsync(Path.GetFileName(instanceDirectory), _launchPage, address);
     }
 
-    private async Task StartLaunchAsync(string instanceId, XsrUiEntityId source, string? serverAddress = null)
+    private async Task StartLaunchAsync(string instanceId, XsrUiEntityId source, string? serverAddress = null, string? rootDirectory = null)
     {
         if (_store.ReadAppliedValue(_libraryId) is MinecraftLibrarySnapshot { IsProvisional: true })
         {
@@ -62,7 +62,7 @@ internal sealed partial class LaunchPageController
         XsrCommandDispatch dispatch = _minecraft.Commands.Dispatch(
             commandId,
             new MinecraftStartCommand(instanceId, selected)
-            { MinecraftRootDirectory = ReadCell(LaunchPageState.InstanceDirectoryKey), ServerAddress = serverAddress },
+            { MinecraftRootDirectory = rootDirectory ?? ReadCell(LaunchPageState.InstanceDirectoryKey), ServerAddress = serverAddress },
             cancellationToken: _lifetimeCancellation.Token);
         XsrResult result = await dispatch.Completion.ConfigureAwait(false);
         if (_disposed)

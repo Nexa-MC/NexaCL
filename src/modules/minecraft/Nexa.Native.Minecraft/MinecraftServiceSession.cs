@@ -140,10 +140,10 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
             return [];
         }
         if (_instances is null) throw new InvalidOperationException("Minecraft service has not initialized.");
-        if (operation is >= MinecraftServiceProtocol.ManageInstanceExportOptionsSave and <= MinecraftServiceProtocol.ManageInstanceWorldSnapshotVerifyQuery)
+        if (operation is >= MinecraftServiceProtocol.ManageInstanceExportOptionsSave and <= MinecraftServiceProtocol.ManageInstanceWorldSnapshotVerifyQuery or MinecraftServiceProtocol.LanDiscover or MinecraftServiceProtocol.ContentInspect or MinecraftServiceProtocol.ScriptExport)
             return await ExecuteManagementAsync(operation, reader, token).ConfigureAwait(false);
         if (operation == MinecraftServiceProtocol.ResourceConfigure) return await ConfigureResourcesAsync(reader, token).ConfigureAwait(false);
-        if (operation is >= MinecraftServiceProtocol.ResourceResourceNetworkPolicyQuery and <= MinecraftServiceProtocol.ResourceResourceModpackUpdateCommand)
+        if (operation is >= MinecraftServiceProtocol.ResourceResourceNetworkPolicyQuery and <= MinecraftServiceProtocol.ResourceResourceModpackUpdateCommand or MinecraftServiceProtocol.ResourceInspectModpack)
             return await ExecuteResourceOperationAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.LibraryConfigure and <= MinecraftServiceProtocol.LibraryRememberRenamed) return await ExecuteLibraryAsync(operation, reader, token).ConfigureAwait(false);
         if (operation == MinecraftServiceProtocol.EnvironmentFacts) return await ReadEnvironmentFactsAsync(reader, token).ConfigureAwait(false);
@@ -305,6 +305,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         await _initialization.WaitAsync().ConfigureAwait(false);
         _initialization.Release();
         _launch?.CancelActiveLaunch();
+        _launch?.Dispose();
         _catalog?.Dispose();
         await RetireInstallationAsync().ConfigureAwait(false);
         await _endpoint.StopAsync().ConfigureAwait(false);

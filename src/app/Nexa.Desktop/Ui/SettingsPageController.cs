@@ -244,7 +244,7 @@ internal sealed partial class SettingsPageController : IDisposable
         UpdateWorldSnapshots(); UpdateIdentity();
         UpdateOnlineContent(); UpdateContentIntegrity();
         UpdateModRemovalPreview();
-        UpdateContentGraph(); UpdateServers(); UpdateExport();
+        UpdateContentGraph(); UpdateServers(); UpdateExport(); UpdateInspection();
         UpdateSettingsTransfer(); UpdateJavaInventory();
         UpdateProxyPreferences(); UpdateDiskLogActions(); UpdateDiagnosticExportControls();
         UpdateThemeSettings();
@@ -526,6 +526,6 @@ internal sealed partial class SettingsPageController : IDisposable
         RetireThemeScope();
         CancelContentIntegrity();
         RetireHardwareAdvice(); RetireDeveloperDiagnostics(); RetireRuntimeDiagnostics(); RetireRuntimeTrace(); CancelAdvancedWorkspace();
-        _disposed = true; CancelIdentityRead(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelDiagnosticExport(); CancelStoragePreferences(); CancelContentWorkspace(); CancelLauncherMigration(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); _updateStop.Cancel(); _updateCheckStop?.Dispose(); _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame;
+        _disposed = true; RetireInspection(); CancelIdentityRead(); CancelSettingsTransfer(); CancelJavaInventory(); CancelDiskLogExport(); CancelDiagnosticExport(); CancelStoragePreferences(); CancelContentWorkspace(); CancelLauncherMigration(); CancelManagementRead(); CancelOfflineReadiness(); CancelWorldSnapshots(); CancelOnlineContent(); CancelModRemovalPreview(); _updateStop.Cancel(); _updateCheckStop?.Dispose(); _intents.IntentEmitted -= OnIntent; _shell.Renderer.FramePreparing -= OnFrame;
     }
 }

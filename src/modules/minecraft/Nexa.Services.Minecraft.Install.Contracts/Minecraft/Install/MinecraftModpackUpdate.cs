@@ -3,7 +3,10 @@ using Nexa.Xsr;
 namespace Nexa.Services.Minecraft.Install;
 
 public sealed record MinecraftModpackUpdateQuery(string InstanceDirectory, string ArchivePath,
-    string? OriginalArchivePath = null, bool IncludeOptional = false, bool ReplaceModifiedMods = false);
+    string? OriginalArchivePath = null, bool IncludeOptional = false, bool ReplaceModifiedMods = false)
+{
+    public IReadOnlyList<string> ExcludedOptionalFiles { get; init; } = [];
+}
 public sealed record MinecraftModpackUpdatePreview(MinecraftModpackUpdateQuery Request, MinecraftModpackPreview Pack,
     string Revision, IReadOnlyList<string> Added, IReadOnlyList<string> Updated, IReadOnlyList<string> Removed,
     IReadOnlyList<string> Preserved, IReadOnlyList<string> Conflicts);

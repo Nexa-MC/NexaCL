@@ -5,6 +5,7 @@ namespace Nexa.Services.Resources;
 
 public static class ResourceModpackContract
 {
+    public static readonly XsrSemanticId Inspect = XsrSemanticId.Parse("resources.modpack.inspect");
     public static readonly XsrSemanticId Install = XsrSemanticId.Parse("resources.modpack.install");
     public static readonly XsrSemanticId Online = XsrSemanticId.Parse("resources.modpack.online");
     public static readonly XsrSemanticId Preview = XsrSemanticId.Parse("resources.modpack.preview");
@@ -20,9 +21,19 @@ public sealed record ResourceModpackOnline(ResourceModpackOnlineQuery Request, s
     public string? OriginalArchivePath { get; init; }
 }
 public sealed record ResourceModpackPreviewQuery(ResourceModpackOnlineQuery Instance, ResourceReference Source,
-    string VersionId, string InstalledArchiveSha256, bool IncludeOptional = false, bool ReplaceModifiedMods = false);
+    string VersionId, string InstalledArchiveSha256, bool IncludeOptional = false, bool ReplaceModifiedMods = false)
+{
+    public IReadOnlyList<string> ExcludedOptionalFiles { get; init; } = [];
+}
 public sealed record ResourceModpackPreview(ResourceModpackPreviewQuery Request, ResourceVersion Version,
     MinecraftModpackUpdatePreview Installation);
 public sealed record ResourceModpackUpdateCommand(ResourceModpackPreview Preview);
 
-public sealed record ResourceModpackInstallCommand(ResourceReference Source, string VersionId, string RootDirectory, bool MirrorFirst = true);
+public sealed record ResourceModpackInspectQuery(ResourceReference Source, string VersionId, bool MirrorFirst = true);
+
+public sealed record ResourceModpackInstallCommand(ResourceReference Source, string VersionId, string RootDirectory, bool MirrorFirst = true)
+{
+    public bool IncludeOptional { get; init; }
+    public IReadOnlyList<string> ExcludedOptionalFiles { get; init; } = [];
+    public string? ExpectedArchiveSha256 { get; init; }
+}

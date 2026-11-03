@@ -19,7 +19,7 @@ public sealed partial class InstanceModpackExportService
         var options = new InstanceExportOptions(root["name"]!.GetValue<string>(), root["version"]!.GetValue<string>(), root["summary"]!.GetValue<string>(),
             root["categories"]!.AsArray().Select(item => item!.GetValue<string>()).ToArray(), root["excluded"]!.AsArray().Select(item => item!.GetValue<string>()).ToArray())
         {
-            Format = root["format"]?.GetValue<string>() switch { null or "mrpack" => InstanceExportFormat.Mrpack, "zip" => InstanceExportFormat.Zip, _ => throw new InvalidDataException("导出格式无效。") },
+            Format = root["format"]?.GetValue<string>() switch { null or "mrpack" => InstanceExportFormat.Mrpack, "zip" => InstanceExportFormat.Zip, "curseforge" => InstanceExportFormat.CurseForge, "mcbbs" => InstanceExportFormat.Mcbbs, "multimc" => InstanceExportFormat.MultiMC, _ => throw new InvalidDataException("导出格式无效。") },
             IncludeGameCore = root["gameCore"]?.GetValue<bool>() ?? false,
             IncludeLibraries = root["libraries"]?.GetValue<bool>() ?? false,
             IncludeAssets = root["assets"]?.GetValue<bool>() ?? false
@@ -34,7 +34,7 @@ public sealed partial class InstanceModpackExportService
         var root = new JsonObject
         {
             ["schema"] = 1,
-            ["format"] = options.Format == InstanceExportFormat.Zip ? "zip" : "mrpack",
+            ["format"] = options.Format.ToString().ToLowerInvariant(),
             ["gameCore"] = options.IncludeGameCore,
             ["libraries"] = options.IncludeLibraries,
             ["assets"] = options.IncludeAssets,

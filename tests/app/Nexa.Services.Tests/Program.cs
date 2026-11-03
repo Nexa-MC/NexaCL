@@ -4,6 +4,12 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("parity legacy archives and optional file installation", ParityLegacyArchivesAndOptionalFiles),
+        ("parity export formats scripts and target preservation", ParityExportFormatsAndScripts),
+        ("parity portable bundle excludes accounts and includes runtimes", ParityPortableBundleExcludesAccountsAndIncludesRuntime),
+        ("parity content inspection compressed NBT and bounds", ParityContentInspectionAndNbt),
+        ("parity offline texture server and verified Nide8 agent", ParityOfflineTexturesAndNide8Agent),
+        ("parity LAN advertisements and Nide8 contracts", ParityLanAndNide8Contracts),
         ..RegisterFoundationAndContent(),
         ("memory cleanup threshold cooldown and manual requests", Async(MemoryThresholdCooldownAndManualCleanup)),
         ("memory cleanup protects games descendants and late roots", Async(MemoryCleanupProtectsGamesAndLateRoots)),

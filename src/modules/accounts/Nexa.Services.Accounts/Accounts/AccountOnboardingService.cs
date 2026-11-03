@@ -146,10 +146,10 @@ public sealed class AccountOnboardingService : IDisposable
                     token => EnsureOwnershipAsync(operation, token)).ConfigureAwait(false);
             LaunchProfile profile = command.Provider switch
             {
-                AccountLoginProvider.Offline => CreateOffline(command.Username),
+                AccountLoginProvider.Offline => CreateOffline(command),
                 AccountLoginProvider.Microsoft => await LoginMicrosoft(operation).ConfigureAwait(false),
                 AccountLoginProvider.LittleSkin => await LoginLittleSkin(operation).ConfigureAwait(false),
-                AccountLoginProvider.ThirdParty => await PrepareAsync(operation, "正在连接第三方认证服务器…",
+                AccountLoginProvider.ThirdParty or AccountLoginProvider.Nide8 => await PrepareAsync(operation, "正在连接第三方认证服务器…",
                     token => LoginThirdParty(command, token)).ConfigureAwait(false),
                 _ => throw new OnboardingFailure("不支持的账户类型。", "accounts.unsupported_provider"),
             };
@@ -198,12 +198,41 @@ public sealed class AccountOnboardingService : IDisposable
         finally { Release(operation); }
     }
 
-    private static LaunchProfile CreateOffline(string username)
+    private static LaunchProfile CreateOffline(AccountLoginStartCommand command)
     {
-        string name = username.Trim();
+        string name = command.Username.Trim(), uuid = command.OfflineUuid;
         if (name.Length is < 1 or > 16 || name.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
             throw new OnboardingFailure("离线名称需为 1–16 位英文字母、数字或下划线。", "accounts.invalid_offline_name");
-        return new LaunchProfile { Username = name, Kind = LaunchProfileKind.Offline, Uuid = MinecraftOfflineIdentity.UuidFromName(name) };
+        string resolved = MinecraftOfflineIdentity.UuidFromName(name);
+        if (!string.IsNullOrWhiteSpace(uuid))
+        {
+            if (!(Guid.TryParseExact(uuid.Trim(), "N", out var parsed) || Guid.TryParseExact(uuid.Trim(), "D", out parsed)) || parsed == Guid.Empty)
+                throw new OnboardingFailure("自定义 UUID 需为 32 位十六进制或标准连字符格式。", "accounts.invalid_offline_uuid");
+            resolved = parsed.ToString("N");
+        }
+        return new LaunchProfile
+        {
+            Username = name,
+            Kind = LaunchProfileKind.Offline,
+            Uuid = resolved,
+            OfflineSkinPng = ReadOfflineTexture(command.OfflineSkinPath, false, command.OfflineSlim),
+            OfflineCapePng = ReadOfflineTexture(command.OfflineCapePath, true, false),
+            OfflineSlim = command.OfflineSlim
+        };
+    }
+
+    private static byte[] ReadOfflineTexture(string path, bool cape, bool slim)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return [];
+        if (!Path.IsPathFullyQualified(path) || new FileInfo(path).Length > 1_048_576) throw new InvalidDataException("离线材质必须是本地 PNG 文件，且小于 1 MiB。");
+        byte[] bytes = File.ReadAllBytes(path);
+        if (cape)
+        {
+            var image = Nexa.Core.Media.PngImage.TryCreate(bytes);
+            if (image is null || image.Width is < 64 or > 512 || image.Width != image.Height * 2 || image.Width % 64 != 0) throw new InvalidDataException("披风必须为 64×32（或整数倍）的 PNG。");
+        }
+        else _ = WardrobeSkinValidator.Validate(bytes, slim);
+        return bytes;
     }
 
     private async Task<LaunchProfile> LoginMicrosoft(Operation operation)
@@ -298,7 +327,7 @@ public sealed class AccountOnboardingService : IDisposable
 
     private async Task<LaunchProfile> LoginThirdParty(AccountLoginStartCommand command, CancellationToken cancellationToken)
     {
-        string server = command.Server.Trim();
+        string server = command.Provider == AccountLoginProvider.Nide8 ? Nide8Account.ServerFromId(command.Server.Trim()) : command.Server.Trim();
         if (!server.Contains("://", StringComparison.Ordinal)) server = "https://" + server;
         if (!Uri.TryCreate(server, UriKind.Absolute, out Uri? uri) || uri.UserInfo.Length > 0
             || (uri.Scheme != Uri.UriSchemeHttps && !(uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback)))

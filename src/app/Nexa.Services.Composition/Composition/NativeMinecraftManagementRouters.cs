@@ -8,6 +8,7 @@ internal static class NativeMinecraftManagementRouters
 {
     internal static void Register(XsrCommandRouterBuilder commands, XsrQueryRouterBuilder queries, NativeMinecraftClient client)
     {
+        commands.Register<InstanceLaunchScriptCommand>(InstanceLaunchScriptContract.Export, client.ExportLaunchScriptAsync);
         commands.Register<InstanceExportOptionsSave>(InstanceModpackExportContract.SaveOptions, client.DispatchInstanceExportOptionsSaveAsync);
         commands.Register<InstanceModpackExportCommand>(InstanceModpackExportContract.Export, client.DispatchInstanceModpackExportCommandAsync);
         commands.Register<InstanceServerListSaveCommand>(InstanceServerListContract.Save, client.DispatchInstanceServerListSaveCommandAsync);
@@ -38,6 +39,8 @@ internal static class NativeMinecraftManagementRouters
         queries.Register<InstanceIdentityQuery, InstanceIdentitySnapshot>(InstanceIdentityContract.Query, client.QueryInstanceIdentityQueryAsync);
         queries.Register<InstanceModpackExportQuery, InstanceModpackExportPreview>(InstanceModpackExportContract.Preview, client.QueryInstanceModpackExportQueryAsync);
         queries.Register<InstanceExportOptionsQuery, InstanceExportOptions>(InstanceModpackExportContract.LoadOptions, client.QueryInstanceExportOptionsQueryAsync);
+        queries.Register<ContentInspectionQuery, ContentInspectionSnapshot>(ContentInspectionContract.Read, client.InspectContentAsync);
+        queries.Register<LanGameDiscoveryQuery, LanGameDiscoverySnapshot>(LanGameDiscoveryContract.Discover, client.DiscoverLanGamesAsync);
         queries.Register<InstanceServerListQuery, InstanceServerList>(InstanceServerListContract.Read, client.QueryInstanceServerListQueryAsync);
         queries.Register<InstanceServerStatusQuery, InstanceServerStatus>(InstanceServerListContract.Status, client.QueryInstanceServerStatusQueryAsync);
         queries.Register<InstanceModRemovalQuery, InstanceModRemovalPreview>(InstanceManagementContract.ModRemovalPreview, client.QueryInstanceModRemovalQueryAsync);

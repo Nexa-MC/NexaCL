@@ -32,6 +32,7 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
     private readonly Action<string>? _openFile;
     private readonly Action<string>? _openTheme;
     private readonly Action<string>? _openExtension;
+    private readonly Action<string, string>? _openInstance;
     private readonly Queue<DesktopInstanceActivation> _pendingFiles = new(16);
     private readonly HashSet<XsrStateId> _keys = [];
     private readonly CancellationTokenSource _stop = new();
@@ -45,10 +46,10 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
 
     internal DesktopIntegrationSession(XsrUiShell shell, DesktopUiIntentSink intents, XsrStateStore state,
         AvaloniaUiPlatformActions platform, DesktopSingleInstance? instance, string[] args, Action<string> report,
-        Action<string>? openFile = null, bool registerProtocol = true, Action<string>? notify = null, Action<string>? openExtension = null, Action<string>? openTheme = null)
+        Action<string>? openFile = null, bool registerProtocol = true, Action<string>? notify = null, Action<string>? openExtension = null, Action<string>? openTheme = null, Action<string, string>? openInstance = null)
     {
         _state = state; _platform = platform; _instance = instance; _report = report; _intents = intents; _shell = shell;
-        _openExtension = openExtension; _openFile = openFile; _openTheme = openTheme; _notify = notify ?? report;
+        _openInstance = openInstance; _openExtension = openExtension; _openFile = openFile; _openTheme = openTheme; _notify = notify ?? report;
         shell.Renderer.FramePreparing += OnFrame;
         var existingMenu = shell.Tree.GetComponent<XsrUiContextMenu>(shell.Root)?.Items ?? [];
         shell.Tree.SetComponent(shell.Root, new XsrUiContextMenu(_menuItems.Concat(existingMenu)
@@ -103,7 +104,9 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
 
     private void OnProtocol(string uri)
     {
-        if (DesktopActivation.TryExtension(uri, out _, out _))
+        if (Nexa.Services.Minecraft.Management.InstanceLaunchScriptContract.TryLink(uri, out string root, out string instance))
+            _platform.PostToWindow(() => { if (!_disposed) { HasExplicitActivation = true; _platform.RestoreWindow(); _openInstance?.Invoke(root, instance); } });
+        else if (DesktopActivation.TryExtension(uri, out _, out _))
         {
             _platform.PostToWindow(() => { if (!_disposed) { HasExplicitActivation = true; _platform.RestoreWindow(); _openExtension?.Invoke(uri); } });
         }
@@ -145,7 +148,7 @@ internal sealed class DesktopIntegrationSession : IAsyncDisposable
         if (_disposed || _instance is null) return;
         while (_instance.TryTakeActivation(out DesktopInstanceActivation activation))
         {
-            if (activation.Destination == DesktopDestination.Extension && activation.File is { } external) { OnProtocol(external); continue; }
+            if (activation.Destination is DesktopDestination.Extension or DesktopDestination.RunInstance && activation.File is { } external) { OnProtocol(external); continue; }
             _activate(activation.Destination);
             if (activation.File is { } file) ScheduleTypedFile(file, activation.Destination);
         }

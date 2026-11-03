@@ -17,6 +17,7 @@ internal sealed partial class LaunchPageController
 {
     private void OnFramePreparing(object? sender, EventArgs e)
     {
+        PumpScriptInstance();
         TryCompleteInstallCommit();
         string copyStamp = HomeCopy("account.title");
         bool homeRefresh = Interlocked.Exchange(ref _homeRefreshRequested, 0) == 1;

@@ -7,15 +7,23 @@
       <Button Key="ProviderMicrosoft" Label="Microsoft 账户" Content="Microsoft 账户" Command="ui.account.microsoft" Class="layout-AccountForm-ProviderMicrosoft account-base account-button" MaxLines="1" TrimOverflow="true" />
       <Button Key="ProviderLittleSkin" Label="LittleSkin 账户" Content="LittleSkin 账户" Command="ui.account.littleskin" Class="layout-AccountForm-ProviderLittleSkin account-base account-button" MaxLines="1" TrimOverflow="true" />
       <Button Key="ProviderThirdParty" Label="第三方账户" Content="第三方账户" Command="ui.account.third-party" Class="layout-AccountForm-ProviderThirdParty account-base account-button" MaxLines="1" TrimOverflow="true" />
+      <Button Key="ProviderNide8" Label="统一通行证 Nide8" Content="统一通行证 Nide8" Command="ui.account.nide8" Class="account-base account-button" />
       <Button Key="ProviderOffline" Label="离线档案" Content="离线档案" Command="ui.account.offline" Class="layout-AccountForm-ProviderOffline account-base account-button" MaxLines="1" TrimOverflow="true" />
     </StackPanel>
     <StackPanel Key="OfflineForm" IsVisible="{state account.form.offline}" Class="layout-AccountForm-OfflineForm account-base">
       <Text Content="游戏名称" Class="layout-AccountForm-8 account-base" MaxLines="0" TrimOverflow="true" />
       <TextInput Key="OfflineName" Label="离线游戏名称" Placeholder="Player" Enabled="{state account.form.submit}" Class="account-base account-input" />
+      <TextInput Key="OfflineUuid" Label="自定义 UUID（可选）" Placeholder="留空使用名称生成 UUID" Enabled="{state account.form.submit}" Class="account-base account-input" />
+      <Button Key="OfflineAppearance" Label="自定义皮肤与披风" Content="自定义皮肤与披风" Command="ui.account.offline.appearance" Class="account-base account-button" />
+      <StackPanel IsVisible="{state account.form.appearance}" Spacing="8">
+      <TextInput Key="OfflineSkin" Label="本地皮肤 PNG（可选）" Placeholder="皮肤 PNG 的完整路径" Enabled="{state account.form.submit}" Class="account-base account-input" />
+      <TextInput Key="OfflineCape" Label="本地披风 PNG（可选）" Placeholder="披风 PNG 的完整路径" Enabled="{state account.form.submit}" Class="account-base account-input" />
+      <Dynamic Key="OfflineModelSlot" />
+      </StackPanel>
       <Text Key="OfflineHelp" Content="1–16 位英文字母、数字或下划线" Class="layout-AccountForm-OfflineHelp account-base account-help" MaxLines="0" TrimOverflow="true" />
     </StackPanel>
     <StackPanel Key="ThirdPartyForm" IsVisible="{state account.form.third-party}" Class="layout-AccountForm-ThirdPartyForm account-base">
-      <TextInput Key="AuthServer" Label="认证服务器地址" Placeholder="https://认证服务器" Enabled="{state account.form.submit}" Class="account-base account-input" />
+      <TextInput Key="AuthServer" Label="认证服务器地址" Placeholder="认证服务器 URL / Nide8 服务器 ID" Enabled="{state account.form.submit}" Class="account-base account-input" />
       <TextInput Key="AuthUsername" Label="登录名或邮箱" Placeholder="登录名或邮箱" Enabled="{state account.form.submit}" Class="account-base account-input" />
       <TextInput Key="AuthPassword" Label="密码" Placeholder="密码" IsPassword="true" Enabled="{state account.form.submit}" Class="account-base account-input" />
       <Text Key="ServerPrivacy" Content="登录信息仅发送到你填写的认证服务器。" Class="layout-AccountForm-ServerPrivacy account-base account-help" MaxLines="0" TrimOverflow="true" />

@@ -1,0 +1,1 @@
+<nxml-dynamic><Text Content="{data name}&#10;必需文件：{data required}&#10;已选可选文件：{data selected} / {data count}" /></nxml-dynamic>

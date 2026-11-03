@@ -146,6 +146,17 @@ internal sealed partial class MinecraftServiceSession
                     { writer.XsrError(ResourceError(operation, error)); }
                     break;
                 }
+            case MinecraftServiceProtocol.ResourceInspectModpack:
+                {
+                    var value = reader.ResourceModpackInspectQuery() ?? throw new InvalidDataException("Missing resource request."); reader.End();
+                    try
+                    {
+                        var result = await _resourcePacks!.InspectAsync(value, token).ConfigureAwait(false); writer.XsrError(null); writer.MinecraftModpackPreview(result);
+                    }
+                    catch (Exception error) when (ExpectedResourceError(operation, error, token))
+                    { writer.XsrError(ResourceError(operation, error)); }
+                    break;
+                }
             case MinecraftServiceProtocol.ResourceResourceModpackPreviewQuery:
                 {
                     var value = reader.ResourceModpackPreviewQuery() ?? throw new InvalidDataException("Missing resource request."); reader.End();

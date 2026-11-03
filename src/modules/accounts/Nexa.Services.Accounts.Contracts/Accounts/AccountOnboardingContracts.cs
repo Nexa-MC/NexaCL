@@ -3,7 +3,7 @@ using Nexa.Xsr.State;
 
 namespace Nexa.Services.Accounts;
 
-public enum AccountLoginProvider { Offline, Microsoft, LittleSkin, ThirdParty }
+public enum AccountLoginProvider { Offline, Microsoft, LittleSkin, ThirdParty, Nide8 }
 public enum AccountLoginPhase { Idle, Starting, AwaitingAuthorization, ChoosingProfile, Saving, Completed, Cancelled, Failed }
 
 /// <summary>Credential-free progress only. Device polling codes and tokens never enter this record.</summary>
@@ -24,12 +24,16 @@ public sealed record AccountImportCommand(string Path);
 public sealed record AccountDiscoverImportsCommand;
 
 /// <summary>Trusted command payload, not public state. Avoid record-generated credential ToString output.</summary>
-public sealed class AccountLoginStartCommand(AccountLoginProvider provider, string username = "", string server = "", string password = "")
+public sealed class AccountLoginStartCommand(AccountLoginProvider provider, string username = "", string server = "", string password = "", string offlineUuid = "", string offlineSkinPath = "", string offlineCapePath = "", bool offlineSlim = false)
 {
     public AccountLoginProvider Provider { get; } = provider;
     public string Username { get; } = username;
     public string Server { get; } = server;
     public string Password { get; } = password;
+    public string OfflineUuid { get; } = offlineUuid;
+    public string OfflineSkinPath { get; } = offlineSkinPath;
+    public string OfflineCapePath { get; } = offlineCapePath;
+    public bool OfflineSlim { get; } = offlineSlim;
 }
 
 public static class AccountOnboardingState

@@ -70,7 +70,7 @@ public sealed partial class InstanceModpackExportService(TaskCenterService tasks
             if (!Enum.IsDefined(command.Format) || (!zip && (command.IncludeGameCore || command.IncludeLibraries || command.IncludeAssets)))
                 throw new InvalidDataException("只有 ZIP 格式可以包含游戏核心、运行库和资源文件。");
             if (string.IsNullOrWhiteSpace(command.Name) || command.Name.Length > 256 || string.IsNullOrWhiteSpace(command.Version) || command.Version.Length > 128
-                || !Path.IsPathFullyQualified(command.DestinationPath) || !Path.GetExtension(command.DestinationPath).Equals(zip ? ".zip" : ".mrpack", StringComparison.OrdinalIgnoreCase))
+                || !Path.IsPathFullyQualified(command.DestinationPath) || !Path.GetExtension(command.DestinationPath).Equals(command.Format == InstanceExportFormat.Mrpack ? ".mrpack" : ".zip", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("请填写整合包名称、版本，并选择 .mrpack 或 .zip 文件。");
             var snapshot = await InstanceManagementService.ReadAsync(new(command.InstanceDirectory), token).ConfigureAwait(false);
             using var lease = await InstanceRecoveryOperationGate.EnterRestoreAsync(Directory.GetParent(snapshot.InstanceDirectory)!.Parent!.FullName, token).ConfigureAwait(false);
@@ -112,15 +112,25 @@ public sealed partial class InstanceModpackExportService(TaskCenterService tasks
                     ["files"] = new JsonArray(),
                     ["summary"] = command.Summary
                 };
-                await using (var index = archive.CreateEntry(zip ? "nexa-export.json" : "modrinth.index.json").Open())
+                string manifestName = zip ? "nexa-export.json" : "modrinth.index.json";
+                string contentPrefix = zip ? ".minecraft/" : "overrides/";
+                if (!zip && command.Format != InstanceExportFormat.Mrpack)
+                    (manifestName, manifest, contentPrefix) = FormatManifest(command, dependencies!);
+                await using (var index = archive.CreateEntry(manifestName).Open())
                     await index.WriteAsync(System.Text.Encoding.UTF8.GetBytes(manifest.ToJsonString()), token).ConfigureAwait(false);
+                if (command.Format == InstanceExportFormat.MultiMC)
+                {
+                    await using var config = archive.CreateEntry("instance.cfg").Open();
+                    await config.WriteAsync(System.Text.Encoding.UTF8.GetBytes("InstanceType=OneSix\nname=" + command.Name.Replace('\n', ' ').Replace('\r', ' ') + "\n"), token).ConfigureAwait(false);
+                }
+                await WritePortablePayloadAsync(archive, command with { InstanceDirectory = snapshot.InstanceDirectory }, zip, token).ConfigureAwait(false);
                 byte[] buffer = new byte[81920]; long written = 0;
                 for (int i = 0; i < files.Count; i++)
                 {
                     var file = files[i]; RecoveryBlobStore.CheckLinks(file.Path);
                     await using var input = new FileStream(file.Path, FileMode.Open, FileAccess.Read, FileShare.Read, buffer.Length, true);
                     if (input.Length != file.Size || File.GetLastWriteTimeUtc(file.Path).Ticks != file.Modified) throw new IOException("导出期间文件已变化，请重新导出。");
-                    var entry = archive.CreateEntry((zip ? ".minecraft/" : "overrides/") + MinecraftModpackArchive.SafeRelative(file.Relative), CompressionLevel.Fastest);
+                    var entry = archive.CreateEntry(contentPrefix + MinecraftModpackArchive.SafeRelative(file.Relative), CompressionLevel.Fastest);
                     await using (var target = entry.Open())
                     {
                         long actual = 0; int read;

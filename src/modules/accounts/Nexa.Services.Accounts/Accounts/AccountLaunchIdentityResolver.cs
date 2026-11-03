@@ -33,9 +33,11 @@ public sealed class AccountLaunchIdentityResolver(
         switch (profile.Kind)
         {
             case LaunchProfileKind.Offline:
-                (string offlineName, string offlineUuid) = MinecraftOfflineIdentity.Resolve(profile.Username, profile.Uuid);
+                (string offlineName, string offlineUuid) = profile.OfflineCustomUuid
+                    ? (profile.Username, profile.Uuid) : MinecraftOfflineIdentity.Resolve(profile.Username, profile.Uuid);
                 return XsrResult.Success(new MinecraftLaunchIdentity(
-                    offlineName, offlineUuid, "0", MinecraftLaunchIdentityMode.Offline));
+                    offlineName, offlineUuid, "0", MinecraftLaunchIdentityMode.Offline)
+                { OfflineSkinPng = profile.OfflineSkinPng, OfflineCapePng = profile.OfflineCapePng, OfflineSlim = profile.OfflineSlim });
 
             case LaunchProfileKind.Microsoft:
                 return await ResolveMicrosoftAsync(accountIndex, profile, cancellationToken).ConfigureAwait(false);
@@ -43,6 +45,7 @@ public sealed class AccountLaunchIdentityResolver(
             case LaunchProfileKind.LittleSkin:
                 return await ResolveLittleSkinAsync(accountIndex, profile, cancellationToken).ConfigureAwait(false);
 
+            case LaunchProfileKind.Nide8:
             case LaunchProfileKind.ThirdParty:
                 return await ResolveThirdPartyAsync(accountIndex, profile, cancellationToken).ConfigureAwait(false);
 
@@ -83,7 +86,7 @@ public sealed class AccountLaunchIdentityResolver(
             if (!_accounts.TryCaptureRefresh(index, profile, out long currentGeneration) || currentGeneration != generation)
                 return XsrResult.Failure<MinecraftLaunchIdentity>(AccountErrors.InvalidProfile("The profile changed during launch authentication."));
             return XsrResult.Success(new MinecraftLaunchIdentity(profile.Username, profile.Uuid, profile.AccessToken, MinecraftLaunchIdentityMode.ThirdParty)
-            { AuthServer = server });
+            { AuthServer = server, Nide8ServerId = Nide8Account.ServerId(server) });
         }
         catch (Exception failure) when (failure is HttpRequestException or InvalidOperationException or ArgumentException)
         {
@@ -146,7 +149,7 @@ public sealed class AccountLaunchIdentityResolver(
             if (!_accounts.TryCaptureRefresh(index, profile, out long currentGeneration) || currentGeneration != generation)
                 return XsrResult.Failure<MinecraftLaunchIdentity>(AccountErrors.InvalidProfile("The profile changed during launch authentication."));
             return XsrResult.Success(new MinecraftLaunchIdentity(profile.Username, profile.Uuid, profile.AccessToken, MinecraftLaunchIdentityMode.ThirdParty)
-            { AuthServer = server });
+            { AuthServer = server, Nide8ServerId = Nide8Account.ServerId(server) });
         }
         catch (Exception failure) when (failure is HttpRequestException or InvalidOperationException or ArgumentException)
         {

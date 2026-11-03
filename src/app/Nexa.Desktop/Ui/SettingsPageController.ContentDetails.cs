@@ -47,6 +47,7 @@ internal sealed partial class SettingsPageController
         ApplyContentFormatting(nodes["ContentDetail.Description"], item.Description);
         _contentDetailFacts.Clear(); ProjectContentDetailFacts(nodes["ContentDetail.Facts"], item);
         if (_selected == "saves") BuildWorldDetails(nodes["ContentDetail.World"], item);
+        BuildInspectionForContent(nodes["ContentDetail.Inspection"], item);
         BuildOnlineContent(nodes["ContentDetail.Online"], item); BuildContentIntegrity(nodes["ContentDetail.Integrity"], item);
     }
 
@@ -80,6 +81,7 @@ internal sealed partial class SettingsPageController
         ApplyContentFormatting(nodes["ContentDetail.Description"], item.Description); BindContentDetailToggle(nodes, item);
         ProjectContentDetailFacts(nodes["ContentDetail.Facts"], item);
         if (_selected == "saves") BuildWorldDetails(nodes["ContentDetail.World"], item);
+        BuildInspectionForContent(nodes["ContentDetail.Inspection"], item);
         BuildOnlineContent(nodes["ContentDetail.Online"], item); BuildContentIntegrity(nodes["ContentDetail.Integrity"], item);
     }
     private void ProjectContentDetailFacts(XsrUiEntityId slot, InstanceContentEntry item)

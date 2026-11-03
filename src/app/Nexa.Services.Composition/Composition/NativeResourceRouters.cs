@@ -1,6 +1,7 @@
 #if NEXA_NATIVE_SERVICES
 using Nexa.Native.Minecraft.Client;
 using Nexa.Services.Resources;
+using Nexa.Services.Minecraft.Install;
 using Nexa.Xsr.Runtime;
 namespace Nexa.Services.Composition;
 internal static class NativeResourceRouters
@@ -31,6 +32,8 @@ internal static class NativeResourceRouters
         { await initialization.WaitAsync(token).ConfigureAwait(false); return await client.QueryResourceModPlanQueryAsync(value, token).ConfigureAwait(false); });
         queries.Register<ResourceModpackOnlineQuery, ResourceModpackOnline>(ResourceModpackContract.Online, async (value, token) =>
         { await initialization.WaitAsync(token).ConfigureAwait(false); return await client.QueryResourceModpackOnlineQueryAsync(value, token).ConfigureAwait(false); });
+        queries.Register<ResourceModpackInspectQuery, MinecraftModpackPreview>(ResourceModpackContract.Inspect, async (value, token) =>
+        { await initialization.WaitAsync(token).ConfigureAwait(false); return await client.InspectResourceModpackAsync(value, token).ConfigureAwait(false); });
         queries.Register<ResourceModpackPreviewQuery, ResourceModpackPreview>(ResourceModpackContract.Preview, async (value, token) =>
         { await initialization.WaitAsync(token).ConfigureAwait(false); return await client.QueryResourceModpackPreviewQueryAsync(value, token).ConfigureAwait(false); });
         commands.Register<ResourceFavoriteCommand>(ResourceCatalogContract.Favorite, async (value, token) =>

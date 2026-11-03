@@ -41,7 +41,7 @@ internal sealed class ModpackInstallJournal
     }
     internal static async Task<ModpackInstallJournal> OpenAsync(string root, string stage, CancellationToken token)
     {
-        var intent = JsonSerializer.Deserialize(await ReadAsync(stage, "intent.json", 65536, token).ConfigureAwait(false), ModpackJournalJson.Default.ModpackIntent)
+        var intent = JsonSerializer.Deserialize(await ReadAsync(stage, "intent.json", 16 * 1024 * 1024, token).ConfigureAwait(false), ModpackJournalJson.Default.ModpackIntent)
             ?? throw new InvalidDataException("整合包任务为空。");
         if (intent.Schema is not (1 or 2)) throw new InvalidDataException("整合包任务版本无效。");
         Validate(root, stage, intent.Command); return new(stage, intent.Command, intent.Schema);

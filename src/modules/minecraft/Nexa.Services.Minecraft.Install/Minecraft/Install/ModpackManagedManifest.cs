@@ -7,7 +7,10 @@ using Nexa.Services.Minecraft.Management;
 namespace Nexa.Services.Minecraft.Install;
 
 internal sealed record ModpackManagedManifest(int Schema, string Name, string Version, string ArchiveSha256, ModpackPublishedFile[] Files)
-{ public ContentFingerprint? ArchiveIdentity { get; init; } }
+{
+    public ContentFingerprint? ArchiveIdentity { get; init; }
+    public IReadOnlyList<string> ExcludedOptionalFiles { get; init; } = [];
+}
 
 internal static class ModpackManagedManifestStore
 {

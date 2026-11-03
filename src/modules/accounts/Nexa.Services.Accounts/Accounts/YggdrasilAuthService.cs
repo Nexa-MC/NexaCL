@@ -203,6 +203,7 @@ public sealed class YggdrasilAuthService
             normalized = normalized[..^"/authserver".Length].TrimEnd('/');
         }
 
+        if (Nide8Account.ServerId(normalized) is { } nideId) return Nide8Account.ServerFromId(nideId);
         if (!normalized.EndsWith("/api/yggdrasil", StringComparison.OrdinalIgnoreCase))
         {
             normalized += "/api/yggdrasil";

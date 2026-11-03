@@ -84,7 +84,7 @@ internal sealed partial class MinecraftServiceSession
     {
         if (error is ResourceFailure) return true;
         if (operation is MinecraftServiceProtocol.ResourceResourceModpackInstallCommand or MinecraftServiceProtocol.ResourceResourceModpackUpdateCommand
-            or MinecraftServiceProtocol.ResourceResourceModpackOnlineQuery or MinecraftServiceProtocol.ResourceResourceModpackPreviewQuery)
+            or MinecraftServiceProtocol.ResourceInspectModpack or MinecraftServiceProtocol.ResourceResourceModpackOnlineQuery or MinecraftServiceProtocol.ResourceResourceModpackPreviewQuery)
             return !token.IsCancellationRequested && (ResourceOnlineInformationCache.Recoverable(error) || error is ArgumentException);
         if (operation is MinecraftServiceProtocol.ResourceResourceModPlanQuery or MinecraftServiceProtocol.ResourceResourceModInstallCommand or MinecraftServiceProtocol.ResourceResourceDownloadCommand)
             return error is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException;

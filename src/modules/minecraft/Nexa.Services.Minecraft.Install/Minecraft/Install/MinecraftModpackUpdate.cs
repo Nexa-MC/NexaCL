@@ -30,12 +30,14 @@ public sealed partial class MinecraftInstallService
         var baseline = await ModpackManagedManifestStore.ReadAsync(instance, token).ConfigureAwait(false)
             ?? await ReadOriginalModpackBaselineAsync(instance, query.OriginalArchivePath, metadata.ModpackVersion, token).ConfigureAwait(false);
         if (baseline.ArchiveSha256.Equals(pack.Preview.Sha256, StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("所选整合包与已安装版本相同。");
-        var newPaths = (await ResolvePackFilesAsync(pack, query.IncludeOptional, token).ConfigureAwait(false)).Select(file => file.Path)
+        var newPaths = (await ResolvePackFilesAsync(pack, query.IncludeOptional, token, query.ExcludedOptionalFiles).ConfigureAwait(false)).Select(file => file.Path)
             .ToHashSet(Nexa.Core.PathIdentity.Comparer);
         using (var archive = ZipFile.OpenRead(pack.Preview.Path))
             foreach (string prefix in pack.OverrideRoots)
                 foreach (var entry in archive.Entries.Where(entry => entry.Name.Length > 0 && entry.FullName.StartsWith(prefix, StringComparison.Ordinal)))
-                    newPaths.Add(entry.FullName[prefix.Length..]);
+                    if (!pack.Preview.OptionalEntries.Any(f => f.Id == "path:" + entry.FullName[prefix.Length..])
+                        || (query.IncludeOptional && !query.ExcludedOptionalFiles.Contains("path:" + entry.FullName[prefix.Length..], StringComparer.Ordinal)))
+                        newPaths.Add(entry.FullName[prefix.Length..]);
         foreach (string path in newPaths)
         {
             ValidatePackDestination(path, pack.Preview.InstanceId);
@@ -46,7 +48,8 @@ public sealed partial class MinecraftInstallService
         var current = new Dictionary<string, string?>(Nexa.Core.PathIdentity.Comparer);
         List<string> added = [], updated = [], removed = [], preserved = [], conflicts = [];
         StringBuilder revision = new(edit.Fingerprint + "\n" + pack.Preview.Sha256 + "\n" + baseline.ArchiveSha256 + "\n"
-            + query.IncludeOptional + "\n" + query.ReplaceModifiedMods);
+            + query.IncludeOptional + "\n" + query.ReplaceModifiedMods
+            + (query.ExcludedOptionalFiles.Count == 0 ? "" : "\noptional-excluded\n" + string.Join("\n", query.ExcludedOptionalFiles.Order(StringComparer.Ordinal))));
         foreach (string path in new[] { Path.GetFileName(instance) + ".json", Path.GetFileName(instance) + ".jar", "Nexa/InstanceMetadata.json", "PCL/InstanceMetadata.json", ModpackManagedManifestStore.RelativePath })
         {
             string? hash = await PackHashAsync(Nexa.Core.PathIdentity.Contained(instance, path), token).ConfigureAwait(false);
@@ -102,13 +105,13 @@ public sealed partial class MinecraftInstallService
             if (_hostStore is null) throw new InvalidOperationException("整合包更新需要活动进程状态。");
             MinecraftInstanceRenamer.EnsureIdle(root, _hostStore, token);
             var state = await ReadModpackUpdateAsync(request, token).ConfigureAwait(false);
-            if (state.Preview.Revision != command.Preview.Revision || state.Preview.Pack != command.Preview.Pack)
+            if (state.Preview.Revision != command.Preview.Revision || !MinecraftModpackArchive.SamePreview(state.Preview.Pack, command.Preview.Pack))
                 throw new IOException("整合包或版本文件已变化，请重新预览更新。");
             if (state.Preview.Conflicts.Count > 0) throw new IOException("部分模组已被修改或与新版同名；请先在预览中确认替换这些模组。");
             RecoveryBlobStore.CheckLinks(stage); Directory.CreateDirectory(stage);
             string scratch = Path.Combine(stage, "prepared"); Directory.CreateDirectory(scratch);
             task.Report("准备新版", state.Preview.Pack.Version, .1, 0, 1, 0);
-            var built = await InstallModpackCoreAsync(new(state.Preview.Pack, scratch, request.IncludeOptional), token,
+            var built = await InstallModpackCoreAsync(new(state.Preview.Pack, scratch, request.IncludeOptional) { ExcludedOptionalFiles = request.ExcludedOptionalFiles }, token,
                 preparingUpdate: true, parentTask: task, baseReuseRoot: root,
                 baseReuseClientPath: Path.Combine(instance, Path.GetFileName(instance) + ".jar")).ConfigureAwait(false);
             if (!built.IsSuccess)
@@ -221,10 +224,11 @@ public sealed partial class MinecraftInstallService
         }
     }
 
-    private async Task<IReadOnlyList<ModpackFile>> ResolvePackFilesAsync(ModpackPlan plan, bool optional, CancellationToken token)
+    private async Task<IReadOnlyList<ModpackFile>> ResolvePackFilesAsync(ModpackPlan plan, bool optional, CancellationToken token, IReadOnlyList<string>? excludedFiles = null)
     {
-        var result = plan.Files.Where(file => optional || !file.Optional).ToList();
-        foreach (var file in plan.CurseFiles.Where(file => optional || !file.Optional))
+        var excluded = MinecraftModpackArchive.ValidateSelection(plan, excludedFiles ?? []);
+        var result = plan.Files.Where(file => !file.Optional || (optional && !excluded.Contains("path:" + file.Path))).ToList();
+        foreach (var file in plan.CurseFiles.Where(file => !file.Optional || (optional && !excluded.Contains("cf:" + file.ProjectId))))
             result.Add(await ResolveCurseForgePackFileAsync(file, token).ConfigureAwait(false));
         return result;
     }

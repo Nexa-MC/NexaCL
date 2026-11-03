@@ -20,6 +20,9 @@ internal sealed partial class SettingsPageController
     private CancellationTokenSource? _modpackUpdateStop;
     private string? _modpackUpdateInstance;
     private bool _modpackDraftsNeedReset;
+    private IReadOnlyList<MinecraftModpackOptionalFile> _modpackOptionalEntries = [];
+    private readonly HashSet<string> _modpackExcluded = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, XsrUiEntityId> _modpackOptionalRows = [];
 
     internal void ConfigureModpackUpdates(XsrQueryRouter queries, XsrCommandRouter commands, Func<Task<string?>>? picker = null)
     { _modpackQueries = queries; _modpackCommands = commands; _pickModpack = picker; }
@@ -32,7 +35,7 @@ internal sealed partial class SettingsPageController
         _modpackPreviewRead = null; _modpackPicking = null; _modpackPreview = null;
         _modpackApplying = null;
         _modpackUpdateInstance = null; _modpackArchive = _modpackOriginal = _modpackUpdateStatus = "";
-        _modpackOptional = _modpackReplace = false;
+        _modpackOptional = _modpackReplace = false; _modpackOptionalEntries = []; _modpackExcluded.Clear(); RetireWorldRows(_modpackOptionalRows, []);
         _modpackArchiveInput = _modpackOriginalInput = default;
         _modpackDraftsNeedReset = true;
     }
@@ -42,12 +45,16 @@ internal sealed partial class SettingsPageController
         string Draft(XsrUiEntityId entity, string fallback) => _shell.Tree.IsAlive(entity)
             ? _shell.Tree.GetComponent<XsrUiTextInput>(entity)!.ReadDraft() : fallback;
         string archive = Draft(_modpackArchiveInput, _modpackArchive), original = Draft(_modpackOriginalInput, _modpackOriginal);
-        if (archive != _modpackArchive || original != _modpackOriginal) InvalidateModpackPreview();
+        if (archive != _modpackArchive || original != _modpackOriginal) { InvalidateModpackPreview(); _modpackOptionalEntries = []; _modpackExcluded.Clear(); }
         _modpackArchive = archive; _modpackOriginal = original;
     }
 
     private MinecraftModpackUpdateQuery CurrentModpackUpdateQuery() => new(_instance!, _modpackArchive.Trim(),
-        string.IsNullOrWhiteSpace(_modpackOriginal) ? null : _modpackOriginal.Trim(), _modpackOptional, _modpackReplace);
+        string.IsNullOrWhiteSpace(_modpackOriginal) ? null : _modpackOriginal.Trim(), _modpackOptional, _modpackReplace)
+    { ExcludedOptionalFiles = _modpackExcluded.Order(StringComparer.Ordinal).ToArray() };
+
+    private static bool SameModpackUpdateRequest(MinecraftModpackUpdateQuery left, MinecraftModpackUpdateQuery right) =>
+        left == right with { ExcludedOptionalFiles = left.ExcludedOptionalFiles } && left.ExcludedOptionalFiles.SequenceEqual(right.ExcludedOptionalFiles);
 
     private void UpdateModpackUpdate()
     {
@@ -78,9 +85,9 @@ internal sealed partial class SettingsPageController
         if (_modpackPreviewRead is { IsCompleted: true } read)
         {
             _modpackPreviewRead = null;
-            if (read.IsCompletedSuccessfully && read.Result.IsSuccess && read.Result.Value!.Request == CurrentModpackUpdateQuery())
+            if (read.IsCompletedSuccessfully && read.Result.IsSuccess && SameModpackUpdateRequest(read.Result.Value!.Request, CurrentModpackUpdateQuery()))
             {
-                _modpackPreview = read.Result.Value;
+                _modpackPreview = read.Result.Value; _modpackOptionalEntries = _modpackPreview!.Pack.OptionalEntries;
                 ShowModpackPreview(_modpackPreview!);
             }
             else _modpackUpdateStatus = read.IsCompletedSuccessfully ? read.Result.Error?.Message ?? WorldTerm("modpack.update.changed") : read.Exception?.GetBaseException().Message ?? WorldTerm("modpack.update.canceled");
@@ -139,7 +146,7 @@ internal sealed partial class SettingsPageController
             _modpackPickOriginal = original; _modpackPicking = _pickModpack(); WakeOnPlatformCompletion(_modpackPicking);
         }
         Bind("ModpackUpdate.Pick", () => Pick(false)); Bind("ModpackUpdate.PickOriginal", () => Pick(true));
-        Bind("ModpackUpdate.Optional", () => { _modpackOptional = !_modpackOptional; InvalidateModpackPreview(); });
+        Bind("ModpackUpdate.Optional", () => { _modpackOptional = !_modpackOptional; _modpackExcluded.Clear(); InvalidateModpackPreview(); });
         Bind("ModpackUpdate.Replace", () => { _modpackReplace = !_modpackReplace; InvalidateModpackPreview(); });
         Bind("ModpackUpdate.Preview", () =>
         {
@@ -169,6 +176,20 @@ internal sealed partial class SettingsPageController
             _modpackApplying = _managementWrite;
             _modpackPreview = null; _modpackUpdateStatus = WorldTerm("modpack.update.queued"); WakeOnPlatformCompletion(_managementWrite);
         });
+        RetireWorldRows(_modpackOptionalRows, _modpackOptionalEntries.Select(f => f.Id));
+        foreach (var file in _modpackOptionalEntries)
+        {
+            string key = "ModpackOptional." + InstanceToolIdentity(file.Id);
+            var row = WorldRow(nodes["ModpackUpdate.OptionalFiles"], _modpackOptionalRows, file.Id, "ExportFile", new()
+            { ["key"] = key, ["choice"] = key + ".Choice", ["path"] = file.Name, ["selected"] = Flag(_modpackOptional && !_modpackExcluded.Contains(file.Id)), ["size"] = "" });
+            BindWorldAction(row, key + ".Choice", () =>
+            {
+                if (!_modpackOptional) { _modpackOptional = true; _modpackExcluded.UnionWith(_modpackOptionalEntries.Select(f => f.Id)); }
+                if (!_modpackExcluded.Remove(file.Id)) _modpackExcluded.Add(file.Id);
+                InvalidateModpackPreview();
+            });
+        }
+        _dynamic.Reorder(nodes["ModpackUpdate.OptionalFiles"], _modpackOptionalEntries.Select(f => _modpackOptionalRows[f.Id]).ToArray());
         BuildModpackOnline(nodes, enabled);
     }
 }

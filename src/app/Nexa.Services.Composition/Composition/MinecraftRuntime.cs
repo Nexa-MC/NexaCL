@@ -44,6 +44,7 @@ public sealed class MinecraftRuntime : IDisposable
 
     public void Dispose()
     {
+        LaunchCoordinator?.Dispose();
         foreach (IDisposable resource in _ownedResources.Reverse())
         {
             resource.Dispose();

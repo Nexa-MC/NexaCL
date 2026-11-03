@@ -93,7 +93,7 @@ internal sealed class MinecraftDropController : IDisposable
                     }, pack.OptionalFiles > 0 ? ProductPresentationText.Raw("native.drop.include-optional") : null, pack.OptionalFiles > 0 ? () =>
                     {
                         _feedback.DismissDialog(_jarDialog);
-                        _ = ExecuteModpackAsync(pack, target, true);
+                        _ = ChooseOptionalAndInstallAsync(pack, target);
                     }
                 : null, localizeMessage: false, localizeTitle: false);
                 awaitingChoice = true;
@@ -131,12 +131,12 @@ internal sealed class MinecraftDropController : IDisposable
         finally { if (!awaitingChoice) ReleaseBusy(); }
     }
 
-    private async Task ExecuteModpackAsync(MinecraftModpackPreview pack, string root, bool includeOptional)
+    private async Task ExecuteModpackAsync(MinecraftModpackPreview pack, string root, bool includeOptional, IReadOnlyList<string>? excluded = null)
     {
         try
         {
             if (_disposed || !_imports.Commands.TryResolve(MinecraftModpackContract.Install, out var route)) return;
-            var result = await _imports.Commands.Dispatch(route, new MinecraftModpackCommand(pack, root, includeOptional), cancellationToken: _lifetime.Token).Completion.ConfigureAwait(false);
+            var result = await _imports.Commands.Dispatch(route, new MinecraftModpackCommand(pack, root, includeOptional) { ExcludedOptionalFiles = excluded ?? [] }, cancellationToken: _lifetime.Token).Completion.ConfigureAwait(false);
             if (!_disposed && !result.IsSuccess && result.Error?.Code != XsrRuntimeErrors.Cancelled().Code)
                 _feedback.Error(result.Error?.Message ?? ProductPresentationText.Raw("native.drop.modpack-incomplete"));
         }
@@ -144,6 +144,18 @@ internal sealed class MinecraftDropController : IDisposable
         catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
         { if (!_disposed) _feedback.Error(NativeFormat("ModpackFailure", ("error", error.Message)), localizeMessage: false); }
         finally { ReleaseBusy(); }
+    }
+
+    private async Task ChooseOptionalAndInstallAsync(MinecraftModpackPreview pack, string root)
+    {
+        bool installing = false;
+        try
+        {
+            var selected = await ModpackOptionalSelection.ChooseAsync(_feedback, pack, _platform.LocalizeDesktopText, _lifetime.Token).ConfigureAwait(false);
+            if (selected is not null) { installing = true; await ExecuteModpackAsync(pack, root, true, selected).ConfigureAwait(false); return; }
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        finally { if (!installing) ReleaseBusy(); }
     }
 
     private void ShowOtherJarUses(LocalJarArtifact jar, string root, string instanceId)

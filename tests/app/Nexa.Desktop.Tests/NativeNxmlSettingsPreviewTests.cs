@@ -22,6 +22,7 @@ namespace Nexa.Desktop.Tests;
 // window. Management and install metadata are controlled typed fixtures, never a game.
 internal static partial class Program
 {
+    private static readonly string[] NativeNxmlExportFormats = ["Export.Mrpack", "Export.Zip", "Export.CurseForge", "Export.Mcbbs", "Export.MultiMC"];
     private static int RunNativeNxmlSettingsPreview(string theme, string outputDirectory) =>
         RunNativeNxmlSettingsPreviewAsync(theme, Path.GetFullPath(outputDirectory)).GetAwaiter().GetResult();
 
@@ -324,6 +325,17 @@ internal static partial class Program
                         surface!.CommitScene(); window!.UpdateLayout();
                         AssertEqual(theme == "dark", f.Shell.Renderer.ColorScheme.IsDark);
                         AssertLaunchGeometry(stage);
+                        if (stage == "instance-export-editor")
+                        {
+                            var formats = Find("Export.Format");
+                            foreach (string key in NativeNxmlExportFormats)
+                            {
+                                var choice = Find(key);
+                                AssertTrue(choice.Rect.Width > 0 && choice.Rect.X >= formats.Rect.X
+                                    && choice.Rect.X + choice.Rect.Width <= formats.Rect.X + formats.Rect.Width + 1
+                                    && choice.Rect.X + choice.Rect.Width <= f.Shell.Renderer.Viewport.Width);
+                            }
+                        }
                         if (retainedInput.IsAssigned)
                         {
                             AssertTrue(f.Shell.Tree.IsAlive(retainedInput)); AssertEqual(retainedInput, f.Shell.Renderer.Focused);

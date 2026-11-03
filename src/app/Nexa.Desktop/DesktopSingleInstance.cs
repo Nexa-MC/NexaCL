@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Nexa.Desktop;
 
-internal enum DesktopDestination : byte { Launch, Install, Resources, Settings, Activate, Tasks, Java, Storage, About, Extension, ThemeImport }
+internal enum DesktopDestination : byte { Launch, Install, Resources, Settings, Activate, Tasks, Java, Storage, About, Extension, ThemeImport, RunInstance }
 internal readonly record struct DesktopInstanceActivation(DesktopDestination Destination, string? File);
 
 internal static class DesktopActivation
@@ -40,12 +40,14 @@ internal static class DesktopActivation
     }
     internal static bool TryPayload(DesktopDestination destination, string value, out string payload)
     {
+        if (destination == DesktopDestination.RunInstance) { payload = value; return Nexa.Services.Minecraft.Management.InstanceLaunchScriptContract.TryLink(value, out _, out _); }
         if (destination != DesktopDestination.Extension) return TryFile(value, out payload);
         payload = value; return TryExtension(value, out _, out _);
     }
     internal static bool TryParse(string value, out DesktopDestination destination)
     {
         destination = DesktopDestination.Launch;
+        if (Nexa.Services.Minecraft.Management.InstanceLaunchScriptContract.TryLink(value, out _, out _)) { destination = DesktopDestination.RunInstance; return true; }
         if (TryExtension(value, out _, out _)) { destination = DesktopDestination.Extension; return true; }
         if (value.Equals("nexacl://", StringComparison.OrdinalIgnoreCase) || value.Equals("nexacl:", StringComparison.OrdinalIgnoreCase))
         { destination = DesktopDestination.Activate; return true; }
@@ -95,7 +97,7 @@ internal sealed class DesktopSingleInstance : IAsyncDisposable
     internal static async Task<DesktopSingleInstance?> AcquireAsync(string directory, DesktopDestination destination, string? file = null, bool forwardActivation = true)
     {
         if (!Enum.IsDefined(destination)) throw new ArgumentOutOfRangeException(nameof(destination));
-        if (destination == DesktopDestination.Extension && file is null) throw new ArgumentException("Extension activation requires a payload.", nameof(file));
+        if (destination is DesktopDestination.Extension or DesktopDestination.RunInstance && file is null) throw new ArgumentException("Extension activation requires a payload.", nameof(file));
         if (file is not null)
         {
             if (!DesktopActivation.TryPayload(destination, file, out string admitted)) throw new ArgumentException("不支持的本地整合包路径。", nameof(file));
@@ -179,7 +181,7 @@ internal sealed class DesktopSingleInstance : IAsyncDisposable
     internal bool TryTakeActivation(out DesktopInstanceActivation activation) { lock (_gate) return _pending.TryDequeue(out activation); }
     internal bool QueueActivation(DesktopDestination destination, string? file = null)
     {
-        if (!Enum.IsDefined(destination) || destination == DesktopDestination.Extension && file is null || file is not null && !DesktopActivation.TryPayload(destination, file, out _)) return false;
+        if (!Enum.IsDefined(destination) || destination is DesktopDestination.Extension or DesktopDestination.RunInstance && file is null || file is not null && !DesktopActivation.TryPayload(destination, file, out _)) return false;
         return Enqueue(new(destination, file));
     }
     internal void BeginShutdown() { lock (_gate) { _closing = true; _wake = null; } }
@@ -213,7 +215,7 @@ internal sealed class DesktopSingleInstance : IAsyncDisposable
                             catch (DecoderFallbackException) { valid = false; }
                         }
                     }
-                    bool accepted = valid && ((DesktopDestination)packet[1] != DesktopDestination.Extension || file is not null) && Enum.IsDefined((DesktopDestination)packet[1])
+                    bool accepted = valid && ((DesktopDestination)packet[1] is not (DesktopDestination.Extension or DesktopDestination.RunInstance) || file is not null) && Enum.IsDefined((DesktopDestination)packet[1])
                         && Enqueue(new((DesktopDestination)packet[1], file));
                     await server.WriteAsync(new byte[] { accepted ? (byte)1 : _closing ? (byte)2 : (byte)0 }, deadline.Token).ConfigureAwait(false);
                     await server.FlushAsync(deadline.Token).ConfigureAwait(false);

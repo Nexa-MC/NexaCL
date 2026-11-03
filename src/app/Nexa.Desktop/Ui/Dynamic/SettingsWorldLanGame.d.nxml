@@ -1,0 +1,10 @@
+<nxml-dynamic>
+  <StackPanel Key="{data key}" Class="world-card-body">
+    <Text Content="{data name}" Localize="false" Class="world-title" />
+    <Text Content="{data address}" Localize="false" Class="world-hint" />
+    <StackPanel Class="world-actions">
+      <Button Key="{data add}" Content="添加到服务器列表" Command="ui.settings.management.action" Class="settings-catalog-action world-button-wide" />
+      <Button Key="{data join}" Content="加入游戏" Command="ui.settings.management.action" Class="settings-catalog-action world-button-wide" />
+    </StackPanel>
+  </StackPanel>
+</nxml-dynamic>

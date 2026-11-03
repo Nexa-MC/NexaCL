@@ -116,6 +116,12 @@ public static class ResourceCatalogRuntimeComposer
                     catch (Exception error) when (!token.IsCancellationRequested && (ResourceOnlineInformationCache.Recoverable(error) || error is ArgumentException))
                     { return XsrResult.Failure<ResourceModpackOnline>(MinecraftErrors.InvalidRequest(error.Message)); }
                 });
+                queries.Register<ResourceModpackInspectQuery, MinecraftModpackPreview>(ResourceModpackContract.Inspect, async (query, token) =>
+                {
+                    try { return XsrResult.Success(await packs.InspectAsync(query, token).ConfigureAwait(false)); }
+                    catch (Exception error) when (!token.IsCancellationRequested && (ResourceOnlineInformationCache.Recoverable(error) || error is ArgumentException))
+                    { return XsrResult.Failure<MinecraftModpackPreview>(MinecraftErrors.InvalidRequest(error.Message)); }
+                });
                 queries.Register<ResourceModpackPreviewQuery, ResourceModpackPreview>(ResourceModpackContract.Preview, async (query, token) =>
                 {
                     try { return XsrResult.Success(await packs.PreviewAsync(query, token).ConfigureAwait(false)); }

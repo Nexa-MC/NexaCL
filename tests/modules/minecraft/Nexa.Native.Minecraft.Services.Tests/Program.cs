@@ -76,6 +76,8 @@ try
     var report = await minecraft.AnalyzeCrashAsync(["java.lang.OutOfMemoryError: Java heap space"], token: token);
     Check(report.AllowedActions.Count > 0 && report.Evidence.Count > 0, "Native crash analysis lost its repair evidence.");
 
+    await FeatureParityCases.RunAsync(minecraft, root, instance, executable, token);
+
     MinecraftLaunchPlan Plan(string mode) => new(javaExecutable, instance, ["fixture.Main", "--accessToken", "private-argument"], [], [],
         new(MinecraftModLoaderKind.Vanilla, null, null, []))
     { MainClassIndex = 0, EnvironmentVariables = new Dictionary<string, string>(StringComparer.Ordinal) { ["NEXA_NATIVE_PROCESS_MODE"] = mode } };

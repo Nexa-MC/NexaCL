@@ -37,6 +37,7 @@ internal static class LaunchProfilePresentation
         if (!string.IsNullOrWhiteSpace(profile.Info)) return profile.Info;
         return profile.Kind switch
         {
+            LaunchProfileKind.Nide8 => ProductPresentationText.Raw("feature.nide8"),
             LaunchProfileKind.Microsoft => ProductPresentationText.Raw("profile.microsoft"),
             LaunchProfileKind.LittleSkin => ProductPresentationText.Raw("profile.littleskin"),
             LaunchProfileKind.ThirdParty => ProductPresentationText.Raw("profile.thirdparty"),

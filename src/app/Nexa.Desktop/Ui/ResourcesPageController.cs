@@ -397,7 +397,22 @@ internal sealed partial class ResourcesPageController : IDisposable
             _picking = true;
             try
             {
-                var result = await _commands.Dispatch(packRoute, new ResourceModpackInstallCommand(new(version.Provider, version.ProjectId), version.Id, root, _filter.MirrorFirst), cancellationToken: _downloadsStop.Token).Completion;
+                IReadOnlyList<string> excluded = []; string? expectedHash = null; bool includeOptional = false;
+                if (_feedback is not null && _queries.TryResolve(ResourceModpackContract.Inspect, out var inspectRoute))
+                {
+                    var inspected = await _queries.QueryAsync<ResourceModpackInspectQuery, MinecraftModpackPreview>(inspectRoute,
+                        new(new(version.Provider, version.ProjectId), version.Id, _filter.MirrorFirst), cancellationToken: _downloadsStop.Token);
+                    if (!inspected.IsSuccess) { _feedback.Error(inspected.Error?.Message ?? DesktopResourcesText.Raw("modpack.failed")); return; }
+                    expectedHash = inspected.Value!.Sha256;
+                    if (inspected.Value.OptionalEntries.Count > 0)
+                    {
+                        var selected = await ModpackOptionalSelection.ChooseAsync(_feedback, inspected.Value, _shell.Renderer.LocalizeText, _downloadsStop.Token);
+                        if (selected is null) return;
+                        excluded = selected; includeOptional = true;
+                    }
+                }
+                var result = await _commands.Dispatch(packRoute, new ResourceModpackInstallCommand(new(version.Provider, version.ProjectId), version.Id, root, _filter.MirrorFirst)
+                { IncludeOptional = includeOptional, ExcludedOptionalFiles = excluded, ExpectedArchiveSha256 = expectedHash }, cancellationToken: _downloadsStop.Token).Completion;
                 if (!_disposed && !result.IsSuccess && result.Error?.Code != XsrRuntimeErrors.Cancelled().Code)
                     _feedback?.Error(result.Error?.Message ?? DesktopResourcesText.Raw("modpack.failed"));
             }

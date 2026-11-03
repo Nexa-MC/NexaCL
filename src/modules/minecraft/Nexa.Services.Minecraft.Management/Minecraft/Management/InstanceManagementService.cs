@@ -118,7 +118,7 @@ public static class InstanceManagementService
         if (schematics) pages.Add(new("schematics", "蓝图", Path.Combine(gameDirectory, "schematics")));
         pages.AddRange([new("saves", "存档", Path.Combine(gameDirectory, "saves")),
             new("screenshots", "截图", Path.Combine(gameDirectory, "screenshots")),
-            new("servers", "服务器"), new("files", "文件工作区"), new("diagnostics", "实例诊断"), new("modpack", "整合包与导出"), new("trash", "已移除内容")]);
+            new("servers", "服务器"), new("inspector", "内容与 NBT 查看"), new("files", "文件工作区"), new("diagnostics", "实例诊断"), new("modpack", "整合包与导出"), new("trash", "已移除内容")]);
         return pages.AsReadOnly();
     }
 }

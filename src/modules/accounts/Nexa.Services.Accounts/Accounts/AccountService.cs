@@ -67,7 +67,7 @@ public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
         lock (_gate)
         {
             generation = _credentialGeneration;
-            return index >= 0 && index < _profiles.Count && _profiles[index] == expected;
+            return index >= 0 && index < _profiles.Count && SameProfile(_profiles[index], expected);
         }
     }
 
@@ -137,7 +137,7 @@ public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
         _log?.Debug("Account", "Loading persisted launch profiles.");
         try
         {
-            loaded = [.. (initialized ?? _port.Load()).Profiles];
+            loaded = (initialized ?? _port.Load()).Profiles.Select(FreezeProfile).ToList();
         }
         catch (Exception failure) when (failure is IOException or UnauthorizedAccessException or NotSupportedException)
         {
@@ -220,7 +220,7 @@ public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
 
         lock (_gate)
         {
-            List<LaunchProfile> updated = [.. _profiles, profile];
+            List<LaunchProfile> updated = [.. _profiles, FreezeProfile(profile)];
             if (CheckCreationPolicy([profile]) is { } rejection) return XsrResult.Failure<int>(rejection);
             XsrResult saved = Persist(updated);
             if (!saved.IsSuccess)
@@ -250,7 +250,7 @@ public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
         {
             XsrResult valid = Validate(profile);
             if (!valid.IsSuccess) return XsrResult.Failure<int>(valid.Error!);
-            normalized.Add(profile with
+            normalized.Add(FreezeProfile(profile) with
             {
                 Info = profile.Info ?? "",
                 Uuid = profile.Uuid ?? "",
@@ -331,11 +331,11 @@ public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
                 return XsrResult.Failure(AccountErrors.ProfileNotFound(index));
             }
 
-            if ((expected is not null && _profiles[index] != expected)
+            if ((expected is not null && !SameProfile(_profiles[index], expected))
                 || (expectedGeneration is { } captured && captured != _credentialGeneration))
                 return XsrResult.Failure(AccountErrors.InvalidProfile("the account changed while refreshing its session."));
             List<LaunchProfile> updated = [.. _profiles];
-            updated[index] = profile;
+            updated[index] = FreezeProfile(profile);
             if (_profiles[index].Kind != profile.Kind && CheckCreationPolicy([profile]) is { } rejection)
                 return XsrResult.Failure(rejection);
             XsrResult saved = Persist(updated);
@@ -369,7 +369,7 @@ public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
         lock (_gate)
         {
             if (_credentialGeneration != expectedGeneration || index < 0 || index >= _profiles.Count
-                || _profiles[index] != expectedProfile)
+                || !SameProfile(_profiles[index], expectedProfile))
                 return XsrResult.Failure(AccountErrors.InvalidProfile("the account changed while refreshing its session."));
             LaunchProfile profile = _profiles[index];
             if (profile.Kind != LaunchProfileKind.Microsoft)
@@ -449,7 +449,7 @@ public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
         lock (_gate)
         {
             return index >= 0 && index < _profiles.Count
-                ? XsrResult.Success(_profiles[index])
+                ? XsrResult.Success(FreezeProfile(_profiles[index]))
                 : XsrResult.Failure<LaunchProfile>(AccountErrors.ProfileNotFound(index));
         }
     }
@@ -493,11 +493,21 @@ public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
             if (!saved.IsSuccess) return XsrResult.Failure<AccountWardrobeCapture>(saved.Error!);
             // Reentrant observers can change selection or the roster during publication.
             if (_selectionGeneration != identity.SelectionGeneration || _selectedIndex != identity.Index
-                || _credentialGeneration != identity.RosterGeneration + 1 || _profiles[identity.Index] != updated)
+                || _credentialGeneration != identity.RosterGeneration + 1 || !SameProfile(_profiles[identity.Index], updated))
                 return XsrResult.Failure<AccountWardrobeCapture>(AccountWardrobeService.StaleIdentity());
             return CaptureActiveWardrobe();
         }
     }
+
+    private static LaunchProfile FreezeProfile(LaunchProfile profile)
+    {
+        if (profile.OfflineSkinPng is null || profile.OfflineCapePng is null || profile.OfflineSkinPng.Length > 1_048_576 || profile.OfflineCapePng.Length > 1_048_576)
+            throw new InvalidDataException("Offline textures exceed the per-profile byte budget.");
+        return profile with { OfflineSkinPng = profile.OfflineSkinPng.ToArray(), OfflineCapePng = profile.OfflineCapePng.ToArray() };
+    }
+    private static bool SameProfile(LaunchProfile left, LaunchProfile right) =>
+        left == right with { OfflineSkinPng = left.OfflineSkinPng, OfflineCapePng = left.OfflineCapePng }
+        && left.OfflineSkinPng.AsSpan().SequenceEqual(right.OfflineSkinPng) && left.OfflineCapePng.AsSpan().SequenceEqual(right.OfflineCapePng);
 
     private static XsrResult Validate(LaunchProfile profile)
     {
@@ -511,6 +521,10 @@ public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
             return XsrResult.Failure(AccountErrors.InvalidProfile("a username is required."));
         }
 
+        if (profile.OfflineSkinPng is null || profile.OfflineCapePng is null || profile.OfflineSkinPng.Length > 1_048_576 || profile.OfflineCapePng.Length > 1_048_576)
+            return XsrResult.Failure(AccountErrors.InvalidProfile("Offline textures exceed the per-profile byte budget."));
+        if (profile.OfflineCustomUuid && (profile.Kind != LaunchProfileKind.Offline || !Guid.TryParseExact(profile.Uuid, "N", out var customUuid) || customUuid == Guid.Empty))
+            return XsrResult.Failure(AccountErrors.InvalidProfile("The custom offline UUID is invalid."));
         if (!Enum.IsDefined(profile.Kind))
         {
             return XsrResult.Failure(AccountErrors.InvalidProfile("the profile kind is not defined."));
@@ -531,7 +545,7 @@ public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
         for (int index = 0; index < profiles.Count; index++)
         {
             LaunchProfile profile = profiles[index];
-            if (profile.Kind != LaunchProfileKind.Offline
+            if (profile.Kind != LaunchProfileKind.Offline || profile.OfflineCustomUuid
                 || string.IsNullOrWhiteSpace(profile.Username)
                 || string.IsNullOrWhiteSpace(profile.Uuid)
                 || !string.Equals(profile.Uuid, Minecraft.Launch.MinecraftOfflineIdentity.LegacyMismatchedUuid(profile.Username), StringComparison.Ordinal))

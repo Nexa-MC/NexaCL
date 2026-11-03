@@ -17,6 +17,8 @@ internal sealed partial class SettingsPageController
     private string _exportNameDraft = "", _exportVersionDraft = "1.0.0", _exportPathDraft = "";
     private InstanceExportFormat _exportFormat;
     private bool _exportCore, _exportLibraries, _exportAssets;
+    private XsrUiEntityId _exportLauncherDirectory, _exportJavaDirectory, _scriptLauncher, _scriptDestination;
+    private string _exportLauncherDraft = "", _exportJavaDraft = "";
     private Func<Task<string?>>? _pickExportDirectory;
     private Task<string?>? _exportDirectoryRead;
     internal void ConfigureExport(Func<Task<string?>> picker) => _pickExportDirectory = picker;
@@ -26,6 +28,7 @@ internal sealed partial class SettingsPageController
         _exportInstance = null; _exportError = null; _exportLoaded = false; _exportDirectoryRead = null;
         _exportName = _exportVersion = _exportPath = default;
         _exportNameDraft = ""; _exportVersionDraft = "1.0.0"; _exportPathDraft = "";
+        _exportLauncherDraft = _exportJavaDraft = "";
         _exportFormat = InstanceExportFormat.Mrpack; _exportCore = _exportLibraries = _exportAssets = false;
         _exportCategories.Clear(); _exportCategories.UnionWith(["mods", "config", "defaultconfigs"]);
         ResetExportFiles();
@@ -52,7 +55,7 @@ internal sealed partial class SettingsPageController
             _exportDirectoryRead = null;
             if (picking.IsCompletedSuccessfully && picking.Result is { } directory)
             {
-                _exportPathDraft = Path.Combine(directory, Path.GetFileName(_instance) + (_exportFormat == InstanceExportFormat.Zip ? ".zip" : ".mrpack"));
+                _exportPathDraft = Path.Combine(directory, Path.GetFileName(_instance) + (_exportFormat == InstanceExportFormat.Mrpack ? ".mrpack" : ".zip"));
                 if (_exportOptionsPathDraft.Length == 0)
                 {
                     _exportOptionsPathDraft = Path.Combine(directory, Path.GetFileName(_instance) + ".export.json");
@@ -78,6 +81,7 @@ internal sealed partial class SettingsPageController
         string Draft(XsrUiEntityId field, string fallback) => field.IsAssigned && _shell.Tree.IsAlive(field)
             ? _shell.Tree.GetComponent<XsrUiTextInput>(field)!.ReadDraft() : fallback;
         _exportNameDraft = Draft(_exportName, _exportNameDraft); _exportVersionDraft = Draft(_exportVersion, _exportVersionDraft); _exportPathDraft = Draft(_exportPath, _exportPathDraft);
+        _exportLauncherDraft = Draft(_exportLauncherDirectory, _exportLauncherDraft); _exportJavaDraft = Draft(_exportJavaDirectory, _exportJavaDraft);
         _exportSummaryDraft = Draft(_exportSummary, _exportSummaryDraft);
         _exportOptionsPathDraft = Draft(_exportOptionsPath, _exportOptionsPathDraft);
     }
@@ -98,6 +102,9 @@ internal sealed partial class SettingsPageController
             ["path"] = _exportPathDraft,
             ["zip"] = Flag(_exportFormat == InstanceExportFormat.Zip),
             ["mrpack"] = Flag(_exportFormat == InstanceExportFormat.Mrpack),
+            ["curseforge"] = Flag(_exportFormat == InstanceExportFormat.CurseForge),
+            ["mcbbs"] = Flag(_exportFormat == InstanceExportFormat.Mcbbs),
+            ["multimc"] = Flag(_exportFormat == InstanceExportFormat.MultiMC),
             ["core"] = Flag(_exportCore),
             ["libraries"] = Flag(_exportLibraries),
             ["assets"] = Flag(_exportAssets),
@@ -108,9 +115,11 @@ internal sealed partial class SettingsPageController
             ["hasError"] = Flag(_exportError is not null),
             ["error"] = _exportError ?? ""
         });
+        _exportLauncherDirectory = nodes["ExportLauncher"]; _exportJavaDirectory = nodes["ExportJava"];
         _exportName = nodes["ExportName"]; _exportVersion = nodes["ExportVersion"]; _exportPath = nodes["ExportPath"];
         if (initialize)
         {
+            _shell.Renderer.SetTextInputValue(_exportLauncherDirectory, _exportLauncherDraft); _shell.Renderer.SetTextInputValue(_exportJavaDirectory, _exportJavaDraft);
             _shell.Renderer.SetTextInputValue(_exportName, _exportNameDraft); _shell.Renderer.SetTextInputValue(_exportVersion, _exportVersionDraft); _shell.Renderer.SetTextInputValue(_exportPath, _exportPathDraft);
         }
         BindWorldAction(nodes, WorldKey("ExportChoose"), () =>
@@ -146,16 +155,33 @@ internal sealed partial class SettingsPageController
             CaptureExportDrafts(); _exportFormat = format;
             if (_exportPathDraft.Length > 0)
             {
-                _exportPathDraft = Path.ChangeExtension(_exportPathDraft, format == InstanceExportFormat.Zip ? ".zip" : ".mrpack");
+                _exportPathDraft = Path.ChangeExtension(_exportPathDraft, format == InstanceExportFormat.Mrpack ? ".mrpack" : ".zip");
                 _shell.Renderer.SetTextInputValue(_exportPath, _exportPathDraft);
             }
             BuildModpackExport(snapshot);
         }
         BindWorldAction(nodes, "Export.Zip", () => ChangeFormat(InstanceExportFormat.Zip));
+        BindWorldAction(nodes, "Export.CurseForge", () => ChangeFormat(InstanceExportFormat.CurseForge));
+        BindWorldAction(nodes, "Export.Mcbbs", () => ChangeFormat(InstanceExportFormat.Mcbbs));
+        BindWorldAction(nodes, "Export.MultiMC", () => ChangeFormat(InstanceExportFormat.MultiMC));
         BindWorldAction(nodes, "Export.Mrpack", () => ChangeFormat(InstanceExportFormat.Mrpack));
         BindWorldAction(nodes, "Export.GameCore", () => { CaptureExportDrafts(); _exportCore = !_exportCore; BuildModpackExport(snapshot); });
         BindWorldAction(nodes, "Export.Libraries", () => { CaptureExportDrafts(); _exportLibraries = !_exportLibraries; BuildModpackExport(snapshot); });
         BindWorldAction(nodes, "Export.Assets", () => { CaptureExportDrafts(); _exportAssets = !_exportAssets; BuildModpackExport(snapshot); });
+        _scriptLauncher = nodes["Script.Launcher"]; _scriptDestination = nodes["Script.Destination"];
+        if (initialize)
+        {
+            _shell.Renderer.SetTextInputValue(_scriptLauncher, Environment.ProcessPath ?? "");
+            _shell.Renderer.SetTextInputValue(_scriptDestination, "");
+        }
+        BindWorldAction(nodes, "Script.Export", () =>
+        {
+            if (_instance is null || _exportWrite is not null || !_commands.TryResolve(InstanceLaunchScriptContract.Export, out var route)) return;
+            _exportWrite = _commands.Dispatch(route, new InstanceLaunchScriptCommand(_instance,
+                _shell.Tree.GetComponent<XsrUiTextInput>(_scriptLauncher)!.ReadDraft().Trim(),
+                _shell.Tree.GetComponent<XsrUiTextInput>(_scriptDestination)!.ReadDraft().Trim())).Completion;
+            WakeOnPlatformCompletion(_exportWrite);
+        });
         BindWorldAction(nodes, WorldKey("Export"), () =>
         {
             if (preview is null || _managementWrite is not null || _exportWrite is not null || _instance is null || !_commands.TryResolve(InstanceModpackExportContract.Export, out var route)) return;
@@ -165,6 +191,8 @@ internal sealed partial class SettingsPageController
             {
                 Summary = _shell.Tree.GetComponent<XsrUiTextInput>(_exportSummary)!.ReadDraft(),
                 ExcludedPaths = _exportExcluded.ToArray(),
+                LauncherDirectory = _exportFormat == InstanceExportFormat.Zip ? _exportLauncherDraft.Trim() : "",
+                JavaDirectory = _exportFormat == InstanceExportFormat.Zip ? _exportJavaDraft.Trim() : "",
                 Format = _exportFormat,
                 IncludeGameCore = _exportFormat == InstanceExportFormat.Zip && _exportCore,
                 IncludeLibraries = _exportFormat == InstanceExportFormat.Zip && _exportLibraries,

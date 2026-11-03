@@ -13,6 +13,7 @@ public enum LaunchProfileKind
     Offline,
     LittleSkin,
     NCloud,
+    Nide8,
 }
 
 /// <summary>
@@ -51,6 +52,10 @@ public sealed record LaunchProfile
 
     /// <summary>Yggdrasil clientToken used for validate/refresh (third-party).</summary>
     public string ClientToken { get; init; } = string.Empty;
+    public byte[] OfflineSkinPng { get; init; } = [];
+    public byte[] OfflineCapePng { get; init; } = [];
+    public bool OfflineSlim { get; init; }
+    public bool OfflineCustomUuid { get; init; }
 }
 
 /// <summary>

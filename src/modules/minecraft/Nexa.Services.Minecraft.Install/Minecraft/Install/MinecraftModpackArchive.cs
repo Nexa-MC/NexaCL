@@ -11,7 +11,7 @@ internal sealed record CurseForgePackFile(long ProjectId, long FileId, bool Opti
 internal sealed record ModpackPlan(MinecraftModpackPreview Preview, IReadOnlyList<ModpackFile> Files,
     IReadOnlyList<CurseForgePackFile> CurseFiles, string[] OverrideRoots);
 
-public static class MinecraftModpackArchive
+public static partial class MinecraftModpackArchive
 {
     internal const long MaxArchive = 2L * 1024 * 1024 * 1024;
     internal const long MaxFile = 512L * 1024 * 1024;
@@ -29,9 +29,19 @@ public static class MinecraftModpackArchive
         stream.Position = 0;
         using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
         ValidateArchive(archive);
-        bool mr = archive.GetEntry("modrinth.index.json") is not null;
-        if (mr && archive.GetEntry("manifest.json") is not null) throw new InvalidDataException("整合包包含互相冲突的清单。");
-        var entry = archive.GetEntry(mr ? "modrinth.index.json" : "manifest.json") ?? throw new InvalidDataException("未找到 Modrinth 或 CurseForge 整合包清单。");
+        var roots = archive.Entries.Where(e => e.FullName.Count(c => c == '/') <= 1
+            && e.Name is "modrinth.index.json" or "manifest.json" or "mcbbs.packmeta" or "modpack.json" or "mmc-pack.json")
+            .Select(e => e.FullName[..^e.Name.Length]).Distinct(StringComparer.Ordinal).ToArray();
+        // Root manifests take precedence over ordinary files named manifest.json in overrides.
+        if (roots.Contains("", StringComparer.Ordinal)) roots = [""];
+        if (roots.Length != 1) throw new InvalidDataException("未找到唯一的整合包清单目录。");
+        string prefix = roots[0];
+        if (prefix.Count(c => c == '/') > 1) throw new InvalidDataException("整合包清单位于过深的目录。");
+        if (archive.GetEntry(prefix + "mcbbs.packmeta") is not null || archive.GetEntry(prefix + "mmc-pack.json") is not null || archive.GetEntry(prefix + "modpack.json") is not null)
+            return await ReadLegacyAsync(path, hash, archive, prefix, token).ConfigureAwait(false);
+        bool mr = archive.GetEntry(prefix + "modrinth.index.json") is not null;
+        if (mr && archive.GetEntry(prefix + "manifest.json") is not null) throw new InvalidDataException("整合包包含互相冲突的清单。");
+        var entry = archive.GetEntry(prefix + (mr ? "modrinth.index.json" : "manifest.json")) ?? throw new InvalidDataException("未找到 Modrinth 或 CurseForge 整合包清单。");
         if (entry.Length > 16 * 1024 * 1024) throw new InvalidDataException("整合包清单过大。");
         await using var manifestStream = entry.Open();
         using var manifestBuffer = new MemoryStream();
@@ -97,19 +107,20 @@ public static class MinecraftModpackArchive
         }
         if (!MinecraftVersionPaths.IsSafeReference(game) || (loader is not null && (string.IsNullOrWhiteSpace(build) || !MinecraftVersionPaths.IsSafeReference(build)))) throw new InvalidDataException("Minecraft 或加载器版本无效。");
         if (files.Count + curseFiles.Count > 10000 || files.Sum(file => file.Size) > MaxExpanded) throw new InvalidDataException("整合包下载数量或大小超过限制。");
-        if (files.Select(file => file.Path).Distinct(StringComparer.OrdinalIgnoreCase).Count() != files.Count || curseFiles.Select(file => (file.ProjectId, file.FileId)).Distinct().Count() != curseFiles.Count) throw new InvalidDataException("整合包包含重复文件。");
+        if (files.Select(file => file.Path).Distinct(StringComparer.OrdinalIgnoreCase).Count() != files.Count || curseFiles.Select(file => file.ProjectId).Distinct().Count() != curseFiles.Count) throw new InvalidDataException("整合包包含重复文件。");
         string safeName = string.Concat(name.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '_'));
         if (safeName.Length > 60) safeName = safeName[..60];
         if (safeName.Length == 0) safeName = "Modpack";
         int optional = files.Count(file => file.Optional) + curseFiles.Count(file => file.Optional);
         var preview = new MinecraftModpackPreview(path, hash, name, version, mr ? "Modrinth" : "CurseForge", game, loader, build,
-            safeName + "-" + hash[..8].ToLowerInvariant(), files.Count + curseFiles.Count - optional, optional);
-        return new(preview, files.AsReadOnly(), curseFiles.AsReadOnly(), overrides);
+            safeName + "-" + hash[..8].ToLowerInvariant(), files.Count + curseFiles.Count - optional, optional)
+        { OptionalEntries = OptionalEntries(files, curseFiles) };
+        return new(preview, files.AsReadOnly(), curseFiles.AsReadOnly(), overrides.Select(p => prefix + p).ToArray());
     }
 
     internal static string SafeRelative(string path)
     {
-        if (string.IsNullOrWhiteSpace(path) || path.Contains('\\') || path.Contains(':') || path.StartsWith('/')) throw new InvalidDataException("整合包包含无效路径。");
+        if (string.IsNullOrWhiteSpace(path) || path.Length > 4096 || path.Contains('\\') || path.Contains(':') || path.StartsWith('/')) throw new InvalidDataException("整合包包含无效路径。");
         foreach (string part in path.TrimEnd('/').Split('/'))
         {
             string stem = part.Split('.')[0].ToUpperInvariant();

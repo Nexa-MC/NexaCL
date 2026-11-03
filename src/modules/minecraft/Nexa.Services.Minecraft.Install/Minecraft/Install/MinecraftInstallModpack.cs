@@ -66,7 +66,7 @@ public sealed partial class MinecraftInstallService
                 File.Move(archivePath + ".part", archivePath);
             }
             var plan = await MinecraftModpackArchive.ReadAsync(archivePath, token).ConfigureAwait(false);
-            if (plan.Preview != command.Pack with { Path = archivePath }) throw new InvalidDataException("整合包已变化，请重新拖入。");
+            if (!MinecraftModpackArchive.SamePreview(plan.Preview, command.Pack with { Path = archivePath })) throw new InvalidDataException("整合包已变化，请重新拖入。");
             ReadyExecution(execution, journal.Stage);
             var pack = plan.Preview;
             string destination = Nexa.Core.PathIdentity.Contained(root, "versions/" + pack.InstanceId);
@@ -76,11 +76,12 @@ public sealed partial class MinecraftInstallService
             Directory.CreateDirectory(buildRoot);
             var metadata = new PersistentInstallMetadataSource(buildRoot, _metadata, journal);
             await EnsureLocalModpackBaseAsync(pack, baseReuseRoot ?? root, baseReuseClientPath, metadata, token).ConfigureAwait(false);
+            var excluded = MinecraftModpackArchive.ValidateSelection(plan, command.ExcludedOptionalFiles);
             var pinnedFiles = await journal.ReadFilesAsync(token).ConfigureAwait(false);
-            var files = pinnedFiles?.ToList() ?? plan.Files.Where(file => command.IncludeOptional || !file.Optional).ToList();
+            var files = pinnedFiles?.ToList() ?? plan.Files.Where(file => !file.Optional || (command.IncludeOptional && !excluded.Contains("path:" + file.Path))).ToList();
             if (pinnedFiles is null)
             {
-                foreach (var reference in plan.CurseFiles.Where(file => command.IncludeOptional || !file.Optional))
+                foreach (var reference in plan.CurseFiles.Where(file => !file.Optional || (command.IncludeOptional && !excluded.Contains("cf:" + file.ProjectId))))
                     files.Add(await ResolveCurseForgePackFileAsync(reference, token).ConfigureAwait(false));
             }
             if (files.Count > 100000 || files.Any(file => file.Size is < 0 or > MinecraftModpackArchive.MaxFile)) throw new InvalidDataException("整合包文件大小无效。");
@@ -140,6 +141,7 @@ public sealed partial class MinecraftInstallService
                     {
                         token.ThrowIfCancellationRequested();
                         string relative = entry.FullName[prefix.Length..];
+                        if (plan.Preview.OptionalEntries.Any(f => f.Id == "path:" + relative) && (!command.IncludeOptional || excluded.Contains("path:" + relative))) continue;
                         ValidatePackDestination(relative, pack.InstanceId);
                         string target = Nexa.Core.PathIdentity.Contained(installed.InstanceDirectory, relative);
                         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
@@ -151,7 +153,8 @@ public sealed partial class MinecraftInstallService
             await new MinecraftInstanceMetadataStore().SaveAsync(installed.InstanceDirectory, new()
             { InstanceIsolation = true, Description = pack.Name, ModpackVersion = pack.Version }, token).ConfigureAwait(false);
             await ModpackManagedManifestStore.WriteAsync(installed.InstanceDirectory,
-                await ModpackManagedManifestStore.CaptureAsync(installed.InstanceDirectory, pack, token).ConfigureAwait(false), token).ConfigureAwait(false);
+                (await ModpackManagedManifestStore.CaptureAsync(installed.InstanceDirectory, pack, token).ConfigureAwait(false)) with
+                { ExcludedOptionalFiles = plan.Preview.OptionalEntries.Where(f => !command.IncludeOptional || excluded.Contains(f.Id)).Select(f => f.Id).ToArray() }, token).ConfigureAwait(false);
             // Shared cache additions are safe to keep on failure; the new instance commits last.
             foreach (string file in Directory.EnumerateFiles(buildRoot, "*", SearchOption.AllDirectories))
             {

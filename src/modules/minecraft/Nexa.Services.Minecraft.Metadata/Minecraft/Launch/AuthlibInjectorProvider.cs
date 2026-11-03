@@ -6,7 +6,7 @@ using Nexa.Services.Downloads;
 namespace Nexa.Services.Minecraft.Launch;
 
 /// <summary>Resolves the upstream artifact contract and verifies SHA-256 before exposing a JVM agent.</summary>
-public sealed class AuthlibInjectorProvider(HttpClient http, DownloadService downloads) : IAuthlibInjectorProvider, IDisposable
+public sealed partial class AuthlibInjectorProvider(HttpClient http, DownloadService downloads) : IAuthlibInjectorProvider, IDisposable
 {
     private readonly SemaphoreSlim _gate = new(1, 1);
     public async Task<string> EnsureAsync(string minecraftRoot, CancellationToken cancellationToken = default)

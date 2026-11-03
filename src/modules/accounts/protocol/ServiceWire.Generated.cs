@@ -63,6 +63,10 @@ internal sealed partial class ServiceWireWriter
         String(value.Username);
         String(value.Server);
         String(value.Password);
+        String(value.OfflineUuid);
+        String(value.OfflineSkinPath);
+        String(value.OfflineCapePath);
+        Boolean(value.OfflineSlim);
     }
     internal void AccountOnboardingOptions(global::Nexa.Services.Accounts.AccountOnboardingOptions? value)
     {
@@ -266,6 +270,10 @@ internal sealed partial class ServiceWireWriter
         String(value.Info);
         LaunchProfileKind(value.Kind);
         String(value.Logo);
+        Array_Byte(value.OfflineCapePng);
+        Boolean(value.OfflineCustomUuid);
+        Array_Byte(value.OfflineSkinPng);
+        Boolean(value.OfflineSlim);
         String(value.ProviderAccessToken);
         Int64(value.ProviderTokenExpiresAtUnix);
         String(value.RefreshToken);
@@ -312,6 +320,10 @@ internal sealed partial class ServiceWireWriter
         String(value.AccessToken);
         MinecraftLaunchIdentityMode(value.Mode);
         String(value.AuthServer);
+        String(value.Nide8ServerId);
+        Array_Byte(value.OfflineCapePng);
+        Array_Byte(value.OfflineSkinPng);
+        Boolean(value.OfflineSlim);
     }
     internal void MinecraftLaunchIdentityMode(global::Nexa.Services.Minecraft.Launch.MinecraftLaunchIdentityMode value) => Int32((int)value);
     internal void Nullable_Int64(global::System.Nullable<global::System.Int64> value)
@@ -446,7 +458,7 @@ internal sealed partial class ServiceWireReader
         return new global::Nexa.Services.Accounts.AccountLoginCancelCommand(p0);
     }
     internal global::Nexa.Services.Accounts.AccountLoginPhase AccountLoginPhase() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 7 ? (global::Nexa.Services.Accounts.AccountLoginPhase)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
-    internal global::Nexa.Services.Accounts.AccountLoginProvider AccountLoginProvider() { int value = Int32(); return value is 0 or 1 or 2 or 3 ? (global::Nexa.Services.Accounts.AccountLoginProvider)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Accounts.AccountLoginProvider AccountLoginProvider() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 ? (global::Nexa.Services.Accounts.AccountLoginProvider)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Accounts.AccountLoginSnapshot? AccountLoginSnapshot()
     {
         if (!Boolean()) return null;
@@ -467,7 +479,11 @@ internal sealed partial class ServiceWireReader
         var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
-        return new global::Nexa.Services.Accounts.AccountLoginStartCommand(p0, p1!, p2!, p3!);
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p6 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p7 = Boolean();
+        return new global::Nexa.Services.Accounts.AccountLoginStartCommand(p0, p1!, p2!, p3!, p4!, p5!, p6!, p7);
     }
     internal global::Nexa.Services.Accounts.AccountOnboardingOptions? AccountOnboardingOptions()
     {
@@ -694,16 +710,20 @@ internal sealed partial class ServiceWireReader
         var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p4 = LaunchProfileKind();
         var p5 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
-        var p6 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
-        var p7 = Int64();
-        var p8 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
-        var p9 = String();
+        var p6 = Array_Byte() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p7 = Boolean();
+        var p8 = Array_Byte() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p9 = Boolean();
         var p10 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
-        var p11 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p11 = Int64();
         var p12 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
-        return new global::Nexa.Services.Accounts.LaunchProfile() { AccessToken = p0!, AuthServer = p1!, ClientToken = p2!, Info = p3!, Kind = p4, Logo = p5!, ProviderAccessToken = p6!, ProviderTokenExpiresAtUnix = p7, RefreshToken = p8!, SkinAddress = p9!, SvgIcon = p10!, Username = p11!, Uuid = p12! };
+        var p13 = String();
+        var p14 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p15 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p16 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Accounts.LaunchProfile() { AccessToken = p0!, AuthServer = p1!, ClientToken = p2!, Info = p3!, Kind = p4, Logo = p5!, OfflineCapePng = p6!, OfflineCustomUuid = p7, OfflineSkinPng = p8!, OfflineSlim = p9, ProviderAccessToken = p10!, ProviderTokenExpiresAtUnix = p11, RefreshToken = p12!, SkinAddress = p13!, SvgIcon = p14!, Username = p15!, Uuid = p16! };
     }
-    internal global::Nexa.Services.Accounts.LaunchProfileKind LaunchProfileKind() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 ? (global::Nexa.Services.Accounts.LaunchProfileKind)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
+    internal global::Nexa.Services.Accounts.LaunchProfileKind LaunchProfileKind() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 ? (global::Nexa.Services.Accounts.LaunchProfileKind)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Accounts.LaunchProfileSet? LaunchProfileSet()
     {
         if (!Boolean()) return null;
@@ -744,7 +764,11 @@ internal sealed partial class ServiceWireReader
         var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p3 = MinecraftLaunchIdentityMode();
         var p4 = String();
-        return new global::Nexa.Services.Minecraft.Launch.MinecraftLaunchIdentity(p0!, p1!, p2!, p3) { AuthServer = p4! };
+        var p5 = String();
+        var p6 = Array_Byte() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p7 = Array_Byte() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p8 = Boolean();
+        return new global::Nexa.Services.Minecraft.Launch.MinecraftLaunchIdentity(p0!, p1!, p2!, p3) { AuthServer = p4!, Nide8ServerId = p5!, OfflineCapePng = p6!, OfflineSkinPng = p7!, OfflineSlim = p8 };
     }
     internal global::Nexa.Services.Minecraft.Launch.MinecraftLaunchIdentityMode MinecraftLaunchIdentityMode() { int value = Int32(); return value is 0 or 1 or 2 ? (global::Nexa.Services.Minecraft.Launch.MinecraftLaunchIdentityMode)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::System.Nullable<global::System.Int64> Nullable_Int64()
@@ -842,5 +866,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "98D2E6943DE70F57C1C16E72A5DAA79333F491930DDDE5EB824AF7332B98904F";
+    internal const string Fingerprint = "5C86C5949F692528EFD1E528FA18AF05A172CFDD2BDB62B69F815095F5C278B9";
 }

@@ -148,6 +148,7 @@ internal static partial class Program
         public TaskCenterService Tasks;
         public MinecraftInstallService Install;
         private readonly DownloadService _downloads;
+        public DownloadService Downloads => _downloads;
         public List<string> InstalledRoots = [];
 
         public InstallFixture(FakeMetadata metadata, IInstallCatalogSource? catalog = null, IMinecraftLoaderInstaller? loaderInstaller = null, HttpClient? http = null,

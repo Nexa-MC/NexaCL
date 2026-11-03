@@ -13,6 +13,23 @@ internal sealed partial class MinecraftServiceSession
         using var writer = new ServiceWireWriter();
         switch (operation)
         {
+            case MinecraftServiceProtocol.ScriptExport:
+                {
+                    var value = reader.InstanceLaunchScriptCommand() ?? throw new InvalidDataException("Missing script request."); reader.End();
+                    writer.XsrError((await InstanceLaunchScriptService.ExportAsync(value, token).ConfigureAwait(false)).Error); break;
+                }
+            case MinecraftServiceProtocol.ContentInspect:
+                {
+                    var value = reader.ContentInspectionQuery() ?? throw new InvalidDataException("Missing inspection request."); reader.End();
+                    var result = await ContentInspectionService.ReadAsync(value, token).ConfigureAwait(false);
+                    writer.XsrError(null); writer.ContentInspectionSnapshot(result); break;
+                }
+            case MinecraftServiceProtocol.LanDiscover:
+                {
+                    var value = reader.LanGameDiscoveryQuery() ?? throw new InvalidDataException("Missing LAN request."); reader.End();
+                    var result = await LanGameDiscoveryService.DiscoverAsync(value, token).ConfigureAwait(false);
+                    writer.XsrError(null); writer.LanGameDiscoverySnapshot(result); break;
+                }
             case MinecraftServiceProtocol.ManageInstanceExportOptionsSave:
                 {
                     var value = reader.InstanceExportOptionsSave() ?? throw new InvalidDataException("Missing management request."); reader.End();

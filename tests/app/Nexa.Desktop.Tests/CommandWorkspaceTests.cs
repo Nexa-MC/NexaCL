@@ -92,6 +92,11 @@ internal static partial class Program
                     AssertTrue(DesktopSingleInstance.AcquireAsync(directory, destination).GetAwaiter().GetResult() is null);
                     AssertTrue(primary.TryTake(out var forwarded)); AssertEqual(destination, forwarded);
                 }
+                string launchLink = Nexa.Services.Minecraft.Management.InstanceLaunchScriptContract.Link(directory + Path.DirectorySeparatorChar, "Instance");
+                AssertTrue(DesktopActivation.TryParse(launchLink, out var scriptDestination)); AssertEqual(DesktopDestination.RunInstance, scriptDestination);
+                AssertTrue(DesktopSingleInstance.AcquireAsync(directory, scriptDestination, launchLink).GetAwaiter().GetResult() is null);
+                AssertTrue(primary.TryTakeActivation(out var scriptActivation)); AssertEqual(launchLink, scriptActivation.File);
+                AssertEqual(DesktopDestination.RunInstance, scriptActivation.Destination);
                 AssertFalse(primary.TryTake(out _));
                 AssertTrue(DesktopSingleInstance.AcquireAsync(directory, DesktopDestination.Settings, forwardActivation: false).GetAwaiter().GetResult() is null);
                 AssertFalse(primary.TryTake(out _)); // Safe-mode rejection never degrades to route forwarding.

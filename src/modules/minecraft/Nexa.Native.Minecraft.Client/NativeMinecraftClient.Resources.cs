@@ -1,6 +1,7 @@
 using Nexa.Native.Minecraft.Services;
 using Nexa.Native.Services.Wire;
 using Nexa.Services.Resources;
+using Nexa.Services.Minecraft.Install;
 using Nexa.Xsr;
 
 namespace Nexa.Native.Minecraft.Client;
@@ -78,6 +79,12 @@ public sealed partial class NativeMinecraftClient
         byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.ResourceResourceModpackOnlineQuery, writer => writer.ResourceModpackOnlineQuery(value), token).ConfigureAwait(false);
         using var reader = new ServiceWireReader(bytes); var error = reader.XsrError();
         var result = error is null ? XsrResult.Success(reader.ResourceModpackOnline() ?? throw new InvalidDataException("Missing resource result.")) : XsrResult.Failure<ResourceModpackOnline>(error); reader.End(); return result;
+    }
+    public async ValueTask<XsrResult<MinecraftModpackPreview>> InspectResourceModpackAsync(ResourceModpackInspectQuery value, CancellationToken token = default)
+    {
+        byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.ResourceInspectModpack, writer => writer.ResourceModpackInspectQuery(value), token).ConfigureAwait(false);
+        using var reader = new ServiceWireReader(bytes); var error = reader.XsrError();
+        var result = error is null ? XsrResult.Success(reader.MinecraftModpackPreview() ?? throw new InvalidDataException("Missing resource result.")) : XsrResult.Failure<MinecraftModpackPreview>(error); reader.End(); return result;
     }
     public async ValueTask<XsrResult<ResourceModpackPreview>> QueryResourceModpackPreviewQueryAsync(ResourceModpackPreviewQuery value, CancellationToken token = default)
     {

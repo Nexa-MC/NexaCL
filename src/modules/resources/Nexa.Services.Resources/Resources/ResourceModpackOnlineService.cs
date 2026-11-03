@@ -11,21 +11,38 @@ public sealed class ResourceModpackOnlineService(IMinecraftInstallationPort inst
         IResourceCatalogSource catalog, ResourceDownloadService downloader, ResourceOnlineInformationCache information, string archiveDirectory)
         : this((IMinecraftInstallationPort)installer, instances, catalog, downloader, information, archiveDirectory) { }
 
+    public async Task<MinecraftModpackPreview> InspectAsync(ResourceModpackInspectQuery query, CancellationToken token = default)
+    {
+        var version = await ReadInstallVersionAsync(query.Source, query.VersionId, query.MirrorFirst, token).ConfigureAwait(false);
+        string archive = await DownloadArchiveAsync(version, query.MirrorFirst, token).ConfigureAwait(false);
+        return await installer.InspectModpackAsync(archive, token).ConfigureAwait(false);
+    }
+    private async Task<ResourceVersion> ReadInstallVersionAsync(ResourceReference source, string versionId, bool mirrorFirst, CancellationToken token)
+    {
+        var detail = await catalog.DetailAsync(new(source.ProjectId)
+        { Sources = [source], MirrorFirst = mirrorFirst, Refresh = true, WaitForRefresh = true }, token).ConfigureAwait(false);
+        if (detail.IsStale || detail.Project.Kind != ResourceKind.Modpack || !detail.Project.Sources.Contains(source))
+            throw new InvalidDataException("无法确认整合包来源，请刷新后重试。");
+        return detail.Versions.FirstOrDefault(v => v.Id == versionId && v.Provider == source.Provider && v.ProjectId == source.ProjectId && v.File is not null)
+            ?? throw new InvalidDataException("整合包版本不可用，请刷新后重试。");
+    }
     public async Task<Nexa.Xsr.XsrResult<MinecraftInstallResult>> InstallAsync(ResourceModpackInstallCommand command, CancellationToken token = default)
     {
-        var detail = await catalog.DetailAsync(new(command.Source.ProjectId)
-        { Sources = [command.Source], MirrorFirst = command.MirrorFirst, Refresh = true, WaitForRefresh = true }, token).ConfigureAwait(false);
-        if (detail.IsStale || detail.Project.Kind != ResourceKind.Modpack || !detail.Project.Sources.Contains(command.Source))
-            throw new InvalidDataException("无法确认整合包来源，请刷新后重试。");
-        var version = detail.Versions.FirstOrDefault(v => v.Id == command.VersionId && v.Provider == command.Source.Provider && v.ProjectId == command.Source.ProjectId && v.File is not null)
-            ?? throw new InvalidDataException("整合包版本不可用，请刷新后重试。");
+        var version = await ReadInstallVersionAsync(command.Source, command.VersionId, command.MirrorFirst, token).ConfigureAwait(false);
+        MinecraftModpackCommand Selection(MinecraftModpackPreview pack)
+        {
+            if (command.ExpectedArchiveSha256 is not null && !pack.Sha256.Equals(command.ExpectedArchiveSha256, StringComparison.OrdinalIgnoreCase))
+                throw new IOException("整合包在选择可选文件后已变化，请重新选择。");
+            return new(pack, command.RootDirectory, command.IncludeOptional) { ExcludedOptionalFiles = command.ExcludedOptionalFiles };
+        }
         string archive = await DownloadArchiveAsync(version, command.MirrorFirst, token, async (ready, cancellation) =>
         {
             var retriedPreview = await installer.InspectModpackAsync(ready, cancellation).ConfigureAwait(false);
-            await installer.InstallModpackAsync(new(retriedPreview, command.RootDirectory), cancellation).ConfigureAwait(false);
+            var retried = await installer.InstallModpackAsync(Selection(retriedPreview), cancellation).ConfigureAwait(false);
+            if (!retried.IsSuccess) throw new IOException(retried.Error?.Message ?? "整合包重试安装失败。");
         }).ConfigureAwait(false);
         var preview = await installer.InspectModpackAsync(archive, token).ConfigureAwait(false);
-        return await installer.InstallModpackAsync(new(preview, command.RootDirectory), token).ConfigureAwait(false);
+        return await installer.InstallModpackAsync(Selection(preview), token).ConfigureAwait(false);
     }
 
     public async Task<ResourceModpackOnline> ReadAsync(ResourceModpackOnlineQuery query, CancellationToken token = default)
@@ -75,7 +92,8 @@ public sealed class ResourceModpackOnlineService(IMinecraftInstallationPort inst
         var (online, version) = await ReadSelectionAsync(query, token).ConfigureAwait(false);
         string archive = await DownloadArchiveAsync(version, query.Instance.MirrorFirst, token).ConfigureAwait(false);
         var installation = await installer.PreviewModpackUpdateAsync(new(query.Instance.InstanceDirectory, archive,
-            online.OriginalArchivePath, query.IncludeOptional, query.ReplaceModifiedMods), token).ConfigureAwait(false);
+            online.OriginalArchivePath, query.IncludeOptional, query.ReplaceModifiedMods)
+        { ExcludedOptionalFiles = query.ExcludedOptionalFiles }, token).ConfigureAwait(false);
         return new(query, version, installation);
     }
 
@@ -88,7 +106,8 @@ public sealed class ResourceModpackOnlineService(IMinecraftInstallationPort inst
         if (!Nexa.Core.PathIdentity.Comparer.Equals(expected, preview.Installation.Request.ArchivePath)
             || !Nexa.Core.PathIdentity.Comparer.Equals(Nexa.Core.PathIdentity.Normalize(preview.Request.Instance.InstanceDirectory), preview.Installation.Request.InstanceDirectory)
             || preview.Installation.Request.IncludeOptional != preview.Request.IncludeOptional
-            || preview.Installation.Request.ReplaceModifiedMods != preview.Request.ReplaceModifiedMods)
+            || preview.Installation.Request.ReplaceModifiedMods != preview.Request.ReplaceModifiedMods
+            || !preview.Installation.Request.ExcludedOptionalFiles.SequenceEqual(preview.Request.ExcludedOptionalFiles))
             throw new InvalidDataException("在线更新预览不属于当前选择。");
         if (!await VerifiedAsync(expected, version.File!, token).ConfigureAwait(false)) throw new IOException("在线整合包缓存已变化，请重新预览。");
         return await installer.UpdateModpackAsync(new(preview.Installation), token).ConfigureAwait(false);

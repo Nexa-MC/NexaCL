@@ -65,4 +65,12 @@
   <Text Key="native.community.survey-skip" Content="暂不填写" />
   <Text Key="native.clipboard.copied" Content="已复制到剪贴板。" />
   <Text Key="native.clipboard.copy-failed" Content="无法复制，请手动选择文本。" />
+<Text Key="feature.nide8" Content="统一通行证 Nide8" />
+<Text Key="feature.script.unavailable" Content="实例选择服务不可用。" />
+<Text Key="feature.script.failed" Content="无法选择脚本指定的实例。" />
+<Text Key="feature.script.changed" Content="实例选择已变化，请重新运行启动脚本。" />
+<Text Key="native.drop.optional-confirm" Content="确认安装" />
+<Text Key="native.drop.optional-include" Content="包含此文件" />
+<Text Key="native.drop.optional-skip" Content="跳过此文件" />
+<Text Key="native.drop.optional-cancel" Content="取消安装" />
 </StackPanel>

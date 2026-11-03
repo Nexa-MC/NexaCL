@@ -22,6 +22,10 @@ public sealed record MinecraftLaunchIdentity(
     MinecraftLaunchIdentityMode Mode)
 {
     public string? AuthServer { get; init; }
+    public string? Nide8ServerId { get; init; }
+    public byte[] OfflineSkinPng { get; init; } = [];
+    public byte[] OfflineCapePng { get; init; } = [];
+    public bool OfflineSlim { get; init; }
 }
 
 public sealed record MinecraftLaunchRequest
