@@ -50,7 +50,10 @@ Run it on an elevated disposable Windows test host. CI downloads the pinned upst
 binary into its temporary directory, checks archive and x64 executable SHA-256 values,
 and never adds that binary to a release artifact. Six samples per cleaner alternate
 order, each with a freshly populated 64 MiB child process. NexaCL runs its actual
-authenticated worker; the reference uses `-clean:full`. Logs include working sets,
+authenticated worker; the reference uses `-clean:full` in a temporary portable copy. Its result dialog is
+dismissed only for the process created by the test; timeout kills that owned process.
+The pinned release also returns exit code 575 after successfully handling CLI commands,
+so measured cleanup validates the reference. Logs include working sets,
 available-memory deltas and elapsed time. Acceptance requires the median target
 working-set reduction to be within five percentage points of the reference, and a
 reference reduction of at least 75% so an ineffective baseline cannot pass.
