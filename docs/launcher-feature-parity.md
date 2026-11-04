@@ -1,5 +1,7 @@
 # Launcher feature parity implementation
 
+English | [简体中文](launcher-feature-parity.zh-CN.md)
+
 The baseline is Alpha 21 (`3c1862e4e`). This work implements the user's explicit
 feature list independently; external launchers are read-only behavior/format
 references and are not implementation dependencies. Internet lobbies and tunnels,
@@ -25,33 +27,20 @@ checks before it is marked complete. No new alpha release is implied by this
 implementation request. Check actual validation output instead of inferring
 success from a button, a DTO or an upstream class name.
 
-## 使用入口
+## Entry points and boundaries
 
-- 实例设置 → **服务器**：进入页面自动扫描 LAN，保留“发现局域网游戏”按钮用于立即重扫；离开页面停止监听。发现项可直接加入或加入服务器列表。
-- 拖入 `.zip` / `.mrpack`：识别 Modrinth、CurseForge、旧 HMCL、MCBBS 和 MultiMC 清单，支持一层外包装目录。MCBBS 的 `force` 是更新策略，不视为可选标志。自定义 MultiMC patches/JarMods、MCBBS 自定义运行库会明确拒绝，防止安装时丢失组件。
-- 整合包安装的可选文件入口逐项选择包含或跳过，最后确认。在线目录安装也先检查清单并绑定所选归档的 SHA-256。更新预览显示逐文件勾选项，修改选择后需重新预览。
-- 实例设置 → **整合包与导出**（先打开实例开发模式）：支持 MRPACK、游戏目录 ZIP、CurseForge、MCBBS（HMCL 兼容）和 MultiMC。可保存内容筛选配置。
-- 游戏目录 ZIP 可填写完整原生启动器发布目录和 Java 根目录。仅收集启动器发布文件及所选 Java，运行时内部文件链接展开为普通文件；越界或循环链接拒绝。保留法律文件和执行权限。便携入口用相对游戏目录启动，并设置随包 Java 的 `JAVA_HOME`。首次运行仍需完成启动器设置及账户登录。目标平台/架构由所选发布包和 Java 决定，不包含跨平台下载。
-- 同一导出页可导出 `.cmd` / `.bat` / `.sh` 实例启动脚本。脚本调用选定的启动器，通过二进制安全编码的本地启动链接选择实例，使用正常账户刷新与启动流程；不携带访问令牌。已有启动器进程和首次设置后的转交均保留目标。
-- 实例设置 → **内容与 NBT 查看**：通用只读查看入口，可输入本地文件路径；资源包、光影包和蓝图的详情页也提供查看器。支持目录/ZIP 文件列表、UTF-8 文本、PNG、原始/gzip/zlib 的 Java 大端 NBT。NBT 使用数字子节点路径，重名标签不会混淆；数组分页。投影显示元数据、调色板信息及文件内嵌的 ARGB 缩略图，不执行光影或游戏脚本。
-- 添加离线档案：可指定 UUID、本地 PNG 皮肤/披风和 Slim 模型。材质随受保护账户档案保存，公开账户列表不携带材质字节；账户服务在存取时复制字节。游戏通过仅监听 loopback、随机路径、带签名的本地材质端点读取外观，使用正常校验的 authlib-injector。该端点随启动器的 Minecraft 服务存活，退出启动器后不再服务后续材质请求；已下载的游戏材质仍由游戏缓存。
-- 添加账户 → **统一通行证 Nide8**：输入 32 位服务器 ID、用户名和密码。认证端点固定为官方 `auth.mc-user.com:233/<id>/authserver`；刷新会话保持角色身份；启动时使用官方代理及其 HTTPS 元数据指定的校验和，代理参数为服务器 ID。
-- 设置 → **Java**、实例 → **游戏设置**：Java 选择方式提供“自动／手动／版本内 Java”。版本内策略查找当前版本文件夹下的 `java`、`jre`、`jdk`、`runtime`（支持嵌套发行目录）或直接的 `bin/java`；验证实际版本并应用游戏兼容范围与停用设置。它不借用全局或其他版本的 Java，也不自动下载替代运行时；缺失或不兼容时停止启动并说明原因。全局、实例和启动配置的覆盖规则保持一致，移动实例后按新目录重新查找。
+- Instance settings / Servers scans LAN automatically, offers immediate rescan and join/save actions, and cancels listening on navigation.
+- Dropped ZIP/MRPACK archives normalize supported manifests and one wrapper directory. Optional install/update files have stable IDs and independent choices. Online installation binds the reviewed archive SHA-256. MCBBS `force` is update policy, not an optional-file flag.
+- Instance settings / Modpacks and export is available in instance development mode. MRPACK, directory ZIP, CurseForge, MCBBS/HMCL-compatible, and MultiMC exports share file filtering. See the completion checklist for extended component/settings support; basic format recognition is not full compatibility.
+- Portable exports select an explicit launcher distribution and Java home. Include only admitted release/runtime files, preserve legal files and execute permissions, and reject escaping/cyclic links. First use still requires setup and account login. Platform/architecture follow the selected files.
+- Instance scripts preserve target root/instance through single-instance and setup handoffs. Launcher-mediated scripts refresh identity and do not store account tokens. Independent-script acceptance is tracked separately.
+- Content/NBT inspection is read-only and bounded. Directory/ZIP inventories, UTF-8 text, PNG, raw/gzip/zlib NBT, numeric tree paths, and paged arrays share the existing query. Schematics expose metadata/palettes and embedded thumbnails without executing game/shader code. Region decoding and complete schematic summaries are tracked by the completion checklist.
+- Offline profiles support custom UUID, local PNG skin/cape, and Slim. Protected profiles own texture bytes and copy them at ingress/egress. Random loopback texture endpoints use signed properties and the verified authlib-injector. Endpoints live with Minecraft services; closing the launcher stops later requests, while the game may retain downloaded textures.
+- Nide8 uses a 32-hex server ID and the official `auth.mc-user.com:233/<id>/authserver` endpoint. Refresh retains character identity. The official agent is downloaded from fixed HTTPS metadata and checked against its published digest.
+- Global Java settings and instance game settings expose automatic/manual/instance policies. Portable relative and major policies and broader version-local discovery are tracked in [completion](parity-completion.md). The launched instance supplies the actual directory after moves or renames.
 
-## 验证记录
+## Verification evidence
 
-验证结果以本次命令输出为准。相关测试位于 `LauncherFeatureParityTests.cs`、
-`FeatureParityPageTests.cs`、账户表单测试，以及独立的 Accounts/Minecraft 原生调用者测试。
-完整方案构建、业务/UI 回归、架构检查、协议生成校验和原生 AOT 检查共同覆盖正式调用链。
+The original implementation baseline passed 876 service cases, 393 Desktop cases, 101-project architecture/layout checks, independent Accounts/Minecraft/Host NativeAOT callers, protocol generators, and actual Avalonia windows at 1040/810 widths. The version-local Java increment added 59 focused Java/offline checks and native probing/isolation coverage. These are historical results for those revisions, not automatic evidence for subsequent changes.
 
-本次 Linux 验证：Release 全方案与原生服务模式 Desktop 构建均无警告、无错误；
-业务测试 876 项、Desktop 测试 393 项通过，101 个项目的架构与目录检查通过。
-Accounts、Minecraft 与 Host 的独立 NativeAOT 调用者验证通过，包含新增操作的
-真实字节边界、准入校验及退出清理。协议与账户路由生成校验通过。
-实际 Avalonia 窗口在 1040 / 810 两种宽度验证页面、滚动、输入保留及格式选项边界。
-Windows 上的防火墙交互、实际游戏外观和不同发行版 Java 仍需平台实机验收。
-
-版本内 Java 增补验证：59 项 Java/离线依赖测试、全局与实例选择及窄窗口/滚动
-回归、101 个项目架构检查通过。独立 NativeAOT 调用者验证了原生模块中的
-版本内策略、实际 Java 探测和缺失运行时隔离；协议生成指纹保持不变。
-源码格式使用 CI 的完整 `IDE0055 IMPORTS` 检查命令验证。
+Current completion requires executed checks recorded in [parity-completion.md](parity-completion.md). Windows firewall interactions, actual game appearance, and Java distribution differences require platform/device acceptance in addition to contract tests.

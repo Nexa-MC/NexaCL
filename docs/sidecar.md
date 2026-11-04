@@ -1,13 +1,13 @@
 # Sidecar
 
-本仓库拥有 `src/sidecar/Nexa.Sidecar.Protocol`、`Transport` 及 XSR 中的 Host 管理侧。插件执行引擎和 SDK 由独立仓库维护。`.nsc` 是原生可执行文件，不能把它当作进程内托管 DLL 加载。
+This repository owns `src/sidecar/Nexa.Sidecar.Protocol`, Transport, and XSR Host supervision. Separate repositories maintain the execution engine and SDK. An `.nsc` is a native executable, not an in-process managed DLL.
 
-Host 验证候选来源与签名，创建认证的本地连接并监督进程。生命周期涵盖握手、发现、验证、加载、注册、就绪、激活、停用、注销和关闭。注册阶段先检查数量、载荷和期限，再发布完整状态；失败不能留下部分注册或镜像。
+Host verifies source and signature, creates an authenticated local connection, and supervises the process. Lifecycle phases include handshake, discovery, verification, load, registration, readiness, activation, deactivation, unregister, and shutdown. Registration validates counts, payloads, and deadlines before publishing complete state; failures cannot leave partial registrations or mirrors.
 
-数据面采用生成数字 ID、二进制帧和可扩展字段。未知字段按约定跳过；现有消息号与字段语义不可复用。命令／查询完成、状态版本、事件、流量信用、取消和会话终止显式编码。禁止同步 IPC、JSON 热路径、反射分派和 CLR 对象跨进程交换。
+The data plane uses generated numeric IDs, binary frames, and extensible fields. Unknown fields follow skip rules; existing message IDs and field semantics cannot be reused. Command/query completion, state revisions, events, credits, cancellation, and session termination are explicit. Synchronous IPC, JSON hot paths, reflection dispatch, and cross-process CLR objects are prohibited.
 
-协议版本与功能位分别协商：共享 NXML 为功能位 16，AutomaticFunctions 为 32，Pages 为 64；源 UI 包当前使用 schema 3，公开兼容仍需遵守现有解码规则。大型注册内容使用有序连续分块，按完整重组结果验证摘要和预算，不能只验证单块。
+Protocol versions and feature bits negotiate separately: shared NXML uses bit 16, AutomaticFunctions 32, and Pages 64. Source UI packages currently use schema 3 while retaining public decoding compatibility. Large registrations use ordered contiguous chunks; verify the complete reassembled digest and budget.
 
-共享 UI 在 Host Renderer 中本地呈现。Sidecar 提供经准入的语义声明和资源，不能直接操纵 Host 的具体 UI 对象。资源及函数扩展绑定会话；会话退出时停止准入、终结待处理请求并退休关联资源。
+Shared UI renders locally in Host Renderer. Sidecars provide admitted semantic declarations and resources, never direct manipulation of Host UI objects. Resources and function extensions belong to sessions. Shutdown closes admission, completes pending requests, and retires associated resources.
 
-发行中的 Market Sidecar 来自锁定输入，构建检查其签名和 provenance。更新、主程序签名和区域／正版政策仍由各自的 Host 边界执行。
+The distributed Market Sidecar comes from pinned inputs with verified signatures and provenance. Host boundaries continue to enforce updates, publisher trust, regional rules, and account eligibility.

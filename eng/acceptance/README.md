@@ -1,3 +1,3 @@
-# 验收工具
+# Acceptance tools
 
-此目录保存 Minecraft 组合矩阵、采样和验收脚本。结合相应脚本的 `--help` 及 CI 入口使用。原生真实设备、权限、长时间运行与云 CI 的结果分别记录，不将候选组合数量当作已通过数量。旧 Alpha 阶段的文档台账已退出当前文档体系。
+This directory contains Minecraft combination matrices, sampling, and acceptance scripts. Use each script's `--help` and the relevant CI entry point. Record native-device, permission, long-running, and cloud-CI evidence separately. Candidate combinations are not passed combinations. Historical Alpha acceptance ledgers are no longer part of current documentation.

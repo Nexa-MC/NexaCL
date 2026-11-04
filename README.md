@@ -1,23 +1,24 @@
-# NexaCL Firefly — 衍生开发与贡献
+# NexaCL Firefly — derivative development and contributions
 
-本仓库面向 **NexaCL 衍生项目开发者、功能贡献者和维护者**。它包含基于 .NET 10、NativeAOT 与 XSR 的 Minecraft Java 启动器源码，支持 Windows、macOS、Linux 的 x64 和 ARM64。
+English | [简体中文](README.zh-CN.md)
 
-普通用户下载安装包及阅读版本说明请访问 [Releases](https://github.com/Nexa-MC/NexaCL/releases)；这里的说明用于理解、构建和修改源码。
+This repository is for **NexaCL derivative developers, contributors, and maintainers**. It contains a Minecraft Java launcher built with .NET 10, NativeAOT, and XSR. Official distributions target Windows, macOS, and Linux on x64 and ARM64.
 
-## 从哪里开始
+Players can find installers and release notes on [Releases](https://github.com/Nexa-MC/NexaCL/releases). This README explains how to understand, build, modify, and distribute the source.
 
-| 目标 | 入口 |
+| Goal | Start here |
 | --- | --- |
-| 开发衍生版本 | [衍生开发说明](docs/derivative-development.md) |
-| 提交功能或修复 | [CONTRIBUTER.md](CONTRIBUTER.md) |
-| 查找功能代码 | [目录结构](docs/repository-layout.md)、[完整项目索引](docs/modules.md) |
-| 理解架构与 DLL 分工 | [架构](docs/architecture.md)、[原生模块](docs/native-modules.md) |
-| 验证、打包与发行 | [测试](docs/testing.md)、[构建](docs/building.md)、[发布](docs/releasing.md) |
-| 修改界面、主题或插件边界 | [呈现](docs/presentation.md)、[主题](docs/themes.md)、[Sidecar](docs/sidecar.md) |
+| Develop a derivative | [Derivative development](docs/derivative-development.md) |
+| Contribute a change | [Contribution guide](CONTRIBUTER.md) |
+| Locate implementation owners | [Repository layout](docs/repository-layout.md), [project index](docs/modules.md) |
+| Understand DLL boundaries | [Architecture](docs/architecture.md), [native modules](docs/native-modules.md) |
+| Build, test, and distribute | [Building](docs/building.md), [testing](docs/testing.md), [releasing](docs/releasing.md) |
+| Develop UI, themes, or extensions | [Presentation](docs/presentation.md), [themes](docs/themes.md), [Sidecar](docs/sidecar.md) |
+| Track launcher compatibility | [Feature parity](docs/launcher-feature-parity.md), [completion checklist](docs/parity-completion.md) |
 
-## 本地运行
+## Local development
 
-安装 `global.json` 指定的 .NET SDK，准备 Python 3；原生编译还需要对应平台的工具链。以下命令从仓库根目录执行：
+Install the SDK pinned in `global.json` and Python 3. Native compilation also requires the target platform's compiler and libraries.
 
 ```sh
 dotnet restore NexaCL.slnx
@@ -25,16 +26,16 @@ dotnet build NexaCL.slnx -c Release -m:1
 dotnet run --project src/app/Nexa.Desktop -c Release --no-build
 ```
 
-直接运行 Desktop 是托管开发路径。正式发行使用 `eng/release/publish_launcher.py` 构建小型 Bootstrap、Host、UI 和独立业务／引擎模块，不能把一个开发 EXE 当作完整发布包。
+Running Desktop directly is the managed development path. Official distributions use `eng/release/publish_launcher.py` to build Bootstrap, Host, UI, independent service/engine modules, and the signed Sidecar. A development executable is not a complete release.
 
-## 源码组织
+## Source organization
 
-`src/app` 保存入口与组合；`foundation`、`runtime`、`rendering` 保存基础层、XSR 和呈现；`modules/<feature>` 将同一业务的契约、实现、客户端和原生入口放在一起；`engines`、`platform`、`sidecar`、`interop` 分别保存引擎、系统集成、进程通信和 ABI 基础。
+`src/app` owns entry points and composition. `foundation`, `runtime`, and `rendering` own shared contracts, XSR, and presentation. `modules/<feature>` groups service contracts, implementations, clients, and native owners. `engines`, `platform`, `sidecar`, and `interop` own native engines, OS integration, process transport, and ABI primitives.
 
-`tests` 对应功能分组，`tools` 保存编译器、探针和基准，`eng` 保存工程与发布脚本。项目位置由 `eng/architecture/projects.json` 记录，允许依赖由 `project-references.json` 锁定。项目身份、源码目录与最终 DLL 是不同层面的清单。
+`tests` mirrors feature ownership; `tools` contains compilers, probes, and benchmarks; `eng` contains engineering and distribution scripts. Project paths are recorded in `eng/architecture/projects.json`. Project identity, source directory, and distributed DLL name are separate concerns.
 
-## 开发边界
+## Development boundaries
 
-遵循 [Apache License 2.0](LICENSE) 及第三方依赖的许可和通知要求。衍生发行应配置自己的产品身份、服务凭据、更新来源及签名体系；本仓库不会提供上游私钥或私人服务凭据。
+Follow [Apache License 2.0](LICENSE) and all applicable third-party licenses and notices. Derivatives must configure their own product identity, authorized service credentials, update sources, and signing trust. Upstream private keys and service credentials are not provided.
 
-提交代码前阅读 [贡献说明](CONTRIBUTER.md)，修改信任或业务边界时同时维护 [项目文档](docs/README.md)。当前实现的正版资格、区域与更新信任规则见 [安全说明](docs/security.md)。不要将编译产物、缓存、个人配置或凭据提交到仓库。
+Read the [contribution guide](CONTRIBUTER.md) and [documentation index](docs/README.md) before changing ownership or trust boundaries. Current account eligibility, regional, and update requirements are documented in [security](docs/security.md). Keep build outputs, caches, local configuration, and credentials out of commits.

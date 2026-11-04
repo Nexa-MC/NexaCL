@@ -1,16 +1,16 @@
-# 版本
+# Versioning
 
-产品版本只使用以下形式：
+Product versions use these exact forms:
 
-| 渠道 | 规范形式 |
+| Channel | Canonical form |
 | --- | --- |
-| 稳定版 | 2.0.0 |
+| Stable | 2.0.0 |
 | Alpha | 2.0.0.alpha.N |
 | Beta | 2.0.0.beta.N |
 | CI | 2.0.0.ci.ffffff |
 
-CI 后缀是小写六位十六进制提交标识；序号规则和编码由 `eng/xsr/Xsr.Version.props`、发布工具及测试共同检查。标签在规范版本前添加 `v`。不能用另一套文件夹名、显示文案或 SemVer 转写替代正式产品身份。
+The CI suffix is a lowercase six-digit hexadecimal commit identifier. `eng/xsr/Xsr.Version.props`, release tooling, and tests validate sequences and encoding. Tags prefix the canonical version with `v`. Alternative directory names, display strings, or SemVer rewrites cannot replace the formal product identity.
 
-默认源码版本以 `eng/xsr/Xsr.Version.props` 为准。它与 GitHub Release 的公开状态不同。正式入口提供产品版本给固定镜像版本的 Host 和 UI。独立引擎镜像版本、Sidecar 自身版本和共享 NuGet 包版本分别管理，不随每个 Alpha 序号一起改写。
+`eng/xsr/Xsr.Version.props` defines the source default, independently of GitHub Release publication status. The official entry point supplies the product version to Host and UI, whose native image versions are fixed independently. Engine image versions, the Sidecar version, and shared NuGet versions are managed separately from Alpha sequence numbers.
 
-同一公开版本对应不可变的构件字节。更改代码后重新发布使用新版本，不覆盖既有签名包。版本比较和渠道选择见 `eng/release/version.py` 及更新模块的对应实现。
+Each public version identifies immutable bytes. Source changes require a new release version rather than overwriting signed packages. Comparison and channel selection are implemented in `eng/release/version.py` and update services.

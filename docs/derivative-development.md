@@ -1,29 +1,31 @@
-# 衍生开发
+# Derivative development
 
-本页用于在独立项目中构建、修改和发行 NexaCL 衍生版本。它不授予上游服务凭据或发布身份。
+English | [简体中文](derivative-development.zh-CN.md)
 
-## 许可与来源
+This guide describes building, modifying, and distributing an independent NexaCL derivative. It does not grant access to upstream credentials or publisher identities.
 
-阅读根目录 Apache License 2.0 和各依赖的许可、版权及通知。对修改作出清晰说明，维护自己的源码与发布来源。不要把第三方资源、插件或品牌内容的授权等同于主仓库代码许可；再分发前核对各自来源与许可。
+## Licensing and provenance
 
-## 先构建，再定制
+Read the root Apache License 2.0 and every dependency's licenses, copyrights, and notices. Identify modifications and maintain your own source and distribution provenance. Third-party resources, plugins, and branding have independent permissions; verify them before redistribution.
 
-先按 [构建说明](building.md) 验证托管开发入口和目标平台 NativeAOT 包。通过 [模块索引](modules.md) 找到功能所有者，不需要为了改品牌同时重命名所有项目、命名空间和 ABI。程序集和二进制协议改名属于兼容变更，应单独规划。
+## Establish a working baseline
 
-产品图像与 UI 位于 `src/app/Nexa.Desktop/Assets`、`Ui`、`Themes`；Artwork 的嵌入规则位于 `eng/build/ArtworkResources.props`。项目名、资源逻辑名、安装身份、关联协议和显示名称的消费方不同，修改后检查对应路径，不能只替换可见标题。
+Follow [building](building.md) to verify managed development and a target-platform NativeAOT distribution before customization. Find owners through the [project index](modules.md). Branding does not require renaming every project, namespace, and ABI. Assembly or binary-protocol renames are compatibility work that needs its own plan.
 
-## 外部服务与凭据
+Product assets and UI reside in `src/app/Nexa.Desktop/Assets`, `Ui`, and `Themes`. Artwork embedding is defined in `eng/build/ArtworkResources.props`. Project names, logical resources, installation identities, protocol associations, and display names have different consumers; verify each affected path.
 
-OAuth 客户端、第三方 API Key、API 客户端身份和远程服务地址按自己的使用权限配置。所需输入以源码与工作流为准；不要复制本地凭据，也不要默认上游提供的服务允许衍生版本共用。缺少凭据时明确禁用或提供相应能力的错误状态，不能吞掉认证失败。
+## External services and credentials
 
-## 独立发行与信任
+Configure OAuth clients, API keys, client identities, and remote endpoints under your own authorization. Source and workflows define the required inputs. Do not copy local credentials or assume upstream services permit shared derivative use. Missing credentials must produce an explicit unavailable/error state rather than hidden authentication failures.
 
-上游发布者公钥只证明上游签名。独立发行需要自己的私钥管理、嵌入公钥、固定指纹、源与更新仓库、版本及渠道政策；修改它们时审查发布脚本、客户端验证、受保护助手和 Sidecar 验签的全部消费方。不能只替换一个公钥文件而保留不匹配的指纹或假定旧安装能自动接受新信任根。
+## Independent distribution and trust
 
-主程序、Sidecar、NuGet 包和操作系统代码签名有不同身份与版本。明确自己的产品安装标识、应用协议和更新来源，避免覆盖现有上游安装。对 Windows Authenticode、Apple Developer ID 和公证分别配置并验证；OpenPGP 不代替操作系统发布者信任。
+The upstream public key authenticates upstream releases only. An independent publisher needs its own private-key management, embedded public key, pinned fingerprint, source/update repositories, version/channel policy, and verification evidence. Review release scripts, client validation, protected helpers, and Sidecar verification together when changing trust. Replacing one key file does not update every fingerprint or authorize old installations to trust a new publisher.
 
-遵守当前 [安全与区域规则](security.md)。本页不建议绕过正版、下载、签名或受保护更新的安全校验。发行前完成六平台中实际支持的平台检查，并明确未支持或未验证的平台。
+The launcher, Sidecar, NuGet packages, and OS code signatures have separate identities and versions. Choose installation identifiers, application protocols, and update sources that do not overwrite upstream installations. Configure and verify Windows Authenticode, Apple Developer ID, and notarization independently; OpenPGP does not replace OS publisher trust.
 
-## 与上游协作
+Follow the current [security and regional rules](security.md). Complete checks for the platforms you actually support and identify unsupported or unverified platforms. Do not bypass account eligibility, download, signature, or protected-update verification.
 
-适合上游的修复遵循 [贡献指南](../CONTRIBUTER.md)。保持定制点集中，避免将本地绝对路径、Secrets 或特定工作站依赖写入项目引用。公开源码版本和发行字节应能相互追溯。
+## Working with upstream
+
+Use the [contribution guide](../CONTRIBUTER.md) for suitable upstream fixes. Keep customization points focused, and exclude local absolute paths, secrets, and workstation-dependent project references. Published source revisions and release bytes must be traceable to each other.

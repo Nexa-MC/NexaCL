@@ -1,3 +1,3 @@
-# 界面预览工具
+# UI preview tools
 
-此目录用于构建、运行及整理界面预览。预览使用实际页面与后端，输出放在 artifacts 或调用方明确指定的工作目录。截图不能代替输入、生命周期和平台集成验证。
+Build, run, and organize previews using actual pages and backends. Write outputs to artifacts or an explicitly supplied workspace directory. Screenshots supplement input, lifecycle, and platform-integration verification; they do not replace it.

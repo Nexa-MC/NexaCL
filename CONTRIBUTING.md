@@ -1,3 +1,3 @@
-# 贡献入口
+# Contribution entry point
 
-完整指南见 [CONTRIBUTER.md](CONTRIBUTER.md)。衍生发行、环境准备和源码导航从 [README](README.md) 开始。
+Read [CONTRIBUTER.md](CONTRIBUTER.md) for the complete guide, or its [Simplified Chinese version](CONTRIBUTER.zh-CN.md). Start with [README](README.md) for source navigation, development setup, and derivative distribution.

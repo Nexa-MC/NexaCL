@@ -1,3 +1,3 @@
-# 账户头像资源
+# Account avatar assets
 
-此目录保存渲染后端的内置头像资源。资源只承担呈现，不保存用户凭据或账户私有状态。更新时保持项目声明与消费方使用的资源身份一致。
+These built-in rendering assets contain presentation data only, never account credentials or private state. Keep project declarations and caller resource identities consistent when replacing them.

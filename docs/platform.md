@@ -1,15 +1,15 @@
-# 平台与进程
+# Platforms and processes
 
-`src/platform/Nexa.Platform.Abstractions` 定义便携接口，`Nexa.Platform.Runtime` 提供操作系统实现。Windows Explorer 集成的 C++ 工程位于 `src/platform/Nexa.ExplorerCommand`。macOS Swift 辅助程序由 `eng/xsr/Xsr.PlatformHelper.targets` 构建。
+`src/platform/Nexa.Platform.Abstractions` defines portable ports and `Nexa.Platform.Runtime` implements OS behavior. Windows Explorer integration is in `src/platform/Nexa.ExplorerCommand`; `eng/xsr/Xsr.PlatformHelper.targets` builds the macOS Swift helper.
 
-产品支持 Windows、Linux、macOS 的 x64 和 ARM64。原生窗口必须遵守系统主线程和生命周期约束。平台能力以实际探测结果和权限为准，不能因为存在设置项就宣称系统已支持或已应用。
+Official targets are Windows, Linux, and macOS on x64/ARM64. Native windows obey OS main-thread and lifetime requirements. A visible setting is not proof of OS availability or successful application; use real probes and permission results.
 
-Minecraft 进程由 `Nexa.Jvm.Host` 承担受控启动与会话所有权；启动参数、Java 运行时、环境和策略通过显式契约传递。进程创建、退出、资源租约与窗口关闭遵循取消和异步回收规则。系统凭据访问通过平台接口进入账户服务，不把秘密投影到 UI 状态。
+`Nexa.Jvm.Host` owns controlled Minecraft launch/session lifetime. Explicit contracts carry arguments, Java runtime, environment, and policy. Creation, exit, resource leases, and window closure follow cancellation and asynchronous retirement. Platform ports supply system credentials without exposing secrets in UI state.
 
-安装器、协议关联、文件类型、托盘和系统动作由各平台的代码及集成测试验证。用户作用域和系统作用域安装需要不同权限，不能将下载内容直接作为提升权限的执行入口。
+Platform implementations and integration suites verify installers, protocols, file associations, tray, and OS actions. User/system scope require different permissions. Never turn arbitrary downloaded content into an elevated execution entry.
 
-操作系统资源压力策略与 Minecraft 内存估算是两套机制。后者仍停用，不参与启动预检或 JVM 自动内存分配。云 CI 不能代替真实设备上的 SmartScreen、Gatekeeper、Steam 客户端或特定文件系统权限验收。
+OS pressure policies and Minecraft memory estimation are separate. The estimator remains disabled and does not participate in preflight or automatic JVM allocation. Cloud CI cannot replace real-device SmartScreen, Gatekeeper, Steam, or filesystem-permission acceptance.
 
-主页右下角的信息卡片组包含“内存整理”。Windows 下可手动整理其他进程的工作集，或开启自动清理并设置 50–95% 的物理内存使用阈值（默认 80%）。自动模式默认关闭，每 5 秒采样，严格超过阈值后触发，至少间隔 2 分钟。普通模式跳过无权访问的进程；“深度清理（需管理员权限）”默认关闭，启用后每次清理请求一次 UAC，授权后的独立 worker 清理完即退出。取消授权显示未执行；主界面不会提权，也不会安装系统服务。
+The bottom-right home widget includes Windows memory cleanup. Manual cleanup trims eligible third-party working sets. Automatic mode defaults off, samples every five seconds, triggers above a configurable 50–95% physical-memory threshold (default 80%), and waits at least two minutes between runs. Deep cleanup defaults off and requests UAC for a one-operation worker. Denied authorization reports not executed; the UI stays unelevated and no persistent service is installed.
 
-普通与深度模式均排除已登记的 Minecraft 游戏与子进程、Java／Bedrock、前台应用、启动器及子进程、系统关键进程和其他会话。不结束应用、不改分页文件、不清空全局工作集或待机页。卡片报告逐进程工作集的观测减少量和处理计数；这不是私有提交释放量，也不保证游戏帧率提升。实现独立编写，仅使用 Windows API，不包含 Mem Reduct 源码或二进制。真实 UAC 接受／取消及第三方应用回读影响还需 Windows 交互环境验收。
+Both modes exclude registered games/descendants, Java/Bedrock, foreground applications, launcher processes, critical system processes, and other sessions. They do not terminate applications, change paging files, or purge global working sets/standby pages. Counts and observed working-set reductions do not establish private-commit release or FPS improvements. Independent Windows API code is used, without Mem Reduct source or binaries. Interactive UAC and third-party application effects still require Windows acceptance.

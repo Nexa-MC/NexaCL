@@ -1,8 +1,8 @@
-# 模块与项目索引
+# Module and project index
 
-此表按当前项目清单生成，目录用于定位，依赖许可仍以机器架构基线为准。发布产物见 [原生模块](native-modules.md)。
+This table follows the project inventory. Directories locate source; the machine dependency baseline governs allowed references. See [native modules](native-modules.md) for distribution artifacts.
 
-| 项目 | 源码位置 |
+| Project | Source location |
 | --- | --- |
 | `CapabilityProbe` | [tools/probes/CapabilityProbe](../tools/probes/CapabilityProbe/CapabilityProbe.csproj) |
 | `Nexa.Bootstrap` | [src/app/Nexa.Bootstrap](../src/app/Nexa.Bootstrap/Nexa.Bootstrap.csproj) |

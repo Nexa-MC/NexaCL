@@ -2,7 +2,7 @@
 
 ## Git workflow defaults
 
-- **GIT-01 — Finish requested changes.** After finishing a **fix** (or other self-contained code change the user asked for), **commit and push** by default without waiting for a separate “请提交/推送”, unless the user says not to push, the change is exploratory/WIP, or the push target/branch is unclear.
+- **GIT-01 — Finish requested changes.** After finishing a **fix** (or other self-contained code change the user asked for), **commit and push** by default without waiting for a separate “commit/push”, unless the user says not to push, the change is exploratory/WIP, or the push target/branch is unclear.
   **Why:** Completed work should reach the intended branch without another approval round, while explicit user limits and unfinished work remain protected.
 
 - **GIT-02 — Keep the branch target.** Prefer the current tracking branch (`git push origin HEAD` / push the branch that was being worked on).

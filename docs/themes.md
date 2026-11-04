@@ -1,11 +1,11 @@
-# 主题
+# Themes
 
-主题服务位于 `src/modules/themes/`，内置主题与示例位于 `src/app/Nexa.Desktop/Themes/`。主题服务不依赖 Renderer、NSS 编译器或 Avalonia；Desktop 协调样式准备和应用。
+Services live under `src/modules/themes/`; built-in themes and examples are in `src/app/Nexa.Desktop/Themes/`. Theme services do not depend on Renderer, NSS compilation, or Avalonia. Desktop prepares and applies styles.
 
-NTP/1 是无可执行代码的 ZIP 或开发目录。根 `mimetype` 为 `application/x-nexa-theme`；`theme.json` 声明 `format: NTP/1`、稳定 ID、点分版本、本地化名称、`styleApi: 1`、`nss: NSS/1`、有序样式、能力和类型化选项。主题不能替换 NXML 行为、执行脚本、声明业务命令或改变状态绑定。内置 Minimal 和 Advanced 目录提供可执行格式样例。
+NTP/1 is a code-free ZIP or development directory. Root `mimetype` is `application/x-nexa-theme`. `theme.json` declares `format: NTP/1`, stable identity, dotted version, localized names, `styleApi: 1`, `nss: NSS/1`, ordered styles, capabilities, and typed options. Themes cannot replace NXML behavior, execute scripts, declare business commands, or change state bindings. Minimal and Advanced are executable format examples.
 
-清单受 64 KiB、深度 16 限制；归档最多 4096 项，实际展开上限 512 MiB；样式最多 64 文件、总计 1 MiB。服务拒绝路径穿越、绝对路径、链接、重复和跨平台歧义名称。文件与目录资源需显式授权，不能通过绝对路径或符号链接逃逸。具体验证入口和错误由契约及测试锁定。
+Manifest limits are 64 KiB and depth 16. Archives allow at most 4096 entries and 512 MiB actual expanded bytes. Styles allow 64 files and 1 MiB total. Reject traversal, absolute paths, links, duplicates, and cross-platform ambiguous names. File/directory resources require explicit grants and cannot escape through links.
 
-相同清单 ID 更新已有安装，不能复制成另一条主题。相同版本可重装，低版本激活需要显式确认；选项保留与版本提交由服务处理。准备、样式提交、原生效果与最后可用版本的持久化使用候选事务和补偿；失败保留有效主题。预览是临时状态，A→B→A 通过单调代数区分。
+A matching manifest ID updates the existing installation. Equal versions may be reinstalled; activating an older version requires explicit confirmation. Services own option preservation and version commits. Preparation, style commits, native effects, and persistence use candidate transactions with compensation. Failure retains a valid theme. Preview is temporary; monotonic generations distinguish A-to-B-to-A changes.
 
-必要能力不可用时拒绝激活，可选能力使用声明的回退。减少动态、安全模式、图形恢复和窗口生命周期政策优先于主题效果。主题包无签名与主程序签名更新是不同政策。
+Unavailable required capabilities reject activation; optional capabilities use declared fallbacks. Reduced motion, safe mode, graphics recovery, and window lifetime policies override theme effects. Unsigned code-free themes and signed executable updates have distinct policies.

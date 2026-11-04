@@ -1,3 +1,3 @@
-# 版本图像
+# Version image assets
 
-此目录保存渲染后端使用的版本图像。文件名和逻辑资源身份由当前项目配置及消费代码决定；替换图像时检查发布输出与深浅背景显示。
+Rendering backends use these version images. Current project configuration and callers define filenames and logical resource identities. Check publish output and both light/dark backgrounds after replacement.

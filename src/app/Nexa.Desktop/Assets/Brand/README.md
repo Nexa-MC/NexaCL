@@ -1,3 +1,3 @@
-# 品牌资源
+# Brand assets
 
-此目录保存产品品牌图像源。资源由 `eng/build/ArtworkResources.props` 嵌入 Artwork 引擎，产品调用端按既有身份读取。生成与发布时保留图像授权和资源逻辑名称。
+Product brand-image sources live here. `eng/build/ArtworkResources.props` embeds them into Artwork; callers use their existing logical identities. Preserve image permissions and resource names when generating and distributing assets.

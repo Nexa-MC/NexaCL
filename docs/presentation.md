@@ -1,11 +1,11 @@
-# NXML、NSS 与呈现
+# NXML, NSS, and presentation
 
-`src/rendering/` 包含语义 Renderer、NXML 编译／运行时、平台契约和后端。产品页面、动态片段、组件、样式及本地化资源位于 `src/app/Nexa.Desktop/Ui/`。托管开发入口和正式 `nexa-ui` 使用同一产品界面。
+`src/rendering/` contains the semantic Renderer, NXML compiler/runtime, platform contracts, and backends. Product pages, dynamic fragments, components, styles, and localization reside in `src/app/Nexa.Desktop/Ui/`. Managed development and the released `nexa-ui` use the same product interface.
 
-NXML 定义结构、身份、角色、绑定和意图；NSS 定义样式。Renderer 读取带版本的状态，不解析具体业务服务。控制器投影状态、绑定意图和观察异步完成，不能在渲染热路径同步等待 IPC 或 IO。
+NXML defines structure, identity, roles, bindings, and intents. NSS defines styling. Renderer reads versioned state without resolving concrete services. Controllers project state, bind intents, and observe asynchronous completion; render paths never synchronously wait for IPC or IO.
 
-组件声明、编译期目录和生成表由仓库编译链校验；运行时不通过反射猜测控件类型。Host 内部 IR 与插件公开 UI 数据契约分别版本化，不能把内部对象布局作为稳定 ABI。
+The compiler checks component declarations, catalogs, and generated tables. Runtime control types are not inferred through reflection. Host-private IR and public extension UI contracts have separate versions; internal object layouts are not stable ABIs.
 
-布局、虚拟列表和命中测试共享同代度量与几何。滚动锚点、裁剪、键盘顺序、无障碍与显示区域保持一致。资源、输入、动画与原生窗口对象遵循各自作用域；窗口关闭必须及时发出取消并异步回收，不在 UI 主线程等待后台完成。
+Layout, virtualization, and hit testing share generation-matched metrics and geometry. Scroll anchors, clipping, keyboard order, accessibility, and visible bounds must agree. Resources, input, animation, and native windows have explicit scopes. Closing a window promptly cancels work and retires resources asynchronously without waiting on the UI thread.
 
-产品 UI 资源随运行时分发。修改页面应同时检查深浅主题、窄窗口、键盘／手柄导航和失败状态。平台真实窗口与截图检查不由纯模型测试代替。主题边界见 [主题](themes.md)，插件共享 UI 见 [Sidecar](sidecar.md)。
+Distribute UI resources with the runtime. Verify light/dark themes, narrow windows, keyboard/controller navigation, failures, and actual native windows. See [themes](themes.md) and [Sidecar](sidecar.md).

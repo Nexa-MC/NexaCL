@@ -1,6 +1,6 @@
-# 共享包
+# Shared packages
 
-共享包由 `eng/packages/manifest.json` 定义，与产品 Alpha/Beta 版本独立。当前闭包包含 Core、Contracts、Sidecar.Protocol、Sidecar.Transport、XSR Abstractions、Diagnostics、State、Runtime，以及独立 BuildTools；Renderer 和平台实现不包含在该闭包中。
+`eng/packages/manifest.json` defines shared packages independently of product Alpha/Beta versions. The closure includes Core, Contracts, Sidecar.Protocol, Sidecar.Transport, XSR Abstractions, Diagnostics, State, Runtime, and separate BuildTools. Renderer and platform implementations are outside this closure.
 
 ```sh
 python eng/packages/build.py --output /absolute/path/to/feed
@@ -8,10 +8,10 @@ python eng/packages/verify.py --feed /absolute/path/to/feed
 python eng/packages/verify.py --feed /absolute/path/to/feed --aot
 ```
 
-需要匹配的 .NET 10 SDK、Python 3 和本地编译依赖。脚本生成本地 feed 与记录源 SHA、依赖、包 SHA-256 的清单；构建不等于已发布到公共注册表。
+Use the pinned .NET 10 SDK, Python 3, and required native dependencies. The local feed manifest records source SHA, dependencies, and package SHA-256. Building a feed does not publish it to a public registry.
 
-运行时包包含程序集、许可证、文档、匹配 `.nfp` 与复制目录的 buildTransitive 目标。BuildTools 包仅提供构建工具及其私有依赖，不能将 Roslyn、Mono.Cecil 带入产品。消费方显式引用 `PrivateAssets=all` 的 BuildTools 并启用 `NexaAutomaticFunctionPatches=true` 才会插桩自己的代码。
+Runtime packages contain assemblies, licenses, documentation, matching `.nfp` catalogs, and buildTransitive copy targets. BuildTools contains private build dependencies only; Roslyn and Mono.Cecil must not enter product output. Consumers explicitly reference BuildTools with `PrivateAssets=all` and set `NexaAutomaticFunctionPatches=true` to instrument their own code.
 
-验证使用独立包消费项目和新缓存，检查命令接受／完成、状态、插桩安装／退休、增量编译及托管／AOT 输出。消费方不依赖 NexaCL 工作区路径。只使用本地 Runtime 不会自动启动 Sidecar 或开启远程插件。
+Verification uses independent consumer projects and fresh caches to check command acceptance/completion, state, instrumentation installation/retirement, incremental builds, and managed/AOT output. Consumers do not reference NexaCL workspace paths. Referencing Runtime alone does not start Sidecars or enable remote plugins.
 
-已发布包版本与字节保持不变，内容变化必须使用新包版本。源码目录位置以 `eng/architecture/projects.json` 为准；包 API 身份不因目录迁移而改变。
+Published package versions and bytes are immutable; content changes require a new package version. Source locations follow `eng/architecture/projects.json`; API identities do not change with directory moves.

@@ -1,5 +1,5 @@
-# 原生更新测试夹具
+# Native update fixtures
 
-各 RID 子目录含测试专用公钥、清单和三字节归档的签名。这些归档不能执行启动器；临时测试私钥已丢弃，测试指纹与生产发布身份分离。
+Each RID directory contains test-only public keys, manifests, and signatures for three-byte archives. These archives cannot launch the product. Temporary fixture private keys were discarded; test fingerprints are separate from production publisher trust.
 
-固定签名字节让不同 CI 平台无需 GPG 程序或外部签名服务即可测试便携事务。提升权限的运行器验证生产拒绝策略，不能把夹具公钥加入生产信任。
+Fixed signature bytes let CI platforms exercise portable transactions without GPG or an external signer. Elevated runners verify production rejection policy. Never add fixture public keys to production trust.

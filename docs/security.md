@@ -1,11 +1,13 @@
-# 信任、凭据与区域规则
+# Trust, credentials, and regional policy
 
-主程序更新与可执行 Sidecar 都必须通过既定来源、固定发布者身份和内容校验。根公钥 `GPG-PUBLIC-KEY.asc` 的发布身份为 `5701218D69B531E1A7ED35BB6E31F5974A273AEE`。禁止把下载位置可信当作内容已验签，也不能以未签名历史包构造受信差分基线。
+English | [简体中文](security.zh-CN.md)
 
-凭据、令牌、私钥和 API 客户端身份不进入源码、测试日志、UI 状态或用户可导出的诊断。Actions 的令牌、发布私钥与本地 CLI 凭据分别管理。更新仓库只持公钥，不能重新签署源发布。
+Launcher updates and executable Sidecars must pass the defined source, pinned publisher, and content checks. The release identity for `GPG-PUBLIC-KEY.asc` is `5701218D69B531E1A7ED35BB6E31F5974A273AEE`. A trusted download location does not establish a content signature; unsigned historical archives cannot serve as trusted differential baselines.
 
-下载、导入、解压、主题和更新都须限制大小、数量、实际展开字节与路径权限。拒绝路径穿越、链接逃逸、替换竞态、重复或跨平台歧义路径。受保护更新通过保留的对象权限和已安装助手执行，不能让普通 UI 用任意路径重建提升权限的操作目标。
+Credentials, tokens, private keys, and API client identities must not enter source, test logs, UI state, or exportable diagnostics. Actions credentials, release private keys, and local CLI credentials are separate. The update repository holds public keys only and cannot resign source releases.
 
-正版资格检查适用于全球。中国大陆不提供 Minecraft 本体下载；整合包安装复用完整本地原版，缺失时引导通过官方 Minecraft Launcher 获取。修改界面、网络模块或插件能力不能绕过这些服务规则。
+Downloads, imports, extraction, themes, and updates have bounded byte/count/path budgets. Reject traversal, link escapes, replacement races, duplicate entries, and cross-platform ambiguous paths. Protected updates retain admitted object permissions and use the installed helper; ordinary UI cannot reconstruct privileged targets from arbitrary paths.
 
-主题是受限样式资源，与可执行更新的签名政策不同。插件扩展需通过能力、会话和资源边界准入。更改上述信任边界必须同时修改契约、实现与回归检查。
+Account eligibility checks apply worldwide. Mainland China does not provide Minecraft game downloads: pack installation reuses a complete local vanilla installation and directs users to the official Minecraft Launcher when it is missing. UI, network, and plugin changes must preserve these service rules.
+
+Themes are restricted styling resources, with a different admission policy from executable updates. Extensions pass capability, session, and resource admission. Trust changes must update contracts, implementations, and regression evidence together.

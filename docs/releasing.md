@@ -1,13 +1,15 @@
-# 发布流程
+# Releasing
 
-正式发布包含源码验证、六平台构建、完整分发签名和独立更新源验证。发布成功以公开 Release 和验证结果为准，不能以标签存在或工作流已启动代替。
+English | [简体中文](releasing.zh-CN.md)
 
-1. 在 `eng/xsr/Xsr.Version.props` 设置规范版本，提交源码和维护者编写的发布说明；运行源码 CI。
-2. 为准确的完整提交 SHA 创建有非空说明的 draft prerelease，创建并推送 `v<version>` 标签。
-3. `Launcher Build` 验证六个 RID，构建原生模块、JVM Host、更新助手、安装器和便携包。若工作流令牌不能读取草稿，用手动 `release_notes` 输入传入同一份说明。
-4. distribution 要求全部 18 个完整包，读取最多五个兼容受信历史版本，生成差分并验证重建，验证嵌入 Sidecar 的签名与来源，然后签名并以独立公钥环境验签完整分发。
-5. 工作流把全部资源附加到既有草稿，保留说明；既有草稿不会自动公开。确认完整任务成功、资源齐全和验签通过后公开草稿。
-6. 触发 `Nexa-MC/NexaCL-Update` 的 `Publish verified updates`，传入相同 tag。目标工作流验证源资源实际字节与签名后公开；核对目标资源及元数据与源一致。
+A release includes source verification, six-platform builds, complete distribution signatures, and independent update-source verification. Success requires a public Release with verified assets, not merely a tag or started workflow.
+
+1. Set the canonical version in `eng/xsr/Xsr.Version.props`, commit source and maintainer-written notes, and run source CI.
+2. Create a draft prerelease with nonempty notes for the exact full commit SHA; create/push `v<version>`.
+3. Launcher Build verifies six RIDs and builds native modules, JVM Host, helper, installers, and portable packages. If its token cannot read the draft, supply the same notes through `release_notes`.
+4. Distribution requires all 18 full packages. It admits up to five compatible trusted historical versions, builds/reconstructs differentials, verifies embedded Sidecar signatures/provenance, signs the full distribution, and verifies it in an independent public-key environment.
+5. Upload assets to the existing draft while retaining notes. Drafts are not automatically published. Publish only after complete jobs, asset inventories, and signatures pass.
+6. Dispatch Publish verified updates in `Nexa-MC/NexaCL-Update` with the same tag. It verifies source bytes/signatures before publication. Check target metadata/assets against the source.
 
 ```sh
 gh workflow run launcher-build.yml --ref v2.0.0.alpha.N -F release_notes=@/path/to/RELEASE.md
@@ -15,8 +17,8 @@ gh release edit v2.0.0.alpha.N --draft=false --prerelease --latest=false
 gh workflow run publish.yml --repo Nexa-MC/NexaCL-Update -f tag=v2.0.0.alpha.N
 ```
 
-Alpha/Beta 保持 prerelease，稳定版按对应渠道设置。完整包包括 Windows 每架构 Setup/MSI/ZIP、Linux DEB/RPM/AppImage/TAR、macOS DMG/TAR。签名元数据包含 `SHA256SUMS`、`Nexa-Release.json`，存在差分时还有 `Nexa-Delta.json`。
+Alpha/Beta remain prereleases. Full packages comprise per-architecture Windows Setup/MSI/ZIP, Linux DEB/RPM/AppImage/TAR, and macOS DMG/TAR. Signed metadata includes `SHA256SUMS`, `Nexa-Release.json`, and `Nexa-Delta.json` when differentials exist.
 
-公开已包含 `SHA256SUMS.asc` 的签名草稿后，工作流跳过重建，保护公开字节。失败时保留日志，只重试失败任务，不移动已发布标签、不覆盖公开文件、不绕过签名。更新仓库每十五分钟的计划同步可能延迟，手动同步仍需等待实际成功。
+Publishing a signed draft already containing `SHA256SUMS.asc` skips rebuilding to protect immutable bytes. Retain failure logs and retry failed jobs without moving public tags, replacing assets, or bypassing signatures. Scheduled update synchronization may lag its fifteen-minute interval; manual synchronization still requires actual success.
 
-发布私钥只在源仓库 Actions Secrets 中使用；更新仓库只需要公钥。仓库 OpenPGP 身份不能代替 Windows Authenticode、Apple Developer ID 或公证。本文不宣称这些操作系统信任凭据已经配置。
+Source Actions Secrets hold release private keys; the update repository needs public keys only. OpenPGP does not replace Windows Authenticode, Apple Developer ID, or notarization. This guide does not claim those OS credentials are configured.
