@@ -73,6 +73,7 @@
               <StackPanel Key="MemoryPage" Scroll="true" Class="launch-memory-page">
                 <StackPanel Class="launch-memory-row">
                   <Text Key="MemoryTitle" Content="内存整理" Class="launch-memory-title" />
+                  <Button Key="MemoryReport" Content="" Label="查看清理报告" Icon="lucide/info" Width="28" Command="ui.launch.memory.report" Class="launch-memory-clean" />
                   <Button Key="MemoryClean" Content="立即清理" Label="清理其他进程内存，排除游戏进程" Command="ui.launch.memory.clean" Clickable="{state launch.memory.can-clean}" Class="launch-memory-clean" />
                 </StackPanel>
                 <Text Key="MemoryUsage" Content="{state launch.memory.usage}" Localize="false" Class="launch-memory-usage" />
@@ -81,7 +82,7 @@
                   <Text Key="MemoryThresholdLabel" Content="{state launch.memory.threshold-label}" Localize="false" Class="launch-memory-threshold-label" />
                 </StackPanel>
                 <Slider Key="MemoryThreshold" Label="自动清理阈值（百分比）" Minimum="50" Maximum="95" Step="1" RangeValue="{data memory_threshold}" Enabled="{state launch.memory.supported}" Command="ui.launch.memory.threshold" Class="launch-memory-threshold" />
-                <CheckBox Key="MemoryDeep" Content="深度清理（需管理员权限）" Label="深度清理，通过 UAC 提权，仍排除游戏进程" Checked="{data memory_deep}" Enabled="{state launch.memory.supported}" Command="ui.launch.memory.deep" Class="launch-memory-deep" />
+                <CheckBox Key="MemoryDeep" Content="深度清理（需管理员权限）" Label="深度清理，通过 UAC 执行系统清理；有游戏运行时跳过系统级项目" Checked="{data memory_deep}" Enabled="{state launch.memory.supported}" Command="ui.launch.memory.deep" Class="launch-memory-deep" />
                 <Text Key="MemoryDetail" Content="{state launch.memory.detail}" Localize="false" MaxLines="2" TrimOverflow="true" Class="launch-memory-detail" />
               </StackPanel>
             </VerticalPager>

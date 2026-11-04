@@ -152,8 +152,32 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          ./native-account-tests/Nexa.Services.Tests.exe "memory cleanup" "memory deep cleanup"
+          ./native-account-tests/Nexa.Services.Tests.exe "memory cleanup" "memory deep cleanup" 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP/windows-memory-cleanup.log"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Compare native memory cleanup with pinned Mem Reduct on a controlled workload
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'memreduct-3.5.2-bin.7z'
+          $fixture = Join-Path $env:RUNNER_TEMP 'memory-comparison-baseline'
+          Invoke-WebRequest 'https://github.com/henrypp/memreduct/releases/download/v.3.5.2/memreduct-3.5.2-bin.7z' -OutFile $archive
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne 'EC41CA15FF623F53850D9EE01986D3F8FF457EC93457A6CEEB993B7164023D15') { throw 'Memory baseline archive hash mismatch.' }
+          & 'C:\Program Files\7-Zip\7z.exe' x $archive "-o$fixture" -y
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $baseline = Get-ChildItem $fixture -Filter memreduct.exe -Recurse | Where-Object { (Get-FileHash $_.FullName -Algorithm SHA256).Hash -eq 'DD55A81D56E8C32918E5190B2EC2A1F2A7EDBBCA884627439B4B619FDFB5602D' } | Select-Object -First 1
+          if ($null -eq $baseline) { throw 'Pinned x64 memory baseline executable is missing.' }
+          ./native-account-tests/Nexa.Services.Tests.exe --memory-compare $baseline.FullName 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP/windows-memory-comparison.log"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Retain Windows native memory operation measurements
+        if: always() && runner.os == 'Windows'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-memory-cleanup
+          path: |
+            ${{ runner.temp }}/windows-memory-cleanup.log
+            ${{ runner.temp }}/windows-memory-comparison.log
+          if-no-files-found: error
+          retention-days: 14
       - name: Verify native launcher migration and SQLite source snapshots
         shell: pwsh
         run: |

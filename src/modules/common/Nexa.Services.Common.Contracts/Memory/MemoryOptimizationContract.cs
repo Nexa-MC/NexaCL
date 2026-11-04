@@ -11,7 +11,21 @@ public readonly record struct SystemMemorySample(long TotalBytes, long Available
 
 public sealed record MemoryProcess(int Id, int ParentId, string Name, long CreationTime, bool IsProtected);
 public sealed record MemoryCleanupResult(int Cleaned, int Skipped, int Failed, long WorkingSetReductionBytes,
-    long AvailableChangeBytes);
+    long AvailableChangeBytes)
+{
+    public IReadOnlyList<SystemMemoryCleanupResult> SystemOperations { get; init; } = [];
+    public long ElapsedMilliseconds { get; init; }
+}
+public enum SystemMemoryCleanupOperation { WorkingSets, FileCache, ModifiedPages, StandbyPages, LowPriorityStandby, RegistryCache, CombinePages, VolumeCache }
+public enum SystemMemoryCleanupOutcome { Succeeded, GameProtected, Unsupported, AccessDenied, Failed }
+public sealed record SystemMemoryCleanupResult(SystemMemoryCleanupOperation Operation, SystemMemoryCleanupOutcome Outcome,
+    int NativeStatus, long AvailableChangeBytes, long ElapsedMilliseconds);
+public interface ISystemMemoryCleanupPort
+{
+    bool IsSupported { get; }
+    SystemMemorySample Sample();
+    int Execute(SystemMemoryCleanupOperation operation);
+}
 
 /// <summary>Platform owns native handles and measurements; the service owns selection and scheduling.</summary>
 public interface IProcessMemoryPort

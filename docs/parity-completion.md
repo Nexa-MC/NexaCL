@@ -6,6 +6,7 @@ No alpha publication is implied.
 
 | Acceptance | State | Required behavior |
 | --- | --- | --- |
+| Deep memory operations | Pending Windows comparison | Eight system operations, privileges, live game guard and native measurements |
 | Whole-instance Java discovery | Pending | Arbitrary nested Java homes; bounded traversal and compatibility |
 | Relative Java selection | Pending | Explicit portable executable path, resolved against launcher location |
 | Java major selection | Pending | Limit compatible automatic candidates to chosen major |

@@ -4,6 +4,8 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("system memory cleanup operation outcomes and live game protection", CompletionSystemMemoryCleanup),
+        ("Windows system memory cleanup reports native outcomes", WindowsSystemMemoryCleanupReportsNativeOutcomes),
         ("instance Java selection stays local and checks compatibility", InstanceJavaSelectionStaysLocalAndChecksCompatibility),
         ("parity legacy archives and optional file installation", ParityLegacyArchivesAndOptionalFiles),
         ("parity export formats scripts and target preservation", ParityExportFormatsAndScripts),
@@ -31,6 +33,7 @@ internal static partial class Program
     private static async Task<int> Main(string[] args)
     {
         if (args is ["--memory-cleanup-child"]) return RunMemoryCleanupChild();
+        if (args is ["--memory-compare", var memoryBaseline]) { await CompareWindowsMemoryCleanup(memoryBaseline); return 0; }
         if (args is [Nexa.Platform.WindowsMemoryElevationPort.WorkerArgument, var memoryPipe, var memoryParent])
             return await Nexa.Platform.WindowsMemoryElevationPort.RunWorkerAsync(memoryPipe, memoryParent);
         if (args is ["--native-directory-snapshot", var snapshotRoot]) { await NativeDirectorySnapshotSmoke(snapshotRoot); return 0; }

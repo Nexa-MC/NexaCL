@@ -89,3 +89,12 @@ sessions own bounded child-process lifetimes and explicit room credentials; prov
 installation must verify bytes and expose actual readiness. Native boundaries use
 the existing generated numeric/binary mechanisms. Platform coverage is admitted only
 after compiler/runtime and native dependency evidence, never by adding untested RIDs.
+
+## Windows 深度系统清理
+
+用户明确开启并通过 UAC 授权后，Windows 深度清理增加八项系统操作：系统工作集、
+文件缓存、卷缓存刷新、已修改页、待机页、低优先级待机页、注册表协调与物理页合并。普通模式
+仍逐进程排除游戏。系统级操作无法排除单独游戏，因此只要存在游戏或排除身份就
+跳过，每项操作前重新检查，并报告真实原生状态与可用内存变化。未支持或被拒绝的
+操作不能计作成功。实现仅依据操作系统接口契约独立编写；没有 Windows 测量证据
+前，不宣称实际效果已与 Mem Reduct 持平。

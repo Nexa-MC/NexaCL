@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using Nexa.Services.Memory;
+using Nexa.Xsr;
 using Nexa.Xsr.State;
 
 namespace Nexa.Platform;
@@ -47,19 +48,34 @@ public sealed class WindowsMemoryElevationPort : IElevatedMemoryCleanupPort
         if (!GetNamedPipeClientProcessId(pipe.SafePipeHandle, out uint client) || client != helper.Id)
             throw new IOException("The elevated memory helper identity does not match.");
         byte[] request = new byte[12 + protectedIds.Count * 4];
-        BinaryPrimitives.WriteInt32LittleEndian(request, 1);
+        BinaryPrimitives.WriteInt32LittleEndian(request, 2);
         BinaryPrimitives.WriteInt32LittleEndian(request.AsSpan(4), Environment.ProcessId);
         BinaryPrimitives.WriteInt32LittleEndian(request.AsSpan(8), protectedIds.Count);
         int offset = 12;
         foreach (int id in protectedIds) { BinaryPrimitives.WriteInt32LittleEndian(request.AsSpan(offset), id); offset += 4; }
         await pipe.WriteAsync(request, deadline.Token).ConfigureAwait(false);
-        byte[] response = new byte[36];
+        byte[] response = new byte[48];
         await pipe.ReadExactlyAsync(response, deadline.Token).ConfigureAwait(false);
-        if (BinaryPrimitives.ReadInt32LittleEndian(response) != 1 || BinaryPrimitives.ReadInt32LittleEndian(response.AsSpan(4)) != 0)
+        if (BinaryPrimitives.ReadInt32LittleEndian(response) != 2 || BinaryPrimitives.ReadInt32LittleEndian(response.AsSpan(4)) != 0)
             throw new IOException("Elevated memory cleanup was not completed.");
         var result = new MemoryCleanupResult(BinaryPrimitives.ReadInt32LittleEndian(response.AsSpan(8)),
             BinaryPrimitives.ReadInt32LittleEndian(response.AsSpan(12)), BinaryPrimitives.ReadInt32LittleEndian(response.AsSpan(16)),
             BinaryPrimitives.ReadInt64LittleEndian(response.AsSpan(20)), BinaryPrimitives.ReadInt64LittleEndian(response.AsSpan(28)));
+        int operationCount = BinaryPrimitives.ReadInt32LittleEndian(response.AsSpan(36));
+        long elapsed = BinaryPrimitives.ReadInt64LittleEndian(response.AsSpan(40));
+        if (operationCount < 0 || operationCount > SystemMemoryCleanupService.Operations.Count || elapsed < 0) throw new IOException("Invalid system cleanup result budget.");
+        byte[] operations = new byte[operationCount * 32]; await pipe.ReadExactlyAsync(operations, deadline.Token).ConfigureAwait(false);
+        List<SystemMemoryCleanupResult> systemResults = [];
+        for (int i = 0; i < operationCount; i++)
+        {
+            int operationOffset = i * 32;
+            var operation = (SystemMemoryCleanupOperation)BinaryPrimitives.ReadInt32LittleEndian(operations.AsSpan(operationOffset));
+            var outcome = (SystemMemoryCleanupOutcome)BinaryPrimitives.ReadInt32LittleEndian(operations.AsSpan(operationOffset + 4));
+            long duration = BinaryPrimitives.ReadInt64LittleEndian(operations.AsSpan(operationOffset + 24));
+            if (!Enum.IsDefined(operation) || !Enum.IsDefined(outcome) || duration < 0 || systemResults.Any(r => r.Operation == operation)) throw new IOException("Invalid system cleanup result.");
+            systemResults.Add(new(operation, outcome, BinaryPrimitives.ReadInt32LittleEndian(operations.AsSpan(operationOffset + 8)), BinaryPrimitives.ReadInt64LittleEndian(operations.AsSpan(operationOffset + 16)), duration));
+        }
+        result = result with { SystemOperations = systemResults.AsReadOnly(), ElapsedMilliseconds = elapsed };
         if (result.Cleaned < 0 || result.Skipped < 0 || result.Failed < 0
             || (long)result.Cleaned + result.Skipped + result.Failed > 4096 || result.WorkingSetReductionBytes < 0)
             throw new IOException("Invalid elevated cleanup result.");
@@ -128,7 +144,7 @@ public sealed class WindowsMemoryElevationPort : IElevatedMemoryCleanupPort
             byte[] header = new byte[12];
             await pipe.ReadExactlyAsync(header, deadline.Token).ConfigureAwait(false);
             int count = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(8));
-            if (BinaryPrimitives.ReadInt32LittleEndian(header) != 1 || BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(4)) != parent
+            if (BinaryPrimitives.ReadInt32LittleEndian(header) != 2 || BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(4)) != parent
                 || count is < 0 or > 4096) return 2;
             byte[] payload = new byte[count * 4];
             await pipe.ReadExactlyAsync(payload, deadline.Token).ConfigureAwait(false);
@@ -143,14 +159,39 @@ public sealed class WindowsMemoryElevationPort : IElevatedMemoryCleanupPort
             var disconnect = WatchDisconnectAsync(pipe, deadline);
             try
             {
-                XsrStateStoreBuilder builder = new(); MemoryOptimizationContract.DeclareState(builder);
-                var store = builder.Build();
-                await using var service = new MemoryOptimizationService(new WindowsProcessMemoryPort(),
-                    () => new(false, 80), () => exclusions, store);
-                var outcome = await service.CleanAsync(deadline.Token).ConfigureAwait(false);
-                var result = store.Read<MemoryOptimizationSnapshot>(store.Resolve(MemoryOptimizationContract.Snapshot)).Value?.LastResult;
-                byte[] response = new byte[36];
-                BinaryPrimitives.WriteInt32LittleEndian(response, 1);
+                var memoryPort = new WindowsProcessMemoryPort();
+                using var systemPort = new WindowsSystemMemoryPort();
+                long started = Stopwatch.GetTimestamp(); var before = memoryPort.Sample();
+                var systemResults = before.IsValid
+                    ? await SystemMemoryCleanupService.RunAsync(systemPort, () =>
+                    {
+                        var live = memoryPort.CaptureProcesses();
+                        return live.Any(p => p.Id != parent && (exclusions.Contains(p.Id) || MemoryOptimizationService.IsGameName(p.Name)));
+                    }, deadline.Token).ConfigureAwait(false) : [];
+                XsrResult outcome = XsrResult.Success();
+                MemoryCleanupResult? result = new(0, 0, 0, 0, 0);
+                // A successful global working-set pass already trims eligible applications.
+                // Avoid a redundant, throttled per-process sweep. If games prevent that pass,
+                // or Windows rejects it, fall back to identity-checked per-process trimming.
+                if (!systemResults.Any(step => step.Operation == SystemMemoryCleanupOperation.WorkingSets
+                    && step.Outcome == SystemMemoryCleanupOutcome.Succeeded))
+                {
+                    XsrStateStoreBuilder builder = new(); MemoryOptimizationContract.DeclareState(builder);
+                    var store = builder.Build();
+                    await using var service = new MemoryOptimizationService(memoryPort,
+                        () => new(false, 80), () => exclusions, store);
+                    outcome = await service.CleanAsync(deadline.Token).ConfigureAwait(false);
+                    result = store.Read<MemoryOptimizationSnapshot>(store.Resolve(MemoryOptimizationContract.Snapshot)).Value?.LastResult;
+                }
+                var after = memoryPort.Sample();
+                if (result is not null) result = result with
+                {
+                    SystemOperations = systemResults,
+                    ElapsedMilliseconds = (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds,
+                    AvailableChangeBytes = before.IsValid && after.IsValid ? after.AvailableBytes - before.AvailableBytes : 0
+                };
+                byte[] response = new byte[48 + systemResults.Count * 32];
+                BinaryPrimitives.WriteInt32LittleEndian(response, 2);
                 BinaryPrimitives.WriteInt32LittleEndian(response.AsSpan(4), outcome.IsSuccess && result is not null ? 0 : 1);
                 if (result is not null)
                 {
@@ -159,6 +200,17 @@ public sealed class WindowsMemoryElevationPort : IElevatedMemoryCleanupPort
                     BinaryPrimitives.WriteInt32LittleEndian(response.AsSpan(16), result.Failed);
                     BinaryPrimitives.WriteInt64LittleEndian(response.AsSpan(20), result.WorkingSetReductionBytes);
                     BinaryPrimitives.WriteInt64LittleEndian(response.AsSpan(28), result.AvailableChangeBytes);
+                    BinaryPrimitives.WriteInt32LittleEndian(response.AsSpan(36), systemResults.Count);
+                    BinaryPrimitives.WriteInt64LittleEndian(response.AsSpan(40), result.ElapsedMilliseconds);
+                    for (int i = 0; i < systemResults.Count; i++)
+                    {
+                        int offset = 48 + i * 32; var step = systemResults[i];
+                        BinaryPrimitives.WriteInt32LittleEndian(response.AsSpan(offset), (int)step.Operation);
+                        BinaryPrimitives.WriteInt32LittleEndian(response.AsSpan(offset + 4), (int)step.Outcome);
+                        BinaryPrimitives.WriteInt32LittleEndian(response.AsSpan(offset + 8), step.NativeStatus);
+                        BinaryPrimitives.WriteInt64LittleEndian(response.AsSpan(offset + 16), step.AvailableChangeBytes);
+                        BinaryPrimitives.WriteInt64LittleEndian(response.AsSpan(offset + 24), step.ElapsedMilliseconds);
+                    }
                 }
                 await pipe.WriteAsync(response, deadline.Token).ConfigureAwait(false);
                 return outcome.IsSuccess ? 0 : 1;

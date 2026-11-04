@@ -93,3 +93,16 @@ sessions own bounded child-process lifetimes and explicit room credentials; prov
 installation must verify bytes and expose actual readiness. Native boundaries use
 the existing generated numeric/binary mechanisms. Platform coverage is admitted only
 after compiler/runtime and native dependency evidence, never by adding untested RIDs.
+
+## Deep Windows system cleanup
+
+Deep Windows cleanup, explicitly enabled and UAC-authorized, adds the eight native
+system operations used by Mem Reduct: system working sets, file cache, volume cache flush, modified
+pages, standby, low-priority standby, registry reconciliation, and page combining.
+This extends the former process-only deep mode. Ordinary mode retains per-process
+protection. System operations cannot exclude individual games, so they are skipped
+when game/exclusion identities are present, with a live check before each operation.
+Report individual native outcomes and measured available-memory changes; unsupported
+or denied operations are not counted as successful. Independent implementation uses
+OS API contracts, without copying or linking Mem Reduct code. No benchmark parity
+claim is made without Windows measurement evidence.

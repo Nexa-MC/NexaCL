@@ -74,6 +74,8 @@ internal static partial class Program
             var elevated = await new WindowsMemoryElevationPort().CleanElevatedAsync(exclusions, deadline.Token);
             AssertEqual(0, elevated.Cleaned);
             AssertTrue(elevated.Skipped > 0);
+            AssertEqual(8, elevated.SystemOperations.Count);
+            AssertTrue(elevated.SystemOperations.All(step => step.Outcome == SystemMemoryCleanupOutcome.GameProtected));
             Console.WriteLine("Native elevated memory helper authenticated, preserved exclusions and exited.");
         }
     }

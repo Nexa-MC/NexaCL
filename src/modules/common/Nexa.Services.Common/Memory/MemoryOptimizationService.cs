@@ -1,9 +1,10 @@
+using System.Diagnostics;
 using Nexa.Xsr;
 using Nexa.Xsr.State;
 
 namespace Nexa.Services.Memory;
 
-/// <summary>Bounded, cancelable working-set cleanup. No process is terminated or globally purged.</summary>
+/// <summary>Bounded, cancelable working-set cleanup, with optional elevated system operations. No process is terminated.</summary>
 public sealed class MemoryOptimizationService : IAsyncDisposable
 {
     private readonly IProcessMemoryPort _port;
@@ -91,6 +92,7 @@ public sealed class MemoryOptimizationService : IAsyncDisposable
 
     private async Task CleanupCoreAsync(CancellationToken token)
     {
+        long started = Stopwatch.GetTimestamp();
         var before = _port.Sample();
         if (!before.IsValid) { Publish(_snapshot with { Status = "unavailable" }); return; }
         Publish(_snapshot with { Memory = before, Busy = true, Status = "cleaning" });
@@ -125,7 +127,8 @@ public sealed class MemoryOptimizationService : IAsyncDisposable
             }
             var after = _port.Sample();
             Publish(new(true, after, false, "complete", new(cleaned, skipped, failed, reduction,
-                after.IsValid ? after.AvailableBytes - before.AvailableBytes : 0)));
+                after.IsValid ? after.AvailableBytes - before.AvailableBytes : 0)
+            { ElapsedMilliseconds = (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds }));
         }
         finally
         {

@@ -17,6 +17,7 @@ internal static partial class Program
         AssertEqual(3, fixture.Shell.Tree.GetComponent<XsrUiPager>(FindEntity(fixture.Shell, "LaunchWidgetPager"))!.PageIndex);
         AssertTrue(HasKey(fixture.Shell, scene, "MemoryClean"));
         AssertTrue(HasKey(fixture.Shell, scene, "MemoryDeep"));
+        AssertTrue(HasKey(fixture.Shell, scene, "MemoryReport"));
         AssertTrue(FindByKey(fixture.Shell, scene, "MemoryClean").IsClickable);
         Emit(fixture.Intents, "ui.launch.memory.automatic");
         Emit(fixture.Intents, "ui.launch.memory.deep");
@@ -39,6 +40,8 @@ internal static partial class Program
         for (int frame = 0; frame < 20; frame++) { fixture.Shell.Render(new(1024, 700)); Thread.Sleep(5); }
         scene = fixture.Shell.Render(new(1024, 700));
         AssertTrue(FindByKey(fixture.Shell, scene, "MemoryDetail").Text!.Contains('3'));
+        AssertTrue(FindByKey(fixture.Shell, scene, "MemoryDetail").Text!.Contains("1/2", StringComparison.Ordinal));
+
         using var persisted = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(fixture.TemporaryDirectory, "settings.json")));
         AssertTrue(persisted.RootElement.GetProperty("booleanOptions").GetProperty(MemoryOptimizationContract.DeepSetting).GetBoolean());
         AssertEqual(87, persisted.RootElement.GetProperty("integerOptions").GetProperty(MemoryOptimizationContract.ThresholdSetting).GetInt32());
@@ -86,6 +89,13 @@ internal static partial class Program
         public IReadOnlyList<MemoryProcess> CaptureProcesses() => [new(40, 0, "app.exe", 1, false)];
         public bool TryTrim(MemoryProcess process, out long workingSetReductionBytes) { OrdinaryRequests++; workingSetReductionBytes = 1048576; return true; }
         public Task<MemoryCleanupResult> CleanElevatedAsync(IReadOnlySet<int> protectedIds, CancellationToken token)
-        { Interlocked.Increment(ref DeepRequests); return Task.FromResult(new MemoryCleanupResult(3, 2, 1, 1048576, 0)); }
+        {
+            Interlocked.Increment(ref DeepRequests); return Task.FromResult(new MemoryCleanupResult(3, 2, 1, 1048576, 0)
+            {
+                ElapsedMilliseconds = 42,
+                SystemOperations = [new(SystemMemoryCleanupOperation.FileCache, SystemMemoryCleanupOutcome.Succeeded, 0, 100, 10),
+            new(SystemMemoryCleanupOperation.StandbyPages, SystemMemoryCleanupOutcome.GameProtected, 0, 0, 0)]
+            });
+        }
     }
 }
