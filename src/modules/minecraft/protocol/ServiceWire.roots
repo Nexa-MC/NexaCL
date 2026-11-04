@@ -177,3 +177,5 @@ Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.
 Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.ContentInspectionSnapshot
 Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceLaunchScriptCommand
 Nexa.Services.Resources.Contracts|Nexa.Services.Resources.ResourceModpackInspectQuery
+
+Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceResourcePackCommand

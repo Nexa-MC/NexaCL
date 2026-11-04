@@ -33,6 +33,6 @@ internal sealed partial class LaunchPageController
         if (!Nexa.Core.PathIdentity.Comparer.Equals(snapshot.RootDirectory, target.Root) || snapshot.SelectedInstanceId != target.Instance)
         { _feedback.Warn(ProductPresentationText.Raw("feature.script.changed")); return; }
         ProjectLibrary(); _shell.Stage.Navigation.Replace(_launchPage);
-        _launchRequest = StartLaunchAsync(target.Instance, _launchPage, rootDirectory: target.Root);
+        _ = StartLaunchAsync(target.Instance, _launchPage, rootDirectory: target.Root);
     }
 }

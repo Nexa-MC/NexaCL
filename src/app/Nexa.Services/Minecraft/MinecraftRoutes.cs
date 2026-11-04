@@ -59,7 +59,7 @@ public static class MinecraftCommands
         {
             ArgumentNullException.ThrowIfNull(command);
             ArgumentNullException.ThrowIfNull(coordinator);
-            return ValueTask.FromResult(coordinator.CancelActiveLaunch()
+            return ValueTask.FromResult(coordinator.CancelActiveLaunch(command.AttemptId)
                 ? XsrResult.Success()
                 : XsrResult.Failure(MinecraftErrors.InvalidRequest("no launch pipeline is running.")));
         };
@@ -70,7 +70,7 @@ public static class MinecraftCommands
         {
             ArgumentNullException.ThrowIfNull(command);
             ArgumentNullException.ThrowIfNull(coordinator);
-            return ValueTask.FromResult(coordinator.DecideJavaAcquisition(command.Approve)
+            return ValueTask.FromResult(coordinator.DecideJavaAcquisition(command.Approve, command.AttemptId)
                 ? XsrResult.Success()
                 : XsrResult.Failure(MinecraftErrors.InvalidRequest("no Java acquisition is pending.")));
         };

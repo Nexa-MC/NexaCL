@@ -143,8 +143,9 @@ public sealed partial class MinecraftLaunchCoordinator : IDisposable
     /// Resolves a pending Java acquisition approval: true downloads the runtime, false declines
     /// it. Returns false when no acquisition is awaiting a decision.
     /// </summary>
-    public bool DecideJavaAcquisition(bool approve)
+    public bool DecideJavaAcquisition(bool approve, Guid? attemptId = null)
     {
+        if (!_attemptChild && FindAttempt(attemptId, true) is { } child) return child.DecideJavaAcquisition(approve);
         TaskCompletionSource<JavaChoice>? decision;
         lock (_launchGate)
         {
@@ -161,8 +162,11 @@ public sealed partial class MinecraftLaunchCoordinator : IDisposable
         return decision.TrySetResult(new(approve));
     }
 
-    public async ValueTask<XsrResult> SelectJavaVersionAsync(int major, CancellationToken cancellationToken = default)
+    public ValueTask<XsrResult> SelectJavaVersionAsync(int major, CancellationToken cancellationToken = default) => SelectJavaVersionAsync(major, null, cancellationToken);
+
+    public async ValueTask<XsrResult> SelectJavaVersionAsync(int major, Guid? attemptId, CancellationToken cancellationToken = default)
     {
+        if (!_attemptChild && FindAttempt(attemptId, true) is { } child) return await child.SelectJavaVersionAsync(major, cancellationToken).ConfigureAwait(false);
         TaskCompletionSource<JavaChoice>? decision;
         JavaRequirementResolution? requirement;
         lock (_launchGate) { decision = _acquisitionDecision; requirement = _pendingJavaRequirement; }
@@ -189,8 +193,11 @@ public sealed partial class MinecraftLaunchCoordinator : IDisposable
         return XsrResult.Success();
     }
 
-    public async ValueTask<XsrResult> SelectJavaAsync(string path, CancellationToken cancellationToken = default)
+    public ValueTask<XsrResult> SelectJavaAsync(string path, CancellationToken cancellationToken = default) => SelectJavaAsync(path, null, cancellationToken);
+
+    public async ValueTask<XsrResult> SelectJavaAsync(string path, Guid? attemptId, CancellationToken cancellationToken = default)
     {
+        if (!_attemptChild && FindAttempt(attemptId, true) is { } child) return await child.SelectJavaAsync(path, cancellationToken).ConfigureAwait(false);
         TaskCompletionSource<JavaChoice>? decision;
         JavaRequirementResolution? requirement;
         lock (_launchGate) { decision = _acquisitionDecision; requirement = _pendingJavaRequirement; }
@@ -211,8 +218,9 @@ public sealed partial class MinecraftLaunchCoordinator : IDisposable
     /// Cancels the active launch pipeline between stages. Returns false when no launch is
     /// running; the game process itself is cancelled through the process service instead.
     /// </summary>
-    public bool CancelActiveLaunch()
+    public bool CancelActiveLaunch(Guid? attemptId = null)
     {
+        if (!_attemptChild && FindAttempt(attemptId, false) is { } child) return child.CancelActiveLaunch();
         // Cancel under the same lock that governs registration and disposal: a racing launch
         // completion may null the field and dispose the CTS between a split read and Cancel.
         lock (_launchGate)

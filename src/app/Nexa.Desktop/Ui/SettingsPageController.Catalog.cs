@@ -95,7 +95,8 @@ internal sealed partial class SettingsPageController
         var definition = entry.Definition!;
         if (definition.Kind is SettingsValueKind.Enum or SettingsValueKind.Boolean || key == "general.region")
         { BuildShiftSelector(controls, entry); return; }
-        var inputRoot = AppendCatalog(controls, key == "java.runtime" ? "SettingsJavaPolicyInput.d.nxml" : "SettingsCatalogInput.d.nxml", new()
+        bool canSetPolicy = _commands.TryResolve(SettingsPolicyContract.SetCommand, out _);
+        var inputRoot = AppendCatalog(controls, key == "java.runtime" ? canSetPolicy ? "SettingsJavaPolicyInput.d.nxml" : "SettingsJavaReadOnlyPolicyInput.d.nxml" : "SettingsCatalogInput.d.nxml", new()
         {
             ["input"] = "SettingsInput." + key,
             ["label"] = entry.Label,
@@ -110,11 +111,18 @@ internal sealed partial class SettingsPageController
             ["manualSelected"] = "false",
             ["instance"] = "SettingsInstanceJava." + key,
             ["instanceSelected"] = "false",
+            ["javaPolicy"] = "",
         });
         nodes = CatalogNodes(inputRoot);
         var apply = nodes["SettingsEdit." + key];
         var editor = new Editor(entry, nodes["SettingsInput." + key], apply, default);
         _editors[apply] = editor;
+        if (key == "java.runtime" && canSetPolicy)
+        {
+            RegisterContentAction(nodes["JavaPolicy.Relative.Apply"], () => Save(editor, "@relative:" + _shell.Tree.GetComponent<XsrUiTextInput>(nodes["JavaPolicy.Relative"])!.ReadDraft().Trim()));
+            RegisterContentAction(nodes["JavaPolicy.Major.Apply"], () => Save(editor, "@major:" + _shell.Tree.GetComponent<XsrUiTextInput>(nodes["JavaPolicy.Major"])!.ReadDraft().Trim()));
+        }
+
         if (definition.SupportsAuto)
         {
             var track = nodes["SettingsMode." + key]; var thumb = nodes["SettingsModeThumb"];

@@ -3,6 +3,7 @@ using Nexa.Native.Services.Wire;
 using Nexa.Services.Capabilities;
 using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Process;
+using Nexa.Xsr;
 
 namespace Nexa.Native.Minecraft.Client;
 
@@ -11,6 +12,7 @@ public sealed partial class NativeMinecraftClient
     private IMinecraftWindowProbe? _windowProbe;
     private Func<string, string, MinecraftLaunchPlan, CancellationToken, Task<CapabilityPreflightReport>>? _preflight;
     private Action<int>? _gameWindowAppeared;
+    private Func<CancellationToken, ValueTask<XsrResult>>? _beforeProcessStart;
     private IResourceObservationSink? _observation;
     public void AttachObservations(IResourceObservationSink sink)
     {
@@ -27,20 +29,28 @@ public sealed partial class NativeMinecraftClient
         => AttachLaunchHost(windowProbe, preflight, null);
     public void AttachLaunchHost(IMinecraftWindowProbe windowProbe,
         Func<string, string, MinecraftLaunchPlan, CancellationToken, Task<CapabilityPreflightReport>> preflight,
-        Action<int>? gameWindowAppeared)
+        Action<int>? gameWindowAppeared) => AttachLaunchHost(windowProbe, preflight, gameWindowAppeared, null);
+    public void AttachLaunchHost(IMinecraftWindowProbe windowProbe,
+        Func<string, string, MinecraftLaunchPlan, CancellationToken, Task<CapabilityPreflightReport>> preflight,
+        Action<int>? gameWindowAppeared, Func<CancellationToken, ValueTask<XsrResult>>? beforeProcessStart)
     {
         ArgumentNullException.ThrowIfNull(windowProbe); ArgumentNullException.ThrowIfNull(preflight);
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_closed, this);
             if (_windowProbe is not null) throw new InvalidOperationException("Minecraft launch host is already attached.");
-            _windowProbe = windowProbe; _preflight = preflight; _gameWindowAppeared = gameWindowAppeared;
+            _windowProbe = windowProbe; _preflight = preflight; _gameWindowAppeared = gameWindowAppeared; _beforeProcessStart = beforeProcessStart;
         }
     }
     private async Task<byte[]> ExecuteLaunchHostAsync(int operation, ReadOnlyMemory<byte> bytes, CancellationToken token)
     {
         using var reader = MinecraftServiceProtocol.Read(bytes, out _); using var writer = new ServiceWireWriter();
-        if (operation == MinecraftHostOperations.RecordObservation)
+        if (operation == MinecraftHostOperations.BeforeProcessStart)
+        {
+            reader.End(); var cleanup = Volatile.Read(ref _beforeProcessStart);
+            writer.XsrError(cleanup is null ? null : (await cleanup(token).ConfigureAwait(false)).Error);
+        }
+        else if (operation == MinecraftHostOperations.RecordObservation)
         {
             var sample = reader.ResourceObservationSample() ?? throw new InvalidDataException("Missing JVM observation sample."); reader.End();
             var sink = Volatile.Read(ref _observation) ?? throw new InvalidOperationException("JVM observation sink is not attached.");

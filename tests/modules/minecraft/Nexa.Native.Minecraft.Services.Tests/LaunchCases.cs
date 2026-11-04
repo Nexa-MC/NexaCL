@@ -22,7 +22,7 @@ internal static class LaunchCases
             await File.WriteAllBytesAsync(Path.Combine(metadataDirectory, "InstanceMetadata.json"), document.ToArray(), token);
         }
         client.AttachAccounts(new Accounts());
-        int preflights = 0, visible = 0;
+        int preflights = 0, visible = 0, cleanups = 0;
         bool warn = true;
         client.AttachLaunchHost(new VisibleWindow(), (_, _, _, cancellation) =>
         {
@@ -34,6 +34,10 @@ internal static class LaunchCases
                 .Items.Any(item => item.ProcessId == pid && item.State == MinecraftProcessState.Running))
                 throw new InvalidDataException("Game-window integration ran before its process snapshot arrived.");
             Interlocked.Increment(ref visible);
+        }, async cancellation =>
+        {
+            cancellation.ThrowIfCancellationRequested(); await Task.Yield(); Interlocked.Increment(ref cleanups);
+            return XsrResult.Success();
         });
         await client.ConfigureLaunchAsync(root, token: token);
         if (!(await client.SetSafeLaunchAsync(true, token)).IsSuccess || !(await client.ReadSafeLaunchAsync(token)).Required
@@ -54,8 +58,17 @@ internal static class LaunchCases
         if (!await client.DecidePreflightAsync(new(prompt.Attempt, false), token) || (await start).IsSuccess)
             throw new InvalidDataException("Native launch bypassed a rejected preflight.");
         var progress = store.Read<MinecraftLaunchProgressSnapshot>(store.Resolve(MinecraftLaunchProgressState.SnapshotKey), token);
-        if (!progress.HasValue || progress.Revision <= 0 || visible != 0 || store.Read<LaunchPreflightPrompt?>(promptId, token).Value is not null)
+        if (!progress.HasValue || progress.Revision <= 0 || visible != 0 || cleanups != 0 || store.Read<LaunchPreflightPrompt?>(promptId, token).Value is not null)
             throw new InvalidDataException("Native launch did not retire replicated progress/preflight state.");
+        var cancelled = client.StartMinecraftAsync("renamed-game", 0, root, token: token);
+        while (store.Read<LaunchPreflightPrompt?>(promptId, token).Value is null)
+        {
+            if (cancelled.IsCompleted) throw new InvalidDataException("Native launch stopped before scoped cancellation.");
+            await Task.Delay(20, token);
+        }
+        var attempt = store.Read<MinecraftLaunchProgressSnapshot>(store.Resolve(MinecraftLaunchProgressState.SnapshotKey), token).Value!.Attempts.Single(item => item.Active);
+        if (await client.CancelLaunchAsync(Guid.NewGuid(), token) || cancelled.IsCompleted || !await client.CancelLaunchAsync(attempt.Id, token) || (await cancelled).IsSuccess)
+            throw new InvalidDataException("Native scoped cancellation lost attempt identity.");
         warn = false;
         var unconfirmed = await client.RemediateAsync(new("remediation.game.repair_files",
             new Dictionary<string, string> { ["instanceDirectory"] = instanceDirectory }), token);
@@ -69,7 +82,7 @@ internal static class LaunchCases
         var launched = await client.StartMinecraftAsync("renamed-game", 0, root, token: token);
         if (!launched.IsSuccess) throw new InvalidDataException("Native full launch failed: " + launched.Error!.Message);
         progress = store.Read<MinecraftLaunchProgressSnapshot>(store.Resolve(MinecraftLaunchProgressState.SnapshotKey), token);
-        if (visible != 1 || progress.Value.SessionId is not { } session)
+        if (visible != 1 || cleanups != 1 || progress.Value.SessionId is not { } session)
             throw new InvalidDataException("Native launch lost its visible window or session identity.");
         if (!client.HasPendingFinalization) throw new InvalidDataException("Native post-exit finalization was not replicated.");
         if ((await client.DeleteLibraryInstanceAsync(new(root, "renamed-game"), token)).IsSuccess || !Directory.Exists(instanceDirectory))

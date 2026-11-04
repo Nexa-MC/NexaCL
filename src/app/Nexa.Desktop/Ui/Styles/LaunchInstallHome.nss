@@ -1,12 +1,13 @@
 /* Owned launch-home and launching presentation variants. */
-.launch-memory-page { Orientation: Vertical; Spacing: 4; }
+.launch-memory-page { Orientation: Vertical; Spacing: 1; }
 .launch-memory-row { Orientation: Horizontal; Spacing: 8; Height: 28; }
 .launch-memory-title { Weight: 1; FontSize: 14; FontWeight: 600; VerticalAlignment: Center; }
 .launch-memory-clean { Width: 88; Height: 28; FontSize: 12; Background: #eef2f7; Foreground: #0b5bcb; CornerRadius: 8; Hover: #e0eafd; Surface: Solid; TextAlignment: Center; }
-.launch-memory-usage { Height: 20; FontSize: 12; }
+.launch-memory-usage { Height: 17; FontSize: 12; }
 .launch-memory-toggle { Weight: 1; Height: 28; FontSize: 12; }
 .launch-memory-threshold-label { Width: 100; Height: 28; FontSize: 12; TextAlignment: End; VerticalAlignment: Center; }
-.launch-memory-threshold { Height: 24; Background: #cbd4e0; Foreground: #0b5bcb; CornerRadius: 2; Surface: None; }
+.launch-memory-threshold { Height: 18; Background: #cbd4e0; Foreground: #0b5bcb; CornerRadius: 2; Surface: None; }
+.launch-memory-modes { Orientation: Horizontal; Spacing: 8; Height: 24; }
 .launch-memory-deep { Height: 24; FontSize: 12; }
 .launch-memory-detail { Height: 36; FontSize: 11; Foreground: #606c7c; }
 .launch-memory-title, .launch-memory-usage, .launch-memory-toggle, .launch-memory-threshold-label, .launch-memory-deep { Foreground: #343d4a; }
@@ -32,3 +33,5 @@
 .layout-LaunchingPage-LaunchProgressFill { Background: #0b5bcb; Foreground: #0b5bcb; CornerRadius: 2; Surface: Solid; }
 .layout-LaunchingPage-LaunchingHintBox { Background: #eef2f7; Foreground: #343d4a; CornerRadius: 12; Surface: Solid; }
 .layout-LaunchingPage-LaunchingCancelButton { Background: #eef2f7; Foreground: #343d4a; CornerRadius: 20; FontSize: 14; FontWeight: 600; TextAlignment: Center; Surface: Solid; }
+
+.launch-start-actions { Orientation: Horizontal; Spacing: 10; Height: 40; Margin: 32,16,32,0; }

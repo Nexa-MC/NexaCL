@@ -62,6 +62,7 @@ internal sealed partial class LaunchPageController
     {
         ["avatar"] = _homeAvatarSource,
         ["memory_automatic"] = _store.Read<bool>(_store.Resolve(Nexa.Xsr.XsrSemanticId.Parse(Nexa.Services.Memory.MemoryOptimizationContract.AutomaticSetting))).Value ? "true" : "false",
+        ["memory_before_launch"] = _store.Read<bool>(_store.Resolve(Nexa.Xsr.XsrSemanticId.Parse(Nexa.Services.Memory.MemoryOptimizationContract.BeforeLaunchSetting))).Value ? "true" : "false",
         ["memory_deep"] = _store.Read<bool>(_store.Resolve(Nexa.Xsr.XsrSemanticId.Parse(Nexa.Services.Memory.MemoryOptimizationContract.DeepSetting))).Value ? "true" : "false",
         ["memory_threshold"] = Math.Clamp(_store.Read<int>(_store.Resolve(Nexa.Xsr.XsrSemanticId.Parse(Nexa.Services.Memory.MemoryOptimizationContract.ThresholdSetting))).Value, 50, 95).ToString(CultureInfo.InvariantCulture),
     };

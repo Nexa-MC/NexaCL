@@ -30,6 +30,16 @@ from a utility that globally trims the game too. No process is terminated; pagin
 configuration is unchanged. Lower working sets do not establish lower private commit,
 and standby pages are already reclaimable by Windows.
 
+## Before launching a game
+
+The independent **Deep clean before launching a game** switch defaults off. Enabling
+it runs deep cleanup after launch preflight, before JVM creation, regardless of the
+manual deep-mode or threshold settings. Each cleanup requests UAC; the main UI stays
+unelevated. Overlapping launches share a cleanup attempt. Canceling a waiting launch
+leaves another launch's cleanup alone. Refusing UAC or a cleanup failure records its
+status and continues launching; explicitly canceling the launch prevents game creation.
+Other running games still cause global operations to be skipped.
+
 ## Verification and comparison
 
 Implementation is independent. The feature uses OS interface contracts; no Mem Reduct
@@ -63,3 +73,19 @@ universal physical-memory or game-performance parity. Machine-wide availability 
 change during either run; retain its signed measurements without turning noise into
 an asserted improvement. Interactive UAC and real application impact need Windows
 device acceptance in addition to automated CI.
+
+## Recorded Windows evidence
+
+[Windows NativeAOT CI, commit `29e676b8d`](https://github.com/Nexa-MC/NexaCL/actions/runs/41767521760)
+completed all eight real system operations with native status zero. Artifact
+`windows-memory-cleanup` retains the individual statuses and the comparison log.
+The direct system pass observed available memory rise from 12,714,315,776 to
+15,850,754,048 bytes while its touched child working set fell from 77,979,648 to zero.
+
+Across six fresh-child samples per cleaner, the median target working-set reduction
+was **100% for NexaCL and 100% for Mem Reduct 3.5.2**, satisfying the controlled
+comparison criterion. Median machine-wide available-memory changes were 125,523,968
+and 153,532,416 bytes respectively; those values include background activity and do
+not establish equal physical-memory gains. One reference sample's availability
+change was negative despite a 99.8% target working-set reduction. This is why the
+report keeps target working sets and machine-wide availability separate.

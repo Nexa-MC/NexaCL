@@ -173,6 +173,7 @@ internal static partial class Program
 
     private static readonly (string Name, Action Body)[] TestCases =
     [
+        ("concurrent launch UI permits another instance and scopes cancellation", ConcurrentLaunchUiScopesCancellation),
         ("memory optimization card persists settings and routes elevated cleanup", MemoryOptimizationCardRoutesSettingsAndManualCleanup),
         ("memory optimization card unsupported platform is explicit", MemoryOptimizationCardUnsupportedPlatformIsExplicit),
         ("Sidecar network grants reject untrusted requests", SidecarNetworkGrantRejectsUntrustedRequests),

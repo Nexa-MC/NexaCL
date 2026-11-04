@@ -4,8 +4,18 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("pre-launch memory cleanup shares overlap and scopes cancellation", PrelaunchMemoryCleanupSharesOverlapAndScopesCancellation),
+        ("pre-launch memory cleanup is opt-in and UAC rejection allows game", PrelaunchMemoryCleanupIsOptInAndUacRejectionAllowsGame),
+        ("pre-launch memory cancellation prevents JVM creation", PrelaunchMemoryCancellationPreventsJvmCreation),
+        ("concurrent launch prompts and cancellation are scoped", ConcurrentLaunchPromptsAndCancellationAreScoped),
+        ("concurrent instances reach window confirmation together", ConcurrentInstancesReachWindowConfirmationTogether),
+        ("concurrent identity refresh shares work and keeps other waiter", ConcurrentIdentityRefreshSharesWorkAndKeepsOtherWaiter),
+        ("concurrent preflight prompts queue without replacement", ConcurrentPreflightPromptsQueueWithoutReplacement),
         ("system memory cleanup operation outcomes and live game protection", CompletionSystemMemoryCleanup),
         ("Windows system memory cleanup reports native outcomes", WindowsSystemMemoryCleanupReportsNativeOutcomes),
+        ("completion resource pack options order compatibility and conflicts", CompletionResourcePackOptions),
+        ("completion region chunks and external payloads", CompletionRegionChunks),
+        ("completion Java relative major and Nide8 constraints", CompletionJavaPolicies),
         ("instance Java selection stays local and checks compatibility", InstanceJavaSelectionStaysLocalAndChecksCompatibility),
         ("parity legacy archives and optional file installation", ParityLegacyArchivesAndOptionalFiles),
         ("parity export formats scripts and target preservation", ParityExportFormatsAndScripts),

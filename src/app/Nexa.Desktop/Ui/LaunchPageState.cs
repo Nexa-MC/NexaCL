@@ -41,6 +41,7 @@ internal static class LaunchPageState
     public static readonly XsrSemanticId WidgetEchoLabelKey = XsrSemanticId.Parse("launch.widget.echo-label");
     public static readonly XsrSemanticId WidgetMemoryLabelKey = XsrSemanticId.Parse("launch.widget.memory-label");
     public static readonly XsrSemanticId MemorySupportedKey = XsrSemanticId.Parse("launch.memory.supported");
+    public static readonly XsrSemanticId MemoryBeforeLaunchKey = XsrSemanticId.Parse("launch.memory.before-launch");
     public static readonly XsrSemanticId MemoryDeepKey = XsrSemanticId.Parse("launch.memory.deep");
     public static readonly XsrSemanticId MemoryAutomaticKey = XsrSemanticId.Parse("launch.memory.automatic");
     public static readonly XsrSemanticId MemoryThresholdKey = XsrSemanticId.Parse("launch.memory.threshold");
@@ -112,6 +113,7 @@ internal static class LaunchPageState
         builder.Cell<bool>(MemorySupportedKey, OwnerName);
         builder.Cell<bool>(MemoryAutomaticKey, OwnerName);
         builder.Cell<bool>(MemoryDeepKey, OwnerName);
+        builder.Cell<bool>(MemoryBeforeLaunchKey, OwnerName);
         builder.Cell<double>(MemoryThresholdKey, OwnerName);
         builder.Cell<string>(MemoryThresholdLabelKey, OwnerName);
         builder.Cell<string>(MemoryUsageKey, OwnerName);

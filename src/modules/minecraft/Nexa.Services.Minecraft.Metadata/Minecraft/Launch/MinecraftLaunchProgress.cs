@@ -19,6 +19,40 @@ public class MinecraftLaunchProgressPublisher(XsrStateStore store)
     private MinecraftLaunchProgressSnapshot _current = MinecraftLaunchProgressSnapshot.Empty;
 
     private string? _instanceId, _root;
+    private MinecraftLaunchProgressPublisher? _parent;
+    private Guid _attempt;
+    private readonly Dictionary<Guid, MinecraftLaunchProgressSnapshot> _attempts = [];
+    private Guid? _focused;
+    public Guid? FocusedAttempt { get { lock (_gate) return _focused; } }
+    public MinecraftLaunchProgressPublisher CreateAttempt(Guid id)
+    {
+        var publisher = CreateScopedPublisher(_store); publisher._parent = this; publisher._attempt = id; return publisher;
+    }
+    protected virtual MinecraftLaunchProgressPublisher CreateScopedPublisher(XsrStateStore targetStore) => new(targetStore);
+    private void PublishAttempt(Guid id, MinecraftLaunchProgressSnapshot snapshot)
+    {
+        lock (_gate)
+        {
+            _attempts[id] = snapshot;
+            if (snapshot.Active && (_focused is null || !_attempts.TryGetValue(_focused.Value, out var old) || !old.Active)) _focused = id;
+            var pending = _attempts.FirstOrDefault(p => p.Value.AcquirePending);
+            if (pending.Key != Guid.Empty) _focused = pending.Key;
+            if (_focused is null) _focused = id;
+            while (_attempts.Count > 64)
+            {
+                var retired = _attempts.FirstOrDefault(p => !p.Value.Active && p.Key != _focused);
+                if (retired.Key == Guid.Empty) break; _attempts.Remove(retired.Key);
+            }
+            var selected = _attempts.GetValueOrDefault(_focused.Value) ?? snapshot;
+            var summaries = _attempts.Select(p => new MinecraftLaunchAttemptSnapshot(p.Key, p.Value.InstanceId ?? "", p.Value.MinecraftRootDirectory ?? "",
+                p.Value.Active, p.Value.Stage, p.Value.Progress, p.Value.Method, p.Value.DownloadSpeed, p.Value.IsLaunched, p.Value.SessionId,
+                p.Value.AcquirePending, p.Value.AcquireComponent, p.Value.AcquireMajor, p.Value.JavaChoices)).ToArray();
+            _store.Publish(_store.Resolve(MinecraftLaunchProgressState.JavaChoicesKey), selected.JavaChoices);
+            _store.Publish(_acquireComponentId, selected.AcquireComponent); _store.Publish(_acquireMajorId, selected.AcquireMajor); _store.Publish(_acquirePendingId, selected.AcquirePending);
+            _current = selected with { Attempts = summaries };
+            _store.Publish(_snapshotId, _current);
+        }
+    }
     public void Start(string instanceId, string root)
     {
         lock (_gate) { _instanceId = instanceId; _root = Path.GetFullPath(root); Start(); }
@@ -35,6 +69,11 @@ public class MinecraftLaunchProgressPublisher(XsrStateStore store)
     /// <summary>Marks a Java runtime acquisition as awaiting the user's decision.</summary>
     public void RequestAcquisition(string component, int majorVersion, IReadOnlyList<int>? choices = null)
     {
+        if (_parent is not null)
+        {
+            lock (_gate) { _current = _current with { AcquirePending = true, AcquireComponent = component, AcquireMajor = majorVersion, JavaChoices = choices ?? [majorVersion] }; PublishSnapshotLocked(_current); }
+            return;
+        }
         try
         {
             // Publish payload before the ready flag so a UI observer never opens a decision
@@ -53,6 +92,7 @@ public class MinecraftLaunchProgressPublisher(XsrStateStore store)
     /// <summary>Clears the acquisition prompt after a decision (or cancellation).</summary>
     public void ResolveAcquisition()
     {
+        if (_parent is not null) { lock (_gate) { _current = _current with { AcquirePending = false }; PublishSnapshotLocked(_current); } return; }
         try
         {
             _store.Publish(_acquirePendingId, false);
@@ -119,6 +159,23 @@ public class MinecraftLaunchProgressPublisher(XsrStateStore store)
 
     private void PublishSnapshotLocked(MinecraftLaunchProgressSnapshot snapshot)
     {
+        if (_parent is not null)
+        {
+            snapshot = snapshot with
+            {
+                AttemptId = _attempt,
+                InstanceId = _instanceId,
+                MinecraftRootDirectory = _root,
+                AcquirePending = snapshot.Active && _current.AcquirePending,
+                AcquireComponent = _current.AcquireComponent,
+                AcquireMajor = _current.AcquireMajor,
+                JavaChoices = _current.JavaChoices
+            };
+            _current = snapshot;
+            try { _parent.PublishAttempt(_attempt, snapshot); }
+            catch (Exception exception) when (exception is not OutOfMemoryException and not AccessViolationException) { }
+            return;
+        }
         try
         {
             _store.Publish(_snapshotId, snapshot);

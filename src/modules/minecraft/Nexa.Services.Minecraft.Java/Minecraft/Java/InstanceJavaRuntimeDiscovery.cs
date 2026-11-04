@@ -14,28 +14,18 @@ internal static class InstanceJavaRuntimeDiscovery
         if (!Directory.Exists(root)) return [];
         List<JavaRuntimeCandidate> candidates = [];
         Stack<(string Directory, int Depth)> pending = new();
-        int roots = 0;
-        foreach (string directory in Directory.EnumerateDirectories(root))
-        {
-            token.ThrowIfCancellationRequested();
-            if (++roots > 4096) throw new IOException("版本目录条目超过扫描限制。");
-            string name = Path.GetFileName(directory);
-            if (name.Equals("java", StringComparison.OrdinalIgnoreCase) || name.Equals("jre", StringComparison.OrdinalIgnoreCase)
-                || name.Equals("jdk", StringComparison.OrdinalIgnoreCase) || name.Equals("runtime", StringComparison.OrdinalIgnoreCase))
-                pending.Push((directory, 0));
-        }
-        await InspectHomeAsync(root).ConfigureAwait(false);
+        pending.Push((root, 0));
         int visited = 0;
         while (pending.TryPop(out var item))
         {
             token.ThrowIfCancellationRequested();
-            if (++visited > 512 || item.Depth > 8) throw new IOException("版本内 Java 目录超过扫描限制。");
+            if (++visited > 4096 || item.Depth > 16) throw new IOException("版本内 Java 目录超过扫描限制。");
             if ((File.GetAttributes(item.Directory) & FileAttributes.ReparsePoint) != 0) continue;
             RecoveryBlobStore.CheckLinks(item.Directory);
             if (await InspectHomeAsync(item.Directory).ConfigureAwait(false)) continue;
-            foreach (string child in Directory.EnumerateDirectories(item.Directory).Take(513))
+            foreach (string child in Directory.EnumerateDirectories(item.Directory).Take(4097))
             {
-                if (pending.Count >= 512) throw new IOException("版本内 Java 目录超过扫描限制。");
+                if (pending.Count >= 4096) throw new IOException("版本内 Java 目录超过扫描限制。");
                 pending.Push((child, item.Depth + 1));
             }
         }

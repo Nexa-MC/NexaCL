@@ -14,6 +14,7 @@ public static class LauncherDefaults
         ["SystemDisableHardwareAcceleration"] = false,
         ["SystemMemoryAutoClean"] = false,
         ["SystemMemoryDeepClean"] = false,
+        ["SystemMemoryDeepCleanBeforeLaunch"] = false,
         // Disable UI motion when compositor/GPU timers misbehave (OOBE / page transitions).
         ["SystemDisableUiAnimations"] = false,
         ["SystemSingleInstance"] = true,

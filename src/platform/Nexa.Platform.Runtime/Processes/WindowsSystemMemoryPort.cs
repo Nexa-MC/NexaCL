@@ -4,7 +4,7 @@ using Nexa.Services.Memory;
 
 namespace Nexa.Platform;
 
-/// <summary>Independent implementation of documented NT memory information classes.</summary>
+/// <summary>Independent implementation of Windows NT memory information classes.</summary>
 public sealed class WindowsSystemMemoryPort : ISystemMemoryCleanupPort, IDisposable
 {
     private readonly WindowsProcessMemoryPort _measure = new();

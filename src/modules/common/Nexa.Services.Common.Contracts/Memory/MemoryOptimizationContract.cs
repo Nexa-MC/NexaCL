@@ -51,6 +51,7 @@ public static class MemoryOptimizationContract
     public const string AutomaticSetting = "SystemMemoryAutoClean";
     public const string ThresholdSetting = "SystemMemoryCleanThreshold";
     public const string DeepSetting = "SystemMemoryDeepClean";
+    public const string BeforeLaunchSetting = "SystemMemoryDeepCleanBeforeLaunch";
     public static readonly XsrSemanticId Snapshot = XsrSemanticId.Parse("memory.optimization.snapshot");
     public static readonly XsrSemanticId Clean = XsrSemanticId.Parse("memory.optimization.clean");
     public static void DeclareState(XsrStateStoreBuilder builder) =>

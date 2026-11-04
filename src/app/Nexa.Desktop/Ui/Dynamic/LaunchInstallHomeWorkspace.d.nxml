@@ -82,7 +82,10 @@
                   <Text Key="MemoryThresholdLabel" Content="{state launch.memory.threshold-label}" Localize="false" Class="launch-memory-threshold-label" />
                 </StackPanel>
                 <Slider Key="MemoryThreshold" Label="自动清理阈值（百分比）" Minimum="50" Maximum="95" Step="1" RangeValue="{data memory_threshold}" Enabled="{state launch.memory.supported}" Command="ui.launch.memory.threshold" Class="launch-memory-threshold" />
-                <CheckBox Key="MemoryDeep" Content="深度清理（需管理员权限）" Label="深度清理，通过 UAC 执行系统清理；有游戏运行时跳过系统级项目" Checked="{data memory_deep}" Enabled="{state launch.memory.supported}" Command="ui.launch.memory.deep" Class="launch-memory-deep" />
+                <StackPanel Class="launch-memory-modes">
+                  <CheckBox Key="MemoryDeep" Weight="0.8" Content="深度清理" Label="深度清理，通过 UAC 执行系统清理；有游戏运行时跳过系统级项目" Checked="{data memory_deep}" Enabled="{state launch.memory.supported}" Command="ui.launch.memory.deep" Class="launch-memory-deep" />
+                  <CheckBox Key="MemoryBeforeLaunch" Weight="1.2" Content="启动前深度清理" Label="启动预检通过后请求管理员权限；取消授权则跳过清理，继续启动游戏" Checked="{data memory_before_launch}" Enabled="{state launch.memory.supported}" Command="ui.launch.memory.before-launch" Class="launch-memory-deep" />
+                </StackPanel>
                 <Text Key="MemoryDetail" Content="{state launch.memory.detail}" Localize="false" MaxLines="2" TrimOverflow="true" Class="launch-memory-detail" />
               </StackPanel>
             </VerticalPager>

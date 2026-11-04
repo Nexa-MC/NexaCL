@@ -15,18 +15,37 @@ internal sealed partial class LaunchPageController
 
     internal void JoinServer(string instanceDirectory, string address)
     {
-        if (LaunchBusy || _launchRequest is { IsCompleted: false }) return;
+        if (LaunchBusy) return;
         string? root = Path.GetDirectoryName(Path.GetDirectoryName(instanceDirectory));
         if (!Nexa.Core.PathIdentity.Comparer.Equals(root, ReadCell(LaunchPageState.InstanceDirectoryKey))
             || Path.GetFileName(instanceDirectory) != ReadCell(LaunchPageState.SelectedInstanceKey))
         { _feedback.Warn(HomeCopy("launch.server-changed")); return; }
         _shell.Stage.Navigation.Replace(_launchPage);
-        _launchRequest = StartLaunchAsync(Path.GetFileName(instanceDirectory), _launchPage, address);
+        _ = StartLaunchAsync(Path.GetFileName(instanceDirectory), _launchPage, address);
     }
 
-    private async Task StartLaunchAsync(string instanceId, XsrUiEntityId source, string? serverAddress = null, string? rootDirectory = null)
+    private Task StartLaunchAsync(string instanceId, XsrUiEntityId source, string? serverAddress = null, string? rootDirectory = null)
     {
-        if (_store.ReadAppliedValue(_libraryId) is MinecraftLibrarySnapshot { IsProvisional: true })
+        string root = rootDirectory ?? ReadCell(LaunchPageState.InstanceDirectoryKey);
+        string key = LaunchTargetKey(root, instanceId);
+        TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!_launchRequests.TryAdd(key, completion.Task)) return Task.CompletedTask;
+        var launchStop = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
+        _launchStops[key] = launchStop;
+        _ = TrackLaunchAsync();
+        return completion.Task;
+        async Task TrackLaunchAsync()
+        {
+            try { await StartLaunchCoreAsync(instanceId, source, root, serverAddress, launchStop.Token).ConfigureAwait(false); completion.TrySetResult(); }
+            catch (OperationCanceledException) { completion.TrySetCanceled(); }
+            catch (Exception error) { completion.TrySetException(error); }
+            finally { _launchRequests.TryRemove(key, out _); if (_launchStops.TryRemove(key, out var owned)) owned.Dispose(); }
+        }
+    }
+
+    private async Task StartLaunchCoreAsync(string instanceId, XsrUiEntityId source, string rootDirectory, string? serverAddress, CancellationToken launchToken)
+    {
+        if (_store.ReadAppliedValue(_libraryId, launchToken) is MinecraftLibrarySnapshot { IsProvisional: true })
         {
             _feedback.Warn(HomeCopy("launch.refresh-required"));
             return;
@@ -45,7 +64,7 @@ internal sealed partial class LaunchPageController
             return;
         }
 
-        if (LaunchBusy) return;
+        _launchViewRoot = rootDirectory; _launchViewInstance = instanceId;
         ShowLaunchingPage(source);
 
         // The launching page replicates the legacy launching card: reset facts, narrate the
@@ -62,8 +81,8 @@ internal sealed partial class LaunchPageController
         XsrCommandDispatch dispatch = _minecraft.Commands.Dispatch(
             commandId,
             new MinecraftStartCommand(instanceId, selected)
-            { MinecraftRootDirectory = rootDirectory ?? ReadCell(LaunchPageState.InstanceDirectoryKey), ServerAddress = serverAddress },
-            cancellationToken: _lifetimeCancellation.Token);
+            { MinecraftRootDirectory = rootDirectory, ServerAddress = serverAddress },
+            cancellationToken: launchToken);
         XsrResult result = await dispatch.Completion.ConfigureAwait(false);
         if (_disposed)
         {
@@ -76,42 +95,44 @@ internal sealed partial class LaunchPageController
             // closes the page immediately so the user is back at the library while the game
             // warms up, instead of parking on a 游戏已启动 card until the session ends.
             _feedback.Success(HomeCopy("launch.started"));
-            RequestCloseLaunchingPage();
+            if (ViewingLaunch(rootDirectory, instanceId)) RequestCloseLaunchingPage(LaunchTargetKey(rootDirectory, instanceId));
             return;
         }
 
         _feedback.Error(HomeFormat("LaunchFailure", new() { ["error"] = result.Error?.Message ?? string.Empty }), localizeMessage: false);
-        RequestCloseLaunchingPage();
+        if (ViewingLaunch(rootDirectory, instanceId)) RequestCloseLaunchingPage(LaunchTargetKey(rootDirectory, instanceId));
     }
 
+    private bool ViewingLaunch(string root, string instance) => instance == _launchViewInstance && Nexa.Core.PathIdentity.Comparer.Equals(root, _launchViewRoot);
 
     private async Task CancelLaunchAsync()
     {
-        if (!LaunchBusy)
-        {
-            return;
-        }
+        var snapshot = LaunchSnapshot;
+        string target = LaunchViewKey();
+        if (!snapshot.IsLaunched && _launchViewRoot is { } root && _launchViewInstance is { } instance
+            && _launchStops.TryRemove(LaunchTargetKey(root, instance), out var stop))
+        { try { await stop.CancelAsync().ConfigureAwait(false); } finally { stop.Dispose(); } }
+        if (!snapshot.Active) { RequestCloseLaunchingPage(target); return; }
 
         // Once the game is running there is no pipeline left to cancel — the button has become
         // "back" — so just leave the page without touching the process.
-        bool launched = _store.ReadAppliedValue(_launchProgressId)
-            is MinecraftLaunchProgressSnapshot snapshot && snapshot.IsLaunched;
+        bool launched = snapshot.IsLaunched;
         if (launched)
         {
-            RequestCloseLaunchingPage();
+            RequestCloseLaunchingPage(target);
             return;
         }
 
         Publish(LaunchPageState.LaunchingStageKey, HomeCopy("launch.cancel-requested"));
         if (_minecraft.Commands.TryResolve(MinecraftRouteIds.LaunchCancel, out XsrCommandId route))
         {
-            await _minecraft.Commands.Dispatch(route, new MinecraftCancelLaunchCommand(),
+            await _minecraft.Commands.Dispatch(route, new MinecraftCancelLaunchCommand { AttemptId = snapshot.AttemptId },
                 cancellationToken: _lifetimeCancellation.Token).Completion.ConfigureAwait(false);
         }
 
         if (!_disposed)
         {
-            RequestCloseLaunchingPage();
+            RequestCloseLaunchingPage(target);
         }
     }
 
@@ -121,9 +142,10 @@ internal sealed partial class LaunchPageController
     /// navigation stack, tree components, and focus — all render-thread state — so it is
     /// drained on the next frame preparation instead of running here.
     /// </summary>
-    private void RequestCloseLaunchingPage()
+    private string LaunchViewKey() => _launchViewRoot is { } root && _launchViewInstance is { } instance ? LaunchTargetKey(root, instance) : "";
+    private void RequestCloseLaunchingPage(string? target = null)
     {
-        Interlocked.Exchange(ref _pendingCloseLaunching, 1);
+        Interlocked.Exchange(ref _pendingCloseLaunchingTarget, target ?? LaunchViewKey());
     }
 
 
@@ -142,10 +164,9 @@ internal sealed partial class LaunchPageController
     }
 
 
-    private async Task DecideAcquisitionAsync(bool approve)
+    private async Task DecideAcquisitionAsync(bool approve, Guid? attemptId)
     {
-        if (!LaunchBusy
-            || !_minecraft.Commands.TryResolve(MinecraftRouteIds.AcquireDecide, out XsrCommandId route))
+        if (!_minecraft.Commands.TryResolve(MinecraftRouteIds.AcquireDecide, out XsrCommandId route))
         {
             _feedback.Error(HomeCopy("launch.java-decision-unavailable"));
             return;
@@ -153,7 +174,7 @@ internal sealed partial class LaunchPageController
 
         XsrResult result = await _minecraft.Commands.Dispatch(
             route,
-            new MinecraftDecideJavaAcquisitionCommand(approve),
+            new MinecraftDecideJavaAcquisitionCommand(approve) { AttemptId = attemptId },
             cancellationToken: _lifetimeCancellation.Token).Completion.ConfigureAwait(false);
         if (!_disposed && !result.IsSuccess)
         {
@@ -189,27 +210,26 @@ internal sealed partial class LaunchPageController
     /// </summary>
     private void RefreshLaunchingDisplay()
     {
-        string stage = ReadServiceCell(MinecraftLaunchProgressState.StageKey);
+        var snapshot = LaunchSnapshot;
+        string stage = snapshot.Stage;
         if (stage.Length > 0)
         {
             Publish(LaunchPageState.LaunchingStageKey,
                 HomeFind("launch.stage." + stage) ?? stage);
         }
 
-        double progress = _store.ReadAppliedValue(_store.Resolve(MinecraftLaunchProgressState.ProgressKey)) is double value
-            ? Math.Clamp(value, 0d, 1d)
-            : 0d;
+        double progress = Math.Clamp(snapshot.Progress, 0d, 1d);
         Publish(LaunchPageState.LaunchingPercentKey, HomeFormat("Percent", new() { ["value"] = Math.Round(progress * 100).ToString(CultureInfo.InvariantCulture) }));
 
-        string method = ReadServiceCell(MinecraftLaunchProgressState.MethodKey);
+        string method = snapshot.Method;
         Publish(LaunchPageState.LaunchingMethodKey,
             method.Length == 0 ? HomeCopy("launch.method.waiting") : HomeFind("launch.method." + method) ?? method);
 
-        string speed = ReadServiceCell(MinecraftLaunchProgressState.SpeedKey);
+        string speed = snapshot.DownloadSpeed;
         Publish(LaunchPageState.LaunchingSpeedKey, speed);
         Publish(LaunchPageState.LaunchingSpeedVisibleKey, speed.Length > 0);
 
-        bool launched = _store.ReadAppliedValue(_store.Resolve(MinecraftLaunchProgressState.LaunchedKey)) is bool running && running;
+        bool launched = snapshot.IsLaunched;
         Publish(LaunchPageState.LaunchingTitleKey, launched ? HomeCopy("launch.title.started") : HomeCopy("launch.title.busy"));
         Publish(LaunchPageState.LaunchingCancelLabelKey, launched ? HomeCopy("launch.back") : HomeCopy("launch.cancel"));
     }
@@ -221,19 +241,25 @@ internal sealed partial class LaunchPageController
     /// </summary>
     private void RefreshAcquisitionPrompt()
     {
-        bool pending = _store.ReadAppliedValue(_store.Resolve(MinecraftLaunchProgressState.AcquirePendingKey)) is bool waiting && waiting;
-        string component = ReadServiceCell(MinecraftLaunchProgressState.AcquireComponentKey);
-        int major = _store.ReadAppliedValue(_store.Resolve(MinecraftLaunchProgressState.AcquireMajorKey)) is int version ? version : 0;
-        if (LaunchBusy && pending && major > 0 && component.Length > 0)
+        var aggregate = AggregateLaunchSnapshot;
+        var prompt = aggregate.Attempts.FirstOrDefault(item => item.Active && item.AcquirePending)?.ToSnapshot();
+        bool pending = aggregate.Attempts.Count > 0 ? prompt?.AcquirePending == true : (_store.ReadAppliedValue(_store.Resolve(MinecraftLaunchProgressState.AcquirePendingKey)) is bool waiting && waiting);
+        string component = prompt?.AcquireComponent ?? ReadServiceCell(MinecraftLaunchProgressState.AcquireComponentKey);
+        int major = prompt?.AcquireMajor ?? (_store.ReadAppliedValue(_store.Resolve(MinecraftLaunchProgressState.AcquireMajorKey)) is int version ? version : 0);
+        Guid? attempt = prompt?.AttemptId;
+        if (_javaChoicePage.IsAssigned && _shell.Stage.Navigation.Current == _javaChoicePage) return;
+        if (pending && major > 0 && component.Length > 0)
         {
+            if (_javaAcquisitionDialog is not null && _javaAcquisitionAttempt != attempt) DismissAcquisitionDialog();
+            _javaAcquisitionAttempt = attempt;
             _javaAcquisitionDialog = _feedback.ShowDialog(
-                "minecraft.java.acquire",
-                HomeFormat("JavaRequiredTitle", new() { ["major"] = major.ToString(CultureInfo.InvariantCulture) }),
+                "minecraft.java.acquire." + attempt,
+                HomeFormat("JavaRequiredTitle", new() { ["major"] = major.ToString(CultureInfo.InvariantCulture) }) + (prompt?.InstanceId is { } instance ? " · " + instance : ""),
                 HomeFormat("JavaRequiredDescription", new() { ["major"] = major.ToString(CultureInfo.InvariantCulture) }),
                 HomeCopy("launch.java.download"),
                 HomeCopy("launch.cancel"),
-                approve => _ = DecideAcquisitionAsync(approve),
-                HomeCopy("launch.java.select"), ShowJavaVersionChoice, localizeMessage: false, localizeTitle: false);
+                approve => _ = DecideAcquisitionAsync(approve, attempt),
+                HomeCopy("launch.java.select"), () => { _javaChoiceAttempt = attempt; ShowJavaVersionChoice(); }, localizeMessage: false, localizeTitle: false);
         }
         else if (!pending && _javaAcquisitionDialog is { } dialog)
         {
@@ -295,6 +321,7 @@ internal sealed partial class LaunchPageController
     {
         public void OnChanged(XsrStateChange change)
         {
+            if (change.SemanticId == MinecraftLaunchProgressState.SnapshotKey) { owner.RefreshLaunchingDisplay(); owner.RefreshAcquisitionPrompt(); return; }
             if (change.SemanticId == LaunchPreflightContract.StateKey) { owner.RefreshPreflightPrompt(); return; }
             if (change.SemanticId == MinecraftLibraryContract.StateKey) { owner.ProjectLibrary(); return; }
             if (change.SemanticId.Equals(MinecraftLaunchProgressState.StageKey)
@@ -331,9 +358,7 @@ internal sealed partial class LaunchPageController
 
     /// <summary>The session this narration launched, from the coherent snapshot truth.</summary>
     private Guid? LaunchedSessionId() =>
-        _store.ReadAppliedValue(_launchProgressId) is MinecraftLaunchProgressSnapshot snapshot
-            ? snapshot.SessionId
-            : null;
+        LaunchSnapshot.SessionId;
 
 
     private bool IsSessionTerminal(Guid sessionId) =>

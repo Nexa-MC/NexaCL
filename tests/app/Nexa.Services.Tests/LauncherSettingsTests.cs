@@ -24,16 +24,16 @@ internal static partial class Program
         SettingsSchema schema = LauncherDefaults.CreateSchema();
         // Legacy defaults retain parity; desktop lifecycle and memory cleanup preferences are additive.
         string[] desktopKeys = ["SystemSingleInstance", "UiTrayEnabled", "UiCloseToTray", "UiMinimizeToTray"];
-        string[] memoryKeys = ["SystemMemoryAutoClean", "SystemMemoryDeepClean", "SystemMemoryCleanThreshold"];
+        string[] memoryKeys = ["SystemMemoryAutoClean", "SystemMemoryDeepClean", "SystemMemoryDeepCleanBeforeLaunch", "SystemMemoryCleanThreshold"];
         string[] additiveKeys = [.. desktopKeys, .. memoryKeys];
-        AssertEqual(114, schema.Count);
+        AssertEqual(115, schema.Count);
         AssertEqual(107, schema.Definitions.Count(definition => !additiveKeys.Contains(definition.Key.Value, StringComparer.Ordinal)));
         AssertEqual(43, schema.Definitions.Count(definition => definition.ValueType == SettingValueType.Bool
             && !additiveKeys.Contains(definition.Key.Value, StringComparer.Ordinal)));
         foreach (string key in desktopKeys)
             AssertTrue(schema.TryGetDefinition(XsrSemanticId.Parse(key)) is { ValueType: SettingValueType.Bool } item
                 && item.DefaultValue == (key is "SystemSingleInstance" or "UiTrayEnabled" ? "true" : "false"));
-        foreach (string key in memoryKeys.Take(2))
+        foreach (string key in memoryKeys.Take(3))
             AssertTrue(schema.TryGetDefinition(XsrSemanticId.Parse(key)) is { ValueType: SettingValueType.Bool, DefaultValue: "false" });
         AssertTrue(schema.TryGetDefinition(XsrSemanticId.Parse("SystemMemoryCleanThreshold")) is { ValueType: SettingValueType.I32, DefaultValue: "80" });
         AssertEqual(43, schema.Definitions.Count(definition => definition.ValueType == SettingValueType.I32

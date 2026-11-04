@@ -57,7 +57,7 @@ public sealed partial class NativeMinecraftClient
             return ExecuteWorkAsync(bytes, token);
         if (operation is MinecraftHostOperations.AccountProfile or MinecraftHostOperations.AccountIdentity)
             return ExecuteAccountsAsync(operation, bytes, token);
-        if (operation is MinecraftHostOperations.WindowProbe or MinecraftHostOperations.PreflightEvaluate or MinecraftHostOperations.RecordObservation)
+        if (operation is MinecraftHostOperations.WindowProbe or MinecraftHostOperations.PreflightEvaluate or MinecraftHostOperations.RecordObservation or MinecraftHostOperations.BeforeProcessStart)
             return ExecuteLaunchHostAsync(operation, bytes, token);
         throw new InvalidDataException("Unknown Minecraft host operation.");
     }

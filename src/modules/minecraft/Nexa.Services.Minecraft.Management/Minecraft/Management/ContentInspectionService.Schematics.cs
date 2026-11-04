@@ -5,15 +5,40 @@ namespace Nexa.Services.Minecraft.Management;
 
 public static partial class ContentInspectionService
 {
+    private static readonly string[] SchematicVectorAxes = ["x", "y", "z"];
+    private static readonly string[] SchematicDimensionFields = ["Width", "Height", "Length"];
     private static string SchematicSummary(ServerNbt root)
     {
         var metadata = root.Children.FirstOrDefault(t => t.Name == "Metadata") ?? root;
         var schematic = root.Children.FirstOrDefault(t => t.Name == "Schematic") ?? root;
-        var lines = metadata.Children.Where(t => t.Type <= 8 && t.Name is "Name" or "Author" or "Description" or "TotalBlocks" or "TotalVolume" or "TimeCreated" or "TimeModified")
+        var lines = metadata.Children.Where(t => t.Type <= 8 && t.Name is "Name" or "Author" or "author" or "Description" or "TotalBlocks" or "TotalVolume" or "TimeCreated" or "TimeModified")
             .Concat(schematic.Children.Where(t => t.Type <= 8 && t.Name is "Width" or "Height" or "Length" or "Version" or "DataVersion"))
             .Select(t => t.Name + ": " + t.ScalarText()).ToList();
-        var palette = schematic.Children.FirstOrDefault(t => t.Name == "Palette") ?? schematic.Children.FirstOrDefault(t => t.Name == "Blocks")?.Children.FirstOrDefault(t => t.Name == "Palette");
+        var palette = schematic.Children.FirstOrDefault(t => t.Name is "Palette" or "palette") ?? schematic.Children.FirstOrDefault(t => t.Name == "Blocks")?.Children.FirstOrDefault(t => t.Name == "Palette");
         if (palette is not null) lines.Add("Palette: " + palette.Children.Count);
+        var size = metadata.Children.FirstOrDefault(t => t.Name == "EnclosingSize") ?? root.Children.FirstOrDefault(t => t.Name == "size");
+        long[] dimensions = [];
+        if (size is { Type: 11 } && size.Payload.Length == 16 && BinaryPrimitives.ReadInt32BigEndian(size.Payload) == 3)
+            dimensions = [BinaryPrimitives.ReadInt32BigEndian(size.Payload.AsSpan(4)), BinaryPrimitives.ReadInt32BigEndian(size.Payload.AsSpan(8)), BinaryPrimitives.ReadInt32BigEndian(size.Payload.AsSpan(12))];
+        else
+        {
+            ServerNbt?[] values = size?.Type == 10 ? SchematicVectorAxes.Select(name => size.Children.FirstOrDefault(t => t.Name == name)).ToArray()
+                : size is not null ? size.Children.Cast<ServerNbt?>().ToArray()
+                : SchematicDimensionFields.Select(name => schematic.Children.FirstOrDefault(t => t.Name == name)).ToArray();
+            if (values.Length == 3)
+            {
+                List<long> parsed = [];
+                foreach (var value in values)
+                    if (value is not null && long.TryParse(value.ScalarText(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out long number)) parsed.Add(number);
+                if (parsed.Count == 3) dimensions = parsed.ToArray();
+            }
+        }
+        if (dimensions.Length == 3 && dimensions.All(d => d is >= -30000000 and <= 30000000))
+        {
+            lines.Add("Size: " + string.Join(" × ", dimensions));
+            try { lines.Add("Volume: " + checked(Math.Abs(dimensions[0]) * Math.Abs(dimensions[1]) * Math.Abs(dimensions[2])).ToString(System.Globalization.CultureInfo.InvariantCulture)); } catch (OverflowException) { }
+        }
+        if (root.Children.FirstOrDefault(t => t.Name == "blocks") is { } blockList) lines.Add("Blocks: " + blockList.Children.Count);
         var regions = root.Children.FirstOrDefault(t => t.Name == "Regions");
         if (regions is not null) foreach (var region in regions.Children.Take(128))
         {

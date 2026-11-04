@@ -20,7 +20,7 @@ public sealed record SettingsPolicyDefinition(string Key, SettingsValueKind Kind
         if (value.Mode == SettingsOverrideMode.Auto) return SupportsAuto && value.Value is null ? null : "Auto is not supported or carries a payload.";
         if (value.Mode != SettingsOverrideMode.Custom || value.Value is null) return "A custom value is required.";
         string raw = value.Value;
-        if (Key == "java.runtime" && raw == SettingsPolicySchema.InstanceJavaRuntime) return null;
+        if (Key == "java.runtime" && (raw == SettingsPolicySchema.InstanceJavaRuntime || SettingsPolicySchema.TryJavaMajor(raw, out _) || SettingsPolicySchema.TryRelativeJava(raw, out _))) return null;
         if (Key == "general.region" && raw is not ("auto" or "follow-language" or "ui-language"))
         {
             if (string.IsNullOrWhiteSpace(raw) || raw.Length > 85 || raw.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '-'))
@@ -95,6 +95,18 @@ public sealed record SettingsPolicyDefinition(string Key, SettingsValueKind Kind
 public static class SettingsPolicySchema
 {
     public const string InstanceJavaRuntime = "@instance";
+    public static bool TryJavaMajor(string value, out int major)
+    {
+        major = 0;
+        return value.StartsWith("@major:", StringComparison.Ordinal) && int.TryParse(value.AsSpan(7), NumberStyles.None, CultureInfo.InvariantCulture, out major) && major is >= 7 and <= 99;
+    }
+    public static bool TryRelativeJava(string value, out string path)
+    {
+        path = value.StartsWith("@relative:", StringComparison.Ordinal) ? value[10..] : "";
+        return path.Length is > 0 and <= 2048 && !Path.IsPathRooted(path) && !path.Contains(':') && !path.Any(char.IsControl)
+            && !path.Replace('\\', '/').Split('/').Any(part => part is ".." or "." or "");
+    }
+
     public const string StorageKey = "NexaSettingsLayers";
     public const string EmptyDocument = "{\"version\":1,\"global\":{},\"instances\":{}}";
     public static IReadOnlyList<SettingsPolicyDefinition> Definitions { get; } = Array.AsReadOnly<SettingsPolicyDefinition>([

@@ -49,7 +49,7 @@ internal sealed partial class MinecraftServiceSession
                     new JavaSelectionService(_javaLocator!), _javaInstaller!, _launchExecutor,
                     progress: new MinecraftLaunchProgressPublisher(_store), launcherVersion: version,
                     windowProbe: new RemoteMinecraftWindow(_endpoint, _publications), authlib: _authlib, fileCompletion: _completion, preflight: _preflight)
-                { SettingsSnapshots = _settings, SettingsPolicies = _settings, WorkScheduler = _work, JavaRegistrationPort = new RemoteJavaRegistry(_endpoint) };
+                { SettingsSnapshots = _settings, SettingsPolicies = _settings, WorkScheduler = _work, JavaRegistrationPort = new RemoteJavaRegistry(_endpoint), BeforeProcessStart = BeforeProcessStartAsync };
             }
             finally { _initialization.Release(); }
             return writer.Finish();
@@ -65,6 +65,19 @@ internal sealed partial class MinecraftServiceSession
         var launch = _launch ?? throw new InvalidOperationException("Minecraft launch is not configured.");
         switch (operation)
         {
+            case MinecraftServiceProtocol.LaunchAttemptControl:
+                {
+                    int action = reader.Int32(); Guid attempt = reader.Guid();
+                    switch (action)
+                    {
+                        case 0: reader.Boolean(); reader.End(); writer.Boolean(launch.CancelActiveLaunch(attempt)); break;
+                        case 1: bool accepted = reader.Boolean(); reader.End(); writer.Boolean(launch.DecideJavaAcquisition(accepted, attempt)); break;
+                        case 2: int versionMajor = reader.Int32(); reader.End(); writer.XsrError((await launch.SelectJavaVersionAsync(versionMajor, attempt, token).ConfigureAwait(false)).Error); break;
+                        case 3: string executable = reader.String() ?? ""; reader.End(); writer.XsrError((await launch.SelectJavaAsync(executable, attempt, token).ConfigureAwait(false)).Error); break;
+                        default: throw new InvalidDataException("Invalid launch attempt operation.");
+                    }
+                    break;
+                }
             case MinecraftServiceProtocol.LaunchStart:
                 string startInstance = reader.String() ?? ""; int startAccount = reader.Int32(); string startRoot = reader.String() ?? "";
                 string? server = reader.String(); reader.End();

@@ -29,7 +29,8 @@ public static class MinecraftRuntimeComposer
         IXsrDispatchObserver? observer = null, TimeProvider? timeProvider = null,
         Nexa.Services.Accounts.IAccountLaunchIdentityResolver? identityResolver = null,
         string? launcherVersion = null, IMinecraftWindowProbe? windowProbe = null,
-        Action<int>? gameWindowAppeared = null, string? jvmHostExecutable = null, string? packagedCurseForgeApiKey = null)
+        Action<int>? gameWindowAppeared = null, string? jvmHostExecutable = null, string? packagedCurseForgeApiKey = null,
+        Func<CancellationToken, ValueTask<XsrResult>>? beforeProcessStart = null)
     {
         ArgumentNullException.ThrowIfNull(host); ArgumentException.ThrowIfNullOrWhiteSpace(minecraftRootDirectory);
         string root = Path.GetFullPath(minecraftRootDirectory); var client = host.NativeMinecraft;
@@ -43,7 +44,7 @@ public static class MinecraftRuntimeComposer
                 PlannedRenderDistance = settings.RenderDistance, RefreshInstance = true
             }, cancellationToken: token).ConfigureAwait(false);
             return CapabilityPreflightEngine.Evaluate(snapshot);
-        }, gameWindowAppeared);
+        }, gameWindowAppeared, beforeProcessStart);
         async Task InitializeAsync()
         {
             await client.EnsureInstallationConfiguredAsync(RegionalPolicy.Current.CountryCode, packagedCurseForgeApiKey).ConfigureAwait(false);
@@ -59,12 +60,12 @@ public static class MinecraftRuntimeComposer
             await initialization.WaitAsync(token).ConfigureAwait(false);
             return await client.StartMinecraftAsync(command.InstanceId, command.AccountIndex, command.MinecraftRootDirectory ?? root, command.ServerAddress, token).ConfigureAwait(false);
         });
-        commands.Register<MinecraftCancelLaunchCommand>(MinecraftRouteIds.LaunchCancel, async (_, token) =>
-            await client.CancelLaunchAsync(token).ConfigureAwait(false) ? XsrResult.Success() : XsrResult.Failure(MinecraftErrors.InvalidRequest("no launch pipeline is running.")));
+        commands.Register<MinecraftCancelLaunchCommand>(MinecraftRouteIds.LaunchCancel, async (command, token) =>
+            await client.CancelLaunchAsync(command.AttemptId, token).ConfigureAwait(false) ? XsrResult.Success() : XsrResult.Failure(MinecraftErrors.InvalidRequest("no launch pipeline is running.")));
         commands.Register<MinecraftDecideJavaAcquisitionCommand>(MinecraftRouteIds.AcquireDecide, async (command, token) =>
-            await client.DecideJavaAsync(command.Approve, token).ConfigureAwait(false) ? XsrResult.Success() : XsrResult.Failure(MinecraftErrors.InvalidRequest("no Java acquisition is pending.")));
-        commands.Register<MinecraftSelectJavaVersionCommand>(MinecraftRouteIds.JavaVersionSelect, async (command, token) => await client.SelectJavaVersionAsync(command.Major, token).ConfigureAwait(false));
-        commands.Register<MinecraftSelectJavaCommand>(MinecraftRouteIds.JavaSelect, async (command, token) => await client.SelectJavaPathAsync(command.Path, token).ConfigureAwait(false));
+            await client.DecideJavaAsync(command.Approve, command.AttemptId, token).ConfigureAwait(false) ? XsrResult.Success() : XsrResult.Failure(MinecraftErrors.InvalidRequest("no Java acquisition is pending.")));
+        commands.Register<MinecraftSelectJavaVersionCommand>(MinecraftRouteIds.JavaVersionSelect, async (command, token) => await client.SelectJavaVersionAsync(command.Major, command.AttemptId, token).ConfigureAwait(false));
+        commands.Register<MinecraftSelectJavaCommand>(MinecraftRouteIds.JavaSelect, async (command, token) => await client.SelectJavaPathAsync(command.Path, command.AttemptId, token).ConfigureAwait(false));
         commands.Register<MinecraftCancelProcessCommand>(MinecraftRouteIds.ProcessCancel, async (command, token) => await client.CancelProcessAsync(command.SessionId, token).ConfigureAwait(false));
         commands.Register<LaunchPreflightDecision>(LaunchPreflightContract.DecisionCommand, async (command, token) =>
             await client.DecidePreflightAsync(command, token).ConfigureAwait(false) ? XsrResult.Success() : XsrResult.Failure(MinecraftErrors.InvalidRequest("预检决定已失效或不可绕过。")));

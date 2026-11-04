@@ -120,7 +120,7 @@ internal static partial class Program
     /// </summary>
     private static (MinecraftLaunchCoordinator Coordinator, FoundationHost Host, T Installer, string Root)
         ComposeAcquisitionCoordinator<T>(T installer, IMinecraftProcessPort? processPort = null, IJavaRuntimeLocator? javaLocator = null, IMinecraftWindowProbe? windowProbe = null,
-            Action<MinecraftProcessService>? processServiceCreated = null) where T : IJavaRuntimeInstaller
+            Action<MinecraftProcessService>? processServiceCreated = null, Func<CancellationToken, ValueTask<XsrResult>>? beforeProcessStart = null) where T : IJavaRuntimeInstaller
     {
         string root = CreateTempDirectory();
         string baseDirectory = CreateVersionDirectory(root, "1.20.1", new JsonObject
@@ -169,7 +169,7 @@ internal static partial class Program
                 IsArm64Architecture: false),
             progress: new MinecraftLaunchProgressPublisher(host.StateStore),
             windowProbe: windowProbe ?? new ImmediateWindowProbe(), settingsPolicy: host.SettingsPolicy)
-        { WorkScheduler = host.Work };
+        { WorkScheduler = host.Work, BeforeProcessStart = beforeProcessStart };
         return (coordinator, host, installer, root);
     }
 

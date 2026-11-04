@@ -70,7 +70,8 @@ internal sealed partial class LaunchPageController
             _observedInstallDraft = draft; _observedInstallOffset = offset; _observedViewport = _shell.Renderer.Viewport;
         }
         bool wake = _projections.Consume() || queryChanged || pageChanged || busyChanged || draftChanged || installLocaleChanged;
-        if (Interlocked.Exchange(ref _pendingCloseLaunching, 0) == 1) { CloseLaunchingPage(); wake = true; }
+        string? closedTarget = Interlocked.Exchange(ref _pendingCloseLaunchingTarget, null);
+        if (closedTarget is not null && Nexa.Core.PathIdentity.Comparer.Equals(closedTarget, LaunchViewKey())) { CloseLaunchingPage(); wake = true; }
         if (!wake) return;
         ProjectionPasses++;
         ProjectInstallEditor();

@@ -29,6 +29,8 @@ internal static partial class Program
     private sealed class RecordingProgressPublisher(XsrStateStore store)
         : MinecraftLaunchProgressPublisher(store)
     {
+        private RecordingProgressPublisher? _parentRecorder;
+        protected override MinecraftLaunchProgressPublisher CreateScopedPublisher(XsrStateStore targetStore) => new RecordingProgressPublisher(targetStore) { _parentRecorder = this };
         public List<string> Stages { get; } = [];
 
         public List<double> Progress { get; } = [];
@@ -37,8 +39,9 @@ internal static partial class Program
         {
             if (report.Stage.Length > 0)
             {
-                Stages.Add(report.Stage);
-                Progress.Add(report.Progress);
+                var recorder = _parentRecorder ?? this;
+                recorder.Stages.Add(report.Stage);
+                recorder.Progress.Add(report.Progress);
             }
 
             base.Report(report);

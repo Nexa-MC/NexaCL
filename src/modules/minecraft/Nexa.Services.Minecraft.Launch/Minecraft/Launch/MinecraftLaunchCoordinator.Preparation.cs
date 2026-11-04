@@ -15,7 +15,7 @@ namespace Nexa.Services.Minecraft.Launch;
 public sealed partial class MinecraftLaunchCoordinator
 {
     private readonly OfflineTextureServer _offlineTextures = new();
-    public void Dispose() => _offlineTextures.Dispose();
+    public void Dispose() { if (Interlocked.Exchange(ref _launchDisposed, 1) != 0) return; if (!_attemptChild) DisposeAttempts(); _offlineTextures.Dispose(); }
 
     public ValueTask<XsrResult<MinecraftLaunchPreparation>> PrepareAsync(
         string instanceId,
@@ -153,7 +153,8 @@ public sealed partial class MinecraftLaunchCoordinator
             MinecraftJavaRequirementRequest javaRequest = CreateJavaRequirement(
                 instance,
                 manifests,
-                loader);
+                loader) with
+            { HasNide8Login = identityResult.Value.Nide8ServerId is not null };
             JavaPreference preference = instance.Metadata.JavaSelectionMode == 2
                 && !string.IsNullOrWhiteSpace(instance.Metadata.SelectedJavaPath)
                 ? new ExistingJavaPreference(instance.Metadata.SelectedJavaPath)

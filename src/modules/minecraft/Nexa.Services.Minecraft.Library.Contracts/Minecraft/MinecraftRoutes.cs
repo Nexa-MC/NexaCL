@@ -13,10 +13,10 @@ public sealed record MinecraftStartCommand(string InstanceId, int AccountIndex)
 }
 public sealed record MinecraftLaunchCommand(MinecraftLaunchRequest Request);
 public sealed record MinecraftCancelProcessCommand(Guid SessionId);
-public sealed record MinecraftCancelLaunchCommand;
-public sealed record MinecraftDecideJavaAcquisitionCommand(bool Approve);
-public sealed record MinecraftSelectJavaCommand(string Path);
-public sealed record MinecraftSelectJavaVersionCommand(int Major);
+public sealed record MinecraftCancelLaunchCommand { public Guid? AttemptId { get; init; } }
+public sealed record MinecraftDecideJavaAcquisitionCommand(bool Approve) { public Guid? AttemptId { get; init; } }
+public sealed record MinecraftSelectJavaCommand(string Path) { public Guid? AttemptId { get; init; } }
+public sealed record MinecraftSelectJavaVersionCommand(int Major) { public Guid? AttemptId { get; init; } }
 public sealed record MinecraftCrashAnalyzeQuery(IReadOnlyList<string> Evidence, string? Stage = null, string? LastClassName = null);
 
 public static class MinecraftRouteIds

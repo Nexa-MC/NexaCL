@@ -107,6 +107,8 @@ public static class FoundationRuntimeComposer
 #else
         var recovery = new InstanceRecoveryService(host.SettingsPolicy, host.StateStore, host.Logging);
         var exporter = new InstanceModpackExportService(host.Tasks, host.StateStore);
+        commands.Register<InstanceResourcePackCommand>(InstanceResourcePackContract.Set,
+            async (command, token) => await InstanceResourcePackService.SetAsync(command, host.StateStore, token).ConfigureAwait(false));
         commands.Register<InstanceLaunchScriptCommand>(InstanceLaunchScriptContract.Export,
             async (command, token) => await InstanceLaunchScriptService.ExportAsync(command, token).ConfigureAwait(false));
         commands.Register<InstanceExportOptionsSave>(InstanceModpackExportContract.SaveOptions,

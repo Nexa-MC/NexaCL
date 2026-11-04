@@ -103,13 +103,27 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
         "JavaLoaderLegacyFabric", "JavaLoaderQuilt", "JavaLoaderLabyMod", "JavaLoaderOptiFine", "JavaLoaderLiteLoader",
     ];
 
-    private Task _launchRequest = Task.CompletedTask;
-    private MinecraftLaunchProgressSnapshot LaunchSnapshot =>
-        _store.ReadAppliedValue(_launchProgressId) as MinecraftLaunchProgressSnapshot
-        ?? MinecraftLaunchProgressSnapshot.Empty;
-    private bool LaunchBusy => !_launchRequest.IsCompleted || LaunchSnapshot is { Active: true, IsLaunched: false };
-    private int _pendingCloseLaunching;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, Task> _launchRequests = new(Nexa.Core.PathIdentity.Comparer);
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, CancellationTokenSource> _launchStops = new(Nexa.Core.PathIdentity.Comparer);
+    private string? _launchViewRoot, _launchViewInstance;
+    private Guid? _javaChoiceAttempt;
+    private MinecraftLaunchProgressSnapshot AggregateLaunchSnapshot => _store.ReadAppliedValue(_launchProgressId) as MinecraftLaunchProgressSnapshot ?? MinecraftLaunchProgressSnapshot.Empty;
+    private MinecraftLaunchProgressSnapshot ProgressFor(string? root, string? instance)
+    {
+        var snapshot = AggregateLaunchSnapshot;
+        if (snapshot.Attempts.Count == 0) return snapshot;
+        return snapshot.Attempts.LastOrDefault(item => item.InstanceId == instance && Nexa.Core.PathIdentity.Comparer.Equals(item.MinecraftRootDirectory, root))?.ToSnapshot()
+            ?? MinecraftLaunchProgressSnapshot.Empty;
+    }
+    private MinecraftLaunchProgressSnapshot LaunchSnapshot => ProgressFor(_launchViewRoot ?? ReadCell(LaunchPageState.InstanceDirectoryKey),
+        _launchViewInstance ?? ReadCell(LaunchPageState.SelectedInstanceKey));
+    private static string LaunchTargetKey(string root, string instance) => Path.Combine(Path.GetFullPath(root), "versions", instance);
+    private bool TargetBusy(string root, string instance) => !string.IsNullOrWhiteSpace(root) && !string.IsNullOrWhiteSpace(instance)
+        && (_launchRequests.TryGetValue(LaunchTargetKey(root, instance), out var task) && !task.IsCompleted || ProgressFor(root, instance) is { Active: true, IsLaunched: false });
+    private bool LaunchBusy => TargetBusy(ReadCell(LaunchPageState.InstanceDirectoryKey), ReadCell(LaunchPageState.SelectedInstanceKey));
+    private string? _pendingCloseLaunchingTarget;
     private Guid? _javaAcquisitionDialog;
+    private Guid? _javaAcquisitionAttempt;
     private Guid? _preflightDialog;
     private Guid? _preflightAttempt;
     private int _pickingJava;
@@ -299,6 +313,8 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
         _processLogPage?.Dispose();
         _processLayer?.Dispose();
         _processDocks.Clear();
+        foreach (var dock in _launchDocks.Values) if (_shell.Tree.IsAlive(dock)) _shell.Tree.Destroy(dock);
+        _launchDocks.Clear();
         if (_javaChoicePage.IsAssigned) _shell.Tree.Destroy(_javaChoicePage);
         if (_javaLauncherGuidePage.IsAssigned) _shell.Tree.Destroy(_javaLauncherGuidePage);
         DismissAcquisitionDialog();
@@ -310,7 +326,7 @@ internal sealed partial class LaunchPageController : IDisposable, IAsyncDisposab
     {
         try
         {
-            await Task.WhenAll(save, WaitUntilIdle(), _launchRequest,
+            await Task.WhenAll(save, WaitUntilIdle(), Task.WhenAll(_launchRequests.Values),
             _memoryCommand ?? Task.CompletedTask, _memorySetting ?? Task.CompletedTask).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested) { }

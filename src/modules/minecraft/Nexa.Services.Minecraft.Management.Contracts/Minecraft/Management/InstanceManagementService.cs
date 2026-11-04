@@ -40,6 +40,7 @@ public sealed record InstanceManagementSnapshot(string InstanceDirectory, string
     public IReadOnlyList<InstanceTrashedContent> Trash { get; init; } = [];
     public InstanceContentGraph? ContentGraph { get; init; }
     public IReadOnlyList<InstanceContentUpdateRecord> ContentUpdates { get; init; } = [];
+    public InstanceResourcePackConfiguration? ResourcePacks { get; init; }
 }
 
 public static class InstanceManagementContract

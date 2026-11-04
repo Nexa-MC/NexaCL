@@ -13,6 +13,11 @@ internal sealed partial class MinecraftServiceSession
         using var writer = new ServiceWireWriter();
         switch (operation)
         {
+            case MinecraftServiceProtocol.ResourcePackSet:
+                {
+                    var value = reader.InstanceResourcePackCommand() ?? throw new InvalidDataException("Missing resource pack request."); reader.End();
+                    writer.XsrError((await InstanceResourcePackService.SetAsync(value, _store, token).ConfigureAwait(false)).Error); break;
+                }
             case MinecraftServiceProtocol.ScriptExport:
                 {
                     var value = reader.InstanceLaunchScriptCommand() ?? throw new InvalidDataException("Missing script request."); reader.End();

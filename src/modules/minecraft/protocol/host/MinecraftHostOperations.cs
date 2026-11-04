@@ -9,7 +9,7 @@ internal static class MinecraftHostOperations
     internal const int SettingsPolicySet = 2130;
     internal const int AccountProfile = 2300, AccountIdentity = 2301;
     internal const int WindowProbe = 2400, PreflightEvaluate = 2401;
-    internal const int RecordObservation = 2402;
+    internal const int RecordObservation = 2402, BeforeProcessStart = 2403;
     internal const int CatalogSource = 2500;
     internal const int InstallationEvent = 2600;
     internal const int LibraryRead = 2900, LibrarySave = 2901, LibraryDiscover = 2902, LibraryCached = 2903;

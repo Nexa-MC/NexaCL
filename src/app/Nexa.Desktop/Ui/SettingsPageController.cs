@@ -412,7 +412,7 @@ internal sealed partial class SettingsPageController : IDisposable
             if (value is null) continue;
             string raw = value.Value.Value ?? "";
             if (editor.Input.IsAssigned && value.Value.Mode != SettingsOverrideMode.Auto
-                && !(editor.Entry.SettingKey == "java.runtime" && raw == SettingsPolicySchema.InstanceJavaRuntime)
+                && !(editor.Entry.SettingKey == "java.runtime" && (raw == SettingsPolicySchema.InstanceJavaRuntime || SettingsPolicySchema.TryJavaMajor(raw, out _) || SettingsPolicySchema.TryRelativeJava(raw, out _)))
                 && !_shell.Renderer.Focused.Equals(editor.Input))
                 _shell.Renderer.SetTextInputValue(editor.Input, raw);
         }

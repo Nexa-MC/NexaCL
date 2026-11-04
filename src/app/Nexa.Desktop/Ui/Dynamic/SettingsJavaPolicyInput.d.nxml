@@ -10,6 +10,15 @@
       <TextInput Key="{data input}" Label="{data label}" Placeholder="{data placeholder}" MaximumLength="{data maximum}" Class="settings-catalog-input" />
       <Button Key="{data apply}" Label="应用" Content="应用" Command="ui.settings.edit" Class="settings-catalog-action settings-catalog-apply" />
     </StackPanel>
+    <StackPanel Class="settings-catalog-input-row">
+      <TextInput Key="JavaPolicy.Relative" Label="相对 Java 路径" Placeholder="runtime/jdk/bin/java" Class="settings-catalog-input" />
+      <Button Key="JavaPolicy.Relative.Apply" Content="使用相对路径" Command="ui.settings.management.action" Class="settings-catalog-action world-button-wide" />
+    </StackPanel>
+    <StackPanel Class="settings-catalog-input-row">
+      <TextInput Key="JavaPolicy.Major" Label="Java 主版本" Placeholder="17" MaximumLength="2" Class="settings-catalog-input" />
+      <Button Key="JavaPolicy.Major.Apply" Content="限定主版本" Command="ui.settings.management.action" Class="settings-catalog-action world-button-wide" />
+    </StackPanel>
+    <Text Content="{data javaPolicy}" Localize="false" Class="world-hint" />
     <Text Content="版本内 Java 仅使用当前版本目录中的运行时；缺失或不兼容时停止启动。" Class="world-hint" />
   </StackPanel>
 </nxml-dynamic>

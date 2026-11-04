@@ -90,4 +90,7 @@
 <Text Key="lan.network-error" Content="局域网发现失败，请检查网络权限。" />
 <Text Key="lan.ready" Content="发现同一网络中开放的游戏" />
 <Text Key="lan.reading" Content="正在监听局域网广播…" />
+<Text Key="resource-pack.title" Content="资源包兼容性" />
+<Text Key="resource-pack.incompatible" Content="此资源包声明的格式与游戏版本不兼容，仍然启用吗？" />
+<Text Key="resource-pack.enable" Content="启用" />
 </StackPanel>

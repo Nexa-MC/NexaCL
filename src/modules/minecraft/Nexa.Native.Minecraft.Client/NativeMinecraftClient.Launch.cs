@@ -72,10 +72,14 @@ public sealed partial class NativeMinecraftClient
     }
     public Task<XsrResult> StartMinecraftAsync(string instance, int account, string root, string? server = null, CancellationToken token = default)
         => LaunchResultAsync(MinecraftServiceProtocol.LaunchStart, writer => { writer.String(instance); writer.Int32(account); writer.String(root); writer.String(server); }, token);
-    public Task<bool> CancelLaunchAsync(CancellationToken token = default) => LaunchBooleanAsync(MinecraftServiceProtocol.LaunchCancel, _ => { }, token);
-    public Task<bool> DecideJavaAsync(bool approve, CancellationToken token = default) => LaunchBooleanAsync(MinecraftServiceProtocol.LaunchJavaApprove, writer => writer.Boolean(approve), token);
-    public Task<XsrResult> SelectJavaVersionAsync(int major, CancellationToken token = default) => LaunchResultAsync(MinecraftServiceProtocol.LaunchJavaMajor, writer => writer.Int32(major), token);
-    public Task<XsrResult> SelectJavaPathAsync(string path, CancellationToken token = default) => LaunchResultAsync(MinecraftServiceProtocol.LaunchJavaPath, writer => writer.String(path), token);
+    public Task<bool> CancelLaunchAsync(CancellationToken token = default) => CancelLaunchAsync(null, token);
+    public Task<bool> CancelLaunchAsync(Guid? attemptId, CancellationToken token = default) => attemptId is { } id ? LaunchBooleanAsync(MinecraftServiceProtocol.LaunchAttemptControl, writer => { writer.Int32(0); writer.Guid(id); writer.Boolean(false); }, token) : LaunchBooleanAsync(MinecraftServiceProtocol.LaunchCancel, _ => { }, token);
+    public Task<bool> DecideJavaAsync(bool approve, CancellationToken token = default) => DecideJavaAsync(approve, null, token);
+    public Task<bool> DecideJavaAsync(bool approve, Guid? attemptId, CancellationToken token = default) => attemptId is { } id ? LaunchBooleanAsync(MinecraftServiceProtocol.LaunchAttemptControl, writer => { writer.Int32(1); writer.Guid(id); writer.Boolean(approve); }, token) : LaunchBooleanAsync(MinecraftServiceProtocol.LaunchJavaApprove, writer => writer.Boolean(approve), token);
+    public Task<XsrResult> SelectJavaVersionAsync(int major, CancellationToken token = default) => SelectJavaVersionAsync(major, null, token);
+    public Task<XsrResult> SelectJavaVersionAsync(int major, Guid? attemptId, CancellationToken token = default) => attemptId is { } id ? LaunchResultAsync(MinecraftServiceProtocol.LaunchAttemptControl, writer => { writer.Int32(2); writer.Guid(id); writer.Int32(major); }, token) : LaunchResultAsync(MinecraftServiceProtocol.LaunchJavaMajor, writer => writer.Int32(major), token);
+    public Task<XsrResult> SelectJavaPathAsync(string path, CancellationToken token = default) => SelectJavaPathAsync(path, null, token);
+    public Task<XsrResult> SelectJavaPathAsync(string path, Guid? attemptId, CancellationToken token = default) => attemptId is { } id ? LaunchResultAsync(MinecraftServiceProtocol.LaunchAttemptControl, writer => { writer.Int32(3); writer.Guid(id); writer.String(path); }, token) : LaunchResultAsync(MinecraftServiceProtocol.LaunchJavaPath, writer => writer.String(path), token);
     public Task<bool> DecidePreflightAsync(LaunchPreflightDecision decision, CancellationToken token = default) => LaunchBooleanAsync(MinecraftServiceProtocol.LaunchPreflightDecide, writer => writer.LaunchPreflightDecision(decision), token);
     public Task<XsrResult> SetSafeLaunchAsync(bool required, CancellationToken token = default) => LaunchResultAsync(MinecraftServiceProtocol.LaunchSafe, writer => writer.Boolean(required), token);
     private async Task<XsrResult> LaunchResultAsync(int operation, Action<ServiceWireWriter> encode, CancellationToken token)

@@ -30,7 +30,10 @@
           </StackPanel>
         </ContentHost>
       </StackPanel>
-      <Button Key="LaunchingCancelButton" Localize="false" Label="{state launch.launching.cancel-label}" Content="{state launch.launching.cancel-label}" Command="ui.launch.cancel" Class="layout-LaunchingPage-LaunchingCancelButton" />
+      <StackPanel Class="launch-start-actions">
+      <Button Weight="1" Margin="0,0,0,0" Key="LaunchingBackgroundButton" Content="在后台继续启动" Command="ui.launch.background" Class="layout-LaunchingPage-LaunchingCancelButton" />
+      <Button Weight="1" Margin="0,0,0,0" Key="LaunchingCancelButton" Localize="false" Label="{state launch.launching.cancel-label}" Content="{state launch.launching.cancel-label}" Command="ui.launch.cancel" Class="layout-LaunchingPage-LaunchingCancelButton" />
+      </StackPanel>
       <ContentHost Key="LaunchingBottomInset" Class="layout-LaunchingPage-LaunchingBottomInset" />
     </StackPanel>
   </ContentHost>

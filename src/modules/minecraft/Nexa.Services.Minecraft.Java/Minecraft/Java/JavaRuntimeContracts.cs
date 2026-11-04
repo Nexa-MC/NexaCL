@@ -214,6 +214,9 @@ public static class MinecraftJavaRequirementResolver
                 return failure!;
         }
 
+        if (request.HasNide8Login && !TryIntersect(ref range, new(new Version(1, 8, 0, 141), JavaVersionRange.Any.Maximum), out var authFailure))
+            return authFailure!;
+
         if (range.Minimum > range.Maximum)
             return JavaRequirementResolution.Invalid(JavaRequirementFailureReason.ConflictingRequirements, "Minecraft metadata contains incompatible Java requirements.");
         return JavaRequirementResolution.Valid(range, component);
@@ -293,12 +296,28 @@ public sealed class JavaSelectionService(IJavaRuntimeLocator locator)
         if (!requirement.Success)
             return new JavaSelectionResult { Success = false, Requirement = requirement, FailureReason = JavaSelectionFailureReason.InvalidVersionMetadata, Detail = requirement.Detail };
 
+        if (preference is MajorJavaPreference major)
+        {
+            if (major.Major is < 7 or > 99 || !requirement.Range.TryIntersect(JavaVersionRange.ForMajor(major.Major), out var range))
+                return new() { Success = false, Requirement = requirement, FailureReason = JavaSelectionFailureReason.InvalidVersionMetadata, Detail = "指定的 Java 主版本与游戏要求不兼容。" };
+            requirement = JavaRequirementResolution.Valid(range, requirement.RecommendedComponent);
+        }
         IReadOnlyList<JavaRuntimeCandidate> candidates;
         try
         {
             if (preference is InstanceJavaPreference local)
             {
                 candidates = await InstanceJavaRuntimeDiscovery.FindAsync(local.InstanceDirectory, _locator, cancellationToken).ConfigureAwait(false);
+            }
+            else if (preference is UseRelativeJavaPreference relative)
+            {
+                string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(relative.BaseDirectory));
+                string path = Path.GetFullPath(Path.Combine(root, relative.RelativePath));
+                string name = Path.GetRelativePath(root, path);
+                if (Path.IsPathRooted(relative.RelativePath) || name == ".." || name.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+                    throw new IOException("相对 Java 路径不能越过启动器目录。");
+                var inspected = await _locator.InspectAsync(path, cancellationToken).ConfigureAwait(false);
+                candidates = inspected is null ? [] : [inspected];
             }
             else if (preference is ExistingJavaPreference existing)
             {
@@ -366,6 +385,7 @@ public static class JavaPreferenceParser
     public static JavaPreference Parse(string? rawPreference, string? relativePathBaseDirectory = null)
     {
         JavaPreference preference = TryParseJson(rawPreference) ?? ParseLegacy(rawPreference);
+        if (preference is UseRelativeJavaPreference relative && relativePathBaseDirectory is not null) preference = relative with { BaseDirectory = relativePathBaseDirectory };
         return Normalize(preference, relativePathBaseDirectory);
     }
 

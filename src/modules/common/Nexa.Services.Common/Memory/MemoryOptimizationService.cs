@@ -20,6 +20,9 @@ public sealed class MemoryOptimizationService : IAsyncDisposable
     private bool _disposed;
     private DateTimeOffset? _lastAutomatic;
     private MemoryOptimizationSnapshot _snapshot;
+    private long _launchCleanupGeneration;
+    private XsrResult _launchCleanupResult = XsrResult.Success();
+    public bool IsSupported => _port.IsSupported;
     public static readonly TimeSpan Cooldown = TimeSpan.FromMinutes(2);
 
     public MemoryOptimizationService(IProcessMemoryPort port, Func<MemoryOptimizationOptions> options,
@@ -90,7 +93,32 @@ public sealed class MemoryOptimizationService : IAsyncDisposable
         finally { _operation.Release(); }
     }
 
-    private async Task CleanupCoreAsync(CancellationToken token)
+    public async ValueTask<XsrResult> CleanBeforeLaunchAsync(CancellationToken token = default)
+    {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, _stop.Token);
+        if (!_port.IsSupported) return XsrResult.Success();
+        long observed = Interlocked.Read(ref _launchCleanupGeneration);
+        await _operation.WaitAsync(linked.Token).ConfigureAwait(false);
+        try
+        {
+            if (observed != Interlocked.Read(ref _launchCleanupGeneration)) return _launchCleanupResult;
+            try
+            {
+                await Task.Run(() => CleanupCoreAsync(linked.Token, forceDeep: true), linked.Token).ConfigureAwait(false);
+                _launchCleanupResult = _snapshot.Status == "unavailable" ? Failure("unavailable", "System memory could not be measured.") : XsrResult.Success();
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+            {
+                Publish(_snapshot with { Busy = false, Status = ErrorStatus(error) });
+                _launchCleanupResult = Failure(ErrorStatus(error), error.Message);
+            }
+            Interlocked.Increment(ref _launchCleanupGeneration);
+            return _launchCleanupResult;
+        }
+        finally { _operation.Release(); }
+    }
+
+    private async Task CleanupCoreAsync(CancellationToken token, bool forceDeep = false)
     {
         long started = Stopwatch.GetTimestamp();
         var before = _port.Sample();
@@ -98,7 +126,7 @@ public sealed class MemoryOptimizationService : IAsyncDisposable
         Publish(_snapshot with { Memory = before, Busy = true, Status = "cleaning" });
         try
         {
-            if (_options().Deep)
+            if (forceDeep || _options().Deep)
             {
                 if (_port is not IElevatedMemoryCleanupPort elevated) throw new IOException("Elevated memory cleanup is unavailable.");
                 var result = await elevated.CleanElevatedAsync(_games(), token).ConfigureAwait(false);

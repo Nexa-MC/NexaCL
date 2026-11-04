@@ -19,6 +19,7 @@ internal sealed partial class LaunchPageController
         int threshold = Math.Clamp(_store.Read<int>(_store.Resolve(XsrSemanticId.Parse(MemoryOptimizationContract.ThresholdSetting))).Value, 50, 95);
         Publish(LaunchPageState.MemorySupportedKey, supported);
         Publish(LaunchPageState.MemoryAutomaticKey, automatic);
+        Publish(LaunchPageState.MemoryBeforeLaunchKey, _store.Read<bool>(_store.Resolve(XsrSemanticId.Parse(MemoryOptimizationContract.BeforeLaunchSetting))).Value);
         Publish(LaunchPageState.MemoryDeepKey, _store.Read<bool>(_store.Resolve(XsrSemanticId.Parse(MemoryOptimizationContract.DeepSetting))).Value);
         Publish(LaunchPageState.MemoryThresholdKey, (double)threshold);
         Publish(LaunchPageState.MemoryCanCleanKey, supported && snapshot?.Busy != true && _memoryCommand?.IsCompleted != false
@@ -33,7 +34,7 @@ internal sealed partial class LaunchPageController
                 ["total"] = (memory.TotalBytes / 1073741824d).ToString("F1", CultureInfo.CurrentCulture),
             }) : HomeCopy(supported ? "memory.waiting" : "memory.unsupported"));
         string detail = HomeCopy("memory." + (snapshot?.Status is "cleaning" or "unavailable" or "cancelled" or "elevation-cancelled" ? snapshot.Status : "idle"));
-        if (snapshot is { Busy: false, Status: "complete", LastResult: { } result }) detail = HomeFormat("MemoryResultV2", new()
+        if (snapshot is { Busy: false, Status: "complete", LastResult: { } result }) detail = HomeFormat(result.SystemOperations.Count > 0 ? "MemoryResultV2" : "MemoryResult", new()
         {
             ["cleaned"] = result.Cleaned.ToString(CultureInfo.CurrentCulture),
             ["amount"] = (result.WorkingSetReductionBytes / 1048576d).ToString("F0", CultureInfo.CurrentCulture),
@@ -59,22 +60,21 @@ internal sealed partial class LaunchPageController
 
     private bool HandleMemoryIntent(XsrSemanticId command)
     {
-        if (command.Value is not ("ui.launch.memory.clean" or "ui.launch.memory.automatic" or "ui.launch.memory.threshold" or "ui.launch.memory.deep" or "ui.launch.memory.report")) return false;
+        if (command.Value is not ("ui.launch.memory.clean" or "ui.launch.memory.automatic" or "ui.launch.memory.threshold" or "ui.launch.memory.deep" or "ui.launch.memory.report" or "ui.launch.memory.before-launch")) return false;
         if (_store.Read<MemoryOptimizationSnapshot>(_store.Resolve(MemoryOptimizationContract.Snapshot)).Value?.Supported != true) return true;
         if (command.Value == "ui.launch.memory.report")
         {
             var result = _store.Read<MemoryOptimizationSnapshot>(_store.Resolve(MemoryOptimizationContract.Snapshot)).Value?.LastResult;
             if (result is null) return true;
-            string T(string source) => _shell.Renderer.LocalizeText(source);
-            string message = T("工作集观察减少量") + ": " + (result.WorkingSetReductionBytes / 1048576d).ToString("F1", CultureInfo.CurrentCulture) + " MiB\n"
-                + T("可用内存变化") + ": " + (result.AvailableChangeBytes / 1048576d).ToString("+0.0;-0.0;0", CultureInfo.CurrentCulture) + " MiB\n"
-                + T("进程：已清理 / 已保护 / 失败") + ": " + result.Cleaned + " / " + result.Skipped + " / " + result.Failed + "\n"
-                + T("总耗时") + ": " + result.ElapsedMilliseconds + " ms\n"
+            string message = HomeCopy("memory.report.workingset") + ": " + (result.WorkingSetReductionBytes / 1048576d).ToString("F1", CultureInfo.CurrentCulture) + " MiB\n"
+                + HomeCopy("memory.report.available") + ": " + (result.AvailableChangeBytes / 1048576d).ToString("+0.0;-0.0;0", CultureInfo.CurrentCulture) + " MiB\n"
+                + HomeCopy("memory.report.processes") + ": " + result.Cleaned + " / " + result.Skipped + " / " + result.Failed + "\n"
+                + HomeCopy("memory.report.elapsed") + ": " + result.ElapsedMilliseconds + " ms\n"
                 + string.Join("\n", result.SystemOperations.Select(step => MemoryOperationName(step.Operation) + ": " + MemoryOutcomeName(step.Outcome)
                     + " · " + (step.AvailableChangeBytes / 1048576d).ToString("+0.0;-0.0;0", CultureInfo.CurrentCulture) + " MiB · " + step.ElapsedMilliseconds + " ms"
                     + (step.Outcome is SystemMemoryCleanupOutcome.Failed or SystemMemoryCleanupOutcome.AccessDenied or SystemMemoryCleanupOutcome.Unsupported
                         ? " · NT 0x" + step.NativeStatus.ToString("X8", CultureInfo.InvariantCulture) : "")));
-            _feedback.ShowDialog("memory.report", T("内存清理报告"), message, T("确定"), T("关闭"), _ => { }, localizeMessage: false);
+            _feedback.ShowDialog("memory.report", HomeCopy("memory.report.title"), message, HomeCopy("memory.report.ok"), HomeCopy("memory.report.close"), _ => { }, localizeMessage: false);
             return true;
         }
         if (command.Value == "ui.launch.memory.clean")
@@ -85,7 +85,8 @@ internal sealed partial class LaunchPageController
         else
         {
             bool toggle = command.Value != "ui.launch.memory.threshold";
-            string key = command.Value == "ui.launch.memory.deep" ? MemoryOptimizationContract.DeepSetting
+            string key = command.Value == "ui.launch.memory.before-launch" ? MemoryOptimizationContract.BeforeLaunchSetting
+                : command.Value == "ui.launch.memory.deep" ? MemoryOptimizationContract.DeepSetting
                 : toggle ? MemoryOptimizationContract.AutomaticSetting : MemoryOptimizationContract.ThresholdSetting;
             string value = toggle
                 ? ((_memorySettingsPending.GetValueOrDefault(key) ?? (_store.Read<bool>(_store.Resolve(XsrSemanticId.Parse(key))).Value ? "true" : "false")) == "true" ? "false" : "true")
@@ -96,26 +97,8 @@ internal sealed partial class LaunchPageController
         return true;
     }
 
-    private string MemoryOperationName(SystemMemoryCleanupOperation operation) => _shell.Renderer.LocalizeText(operation switch
-    {
-        SystemMemoryCleanupOperation.WorkingSets => "系统工作集",
-        SystemMemoryCleanupOperation.FileCache => "系统文件缓存",
-        SystemMemoryCleanupOperation.VolumeCache => "卷缓存刷新",
-        SystemMemoryCleanupOperation.ModifiedPages => "修改页写回",
-        SystemMemoryCleanupOperation.StandbyPages => "待机页列表",
-        SystemMemoryCleanupOperation.LowPriorityStandby => "低优先级待机页",
-        SystemMemoryCleanupOperation.RegistryCache => "注册表缓存",
-        SystemMemoryCleanupOperation.CombinePages => "内存页合并",
-        _ => operation.ToString()
-    });
-    private string MemoryOutcomeName(SystemMemoryCleanupOutcome outcome) => _shell.Renderer.LocalizeText(outcome switch
-    {
-        SystemMemoryCleanupOutcome.Succeeded => "已完成",
-        SystemMemoryCleanupOutcome.GameProtected => "已跳过：保护运行中的游戏",
-        SystemMemoryCleanupOutcome.Unsupported => "系统不支持",
-        SystemMemoryCleanupOutcome.AccessDenied => "权限不足",
-        _ => "执行失败"
-    });
+    private string MemoryOperationName(SystemMemoryCleanupOperation operation) => HomeCopy("memory.operation." + operation);
+    private string MemoryOutcomeName(SystemMemoryCleanupOutcome outcome) => HomeCopy("memory.outcome." + outcome);
 
     private void DispatchPendingMemorySetting()
     {

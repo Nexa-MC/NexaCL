@@ -13,6 +13,7 @@ internal sealed partial class LaunchPageController
 {
     private readonly Dictionary<Guid, (XsrUiEntityId Power, XsrUiEntityId Logs)> _processDocks = [];
     private readonly HashSet<Guid> _shownFailures = [];
+    private readonly Dictionary<Guid, XsrUiEntityId> _launchDocks = [];
     private XsrUiEntityId _javaChoicePage;
     private int _showJavaChoices, _returnFromJavaChoice;
     private NxmlDynamicContent? _javaChoiceContent;
@@ -32,11 +33,13 @@ internal sealed partial class LaunchPageController
 
     private void ProjectProcessFeedback()
     {
+        ProjectLaunchAttempts();
         if (Interlocked.Exchange(ref _returnFromJavaChoice, 0) != 0 && _shell.Stage.Navigation.Current == _javaChoicePage)
         { _shell.Stage.Navigation.Pop(); _returnFocus.TryPop(out _); UpdateTitleBar(); }
         if (Interlocked.Exchange(ref _showJavaChoices, 0) != 0)
         {
-            var choices = _store.ReadAppliedValue(_store.Resolve(MinecraftLaunchProgressState.JavaChoicesKey)) as IReadOnlyList<int>;
+            var choices = AggregateLaunchSnapshot.Attempts.FirstOrDefault(item => item.Id == _javaChoiceAttempt)?.JavaChoices
+                ?? _store.ReadAppliedValue(_store.Resolve(MinecraftLaunchProgressState.JavaChoicesKey)) as IReadOnlyList<int>;
             var data = new Dictionary<string, string>();
             foreach (int major in new[] { 8, 16, 17, 21, 25 })
                 data["visible" + major] = (choices is null || choices.Contains(major)) ? "true" : "false";
@@ -103,6 +106,30 @@ internal sealed partial class LaunchPageController
         }
     }
 
+    private void ProjectLaunchAttempts()
+    {
+        var attempts = AggregateLaunchSnapshot.Attempts.Where(item => item.Active && !item.IsLaunched).ToArray();
+        foreach (var id in _launchDocks.Keys.Except(attempts.Select(item => item.Id)).ToArray())
+        { RetireProcessButton(_launchDocks[id]); _launchDocks.Remove(id); }
+        foreach (var attempt in attempts)
+        {
+            var data = new Dictionary<string, string>
+            {
+                ["key"] = "launch-attempt-" + attempt.Id.ToString("N"),
+                ["command"] = "ui.launch.attempt." + attempt.Id.ToString("N"),
+                ["caption"] = attempt.InstanceId + " · " + (HomeFind("launch.stage." + attempt.Stage) ?? attempt.Stage)
+            };
+            _processLayer ??= new(_shell, _store, "ShellBubbleLayer.nxml");
+            if (!_launchDocks.TryGetValue(attempt.Id, out var entity))
+            {
+                entity = _processLayer.Append("ProcessLogsBubble.d.nxml", data);
+                _launchDocks.Add(attempt.Id, entity); DesktopBubbleLayout.Register(_shell, entity, 2);
+            }
+            else _processLayer.Reload(entity, "ProcessLogsBubble.d.nxml", data);
+            DesktopBubbleLayout.SetVisible(_shell, _store, entity, _shell.Stage.Navigation.Current != _launchingPage || LaunchSnapshot.AttemptId != attempt.Id);
+        }
+    }
+
     private void RetireProcessButton(XsrUiEntityId entity)
     {
         // Hidden viewer docks no longer need an exit animation. The shared dock helper
@@ -132,6 +159,16 @@ internal sealed partial class LaunchPageController
     private bool HandleProcessIntent(DesktopUiIntentEventArgs e)
     {
         string command = e.Intent.Command.Value;
+        if (command.StartsWith("ui.launch.attempt.", StringComparison.Ordinal) && Guid.TryParseExact(command[18..], "N", out var attemptId))
+        {
+            var attempt = AggregateLaunchSnapshot.Attempts.FirstOrDefault(item => item.Id == attemptId && item.Active);
+            if (attempt is not null)
+            {
+                _launchViewRoot = attempt.MinecraftRootDirectory; _launchViewInstance = attempt.InstanceId;
+                ShowLaunchingPage(e.Intent.Source); RefreshLaunchingDisplay(); RefreshAcquisitionPrompt();
+            }
+            return true;
+        }
         if (_processLogPage is { } logs && _shell.Stage.Navigation.Current == logs.Page
             && (command == "ui.page.back" || command.StartsWith("ui.navigation.", StringComparison.Ordinal)))
             logs.Leave();
@@ -176,7 +213,7 @@ internal sealed partial class LaunchPageController
         {
             if (!_minecraft.Commands.TryResolve(MinecraftRouteIds.JavaVersionSelect, out var route)) return;
             _feedback.Info(ProcessFormat("JavaSearching", new() { ["major"] = major.ToString(System.Globalization.CultureInfo.CurrentCulture) }), localizeMessage: false);
-            var result = await _minecraft.Commands.Dispatch(route, new MinecraftSelectJavaVersionCommand(major), cancellationToken: _lifetimeCancellation.Token).Completion.ConfigureAwait(false);
+            var result = await _minecraft.Commands.Dispatch(route, new MinecraftSelectJavaVersionCommand(major) { AttemptId = _javaChoiceAttempt }, cancellationToken: _lifetimeCancellation.Token).Completion.ConfigureAwait(false);
             if (!_disposed && !result.IsSuccess) _feedback.Error(result.Error?.Message ?? ProcessTerm("java.failed"));
             else if (!_disposed)
             {

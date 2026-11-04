@@ -6,7 +6,7 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
-    private static readonly string[] MemoryContrastKeys = ["MemoryTitle", "MemoryUsage", "MemoryAutomatic", "MemoryThresholdLabel", "MemoryDeep", "MemoryDetail"];
+    private static readonly string[] MemoryContrastKeys = ["MemoryTitle", "MemoryUsage", "MemoryAutomatic", "MemoryThresholdLabel", "MemoryDeep", "MemoryBeforeLaunch", "MemoryDetail"];
     private static void MemoryOptimizationCardRoutesSettingsAndManualCleanup()
     {
         var port = new CardMemoryPort();
@@ -17,8 +17,10 @@ internal static partial class Program
         AssertEqual(3, fixture.Shell.Tree.GetComponent<XsrUiPager>(FindEntity(fixture.Shell, "LaunchWidgetPager"))!.PageIndex);
         AssertTrue(HasKey(fixture.Shell, scene, "MemoryClean"));
         AssertTrue(HasKey(fixture.Shell, scene, "MemoryDeep"));
+        AssertTrue(HasKey(fixture.Shell, scene, "MemoryBeforeLaunch"));
         AssertTrue(HasKey(fixture.Shell, scene, "MemoryReport"));
         AssertTrue(FindByKey(fixture.Shell, scene, "MemoryClean").IsClickable);
+        Emit(fixture.Intents, "ui.launch.memory.before-launch");
         Emit(fixture.Intents, "ui.launch.memory.automatic");
         Emit(fixture.Intents, "ui.launch.memory.deep");
         for (int frame = 0; frame < 50; frame++)
@@ -27,6 +29,7 @@ internal static partial class Program
             if (fixture.Foundation.Host.Settings.GetRawValue(MemoryOptimizationContract.DeepSetting).Value == "true") break;
             Thread.Sleep(10);
         }
+        AssertEqual("true", fixture.Foundation.Host.Settings.GetRawValue(MemoryOptimizationContract.BeforeLaunchSetting).Value);
         AssertEqual("true", fixture.Foundation.Host.Settings.GetRawValue(MemoryOptimizationContract.AutomaticSetting).Value);
         AssertEqual("true", fixture.Foundation.Host.Settings.GetRawValue(MemoryOptimizationContract.DeepSetting).Value);
         fixture.Shell.Renderer.SetRangeValue(FindEntity(fixture.Shell, "MemoryThreshold"), 87);
@@ -44,6 +47,7 @@ internal static partial class Program
 
         using var persisted = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(fixture.TemporaryDirectory, "settings.json")));
         AssertTrue(persisted.RootElement.GetProperty("booleanOptions").GetProperty(MemoryOptimizationContract.DeepSetting).GetBoolean());
+        AssertTrue(persisted.RootElement.GetProperty("booleanOptions").GetProperty(MemoryOptimizationContract.BeforeLaunchSetting).GetBoolean());
         AssertEqual(87, persisted.RootElement.GetProperty("integerOptions").GetProperty(MemoryOptimizationContract.ThresholdSetting).GetInt32());
         foreach (bool dark in MemoryPreviewThemes)
         {
@@ -54,6 +58,8 @@ internal static partial class Program
                 var pager = FindByKey(fixture.Shell, scene, "LaunchWidgetPager").Rect;
                 var deep = FindByKey(fixture.Shell, scene, "MemoryDeep").Rect;
                 AssertTrue(deep.Y >= pager.Y && deep.Y + deep.Height <= pager.Y + pager.Height);
+                var detail = FindByKey(fixture.Shell, scene, "MemoryDetail").Rect;
+                AssertTrue(detail.Y >= pager.Y && detail.Y + detail.Height <= pager.Y + pager.Height);
                 AssertMemoryCardContrast(fixture.Shell, scene);
             }
         }

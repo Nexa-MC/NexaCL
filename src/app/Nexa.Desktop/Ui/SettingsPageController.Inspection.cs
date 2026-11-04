@@ -102,7 +102,7 @@ internal sealed partial class SettingsPageController
             BindWorldAction(row, key + ".Open", () =>
             {
                 if (_inspectionRequest is not { } q || _inspection is not { } v) return;
-                Inspect(v.Format switch { "NBT" => q with { Node = item.Id, Offset = 0 }, "ZIP" => q with { ArchiveEntry = item.Id, Node = "", Offset = 0 }, _ => new(item.Id) });
+                Inspect(v.Format switch { "NBT" => q with { Node = item.Id, Offset = 0 }, "Region" => q with { ArchiveEntry = item.Id, Node = "", Offset = 0 }, "ZIP" => q with { ArchiveEntry = item.Id, Node = "", Offset = 0 }, _ => new(item.Id) });
             });
         }
         _dynamic.Reorder(nodes["Inspection.Rows"], items.Select(i => _inspectionRows[i.Id]).ToArray());

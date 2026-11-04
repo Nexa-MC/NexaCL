@@ -285,6 +285,13 @@ internal sealed partial class ServiceWireWriter
         Count(value.Count);
         foreach (var item in value) InstanceRecoverySnapshotSummary(item);
     }
+    internal void IReadOnlyList_InstanceResourcePack(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceResourcePack>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) InstanceResourcePack(item);
+    }
     internal void IReadOnlyList_InstanceServerEntry(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceServerEntry>? value)
     {
         if (value is null) { Int32(-1); return; }
@@ -389,6 +396,13 @@ internal sealed partial class ServiceWireWriter
         using var scope = EnterValue();
         Count(value.Count);
         foreach (var item in value) MinecraftInstanceDescriptor(item);
+    }
+    internal void IReadOnlyList_MinecraftLaunchAttemptSnapshot(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Launch.MinecraftLaunchAttemptSnapshot>? value)
+    {
+        if (value is null) { Int32(-1); return; }
+        using var scope = EnterValue();
+        Count(value.Count);
+        foreach (var item in value) MinecraftLaunchAttemptSnapshot(item);
     }
     internal void IReadOnlyList_MinecraftLibraryDirectory(global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.MinecraftLibraryDirectory>? value)
     {
@@ -1041,6 +1055,7 @@ internal sealed partial class ServiceWireWriter
         String(value.Description);
         InstanceRecoveryReport(value.RecoveryComparison);
         InstanceRecoveryStorage(value.RecoveryStorage);
+        InstanceResourcePackConfiguration(value.ResourcePacks);
         IReadOnlyList_InstanceTrashedContent(value.Trash);
     }
     internal void InstanceModEnabledCommand(global::Nexa.Services.Minecraft.Management.InstanceModEnabledCommand? value)
@@ -1186,6 +1201,37 @@ internal sealed partial class ServiceWireWriter
         Boolean(value.Complete);
         IReadOnlyList_InstanceRecoverySnapshotSummary(value.Snapshots);
         String(value.Error);
+    }
+    internal void InstanceResourcePack(global::Nexa.Services.Minecraft.Management.InstanceResourcePack? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Name);
+        Boolean(value.Enabled);
+        Int32(value.Order);
+        String(value.FormatRange);
+        Nullable_Boolean(value.Compatible);
+        String(value.Problem);
+    }
+    internal void InstanceResourcePackCommand(global::Nexa.Services.Minecraft.Management.InstanceResourcePackCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.ExpectedRevision);
+        String(value.Name);
+        Boolean(value.Enabled);
+        Int32(value.Order);
+        Boolean(value.AllowIncompatible);
+    }
+    internal void InstanceResourcePackConfiguration(global::Nexa.Services.Minecraft.Management.InstanceResourcePackConfiguration? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.Revision);
+        IReadOnlyList_InstanceResourcePack(value.Packs);
+        String(value.TargetFormat);
+        String(value.Problem);
     }
     internal void InstanceScreenshot(global::Nexa.Services.Minecraft.Management.InstanceScreenshot? value)
     {
@@ -2069,6 +2115,25 @@ internal sealed partial class ServiceWireWriter
         String(value.WindowTitle);
         String(value.WrapperCommand);
     }
+    internal void MinecraftLaunchAttemptSnapshot(global::Nexa.Services.Minecraft.Launch.MinecraftLaunchAttemptSnapshot? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Guid(value.Id);
+        String(value.InstanceId);
+        String(value.MinecraftRootDirectory);
+        Boolean(value.Active);
+        String(value.Stage);
+        Double(value.Progress);
+        String(value.Method);
+        String(value.DownloadSpeed);
+        Boolean(value.IsLaunched);
+        Nullable_Guid(value.SessionId);
+        Boolean(value.AcquirePending);
+        String(value.AcquireComponent);
+        Int32(value.AcquireMajor);
+        IReadOnlyList_Int32(value.JavaChoices);
+    }
     internal void MinecraftLaunchFaultCode(global::Nexa.Services.Minecraft.Crash.MinecraftLaunchFaultCode value) => Int32((int)value);
     internal void MinecraftLaunchFaultReport(global::Nexa.Services.Minecraft.Crash.MinecraftLaunchFaultReport? value)
     {
@@ -2179,7 +2244,13 @@ internal sealed partial class ServiceWireWriter
         String(value.DownloadSpeed);
         Boolean(value.IsLaunched);
         Nullable_Guid(value.SessionId);
+        String(value.AcquireComponent);
+        Int32(value.AcquireMajor);
+        Boolean(value.AcquirePending);
+        Nullable_Guid(value.AttemptId);
+        IReadOnlyList_MinecraftLaunchAttemptSnapshot(value.Attempts);
         String(value.InstanceId);
+        IReadOnlyList_Int32(value.JavaChoices);
         String(value.MinecraftRootDirectory);
     }
     internal void MinecraftLauncherVisibility(global::Nexa.Services.Minecraft.Launch.MinecraftLauncherVisibility value) => Int32((int)value);
@@ -3502,6 +3573,14 @@ internal sealed partial class ServiceWireReader
         for (int index = 0; index < count; index++) value[index] = InstanceRecoverySnapshotSummary() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceResourcePack>? IReadOnlyList_InstanceResourcePack()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Management.InstanceResourcePack[count];
+        for (int index = 0; index < count; index++) value[index] = InstanceResourcePack() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
     internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Management.InstanceServerEntry>? IReadOnlyList_InstanceServerEntry()
     {
         int count = Count(); if (count == -1) return null;
@@ -3620,6 +3699,14 @@ internal sealed partial class ServiceWireReader
         using var scope = EnterValue();
         var value = new global::Nexa.Services.Minecraft.MinecraftInstanceDescriptor[count];
         for (int index = 0; index < count; index++) value[index] = MinecraftInstanceDescriptor() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
+        return value;
+    }
+    internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.Launch.MinecraftLaunchAttemptSnapshot>? IReadOnlyList_MinecraftLaunchAttemptSnapshot()
+    {
+        int count = Count(); if (count == -1) return null;
+        using var scope = EnterValue();
+        var value = new global::Nexa.Services.Minecraft.Launch.MinecraftLaunchAttemptSnapshot[count];
+        for (int index = 0; index < count; index++) value[index] = MinecraftLaunchAttemptSnapshot() ?? throw new global::System.IO.InvalidDataException("Missing service item.");
         return value;
     }
     internal global::System.Collections.Generic.IReadOnlyList<global::Nexa.Services.Minecraft.MinecraftLibraryDirectory>? IReadOnlyList_MinecraftLibraryDirectory()
@@ -4344,8 +4431,9 @@ internal sealed partial class ServiceWireReader
         var p10 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p11 = InstanceRecoveryReport();
         var p12 = InstanceRecoveryStorage();
-        var p13 = IReadOnlyList_InstanceTrashedContent() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
-        return new global::Nexa.Services.Minecraft.Management.InstanceManagementSnapshot(p0!, p1!, p2!, p3!, p4!, p5, p6!) { ContentGraph = p7!, ContentUpdates = p8!, Contents = p9!, Description = p10!, RecoveryComparison = p11!, RecoveryStorage = p12!, Trash = p13! };
+        var p13 = InstanceResourcePackConfiguration();
+        var p14 = IReadOnlyList_InstanceTrashedContent() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceManagementSnapshot(p0!, p1!, p2!, p3!, p4!, p5, p6!) { ContentGraph = p7!, ContentUpdates = p8!, Contents = p9!, Description = p10!, RecoveryComparison = p11!, RecoveryStorage = p12!, ResourcePacks = p13!, Trash = p14! };
     }
     internal global::Nexa.Services.Minecraft.Management.InstanceModEnabledCommand? InstanceModEnabledCommand()
     {
@@ -4506,6 +4594,40 @@ internal sealed partial class ServiceWireReader
         var p3 = IReadOnlyList_InstanceRecoverySnapshotSummary() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p4 = String();
         return new global::Nexa.Services.Minecraft.Management.InstanceRecoveryStorage(p0, p1, p2, p3!, p4!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceResourcePack? InstanceResourcePack()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = Boolean();
+        var p2 = Int32();
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p4 = Nullable_Boolean();
+        var p5 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceResourcePack(p0!, p1, p2, p3!, p4, p5!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceResourcePackCommand? InstanceResourcePackCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Boolean();
+        var p4 = Int32();
+        var p5 = Boolean();
+        return new global::Nexa.Services.Minecraft.Management.InstanceResourcePackCommand(p0!, p1!, p2!, p3, p4, p5);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceResourcePackConfiguration? InstanceResourcePackConfiguration()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = IReadOnlyList_InstanceResourcePack() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceResourcePackConfiguration(p0!, p1!, p2!, p3!);
     }
     internal global::Nexa.Services.Minecraft.Management.InstanceScreenshot? InstanceScreenshot()
     {
@@ -5469,6 +5591,26 @@ internal sealed partial class ServiceWireReader
         var p47 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         return new global::Nexa.Services.Minecraft.MinecraftInstanceMetadata() { AuthRegisterAddress = p0!, AuthServerAddress = p1!, AuthServerDisplayName = p2!, AuthSettingsLocked = p3, CardType = p4, ClasspathHead = p5!, CorePatchSha256 = p6!, CustomInfo = p7!, CustomMemorySize = p8, Description = p9!, DisableAssetVerification = p10, DisableJlw = p11, DisableLwjglUnsafeAgent = p12, DisableRw = p13, DisplayName = p14!, ForceX11OnWayland = p15, GameArguments = p16!, Group = p17!, Identity = p18!, IgnoreJavaCompatibility = p19, InstanceIsolation = p20, IsStarred = p21, JavaSelectionMode = p22, JvmArguments = p23!, LaunchCount = p24, LogoPath = p25!, MemorySolution = p26, ModpackProjectId = p27!, ModpackVersion = p28!, Notes = p29!, OfflineLaunchAllowed = p30, PreLaunchCommand = p31!, Renderer = p32, SchemaVersion = p33, SelectedJavaPath = p34!, ServerExpectedGameVersion = p35!, ServerExpectedLoader = p36!, ServerLoginRequirement = p37, ServerRequiredMods = p38!, ServerToEnter = p39!, Tags = p40!, UseDebugLog4j2Config = p41, UseGlobalWindowTitle = p42, UseProxy = p43, UseSystemGlfw = p44, WaitForPreLaunchCommand = p45, WindowTitle = p46!, WrapperCommand = p47! };
     }
+    internal global::Nexa.Services.Minecraft.Launch.MinecraftLaunchAttemptSnapshot? MinecraftLaunchAttemptSnapshot()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Guid();
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = Boolean();
+        var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p5 = Double();
+        var p6 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p7 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p8 = Boolean();
+        var p9 = Nullable_Guid();
+        var p10 = Boolean();
+        var p11 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p12 = Int32();
+        var p13 = IReadOnlyList_Int32() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Launch.MinecraftLaunchAttemptSnapshot(p0, p1!, p2!, p3, p4!, p5, p6!, p7!, p8, p9, p10, p11!, p12, p13!);
+    }
     internal global::Nexa.Services.Minecraft.Crash.MinecraftLaunchFaultCode MinecraftLaunchFaultCode() { int value = Int32(); return value is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10 or 11 or 12 or 13 or 14 or 15 ? (global::Nexa.Services.Minecraft.Crash.MinecraftLaunchFaultCode)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Minecraft.Crash.MinecraftLaunchFaultReport? MinecraftLaunchFaultReport()
     {
@@ -5584,9 +5726,15 @@ internal sealed partial class ServiceWireReader
         var p4 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p5 = Boolean();
         var p6 = Nullable_Guid();
-        var p7 = String();
-        var p8 = String();
-        return new global::Nexa.Services.Minecraft.Launch.MinecraftLaunchProgressSnapshot(p0, p1!, p2, p3!, p4!, p5, p6) { InstanceId = p7!, MinecraftRootDirectory = p8! };
+        var p7 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p8 = Int32();
+        var p9 = Boolean();
+        var p10 = Nullable_Guid();
+        var p11 = IReadOnlyList_MinecraftLaunchAttemptSnapshot() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p12 = String();
+        var p13 = IReadOnlyList_Int32() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p14 = String();
+        return new global::Nexa.Services.Minecraft.Launch.MinecraftLaunchProgressSnapshot(p0, p1!, p2, p3!, p4!, p5, p6) { AcquireComponent = p7!, AcquireMajor = p8, AcquirePending = p9, AttemptId = p10, Attempts = p11!, InstanceId = p12!, JavaChoices = p13!, MinecraftRootDirectory = p14! };
     }
     internal global::Nexa.Services.Minecraft.Launch.MinecraftLauncherVisibility MinecraftLauncherVisibility() { int value = Int32(); return value is 0 or 1 or 2 or 3 ? (global::Nexa.Services.Minecraft.Launch.MinecraftLauncherVisibility)value : throw new global::System.IO.InvalidDataException("Invalid service enum."); }
     internal global::Nexa.Services.Minecraft.MinecraftLibraryConfiguration? MinecraftLibraryConfiguration()
@@ -6675,5 +6823,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "134D131D12C8FC23B6831B1B4E6B23B7C8FF13299EFAD1E8607ED11B66BCEB3E";
+    internal const string Fingerprint = "3BDF39C90D4B902D59514214B8064F1826F4B26064FE19C804BF9562E573AD04";
 }

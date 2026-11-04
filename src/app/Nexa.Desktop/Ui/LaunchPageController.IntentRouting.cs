@@ -131,9 +131,10 @@ internal sealed partial class LaunchPageController
             }
             else
             {
-                _launchRequest = StartLaunchAsync(instanceId, e.Intent.Source);
+                _ = StartLaunchAsync(instanceId, e.Intent.Source);
             }
         }
+        else if (command.Value == "ui.launch.background") { CloseLaunchingPage(); }
         else if (command == LaunchCancelCommand)
         {
             _ = CancelLaunchAsync();

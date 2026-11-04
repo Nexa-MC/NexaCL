@@ -53,11 +53,17 @@ internal static partial class Program
         {
             string key = shell.Tree.Name(entity);
             if (key.StartsWith("JavaDiagnostics", StringComparison.Ordinal) || key.StartsWith("JavaManual", StringComparison.Ordinal)
-                || key.StartsWith("JavaPolicy", StringComparison.Ordinal))
+                || key.StartsWith("JavaPolicy", StringComparison.Ordinal)
+                && key is not ("JavaPolicy.Relative" or "JavaPolicy.Relative.Apply" or "JavaPolicy.Major" or "JavaPolicy.Major.Apply"))
                 throw new InvalidOperationException("Retired Java panels reappeared.");
             return true;
         });
-        Console.WriteLine("Dynamic Java validation passed: external inventory header and owned body slot; no registry changes.");
+        if (shell.Tree.GetComponent<XsrUiTextInput>(Find("JavaPolicy.Relative")) is null
+            || shell.Tree.GetComponent<XsrUiTextInput>(Find("JavaPolicy.Major")) is null
+            || shell.Tree.GetComponent<XsrUiCommandBinding>(Find("JavaPolicy.Relative.Apply")) is null
+            || shell.Tree.GetComponent<XsrUiCommandBinding>(Find("JavaPolicy.Major.Apply")) is null)
+            throw new InvalidOperationException("Portable Java policy controls did not load.");
+        Console.WriteLine("Dynamic Java validation passed: external inventory and portable policy controls; no registry changes.");
         intents.Emit(XsrSemanticId.Parse("ui.settings.section"), Find("SettingsNav.about"), XsrCorrelationId.Create());
         shell.Render(new(1280, 800));
         if (!Find("AboutCopyright").IsAssigned || !Find("AboutOpenSource").IsAssigned || !Find("AboutThanks").IsAssigned)
@@ -540,6 +546,7 @@ internal static partial class Program
                     ["avatar"] = LaunchProfilePresentation.Avatar(""),
                     ["memory_automatic"] = "false",
                     ["memory_deep"] = "false",
+                    ["memory_before_launch"] = "false",
                     ["memory_threshold"] = "80"
                 }));
             var form = owner.Append(Find(home, "AccountFormSlot"), DesktopMarkup.Dynamic("AccountFormWorkspace.d.nxml"));

@@ -40,10 +40,18 @@ public static class InstanceManagementService
                     if (contents[i].PageId == "mods")
                         contents[i] = await InstanceModUpdates.CheckAsync(InstanceModUpdates.SharedHttp, contents[i], Path.Combine(gameDirectory, "mods"), edit.GameVersion, edit.Selection, token).ConfigureAwait(false);
             }
+            var resourceEntries = contents.FirstOrDefault(c => c.PageId == "resourcepacks");
+            var resourcePacks = await InstanceResourcePackService.ReadSafelyAsync(instance, gameDirectory, edit.GameVersion, resourceEntries?.Entries ?? [], token).ConfigureAwait(false);
+            if (resourceEntries is not null && resourcePacks.Problem.Length == 0)
+            {
+                int index = contents.IndexOf(resourceEntries);
+                contents[index] = resourceEntries with { Entries = resourceEntries.Entries.Select(entry => resourcePacks.Packs.FirstOrDefault(p => p.Name == entry.Name) is { } pack ? entry with { Enabled = pack.Enabled } : entry).ToArray() };
+            }
             var result = new InstanceManagementSnapshot(instance, gameDirectory, edit.GameVersion, edit.Selection,
                 pages, inventory.Complete, metadata.ModpackVersion)
             {
                 Description = metadata.Description,
+                ResourcePacks = resourcePacks,
                 ContentGraph = query.IncludeContentGraph ? InstanceContentGraphBuilder.Build(GraphInventory(inventory, contents), edit.Selection, token) : null,
                 Trash = query.IncludeTrash ? InstanceContentTrash.Read(instance, gameDirectory) : [],
                 RecoveryStorage = query.IncludeRecoveryStorage ? await InstanceRecoveryStorageReader.ReadAsync(instance, gameDirectory, token).ConfigureAwait(false) : null,

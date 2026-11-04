@@ -10,7 +10,7 @@ namespace Nexa.Services.Accounts;
 /// the persisted access token is used as-is and the gap is logged. LittleSkin resolves a
 /// Yggdrasil game session separately from its provider OAuth credentials.
 /// </summary>
-public sealed class AccountLaunchIdentityResolver(
+public sealed partial class AccountLaunchIdentityResolver(
     AccountService accounts,
     IMicrosoftMinecraftAuthService? microsoft = null,
     string? microsoftClientId = null,
@@ -24,7 +24,7 @@ public sealed class AccountLaunchIdentityResolver(
     /// <summary>Whether Microsoft session refresh is composed (service + client id present).</summary>
     public bool ComposedRefreshCapability => microsoft is not null && !string.IsNullOrWhiteSpace(microsoftClientId);
 
-    public async ValueTask<XsrResult<MinecraftLaunchIdentity>> ResolveAsync(
+    private async ValueTask<XsrResult<MinecraftLaunchIdentity>> ResolveCoreAsync(
         int accountIndex,
         LaunchProfile profile,
         CancellationToken cancellationToken = default)

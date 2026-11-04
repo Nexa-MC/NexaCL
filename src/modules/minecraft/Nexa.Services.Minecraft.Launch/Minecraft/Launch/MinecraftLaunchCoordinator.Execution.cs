@@ -38,6 +38,7 @@ public sealed partial class MinecraftLaunchCoordinator
     private async ValueTask<XsrResult> StartCoreAsync(string instanceId, int accountIndex, string minecraftRootDirectory, string? serverAddress,
         CancellationToken cancellationToken)
     {
+        if (!_attemptChild) return await StartConcurrentAsync(instanceId, accountIndex, minecraftRootDirectory, serverAddress, cancellationToken).ConfigureAwait(false);
         using LogOperation? operation = _log?.BeginOperation("Launch", "StartMinecraft", $"instance={instanceId} account_index={accountIndex}");
         CancellationTokenSource launchCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         lock (_launchGate)
@@ -135,6 +136,13 @@ public sealed partial class MinecraftLaunchCoordinator
                     return XsrResult.Failure(MinecraftErrors.LaunchPreparationFailed("启动预检未通过或已取消。"));
                 }
             }
+            if (BeforeProcessStart is { } beforeStart)
+            {
+                operation?.Stage("pre_launch_cleanup");
+                var ready = await beforeStart(launchToken).ConfigureAwait(false);
+                launchToken.ThrowIfCancellationRequested();
+                if (!ready.IsSuccess) { _progress?.Stop(); return ready; }
+            }
             operation?.Stage("execute_plan", $"native_archives={plan.NativeLibraries.Count}");
             // Stage boundaries as named constants: every hand-written +Weight chain eventually
             // desynced from the weight table, so the math is written exactly once here.
@@ -187,6 +195,7 @@ public sealed partial class MinecraftLaunchCoordinator
                 session.Changed -= OnSessionChanged;
                 quiet?.Dispose();
                 _progress?.Stop(sessionId);
+                _sessionEnded?.Invoke(snapshot);
             }
 
             session.Changed += OnSessionChanged;

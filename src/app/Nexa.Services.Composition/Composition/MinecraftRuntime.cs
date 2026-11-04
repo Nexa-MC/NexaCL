@@ -116,7 +116,8 @@ public static class MinecraftRuntimeComposer
         IMinecraftWindowProbe? windowProbe = null,
         Action<int>? gameWindowAppeared = null,
         string? jvmHostExecutable = null,
-        MinecraftLaunchPlanDiagnostics? launchDiagnostics = null)
+        MinecraftLaunchPlanDiagnostics? launchDiagnostics = null,
+        Func<CancellationToken, ValueTask<Nexa.Xsr.XsrResult>>? beforeProcessStart = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentException.ThrowIfNullOrWhiteSpace(minecraftRootDirectory);
@@ -220,7 +221,7 @@ public static class MinecraftRuntimeComposer
             identityResolver,
             launcherVersion,
             windowProbe, authlib, gameWindowAppeared, fileCompletion, host.SettingsPolicy, preflight)
-        { WorkScheduler = host.Work, JavaRegistrations = host.JavaRegistrations };
+        { WorkScheduler = host.Work, JavaRegistrations = host.JavaRegistrations, BeforeProcessStart = beforeProcessStart };
         IXsrDispatchObserver dispatchObserver = observer ?? NullDispatchObserver.Instance;
         XsrCommandRouterBuilder commandBuilder = new();
 #if NEXA_NATIVE_SERVICES
@@ -247,8 +248,8 @@ public static class MinecraftRuntimeComposer
         commandBuilder.Register(MinecraftRouteIds.Launch, MinecraftCommands.CreateLaunchHandler(executor));
         commandBuilder.Register(MinecraftRouteIds.LaunchCancel, MinecraftCommands.CreateCancelLaunchHandler(coordinator));
         commandBuilder.Register(MinecraftRouteIds.AcquireDecide, MinecraftCommands.CreateAcquireDecideHandler(coordinator));
-        commandBuilder.Register<MinecraftSelectJavaVersionCommand>(MinecraftRouteIds.JavaVersionSelect, (command, token) => coordinator.SelectJavaVersionAsync(command.Major, token));
-        commandBuilder.Register<MinecraftSelectJavaCommand>(MinecraftRouteIds.JavaSelect, (command, token) => coordinator.SelectJavaAsync(command.Path, token));
+        commandBuilder.Register<MinecraftSelectJavaVersionCommand>(MinecraftRouteIds.JavaVersionSelect, (command, token) => coordinator.SelectJavaVersionAsync(command.Major, command.AttemptId, token));
+        commandBuilder.Register<MinecraftSelectJavaCommand>(MinecraftRouteIds.JavaSelect, (command, token) => coordinator.SelectJavaAsync(command.Path, command.AttemptId, token));
         commandBuilder.Register(MinecraftRouteIds.ProcessCancel, MinecraftCommands.CreateCancelProcessHandler(processService));
         XsrQueryRouterBuilder queryBuilder = new();
 #if NEXA_NATIVE_SERVICES

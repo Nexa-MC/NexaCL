@@ -323,6 +323,12 @@ internal static partial class Program
         scene = fixture.Shell.Render(new(1000, 650));
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.java").Entity);
         scene = fixture.Shell.Render(new(1000, 650));
+        fixture.Shell.Renderer.SetTextInputValue(ShowFormControl("JavaPolicy.Major").Entity, "17");
+        Emit(fixture.Intents, "ui.settings.management.action", ShowFormControl("JavaPolicy.Major.Apply").Entity);
+        WaitCommitted(() => Read("java.runtime").Value.Value == "@major:17");
+        fixture.Shell.Renderer.SetTextInputValue(ShowFormControl("JavaPolicy.Relative").Entity, "runtime/jdk/bin/java");
+        Emit(fixture.Intents, "ui.settings.management.action", ShowFormControl("JavaPolicy.Relative.Apply").Entity);
+        WaitCommitted(() => Read("java.runtime").Value.Value == "@relative:runtime/jdk/bin/java");
         AssertEqual("false", Read("java.auto-install").Value.Value);
         Emit(fixture.Intents, "ui.settings.choice", ShowFormControl("SettingsOption.java.auto-install.true").Entity);
         WaitCommitted(() => Read("java.auto-install").Value.Value == "true");

@@ -96,6 +96,8 @@ public sealed partial class MinecraftLaunchCoordinator
         JavaPreference preference = setting.Source == SettingsLayer.Builtin ? fallback
             : setting.Value.Mode == SettingsOverrideMode.Auto ? new AutoSelectJavaPreference()
             : setting.Value.Value == SettingsPolicySchema.InstanceJavaRuntime ? new InstanceJavaPreference(instanceDirectory)
+            : SettingsPolicySchema.TryJavaMajor(setting.Value.Value!, out int major) ? new MajorJavaPreference(major)
+            : SettingsPolicySchema.TryRelativeJava(setting.Value.Value!, out string relative) ? new UseRelativeJavaPreference(relative)
             : new ExistingJavaPreference(setting.Value.Value!);
         var vendor = snapshot.Values.Single(item => item.Key == "java.vendor");
         if (preference is AutoSelectJavaPreference auto && vendor.Source != SettingsLayer.Builtin)

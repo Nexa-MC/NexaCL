@@ -15,9 +15,16 @@ internal sealed partial class SettingsPageController
             var value = _values?.Values.FirstOrDefault(item => item.Key == mode.Editor.Entry.SettingKey)?.Value;
             bool auto = value?.Mode == SettingsOverrideMode.Auto || mode.Editor.Entry.SettingKey == "java.runtime" && string.IsNullOrWhiteSpace(value?.Value);
             bool instance = mode.Instance.IsAssigned && value?.Value == SettingsPolicySchema.InstanceJavaRuntime;
+            bool portable = value?.Value is { } raw && (SettingsPolicySchema.TryJavaMajor(raw, out _) || SettingsPolicySchema.TryRelativeJava(raw, out _));
+            if (mode.Instance.IsAssigned)
+            {
+                string description = value?.Value is { } text && SettingsPolicySchema.TryJavaMajor(text, out int major) ? "Java " + major
+                    : value?.Value is { } relative && SettingsPolicySchema.TryRelativeJava(relative, out string path) ? path : "";
+                ReloadCatalog(_autoModeViews[track], ("javaPolicy", description));
+            }
             var selected = instance ? mode.Instance : auto ? mode.Auto : mode.Manual;
             _shell.Tree.GetComponent<XsrUiSegmentedTrack>(track)!.Selected = selected;
-            ReloadCatalog(_autoModeViews[track], ("autoSelected", Flag(auto)), ("manualSelected", Flag(!auto && !instance)), ("instanceSelected", Flag(instance)));
+            ReloadCatalog(_autoModeViews[track], ("autoSelected", Flag(auto)), ("manualSelected", Flag(!auto && !instance && !portable)), ("instanceSelected", Flag(instance)));
         }
     }
 

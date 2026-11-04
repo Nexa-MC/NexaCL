@@ -68,7 +68,27 @@
   <Text Key="memory.waiting" Content="正在读取系统内存…" />
   <Text Key="memory.unavailable" Content="无法读取系统内存，请稍后重试" />
   <Text Key="memory.idle" Content="排除游戏及其子进程；每次清理后冷却 2 分钟。" />
-  <Text Key="memory.cleaning" Content="正在整理其他进程的工作集，游戏进程受保护…" />
+  <Text Key="memory.cleaning" Content="正在清理内存，游戏进程受保护…" />
   <Text Key="memory.cancelled" Content="清理已取消" />
   <Text Key="memory.elevation-cancelled" Content="已取消管理员授权，未执行深度清理。" />
+  <Text Key="memory.report.workingset" Content="逐进程工作集观察减少量" />
+  <Text Key="memory.report.available" Content="可用内存变化" />
+  <Text Key="memory.report.processes" Content="进程：已清理 / 已保护 / 失败" />
+  <Text Key="memory.report.elapsed" Content="总耗时" />
+  <Text Key="memory.report.title" Content="内存清理报告" />
+  <Text Key="memory.report.ok" Content="确定" />
+  <Text Key="memory.report.close" Content="关闭" />
+  <Text Key="memory.operation.WorkingSets" Content="系统工作集" />
+  <Text Key="memory.operation.FileCache" Content="系统文件缓存" />
+  <Text Key="memory.operation.VolumeCache" Content="卷缓存刷新" />
+  <Text Key="memory.operation.ModifiedPages" Content="修改页写回" />
+  <Text Key="memory.operation.StandbyPages" Content="待机页列表" />
+  <Text Key="memory.operation.LowPriorityStandby" Content="低优先级待机页" />
+  <Text Key="memory.operation.RegistryCache" Content="注册表缓存" />
+  <Text Key="memory.operation.CombinePages" Content="内存页合并" />
+  <Text Key="memory.outcome.Succeeded" Content="已完成" />
+  <Text Key="memory.outcome.GameProtected" Content="已跳过：保护运行中的游戏" />
+  <Text Key="memory.outcome.Unsupported" Content="系统不支持" />
+  <Text Key="memory.outcome.AccessDenied" Content="权限不足" />
+  <Text Key="memory.outcome.Failed" Content="执行失败" />
 </StackPanel>

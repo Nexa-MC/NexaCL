@@ -42,6 +42,17 @@ public sealed partial class JavaRuntimeInstaller : IConfirmedJavaRuntimeInstalle
         return client;
     }
 
+    private static async Task<FileStream> AcquireInstallLeaseAsync(string path, JavaExecution execution, CancellationToken token)
+    {
+        while (true)
+        {
+            token.ThrowIfCancellationRequested();
+            try { return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); }
+            catch (IOException error) when ((error.HResult & 0xffff) is 11 or 32 or 33)
+            { execution.Ready.TrySetResult(); await Task.Delay(100, token).ConfigureAwait(false); }
+        }
+    }
+
     private async Task<string> InstallCoreAsync(
         string requestedComponent,
         string runtimeRootDirectory,
@@ -63,7 +74,7 @@ public sealed partial class JavaRuntimeInstaller : IConfirmedJavaRuntimeInstalle
             Directory.CreateDirectory(runtimeRootDirectory);
             string lockPath = Path.Combine(runtimeRootDirectory, ".nexa-java.lock");
             Nexa.Services.Minecraft.Management.RecoveryBlobStore.CheckLinks(lockPath);
-            rootLease = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            rootLease = await AcquireInstallLeaseAsync(lockPath, execution, cancellationToken).ConfigureAwait(false);
             var journal = await FindPendingAsync(runtimeRootDirectory, requestedComponent, cancellationToken).ConfigureAwait(false);
             JavaRuntimeDownloadPlan? reviewedNewPlan = null;
             if (journal is null && expectedPlanFingerprint is not null)

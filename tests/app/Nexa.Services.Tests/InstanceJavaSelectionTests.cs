@@ -17,7 +17,7 @@ internal static partial class Program
                 return new(new(home, executable, null, new Version(major, 0), JavaBrand.EclipseTemurin, JavaArchitecture.X64, true, false));
             }
             var incompatible = Runtime(Path.Combine(instance, "jre"), 8);
-            var compatible = Runtime(Path.Combine(instance, "runtime", "java-runtime-gamma", "linux", "jdk-17"), 17);
+            var compatible = Runtime(Path.Combine(instance, "arbitrary-folder", "jdk-17.0.10"), 17);
             var foreign = Runtime(Path.Combine(other, "java"), 17);
             var global = Runtime(Path.Combine(root, "global"), 17);
             var locator = new InstanceOnlyJavaInspector([incompatible, compatible, foreign, global]);

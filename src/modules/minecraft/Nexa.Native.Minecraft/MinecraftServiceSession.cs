@@ -140,7 +140,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
             return [];
         }
         if (_instances is null) throw new InvalidOperationException("Minecraft service has not initialized.");
-        if (operation is >= MinecraftServiceProtocol.ManageInstanceExportOptionsSave and <= MinecraftServiceProtocol.ManageInstanceWorldSnapshotVerifyQuery or MinecraftServiceProtocol.LanDiscover or MinecraftServiceProtocol.ContentInspect or MinecraftServiceProtocol.ScriptExport)
+        if (operation is >= MinecraftServiceProtocol.ManageInstanceExportOptionsSave and <= MinecraftServiceProtocol.ManageInstanceWorldSnapshotVerifyQuery or MinecraftServiceProtocol.LanDiscover or MinecraftServiceProtocol.ContentInspect or MinecraftServiceProtocol.ScriptExport or MinecraftServiceProtocol.ResourcePackSet)
             return await ExecuteManagementAsync(operation, reader, token).ConfigureAwait(false);
         if (operation == MinecraftServiceProtocol.ResourceConfigure) return await ConfigureResourcesAsync(reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.ResourceResourceNetworkPolicyQuery and <= MinecraftServiceProtocol.ResourceResourceModpackUpdateCommand or MinecraftServiceProtocol.ResourceInspectModpack)
@@ -162,7 +162,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
         if (operation is >= MinecraftServiceProtocol.RecoveryRead and <= MinecraftServiceProtocol.RecoveryResume)
             return await ExecuteRecoveryAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.LaunchConfigure and <= MinecraftServiceProtocol.LaunchFinalize
-            or MinecraftServiceProtocol.LaunchSafeRead or MinecraftServiceProtocol.LaunchDiagnostics)
+            or MinecraftServiceProtocol.LaunchSafeRead or MinecraftServiceProtocol.LaunchDiagnostics or MinecraftServiceProtocol.LaunchAttemptControl)
             return await ExecuteLaunchAsync(operation, reader, token).ConfigureAwait(false);
         switch (operation)
         {

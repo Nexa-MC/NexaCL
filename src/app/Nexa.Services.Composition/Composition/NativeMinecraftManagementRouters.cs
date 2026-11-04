@@ -8,6 +8,7 @@ internal static class NativeMinecraftManagementRouters
 {
     internal static void Register(XsrCommandRouterBuilder commands, XsrQueryRouterBuilder queries, NativeMinecraftClient client)
     {
+        commands.Register<InstanceResourcePackCommand>(InstanceResourcePackContract.Set, client.SetResourcePackAsync);
         commands.Register<InstanceLaunchScriptCommand>(InstanceLaunchScriptContract.Export, client.ExportLaunchScriptAsync);
         commands.Register<InstanceExportOptionsSave>(InstanceModpackExportContract.SaveOptions, client.DispatchInstanceExportOptionsSaveAsync);
         commands.Register<InstanceModpackExportCommand>(InstanceModpackExportContract.Export, client.DispatchInstanceModpackExportCommandAsync);

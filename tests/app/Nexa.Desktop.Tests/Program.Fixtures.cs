@@ -32,11 +32,13 @@ internal static partial class Program
     private static int ReadCellInt(XsrStateStore store, XsrSemanticId key) =>
         (int?)store.ReadAppliedValue(store.Resolve(key)) ?? -1;
 
-    private static MinecraftRuntime CreateRecordingRuntime(RecordingStartRoute recording)
+    private static MinecraftRuntime CreateRecordingRuntime(RecordingStartRoute recording, bool includeAttemptCancel = false)
     {
         NoopDispatchObserver observer = new();
         XsrCommandRouterBuilder commands = new();
         commands.Register<MinecraftStartCommand>(MinecraftRouteIds.Start, recording.Handle);
+        if (includeAttemptCancel) commands.Register<MinecraftCancelLaunchCommand>(MinecraftRouteIds.LaunchCancel, (command, _) =>
+        { recording.LastCancelledAttempt = command.AttemptId; return ValueTask.FromResult(XsrResult.Success()); });
         commands.Register<MinecraftDecideJavaAcquisitionCommand>(MinecraftRouteIds.AcquireDecide, (command, _) =>
         {
             recording.LastDecision = command.Approve;

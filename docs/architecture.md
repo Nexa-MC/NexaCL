@@ -26,7 +26,7 @@ Update architecture documentation before changing a public contract or owner, th
 
 Common owns scheduling, thresholds, cooldown, and state. Platform.Runtime samples physical memory and applies Windows working-set APIs to individual processes. Composition supplies protected game identities. Desktop uses commands/state in the home widget and does not enumerate or manipulate processes. The implementation is independent of Mem Reduct source and binaries.
 
-Cleanup never terminates or suspends applications and never invokes global working-set/standby operations that cannot exclude games. Protect registered Minecraft PIDs and descendants, Java/Bedrock, foreground applications, launcher processes, critical system processes, and other sessions. Use creation times and retained handles against PID reuse; skip inaccessible or uncertain identities. Report working-set observations and system availability separately, without equating either to private committed memory released.
+Ordinary cleanup never terminates or suspends applications and never invokes global working-set/standby operations that cannot exclude games. Protect registered Minecraft PIDs and descendants, Java/Bedrock, foreground applications, launcher processes, critical system processes, and other sessions. Use creation times and retained handles against PID reuse; skip inaccessible or uncertain identities. Report working-set observations and system availability separately, without equating either to private committed memory released.
 
 Automatic cleanup defaults off. The default threshold is 80%, adjustable from 50–95%, sampled every five seconds. Trigger only above the threshold and enforce a two-minute cooldown. Manual/automatic work is mutually exclusive; shutdown cancels and drains work.
 
@@ -94,6 +94,13 @@ installation must verify bytes and expose actual readiness. Native boundaries us
 the existing generated numeric/binary mechanisms. Platform coverage is admitted only
 after compiler/runtime and native dependency evidence, never by adding untested RIDs.
 
+## Concurrent startup
+
+Distinct canonical instance directories may prepare and start concurrently. Every
+attempt owns its cancellation, Java decisions, progress and identity; duplicate
+attempts for one instance are rejected. Shared mutable game directories retain their
+existing execution/overlay leases. Native clients preserve attempt identifiers.
+
 ## Deep Windows system cleanup
 
 Deep Windows cleanup, explicitly enabled and UAC-authorized, adds the eight native
@@ -106,3 +113,11 @@ Report individual native outcomes and measured available-memory changes; unsuppo
 or denied operations are not counted as successful. Independent implementation uses
 OS API contracts, without copying or linking Mem Reduct code. No benchmark parity
 claim is made without Windows measurement evidence.
+
+The opt-in pre-launch deep cleanup runs after launch preflight and before JVM
+creation, independently of manual/threshold cleanup settings. Host owns UAC and
+memory cleanup; the native Minecraft owner calls it through numeric operation 2403
+with the launch cancellation token. Concurrent launches share an overlapping cleanup
+attempt; canceling a waiting launch does not cancel another launch's cleanup. A UAC
+rejection or cleanup failure is recorded and the game may continue; explicit launch
+cancellation still stops creation. Other running games retain global-operation guards.

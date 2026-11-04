@@ -29,11 +29,33 @@ public sealed record MinecraftLaunchProgressSnapshot(
     bool IsLaunched,
     Guid? SessionId)
 {
+    public Guid? AttemptId { get; init; }
+    public bool AcquirePending { get; init; }
+    public string AcquireComponent { get; init; } = "";
+    public int AcquireMajor { get; init; }
+    public IReadOnlyList<int> JavaChoices { get; init; } = [];
+    public IReadOnlyList<MinecraftLaunchAttemptSnapshot> Attempts { get; init; } = [];
     public string? InstanceId { get; init; }
     public string? MinecraftRootDirectory { get; init; }
 
     public static MinecraftLaunchProgressSnapshot Empty { get; } =
         new(false, string.Empty, 0d, string.Empty, string.Empty, false, null);
+}
+
+public sealed record MinecraftLaunchAttemptSnapshot(Guid Id, string InstanceId, string MinecraftRootDirectory,
+    bool Active, string Stage, double Progress, string Method, string DownloadSpeed, bool IsLaunched, Guid? SessionId,
+    bool AcquirePending, string AcquireComponent, int AcquireMajor, IReadOnlyList<int> JavaChoices)
+{
+    public MinecraftLaunchProgressSnapshot ToSnapshot() => new(Active, Stage, Progress, Method, DownloadSpeed, IsLaunched, SessionId)
+    {
+        AttemptId = Id,
+        InstanceId = InstanceId,
+        MinecraftRootDirectory = MinecraftRootDirectory,
+        AcquirePending = AcquirePending,
+        AcquireComponent = AcquireComponent,
+        AcquireMajor = AcquireMajor,
+        JavaChoices = JavaChoices
+    };
 }
 
 /// <summary>

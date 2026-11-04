@@ -23,6 +23,11 @@ public sealed partial class NativeMinecraftClient
         if (error is not null) { reader.End(); return XsrResult.Failure<LanGameDiscoverySnapshot>(error); }
         var result = reader.LanGameDiscoverySnapshot() ?? throw new InvalidDataException("Missing LAN result."); reader.End(); return XsrResult.Success(result);
     }
+    public async ValueTask<XsrResult> SetResourcePackAsync(InstanceResourcePackCommand value, CancellationToken token = default)
+    {
+        byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.ResourcePackSet, writer => writer.InstanceResourcePackCommand(value), token).ConfigureAwait(false);
+        using var reader = new ServiceWireReader(bytes); var error = reader.XsrError(); reader.End(); return error is null ? XsrResult.Success() : XsrResult.Failure(error);
+    }
     public async ValueTask<XsrResult> ExportLaunchScriptAsync(InstanceLaunchScriptCommand value, CancellationToken token = default)
     {
         byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.ScriptExport, writer => writer.InstanceLaunchScriptCommand(value), token).ConfigureAwait(false);

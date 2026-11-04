@@ -22,6 +22,7 @@ public static partial class ContentInspectionService
         await using var input = File.OpenRead(path);
         if (input.Length > 2L * 1024 * 1024 * 1024) throw new InvalidDataException("文件超过 2 GiB。");
         string extension = Path.GetExtension(path).ToLowerInvariant();
+        if (extension is ".mca" or ".mcr") return await InspectRegionAsync(input, path, query, token).ConfigureAwait(false);
         if (extension is ".zip" or ".jar" or ".mrpack")
         {
             using var archive = new ZipArchive(input, ZipArchiveMode.Read);
@@ -49,7 +50,7 @@ public static partial class ContentInspectionService
     {
         string revision = Convert.ToHexString(SHA256.HashData(bytes));
         string extension = Path.GetExtension(name).ToLowerInvariant();
-        if (extension is ".nbt" or ".dat" or ".litematic" or ".schem" or ".schematic")
+        if (extension is ".nbt" or ".dat" or ".dat_old" or ".litematic" or ".schem" or ".schematic")
         {
             using var input = new MemoryStream(bytes); Stream decoded = input;
             if (bytes.AsSpan().StartsWith(new byte[] { 0x1f, 0x8b })) decoded = new GZipStream(input, CompressionMode.Decompress);

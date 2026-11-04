@@ -5,7 +5,7 @@ namespace Nexa.Native.Minecraft.Services;
 internal static class MinecraftServiceProtocol
 {
     internal static string Identity => "nexa-minecraft-service/1/error-envelope-1/" + ServiceWireSchema.Fingerprint;
-    internal const int LanDiscover = 500, ContentInspect = 501, ScriptExport = 502, ResourceInspectModpack = 503;
+    internal const int LanDiscover = 500, ContentInspect = 501, ScriptExport = 502, ResourceInspectModpack = 503, ResourcePackSet = 504, LaunchAttemptControl = 505;
     internal const int Initialize = 0, Versions = 10, Instances = 11, RefreshInstances = 12;
     internal const int Processes = 20, ProcessOutput = 21, CancelProcess = 22, CrashAnalyze = 23;
     internal const int StartProcess = 24;

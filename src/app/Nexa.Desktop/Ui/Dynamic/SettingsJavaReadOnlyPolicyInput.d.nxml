@@ -1,0 +1,16 @@
+<nxml-dynamic>
+  <StackPanel Class="world-rows">
+    <SettingsChoiceTrack Key="{data mode}" Label="Java 选择方式" SegmentThumb="SettingsModeThumb" Width="224" Class="settings-catalog-mode">
+      <ContentHost Key="SettingsModeThumb" TransitionKey="selection" IsVisible="false" Class="settings-catalog-thumb" />
+      <SettingsChoice Key="{data auto}" Label="自动" Content="自动" Command="ui.settings.choice" Selected="{data autoSelected}" Class="settings-catalog-option settings-catalog-mode-option" />
+      <SettingsChoice Key="{data manual}" Label="手动" Content="手动" Command="ui.settings.choice" Selected="{data manualSelected}" Class="settings-catalog-option settings-catalog-mode-option" />
+      <SettingsChoice Key="{data instance}" Label="版本内 Java" Content="版本内 Java" Width="112" Command="ui.settings.choice" Selected="{data instanceSelected}" Class="settings-catalog-option" />
+    </SettingsChoiceTrack>
+    <StackPanel Class="settings-catalog-input-row">
+      <TextInput Key="{data input}" Label="{data label}" Placeholder="{data placeholder}" MaximumLength="{data maximum}" Class="settings-catalog-input" />
+      <Button Key="{data apply}" Label="应用" Content="应用" Command="ui.settings.edit" Class="settings-catalog-action settings-catalog-apply" />
+    </StackPanel>
+    <Text Content="{data javaPolicy}" Localize="false" Class="world-hint" />
+    <Text Content="版本内 Java 仅使用当前版本目录中的运行时；缺失或不兼容时停止启动。" Class="world-hint" />
+  </StackPanel>
+</nxml-dynamic>

@@ -1,1 +1,1 @@
-<nxml-dynamic><Text Content="进程 {data cleaned} 项 · 工作集 {data amount} MiB&#10;可用内存 {data available} MiB · 系统 {data passed}/{data total}" /></nxml-dynamic>
+<nxml-dynamic><Text Content="可用内存 {data available} MiB · 系统 {data passed}/{data total}&#10;进程 {data cleaned} 项 · 保护 {data skipped} · 失败 {data failed}" /></nxml-dynamic>

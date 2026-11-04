@@ -1,59 +1,57 @@
 [English](launcher-feature-parity.md) | 简体中文
 
-# Launcher feature parity implementation
+# 启动器功能对照实现
 
-The baseline is Alpha 21 (`3c1862e4e`). This work implements the user's explicit
-feature list independently; external launchers are read-only behavior/format
-references and are not implementation dependencies. Internet lobbies and tunnels,
-remote homepage subscriptions and remote server-pack subscriptions are outside
-this explicit list.
+最初对照基线为 Alpha 21（`3c1862e4e`）。实现独立编写，PCL、PCL CE 与 HMCL
+仅作为只读行为和格式参考，不作为实现依赖。后续请求扩大了补齐范围；
+[完成清单](parity-completion.md) 逐项记录状态。识别格式、存在按钮或 DTO
+均不代表完整兼容，也不表示已经发布新的 Alpha。
 
-| Capability | Implementation and acceptance |
+| 功能 | 当前行为 |
 | --- | --- |
-| LAN discovery | Bounded UDP multicast listen, deduplicated endpoints, server UI import, cancellation on exit |
-| HMCL/MCBBS/MultiMC imports | Detect manifests and optional wrapper directories, normalize versions/loaders/files, existing staged installer, malformed/conflicting archive rejection |
-| Export formats | MRPACK/ZIP plus CurseForge, MCBBS (HMCL-compatible) and MultiMC, round-trip import tests |
-| Launcher and Java bundles | Explicit portable closure/runtime selection, exclude credentials, reproducible paths and usable start entry |
-| Optional files | Stable per-file IDs in preview, independent selection in install/update, persisted selections |
-| Instance scripts | Windows/POSIX quoting, selected root and instance, current launcher identity refresh, no credentials in scripts |
-| Content previews | Archive inventory, metadata, bounded text/image preview, schematic metadata and embedded preview |
-| NBT tree | Read-only typed tree, compressed/raw Java NBT, bounded depth/arrays/nodes, paged navigation |
-| Offline customization | Optional UUID at creation, local skin selection, in-game local texture/authlib lifecycle |
-| Nide8 compatibility | Dedicated server ID/account flow and compatible launch preparation; no credentials in UI state |
+| 局域网发现 | 有界 UDP 组播监听、地址去重、重新扫描、保存及加入；离开页面取消监听 |
+| HMCL / MCBBS / MultiMC 导入 | 清单与包装目录识别，统一版本、加载器及文件计划；扩展组件和启动设置仍单独验收 |
+| 整合包导出 | MRPACK、游戏目录 ZIP、CurseForge、MCBBS/HMCL 兼容和 MultiMC；复用筛选与文件身份校验 |
+| 携带启动器和 Java | 明确选择完整发布目录及 Java 根目录，排除账户凭据，保留执行权限和法律文件 |
+| 可选文件 | 安装和更新按稳定文件标识逐项勾选；在线安装绑定已检查归档的 SHA-256 |
+| 实例脚本 | Windows/POSIX 引号处理，保留实例及根目录，通过启动器刷新账户；独立 Java 脚本另行验收 |
+| 内容预览 | 目录/ZIP 列表、文本、PNG、整合包元数据、投影元数据与内嵌缩略图；不执行游戏或光影代码 |
+| NBT 树 | 原始/gzip/zlib NBT、数字节点路径及数组分页；MCA/MCR 区块选择、外置 MCC、LZ4 块与 dat_old |
+| 投影尺寸 | 小写 author、结构 size、Litematic EnclosingSize、轴顺序及可计算的体积 |
+| 资源包配置 | 启用、停用及优先级同步 options.txt；检查格式范围、不兼容确认及修改冲突 |
+| 离线外观 | 创建时自定义 UUID、本地皮肤/披风及 Slim；编辑已有账户和远程来源仍单独验收 |
+| Nide8 | 专用服务器 ID、保持角色身份的会话刷新、校验官方代理；至少使用 Java 8u141 |
+| Java 策略 | 自动、手动、版本内、相对启动器的便携路径，以及指定主版本 |
+| 多实例同时启动 | 独立准备流程、进度、Java 提示和取消；同一实例重复任务拒绝 |
+| 启动前深度清理 | 主页独立开关，预检通过后、创建 JVM 前请求 UAC；其他已运行游戏继续受保护 |
 
-Each capability must include its Desktop entry, managed and native registration,
-binary contract coverage, focused failure/cancellation tests and architecture
-checks before it is marked complete. No new alpha release is implied by this
-implementation request. Check actual validation output instead of inferring
-success from a button, a DTO or an upstream class name.
+## 使用入口与限制
 
-## 使用入口
+- 实例设置 → **服务器**：自动发现局域网游戏，支持重扫、加入和保存。
+- 拖入 ZIP/MRPACK 后先检查内容，再逐项选择可选文件并确认安装。
+- 实例设置 → **整合包与导出**：先开启实例开发模式。携带启动器的便携包
+  首次使用仍需完成设置和账户登录；目标平台与架构由选中的启动器、Java 决定。
+- **内容与 NBT 查看**是只读入口。解压、深度、节点及预览尺寸均有预算；
+  区域文件按区块查看，不一次性加载整个区域。资源包与光影详情也可进入查看器。
+- **资源包**启用与排序会原子更新 options.txt，并保留其他选项。格式不兼容需
+  明确确认；选项已变化或游戏正在使用该实例时拒绝写入。
+- **Java**设置中的版本内策略只扫描当前实例，包括任意名称的嵌套目录，
+  并检查版本兼容与停用状态。不会借用其他实例、全局 Java 或自动下载来替代。
+  相对路径以启动器所在目录为基准；主版本策略只在兼容范围内选择指定版本。
+- 启动页面可选**在后台继续启动**，再选择其他实例同时启动。每个待启动实例
+  有独立进度入口，取消操作只作用于对应任务；共享文件目录继续使用原有租约保护。
+- 主页右下角内存卡片的**启动前深度清理**默认关闭，独立于手动深度清理和阈值
+  自动清理。拒绝 UAC 会跳过本次清理并继续游戏；取消整个启动任务仍阻止创建进程。
+  无法排除单个游戏的系统操作，在已有游戏运行时跳过，结果报告明确显示原因。
+- 离线材质随受保护账户档案保存，公开账户列表不携带材质字节。随机 loopback
+  材质端点随对应游戏任务存活；退出启动器后，不再服务后续材质请求。
 
-- 实例设置 → **服务器**：进入页面自动扫描 LAN，保留“发现局域网游戏”按钮用于立即重扫；离开页面停止监听。发现项可直接加入或加入服务器列表。
-- 拖入 `.zip` / `.mrpack`：识别 Modrinth、CurseForge、旧 HMCL、MCBBS 和 MultiMC 清单，支持一层外包装目录。MCBBS 的 `force` 是更新策略，不视为可选标志。自定义 MultiMC patches/JarMods、MCBBS 自定义运行库会明确拒绝，防止安装时丢失组件。
-- 整合包安装的可选文件入口逐项选择包含或跳过，最后确认。在线目录安装也先检查清单并绑定所选归档的 SHA-256。更新预览显示逐文件勾选项，修改选择后需重新预览。
-- 实例设置 → **整合包与导出**（先打开实例开发模式）：支持 MRPACK、游戏目录 ZIP、CurseForge、MCBBS（HMCL 兼容）和 MultiMC。可保存内容筛选配置。
-- 游戏目录 ZIP 可填写完整原生启动器发布目录和 Java 根目录。仅收集启动器发布文件及所选 Java，运行时内部文件链接展开为普通文件；越界或循环链接拒绝。保留法律文件和执行权限。便携入口用相对游戏目录启动，并设置随包 Java 的 `JAVA_HOME`。首次运行仍需完成启动器设置及账户登录。目标平台/架构由所选发布包和 Java 决定，不包含跨平台下载。
-- 同一导出页可导出 `.cmd` / `.bat` / `.sh` 实例启动脚本。脚本调用选定的启动器，通过二进制安全编码的本地启动链接选择实例，使用正常账户刷新与启动流程；不携带访问令牌。已有启动器进程和首次设置后的转交均保留目标。
-- 实例设置 → **内容与 NBT 查看**：通用只读查看入口，可输入本地文件路径；资源包、光影包和蓝图的详情页也提供查看器。支持目录/ZIP 文件列表、UTF-8 文本、PNG、原始/gzip/zlib 的 Java 大端 NBT。NBT 使用数字子节点路径，重名标签不会混淆；数组分页。投影显示元数据、调色板信息及文件内嵌的 ARGB 缩略图，不执行光影或游戏脚本。
-- 添加离线档案：可指定 UUID、本地 PNG 皮肤/披风和 Slim 模型。材质随受保护账户档案保存，公开账户列表不携带材质字节；账户服务在存取时复制字节。游戏通过仅监听 loopback、随机路径、带签名的本地材质端点读取外观，使用正常校验的 authlib-injector。该端点随启动器的 Minecraft 服务存活，退出启动器后不再服务后续材质请求；已下载的游戏材质仍由游戏缓存。
-- 添加账户 → **统一通行证 Nide8**：输入 32 位服务器 ID、用户名和密码。认证端点固定为官方 `auth.mc-user.com:233/<id>/authserver`；刷新会话保持角色身份；启动时使用官方代理及其 HTTPS 元数据指定的校验和，代理参数为服务器 ID。
-- 设置 → **Java**、实例 → **游戏设置**：Java 选择方式提供“自动／手动／版本内 Java”。版本内策略查找当前版本文件夹下的 `java`、`jre`、`jdk`、`runtime`（支持嵌套发行目录）或直接的 `bin/java`；验证实际版本并应用游戏兼容范围与停用设置。它不借用全局或其他版本的 Java，也不自动下载替代运行时；缺失或不兼容时停止启动并说明原因。全局、实例和启动配置的覆盖规则保持一致，移动实例后按新目录重新查找。
+## 验证
 
-## 验证记录
+以[完成清单](parity-completion.md)和实际命令输出为准。完整构建、服务与 Desktop
+回归、101 项目架构检查、协议生成校验，以及独立 Accounts/Minecraft NativeAOT
+调用者共同验证正式边界。
 
-验证结果以本次命令输出为准。相关测试位于 `LauncherFeatureParityTests.cs`、
-`FeatureParityPageTests.cs`、账户表单测试，以及独立的 Accounts/Minecraft 原生调用者测试。
-完整方案构建、业务/UI 回归、架构检查、协议生成校验和原生 AOT 检查共同覆盖正式调用链。
-
-本次 Linux 验证：Release 全方案与原生服务模式 Desktop 构建均无警告、无错误；
-业务测试 876 项、Desktop 测试 393 项通过，101 个项目的架构与目录检查通过。
-Accounts、Minecraft 与 Host 的独立 NativeAOT 调用者验证通过，包含新增操作的
-真实字节边界、准入校验及退出清理。协议与账户路由生成校验通过。
-实际 Avalonia 窗口在 1040 / 810 两种宽度验证页面、滚动、输入保留及格式选项边界。
-Windows 上的防火墙交互、实际游戏外观和不同发行版 Java 仍需平台实机验收。
-
-版本内 Java 增补验证：59 项 Java/离线依赖测试、全局与实例选择及窄窗口/滚动
-回归、101 个项目架构检查通过。独立 NativeAOT 调用者验证了原生模块中的
-版本内策略、实际 Java 探测和缺失运行时隔离；协议生成指纹保持不变。
-源码格式使用 CI 的完整 `IDE0055 IMPORTS` 检查命令验证。
+[Windows 内存清理说明](windows-memory-cleanup.md)记录八项系统操作的真实结果，
+以及与 Mem Reduct 3.5.2 在相同负载下交替运行的测量。目标进程工作集降幅和
+系统可用内存变化分别报告，不等同于释放私有提交量或提升游戏帧率。

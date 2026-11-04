@@ -516,6 +516,7 @@ internal static partial class Program
             launchDiagnostics: launchDiagnostics,
 #endif
             jvmHostExecutable: jvmHostPath,
+            beforeProcessStart: memoryOptimization.BeforeLaunchAsync,
             gameWindowAppeared: pid =>
             {
                 MinecraftWindowIntegration.DetachGameWindows(pid,

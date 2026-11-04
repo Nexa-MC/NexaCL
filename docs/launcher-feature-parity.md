@@ -4,9 +4,9 @@ English | [简体中文](launcher-feature-parity.zh-CN.md)
 
 The baseline is Alpha 21 (`3c1862e4e`). This work implements the user's explicit
 feature list independently; external launchers are read-only behavior/format
-references and are not implementation dependencies. Internet lobbies and tunnels,
-remote homepage subscriptions and remote server-pack subscriptions are outside
-this explicit list.
+references and are not implementation dependencies. Later requests expanded the
+completion scope; [the checklist](parity-completion.md) records the remaining work,
+including online rooms, homepage/help sources and server packs.
 
 | Capability | Implementation and acceptance |
 | --- | --- |
@@ -34,10 +34,13 @@ success from a button, a DTO or an upstream class name.
 - Instance settings / Modpacks and export is available in instance development mode. MRPACK, directory ZIP, CurseForge, MCBBS/HMCL-compatible, and MultiMC exports share file filtering. See the completion checklist for extended component/settings support; basic format recognition is not full compatibility.
 - Portable exports select an explicit launcher distribution and Java home. Include only admitted release/runtime files, preserve legal files and execute permissions, and reject escaping/cyclic links. First use still requires setup and account login. Platform/architecture follow the selected files.
 - Instance scripts preserve target root/instance through single-instance and setup handoffs. Launcher-mediated scripts refresh identity and do not store account tokens. Independent-script acceptance is tracked separately.
-- Content/NBT inspection is read-only and bounded. Directory/ZIP inventories, UTF-8 text, PNG, raw/gzip/zlib NBT, numeric tree paths, and paged arrays share the existing query. Schematics expose metadata/palettes and embedded thumbnails without executing game/shader code. Region decoding and complete schematic summaries are tracked by the completion checklist.
+- Content/NBT inspection is read-only and bounded. Directory/ZIP inventories, UTF-8 text, PNG, raw/gzip/zlib NBT, numeric tree paths, and paged arrays share the existing query. Schematics expose metadata/palettes and embedded thumbnails without executing game/shader code. MCA/MCR region inventories select individual chunks, including external MCC payloads and gzip/zlib/raw/LZ4 blocks. `dat_old` and structure/litematic/schematic dimension, author and volume facts are supported.
 - Offline profiles support custom UUID, local PNG skin/cape, and Slim. Protected profiles own texture bytes and copy them at ingress/egress. Random loopback texture endpoints use signed properties and the verified authlib-injector. Endpoints live with Minecraft services; closing the launcher stops later requests, while the game may retain downloaded textures.
 - Nide8 uses a 32-hex server ID and the official `auth.mc-user.com:233/<id>/authserver` endpoint. Refresh retains character identity. The official agent is downloaded from fixed HTTPS metadata and checked against its published digest.
-- Global Java settings and instance game settings expose automatic/manual/instance policies. Portable relative and major policies and broader version-local discovery are tracked in [completion](parity-completion.md). The launched instance supplies the actual directory after moves or renames.
+- Global and instance Java settings expose automatic/manual/instance choices, portable paths relative to the launcher, and a chosen major version. Version-local discovery scans arbitrary nested folders within a bounded traversal, probes compatibility and never borrows another instance's runtime. Nide8 requires at least Java 8u141. Moves and renames use the actual current instance directory.
+- Resource-pack enablement and priority update `options.txt` atomically, preserve unrelated options and check declared compatibility. Incompatible activation needs confirmation; stale option revisions and running instances are rejected.
+- Different instances prepare and start concurrently, with independent progress, Java choices and cancellation. A background action and per-attempt entries let the user start another instance while preparation continues. A duplicate attempt for the same instance is rejected.
+- The home memory card offers an independent opt-in deep cleanup before launch. It runs after preflight, before creating the JVM. UAC rejection skips cleanup and continues launching; explicit launch cancellation prevents creation. Other running games remain protected. See [Windows memory cleanup](windows-memory-cleanup.md) for native operations and measured comparison evidence.
 
 ## Verification evidence
 

@@ -9,7 +9,7 @@ internal sealed partial class LaunchPageController
     {
         if (!TryCaptureManagementInstance(instanceDirectory, out var instance)) return;
         _shell.Stage.Navigation.Replace(_launchPage);
-        _launchRequest = StartLaunchAsync(instance.Id, _launchPage);
+        _ = StartLaunchAsync(instance.Id, _launchPage);
     }
 
     internal void ModifyInstance(string instanceDirectory)

@@ -81,7 +81,8 @@ internal static partial class Program
             remediationHandlers: [remediationHandler]);
         FoundationRuntime runtime = FoundationRuntimeComposer.Compose(host, observer);
 
-        AssertEqual(36, runtime.Commands.Count);
+        AssertEqual(37, runtime.Commands.Count);
+        AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Management.InstanceResourcePackContract.Set, out _));
         foreach (var route in new[]
         {
             SettingsLaunchProfileContract.Save, SettingsLaunchProfileContract.Delete, SettingsLaunchProfileContract.Select,

@@ -143,7 +143,11 @@ public sealed record AutoSelectJavaPreference : JavaPreference
 public sealed record ExistingJavaPreference(string JavaExecutablePath) : JavaPreference;
 public sealed record InstanceJavaPreference(string InstanceDirectory) : JavaPreference;
 public sealed record UseGlobalJavaPreference : JavaPreference;
-public sealed record UseRelativeJavaPreference(string RelativePath) : JavaPreference;
+public sealed record UseRelativeJavaPreference(string RelativePath) : JavaPreference
+{
+    public string BaseDirectory { get; init; } = AppContext.BaseDirectory;
+}
+public sealed record MajorJavaPreference(int Major) : JavaPreference;
 
 public readonly record struct JavaVersionRange
 {
@@ -219,6 +223,7 @@ public sealed record MinecraftJavaRequirementRequest
     public bool HasFabric { get; init; }
     public bool HasLiteLoader { get; init; }
     public bool HasLabyMod { get; init; }
+    public bool HasNide8Login { get; init; }
 }
 
 public enum JavaRequirementFailureReason

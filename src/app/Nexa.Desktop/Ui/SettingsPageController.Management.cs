@@ -192,6 +192,7 @@ internal sealed partial class SettingsPageController
 
     private void ToggleMod(InstanceContentEntry entry)
     {
+        if (_selected == "resourcepacks") { SetResourcePack(entry, entry.Enabled != true, null); return; }
         if (_managementWrite is not null || _management is null || entry.Enabled is not { } enabled || entry.Size is not { } size
             || !_commands.TryResolve(InstanceManagementContract.SetModEnabled, out var route)) return;
         _managementWriteInstance = _management.InstanceDirectory;
