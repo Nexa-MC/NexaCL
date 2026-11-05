@@ -18,10 +18,10 @@ $registration = Join-Path $installation 'ShellIntegration/Nexa.ShellRegistration
 function AssertUpdateAdmission {
     $helper = Join-Path $installation 'Nexa.Update.Helper.exe'
     if (-not (Test-Path -LiteralPath $helper)) { throw 'The actual NativeAOT update helper is missing.' }
-    & $helper --validate-helper
-    if ($LASTEXITCODE -ne 0) { throw 'The installed update helper failed its self-check.' }
-    & $helper --validate-installation
-    if ($LASTEXITCODE -ne 0) { throw 'The installed update helper rejected the installation ACL.' }
+    # WinExe invocation does not reliably set LASTEXITCODE in PowerShell.
+    # Wait for the actual process, just as for the installer operations.
+    RunInstaller $helper @('--validate-helper')
+    RunInstaller $helper @('--validate-installation')
 }
 AssertTrust $false
 # Default silent installation must not add trust or launch the application.
