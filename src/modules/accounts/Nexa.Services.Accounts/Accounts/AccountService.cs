@@ -139,7 +139,7 @@ public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
         {
             loaded = (initialized ?? _port.Load()).Profiles.Select(FreezeProfile).ToList();
         }
-        catch (Exception failure) when (failure is IOException or UnauthorizedAccessException or NotSupportedException)
+        catch (Exception failure) when (failure is IOException or InvalidDataException or UnauthorizedAccessException or NotSupportedException)
         {
             LoadError = AccountErrors.PersistFailed(failure.Message);
             loaded = [];

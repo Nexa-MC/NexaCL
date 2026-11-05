@@ -162,7 +162,7 @@ public sealed partial class NativeAccountService : IAccountLaunchAccess, IAsyncD
         int count = reader.Count(); if (count < 0) throw new InvalidDataException("Missing account state collection.");
         T[] items = new T[count]; for (int index = 0; index < count; index++) items[index] = read(); return items;
     }
-    private void Report(Exception error) => _log?.Error("Accounts", "Native account operation failed.", error.GetType().Name);
+    private void Report(Exception error) => _log?.Error("Accounts", "Native account operation failed.", ExceptionDiagnostics.Describe(error));
 
     private unsafe (long Context, nint Close) Open(ServiceEndpoint endpoint)
     {

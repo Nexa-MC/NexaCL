@@ -96,6 +96,7 @@ public sealed class ProtectedLaunchProfilePort : IAsyncLaunchProfilePort, IDispo
                         result = JsonSerializer.Deserialize(plain, LaunchProfileJsonContext.Default.LaunchProfileSet)
                             ?? throw new IOException("档案内容无效。");
                         Validate(result);
+                        result = LaunchProfileJsonContext.NormalizeLoadedProfiles(result);
                         if (!encrypted) WriteProtected(_path, plain);
                     }
                     finally

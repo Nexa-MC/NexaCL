@@ -67,7 +67,7 @@ public sealed class LaunchProfileFilePort : ILaunchProfilePort
                     throw new InvalidDataException($"Unsupported launch profile schema: {profiles.SchemaVersion}.");
                 }
 
-                return profiles;
+                return LaunchProfileJsonContext.NormalizeLoadedProfiles(profiles);
             }
             catch (Exception failure) when (failure is JsonException or InvalidDataException)
             {

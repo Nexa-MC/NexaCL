@@ -32,6 +32,8 @@ internal static partial class Program
         ("online model session cancels pending refresh", OnlineModelSessionCancelsPendingRefresh),
         ("protected profiles migrate without plaintext copies", ProtectedProfilesMigrateWithoutPlaintextCopies),
         ("protected profile failures preserve original", ProtectedProfileFailuresPreserveOriginal),
+        ("A21 protected profiles upgrade without rewriting credentials", LegacyProtectedProfilesUpgradeWithoutRewriting),
+        ("oversized persisted textures leave accounts unavailable without aborting startup", OversizedStoredTexturesPreserveProfile),
         ("native profile protection uses current user", NativeProfileProtectionUsesCurrentUser),
         ("Microsoft refresh cannot restore removed accounts", MicrosoftRefreshCannotRestoreRemovedAccounts),
         ("LittleSkin refresh rejects stale generations at every stage", LittleSkinRefreshRejectsStaleGenerations),

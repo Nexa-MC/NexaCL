@@ -22,6 +22,17 @@ NativeAOT modules exchange versioned C ABI integers, bounded bytes, buffers, and
 
 Update architecture documentation before changing a public contract or owner, then update implementation, consumers, and verification together. External extension engines remain in their own repositories, without adjacent-workspace source references.
 
+## Account file upgrades
+
+Accounts owns normalization of persisted profiles. Schema-1 documents written before
+offline textures were introduced may omit those fields or contain null values; JSON
+ingress maps those optional values to empty textures before service validation. Reading
+an encrypted profile does not rewrite its bytes. Oversized or invalid stored values
+leave the roster unavailable and preserve the source instead of aborting startup.
+Native account failures report type, status and stack through the existing log bridge;
+raw exception messages and credentials do not enter diagnostic state. Failed native
+retirement keeps callbacks retained and reports its cause once.
+
 ## Windows memory cleanup
 
 Common owns scheduling, thresholds, cooldown, and state. Platform.Runtime samples physical memory and applies Windows working-set APIs to individual processes. Composition supplies protected game identities. Desktop uses commands/state in the home widget and does not enumerate or manipulate processes. The implementation is independent of Mem Reduct source and binaries.

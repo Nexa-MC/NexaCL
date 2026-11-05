@@ -38,7 +38,11 @@ internal sealed partial class AccountsSession : IAsyncDisposable
         _http = new(new ServiceHttp.Handler(_endpoint)) { Timeout = TimeSpan.FromSeconds(30) };
     }
     internal NativeUiCallTable Table => _endpoint.Table;
-    internal void Report(Exception error) => Console.Error.WriteLine("Account module operation failed: " + error.GetType().Name);
+    internal void Report(Exception error)
+    {
+        try { _log.Error("Account", "Native account operation failed.", ExceptionDiagnostics.Describe(error)); }
+        catch { Console.Error.WriteLine("Account module operation failed: " + error.GetType().Name); }
+    }
 
     private async Task<byte[]> ExecuteAsync(ReadOnlyMemory<byte> bytes, CancellationToken token)
     {

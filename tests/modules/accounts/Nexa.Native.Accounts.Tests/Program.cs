@@ -74,8 +74,65 @@ await accounts.DisposeAsync();
 Check(network.CancelCount == 3, "Shutdown did not drain canceled and superseded HTTP workers.");
 Check(!transport.Failed, "A callback reached a retired native account endpoint.");
 await accounts.DisposeAsync();
+await VerifyFailureDiagnosticsAsync();
+if (OperatingSystem.IsWindows()) await VerifyLegacyProfileUpgradeAsync();
 Console.WriteLine("Independent native account runtimes passed storage, privileged identity, typed queries, revisions, HTTP policy, cancellation and drained shutdown.");
 
+static XsrStateStore UpgradeStore()
+{
+    XsrStateStoreBuilder builder = new();
+    AccountStateContract.DeclareState(builder); AccountOnboardingState.DeclareState(builder); AccountSkinContract.DeclareState(builder);
+    LogService.DeclareState(builder); NativeAccountService.DeclareReplicas(builder);
+    return builder.Build();
+}
+static async Task VerifyFailureDiagnosticsAsync()
+{
+    var state = UpgradeStore(); using var log = new LogService(state);
+    await using var client = new NativeAccountService(state, new InvalidStore(), log);
+    client.AttachHttp(new HttpClient(new NetworkPolicy()));
+    bool rejected = false;
+    try { await client.Initialization.WaitAsync(TimeSpan.FromSeconds(10)); }
+    catch (InvalidOperationException) { rejected = true; }
+    Check(rejected, "Invalid profile path was accepted.");
+    Check(log.GetSnapshot().Any(entry => entry.Module == "Account" && entry.Level == LogLevel.Error
+        && entry.ExceptionText?.Contains("System.IO.InvalidDataException", StringComparison.Ordinal) == true),
+        "The original native initialization exception was not recorded before retirement.");
+    Console.WriteLine("PASS: native initialization diagnostics retain original exception facts");
+}
+static async Task VerifyLegacyProfileUpgradeAsync()
+{
+    string root = Path.Combine(Path.GetTempPath(), "nexa-a21-native-" + Guid.NewGuid().ToString("N"));
+    Directory.CreateDirectory(root);
+    try
+    {
+        string path = Path.Combine(root, "profiles.json");
+        // Literal A21 JSON: no new fields, rather than JSON serialized by A22.
+        File.WriteAllText(path, """
+            {"schemaVersion":1,"profiles":[{"username":"LegacyPlayer","kind":"Microsoft","uuid":"0123456789abcdef0123456789abcdef","accessToken":"upgrade-fixture-token"}]}
+            """);
+        byte[]? encrypted = null;
+        for (int pass = 0; pass < 2; pass++)
+        {
+            var state = UpgradeStore(); using var log = new LogService(state);
+            await using (var client = new NativeAccountService(state, new NativeProfileStore(path), log))
+            {
+                client.AttachHttp(new HttpClient(new UpgradeTextureNetwork()));
+                await client.Initialization.WaitAsync(TimeSpan.FromSeconds(15));
+                var loaded = await client.GetProfileAsync(0);
+                Check(loaded.IsSuccess && loaded.Value.AccessToken == "upgrade-fixture-token"
+                    && loaded.Value.OfflineSkinPng.Length == 0 && loaded.Value.OfflineCapePng.Length == 0,
+                    "Legacy protected profile initialization lost credentials or optional texture defaults.");
+                await client.ConfigureRuntimeAsync(new("native-fixture-client", null), root);
+            }
+            byte[] current = File.ReadAllBytes(path);
+            Check(current.AsSpan().StartsWith("NEXAAC01"u8), "Legacy plaintext did not enter protected storage.");
+            if (encrypted is not null) Check(encrypted.SequenceEqual(current), "Reading a protected legacy file rewrote credentials.");
+            encrypted = current;
+        }
+        Console.WriteLine("PASS: native Windows A21 plaintext and protected profiles upgrade and retire without rewriting credentials");
+    }
+    finally { Directory.Delete(root, true); }
+}
 static void Check(bool condition, string message)
 { if (!condition) throw new InvalidOperationException(message); }
 static async Task WaitAsync(Func<bool> ready)
@@ -93,6 +150,18 @@ sealed class MemoryStore(string secret) : ILaunchProfilePort, INativeAccountProf
     };
     public LaunchProfileSet Load() => throw new InvalidOperationException("Caller must not load native storage.");
     public void Save(LaunchProfileSet profiles) => throw new InvalidOperationException("Caller must not save native storage.");
+}
+sealed class InvalidStore : ILaunchProfilePort, INativeAccountProfileStore
+{
+    public string? NativeProfilePath => "relative-profile-path";
+    public LaunchProfileSet NativeInitialProfiles => new();
+    public LaunchProfileSet Load() => throw new NotSupportedException();
+    public void Save(LaunchProfileSet profiles) => throw new NotSupportedException();
+}
+sealed class UpgradeTextureNetwork : HttpMessageHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token) =>
+        Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
 }
 sealed class NetworkPolicy : HttpMessageHandler
 {

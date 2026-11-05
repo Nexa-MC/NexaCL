@@ -10,7 +10,7 @@ namespace Nexa.Native.Accounts;
 internal static class AccountsExports
 {
     private sealed class Entry(AccountsSession session)
-    { internal AccountsSession Session { get; } = session; internal Task? Retirement; }
+    { internal AccountsSession Session { get; } = session; internal Task? Retirement; internal bool FailureReported; }
     private static readonly ConcurrentDictionary<long, Entry> Sessions = new();
     private static readonly byte[] IdentityBytes = Encoding.UTF8.GetBytes(AccountProtocol.Identity);
     private static readonly object Admission = new();
@@ -49,7 +49,15 @@ internal static class AccountsExports
             {
                 entry.Retirement ??= Task.Run(async () => await entry.Session.DisposeAsync().ConfigureAwait(false));
                 if (!entry.Retirement.IsCompleted) return 0;
-                if (entry.Retirement.IsFaulted) { _ = entry.Retirement.Exception; return -1; }
+                if (entry.Retirement.IsFaulted)
+                {
+                    if (!entry.FailureReported)
+                    {
+                        entry.FailureReported = true;
+                        entry.Session.Report(entry.Retirement.Exception!.GetBaseException());
+                    }
+                    return -1;
+                }
                 Sessions.TryRemove(context, out _); return 1;
             }
         }
