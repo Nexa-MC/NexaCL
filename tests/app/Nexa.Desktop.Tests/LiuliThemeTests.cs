@@ -39,6 +39,16 @@ internal static partial class Program
             AssertTrue(Contrast(text.Foreground!.Value, dark ? new(25, 45, 59) : new(247, 251, 252)) >= 7);
             AssertTrue(Contrast(primary.Foreground!.Value, primary.Background!.Value) >= 4.5);
             AssertEqual(2d, Style("Button", "AccountSwitch", state: XsrUiThemeInteractionState.FocusVisible).BorderWidth!.Value);
+            foreach (var state in new[] { default, XsrUiThemeInteractionState.Hover, XsrUiThemeInteractionState.Pressed, XsrUiThemeInteractionState.FocusVisible })
+            {
+                var add = Style("Button", "AccountAdd", state: state);
+                var picker = Style("Button", "InstanceListButton", state: state);
+                AssertTrue(add.Background == picker.Background);
+                AssertTrue(add.Foreground == picker.Foreground);
+                AssertTrue(add.Border == picker.Border);
+                AssertTrue(add.BorderWidth == picker.BorderWidth);
+                AssertTrue(add.Hover == picker.Hover);
+            }
             // Runtime error/status text is not globally recolored by the theme.
             AssertFalse(Style("Text", "AnyFutureError").Foreground.HasValue);
             AssertFalse(Style("Text", "TaskError", ["layout-TaskCard-TaskCardError"]).Foreground.HasValue);

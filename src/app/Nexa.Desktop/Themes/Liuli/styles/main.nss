@@ -33,12 +33,13 @@ NavigationItem:selected { Foreground: var(accent); Background: #ffffffa8; }
 .theme-version, .theme-description, .theme-group, .settings-save-status, .world-counter { Foreground: var(muted); }
 
 Button { CornerRadius: 12; }
-.capsule, #AccountSwitch, #AccountWardrobe, #InstanceListButton, #InstanceSettings, #InstanceModify,
+.capsule, #AccountAdd, #AccountBack, #AccountImport, #AccountSwitch, #AccountWardrobe, #InstanceListButton, #InstanceSettings, #InstanceModify,
 .theme-action, .theme-action-small, .settings-catalog-action {
   Background: #e1eff2c0; Foreground: var(accent); Border: #ffffff90; BorderWidth: 1; Hover: #c9e7eb;
 }
 Button:hover { Border: var(accent); }
 Button:focus-visible, TextInput:focus-visible { Border: var(accent); BorderWidth: 2; }
+#AccountAdd:focus-visible, #AccountBack:focus-visible, #AccountImport:focus-visible,
 #AccountSwitch:focus-visible, #AccountWardrobe:focus-visible, #InstanceListButton:focus-visible,
 #InstanceSettings:focus-visible, #InstanceModify:focus-visible, #LaunchButton:focus-visible, #TitleBack:focus-visible {
   Border: var(accent); BorderWidth: 2;
@@ -84,7 +85,7 @@ TextInput, .settings-catalog-input, .settings-editor-input, .theme-input, .world
   .world-server-name, .world-online-name, .settings-category-title { Foreground: #e3f0f2; }
   #AccountKind, #AccountHint, #VersionHeader, #AboutTitle, #TriviaTitle, #EchoTitle,
   .theme-version, .theme-description, .theme-group, .settings-save-status, .world-counter { Foreground: #a4bdc7; }
-  .capsule, #AccountSwitch, #AccountWardrobe, #InstanceListButton, #InstanceSettings, #InstanceModify,
+  .capsule, #AccountAdd, #AccountBack, #AccountImport, #AccountSwitch, #AccountWardrobe, #InstanceListButton, #InstanceSettings, #InstanceModify,
   .theme-action, .theme-action-small, .settings-catalog-action {
     Background: #6eacbc20; Foreground: #b6e4e9; Border: #b0dfe32a; Hover: #80c7d33b;
   }
@@ -98,6 +99,7 @@ TextInput, .settings-catalog-input, .settings-editor-input, .theme-input, .world
   .settings-navigation-option-selected, .settings-catalog-option-selected { Foreground: #c3eef2; }
   .settings-catalog-divider, .theme-option-divider { Background: #a7d9e018; }
   Button:focus-visible, TextInput:focus-visible,
+  #AccountAdd:focus-visible, #AccountBack:focus-visible, #AccountImport:focus-visible,
   #AccountSwitch:focus-visible, #AccountWardrobe:focus-visible, #InstanceListButton:focus-visible,
   #InstanceSettings:focus-visible, #InstanceModify:focus-visible, #LaunchButton:focus-visible, #TitleBack:focus-visible { Border: #a8e0e7; }
 }

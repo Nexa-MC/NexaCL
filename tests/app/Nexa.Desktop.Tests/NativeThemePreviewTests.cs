@@ -207,6 +207,13 @@ internal static partial class Program
                     var wallpaperNodes = surface!.Scene!.Nodes.Where(node => node.BackgroundImage is not null).ToArray();
                     AssertTrue(wallpaperNodes.Length > 0);
                     AssertTrue(wallpaperNodes.Any(node => node.Rect.Width >= surface.Bounds.Width - 1 && node.Rect.Height >= surface.Bounds.Height - 1));
+                    var add = Find("AccountAdd").VisualStyle;
+                    var picker = Find("InstanceListButton").VisualStyle;
+                    AssertEqual(picker.Background, add.Background);
+                    AssertEqual(picker.Foreground, add.Foreground);
+                    AssertEqual(picker.Border, add.Border);
+                    AssertEqual(picker.BorderWidth, add.BorderWidth);
+                    AssertEqual(picker.Hover, add.Hover);
                 }, timeout.Token);
                 await CapturePair("liuli-launch");
                 await NavigateSettings(h.Global, "appearance");
