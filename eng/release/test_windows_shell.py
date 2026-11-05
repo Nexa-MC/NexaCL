@@ -32,11 +32,32 @@ class WindowsShellTests(unittest.TestCase):
         self.assertIn('runasoriginaluser', inno)
         self.assertIn('--unregister-all', inno)
 
-    def test_no_installer_enables_developer_mode_or_installs_trust(self):
+    def test_optional_trust_never_enables_developer_mode_or_installs_a_root(self):
         for relative in ('eng/release/windows.iss', 'eng/release/windows.wxs', 'src/platform/Nexa.ExplorerCommand/Registration.cpp'):
             source = (ROOT / relative).read_text(encoding='utf-8')
-            for forbidden in ('AllowDevelopmentWithoutDevLicense', 'Import-Certificate', 'TrustedPeople', 'Root\\Certificates'):
+            for forbidden in ('AllowDevelopmentWithoutDevLicense', 'Import-PfxCertificate', 'Root\\Certificates'):
                 self.assertNotIn(forbidden, source)
+        native = (ROOT / 'src/platform/Nexa.ExplorerCommand/CertificateTrust.h').read_text()
+        self.assertIn('L"TrustedPeople"', native)
+        self.assertNotIn('L"Root"', native)
+        self.assertIn('NEXA_SHELL_CERT_SHA256', native)
+        wix = ET.parse(ROOT / 'eng/release/windows.wxs')
+        self.assertEqual('200', wix.find('.//{*}Feature[@Id="ExplorerIntegration"]').get('Level'))
+        self.assertEqual('rollback', wix.find('.//{*}CustomAction[@Id="RollbackShellTrust"]').get('Execute'))
+        inno = (ROOT / 'eng/release/windows.iss').read_text()
+        task = next(line for line in inno.splitlines() if line.startswith('Name: "explorerintegration"'))
+        self.assertIn('unchecked', task)
+
+    def test_welcome_and_finish_launch_are_interactive_and_user_context(self):
+        inno = (ROOT / 'eng/release/windows.iss').read_text()
+        self.assertIn('DisableWelcomePage=no', inno)
+        launch = next(line for line in inno.splitlines() if line.startswith('Filename: "{app}\\Nexa.Desktop.exe"'))
+        for flag in ('postinstall', 'skipifsilent', 'runasoriginaluser'):
+            self.assertIn(flag, launch)
+        wix = ET.parse(ROOT / 'eng/release/windows.wxs')
+        self.assertEqual('WixUI_FeatureTree', wix.find('.//{*}WixUI').get('Id'))
+        self.assertEqual('yes', wix.find('.//{*}CustomAction[@Id="LaunchNexaCL"]').get('Impersonate'))
+        self.assertTrue(any(p.get('Value') == 'LaunchNexaCL' and 'NOT Installed' in p.get('Condition', '') for p in wix.findall('.//{*}Publish')))
 
 if __name__ == '__main__':
     unittest.main()

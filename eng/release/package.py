@@ -93,11 +93,15 @@ def windows(payload, output, work, base, version, prefix, arch):
     build_shell(payload, arch)
     iscc = required_tool("NEXA_ISCC")
     icon = ROOT / "src/app/Nexa.Desktop/Assets/icon.ico"
+    license_rtf = work / "license.rtf"
+    license_text = (ROOT / "LICENSE").read_text(encoding="utf-8").replace('\\', '\\\\').replace('{', '\\{').replace('}', '\\}').replace('\n', '\\par\n')
+    license_rtf.write_text('{\\rtf1\\ansi\n' + license_text + '}', encoding="ascii")
     run(iscc, f"/DPayload={payload}", f"/DProductVersion={version}", f"/DNumericVersion={prefix}",
         f"/DInstallArch={'arm64' if arch == 'arm64' else 'x64compatible'}", f"/DOutputDir={output}",
         f"/DOutputName={base}.setup", f"/DIconPath={icon}", ROOT / "eng/release/windows.iss")
     run("wix", "build", ROOT / "eng/release/windows.wxs", "-arch", arch,
-        "-d", f"Payload={payload}", "-d", f"NumericVersion={prefix}", "-d", f"IconPath={icon}",
+        "-ext", "WixToolset.UI.wixext", "-ext", "WixToolset.Util.wixext",
+        "-d", f"LicenseRtf={license_rtf}", "-d", f"Payload={payload}", "-d", f"NumericVersion={prefix}", "-d", f"IconPath={icon}",
                 "-o", work / "launcher.msi")
     shutil.copy2(work / "launcher.msi", output / f"{base}.msi")
     archive(payload, output / f"{base}.portable.zip", "NexaCL")

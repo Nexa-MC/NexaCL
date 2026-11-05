@@ -1,9 +1,21 @@
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-  <Package Name="NexaCL" Manufacturer="Nexa" Version="$(var.NumericVersion)" UpgradeCode="4586C6CD-E11C-435C-89B4-1DAA8F023651" Scope="perMachine">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="NexaCL" Manufacturer="Nexa" Version="$(var.NumericVersion)" UpgradeCode="4586C6CD-E11C-435C-89B4-1DAA8F023651" Scope="perMachine" Codepage="936">
     <MajorUpgrade DowngradeErrorMessage="A newer version of Nexa is already installed." AllowSameVersionUpgrades="yes" />
     <MediaTemplate EmbedCab="yes" />
     <Icon Id="LauncherIcon" SourceFile="$(var.IconPath)" />
     <Property Id="ARPPRODUCTICON" Value="LauncherIcon" />
+    <ui:WixUI Id="WixUI_FeatureTree" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Open NexaCL" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <CustomAction Id="SetLaunchTarget" Property="WixShellExecTarget" Value="[INSTALLFOLDER]Nexa.Desktop.exe" />
+    <CustomAction Id="LaunchNexaCL" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" DllEntry="WixShellExec" Impersonate="yes" />
+    <CustomAction Id="RegisterNativeExplorer" Directory="INSTALLFOLDER" ExeCommand="&quot;[INSTALLFOLDER]ShellIntegration\Nexa.ShellRegistration.exe&quot; --register" Impersonate="yes" Return="check" />
+    <UI>
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="RegisterNativeExplorer" Order="0" Condition="&amp;ExplorerIntegration=3 AND NOT Installed" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="SetLaunchTarget" Order="1" Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchNexaCL" Order="2" Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed" />
+    </UI>
     <StandardDirectory Id="ProgramFiles6432Folder">
       <Directory Id="INSTALLFOLDER" Name="NexaCL" />
     </StandardDirectory>
@@ -70,9 +82,16 @@
     </Component>
     <CustomAction Id="RemoveNativeExplorerPackage" Directory="INSTALLFOLDER" ExeCommand="&quot;[INSTALLFOLDER]ShellIntegration\Nexa.ShellRegistration.exe&quot; --unregister-all" Execute="deferred" Impersonate="no" Return="check" />
     <InstallExecuteSequence>
+      <Custom Action="RollbackShellTrust" After="InstallFiles" Condition="&amp;ExplorerIntegration=3 AND NOT !ExplorerIntegration=3" />
+      <Custom Action="InstallShellTrust" After="RollbackShellTrust" Condition="&amp;ExplorerIntegration=3 AND NOT !ExplorerIntegration=3" />
       <Custom Action="RemoveNativeExplorerPackage" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="RemoveShellTrust" After="RemoveNativeExplorerPackage" Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
     </InstallExecuteSequence>
-    <Feature Id="Launcher" Title="NexaCL" Level="1"><ComponentGroupRef Id="Payload" /><ComponentRef Id="MenuShortcut" /><ComponentRef Id="ZipContextMenu" /><ComponentRef Id="DocumentAssociations" /><ComponentRef Id="NativeExplorerRegistration" /></Feature>
+    <CustomAction Id="InstallShellTrust" Directory="INSTALLFOLDER" ExeCommand="&quot;[INSTALLFOLDER]ShellIntegration\Nexa.ShellRegistration.exe&quot; --install-trust" Execute="deferred" Impersonate="no" Return="check" />
+    <CustomAction Id="RollbackShellTrust" Directory="INSTALLFOLDER" ExeCommand="&quot;[INSTALLFOLDER]ShellIntegration\Nexa.ShellRegistration.exe&quot; --remove-trust" Execute="rollback" Impersonate="no" Return="check" />
+    <CustomAction Id="RemoveShellTrust" Directory="INSTALLFOLDER" ExeCommand="&quot;[INSTALLFOLDER]ShellIntegration\Nexa.ShellRegistration.exe&quot; --remove-trust" Execute="deferred" Impersonate="no" Return="check" />
+    <Feature Id="Launcher" Title="NexaCL" Level="1" AllowAbsent="no"><ComponentGroupRef Id="Payload" /><ComponentRef Id="MenuShortcut" /><ComponentRef Id="ZipContextMenu" /><ComponentRef Id="DocumentAssociations" /></Feature>
+    <Feature Id="ExplorerIntegration" Title="Windows 11 context menu" Description="Trusts the NexaCL signing certificate in Local Machine Trusted People for all users and enables the Explorer extension." Level="200"><ComponentRef Id="NativeExplorerRegistration" /></Feature>
     <Feature Id="DesktopShortcut" Title="Desktop shortcut" Level="1"><ComponentRef Id="DesktopShortcutComponent" /></Feature>
   </Package>
 </Wix>

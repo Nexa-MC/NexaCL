@@ -1,0 +1,54 @@
+name: Windows installer trust and wizard contracts
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  installers:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Prepare signing identity
+        shell: pwsh
+        env:
+          NEXA_SHELL_SIGNING_PFX_BASE64: ${{ secrets.NEXA_SHELL_SIGNING_PFX_BASE64 }}
+          NEXA_SHELL_SIGNING_PFX_PASSWORD: ${{ secrets.NEXA_SHELL_SIGNING_PFX_PASSWORD }}
+        run: ./eng/release/prepare_windows_signing.ps1
+      - name: Build native fixtures and packaging tools
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 6.0.2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          wix extension add --global WixToolset.UI.wixext/6.0.2 WixToolset.Util.wixext/6.0.2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python eng/release/fetch_tool.py innosetup "$env:RUNNER_TEMP\inno.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $setup=Start-Process "$env:RUNNER_TEMP\inno.exe" -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',('/DIR="'+$env:RUNNER_TEMP+'\inno"') -Wait -PassThru -WindowStyle Hidden
+          if ($setup.ExitCode -ne 0) { exit $setup.ExitCode }
+          "NEXA_ISCC=$env:RUNNER_TEMP\inno\ISCC.exe" >> $env:GITHUB_ENV
+          cmake -S src/platform/Nexa.ExplorerCommand -B "$env:RUNNER_TEMP\native" -A x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build "$env:RUNNER_TEMP\native" --config Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ctest --test-dir "$env:RUNNER_TEMP\native" -C Release --output-on-failure
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "NEXA_TEST_NATIVE=$env:RUNNER_TEMP\native\Release\ExplorerCommandTests.exe" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\payload","$env:RUNNER_TEMP\artifacts","$env:RUNNER_TEMP\work" | Out-Null
+          Copy-Item "$env:RUNNER_TEMP\native\Release\ExplorerCommandTests.exe" "$env:RUNNER_TEMP\payload\Nexa.Desktop.exe"
+      - name: Build both signed fixture installers
+        shell: pwsh
+        run: |
+          python -c "import os,sys;from pathlib import Path;sys.path.insert(0,'eng/release');from package import windows;t=Path(os.environ['RUNNER_TEMP']);windows(t/'payload',t/'artifacts',t/'work','Nexa-test','2.0.0.alpha.24','2.0.0','x64')"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s eng/release -p test_windows_shell.py
+      - name: Install with and without trust, activate COM and uninstall
+        shell: pwsh
+        run: ./eng/release/test_installer_live.ps1 -Artifacts "$env:RUNNER_TEMP/artifacts" -Payload "$env:RUNNER_TEMP/payload"
+      - name: Remove signing key
+        if: always() && env.NEXA_WINDOWS_SIGNING_THUMBPRINT != ''
+        shell: pwsh
+        run: Remove-Item -LiteralPath ('Cert:\CurrentUser\My\' + $env:NEXA_WINDOWS_SIGNING_THUMBPRINT) -DeleteKey -ErrorAction SilentlyContinue

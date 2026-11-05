@@ -95,7 +95,7 @@ def windows(root, base):
         validate_runtime_contents(executable.parent)
         run(executable, "--validate-shell", timeout=30)
     check_windows_portable(root, base)
-    run(root / (base + ".setup.exe"), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/TASKS=desktopicon",
+    run(root / (base + ".setup.exe"), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/TASKS=desktopicon,explorerintegration",
         f"/LOG={diagnostics / 'inno-install.log'}", timeout=installer_timeout)
     try:
         check()
@@ -104,8 +104,9 @@ def windows(root, base):
             f"/LOG={diagnostics / 'inno-uninstall.log'}", timeout=installer_timeout)
     check_removed()
     msi = root / (base + ".msi")
-    run("msiexec.exe", "/i", msi, "/qn", "/norestart", "/L*V", diagnostics / "msi-install.log", timeout=installer_timeout)
+    run("msiexec.exe", "/i", msi, "/qn", "/norestart", "ADDLOCAL=Launcher,DesktopShortcut,ExplorerIntegration", "/L*V", diagnostics / "msi-install.log", timeout=installer_timeout)
     try:
+        run(executable.parent / "ShellIntegration/Nexa.ShellRegistration.exe", "--register", timeout=60)
         check()
     finally:
         run("msiexec.exe", "/x", msi, "/qn", "/norestart", "/L*V", diagnostics / "msi-uninstall.log", timeout=installer_timeout)
