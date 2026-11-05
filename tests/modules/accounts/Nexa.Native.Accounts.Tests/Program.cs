@@ -114,6 +114,7 @@ static async Task VerifyLegacyProfileUpgradeAsync()
         for (int pass = 0; pass < 2; pass++)
         {
             var state = UpgradeStore(); using var log = new LogService(state);
+            log.AddSink(new ConsoleLogSink());
             await using (var client = new NativeAccountService(state, new NativeProfileStore(path), log))
             {
                 client.AttachHttp(new HttpClient(new UpgradeTextureNetwork()));
