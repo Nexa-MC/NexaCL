@@ -58,6 +58,21 @@ class ReleaseNotesTests(unittest.TestCase):
         self.assertEqual(["gh", "release", "upload"], run.call_args.args[0][:3])
         self.assertNotIn("--notes-file", run.call_args.args[0])
 
+    def test_upload_retries_are_bounded_and_preserve_the_original_request(self):
+        error = subprocess.CalledProcessError(1, ["gh", "release", "upload"])
+        with patch.object(release_notes, "get_release", return_value={"body": "manual notes"}), \
+                patch.object(release_notes.subprocess, "run", side_effect=[error, None]) as run, \
+                patch.object(release_notes.time, "sleep"):
+            self.publish()
+            self.assertEqual(2, run.call_count)
+            self.assertEqual(run.call_args_list[0], run.call_args_list[1])
+        with patch.object(release_notes, "get_release", return_value={"body": "manual notes"}), \
+                patch.object(release_notes.subprocess, "run", side_effect=error) as run, \
+                patch.object(release_notes.time, "sleep"):
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.publish()
+            self.assertEqual(3, run.call_count)
+
     def test_body_cleared_during_build_is_never_restored_or_published(self):
         with patch.object(release_notes, "get_release", side_effect=[{"body": "before build"}, {"body": " "}]), \
                 patch.object(release_notes.subprocess, "run") as run:

@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 
 
@@ -73,7 +74,14 @@ def publish(repository, tag, version, channel, notes_file, assets_directory):
     if release is not None:
         # Re-read after the build. Never overwrite notes edited while CI was running.
         require_notes(release.get("body"))
-        subprocess.run(["gh", "release", "upload", tag, *common, *assets, "--clobber"], check=True)
+        for attempt in range(3):
+            try:
+                subprocess.run(["gh", "release", "upload", tag, *common, *assets, "--clobber"], check=True)
+                break
+            except subprocess.CalledProcessError:
+                if attempt == 2:
+                    raise
+                time.sleep(2 ** attempt)
     else:
         if not source["allow_create"]:
             raise ValueError("The prepared Release was removed; refusing to recreate or publish it")
