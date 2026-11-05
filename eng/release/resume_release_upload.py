@@ -13,7 +13,17 @@ REPOSITORY = "Nexa-MC/NexaCL"
 
 
 def api(path):
-    return json.loads(subprocess.check_output(["gh", "api", f"repos/{REPOSITORY}/{path}"]))
+    for attempt in range(4):
+        try:
+            raw = subprocess.check_output(["gh", "api", f"repos/{REPOSITORY}/{path}"],
+                                          stderr=subprocess.PIPE, timeout=60)
+            break
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            if attempt == 3:
+                raise RuntimeError("GitHub metadata could not be read after bounded retries") from None
+            time.sleep(2 ** attempt)
+    # A transport retry must never turn invalid metadata into an absent release.
+    return json.loads(raw)
 
 
 def source(tag, run_id):

@@ -9,6 +9,23 @@ import resume_release_upload as recovery
 
 
 class ResumeReleaseUploadTests(unittest.TestCase):
+    def test_metadata_read_retries_transport_errors_without_accepting_invalid_data(self):
+        with patch.object(recovery.subprocess, "check_output", side_effect=[
+                subprocess.CalledProcessError(1, ["gh", "api"]), b'{"id": 1}']) as read, \
+                patch.object(recovery.time, "sleep"):
+            self.assertEqual({"id": 1}, recovery.api("releases/1"))
+            self.assertEqual(2, read.call_count)
+        with patch.object(recovery.subprocess, "check_output", side_effect=
+                          subprocess.CalledProcessError(1, ["gh", "api"])) as read, \
+                patch.object(recovery.time, "sleep"):
+            with self.assertRaises(RuntimeError):
+                recovery.api("releases/1")
+            self.assertEqual(4, read.call_count)
+        with patch.object(recovery.subprocess, "check_output", return_value=b'not JSON') as read:
+            with self.assertRaises(ValueError):
+                recovery.api("releases/1")
+            self.assertEqual(1, read.call_count)
+
     def test_partial_upload_retries_missing_bytes_without_replacing_existing_assets(self):
         with tempfile.TemporaryDirectory() as temp:
             directory = Path(temp)
