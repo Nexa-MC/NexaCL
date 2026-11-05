@@ -1,17 +1,47 @@
 name: Windows installer trust and wizard contracts
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/platform/Nexa.Platform.Runtime/Updates/**'
+      - 'src/app/Nexa.Update.Helper/**'
+      - 'tests/app/Nexa.Services.Tests/WindowsUpdateDirectoryTests.cs'
+      - 'eng/release/test_installer_live.ps1'
+      - '.github/workflows/windows-installer-check.yml'
 permissions:
   contents: read
 jobs:
   installers:
-    runs-on: windows-2025
+    name: Windows installer and update admission (${{ matrix.rid }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: windows-2025, rid: win-x64, arch: x64}
+          - {os: windows-11-arm, rid: win-arm64, arch: ARM64}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
+    env:
+      TEST_RID: ${{ matrix.rid }}
+      TEST_ARCH: ${{ matrix.arch }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.12'
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          global-json-file: global.json
+      - name: Verify update ACL policy and publish the actual NativeAOT helper
+        shell: pwsh
+        run: |
+          dotnet build tests/app/Nexa.Services.Tests/Nexa.Services.Tests.csproj -c Release --nologo
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet tests/app/Nexa.Services.Tests/bin/Release/net10.0/Nexa.Services.Tests.dll --filter 'Windows protected update descriptor policy'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet publish src/app/Nexa.Update.Helper/Nexa.Update.Helper.csproj -c Release -r $env:TEST_RID -p:PublishAot=true -o "$env:RUNNER_TEMP\real-helper" --nologo
+          exit $LASTEXITCODE
       - name: Prepare signing identity
         shell: pwsh
         env:
@@ -30,7 +60,7 @@ jobs:
           $setup=Start-Process "$env:RUNNER_TEMP\inno.exe" -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',('/DIR="'+$env:RUNNER_TEMP+'\inno"') -Wait -PassThru -WindowStyle Hidden
           if ($setup.ExitCode -ne 0) { exit $setup.ExitCode }
           "NEXA_ISCC=$env:RUNNER_TEMP\inno\ISCC.exe" >> $env:GITHUB_ENV
-          cmake -S src/platform/Nexa.ExplorerCommand -B "$env:RUNNER_TEMP\native" -A x64
+          cmake -S src/platform/Nexa.ExplorerCommand -B "$env:RUNNER_TEMP\native" -A $env:TEST_ARCH
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cmake --build "$env:RUNNER_TEMP\native" --config Release
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -39,10 +69,11 @@ jobs:
           "NEXA_TEST_NATIVE=$env:RUNNER_TEMP\native\Release\ExplorerCommandTests.exe" >> $env:GITHUB_ENV
           New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\payload","$env:RUNNER_TEMP\artifacts","$env:RUNNER_TEMP\work" | Out-Null
           Copy-Item "$env:RUNNER_TEMP\native\Release\ExplorerCommandTests.exe" "$env:RUNNER_TEMP\payload\Nexa.Desktop.exe"
+          Copy-Item "$env:RUNNER_TEMP\real-helper\Nexa.Update.Helper.exe" "$env:RUNNER_TEMP\payload\Nexa.Update.Helper.exe"
       - name: Build both signed fixture installers
         shell: pwsh
         run: |
-          python -c "import os,sys;from pathlib import Path;sys.path.insert(0,'eng/release');from package import windows;t=Path(os.environ['RUNNER_TEMP']);windows(t/'payload',t/'artifacts',t/'work','Nexa-test','2.0.0.alpha.24','2.0.0','x64')"
+          python -c "import os,sys;from pathlib import Path;sys.path.insert(0,'eng/release');from package import windows;t=Path(os.environ['RUNNER_TEMP']);windows(t/'payload',t/'artifacts',t/'work','Nexa-test','2.0.0.alpha.24','2.0.0',os.environ['TEST_RID'][4:])"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m unittest discover -s eng/release -p test_windows_shell.py
       - name: Install with and without trust, activate COM and uninstall

@@ -15,10 +15,19 @@ function AssertTrust([bool]$Expected) {
 }
 $installation = Join-Path $env:ProgramFiles 'NexaCL'
 $registration = Join-Path $installation 'ShellIntegration/Nexa.ShellRegistration.exe'
+function AssertUpdateAdmission {
+    $helper = Join-Path $installation 'Nexa.Update.Helper.exe'
+    if (-not (Test-Path -LiteralPath $helper)) { throw 'The actual NativeAOT update helper is missing.' }
+    & $helper --validate-helper
+    if ($LASTEXITCODE -ne 0) { throw 'The installed update helper failed its self-check.' }
+    & $helper --validate-installation
+    if ($LASTEXITCODE -ne 0) { throw 'The installed update helper rejected the installation ACL.' }
+}
 AssertTrust $false
 # Default silent installation must not add trust or launch the application.
 RunInstaller (Join-Path $Artifacts 'Nexa-test.setup.exe') @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/TASKS=')
 AssertTrust $false
+AssertUpdateAdmission
 RunInstaller (Join-Path $installation 'unins000.exe') @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART')
 AssertTrust $false
 foreach ($kind in @('exe','msi')) {
@@ -30,6 +39,7 @@ foreach ($kind in @('exe','msi')) {
             RunInstaller $registration @('--register')
         }
         AssertTrust $true
+        AssertUpdateAdmission
         & $env:NEXA_TEST_NATIVE --registered
         if ($LASTEXITCODE -ne 0) { throw 'Registered native COM activation failed.' }
     } finally {

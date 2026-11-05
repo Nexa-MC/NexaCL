@@ -15,6 +15,7 @@ public sealed partial class WindowsUpdateDirectory : IDisposable
     private const uint DirectoryAccess = ReadControl | Synchronize | ReadAttributes | 0x21;
     private const uint DeleteAccess = 0x10000;
     private const uint MutationRights = 0x500D0156;
+    private const uint ConditionalReadRights = 0xA01200A9;
     private const string TrustedInstallerSid = "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464";
     private readonly object _gate = new();
     private readonly List<SafeFileHandle> _chain;
@@ -250,7 +251,15 @@ public sealed partial class WindowsUpdateDirectory : IDisposable
         foreach (GenericAce ace in acl)
         {
             if ((ace.AceFlags & AceFlags.InheritOnly) != 0) continue;
-            if (ace is not CommonAce common || common.IsCallback) return false;
+            if (ace is not CommonAce common) return false;
+            if (common.IsCallback)
+            {
+                // Sparse MSIX registration adds conditional read/execute grants.
+                // No condition can grant more than its mask. Admit only known
+                // read/execute rights, even for trusted SIDs or ancestors.
+                if (common.AceQualifier != AceQualifier.AccessAllowed || ((uint)common.AccessMask & ~ConditionalReadRights) != 0) return false;
+                continue;
+            }
             if (common.AceQualifier == AceQualifier.AccessDenied) continue;
             if (common.AceQualifier != AceQualifier.AccessAllowed) return false;
             if (((uint)common.AccessMask & denied) != 0 && !Trusted(common.SecurityIdentifier)) return false;

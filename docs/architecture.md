@@ -24,6 +24,15 @@ NativeAOT modules exchange versioned C ABI integers, bounded bytes, buffers, and
 
 Update architecture documentation before changing a public contract or owner, then update implementation, consumers, and verification together. External extension engines remain in their own repositories, without adjacent-workspace source references.
 
+## Protected Windows update paths
+
+Platform.Runtime owns admission of the update helper's Windows directory chain.
+Owners remain restricted to SYSTEM, Administrators and TrustedInstaller. Parsed
+conditional allow ACEs are accepted only when their access mask contains known
+read/execute rights; this admits the ACEs added by sparse MSIX registration
+without trusting their condition. Conditional write grants, unknown rights and unsupported ACE
+types remain rejected. Checks retain ancestor handles and never repair permissions.
+
 ## Account file upgrades
 
 Accounts owns normalization of persisted profiles. Schema-1 documents written before

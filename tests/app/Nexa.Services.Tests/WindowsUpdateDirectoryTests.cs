@@ -34,7 +34,24 @@ internal static partial class Program
         var callback = new RawSecurityDescriptor("O:BAG:BAD:P(A;;FA;;;BA)");
         callback.DiscretionaryAcl!.InsertAce(0, new CommonAce(AceFlags.None, AceQualifier.AccessAllowed, 1,
             new SecurityIdentifier(WellKnownSidType.WorldSid, null), true, null));
-        AssertFalse(WindowsUpdateDirectory.IsProtected(callback, false));
+        AssertTrue(WindowsUpdateDirectory.IsProtected(callback, false));
+        // Actual conditional-ACE shape added by sparse MSIX registration.
+        var appx = new RawSecurityDescriptor("""O:BAG:BAD:P(A;;FA;;;BA)(XA;OICI;0x1200a9;;;BU;(WIN://SYSAPPID Contains "NexaCL.ExplorerIntegration_pyb6a16afshvc"))""");
+        AssertTrue(WindowsUpdateDirectory.IsProtected(appx, false));
+        AssertTrue(WindowsUpdateDirectory.IsProtected(appx, true));
+        foreach (int right in new[] { 0x40000000, 0x10000000, 0x40000, 0x80000, 0x10000, 0x40, 0x2, 0x4, 0x10, 0x100, 0x1000000, 0x2000000, 0x800000 })
+            foreach (var sid in new[] { WellKnownSidType.WorldSid, WellKnownSidType.BuiltinAdministratorsSid })
+            {
+                var writable = new RawSecurityDescriptor("O:BAG:BAD:P(A;;FA;;;BA)");
+                writable.DiscretionaryAcl!.InsertAce(0, new CommonAce(AceFlags.None, AceQualifier.AccessAllowed, 0x1200a9 | right,
+                    new SecurityIdentifier(sid, null), true, null));
+                AssertFalse(WindowsUpdateDirectory.IsProtected(writable, false));
+                AssertFalse(WindowsUpdateDirectory.IsProtected(writable, true));
+            }
+        var conditionalDeny = new RawSecurityDescriptor("O:BAG:BAD:P(A;;FA;;;BA)");
+        conditionalDeny.DiscretionaryAcl!.InsertAce(0, new CommonAce(AceFlags.None, AceQualifier.AccessDenied, 1,
+            new SecurityIdentifier(WellKnownSidType.WorldSid, null), true, null));
+        AssertFalse(WindowsUpdateDirectory.IsProtected(conditionalDeny, false));
         foreach (string name in new[] { "..", "a/b", "a\\b", "a:stream", "CON.txt", "LPT1", "a.", "a " })
             ExpectUpdateFailure<ArgumentException>(() => WindowsUpdateDirectory.ValidateLeaf(name));
     }
