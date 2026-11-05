@@ -81,6 +81,25 @@ def expected_files(directory):
     return result
 
 
+def signed_directory(directory):
+    # upload-artifact preserves both roots when the producer uploads artifacts/*
+    # together with release-metadata/CHANGELOG.md. The changelog is never an asset.
+    nested = directory / "artifacts"
+    if nested.exists():
+        if (nested.is_symlink() or not nested.is_dir()
+                or {item.name for item in directory.iterdir()} - {"artifacts", "release-metadata"}):
+            raise ValueError("Unexpected signed artifact wrapper")
+        metadata = directory / "release-metadata"
+        if metadata.exists():
+            if metadata.is_symlink() or not metadata.is_dir():
+                raise ValueError("Invalid artifact metadata directory")
+            for path in metadata.iterdir():
+                if path.name != "CHANGELOG.md" or path.is_symlink() or not path.is_file() or path.stat().st_size > 2 * 1024**2:
+                    raise ValueError("Unexpected artifact metadata")
+        return nested
+    return directory
+
+
 def existing_files(release, expected):
     found = set()
     for asset in release["assets"]:
@@ -124,8 +143,9 @@ def main():
         raise ValueError("A destination draft ID is required")
     # Read the trust anchor from the immutable source tag, not a later publisher checkout.
     key = subprocess.check_output(["git", "show", args.tag + ":GPG-PUBLIC-KEY.asc"])
-    verify_signatures(args.directory, args.tag[1:], key)
-    upload(args.directory, args.release_id, args.tag, commit, expected_files(args.directory))
+    directory = signed_directory(args.directory)
+    verify_signatures(directory, args.tag[1:], key)
+    upload(directory, args.release_id, args.tag, commit, expected_files(directory))
     print("Complete signed draft verified; publication still requires a separate action.")
 
 

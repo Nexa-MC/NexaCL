@@ -9,6 +9,28 @@ import resume_release_upload as recovery
 
 
 class ResumeReleaseUploadTests(unittest.TestCase):
+    def test_saved_distribution_preserves_both_declared_producer_roots(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.assertEqual(root, recovery.signed_directory(root))
+            (root / "artifacts").mkdir()
+            (root / "artifacts" / "package.zip").write_bytes(b"signed package")
+            (root / "release-metadata").mkdir()
+            (root / "release-metadata" / "CHANGELOG.md").write_text("human notes")
+            self.assertEqual(root / "artifacts", recovery.signed_directory(root))
+            (root / "unexpected.zip").write_bytes(b"must not be hidden by wrapper selection")
+            with self.assertRaises(ValueError):
+                recovery.signed_directory(root)
+
+    def test_wrapper_never_treats_unknown_metadata_as_publishable_content(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "artifacts").mkdir()
+            (root / "release-metadata").mkdir()
+            (root / "release-metadata" / "unexpected.zip").write_bytes(b"unexpected")
+            with self.assertRaises(ValueError):
+                recovery.signed_directory(root)
+
     def test_metadata_read_retries_transport_errors_without_accepting_invalid_data(self):
         with patch.object(recovery.subprocess, "check_output", side_effect=[
                 subprocess.CalledProcessError(1, ["gh", "api"]), b'{"id": 1}']) as read, \
