@@ -116,6 +116,8 @@ jobs:
         run: |
           dotnet tool install --global wix --version 6.0.2
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          wix extension add --global WixToolset.UI.wixext/6.0.2 WixToolset.Util.wixext/6.0.2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python eng/release/fetch_tool.py innosetup "$env:RUNNER_TEMP\innosetup.exe"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $innoDirectory = Join-Path $env:RUNNER_TEMP 'nexa-inno'
@@ -298,12 +300,24 @@ jobs:
           binary="$RUNNER_TEMP/launcher/Nexa.Desktop"
           if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
           "$binary" --validate-shell --require-sidecar=Nexa.Cloud.Market.Sidecar
+      - name: Prepare persistent Windows Explorer signing identity
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          NEXA_SHELL_SIGNING_PFX_BASE64: ${{ secrets.NEXA_SHELL_SIGNING_PFX_BASE64 }}
+          NEXA_SHELL_SIGNING_PFX_PASSWORD: ${{ secrets.NEXA_SHELL_SIGNING_PFX_PASSWORD }}
+        run: ./eng/release/prepare_windows_signing.ps1
       - name: Build native installers and portable archive
         shell: bash
         run: python eng/release/package.py --payload "$RUNNER_TEMP/launcher" --output artifacts --rid '${{ matrix.rid }}' --version "$PRODUCT_VERSION"
       - name: Verify machine-wide installation on disposable runner
+        # Explicitly selects certificate trust only on the disposable CI machine.
         shell: bash
         run: python eng/release/smoke_install.py artifacts "$PRODUCT_VERSION" '${{ matrix.rid }}'
+      - name: Remove imported Windows signing key from build runner
+        if: always() && runner.os == 'Windows' && env.NEXA_WINDOWS_SIGNING_THUMBPRINT != ''
+        shell: pwsh
+        run: Remove-Item -LiteralPath ('Cert:\CurrentUser\My\' + $env:NEXA_WINDOWS_SIGNING_THUMBPRINT) -DeleteKey -ErrorAction SilentlyContinue
       - name: Publish native update transaction regression
         shell: bash
         run: |

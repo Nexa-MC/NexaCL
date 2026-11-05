@@ -8,6 +8,7 @@
 #include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.ApplicationModel.h>
 #include <winrt/Windows.Management.Deployment.h>
+#include "CertificateTrust.h"
 using namespace winrt;
 using namespace Windows::Foundation;
 using namespace Windows::Management::Deployment;
@@ -23,10 +24,11 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         init_apartment(apartment_type::multi_threaded);
         int count{}; PWSTR* arguments = CommandLineToArgvW(GetCommandLineW(), &count);
         std::wstring mode = arguments && count == 2 ? arguments[1] : L""; LocalFree(arguments);
-        if (mode != L"--register" && mode != L"--development" && mode != L"--unregister" && mode != L"--unregister-all") return ERROR_INVALID_PARAMETER;
+        if (mode != L"--register" && mode != L"--development" && mode != L"--unregister" && mode != L"--unregister-all" && mode != L"--install-trust" && mode != L"--remove-trust") return ERROR_INVALID_PARAMETER;
         wchar_t file[32768]; DWORD size = GetModuleFileNameW(nullptr, file, ARRAYSIZE(file));
         if (!size || size >= ARRAYSIZE(file)) return ERROR_BAD_PATHNAME;
         auto directory = std::filesystem::path(file).parent_path(); auto root = directory.parent_path();
+        if (mode == L"--install-trust" || mode == L"--remove-trust") { ShellTrust::Change(directory, mode == L"--install-trust"); return 0; }
         PackageManager manager;
         if (mode == L"--unregister" || mode == L"--unregister-all") {
             bool all = mode == L"--unregister-all";

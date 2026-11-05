@@ -1,5 +1,7 @@
 # Architecture and dependencies
 
+Windows Explorer integration is optional. Its installer may import a dedicated, pinned, non-CA code-signing certificate into LocalMachine/TrustedPeople only after explicit selection. No private key ships. An administrator-owned registry journal records whether Nexa created the trust and which installation roots use it; rollback/removal drops that reference and deletes only Nexa-created trust after the final reference. This trust enables the sparse MSIX locally, not public publisher reputation. The elevated installer owns machine trust; user-context registration owns package identity. See `eng/release/windows.iss`, `windows.wxs`, and the native ShellRegistration helper.
+
 English | [简体中文](architecture.zh-CN.md)
 
 XSR separates execution coordination, business capabilities, and semantic presentation. NativeAOT distributions consist of in-process native modules and independent Sidecar processes.

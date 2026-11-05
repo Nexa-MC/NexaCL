@@ -1,5 +1,8 @@
 """Build native Explorer commands and their sparse identity package using the Windows SDK."""
 import argparse
+import hashlib
+import json
+import base64
 import os
 from pathlib import Path
 import re
@@ -61,13 +64,24 @@ def build(payload, arch, version="1.0.0.0"):
     output.mkdir(parents=True, exist_ok=True)
     thumb = os.environ.get("NEXA_WINDOWS_SIGNING_THUMBPRINT", "").strip()
     publisher = "CN=Nexa"
+    certificate = None
+    self_signed = False
     if thumb:
         if not re.fullmatch(r"[a-fA-F0-9]{40}", thumb):
             raise ValueError("Invalid Windows signing certificate thumbprint")
-        publisher = subprocess.check_output(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
-            f"[Console]::OutputEncoding=[Text.Encoding]::UTF8; (Get-Item -LiteralPath 'Cert:\\CurrentUser\\My\\{thumb}' -ErrorAction Stop).Subject"], encoding="utf-8-sig").strip()
+        details = json.loads(subprocess.check_output(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
+            "$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.Encoding]::UTF8; "
+            "$s=New-Object System.Security.Cryptography.X509Certificates.X509Store('My','CurrentUser'); $s.Open('ReadOnly'); "
+            f"$c=@($s.Certificates.Find('FindByThumbprint','{thumb}',$false)); "
+            "if($c.Count -ne 1 -or -not $c[0].HasPrivateKey){throw 'Signing identity unavailable'}; "
+            "@{subject=$c[0].Subject; raw=[Convert]::ToBase64String($c[0].RawData); selfSigned=($c[0].Subject -eq $c[0].Issuer)} | ConvertTo-Json -Compress; $s.Close()"], encoding="utf-8-sig"))
+        publisher = details['subject']
+        certificate = base64.b64decode(details['raw'], validate=True)
+        self_signed = details['selfSigned']
     with tempfile.TemporaryDirectory(prefix="nexacl-shell-build-") as temporary:
-        subprocess.run(["cmake", "-S", str(ROOT / "src/platform/Nexa.ExplorerCommand"), "-B", temporary, "-A", "ARM64" if arch == "arm64" else "x64"], check=True)
+        fingerprint = hashlib.sha256(certificate).hexdigest().upper() if certificate else ""
+        subprocess.run(["cmake", "-S", str(ROOT / "src/platform/Nexa.ExplorerCommand"), "-B", temporary, "-A", "ARM64" if arch == "arm64" else "x64",
+                        f"-DNEXA_SHELL_CERT_SHA256={fingerprint}"], check=True)
         subprocess.run(["cmake", "--build", temporary, "--config", "Release"], check=True)
         if arch == "x64":
             subprocess.run(["ctest", "--test-dir", temporary, "-C", "Release", "--output-on-failure"], check=True)
@@ -78,13 +92,19 @@ def build(payload, arch, version="1.0.0.0"):
     shutil.copy2(ROOT / "src/app/Nexa.Desktop/Assets/icon.png", package / "Assets/Logo.png")
     (package / "AppxManifest.xml").write_text(manifest(arch, publisher, version), encoding="utf-8")
     msix = output / f"{PACKAGE}.msix"
+    # Only the public leaf certificate ships. No PFX/password/private key enters payload.
+    if certificate:
+        (output / "signer.cer").write_bytes(certificate)
     # Sparse packages deliberately refer to executable/COM files in ExternalLocation.
     subprocess.run([str(sdk_tool("makeappx.exe")), "pack", "/d", str(package), "/p", str(msix), "/nv", "/o"], check=True)
     if thumb:
         signer = str(sdk_tool("signtool.exe"))
         for artifact in (output / "Nexa.ExplorerCommand.dll", output / "Nexa.ShellRegistration.exe", msix):
             subprocess.run([signer, "sign", "/sha1", thumb, "/fd", "SHA256", "/tr", "http://timestamp.digicert.com", "/td", "SHA256", str(artifact)], check=True)
-            subprocess.run([signer, "verify", "/pa", str(artifact)], check=True)
+            if not self_signed:
+                subprocess.run([signer, "verify", "/pa", str(artifact)], check=True)
+        if self_signed:
+            print("Self-signed Explorer package: device trust is established only by the optional installer feature. Build host trust was not changed.", flush=True)
     else:
         print("Explorer identity package is unsigned: production registration requires a trusted signing certificate. Development registration must be explicit.", flush=True)
     return output
