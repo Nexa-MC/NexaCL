@@ -273,7 +273,7 @@ internal sealed partial class DesktopThemeSession
             PngImage? backgroundImage = PreviewPng(background);
             if (logoId is not null) sources.Add("[key=\"CustomLauncherLogo\"] { ImageSource: " + logoId + "; }");
             if (backgroundId is not null && backgroundImage is null)
-                sources.Add("ContentHost.layout-Shell-14 { BackgroundImage: " + backgroundId + "; BackgroundImageFit: " + Read("appearance.background-fit")
+                sources.Add("Shell { BackgroundImage: " + backgroundId + "; BackgroundImageFit: " + Read("appearance.background-fit")
                     + "; BackgroundImageOpacity: " + (double.Parse(Read("appearance.background-opacity"), CultureInfo.InvariantCulture) / 100).ToString(CultureInfo.InvariantCulture) + "; }");
 
             AvaloniaUiThemeResource? Brand(string slot) => slots.TryGetValue(slot, out var payload) && FindNativeId(payload, native) is { } id ? native[id] : null;

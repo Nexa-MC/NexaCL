@@ -92,6 +92,11 @@ internal static partial class Program
             Environment.ExitCode = RunNativeTaskLayoutPreview(taskLayoutOutput);
             return;
         }
+        if (args is ["--native-liuli-preview", var liuliMode, var liuliDirectory])
+        {
+            Environment.ExitCode = RunNativeThemePreview(liuliMode, liuliDirectory, liuliOnly: true);
+            return;
+        }
         if (args is ["--native-theme-preview", var themeMode, var themeDirectory])
         {
             Environment.ExitCode = RunNativeThemePreview(themeMode, themeDirectory);
@@ -222,6 +227,7 @@ internal static partial class Program
         ("ThemePreviewRetirementCancelsPendingPickAndRestoresSelection", ThemePreviewRetirementCancelsPendingPickAndRestoresSelection),
         ("ThemeRangeAndVisibilityPreserveTypedEditors", ThemeRangeAndVisibilityPreserveTypedEditors),
         ("ThemeOptionSaveAndResetUseCurrentSourceRevision", ThemeOptionSaveAndResetUseCurrentSourceRevision),
+        ("LiuliThemePreservesReadableStatesAndHostGeometry", LiuliThemePreservesReadableStatesAndHostGeometry),
         ("ThemeOptionLiveReloadRecomputesActualStyleAndPersistsPreviewValues", ThemeOptionLiveReloadRecomputesActualStyleAndPersistsPreviewValues),
         ("ThemeOptionPublishedSnapshotCannotOverwriteReturnToPreviousValue", ThemeOptionPublishedSnapshotCannotOverwriteReturnToPreviousValue),
         ("ThemeOptionEditsReloadWithoutSaveAndRetainInputOwnership", ThemeOptionEditsReloadWithoutSaveAndRetainInputOwnership),

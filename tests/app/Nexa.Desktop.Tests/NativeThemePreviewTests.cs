@@ -14,6 +14,10 @@ using Nexa.Desktop.Ui;
 using Nexa.Services.Composition;
 using Nexa.Services.Settings;
 using Nexa.Services.Themes;
+using Nexa.Services.Resources;
+using Nexa.Services.Accounts;
+using Nexa.Services.Tasks;
+using Nexa.Xsr.State;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
@@ -28,10 +32,10 @@ internal static partial class Program
 
     // Native theme IO, services, session, controllers and decoders are real. Only
     // game/account/instance data and explicit picker selections are isolated fixtures.
-    private static int RunNativeThemePreview(string mode, string outputDirectory, bool optionsOnly = false) =>
-        AvaloniaUiStartupSession.RunApplicationOnMainThread(() => RunNativeThemePreviewAsync(mode, Path.GetFullPath(outputDirectory), optionsOnly));
+    private static int RunNativeThemePreview(string mode, string outputDirectory, bool optionsOnly = false, bool liuliOnly = false) =>
+        AvaloniaUiStartupSession.RunApplicationOnMainThread(() => RunNativeThemePreviewAsync(mode, Path.GetFullPath(outputDirectory), optionsOnly, liuliOnly));
 
-    private static async Task<int> RunNativeThemePreviewAsync(string mode, string outputDirectory, bool optionsOnly)
+    private static async Task<int> RunNativeThemePreviewAsync(string mode, string outputDirectory, bool optionsOnly, bool liuliOnly)
     {
         if (mode is not ("light" or "dark")) throw new ArgumentException("Expected light or dark.", nameof(mode));
         Directory.CreateDirectory(outputDirectory);
@@ -190,6 +194,124 @@ internal static partial class Program
                 await Show(OptionKey(builtin, "appearance.background-opacity") + ".Slider");
                 await CapturePair("builtin-options");
                 Console.WriteLine("PASS: built-in theme option rows captured through native Windows rendering at both viewport widths.");
+                return 0;
+            }
+            if (liuliOnly)
+            {
+                nextImport = Path.Combine(AppContext.BaseDirectory, "Themes", "Liuli");
+                await Activate("Theme.ImportDirectory");
+                await Eventually(() => PresentedId() == "nexa.liuli" && !themes.Snapshot.Busy);
+                await NavigateLaunch();
+                await startup.InvokeAsync(() =>
+                {
+                    var wallpaperNodes = surface!.Scene!.Nodes.Where(node => node.BackgroundImage is not null).ToArray();
+                    AssertTrue(wallpaperNodes.Length > 0);
+                    AssertTrue(wallpaperNodes.Any(node => node.Rect.Width >= surface.Bounds.Width - 1 && node.Rect.Height >= surface.Bounds.Height - 1));
+                }, timeout.Token);
+                await CapturePair("liuli-launch");
+                await NavigateSettings(h.Global, "appearance");
+                await CapturePair("liuli-settings");
+                await NavigateSettings(h.Global, "game");
+                await CapturePair("liuli-game-settings");
+                await NavigateSettings(h.Instance, "mods");
+                await Eventually(() => Has("ManagementContentRow"));
+                await CapturePair("liuli-content-list");
+                await NavigateSettings(h.Instance, "screenshots");
+                await Eventually(() => surface!.Scene!.Nodes.Any(node => f.Shell.Tree.Name(node.Entity).StartsWith("ManagementScreenshot.", StringComparison.Ordinal)));
+                await CapturePair("liuli-screenshots");
+                await NavigateLaunch();
+                await startup.InvokeAsync(() => Emit(f.Intents, "ui.launch.instances"), timeout.Token);
+                await Eventually(() => f.Shell.Stage.Navigation.Current == f.Controller.Versions.Page);
+                await CapturePair("liuli-version-list");
+                await NavigateLaunch();
+                await startup.InvokeAsync(() => Emit(f.Intents, "ui.navigation.download"), timeout.Token);
+                await Eventually(() => Has("InstallJavaChoice"));
+                await CapturePair("liuli-install");
+                await Activate("InstallJavaChoice");
+                await Eventually(() => Has("CatalogRow:game:1.21.1"));
+                await CapturePair("liuli-java-install");
+
+                ResourcesPageController? resources = null;
+                WardrobePageController? wardrobe = null;
+                DesktopTaskBubblePresenter? bubble = null;
+                TaskCenterRuntime? taskRuntime = null;
+                TaskCenterController? taskCenter = null;
+                try
+                {
+                    await startup.InvokeAsync(() =>
+                    {
+                        var queries = new XsrQueryRouterBuilder();
+                        var projects = Enumerable.Range(1, 8).Select(index => new ResourceProject("liuli-" + index,
+                            "资源预览 " + index, "保留资源图标、项目简介与下载操作。", "NexaCL", index * 12500,
+                            "https://example.invalid/project/" + index)).ToArray();
+                        queries.Register<ResourceSearchQuery, ResourceSearchResult>(ResourceCatalogContract.Search,
+                            (_, _) => new(XsrResult.Success(new ResourceSearchResult(projects, projects.Length, 0))));
+                        resources = new(f.Shell, f.Intents, queries.Build(new NoopDispatchObserver()), f.Store, _ => { });
+                        _ = f.Shell.Select(XsrSemanticId.Parse("navigation.community"));
+                        f.Shell.Stage.Navigation.Replace(resources.Page); surface!.CommitScene();
+                    }, timeout.Token);
+                    await Eventually(() => Has("ResourceQuickDownload.liuli-1"));
+                    await CapturePair("liuli-resources");
+                    await startup.InvokeAsync(() =>
+                    {
+                        var queries = new XsrQueryRouterBuilder();
+                        var textures = new AccountWardrobeResolvedTextures(null, null, true, null, null);
+                        queries.Register<AccountWardrobeQuery, AccountWardrobeSnapshot>(AccountWardrobeContract.Read,
+                            (_, _) => new(XsrResult.Success(WardrobeDesktopSnapshot(f, "原版披风") with
+                            {
+                                Current = textures,
+                                Skins = Enumerable.Range(0, 6).Select(index => new AccountWardrobeCard("skin" + index,
+                                    "Player", "其他档案", textures with { IsSlim = index % 2 == 0 }, true)).ToArray()
+                            })));
+                        wardrobe = new(f.Shell, f.Intents, queries.Build(new NoopDispatchObserver()),
+                            new XsrCommandRouterBuilder().Build(new NoopDispatchObserver()), f.Store, f.Feedback);
+                        _ = f.Shell.Select(XsrSemanticId.Parse("navigation.launch"));
+                        f.Shell.Stage.Navigation.Replace(wardrobe.Page); surface!.CommitScene();
+                    }, timeout.Token);
+                    await Eventually(() => Has("WardrobeIdentity"));
+                    await CapturePair("liuli-wardrobe");
+                    await startup.InvokeAsync(() =>
+                    {
+                        bubble = new(f.Shell, f.Store);
+                        taskRuntime = TaskCenterRuntimeComposer.Compose(f.Foundation.Host);
+                        taskCenter = new(f.Shell, f.Intents, taskRuntime.Commands, f.Store, bubble);
+                        var entries = f.Store.Resolve(TaskCenterStateContract.EntriesKey);
+                        var before = f.Store.ReadCollection<TaskCenterEntry>(entries);
+                        AssertTrue(f.Store.PublishDelta(entries, new XsrCollectionDelta<TaskCenterEntry, string>(before.Revision,
+                            [new("liuli-running", "安装 Minecraft", "游戏文件", "正在下载资源", .64, 64, 100, 0, TaskCenterEntryState.Running),
+                             new("liuli-failed", "安装资源", "下载", "连接已中断", .3, 3, 10, 0, TaskCenterEntryState.Failed, "请检查网络后重试。")], [])).IsApplied);
+                        f.Store.Publish(f.Store.Resolve(TaskCenterStateContract.SummaryKey), new TaskCenterSummary(1, 2, .64, 0, 1));
+                        Emit(f.Intents, "ui.tasks.open"); surface!.CommitScene();
+                    }, timeout.Token);
+                    await Eventually(() => Has("TaskCenterTitle"));
+                    await CapturePair("liuli-tasks");
+                    await NavigateLaunch();
+                }
+                finally { await startup.InvokeAsync(() => { taskCenter?.Dispose(); taskRuntime?.Dispose(); bubble?.Dispose(); wardrobe?.Dispose(); resources?.Dispose(); }, timeout.Token); }
+
+                await SetReducedMotionPreference(false);
+                await startup.InvokeAsync(() =>
+                {
+                    SetPreviewWindowSize(1040); ActivateThemePreviewWindow(window!);
+                }, timeout.Token);
+                await SettlePreviewWindowSize();
+                await Eventually(() => window!.IsActive && !f.Shell.Renderer.EffectiveReducedMotion);
+                await startup.InvokeAsync(() => Emit(f.Intents, "ui.navigation.download"), timeout.Token);
+                await Eventually(() => Has("InstallJavaChoice"));
+                // Re-enter the launch page while recording real native animation frames.
+                await NavigateLaunch();
+                for (int frame = 0; frame < 6; frame++)
+                {
+                    await startup.InvokeAsync(() => { surface!.CommitScene(); Capture("liuli-motion-" + frame.ToString("00", CultureInfo.InvariantCulture), 1040); }, timeout.Token);
+                    await Task.Delay(45, timeout.Token);
+                }
+                await SetReducedMotionPreference(true);
+                await startup.InvokeAsync(() =>
+                {
+                    surface!.CommitScene(); AssertFalse(f.Shell.Renderer.HasThemeAnimations);
+                    AssertEqual(0, h.CropWrites); AssertEqual(0, h.ServerWrites); AssertEqual(0, h.ExportWrites);
+                }, timeout.Token);
+                Console.WriteLine("PASS: Liuli page materials captured at two widths, with native motion frames and reduced-motion verification.");
                 return 0;
             }
             nextImport = Path.Combine(AppContext.BaseDirectory, "Themes", "Minimal");
@@ -536,7 +658,11 @@ internal static partial class Program
             }
             async Task NavigateSettings(SettingsPageController controller, string section)
             {
-                await startup.InvokeAsync(() => { f.Shell.Stage.Navigation.Replace(controller.Page); surface!.CommitScene(); }, timeout.Token);
+                await startup.InvokeAsync(() =>
+                {
+                    _ = f.Shell.Select(XsrSemanticId.Parse(ReferenceEquals(controller, h.Global) ? "navigation.settings" : "navigation.launch"));
+                    f.Shell.Stage.Navigation.Replace(controller.Page); surface!.CommitScene();
+                }, timeout.Token);
                 await Eventually(() => Has("SettingsNav." + section));
                 await startup.InvokeAsync(() => { Emit(f.Intents, "ui.settings.section", Find("SettingsNav." + section).Entity); surface!.CommitScene(); }, timeout.Token);
                 await Eventually(() => controller.SelectedSection == section && (section != "appearance" || Exists("Theme.ImportDirectory")));
@@ -690,7 +816,8 @@ internal static partial class Program
                 string name = "ntp-" + mode + "-" + stage + "-" + width.ToString(CultureInfo.InvariantCulture);
                 string pngPath = Path.Combine(outputDirectory, name + ".png");
                 bitmap.Save(pngPath, PngBitmapEncoderOptions.Default);
-                var titleRect = Find("TitleMain").Rect;
+                var title = Has("TitleMain") ? Find("TitleMain") : Find("TitleSubpage");
+                var titleRect = title.Rect;
                 Point titleOrigin = surface!.TranslatePoint(new(titleRect.X, titleRect.Y), window)
                     ?? throw new InvalidOperationException("Actual title surface is detached from its capture window.");
                 var titleCaptureRect = new XsrUiRect(titleOrigin.X, titleOrigin.Y, titleRect.Width, titleRect.Height);
@@ -714,8 +841,8 @@ internal static partial class Program
                     ["activationGeneration"] = f.Shell.Renderer.ThemeActivationGeneration,
                     ["nativeGeneration"] = actions.ThemeAppearanceGeneration,
                     ["fontProviderRevision"] = f.Shell.Renderer.TextLayoutProvider?.Revision,
-                    ["fontResource"] = Find("TitleMain").FontFamily,
-                    ["titleScene"] = NodeFacts(f.Shell, Find("TitleMain")),
+                    ["fontResource"] = title.FontFamily,
+                    ["titleScene"] = NodeFacts(f.Shell, title),
                     ["titleCaptureRect"] = RectFacts(titleCaptureRect),
                     ["titleContrastingPixels"] = titleInkPixels,
                     ["windowActive"] = window.IsActive,
@@ -723,7 +850,7 @@ internal static partial class Program
                     ["reducedMotion"] = f.Shell.Renderer.ReducedMotion,
                     ["optionalMotionSuspended"] = f.Shell.Renderer.OptionalMotionSuspended,
                     ["effectiveReducedMotion"] = f.Shell.Renderer.EffectiveReducedMotion,
-                    ["titleOpacity"] = Find("TitleMain").VisualStyle.Opacity,
+                    ["titleOpacity"] = title.VisualStyle.Opacity,
                     ["backgroundResources"] = surface!.Scene!.Nodes.Count(node => node.BackgroundImage is not null),
                     ["shadowNodes"] = surface.Scene.Nodes.Count(node => node.Shadow is not null),
                     ["gradientNodes"] = surface.Scene.Nodes.Count(node => node.BackgroundGradient is not null),

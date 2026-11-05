@@ -1,0 +1,126 @@
+{
+  "format": "NTP/1",
+  "id": "nexa.liuli",
+  "version": "1.0.0",
+  "name": {
+    "en-US": "Liuli",
+    "zh-CN": "琉璃",
+    "zh-TW": "琉璃"
+  },
+  "styleApi": 1,
+  "nss": "NSS/1",
+  "styles": [
+    "styles/main.nss",
+    "styles/pages.nss",
+    "styles/tools.nss",
+    "styles/motion.nss"
+  ],
+  "requiredCapabilities": [
+    "styles.basic",
+    "tokens",
+    "options",
+    "selectors",
+    "conditions",
+    "gradients",
+    "shadows",
+    "images",
+    "svg",
+    "startup-appearance",
+    "keyframes",
+    "animations",
+    "transforms",
+    "opacity"
+  ],
+  "optionalCapabilities": [
+    {
+      "name": "window-acrylic",
+      "fallback": "solid"
+    }
+  ],
+  "optionsVersion": 1,
+  "options": [
+    {
+      "id": "accent",
+      "kind": "Color",
+      "default": "#216f82",
+      "label": {
+        "en-US": "Accent color",
+        "zh-CN": "强调色",
+        "zh-TW": "強調色"
+      },
+      "group": "style",
+      "control": "Input"
+    },
+    {
+      "id": "radius",
+      "kind": "Range",
+      "default": 20,
+      "label": {
+        "en-US": "Card corners",
+        "zh-CN": "卡片圆角",
+        "zh-TW": "卡片圓角"
+      },
+      "group": "style",
+      "min": 12,
+      "max": 28,
+      "step": 1,
+      "control": "Slider"
+    },
+    {
+      "id": "wallpaper-opacity",
+      "kind": "Range",
+      "default": 38,
+      "label": {
+        "en-US": "Wallpaper visibility",
+        "zh-CN": "壁纸可见度",
+        "zh-TW": "桌布可見度"
+      },
+      "group": "background",
+      "min": 0,
+      "max": 70,
+      "step": 1,
+      "control": "Slider"
+    },
+    {
+      "id": "background-path",
+      "kind": "File",
+      "default": "",
+      "label": {
+        "en-US": "Custom wallpaper",
+        "zh-CN": "自选壁纸",
+        "zh-TW": "自選桌布"
+      },
+      "group": "background",
+      "resourceKind": "Image"
+    },
+    {
+      "id": "motion",
+      "kind": "Boolean",
+      "default": true,
+      "label": {
+        "en-US": "Enhanced motion",
+        "zh-CN": "增强动效",
+        "zh-TW": "增強動效"
+      },
+      "group": "style",
+      "control": "Switch"
+    }
+  ],
+  "appearance": {
+    "accentColor": "#216f82",
+    "splashMotion": "fade",
+    "windowMaterial": "acrylic",
+    "resources": {
+      "background": {
+        "expression": "asset(assets/liuli.svg)",
+        "kind": "Image",
+        "required": false,
+        "fallback": "none"
+      }
+    },
+    "properties": {
+      "background-fit": "cover",
+      "background-opacity": "option(wallpaper-opacity)"
+    }
+  }
+}
