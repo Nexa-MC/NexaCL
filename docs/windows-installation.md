@@ -21,3 +21,5 @@ Self-signed output is not publicly trusted. The build does not install trust to 
 ## Verification boundaries
 
 Native tests use an in-memory certificate store and an isolated current-user registry fixture; they do not modify machine trust. Release smoke tests explicitly select the integration in both installers on disposable Windows runners, register the MSIX, and uninstall. Local installer compilation and certificate-state tests are distinct from an interactive wizard check and the complete NativeAOT release smoke.
+
+On 2026-11-05, [Windows installer verification run 42024494062](https://github.com/Nexa-MC/NexaCL/actions/runs/42024494062) passed with the dedicated self-signed identity. It built both installers around a native fixture, verified default installation without certificate trust, opted into certificate trust and registered COM activation for both installer formats, and verified trust removal after uninstall. Signing keys were removed from the disposable build user's store. This does not claim a full launcher NativeAOT release run or interactive wizard screenshot verification.
