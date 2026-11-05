@@ -1,7 +1,0 @@
-<nxml-dynamic>
-  <StackPanel Key="{data key}" Class="world-rows">
-    <Text Content="{data name}" Localize="false" Class="world-field-label" />
-    <Text Content="{data type}: {data value}" Localize="false" MaxLines="0" Class="world-hint" />
-    <Button Key="{data open}" Content="展开 / 预览" IsVisible="{data expand}" Command="ui.settings.management.action" Class="settings-catalog-action world-button-wide" />
-  </StackPanel>
-</nxml-dynamic>

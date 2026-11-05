@@ -7,7 +7,6 @@ namespace Nexa.Desktop.Ui;
 internal sealed partial class SettingsPageController
 {
     private long _lanNextScan;
-    private string _lanError = "";
     private Task<XsrResult<LanGameDiscoverySnapshot>>? _lanRead;
     private LanGameDiscoverySnapshot? _lanGames;
     private readonly Dictionary<string, XsrUiEntityId> _lanViews = [];
@@ -28,7 +27,7 @@ internal sealed partial class SettingsPageController
     {
         _serverStop?.Cancel(); _serverStop?.Dispose(); _serverStop = null;
         ObserveRetiredInstanceToolRead(_serverRead); ObserveRetiredInstanceToolRead(_serverStatusRead);
-        ObserveRetiredInstanceToolRead(_lanRead); _lanRead = null; _lanGames = null; _lanNextScan = 0; _lanError = ""; RetireWorldRows(_lanViews, []);
+        ObserveRetiredInstanceToolRead(_lanRead); _lanRead = null; _lanGames = null; _lanNextScan = 0; RetireWorldRows(_lanViews, []);
         _serverRead = null; _serverList = null; _serverInstance = null; _serverLoaded = false; _serverEditing = null; _serverError = null;
         _serverStatusRead = null; _serverStatuses.Clear(); _serverEditorProjection = null;
     }
@@ -41,8 +40,8 @@ internal sealed partial class SettingsPageController
         if (_lanRead is { IsCompleted: true } lan)
         {
             _lanRead = null; _lanNextScan = Environment.TickCount64 + 5000;
-            if (PendingQuery.Succeeded(lan)) { _lanGames = lan.Result.Value; _lanError = ""; }
-            else _lanError = lan.IsCompletedSuccessfully ? lan.Result.Error?.Message ?? WorldTerm("lan.failed") : WorldTerm("lan.network-error");
+            if (PendingQuery.Succeeded(lan)) _lanGames = lan.Result.Value;
+            else { ObserveRetiredInstanceToolRead(lan); _lanGames = null; }
             BuildServers();
         }
         if (_serverStatusRead is { IsCompleted: true } status)
@@ -75,33 +74,34 @@ internal sealed partial class SettingsPageController
     {
         if (!_shell.Tree.IsAlive(_sections)) return;
         var list = _serverList;
+        var savedEndpoints = (list?.Entries ?? []).Select(entry => ServerEndpointKey(entry.Address)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var games = (_lanGames?.Games ?? []).DistinctBy(game => game.Address, StringComparer.OrdinalIgnoreCase)
+            .Where(game => !savedEndpoints.Contains(ServerEndpointKey(game.Address))).ToArray();
         var nodes = WorldView(_sections, ref _serverWorkspaceRoot, "Servers", new()
         {
             ["loading"] = Flag(list is null && _serverError is null),
             ["hasError"] = Flag(_serverError is not null),
             ["error"] = _serverError ?? "",
             ["loaded"] = Flag(list is not null),
-            ["count"] = WorldNumber(list?.Entries.Count ?? 0),
-            ["lanIdle"] = Flag(_lanRead is null),
-            ["lanStatus"] = _lanRead is null ? (_lanError.Length > 0 ? _lanError : _lanGames is null ? WorldTerm("lan.ready") : WorldFormat("LanCount", new() { ["value"] = WorldNumber(_lanGames.Games.Count) })) : WorldTerm("lan.reading")
+            ["count"] = WorldNumber((list?.Entries.Count ?? 0) + games.Length)
         });
         BindWorldAction(nodes, WorldKey("ServerAdd"), () => { _serverEditing = -1; BuildServers(); });
-        BindWorldAction(nodes, "Servers.LanScan", StartLanDiscovery);
         if (list is null) return;
-        var games = _lanGames?.Games ?? [];
         RetireWorldRows(_lanViews, games.Select(g => g.Address));
         foreach (var game in games)
         {
             string key = "Servers.Lan." + InstanceToolIdentity(game.Address);
-            var row = WorldRow(nodes["Servers.LanRows"], _lanViews, game.Address, "LanGame", new()
-            { ["key"] = key, ["add"] = key + ".Add", ["join"] = key + ".Join", ["name"] = game.Name, ["address"] = game.Address });
-            BindWorldAction(row, key + ".Add", () =>
+            var row = WorldRow(nodes["Servers.Rows"], _lanViews, game.Address, "LanGame", new()
             {
-                if (!list.Entries.Any(e => e.Address == game.Address)) SaveServers([.. list.Entries, new(-1, game.Name, game.Address)]);
+                ["key"] = key,
+                ["nameKey"] = key + ".Name",
+                ["join"] = key + ".Join",
+                ["name"] = WorldFormat("LanServerName", new() { ["address"] = game.Address }),
+                ["address"] = game.Address,
+                ["canJoin"] = Flag(JoinManagementServer is not null)
             });
             BindWorldAction(row, key + ".Join", () => { if (_instance is not null) JoinManagementServer?.Invoke(_instance, game.Address); });
         }
-        _dynamic.Reorder(nodes["Servers.LanRows"], games.Select(g => _lanViews[g.Address]).ToArray());
         if (_serverEditing is { } editing)
         {
             if (editing >= list.Entries.Count) { _serverEditing = null; RemoveWorldView(ref _serverEditorRoot); }
@@ -166,8 +166,11 @@ internal sealed partial class SettingsPageController
             BindWorldAction(row, remove, () => _feedback.ShowDialog("server.remove", WorldTerm("server.remove-title"), WorldTerm("server.remove-message"), WorldTerm("remove"), WorldTerm("cancel"),
                 accepted => { if (accepted && _serverInstance == _instance && _selected == "servers" && ReferenceEquals(_serverList, list)) SaveServers(list.Entries.Where((_, i) => i != index).ToArray()); }, localizeMessage: false));
         }
-        _dynamic.Reorder(nodes["Servers.Rows"], entries.Select(entry => _serverViews[entry.Key]).ToArray());
+        _dynamic.Reorder(nodes["Servers.Rows"], [.. entries.Select(entry => _serverViews[entry.Key]), .. games.Select(game => _lanViews[game.Address])]);
     }
+    private static string ServerEndpointKey(string address)
+        => Uri.TryCreate("tcp://" + address, UriKind.Absolute, out var endpoint)
+            ? endpoint.DnsSafeHost + "|" + WorldNumber(endpoint.Port < 0 ? 25565 : endpoint.Port) : address;
     private string ServerStatusLabel(int index)
     {
         if (!_serverStatuses.TryGetValue(index, out var status)) return WorldTerm("server.unchecked");

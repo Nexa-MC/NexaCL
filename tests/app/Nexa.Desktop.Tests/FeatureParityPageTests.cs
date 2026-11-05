@@ -29,7 +29,7 @@ internal static partial class Program
         AssertTrue(replaced.GetAwaiter().GetResult() is null); AssertEqual("other", fixture.Feedback.Snapshot().Dialog!.Key);
     }
 
-    private static void FeatureParityLanAndInspectorUseTypedRoutesAndRetireReads()
+    private static void FeatureParityLanAutomaticallyJoinsServerListAndRetiresReads()
     {
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
         string instance = Path.Combine(fixture.TemporaryDirectory, "instance");
@@ -41,34 +41,30 @@ internal static partial class Program
         queries.Register<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(SettingsPolicyContract.EffectiveQuery,
             (q, ct) => fixture.Foundation.Queries.QueryAsync<SettingsEffectiveQuery, SettingsEffectiveSnapshot>(effective, q, cancellationToken: ct));
         queries.Register<InstanceManagementQuery, InstanceManagementSnapshot>(InstanceManagementContract.Query, (q, _) => ValueTask.FromResult(XsrResult.Success(
-            new InstanceManagementSnapshot(q.InstanceDirectory, q.InstanceDirectory, "1.21.1", [], [new("overview", "概览"), new("game", "游戏设置"), new("servers", "服务器"), new("inspector", "内容与 NBT 查看")], true, ""))));
-        queries.Register<InstanceServerListQuery, InstanceServerList>(InstanceServerListContract.Read, (_, _) => ValueTask.FromResult(XsrResult.Success(new InstanceServerList("revision", []))));
+            new InstanceManagementSnapshot(q.InstanceDirectory, q.InstanceDirectory, "1.21.1", [], [new("overview", "概览"), new("game", "游戏设置"), new("servers", "服务器")], true, ""))));
+        queries.Register<InstanceServerListQuery, InstanceServerList>(InstanceServerListContract.Read, (_, _) => ValueTask.FromResult(XsrResult.Success(new InstanceServerList("revision", [new(0, "Saved", "192.168.1.3")]))));
         int discovered = 0; CancellationToken lanToken = default;
         queries.Register<LanGameDiscoveryQuery, LanGameDiscoverySnapshot>(LanGameDiscoveryContract.Discover, (_, token) =>
-        { discovered++; lanToken = token; return ValueTask.FromResult(XsrResult.Success(new LanGameDiscoverySnapshot([new("Local game", "192.168.1.2:25565")]))); });
-        ContentInspectionQuery? inspected = null; CancellationToken inspectionToken = default;
-        queries.Register<ContentInspectionQuery, ContentInspectionSnapshot>(ContentInspectionContract.Read, (q, token) =>
-        {
-            inspected = q; inspectionToken = token;
-            return ValueTask.FromResult(XsrResult.Success(new ContentInspectionSnapshot("NBT", "revision", "Schematic", "", [], [new("0", "Regions", "Compound", "1 child", true)], 1)));
-        });
+        { discovered++; lanToken = token; return ValueTask.FromResult(XsrResult.Success(new LanGameDiscoverySnapshot([new("Untrusted broadcast title", "192.168.1.2:25565"), new("Duplicate", "192.168.1.2:25565"), new("Saved duplicate", "192.168.1.3:25565")]))); });
         var commands = new XsrCommandRouterBuilder(); InstanceServerListSaveCommand? saved = null;
         commands.Register<InstanceServerListSaveCommand>(InstanceServerListContract.Save, (q, _) => { saved = q; return ValueTask.FromResult(XsrResult.Success()); });
         using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, queries.Build(new NoopDispatchObserver()), commands.Build(new NoopDispatchObserver()), fixture.Store, fixture.Feedback, () => instance);
+        string? joined = null; settings.JoinManagementServer = (_, address) => joined = address;
         fixture.Shell.Renderer.ReducedMotion = true; fixture.Shell.Stage.Navigation.Replace(settings.Page);
         var scene = fixture.Shell.Render(new(1100, 2400));
         void Pump(Func<bool> condition) => AssertTrue(SpinWait.SpinUntil(() => { scene = fixture.Shell.Render(new(1100, 2400)); return condition(); }, TimeSpan.FromSeconds(5)));
         void Click(string key, string intent) => Emit(fixture.Intents, intent, FindByKey(fixture.Shell, scene, key).Entity);
         Pump(() => scene.Nodes.Any(n => fixture.Shell.Tree.Name(n.Entity) == "SettingsNav.servers"));
-        Click("SettingsNav.servers", "ui.settings.section"); Pump(() => scene.Nodes.Any(n => n.Text == "Local game"));
+        Click("SettingsNav.servers", "ui.settings.section");
+        Pump(() => scene.Nodes.Any(n => n.Text == "来自局域网的服务器 192.168.1.2:25565"));
         AssertEqual(1, discovered);
-        var add = scene.Nodes.First(n => fixture.Shell.Tree.Name(n.Entity).StartsWith("Servers.Lan.", StringComparison.Ordinal) && fixture.Shell.Tree.Name(n.Entity).EndsWith(".Add", StringComparison.Ordinal));
-        Emit(fixture.Intents, "ui.settings.management.action", add.Entity); Pump(() => saved is not null);
-        AssertEqual("revision", saved!.ExpectedRevision); AssertEqual("192.168.1.2:25565", saved.Entries.Single().Address);
-        Click("SettingsNav.inspector", "ui.settings.section"); Pump(() => inspected is not null && scene.Nodes.Any(n => n.Text == "Regions"));
-        AssertTrue(lanToken.IsCancellationRequested);
-        var expand = scene.Nodes.First(n => fixture.Shell.Tree.Name(n.Entity).StartsWith("Inspection.Item.", StringComparison.Ordinal) && fixture.Shell.Tree.Name(n.Entity).EndsWith(".Open", StringComparison.Ordinal));
-        Emit(fixture.Intents, "ui.settings.management.action", expand.Entity); Pump(() => inspected!.Node == "0");
-        Click("SettingsNav.overview", "ui.settings.section"); Pump(() => inspectionToken.IsCancellationRequested);
+        AssertTrue(saved is null);
+        AssertFalse(scene.Nodes.Any(n => fixture.Shell.Tree.Name(n.Entity) is "Servers.LanScan" or "SettingsNav.inspector"));
+        AssertFalse(scene.Nodes.Any(n => n.Text is "局域网游戏" or "正在监听局域网广播…" or "发现局域网游戏" or "Untrusted broadcast title"));
+        var rows = scene.Nodes.Where(n => fixture.Shell.Tree.Name(n.Entity).StartsWith("Servers.Lan.", StringComparison.Ordinal)
+            && fixture.Shell.Tree.Name(n.Entity).EndsWith(".Join", StringComparison.Ordinal)).ToArray();
+        AssertEqual(1, rows.Length);
+        Emit(fixture.Intents, "ui.settings.management.action", rows[0].Entity); Pump(() => joined is not null); AssertEqual("192.168.1.2:25565", joined);
+        Click("SettingsNav.overview", "ui.settings.section"); Pump(() => lanToken.IsCancellationRequested);
     }
 }

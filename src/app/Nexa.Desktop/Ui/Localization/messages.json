@@ -1,4 +1,5 @@
 [
+  {"source":"来自局域网的服务器 {data address}","en":"LAN server {data address}","zh-Hant":"來自區域網路的伺服器 {data address}"},
   {"source": "确定", "en": "OK", "zh-Hant": "確定"},
   {"source": "权限不足", "en": "Insufficient permission", "zh-Hant": "權限不足"},
   {"source": "深度清理", "en": "Deep cleanup", "zh-Hant": "深度清理"},
@@ -994,7 +995,6 @@
   {"source":"保存预览：{0} → {1} bytes，{2} → {3} 行。原件将保留为 .nexa-backup。","en":"Save preview: {0} → {1} bytes, {2} → {3} lines. The original will be preserved as .nexa-backup.","zh-Hant":"儲存預覽：{0} → {1} bytes，{2} → {3} 行。原件將保留為 .nexa-backup。"},
   {"source":"确认保存配置","en":"Confirm configuration save","zh-Hant":"確認儲存組態"},
   {"source":"内容在预览后变化，请重新预览。","en":"The content changed after preview. Preview again.","zh-Hant":"內容在預覽後變更，請重新預覽。"},
-  {"source":"服务器要求与环境匹配","en":"Server requirements and environment matching","zh-Hant":"伺服器要求與環境比對"},
   {"source":"无法读取实例信息；现有文件已保留。","en":"Cannot read instance information; existing files were preserved.","zh-Hant":"無法讀取實例資訊；現有檔案已保留。"},
   {"source":"正在读取实例信息…","en":"Reading instance information…","zh-Hant":"正在讀取實例資訊…"},
   {"source":"重新读取","en":"Read again","zh-Hant":"重新讀取"},
@@ -10999,8 +10999,6 @@
   {"source":"找到 {0} 个局域网游戏","en":"LAN games found: {0}","zh-Hant":"找到 {0} 個區域網路遊戲","template":true},
   {"source":"披风 PNG 的完整路径","en":"Full path to a cape PNG","zh-Hant":"披風 PNG 的完整路徑"},
   {"source":"按实例导出启动脚本","en":"Export an instance launch script","zh-Hant":"依實例匯出啟動指令碼"},
-  {"source":"文件内容与 NBT 查看器","en":"File content and NBT viewer","zh-Hant":"檔案內容與 NBT 檢視器"},
-  {"source":"内容与 NBT 查看","en":"Content and NBT viewer","zh-Hant":"內容與 NBT 檢視"},
   {"source":"无法查看此文件。","en":"Could not inspect this file.","zh-Hant":"無法檢視此檔案。"},
   {"source":"无法选择脚本指定的实例。","en":"Could not select the instance requested by the script.","zh-Hant":"無法選擇指令碼指定的實例。"},
   {"source":"本地披风 PNG（可选）","en":"Local cape PNG (optional)","zh-Hant":"本機披風 PNG（可選）"},

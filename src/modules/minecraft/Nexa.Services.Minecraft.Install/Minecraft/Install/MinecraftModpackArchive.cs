@@ -21,7 +21,7 @@ public static partial class MinecraftModpackArchive
 
     internal static async Task<ModpackPlan> ReadAsync(string path, CancellationToken token)
     {
-        path = Nexa.Core.PathIdentity.Normalize(path);
+        path = Nexa.Core.PathIdentity.ResolveExistingFile(path);
         CheckPath(path);
         if (new FileInfo(path).Length > MaxArchive) throw new InvalidDataException("整合包超过 2 GiB。");
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, true);

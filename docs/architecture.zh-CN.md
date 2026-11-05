@@ -44,9 +44,15 @@ New native operations use unused numeric IDs and generated binary DTO codecs; th
 private service schema fingerprint changes with the coherent module build. Existing
 operation IDs and public Sidecar protocol/SDK contracts remain unchanged.
 
-LAN discovery is an explicit, cancellable, bounded multicast listen for Minecraft
-LAN advertisements; it does not create an Internet lobby or tunnel. Archive/NBT
-inspection uses entry, byte, recursion and text budgets and treats payloads as data.
+局域网发现是可取消、有界的 Minecraft 多播监听。服务器页显示期间自动发现，
+将唯一端点与已保存服务器并列显示，不写入 `servers.dat`。
+此工作区不提供通用文件／NBT 查看器、独立内容查看入口或服务器要求编辑表单。
+内部归档／NBT 解析继续执行条目数、字节数、递归和文本预算。
+
+用户选择的本地文件或归档，在打开、计算哈希和预览前，通过 Core 的有界路径解析器
+跟随有效文件链接或目录联接。提交时仍重新验证来源，归档条目和写入目标的链接校验
+保持严格。命名启动配置与临时覆盖控件仅在实例开发者模式显示。
+
 Exports stage output before atomic publication and never include account/session
 stores. Launcher-mediated launch scripts refresh identity through the launcher
 rather than embedding account tokens. Embedded launcher/runtime selection must be

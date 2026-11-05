@@ -1,3 +1,0 @@
-<nxml-dynamic>
-<Text Key="{data key}" Content="{data text}" Localize="false" Class="settings-custom-caption" />
-</nxml-dynamic>

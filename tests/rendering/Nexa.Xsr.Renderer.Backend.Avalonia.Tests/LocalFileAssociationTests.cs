@@ -41,7 +41,11 @@ internal static partial class Program
             {
                 string link = Path.Combine(directory, "link.json");
                 File.CreateSymbolicLink(link, file);
-                Reject<ArgumentException>(() => actions.OpenLocalFile(link));
+                actions.OpenLocalFile(link);
+                AssertEqual(2, invocations.Count);
+                AssertEqual(file, invocations[^1].ArgumentList.Single());
+                File.Delete(link); File.CreateSymbolicLink(link, Path.Combine(directory, "absent.json"));
+                Reject<FileNotFoundException>(() => actions.OpenLocalFile(link));
             }
             if (OperatingSystem.IsLinux())
             {
@@ -51,7 +55,7 @@ internal static partial class Program
                 Reject<ArgumentException>(() => actions.OpenLocalFile(fifo));
                 Reject<ArgumentException>(() => actions.OpenLocalFile("/dev/null"));
             }
-            AssertEqual(1, invocations.Count); // No denied input reaches the native process edge.
+            AssertEqual(OperatingSystem.IsWindows() ? 1 : 2, invocations.Count); // No denied input reaches the native process edge.
         }
         finally { window?.Close(); Directory.Delete(directory, true); }
 

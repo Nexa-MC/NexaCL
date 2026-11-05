@@ -18,7 +18,7 @@ public sealed class MinecraftLocalJarService(TaskCenterService tasks, XsrStateSt
 
     public static Task<LocalJarArtifact> InspectAsync(string path, CancellationToken token = default) => Task.Run(async () =>
     {
-        path = Path.GetFullPath(path);
+        path = Nexa.Core.PathIdentity.ResolveExistingFile(path);
         CheckPath(path);
         await using var stream = OpenArchive(path);
         string hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, token).ConfigureAwait(false));

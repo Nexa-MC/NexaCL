@@ -71,7 +71,7 @@ internal static partial class Program
         Wait(() => Draft("name", required: false) == "Unsaved A");
         fixture.Shell.Renderer.SetTextInputValue(Find("InstanceIdentityInput.name"), "Discard on navigation");
         Click("SettingsNav.servers", "ui.settings.section");
-        Wait(() => Find("InstanceIdentityInput.game-version", false).IsAssigned);
+        Wait(() => Find("ServersWorkspace", false).IsAssigned);
         Click("SettingsNav.overview", "ui.settings.section");
         Wait(() => Draft("name", required: false) == "Unsaved A");
         fixture.Shell.Renderer.SetTextInputValue(Find("InstanceIdentityInput.name"), "Must not leak to B");

@@ -556,7 +556,8 @@
   "Nexa.Xsr.Renderer.Backend.Avalonia": [
     "Nexa.Xsr.Renderer.Platform.Contracts",
     "Nexa.Xsr.Renderer.Artwork",
-    "Nexa.Xsr.Renderer"
+    "Nexa.Xsr.Renderer",
+    "Nexa.Core"
   ],
   "Nexa.Xsr.Renderer.Backend.Avalonia.Tests": [
     "Nexa.Xsr.Renderer.Backend.Avalonia",

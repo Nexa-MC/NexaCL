@@ -41,11 +41,12 @@ internal static partial class Program
         Emit(fixture.Intents, "ui.settings.section", Find("SettingsNav.game"));
         PumpUntil(() => Find("SettingsOption.instance.development-mode.true").IsAssigned);
         AssertAdvanced(false);
+        AssertFalse(Find("LaunchProfiles").IsAssigned);
         foreach (string page in new[] { "game", "mods", "resourcepacks", "saves", "screenshots", "servers", "trash" })
             AssertTrue(Find("SettingsNav." + page).IsAssigned);
         AssertFalse(Find("SettingsInherit.instance.development-mode").IsAssigned);
         Emit(fixture.Intents, "ui.settings.choice", Find("SettingsOption.instance.development-mode.true"));
-        PumpUntil(() => Find("SettingsNav.modpack").IsAssigned); AssertAdvanced(true);
+        PumpUntil(() => Find("SettingsNav.modpack").IsAssigned && Find("LaunchProfiles").IsAssigned); AssertAdvanced(true);
         Emit(fixture.Intents, "ui.settings.section", Find("SettingsNav.recovery"));
         PumpUntil(() => settings.SelectedSection == "recovery");
         AssertTrue(fixture.Foundation.Host.SettingsPolicy.Set(new("instance.development-mode", SettingsLayer.Instance,

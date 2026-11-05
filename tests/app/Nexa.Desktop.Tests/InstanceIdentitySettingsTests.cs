@@ -8,7 +8,7 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
-    private static void InstanceIdentityEditorWritesTypedMetadataAndShowsServerRequirements()
+    private static void InstanceIdentityEditorWritesTypedMetadataAndKeepsServerList()
     {
         string root = Path.Combine(Path.GetTempPath(), "nexacl-identity-ui-" + Guid.NewGuid().ToString("N"));
         string instance = Path.Combine(root, "versions", "identity"); Directory.CreateDirectory(instance);
@@ -41,11 +41,10 @@ internal static partial class Program
             AssertEqual(instance, launched); AssertEqual(instance, modified);
             Wait(() => Find("SettingsNav.servers", false).IsAssigned);
             Emit(fixture.Intents, "ui.settings.section", Find("SettingsNav.servers"));
-            Wait(() => Find("InstanceIdentityInput.game-version", false).IsAssigned);
-            fixture.Shell.Renderer.SetTextInputValue(Find("InstanceIdentityInput.game-version"), "1.19.4");
-            Emit(fixture.Intents, "ui.settings.instance-identity.action", Find("InstanceIdentitySave"));
-            Wait(() => Read().Server.ExpectedGameVersion == "1.19.4");
-            AssertTrue(Read().EnvironmentMismatches.Count > 0);
+            Wait(() => Find("ServersWorkspace", false).IsAssigned);
+            AssertFalse(Find("InstanceIdentity", false).IsAssigned);
+            AssertFalse(Find("InstanceIdentityInput.game-version", false).IsAssigned);
+            AssertFalse(Find("InstanceIdentityInput.login", false).IsAssigned);
             AssertEqual("Custom display", Read().Fields.DisplayName);
 
             InstanceIdentitySnapshot Read() => InstanceIdentityService.ReadAsync(new(instance)).GetAwaiter().GetResult();

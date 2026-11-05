@@ -30,7 +30,7 @@ internal static partial class Program
                         int length = await InstanceServerStatusService.ReadVarAsync(stream, timeout.Token); AssertTrue(length is > 0 and < 1024);
                         byte[] handshake = new byte[length]; await stream.ReadExactlyAsync(handshake, timeout.Token);
                         using var packet = new MemoryStream(handshake); AssertEqual(0, await InstanceServerStatusService.ReadVarAsync(packet, timeout.Token));
-                        AssertEqual(-1, await InstanceServerStatusService.ReadVarAsync(packet, timeout.Token));
+                        AssertEqual(767, await InstanceServerStatusService.ReadVarAsync(packet, timeout.Token));
                         byte[] request = new byte[2]; await stream.ReadExactlyAsync(request, timeout.Token); AssertTrue(request.SequenceEqual(new byte[] { 1, 0 }));
                         using var response = new MemoryStream();
                         if (oversized) InstanceServerStatusService.WriteVar(response, 262145);

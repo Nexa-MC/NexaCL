@@ -18,12 +18,15 @@ public static class InstanceServerStatusService
             || endpoint.UserInfo.Length != 0 || endpoint.AbsolutePath != "/" || endpoint.Query.Length != 0 || endpoint.Fragment.Length != 0 || endpoint.Port > 65535)
             throw new InvalidDataException("服务器地址无效。");
         int port = endpoint.Port < 0 ? 25565 : endpoint.Port;
-        var clock = Stopwatch.StartNew(); using var stop = CancellationTokenSource.CreateLinkedTokenSource(token); stop.CancelAfter(TimeSpan.FromSeconds(3));
+        int? clientProtocol = await InstanceOfflineReadinessService.ReadClientProtocolAsync(query.InstanceDirectory, token).ConfigureAwait(false);
+        var clock = Stopwatch.StartNew(); using var stop = CancellationTokenSource.CreateLinkedTokenSource(token); stop.CancelAfter(TimeSpan.FromSeconds(8));
         try
         {
             using var client = new TcpClient(); await client.ConnectAsync(endpoint.DnsSafeHost, port, stop.Token).ConfigureAwait(false);
             await using var stream = client.GetStream(); using var packet = new MemoryStream();
-            WriteVar(packet, 0); WriteVar(packet, -1); byte[] host = Encoding.UTF8.GetBytes(endpoint.DnsSafeHost); WriteVar(packet, host.Length); packet.Write(host);
+            // A negative sentinel is rejected by some Java server proxies. The fallback
+            // is a valid status-handshake protocol, not an inferred client version.
+            WriteVar(packet, 0); WriteVar(packet, clientProtocol ?? 767); byte[] host = Encoding.UTF8.GetBytes(endpoint.DnsSafeHost); WriteVar(packet, host.Length); packet.Write(host);
             byte[] portBytes = new byte[2]; BinaryPrimitives.WriteUInt16BigEndian(portBytes, (ushort)port); packet.Write(portBytes); WriteVar(packet, 1);
             using var request = new MemoryStream(); WriteVar(request, (int)packet.Length); packet.WriteTo(request); request.Write([1, 0]);
             await stream.WriteAsync(request.ToArray(), stop.Token).ConfigureAwait(false);
@@ -50,12 +53,20 @@ public static class InstanceServerStatusService
             return new(true, description, version, online, max, clock.ElapsedMilliseconds)
             {
                 ServerProtocol = serverProtocol,
-                ClientProtocol = await InstanceOfflineReadinessService.ReadClientProtocolAsync(query.InstanceDirectory, token).ConfigureAwait(false),
+                ClientProtocol = clientProtocol,
             };
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
-        catch (Exception error) when (error is IOException or SocketException or OperationCanceledException or JsonException or InvalidDataException)
-        { return new(false, "无法连接或未返回有效状态", "", null, null, clock.ElapsedMilliseconds); }
+        catch (SocketException error) when (error.SocketErrorCode is SocketError.HostNotFound or SocketError.NoData or SocketError.TryAgain)
+        { return new(false, "无法解析服务器域名，请检查 DNS 设置", "", null, null, clock.ElapsedMilliseconds); }
+        catch (SocketException error) when (error.SocketErrorCode == SocketError.ConnectionRefused)
+        { return new(false, "服务器拒绝连接，请检查地址和端口", "", null, null, clock.ElapsedMilliseconds); }
+        catch (OperationCanceledException)
+        { return new(false, "服务器连接或状态响应超时", "", null, null, clock.ElapsedMilliseconds); }
+        catch (Exception error) when (error is JsonException or InvalidDataException)
+        { return new(false, "服务器返回了无法解析的 Java 版状态", "", null, null, clock.ElapsedMilliseconds); }
+        catch (Exception error) when (error is IOException or SocketException)
+        { return new(false, "服务器连接中断或未返回状态", "", null, null, clock.ElapsedMilliseconds); }
     }
     private static string Description(JsonElement value, int depth)
     {

@@ -81,6 +81,8 @@ internal static partial class Program
                     {
                         using var client = await listener.AcceptTcpClientAsync(stop.Token); await using var stream = client.GetStream();
                         int length = await InstanceServerStatusService.ReadVarAsync(stream, stop.Token); byte[] handshake = new byte[length]; await stream.ReadExactlyAsync(handshake, stop.Token);
+                        using var packet = new MemoryStream(handshake); AssertEqual(0, await InstanceServerStatusService.ReadVarAsync(packet, stop.Token));
+                        AssertEqual(knownClient ? 763 : 767, await InstanceServerStatusService.ReadVarAsync(packet, stop.Token));
                         byte[] request = new byte[2]; await stream.ReadExactlyAsync(request, stop.Token); AssertTrue(request.SequenceEqual(new byte[] { 1, 0 }));
                         string version = protocol is { } value ? "{\"name\":\"Untrusted name\",\"protocol\":" + value + "}" : "{\"name\":\"Same name proves nothing\"}";
                         byte[] json = Encoding.UTF8.GetBytes("{\"description\":\"Fixture\",\"version\":" + version + "}");

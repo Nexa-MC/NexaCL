@@ -12,6 +12,7 @@ internal static partial class Program
     {
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
         string instance = Path.GetFullPath("desktop-profile-instance");
+        EnableInstanceDevelopmentMode(fixture, instance);
         var policy = fixture.Foundation.Host.SettingsPolicy;
         var queries = new XsrQueryRouterBuilder();
         Forward<SettingsCatalogQuery, SettingsCatalogSnapshot>(SettingsPolicyContract.CatalogQuery);

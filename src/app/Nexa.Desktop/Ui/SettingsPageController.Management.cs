@@ -82,7 +82,7 @@ internal sealed partial class SettingsPageController
     private void CancelManagementRead()
     {
         RetireContentScope();
-        RetireInspection(); CloseScreenshotPreview(); CancelScreenshotThumbnails();
+        CloseScreenshotPreview(); CancelScreenshotThumbnails();
         CancelOnlineList(); CancelServers(); CancelExport(); CancelModpackUpdate(); CancelFileWorkspace(); CancelWorldHealth(); CancelWorldDetails(); CancelInstanceDiagnostics();
         CancelAdvancedLaunchDiagnostics();
         ObserveRetiredInstanceToolRead(_managementRead);
@@ -267,13 +267,12 @@ internal sealed partial class SettingsPageController
         else if (_selected == "recovery") { BuildRecoveryStorage(snapshot); BuildRecoveryTimeline(snapshot); }
         else if (_selected == "trash") BuildContentTrash(snapshot);
         else if (_selected == "contentgraph") BuildContentGraph(snapshot);
-        else if (_selected == "inspector") BuildInspectionPage(snapshot);
         else if (_selected == "files") BuildInstanceFiles();
         else if (_selected == "diagnostics") BuildInstanceDiagnostics();
         else if (_selected == "modpack") BuildModpackExport(snapshot);
         else if (_selected == "servers") BuildServers();
         BuildOfflineReadiness(snapshot);
-        if (_selected is "overview" or "servers") BuildInstanceIdentity();
+        if (_selected == "overview") BuildInstanceIdentity();
         if (_selected == "diagnostics") BuildAdvancedLaunchDiagnostics();
         _shell.Tree.GetComponent<XsrUiScroll>(_sections)!.OffsetY = _scrollPositions.GetValueOrDefault(_selected);
         _shell.Tree.MarkDirty(_sections, XsrUiDirtyKinds.Layout | XsrUiDirtyKinds.Paint);

@@ -21,7 +21,7 @@ public sealed partial class AvaloniaUiPlatformActions
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         if (path.Length > 32768 || path.Any(char.IsControl) || !Path.IsPathFullyQualified(path))
             throw new ArgumentException("Only absolute local file paths without control characters are supported.", nameof(path));
-        string fullPath = Path.GetFullPath(path);
+        string fullPath = Nexa.Core.PathIdentity.ResolveExistingFile(path);
         if (!File.Exists(fullPath)) throw new FileNotFoundException("The local file does not exist.", fullPath);
         FileAttributes attributes = File.GetAttributes(fullPath);
         if ((attributes & (FileAttributes.Directory | FileAttributes.Device | FileAttributes.ReparsePoint)) != 0 || !IsRegularLocalFile(fullPath))

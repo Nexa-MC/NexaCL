@@ -24,16 +24,34 @@ internal static partial class Program
                     AssertTrue(Nexa.Core.PathIdentity.IsMacOSSystemDirectoryAlias(alias));
                 }
             }
+            if (OperatingSystem.IsWindows())
+            {
+                string junction = Path.Combine(temporary, "source-junction");
+                var command = new System.Diagnostics.ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "cmd.exe"))
+                { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+                foreach (string argument in new[] { "/d", "/c", "mklink", "/J", junction, physical }) command.ArgumentList.Add(argument);
+                using var process = System.Diagnostics.Process.Start(command)!;
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                await process.WaitForExitAsync(timeout.Token); AssertEqual(0, process.ExitCode);
+                AssertEqual(pack, (await MinecraftModpackArchive.InspectAsync(Path.Combine(junction, "pack.mrpack"))).Path);
+                AssertEqual(jar, (await MinecraftLocalJarService.InspectAsync(Path.Combine(junction, "patch.jar"))).Path);
+            }
             if (!OperatingSystem.IsWindows())
             {
                 string directoryLink = Path.Combine(temporary, "linked"), packLink = Path.Combine(temporary, "linked.mrpack"), jarLink = Path.Combine(temporary, "linked.jar");
                 Directory.CreateSymbolicLink(directoryLink, physical);
                 File.CreateSymbolicLink(packLink, pack); File.CreateSymbolicLink(jarLink, jar);
                 AssertFalse(Nexa.Core.PathIdentity.IsMacOSSystemDirectoryAlias(directoryLink));
-                await TrustRejectsAsync<IOException>(() => MinecraftModpackArchive.InspectAsync(Path.Combine(directoryLink, "pack.mrpack")));
-                await TrustRejectsAsync<IOException>(() => MinecraftLocalJarService.InspectAsync(Path.Combine(directoryLink, "patch.jar")));
-                await TrustRejectsAsync<IOException>(() => MinecraftModpackArchive.InspectAsync(packLink));
-                await TrustRejectsAsync<IOException>(() => MinecraftLocalJarService.InspectAsync(jarLink));
+                string chained = Path.Combine(temporary, "chained"); Directory.CreateSymbolicLink(chained, "linked");
+                AssertEqual(pack, (await MinecraftModpackArchive.InspectAsync(Path.Combine(chained, "pack.mrpack"))).Path);
+                string cycle = Path.Combine(temporary, "cycle.mrpack"); File.CreateSymbolicLink(cycle, cycle);
+                await TrustRejectsAsync<IOException>(() => MinecraftModpackArchive.InspectAsync(cycle));
+                string missing = Path.Combine(temporary, "missing.jar"); File.CreateSymbolicLink(missing, Path.Combine(temporary, "absent.jar"));
+                await TrustRejectsAsync<IOException>(() => MinecraftLocalJarService.InspectAsync(missing));
+                AssertEqual(pack, (await MinecraftModpackArchive.InspectAsync(Path.Combine(directoryLink, "pack.mrpack"))).Path);
+                AssertEqual(jar, (await MinecraftLocalJarService.InspectAsync(Path.Combine(directoryLink, "patch.jar"))).Path);
+                AssertEqual(pack, (await MinecraftModpackArchive.InspectAsync(packLink)).Path);
+                AssertEqual(jar, (await MinecraftLocalJarService.InspectAsync(jarLink)).Path);
             }
         }
         finally { Directory.Delete(temporary, true); }

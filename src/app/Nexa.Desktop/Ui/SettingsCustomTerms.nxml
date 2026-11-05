@@ -4,10 +4,6 @@
 <Text Key="identity.shared" Content="游戏目录：共享根目录（点击改为隔离）" />
 <Text Key="identity.starred" Content="已收藏 · 点击取消" />
 <Text Key="identity.unstarred" Content="收藏此实例" />
-<Text Key="identity.offline" Content="允许离线档案 · 点击收紧" />
-<Text Key="identity.online" Content="要求在线账户 · 点击允许离线" />
-<Text Key="identity.locked" Content="已锁定" />
-<Text Key="identity.editable" Content="可编辑" />
 <Text Key="identity.notLaunched" Content="本次启动器尚未启动此实例" />
 <Text Key="identity.healthy" Content="离线依赖校验通过" />
 <Text Key="identity.unhealthy" Content="发现缺失或校验问题" />
@@ -18,7 +14,6 @@
 <Text Key="identity.saved" Content="实例信息已保存。" />
 <Text Key="identity.permissions" Content="请检查文件权限。" />
 <Text Key="identity.readFailed" Content="无法读取实例信息；文件已保留。" />
-<Text Key="identity.invalidLogin" Content="请选择有效的登录要求。" />
 <Text Key="profile.temporary" Content="当前编辑：临时覆盖（结束后撤销）" />
 <Text Key="profile.instance" Content="当前编辑：实例设置" />
 <Text Key="profile.new" Content="新启动配置" />

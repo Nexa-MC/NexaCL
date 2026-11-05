@@ -62,7 +62,7 @@ internal sealed partial class SettingsPageController
 
     private void BuildLaunchProfiles()
     {
-        if (_instance is null || _selected != "game") return;
+        if (_instance is null || _selected != "game" || !InstanceDevelopmentMode) return;
         _launchProfilesGroup = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsCustomLaunchProfiles.d.nxml", LaunchProfileProjection()));
         BuildLaunchProfileControls();
     }
@@ -155,7 +155,7 @@ internal sealed partial class SettingsPageController
 
     private bool LaunchProfileWriteReady => _writing is null && LaunchProfileSnapshotReady;
 
-    private bool LaunchProfileActionReady(XsrUiEntityId source) => _shell.Tree.IsAlive(source)
+    private bool LaunchProfileActionReady(XsrUiEntityId source) => InstanceDevelopmentMode && _shell.Tree.IsAlive(source)
         && (LaunchProfileWriteReady || _shell.Tree.Name(source) == "LaunchProfilesRetry" && _writing is null);
 
     private void UpdateLaunchProfileAdmission()

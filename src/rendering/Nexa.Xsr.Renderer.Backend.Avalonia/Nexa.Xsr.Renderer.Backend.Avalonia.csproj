@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../foundation/Nexa.Core/Nexa.Core.csproj" />
     <Compile Include="../../platform/Nexa.Platform.Runtime/Processes/MinecraftWorldSessionLease.cs" Link="Platform/AvaloniaUiWorldEditLease.cs" />
     <InternalsVisibleTo Include="Nexa.Native.Window" />
     <EmbeddedResource Include="Assets/Avatars/Steve.png" />

@@ -57,9 +57,19 @@ New native operations use unused numeric IDs and generated binary DTO codecs; th
 private service schema fingerprint changes with the coherent module build. Existing
 operation IDs and public Sidecar protocol/SDK contracts remain unchanged.
 
-LAN discovery is an explicit, cancellable, bounded multicast listen for Minecraft
-LAN advertisements; it does not create an Internet lobby or tunnel. Archive/NBT
-inspection uses entry, byte, recursion and text budgets and treats payloads as data.
+LAN discovery is a cancellable, bounded multicast listen for Minecraft LAN
+advertisements. The server page starts discovery while visible and projects
+unique discovered endpoints alongside saved servers without writing them to
+`servers.dat`. Generic file/NBT viewer controls, standalone inspection navigation
+and server-requirement editing are not exposed in this workspace. Internal
+archive/NBT inspection retains its entry, byte, recursion and text budgets.
+
+User-selected local file and archive paths resolve existing file/directory links
+through Core's bounded path resolver before opening, hashing or preview. Source
+revalidation still applies at commit; archive entry and destination link checks
+remain strict. Named launch-profile and temporary-override controls are shown
+only in instance development mode.
+
 Exports stage output before atomic publication and never include account/session
 stores. Launcher-mediated launch scripts refresh identity through the launcher
 rather than embedding account tokens. Embedded launcher/runtime selection must be
