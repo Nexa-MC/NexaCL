@@ -92,6 +92,11 @@ internal static partial class Program
             Environment.ExitCode = RunNativeTaskLayoutPreview(taskLayoutOutput);
             return;
         }
+        if (args is ["--native-liuli-preview", var liuliPackageMode, var liuliPackageDirectory, var liuliPackage])
+        {
+            Environment.ExitCode = RunNativeThemePreview(liuliPackageMode, liuliPackageDirectory, liuliOnly: true, liuliPackage: liuliPackage);
+            return;
+        }
         if (args is ["--native-liuli-preview", var liuliMode, var liuliDirectory])
         {
             Environment.ExitCode = RunNativeThemePreview(liuliMode, liuliDirectory, liuliOnly: true);

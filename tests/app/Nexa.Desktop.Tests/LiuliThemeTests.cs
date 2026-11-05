@@ -13,6 +13,8 @@ internal static partial class Program
         string root = Path.Combine(AppContext.BaseDirectory, "Themes", "Liuli");
         using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "theme.json")));
         AssertEqual("nexa.liuli", manifest.RootElement.GetProperty("id").GetString()!);
+        AssertEqual("1.0.1", manifest.RootElement.GetProperty("version").GetString()!);
+        AssertFalse(manifest.RootElement.GetProperty("appearance").GetProperty("resources").TryGetProperty("background", out _));
         var options = manifest.RootElement.GetProperty("options").EnumerateArray().ToDictionary(
             option => option.GetProperty("id").GetString()!, option =>
             {
@@ -34,6 +36,12 @@ internal static partial class Program
             AssertFalse(card.Width.HasValue); AssertFalse(card.Height.HasValue); AssertFalse(card.Padding.HasValue);
             AssertFalse(card.BlurRadius.HasValue);
             AssertEqual((byte)0, Style("ContentHost", "Host", ["layout-Shell-14"]).Background!.Value.Alpha);
+            // The package itself targets the window root. Alpha 24's generated
+            // appearance-background rule must never be needed to place its wallpaper.
+            var wallpaper = Style("Shell", "Root").BackgroundImage!;
+            AssertEqual("asset(\"assets/liuli.svg\")", wallpaper.ResourceId);
+            AssertEqual(.38d, wallpaper.Opacity);
+            AssertTrue(Style("ContentHost", "Host", ["layout-Shell-14"]).BackgroundImage is null);
             var text = Style("Text", "AccountName");
             var primary = Style("Button", "LaunchButton");
             AssertTrue(Contrast(text.Foreground!.Value, dark ? new(25, 45, 59) : new(247, 251, 252)) >= 7);
@@ -67,6 +75,14 @@ internal static partial class Program
             AssertTrue(Style("StackPanel", "Dialog", ["feedback-dialog-card"]).Animations is not { Count: > 0 });
         }
         LiuliMotionSettlesAndRespectsReducedMotion(program);
+        foreach (int percent in new[] { 0, 38, 70 })
+        {
+            options["wallpaper-opacity"] = percent.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var opacityProgram = NssThemeCompiler.Compile(source, new NssThemeCompileInputs { Options = options });
+            AssertEqual(percent / 100d, opacityProgram.Compute(new(default, new("Shell", "Root", [], "Shell"), [], default,
+                new(800, 740), new("Windows", true), new XsrUiVisualStyle().Snapshot())).BackgroundImage!.Opacity);
+        }
+        options["wallpaper-opacity"] = "38";
         options["motion"] = "false";
         var quiet = NssThemeCompiler.Compile(source, new NssThemeCompileInputs { Options = options });
         AssertTrue(quiet.Compute(new(default, new("StackPanel", "CardAccount", [], "Group"), [], default,

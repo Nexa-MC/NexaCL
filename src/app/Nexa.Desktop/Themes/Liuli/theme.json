@@ -1,7 +1,7 @@
 {
   "format": "NTP/1",
   "id": "nexa.liuli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": {
     "en-US": "Liuli",
     "zh-CN": "琉璃",
@@ -13,6 +13,7 @@
     "styles/main.nss",
     "styles/pages.nss",
     "styles/tools.nss",
+    "styles/wallpaper.nss",
     "styles/motion.nss"
   ],
   "requiredCapabilities": [
@@ -82,18 +83,6 @@
       "control": "Slider"
     },
     {
-      "id": "background-path",
-      "kind": "File",
-      "default": "",
-      "label": {
-        "en-US": "Custom wallpaper",
-        "zh-CN": "自选壁纸",
-        "zh-TW": "自選桌布"
-      },
-      "group": "background",
-      "resourceKind": "Image"
-    },
-    {
       "id": "motion",
       "kind": "Boolean",
       "default": true,
@@ -110,17 +99,6 @@
     "accentColor": "#216f82",
     "splashMotion": "fade",
     "windowMaterial": "acrylic",
-    "resources": {
-      "background": {
-        "expression": "asset(assets/liuli.svg)",
-        "kind": "Image",
-        "required": false,
-        "fallback": "none"
-      }
-    },
-    "properties": {
-      "background-fit": "cover",
-      "background-opacity": "option(wallpaper-opacity)"
-    }
+    "resources": {}
   }
 }

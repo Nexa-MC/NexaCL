@@ -2,7 +2,7 @@
 
 独立编写的 NTP/1 主题，视觉参考 [QQNT 琉璃](https://github.com/LilycleHeart/qqnt-liuli-theme)：柔和壁纸、玻璃分层、同色系强调色与克制的高光。未复制该项目的源代码或图片，也不是其官方移植。
 
-浅色、深色随 NexaCL 的外观模式切换；可调强调色、卡片圆角、壁纸可见度，并可选择本地壁纸。未授权外部文件时使用包内原创 SVG。窗口磨砂使用平台可用的 Acrylic，不对控件本身施加模糊；不支持时降级为普通材质。
+浅色、深色随 NexaCL 的外观模式切换；可调强调色、卡片圆角、包内壁纸可见度。壁纸由 `styles/wallpaper.nss` 直接绘制到 Shell，兼容 Alpha 24，不依赖后续宿主对外观背景槽位的修复。NSS/1 不支持算术表达式，因此用有限规则将 0–70 的整数百分比映射为透明度。此版本不提供自选壁纸入口，避免旧宿主将它画进内容区。窗口磨砂使用平台可用的 Acrylic，不对控件本身施加模糊；不支持时降级为普通材质。
 
 主页卡片以 260/300/340ms 错峰淡入上移，最大位移 8px；安装入口以 260/300ms 错峰展开。悬停高光、按压回弹、胶囊展开、滑块、弹窗开合和通知重排沿用宿主可中断的动画，从当前显示位置继续；不再叠加会在快速操作时重置的主题缩放。设置和列表保留宿主逐控件入场，不给复用的列表行添加主题进场动画。增强动效可单独关闭；系统或启动器启用减少动态效果后直接呈现最终状态，动画结束后不持续刷新。
 
@@ -23,8 +23,8 @@
 
 当前不包含 QQNT 项目的 MCU 自动壁纸取色。强调色通过主题选项设置；壁纸与颜色均在本地处理，主题不执行脚本或网络请求。
 
-安装：设置 → 外观 → 主题 → 导入主题包，选择 NexaCL-Liuli-1.0.0.ntp，然后启用。开发时也可导入此目录。
+安装：设置 → 外观 → 主题 → 导入主题包，选择 NexaCL-Liuli-1.0.1.ntp，然后启用。相同 ID 的 1.0.0 会升级，已有强调色、圆角、可见度和动效选项保留。开发时也可导入此目录。
 
-打包：`python eng/themes/pack.py src/app/Nexa.Desktop/Themes/Liuli --output artifacts/themes/NexaCL-Liuli-1.0.0.ntp`。
+打包：`python eng/themes/pack.py src/app/Nexa.Desktop/Themes/Liuli --output artifacts/themes/NexaCL-Liuli-1.0.1.ntp`。
 
 本目录的 NSS、SVG 及说明由 NexaCL 项目原创，遵循项目 Apache-2.0 许可证。Reference project: LilycleHeart/qqnt-liuli-theme (visual inspiration only; no upstream files redistributed).

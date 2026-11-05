@@ -32,10 +32,10 @@ internal static partial class Program
 
     // Native theme IO, services, session, controllers and decoders are real. Only
     // game/account/instance data and explicit picker selections are isolated fixtures.
-    private static int RunNativeThemePreview(string mode, string outputDirectory, bool optionsOnly = false, bool liuliOnly = false) =>
-        AvaloniaUiStartupSession.RunApplicationOnMainThread(() => RunNativeThemePreviewAsync(mode, Path.GetFullPath(outputDirectory), optionsOnly, liuliOnly));
+    private static int RunNativeThemePreview(string mode, string outputDirectory, bool optionsOnly = false, bool liuliOnly = false, string? liuliPackage = null) =>
+        AvaloniaUiStartupSession.RunApplicationOnMainThread(() => RunNativeThemePreviewAsync(mode, Path.GetFullPath(outputDirectory), optionsOnly, liuliOnly, liuliPackage));
 
-    private static async Task<int> RunNativeThemePreviewAsync(string mode, string outputDirectory, bool optionsOnly, bool liuliOnly)
+    private static async Task<int> RunNativeThemePreviewAsync(string mode, string outputDirectory, bool optionsOnly, bool liuliOnly, string? liuliPackage)
     {
         if (mode is not ("light" or "dark")) throw new ArgumentException("Expected light or dark.", nameof(mode));
         Directory.CreateDirectory(outputDirectory);
@@ -135,6 +135,8 @@ internal static partial class Program
                     token.ThrowIfCancellationRequested(); pickerCount++;
                     if (request.Kind == ThemeOptionKind.Directory && request.ResourceKind is null)
                         return Task.FromResult<IReadOnlyList<string>>([nextImport ?? throw new InvalidOperationException("Missing explicit directory fixture selection.")]);
+                    if (request.Kind == ThemeOptionKind.File && request.ResourceKind is null && liuliPackage is not null)
+                        return Task.FromResult<IReadOnlyList<string>>([Path.GetFullPath(liuliPackage)]);
                     if (request.Kind == ThemeOptionKind.File && request.ResourceKind == ThemeResourceKind.Image)
                         return Task.FromResult<IReadOnlyList<string>>([externalImage]);
                     if (request.Kind == ThemeOptionKind.Directory && request.ResourceKind == ThemeResourceKind.Audio)
@@ -199,8 +201,10 @@ internal static partial class Program
             if (liuliOnly)
             {
                 nextImport = Path.Combine(AppContext.BaseDirectory, "Themes", "Liuli");
-                await Activate("Theme.ImportDirectory");
+                await Activate(liuliPackage is null ? "Theme.ImportDirectory" : "Theme.ImportPackage");
                 await Eventually(() => PresentedId() == "nexa.liuli" && !themes.Snapshot.Busy);
+                if (liuliPackage is not null)
+                    AssertEqual(ThemeSourceKind.Package, themes.Snapshot.Catalogue.Themes.Single(entry => entry.SourceIdentity == themes.Snapshot.PresentedSourceIdentity).SourceKind);
                 await NavigateLaunch();
                 await startup.InvokeAsync(() =>
                 {
