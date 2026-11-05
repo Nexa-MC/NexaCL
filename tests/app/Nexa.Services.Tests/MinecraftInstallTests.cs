@@ -65,11 +65,18 @@ internal static partial class Program
             int downloaded = clientDownloads; AssertTrue(downloaded > 0);
             online = true; AssertTrue(fixture.Tasks.RequestRetry(id));
             await WaitForRetryEntryAsync(fixture.Tasks, id, entry => entry.State == TaskCenterEntryState.Finished);
+            // The finished card is published before the retry owner removes its staging
+            // directory. Drain the owner before inspecting events or deleting the fixture.
+            await fixture.Tasks.DisposeAsync();
             AssertEqual(downloaded, clientDownloads);
             AssertEqual("JARCONTENT", await File.ReadAllTextAsync(Path.Combine(root, "versions", "1.20.1", "1.20.1.jar")));
             AssertEqual(1, fixture.InstalledRoots.Count);
         }
-        finally { Directory.Delete(root, true); }
+        finally
+        {
+            await fixture.Tasks.DisposeAsync();
+            Directory.Delete(root, true);
+        }
     }
 
     private sealed class FakeMetadata : IMinecraftInstallMetadataSource, IVerifiedAssetIndexSource
