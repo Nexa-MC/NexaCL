@@ -27,14 +27,29 @@ internal static partial class Program
             if (OperatingSystem.IsWindows())
             {
                 string junction = Path.Combine(temporary, "source-junction");
-                var command = new System.Diagnostics.ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "cmd.exe"))
-                { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
-                foreach (string argument in new[] { "/d", "/c", "mklink", "/J", junction, physical }) command.ArgumentList.Add(argument);
-                using var process = System.Diagnostics.Process.Start(command)!;
-                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-                await process.WaitForExitAsync(timeout.Token); AssertEqual(0, process.ExitCode);
-                AssertEqual(pack, (await MinecraftModpackArchive.InspectAsync(Path.Combine(junction, "pack.mrpack"))).Path);
-                AssertEqual(jar, (await MinecraftLocalJarService.InspectAsync(Path.Combine(junction, "patch.jar"))).Path);
+                try
+                {
+                    var command = new System.Diagnostics.ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "cmd.exe"))
+                    { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+                    foreach (string argument in new[] { "/d", "/c", "mklink", "/J", junction, physical }) command.ArgumentList.Add(argument);
+                    using var process = System.Diagnostics.Process.Start(command)!;
+                    using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    await process.WaitForExitAsync(timeout.Token); AssertEqual(0, process.ExitCode);
+                    AssertEqual(pack, (await MinecraftModpackArchive.InspectAsync(Path.Combine(junction, "pack.mrpack"))).Path);
+                    AssertEqual(jar, (await MinecraftLocalJarService.InspectAsync(Path.Combine(junction, "patch.jar"))).Path);
+                }
+                catch (Exception error)
+                {
+                    Console.Error.WriteLine("Windows junction source validation failed: " + error);
+                    throw;
+                }
+                finally
+                {
+                    // Remove only the junction before recursive fixture cleanup.
+                    // Recursive deletion can treat its reparse metadata as a volume mount.
+                    if (Directory.Exists(junction)) Directory.Delete(junction);
+                }
+                Console.WriteLine("PASS: Windows archive sources resolve and unlink directory junctions");
             }
             if (!OperatingSystem.IsWindows())
             {
