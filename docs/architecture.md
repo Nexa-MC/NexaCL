@@ -25,8 +25,8 @@ Update architecture documentation before changing a public contract or owner, th
 ## Account file upgrades
 
 Accounts owns normalization of persisted profiles. Schema-1 documents written before
-offline textures were introduced may omit those fields or contain null values; JSON
-ingress maps those optional values to empty textures before service validation. Reading
+offline textures were introduced may omit optional fields or contain null values; JSON
+ingress restores declared text defaults and empty textures before service validation. Reading
 an encrypted profile does not rewrite its bytes. Oversized or invalid stored values
 leave the roster unavailable and preserve the source instead of aborting startup.
 Native account failures report type, status and stack through the existing log bridge;

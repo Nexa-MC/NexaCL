@@ -37,6 +37,13 @@ internal static partial class Program
                     AssertEqual(1, accounts.GetViews().Count);
                     var profile = accounts.GetProfile(0).Value;
                     AssertEqual("upgrade-private-token", profile.AccessToken);
+                    AssertEqual("", profile.Info);
+                    AssertEqual("", profile.Logo);
+                    AssertEqual("lucide/user", profile.SvgIcon);
+                    AssertEqual("", profile.AuthServer);
+                    AssertEqual("", profile.RefreshToken);
+                    AssertEqual("", profile.ProviderAccessToken);
+                    AssertEqual("", profile.ClientToken);
                     AssertTrue(profile.OfflineSkinPng.SequenceEqual(skin));
                     AssertTrue(profile.OfflineCapePng.SequenceEqual(cape));
                 }

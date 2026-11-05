@@ -23,6 +23,15 @@ internal sealed partial class LaunchProfileJsonContext : JsonSerializerContext
         {
             Profiles = profiles.Profiles.Select(profile => profile with
             {
+                Info = profile.Info ?? "",
+                Uuid = profile.Uuid ?? "",
+                Logo = profile.Logo ?? "",
+                SvgIcon = profile.SvgIcon ?? "lucide/user",
+                AuthServer = profile.AuthServer ?? "",
+                AccessToken = profile.AccessToken ?? "",
+                RefreshToken = profile.RefreshToken ?? "",
+                ProviderAccessToken = profile.ProviderAccessToken ?? "",
+                ClientToken = profile.ClientToken ?? "",
                 OfflineSkinPng = profile.OfflineSkinPng ?? [],
                 OfflineCapePng = profile.OfflineCapePng ?? []
             }).ToArray()
