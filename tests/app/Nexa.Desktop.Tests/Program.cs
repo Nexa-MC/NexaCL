@@ -500,6 +500,7 @@ internal static partial class Program
         ("install catalog checks bridge selection and cleanup", InstallCatalogChecksBridgeSelection),
         ("install catalog returns to selected game and loader", InstallCatalogReturnsToSelectedGameAndLoader),
         ("install catalog virtualizes and prefetches off UI thread", InstallCatalogVirtualizesAndPrefetchesOffUiThread),
+        ("InstallCatalogRetryRemainsActionableAfterStatusSplit", InstallCatalogRetryRemainsActionableAfterStatusSplit),
         ("Windows property store roundtrips the game AUMID", WindowPropertyStoreRoundTripsAppId),
         ("version click returns immediately and double click opens directory", VersionClickReturnsImmediatelyAndDoubleClickOpensDirectory),
         ("version transfer selection supports toggle range and filter cleanup", VersionTransferSelectionSupportsRanges),

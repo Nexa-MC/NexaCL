@@ -450,7 +450,7 @@ internal static partial class Program
 
     private sealed class NativeNxmlSettingsHarness : IDisposable
     {
-        internal LaunchPageFixture Fixture { get; } = new(new ImmediateInstanceSource([]), addProfile: true, installSource: new NativeNxmlPreviewInstallSource());
+        internal LaunchPageFixture Fixture { get; }
         internal SettingsPageController Global { get; }
         internal SettingsPageController Instance { get; }
         internal string InstanceDirectory { get; }
@@ -464,8 +464,10 @@ internal static partial class Program
         private readonly InstanceContentEntry[] _screenshots;
         private readonly InstanceManagementSnapshot _snapshot;
 
-        internal NativeNxmlSettingsHarness()
+        internal NativeNxmlSettingsHarness(bool liuliStates = false)
         {
+            Fixture = new(new ImmediateInstanceSource([]), addProfile: true,
+                installSource: new NativeNxmlPreviewInstallSource(holdForge: liuliStates), memoryPort: liuliStates ? new CardMemoryPort() : null);
             InstanceDirectory = Path.Combine(Fixture.TemporaryDirectory, "fixture-instance");
             string screenshots = Path.Combine(InstanceDirectory, "screenshots"); Directory.CreateDirectory(screenshots);
             _screenshots = Enumerable.Range(0, 12).Select(index =>
@@ -529,8 +531,9 @@ internal static partial class Program
         public void Dispose() { Instance.Dispose(); Global.Dispose(); Fixture.Dispose(); }
     }
 
-    private sealed class NativeNxmlPreviewInstallSource : IInstallCatalogSource
+    private sealed class NativeNxmlPreviewInstallSource(bool holdForge = false) : IInstallCatalogSource
     {
+        private readonly TaskCompletionSource<IReadOnlyList<InstallCatalogVersion>> _forge = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public Task<IReadOnlyList<InstallCatalogVersion>> GetGamesAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
@@ -540,6 +543,7 @@ internal static partial class Program
         public Task<IReadOnlyList<InstallCatalogVersion>> GetLoadersAsync(InstallLoader loader, string game, CancellationToken token)
         {
             token.ThrowIfCancellationRequested(); AssertEqual("1.21.1", game);
+            if (holdForge && loader == InstallLoader.Forge) return _forge.Task.WaitAsync(token);
             return Task.FromResult<IReadOnlyList<InstallCatalogVersion>>(loader == InstallLoader.Fabric
                 ? [new("0.16.10", "controlled Fabric <metadata> {state private}"), new("0.16.9", "controlled Fabric metadata")]
                 : []);

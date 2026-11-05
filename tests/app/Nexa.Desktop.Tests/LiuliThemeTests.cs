@@ -13,7 +13,7 @@ internal static partial class Program
         string root = Path.Combine(AppContext.BaseDirectory, "Themes", "Liuli");
         using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "theme.json")));
         AssertEqual("nexa.liuli", manifest.RootElement.GetProperty("id").GetString()!);
-        AssertEqual("1.0.1", manifest.RootElement.GetProperty("version").GetString()!);
+        AssertEqual("1.0.2", manifest.RootElement.GetProperty("version").GetString()!);
         AssertFalse(manifest.RootElement.GetProperty("appearance").GetProperty("resources").TryGetProperty("background", out _));
         var options = manifest.RootElement.GetProperty("options").EnumerateArray().ToDictionary(
             option => option.GetProperty("id").GetString()!, option =>
@@ -40,7 +40,16 @@ internal static partial class Program
             // appearance-background rule must never be needed to place its wallpaper.
             var wallpaper = Style("Shell", "Root").BackgroundImage!;
             AssertEqual("asset(\"assets/liuli.svg\")", wallpaper.ResourceId);
-            AssertEqual(.38d, wallpaper.Opacity);
+            AssertEqual(dark ? .095d : .38d, wallpaper.Opacity);
+            var status = Style("Button", "PendingForge", ["launch-install-catalog-status"], XsrUiThemeInteractionState.Disabled);
+            AssertEqual(1d, status.Opacity!.Value);
+            AssertTrue(Contrast(status.Foreground!.Value, dark ? new(61, 71, 82) : new(235, 243, 249)) >= 4.5);
+            var clean = Style("Button", "MemoryClean", ["launch-memory-clean"]);
+            AssertTrue(clean.Background == Style("Button", "InstanceListButton").Background);
+            var entry = Style("StackPanel", "ThemeEntry", ["theme-entry"]);
+            AssertTrue(entry.Background.HasValue); AssertEqual(XsrUiSurfaceKind.Solid, entry.Surface!.Value);
+            AssertEqual(0d, Style("StackPanel", "ThemeBody", ["theme-surface"]).BorderWidth!.Value);
+            AssertTrue(Style("CheckBox", "MemoryDeep", ["launch-memory-deep"], XsrUiThemeInteractionState.Checked).Border == new XsrUiColor(33, 111, 130));
             AssertTrue(Style("ContentHost", "Host", ["layout-Shell-14"]).BackgroundImage is null);
             var text = Style("Text", "AccountName");
             var primary = Style("Button", "LaunchButton");
@@ -79,7 +88,7 @@ internal static partial class Program
         {
             options["wallpaper-opacity"] = percent.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var opacityProgram = NssThemeCompiler.Compile(source, new NssThemeCompileInputs { Options = options });
-            AssertEqual(percent / 100d, opacityProgram.Compute(new(default, new("Shell", "Root", [], "Shell"), [], default,
+            AssertEqual(percent / 400d, opacityProgram.Compute(new(default, new("Shell", "Root", [], "Shell"), [], default,
                 new(800, 740), new("Windows", true), new XsrUiVisualStyle().Snapshot())).BackgroundImage!.Opacity);
         }
         options["wallpaper-opacity"] = "38";

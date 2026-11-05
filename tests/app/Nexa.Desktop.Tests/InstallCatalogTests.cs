@@ -4,6 +4,39 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static void InstallCatalogRetryRemainsActionableAfterStatusSplit()
+    {
+        var source = new RetryInstallStatusSource();
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]), installSource: source);
+        fixture.Shell.Renderer.ReducedMotion = true;
+        Emit(fixture.Intents, "ui.navigation.download"); Emit(fixture.Intents, "ui.install.java");
+        fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();
+        var scene = fixture.Shell.Render(new(1024, 700));
+        var retry = FindByKey(fixture.Shell, scene, "JavaMinecraftPageRetry");
+        AssertEqual(XsrUiSemanticRole.Button, retry.Role);
+        AssertTrue(retry.IsEnabled && retry.IsClickable);
+        AssertTrue(fixture.Shell.Renderer.Activate(retry.Entity));
+        fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();
+        AssertTrue(SpinWait.SpinUntil(() =>
+            HasKey(fixture.Shell, fixture.Shell.Render(new(1024, 700)), "CatalogRow:game:1.21.1"), TimeSpan.FromSeconds(5)));
+        AssertTrue(source.Reads >= 2);
+    }
+
+    private sealed class RetryInstallStatusSource : IInstallCatalogSource
+    {
+        private int _reads;
+        public int Reads => Volatile.Read(ref _reads);
+        public Task<IReadOnlyList<InstallCatalogVersion>> GetGamesAsync(CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            return Interlocked.Increment(ref _reads) == 1
+                ? Task.FromException<IReadOnlyList<InstallCatalogVersion>>(new IOException("Controlled catalogue failure"))
+                : Task.FromResult<IReadOnlyList<InstallCatalogVersion>>([new("1.21.1", "release")]);
+        }
+        public Task<IReadOnlyList<InstallCatalogVersion>> GetLoadersAsync(InstallLoader loader, string game, CancellationToken token) =>
+            Task.FromResult<IReadOnlyList<InstallCatalogVersion>>([]);
+    }
+
     private sealed class LargeInstallSource(int selectedIndex = 0) : IInstallCatalogSource
     {
         private int _loaderReads;
@@ -54,6 +87,10 @@ internal static partial class Program
         scene = fixture.Shell.Render(new(1024, 600));
         AssertTrue(source.LoaderReads > 0);
         AssertEqual("正在获取版本…", FindByKey(fixture.Shell, scene, "JavaFabricPageStatus").Text);
+        var loading = FindByKey(fixture.Shell, scene, "JavaFabricPageStatus");
+        AssertEqual(XsrUiSemanticRole.Text, loading.Role);
+        AssertTrue(loading.IsEnabled);
+        AssertFalse(loading.IsClickable);
         AssertTrue(IsVisible(fixture.Shell, "JavaForgeTab"));
         source.Loader.SetResult([new("0.16.0", "Fabric")]);
         fixture.Controller.WaitUntilIdle().GetAwaiter().GetResult();

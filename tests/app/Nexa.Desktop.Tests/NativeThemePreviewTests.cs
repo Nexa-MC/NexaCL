@@ -98,7 +98,7 @@ internal static partial class Program
         {
             await startup.InvokeAsync(() =>
             {
-                harness = new();
+                harness = new(liuliStates: liuliOnly);
                 var fixture = harness.Fixture;
                 AssertTrue(fixture.Foundation.Host.SettingsPolicy.Set(new("general.language", SettingsLayer.Global,
                     new(SettingsOverrideMode.Custom, "zh-Hans"))).IsSuccess);
@@ -220,8 +220,27 @@ internal static partial class Program
                     AssertEqual(picker.Hover, add.Hover);
                 }, timeout.Token);
                 await CapturePair("liuli-launch");
+                await startup.InvokeAsync(() =>
+                {
+                    Emit(f.Intents, "ui.launch.widget.memory");
+                    Emit(f.Intents, "ui.launch.memory.deep");
+                }, timeout.Token);
+                await Eventually(() => Has("MemoryClean") && Find("MemoryDeep").IsChecked == true);
+                await CapturePair("liuli-memory");
                 await NavigateSettings(h.Global, "appearance");
                 await CapturePair("liuli-settings");
+                await Show("Theme.ImportPackage");
+                await startup.InvokeAsync(() =>
+                {
+                    var sections = Sections();
+                    f.Shell.Renderer.PointerScroll(new(sections.Rect.X + 12, sections.Rect.Y + 20), Find("Theme.ImportPackage").Rect.Y - sections.Rect.Y - 48);
+                    surface!.CommitScene();
+                }, timeout.Token);
+                await CapturePair("liuli-theme-catalog");
+                await startup.InvokeAsync(() => AssertTrue(surface!.Scene!.Nodes.Count(node => Visible(node)
+                    && f.Shell.Tree.GetComponent<XsrUiStyleIdentity>(node.Entity)?.Classes.Contains("theme-entry") == true) >= 2), timeout.Token);
+                await Show(OptionKey(themes.Snapshot.PresentedSourceIdentity!, "radius") + ".Slider");
+                await CapturePair("liuli-theme-options");
                 await NavigateSettings(h.Global, "game");
                 await CapturePair("liuli-game-settings");
                 await NavigateSettings(h.Instance, "mods");
@@ -241,6 +260,22 @@ internal static partial class Program
                 await Activate("InstallJavaChoice");
                 await Eventually(() => Has("CatalogRow:game:1.21.1"));
                 await CapturePair("liuli-java-install");
+                await Activate("CatalogRow:game:1.21.1");
+                await Eventually(() => Has("JavaForgeTab"));
+                await Activate("JavaForgeTab");
+                await Eventually(() => surface!.Scene!.Nodes.Any(node => Visible(node) && node.Role == XsrUiSemanticRole.Text
+                    && node.Text?.StartsWith("正在获取版本", StringComparison.Ordinal) == true
+                    && f.Shell.Tree.GetComponent<XsrUiStyleIdentity>(node.Entity)?.Classes.Contains("launch-install-catalog-status") == true));
+                await startup.InvokeAsync(() =>
+                {
+                    var status = surface!.Scene!.Nodes.Single(node => Visible(node) && node.Role == XsrUiSemanticRole.Text
+                        && node.Text?.StartsWith("正在获取版本", StringComparison.Ordinal) == true
+                        && f.Shell.Tree.GetComponent<XsrUiStyleIdentity>(node.Entity)?.Classes.Contains("launch-install-catalog-status") == true);
+                    AssertEqual(1d, status.VisualStyle.Opacity);
+                    AssertTrue(status.IsEnabled);
+                    AssertFalse(status.IsClickable);
+                }, timeout.Token);
+                await CapturePair("liuli-forge-loading");
 
                 ResourcesPageController? resources = null;
                 WardrobePageController? wardrobe = null;

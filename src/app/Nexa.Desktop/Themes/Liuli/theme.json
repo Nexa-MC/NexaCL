@@ -1,7 +1,7 @@
 {
   "format": "NTP/1",
   "id": "nexa.liuli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "name": {
     "en-US": "Liuli",
     "zh-CN": "琉璃",
@@ -13,6 +13,7 @@
     "styles/main.nss",
     "styles/pages.nss",
     "styles/tools.nss",
+    "styles/states.nss",
     "styles/wallpaper.nss",
     "styles/motion.nss"
   ],
@@ -49,7 +50,7 @@
         "zh-CN": "强调色",
         "zh-TW": "強調色"
       },
-      "group": "style",
+      "group": "color",
       "control": "Input"
     },
     {
@@ -61,11 +62,23 @@
         "zh-CN": "卡片圆角",
         "zh-TW": "卡片圓角"
       },
-      "group": "style",
+      "group": "window",
       "min": 12,
       "max": 28,
       "step": 1,
       "control": "Slider"
+    },
+    {
+      "id": "motion",
+      "kind": "Boolean",
+      "default": true,
+      "label": {
+        "en-US": "Enhanced motion",
+        "zh-CN": "增强动效",
+        "zh-TW": "增強動效"
+      },
+      "group": "window",
+      "control": "Switch"
     },
     {
       "id": "wallpaper-opacity",
@@ -81,18 +94,6 @@
       "max": 70,
       "step": 1,
       "control": "Slider"
-    },
-    {
-      "id": "motion",
-      "kind": "Boolean",
-      "default": true,
-      "label": {
-        "en-US": "Enhanced motion",
-        "zh-CN": "增强动效",
-        "zh-TW": "增強動效"
-      },
-      "group": "style",
-      "control": "Switch"
     }
   ],
   "appearance": {

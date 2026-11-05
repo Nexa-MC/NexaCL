@@ -18,7 +18,7 @@ NavigationItem { Foreground: var(muted); CornerRadius: 12; Hover: var(tint); Mar
 NavigationItem:selected { Foreground: var(accent); Background: #ffffffa8; }
 
 #CardAccount, #CardVersion, #CardAbout,
-.world-card, .theme-surface, .resource-card, .resource-project,
+.world-card, .resource-card, .resource-project,
 .platform-card, .settings-form-surface, .settings-diagnostics-card, .settings-custom-update, .settings-disk-log-card,
 .layout-TaskCard-TaskCard, .layout-VersionSelectionRow-LibraryRow {
   Background: var(glass); Foreground: var(ink); Border: var(edge); BorderWidth: 1;
@@ -74,7 +74,7 @@ TextInput, .settings-catalog-input, .settings-editor-input, .theme-input, .world
   NavigationItem { Foreground: #a4bdc7; Hover: #93d8df18; }
   NavigationItem:selected { Foreground: #a8e0e7; Background: #93d8df20; }
   #CardAccount, #CardVersion, #CardAbout,
-  .world-card, .theme-surface, .resource-card, .resource-project,
+  .world-card, .resource-card, .resource-project,
   .platform-card, .settings-form-surface, .settings-diagnostics-card, .settings-custom-update, .settings-disk-log-card,
   .layout-TaskCard-TaskCard, .layout-VersionSelectionRow-LibraryRow {
     Background: #192d3bce; Foreground: #e3f0f2; Border: #a7d9e022; Shadow: #050e1730 0 6 20;
