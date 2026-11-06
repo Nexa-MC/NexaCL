@@ -8,6 +8,28 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static void ThemeSettingsDoNotCacheBusyControlsFromAnOlderSnapshot()
+    {
+        using var page = new ThemeSettingsFixture([]);
+        page.Settings.ConfigureThemePickers((_, _) => Task.FromResult<IReadOnlyList<string>>([]),
+            _ => Task.FromResult<string?>(null), _ => Task.FromResult<string?>(null));
+        for (int transitionRead = 1; transitionRead <= 32; transitionRead++)
+        {
+            page.Session.SetBusy(true);
+            int reads = 0;
+            page.Session.AfterSnapshotRead = () =>
+            {
+                if (++reads == transitionRead) page.Session.SetBusy(false);
+            };
+            page.Render();
+            page.Session.AfterSnapshotRead = null;
+            page.Session.SetBusy(false);
+            for (int frame = 0; frame < 3; frame++) page.Render();
+            if (!page.Tree.GetComponent<XsrUiInput>(page.Find("Theme.ImportDirectory"))!.Enabled)
+                throw new InvalidOperationException($"Import stayed disabled when the theme snapshot completed on read {transitionRead}.");
+        }
+    }
+
     private static void ThemeSettingsHideEmptyOptionAndPermissionGroups()
     {
         using var page = new ThemeSettingsFixture([]);
@@ -263,7 +285,17 @@ internal static partial class Program
     private sealed class FakeThemeSettingsSession : IDesktopThemeSettingsSession
     {
         private readonly IReadOnlyList<ThemeOptionDefinition> _options;
-        public DesktopThemeSettingsSnapshot Snapshot { get; private set; }
+        private DesktopThemeSettingsSnapshot _snapshot = null!;
+        internal Action? AfterSnapshotRead;
+        public DesktopThemeSettingsSnapshot Snapshot
+        {
+            get { var snapshot = _snapshot; AfterSnapshotRead?.Invoke(); return snapshot; }
+            private set => _snapshot = value;
+        }
+        internal void SetBusy(bool busy)
+        {
+            if (_snapshot.Busy != busy) _snapshot = _snapshot with { Revision = _snapshot.Revision + 1, Busy = busy };
+        }
         internal int RefreshCalls, SaveCalls, ResetCalls, RevokeCalls, EndPreviewCalls;
         internal bool FailSave;
         internal ThemeCandidate? ImportCandidate;

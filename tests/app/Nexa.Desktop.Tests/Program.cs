@@ -204,6 +204,7 @@ internal static partial class Program
         ("RegionalAutomaticOptiFineTabsStayHiddenAndRejectIntents", RegionalAutomaticOptiFineTabsStayHiddenAndRejectIntents),
         ("ThemeOptionsRetainLiteralDraftCaretAndFocusAcrossProjection", ThemeOptionsRetainLiteralDraftCaretAndFocusAcrossProjection),
         ("ThemeSettingsHideEmptyOptionAndPermissionGroups", ThemeSettingsHideEmptyOptionAndPermissionGroups),
+        ("ThemeSettingsDoNotCacheBusyControlsFromAnOlderSnapshot", ThemeSettingsDoNotCacheBusyControlsFromAnOlderSnapshot),
         ("LauncherMigrationPagePreviewsSelectsConfirmsAndRegisters", LauncherMigrationPagePreviewsSelectsConfirmsAndRegisters),
         ("LauncherMigrationPageRestoresReceiptAndRetriesOnlyRegistration", LauncherMigrationPageRestoresReceiptAndRetriesOnlyRegistration),
         ("LauncherMigrationPageCancelsStalePreviewAndRecoversFromFailure", LauncherMigrationPageCancelsStalePreviewAndRecoversFromFailure),

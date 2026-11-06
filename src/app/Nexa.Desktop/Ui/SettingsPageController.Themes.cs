@@ -164,6 +164,10 @@ internal sealed partial class SettingsPageController
     private void ProjectThemeSettings()
     {
         if (!_shell.Tree.IsAlive(_themeRoot)) return;
+        // A background theme operation can finish while the fragments are projected.
+        // Cache only a revision observed before those reads, so newer facts still
+        // trigger another projection instead of leaving old busy controls current.
+        long projectedRevision = _themeSession?.Snapshot.Revision ?? 0;
         _themeActions.Clear();
         _dynamic.Reload(_themeRoot, DesktopMarkup.Dynamic("ThemeSettings.d.nxml", ThemeSettingsData()));
         _dynamic.Reload(_themeIconRoot, DesktopMarkup.Dynamic("ThemeLauncherIcon.d.nxml", ThemeIconData()));
@@ -188,7 +192,7 @@ internal sealed partial class SettingsPageController
             BindThemeAction(_themeOptionsRoot, "Theme.OptionsExport", new(ThemeUiOperation.Export, source.SourceIdentity));
             BindThemeAction(_themeOptionsRoot, "Theme.OptionsImport", new(ThemeUiOperation.ImportOptions, source.SourceIdentity));
         }
-        _themePresentationRevision = snapshot?.Revision ?? 0; _themePresentationLanguage = ThemeLanguage;
+        _themePresentationRevision = projectedRevision; _themePresentationLanguage = ThemeLanguage;
         _themeSettingsRevision = _revision;
     }
 
