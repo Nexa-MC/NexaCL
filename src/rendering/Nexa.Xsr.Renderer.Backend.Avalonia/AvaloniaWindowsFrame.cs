@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.VisualTree;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
@@ -70,7 +71,11 @@ internal static partial class AvaloniaWindowsFrame
             if (GetWindowRect(handle.Handle, out var outer) == 0) return;
             // DWM frame bounds include native resize/decorations margins. The rounded
             // region must follow the actual rendered client surface, not that outer frame.
-            if (window.Content is not Control content || content.Bounds.Width <= 0 || content.Bounds.Height <= 0) return;
+            // Hidden startup warmup arranges content before it belongs to a visual root.
+            // An HWND alone cannot supply screen coordinates for that content; opening
+            // and subsequent layout notifications apply the region after attachment.
+            if (window.Content is not Control content || !content.IsAttachedToVisualTree()
+                || content.Bounds.Width <= 0 || content.Bounds.Height <= 0) return;
             var origin = content.PointToScreen(default);
             int left = origin.X - outer.Left, top = origin.Y - outer.Top;
             int right = left + (int)Math.Round(content.Bounds.Width * window.RenderScaling);

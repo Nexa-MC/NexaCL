@@ -73,6 +73,8 @@ internal static partial class Program
     {
         try
         {
+            await VerifyOpaqueNativeStartupAsync();
+            window.Activate();
             await VerifyNativeWindowsMediaControlsReadinessAsync(handle);
             VerifyNativeDwmSetterSupport();
             await WaitForNativeCornerLayoutAsync(() => NativeCornerViewportMatches(window, 960, 600));
@@ -155,7 +157,8 @@ internal static partial class Program
             VerifyCompositedViewport(window, 860, 550);
             window.TransparencyLevelHint = [WindowTransparencyLevel.None];
             await WaitForNativeCornerLayoutAsync(() => !window.UsesCompositedEdges
-                && ((Control)window.Content!).Bounds.Size == window.Surface.Bounds.Size);
+                && ((Control)window.Content!).Bounds.Size == window.Surface.Bounds.Size
+                && NativeOpaqueCornersMatch(window));
             AssertFalse(window.UsesCompositedEdges);
             AssertEqual(((Control)window.Content!).Bounds.Size, window.Surface.Bounds.Size);
             AssertTrue(Math.Abs(window.Surface.Bounds.Width - 860) <= 1 / window.RenderScaling);
@@ -170,6 +173,32 @@ internal static partial class Program
             desktop.Shutdown(0);
         }
         catch (Exception error) { Console.Error.WriteLine(error); desktop.Shutdown(1); }
+    }
+
+    private static async Task VerifyOpaqueNativeStartupAsync()
+    {
+        var shell = XsrUiShellComposer.Compose(new XsrStateStoreBuilder().Build());
+        shell.Renderer.ReducedMotion = true;
+        var window = new AvaloniaUiShellWindow(shell) { TransparencyLevelHint = [WindowTransparencyLevel.None] };
+        try
+        {
+            // Reproduce Windows 10's fallback even on compositing-capable CI machines:
+            // the HWND exists while hidden warmup arranges content without a visual root.
+            nint handle = window.TryGetPlatformHandle()!.Handle;
+            AssertTrue(handle != 0);
+            AssertFalse(((Control)window.Content!).IsAttachedToVisualTree());
+            window.PrepareStartupScene();
+            AssertFalse(window.IsVisible);
+            AssertTrue(window.Surface.Scene is { Count: > 0 });
+            window.Show();
+            await WaitForNativeCornerLayoutAsync(() => !window.UsesCompositedEdges && NativeOpaqueCornersMatch(window));
+            AssertEqual(handle, window.TryGetPlatformHandle()!.Handle);
+            window.Hide(); window.Show();
+            await WaitForNativeCornerLayoutAsync(() => NativeOpaqueCornersMatch(window));
+            AssertEqual(handle, window.TryGetPlatformHandle()!.Handle);
+            Console.WriteLine("PASS: opaque native shell warms detached content, then rounds the same HWND on first show and reopening");
+        }
+        finally { window.RequestClose(); }
     }
 
     private static async Task VerifyAnimatedNativeTrayAsync(XsrUiShell shell, AvaloniaUiShellWindow window,
@@ -345,6 +374,25 @@ internal static partial class Program
                 AssertTrue(PtInRegion(region, left, top) != 0 && PtInRegion(region, right, top) != 0
                     && PtInRegion(region, left, bottom) != 0 && PtInRegion(region, right, bottom) != 0);
             }
+        }
+        finally { _ = DeleteObject(region); }
+    }
+
+    private static bool NativeOpaqueCornersMatch(AvaloniaUiShellWindow window)
+    {
+        nint region = CreateRectRgn(0, 0, 0, 0);
+        try
+        {
+            nint handle = window.TryGetPlatformHandle()!.Handle;
+            if (GetWindowRgn(handle, region) == 0 || !GetWindowRectForChrome(handle, out var bounds)) return false;
+            var root = (Control)window.Content!;
+            var origin = root.PointToScreen(default);
+            int left = origin.X - bounds.Left, top = origin.Y - bounds.Top;
+            int right = left + (int)Math.Round(root.Bounds.Width * window.RenderScaling) - 1;
+            int bottom = top + (int)Math.Round(root.Bounds.Height * window.RenderScaling) - 1;
+            return PtInRegion(region, left, top) == 0 && PtInRegion(region, right, top) == 0
+                && PtInRegion(region, left, bottom) == 0 && PtInRegion(region, right, bottom) == 0
+                && PtInRegion(region, (left + right) / 2, (top + bottom) / 2) != 0;
         }
         finally { _ = DeleteObject(region); }
     }
