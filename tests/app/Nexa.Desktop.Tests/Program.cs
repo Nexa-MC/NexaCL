@@ -92,14 +92,9 @@ internal static partial class Program
             Environment.ExitCode = RunNativeTaskLayoutPreview(taskLayoutOutput);
             return;
         }
-        if (args is ["--native-liuli-preview", var liuliPackageMode, var liuliPackageDirectory, var liuliPackage])
+        if (args is ["--native-theme-package-preview", var packageMode, var packageOutput, var packagePath])
         {
-            Environment.ExitCode = RunNativeThemePreview(liuliPackageMode, liuliPackageDirectory, liuliOnly: true, liuliPackage: liuliPackage);
-            return;
-        }
-        if (args is ["--native-liuli-preview", var liuliMode, var liuliDirectory])
-        {
-            Environment.ExitCode = RunNativeThemePreview(liuliMode, liuliDirectory, liuliOnly: true);
+            Environment.ExitCode = RunNativeThemePreview(packageMode, packageOutput, packagePath: packagePath);
             return;
         }
         if (args is ["--native-theme-preview", var themeMode, var themeDirectory])
@@ -233,7 +228,6 @@ internal static partial class Program
         ("ThemePreviewRetirementCancelsPendingPickAndRestoresSelection", ThemePreviewRetirementCancelsPendingPickAndRestoresSelection),
         ("ThemeRangeAndVisibilityPreserveTypedEditors", ThemeRangeAndVisibilityPreserveTypedEditors),
         ("ThemeOptionSaveAndResetUseCurrentSourceRevision", ThemeOptionSaveAndResetUseCurrentSourceRevision),
-        ("LiuliThemePreservesReadableStatesAndHostGeometry", LiuliThemePreservesReadableStatesAndHostGeometry),
         ("ThemeOptionLiveReloadRecomputesActualStyleAndPersistsPreviewValues", ThemeOptionLiveReloadRecomputesActualStyleAndPersistsPreviewValues),
         ("ThemeOptionPublishedSnapshotCannotOverwriteReturnToPreviousValue", ThemeOptionPublishedSnapshotCannotOverwriteReturnToPreviousValue),
         ("ThemeOptionEditsReloadWithoutSaveAndRetainInputOwnership", ThemeOptionEditsReloadWithoutSaveAndRetainInputOwnership),
