@@ -131,7 +131,7 @@ public sealed class LauncherSettingsJsonPort : ISettingsPort
         int schemaVersion = SupportedSchemaVersion;
         if (root.TryGetProperty("schemaVersion", out JsonElement versionElement))
         {
-            if (!versionElement.TryGetInt32(out schemaVersion))
+            if (versionElement.ValueKind != JsonValueKind.Number || !versionElement.TryGetInt32(out schemaVersion))
             {
                 recovered = true;
                 schemaVersion = SupportedSchemaVersion;

@@ -29,7 +29,8 @@ public static class InstanceContentService
                     ?? throw new InvalidDataException("此版本没有可管理的模组加载器。");
                 string source = Path.Combine(page.Directory!, command.Name);
                 for (string? current = source; current is not null; current = Path.GetDirectoryName(current))
-                    if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+                    if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0
+                        && !Nexa.Core.PathIdentity.IsMacOSSystemDirectoryAlias(current))
                         throw new IOException("不能修改链接文件或链接目录中的模组。");
                 var file = new FileInfo(source);
                 if (!file.Exists || file.Length != command.ExpectedSize || file.LastWriteTimeUtc.Ticks != command.ExpectedModifiedUtcTicks)

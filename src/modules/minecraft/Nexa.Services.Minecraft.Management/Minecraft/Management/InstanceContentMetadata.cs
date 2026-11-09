@@ -230,7 +230,8 @@ internal static partial class InstanceContentMetadata
     private static void CheckPath(string path)
     {
         for (string? current = path; current is not null; current = Path.GetDirectoryName(current))
-            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0) throw new IOException("不能读取链接内容。");
+            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0
+                && !Nexa.Core.PathIdentity.IsMacOSSystemDirectoryAlias(current)) throw new IOException("不能读取链接内容。");
     }
     // Metadata belongs to a captured file handle. Permit rename/delete while a retired
     // UI read finishes, but never let another writer mutate bytes being interpreted.

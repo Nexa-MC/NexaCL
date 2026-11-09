@@ -124,7 +124,8 @@ internal static class InstanceModUpdates
     private static void CheckLinks(string path)
     {
         for (string? parent = path; parent is not null; parent = Path.GetDirectoryName(parent))
-            if ((File.GetAttributes(parent) & FileAttributes.ReparsePoint) != 0) throw new IOException("不能检查链接目录中的模组。");
+            if ((File.GetAttributes(parent) & FileAttributes.ReparsePoint) != 0
+                && !Nexa.Core.PathIdentity.IsMacOSSystemDirectoryAlias(parent)) throw new IOException("不能检查链接目录中的模组。");
     }
 
     private static async Task<string> HashAsync(Stream input, long size, CancellationToken token)

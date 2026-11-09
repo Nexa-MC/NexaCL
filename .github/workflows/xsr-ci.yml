@@ -182,7 +182,7 @@ jobs:
         shell: pwsh
         run: |
           $binary = if ($IsWindows) { './native-account-tests/Nexa.Services.Tests.exe' } else { './native-account-tests/Nexa.Services.Tests' }
-          & $binary "launch scripts preserve Unicode paths"
+          & $binary "launch scripts preserve Unicode paths" "instance content admits system aliases only"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Verify native launcher migration and SQLite source snapshots
         shell: pwsh

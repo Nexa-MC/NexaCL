@@ -4,6 +4,9 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("HTTP resume requires byte ranges", HttpResumeRequiresByteRanges),
+        ("instance content admits system aliases only", InstanceContentAdmitsSystemAliasesOnly),
+        ("settings recover nonnumeric schema versions", SettingsRecoverNonNumericSchemaVersions),
         ("launch scripts preserve Unicode paths", LaunchScriptsPreserveUnicodePaths),
         ("resource pack writes keep list within read budget", ResourcePackWritesKeepListReadable),
         ("resource pack writes keep file within read budget", ResourcePackWritesKeepFileReadable),

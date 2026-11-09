@@ -23,7 +23,8 @@ public static class InstanceManagementService
                 || !MinecraftVersionPaths.IsSafeReference(Path.GetFileName(instance)))
                 throw new InvalidDataException("版本必须位于游戏目录的 versions 下。");
             for (string? current = instance; current is not null; current = Path.GetDirectoryName(current))
-                if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+                if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0
+                    && !Nexa.Core.PathIdentity.IsMacOSSystemDirectoryAlias(current))
                     throw new IOException("不能通过链接读取版本管理目录。");
             var metadata = await new MinecraftInstanceMetadataStore().LoadAsync(instance, token).ConfigureAwait(false);
             string gameDirectory = metadata.InstanceIsolation ? instance : versions.Parent.FullName;
@@ -85,7 +86,8 @@ public static class InstanceManagementService
             string directory = page.Directory!;
             if (!Directory.Exists(directory)) return new(page.Id, [], true, null);
             for (string? current = directory; current is not null; current = Path.GetDirectoryName(current))
-                if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+                if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0
+                    && !Nexa.Core.PathIdentity.IsMacOSSystemDirectoryAlias(current))
                     throw new IOException("不能读取链接目录。");
             foreach (var item in new DirectoryInfo(directory).EnumerateFileSystemInfos())
             {

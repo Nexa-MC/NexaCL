@@ -153,6 +153,8 @@ public sealed class FileLogSink : ILogSink, ILogRetentionSink, IDisposable, IAsy
                     if (pending.Flushed is { } barrier)
                     {
                         flushing = barrier;
+                        // A policy update can arrive while this batch is draining.
+                        ApplyRetention();
                         if (writer is not null) await writer.FlushAsync().ConfigureAwait(false);
                         barrier.TrySetResult();
                         flushing = null;

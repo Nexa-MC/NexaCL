@@ -120,3 +120,5 @@ after compiler/runtime and native dependency evidence, never by adding untested 
 回调 Host，并传递本次启动的取消令牌。并发启动共享重叠的清理尝试；取消等待中的
 启动不影响其他启动正在使用的清理。拒绝 UAC 或清理失败会记录状态并继续启动游戏，
 明确取消启动仍阻止创建游戏进程。其他已运行游戏继续受系统级操作保护。
+
+实例管理仅允许经 Core 验证目标为对应 `/private` 目录且目标祖先无链接的 macOS 系统根别名 `/var`、`/tmp`、`/etc`。自定义目录链接仍被拒绝；内容读取与修改采用相同准入规则。

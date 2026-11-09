@@ -75,6 +75,8 @@ unique discovered endpoints alongside saved servers without writing them to
 and server-requirement editing are not exposed in this workspace. Internal
 archive/NBT inspection retains its entry, byte, recursion and text budgets.
 
+Instance management admits only macOS system root aliases `/var`, `/tmp`, and `/etc` when Core verifies their exact `/private` targets and target ancestry. Custom directory links remain rejected; content reads and mutations use the same admission rule.
+
 User-selected local file and archive paths resolve existing file/directory links
 through Core's bounded path resolver before opening, hashing or preview. Source
 revalidation still applies at commit; archive entry and destination link checks
