@@ -17,7 +17,7 @@ public static class InstanceLaunchScriptService
             RecoveryBlobStore.CheckLinks(destination);
             string root = Directory.GetParent(instance.InstanceDirectory)!.Parent!.FullName;
             string link = InstanceLaunchScriptContract.Link(root, Path.GetFileName(instance.InstanceDirectory));
-            string text = windows ? "@echo off\r\nsetlocal DisableDelayedExpansion\r\n\"" + launcher.Replace("%", "%%", StringComparison.Ordinal) + "\" \"" + link + "\"\r\n"
+            string text = windows ? "@echo off\r\nchcp 65001 >nul\r\nsetlocal DisableDelayedExpansion\r\n\"" + launcher.Replace("%", "%%", StringComparison.Ordinal) + "\" \"" + link + "\"\r\n"
                 : "#!/bin/sh\nexec " + Quote(launcher) + " " + Quote(link) + "\n";
             stage = destination + "." + Guid.NewGuid().ToString("N") + ".tmp";
             await File.WriteAllTextAsync(stage, text, new UTF8Encoding(false), token).ConfigureAwait(false);

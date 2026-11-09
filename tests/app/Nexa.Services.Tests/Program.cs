@@ -4,6 +4,7 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("launch scripts preserve Unicode paths", LaunchScriptsPreserveUnicodePaths),
         ("resource pack writes keep list within read budget", ResourcePackWritesKeepListReadable),
         ("resource pack writes keep file within read budget", ResourcePackWritesKeepFileReadable),
         ("download rejects changed segment totals", DownloadRejectsChangedSegmentTotals),
