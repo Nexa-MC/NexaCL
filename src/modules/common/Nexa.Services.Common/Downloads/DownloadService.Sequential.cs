@@ -67,6 +67,8 @@ public sealed partial class DownloadService
                     .ConfigureAwait(false);
                 if (!request.AllowResume && connectionInfo.BeginOffset != 0)
                     throw new InvalidDataException("A fresh download requires a response starting at zero.");
+                if (connectionInfo.BeginOffset != 0 && connectionInfo.BeginOffset != requestedOffset)
+                    throw new InvalidDataException("Download response starts outside the requested range.");
 
                 long startOffset = connectionInfo.BeginOffset == requestedOffset ? requestedOffset : 0;
                 _log?.Debug(LogModuleName, $"Source connected source={DescribeSource(source)} begin_offset={connectionInfo.BeginOffset} length={connectionInfo.Length}");

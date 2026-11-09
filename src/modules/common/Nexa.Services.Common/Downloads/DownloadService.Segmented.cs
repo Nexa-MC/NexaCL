@@ -189,9 +189,9 @@ public sealed partial class DownloadService
             DownloadConnectionInfo info = await segmented
                 .StartSegmentAsync(begin, end, cancellationToken)
                 .ConfigureAwait(false);
-            if (info.BeginOffset != begin || info.EndOffset != end)
+            if (info.BeginOffset != begin || info.EndOffset != end || info.Length != totalLength)
             {
-                throw new IOException($"The server returned a wrong download segment: {info.BeginOffset}-{info.EndOffset}.");
+                throw new IOException($"The server returned a wrong download segment: {info.BeginOffset}-{info.EndOffset}/{info.Length}.");
             }
 
             await using FileStream target = new(
