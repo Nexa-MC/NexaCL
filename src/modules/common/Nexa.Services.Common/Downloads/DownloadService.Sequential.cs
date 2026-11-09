@@ -171,7 +171,7 @@ public sealed partial class DownloadService
                     ArrayPool<byte>.Shared.Return(buffer);
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 _log?.Info(LogModuleName, $"Source attempt cancelled stage={stage} destination={destinationPath} source={DescribeSource(source)}");
                 throw;

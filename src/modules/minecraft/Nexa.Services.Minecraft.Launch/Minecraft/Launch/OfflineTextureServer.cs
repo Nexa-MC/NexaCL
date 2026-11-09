@@ -17,7 +17,6 @@ internal sealed class OfflineTextureServer : IDisposable
     private readonly Dictionary<string, (string Server, string Metadata)> _identities = new(StringComparer.Ordinal);
     private TcpListener? _listener;
     private Task? _running;
-    private int _profiles;
     private bool _disposed;
     private readonly string _prefix = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(24));
     internal (string Server, string Metadata) Register(MinecraftLaunchIdentity identity)
@@ -31,7 +30,10 @@ internal sealed class OfflineTextureServer : IDisposable
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             if (_identities.TryGetValue(identityKey, out var cached)) return cached;
-            if (++_profiles > 128) throw new InvalidDataException("本次启动器会话中的离线材质数量过多，请重启启动器。");
+            if (_identities.Count >= 128) throw new InvalidDataException("本次启动器会话中的离线材质数量过多，请重启启动器。");
+            // Invalid skins/capes must not consume capacity or publish partial textures.
+            Dictionary<string, byte[]> pendingTextures = new(StringComparer.Ordinal);
+            long pendingBytes = 0;
             _signer ??= RSA.Create(2048);
             if (_running is null) { _listener = new(IPAddress.Loopback, 0); _listener.Start(8); _running = Task.Run(ListenAsync); }
             string root = "http://127.0.0.1:" + ((IPEndPoint)_listener!.LocalEndpoint).Port.ToString(System.Globalization.CultureInfo.InvariantCulture) + "/" + _prefix + "/";
@@ -62,8 +64,12 @@ internal sealed class OfflineTextureServer : IDisposable
                 ["skinDomains"] = new JsonArray((JsonNode)JsonValue.Create("127.0.0.1")!),
                 ["signaturePublickey"] = _signer.ExportSubjectPublicKeyInfoPem()
             }.ToJsonString();
-            _responses["/" + _prefix + "/" + session] = Encoding.UTF8.GetBytes(metadata);
-            _responses["/" + _prefix + "/" + session + "sessionserver/session/minecraft/profile/" + identity.PlayerUuid] = Encoding.UTF8.GetBytes(profile.ToJsonString());
+            byte[] metadataBytes = Encoding.UTF8.GetBytes(metadata);
+            byte[] profileBytes = Encoding.UTF8.GetBytes(profile.ToJsonString());
+            foreach (var texture in pendingTextures) _responses.Add(texture.Key, texture.Value);
+            _textureBytes += pendingBytes;
+            _responses["/" + _prefix + "/" + session] = metadataBytes;
+            _responses["/" + _prefix + "/" + session + "sessionserver/session/minecraft/profile/" + identity.PlayerUuid] = profileBytes;
             _identities[identityKey] = (server, metadata);
             return (server, metadata);
             void AddTexture(string kind, byte[] bytes, bool slim)
@@ -74,10 +80,10 @@ internal sealed class OfflineTextureServer : IDisposable
                 if (image is null || image.Width is < 64 or > 512 || image.Width % 64 != 0 || (kind == "SKIN" ? image.Height != image.Width && image.Height * 2 != image.Width : image.Height * 2 != image.Width)) throw new InvalidDataException("离线材质尺寸无效。");
                 string hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
                 string texturePath = "/" + _prefix + "/textures/" + hash;
-                if (!_responses.ContainsKey(texturePath))
+                if (!_responses.ContainsKey(texturePath) && !pendingTextures.ContainsKey(texturePath))
                 {
-                    if (_textureBytes + bytes.Length > 32 * 1024 * 1024) throw new InvalidDataException("离线材质缓存已达到 32 MiB，请重启启动器。");
-                    _textureBytes += bytes.Length; _responses[texturePath] = bytes;
+                    if (_textureBytes + pendingBytes + bytes.Length > 32 * 1024 * 1024) throw new InvalidDataException("离线材质缓存已达到 32 MiB，请重启启动器。");
+                    pendingBytes += bytes.Length; pendingTextures.Add(texturePath, bytes);
                 }
                 var texture = new JsonObject { ["url"] = root + "textures/" + hash };
                 if (kind == "SKIN" && slim) texture["metadata"] = new JsonObject { ["model"] = "slim" };

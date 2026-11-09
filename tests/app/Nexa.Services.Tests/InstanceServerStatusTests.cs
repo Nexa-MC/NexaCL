@@ -14,7 +14,7 @@ internal static partial class Program
         try
         {
             string instance = ResourceInstanceFixture(root); var store = new XsrStateStoreBuilder().Build();
-            foreach (bool oversized in new[] { false, true })
+            foreach (int scenario in new[] { 0, 1, 2 })
             {
                 var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -33,18 +33,18 @@ internal static partial class Program
                         AssertEqual(767, await InstanceServerStatusService.ReadVarAsync(packet, timeout.Token));
                         byte[] request = new byte[2]; await stream.ReadExactlyAsync(request, timeout.Token); AssertTrue(request.SequenceEqual(new byte[] { 1, 0 }));
                         using var response = new MemoryStream();
-                        if (oversized) InstanceServerStatusService.WriteVar(response, 262145);
+                        if (scenario == 1) InstanceServerStatusService.WriteVar(response, 262145);
                         else
                         {
-                            byte[] json = Encoding.UTF8.GetBytes("{\"description\":{\"text\":\"Hello\",\"extra\":[{\"text\":\" World\"}]},\"version\":{\"name\":\"Fixture\"},\"players\":{\"online\":3,\"max\":20}}");
+                            byte[] json = Encoding.UTF8.GetBytes(scenario == 2 ? "{\"description\":[\"Hello\",{\"text\":\" World\"}],\"version\":{\"name\":\"Fixture\"},\"players\":{\"online\":3}}" : "{\"description\":{\"text\":\"Hello\",\"extra\":[{\"text\":\" World\"}]},\"version\":{\"name\":\"Fixture\"},\"players\":{\"online\":3,\"max\":20}}");
                             using var body = new MemoryStream(); InstanceServerStatusService.WriteVar(body, 0); InstanceServerStatusService.WriteVar(body, json.Length); body.Write(json);
                             InstanceServerStatusService.WriteVar(response, (int)body.Length); body.WriteTo(response);
                         }
                         await stream.WriteAsync(response.ToArray(), timeout.Token);
                     }, timeout.Token);
                     var status = await InstanceServerStatusService.ReadAsync(new(instance, list.Revision, 0), timeout.Token);
-                    await serve; AssertEqual(!oversized, status.Reachable);
-                    if (!oversized) { AssertEqual("Hello World", status.Description); AssertEqual<int?>(3, status.OnlinePlayers); AssertEqual("Fixture", status.Version); }
+                    await serve; AssertEqual(scenario != 1, status.Reachable);
+                    if (scenario != 1) { AssertEqual("Hello World", status.Description); AssertEqual<int?>(3, status.OnlinePlayers); AssertEqual("Fixture", status.Version); }
                     bool stale = false;
                     try { await InstanceServerStatusService.ReadAsync(new(instance, "stale", 0), timeout.Token); } catch (IOException) { stale = true; }
                     AssertTrue(stale);

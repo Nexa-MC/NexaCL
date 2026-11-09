@@ -284,11 +284,16 @@ internal static partial class Program
             string destination = Path.Combine(directory, "file.bin");
             DownloadService service = CreateDownloadService();
             using CancellationTokenSource cancellation = new();
+            int backupAttempts = 0;
             Task<DownloadTransferResult> task = service.DownloadAsync(new DownloadRequest
             {
-                Sources = ["mem://a"],
+                Sources = ["mem://a", "mem://backup"],
                 DestinationPath = destination,
-                ConnectionFactory = _ => new SlowConnection(),
+                ConnectionFactory = source =>
+                {
+                    if (source == "mem://backup") backupAttempts++;
+                    return new SlowConnection();
+                },
             }, cancellationToken: cancellation.Token);
 
             cancellation.Cancel();
@@ -303,6 +308,7 @@ internal static partial class Program
             }
 
             AssertTrue(cancelled);
+            AssertEqual(0, backupAttempts);
             AssertFalse(File.Exists(destination));
         }
         finally

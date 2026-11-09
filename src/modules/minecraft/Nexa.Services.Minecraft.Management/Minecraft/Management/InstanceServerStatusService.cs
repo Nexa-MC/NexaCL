@@ -71,6 +71,16 @@ public static class InstanceServerStatusService
     private static string Description(JsonElement value, int depth)
     {
         if (depth > 8) return "";
+        if (value.ValueKind == JsonValueKind.Array)
+        {
+            string combined = "";
+            foreach (var child in value.EnumerateArray().Take(32))
+            {
+                combined += Description(child, depth + 1);
+                if (combined.Length >= 512) break;
+            }
+            return combined[..Math.Min(512, combined.Length)];
+        }
         string text = value.ValueKind == JsonValueKind.String ? value.GetString()! : value.ValueKind == JsonValueKind.Object
             && value.TryGetProperty("text", out var plain) && plain.ValueKind == JsonValueKind.String ? plain.GetString()! : "";
         if (value.ValueKind == JsonValueKind.Object && value.TryGetProperty("extra", out var extra) && extra.ValueKind == JsonValueKind.Array)

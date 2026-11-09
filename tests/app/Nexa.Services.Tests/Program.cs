@@ -4,6 +4,8 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("download source timeouts fail over", DownloadTimeoutFailsOver),
+        ("offline texture rejection preserves registration capacity", OfflineTextureRejectionPreservesCapacity),
         ("pre-launch memory cleanup shares overlap and scopes cancellation", PrelaunchMemoryCleanupSharesOverlapAndScopesCancellation),
         ("pre-launch memory cleanup is opt-in and UAC rejection allows game", PrelaunchMemoryCleanupIsOptInAndUacRejectionAllowsGame),
         ("pre-launch memory cancellation prevents JVM creation", PrelaunchMemoryCancellationPreventsJvmCreation),
