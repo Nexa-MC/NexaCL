@@ -15,7 +15,7 @@ public static class InstanceResourcePackService
     internal static async Task<InstanceResourcePackConfiguration> ReadSafelyAsync(string instance, string game, string version, IReadOnlyList<InstanceContentEntry> entries, CancellationToken token)
     {
         try { return await ReadAsync(instance, game, version, entries, token).ConfigureAwait(false); }
-        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or InvalidOperationException)
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or InvalidOperationException or DecoderFallbackException)
         { return new("", [], "", "Cannot read resource pack settings: " + e.Message[..Math.Min(512, e.Message.Length)]); }
     }
     internal static async Task<InstanceResourcePackConfiguration> ReadAsync(string instance, string game, string version, IReadOnlyList<InstanceContentEntry> entries, CancellationToken token)
@@ -98,6 +98,7 @@ public static class InstanceResourcePackService
     }
     private static string[] ReadList(string text, string key)
     {
+        if (text.StartsWith('\uFEFF')) text = text[1..];
         var lines = text.Split('\n').Where(line => line.StartsWith(key + ":", StringComparison.Ordinal)).ToArray();
         if (lines.Length > 1) throw new InvalidDataException("Duplicate game option: " + key);
         if (lines.Length == 0) return [];
@@ -107,12 +108,14 @@ public static class InstanceResourcePackService
     }
     private static string SetList(string text, string key, List<string> values)
     {
+        bool hasBom = text.StartsWith('\uFEFF');
+        if (hasBom) text = text[1..];
         string newline = text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
         var lines = text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n').ToList();
         string replacement = key + ":" + new JsonArray(values.Select(v => (JsonNode)JsonValue.Create(v)!).ToArray()).ToJsonString();
         int index = lines.FindIndex(line => line.StartsWith(key + ":", StringComparison.Ordinal));
         if (index >= 0) lines[index] = replacement; else lines.Insert(Math.Max(0, lines.Count - 1), replacement);
-        return string.Join(newline, lines);
+        return (hasBom ? "\uFEFF" : "") + string.Join(newline, lines);
     }
     private static async Task<JsonObject?> MetadataAsync(string path, ArchiveReadBudget budget, CancellationToken token)
     {

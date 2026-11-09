@@ -14,7 +14,7 @@ internal static partial class Program
 
     private static async ValueTask PhysicalSidecarMemoryQuiescencePreservesOwnership()
     {
-        using var fixture = new CompleteSupervisorFixture();
+        await using var fixture = new CompleteSupervisorFixture();
         await fixture.AddPackageAsync("provider");
         await fixture.AddPackageAsync("stopped");
         await using var supervisor = new SidecarSupervisor(fixture.VerifyAsync);
@@ -56,7 +56,7 @@ internal static partial class Program
 
     private static async ValueTask PhysicalSidecarHostApiCompletesLifecycle()
     {
-        using var fixture = new CompleteSupervisorFixture();
+        await using var fixture = new CompleteSupervisorFixture();
         string package = await fixture.AddPackageAsync("provider");
         await fixture.AddPackageAsync("unsigned", signed: false);
         var builder = new XsrStateStoreBuilder();
@@ -181,7 +181,7 @@ internal static partial class Program
 
     private static async ValueTask PhysicalSidecarRecoveryIsBoundedAndIsolated()
     {
-        using var fixture = new CompleteSupervisorFixture();
+        await using var fixture = new CompleteSupervisorFixture();
         await fixture.AddPackageAsync("healthy");
         await fixture.AddPackageAsync("loop");
         await using var supervisor = new SidecarSupervisor(fixture.VerifyAsync);
@@ -212,7 +212,7 @@ internal static partial class Program
 
     private static async ValueTask PhysicalSidecarReloadReverifiesAdmittedPackages()
     {
-        using var fixture = new CompleteSupervisorFixture();
+        await using var fixture = new CompleteSupervisorFixture();
         await fixture.AddPackageAsync("provider");
         await using var supervisor = new SidecarSupervisor(fixture.VerifyAsync);
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(30));
@@ -248,7 +248,7 @@ internal static partial class Program
 
     private static async ValueTask SupervisorDisposalCancelsUnpublishedStartup()
     {
-        using var fixture = new CompleteSupervisorFixture();
+        await using var fixture = new CompleteSupervisorFixture();
         await fixture.AddPackageAsync("provider");
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         await using var supervisor = new SidecarSupervisor(async (_, _, token) =>
@@ -504,7 +504,7 @@ internal static partial class Program
         }
     }
 
-    private sealed class CompleteSupervisorFixture : IDisposable
+    private sealed class CompleteSupervisorFixture : IAsyncDisposable
     {
         private readonly Dictionary<string, int> _verified = new(StringComparer.Ordinal);
         public string DirectoryPath { get; } = Path.Combine(Path.GetTempPath(), "nexa-sidecar-full-" + Guid.NewGuid().ToString("N"));
@@ -539,6 +539,17 @@ internal static partial class Program
             lock (_verified) _verified[package] = _verified.GetValueOrDefault(package) + 1;
         }
         public int VerificationCount(string package) { lock (_verified) return _verified.GetValueOrDefault(package); }
-        public void Dispose() => Directory.Delete(DirectoryPath, recursive: true);
+        public async ValueTask DisposeAsync()
+        {
+            // Supervisor disposal has joined its children. Windows can still retain an
+            // executable image briefly after process exit; keep retries local to fixtures.
+            for (int attempt = 0; ; attempt++)
+            {
+                try { Directory.Delete(DirectoryPath, recursive: true); return; }
+                catch (Exception error) when (OperatingSystem.IsWindows() && attempt < 20
+                    && error is IOException or UnauthorizedAccessException)
+                { await Task.Delay(50); }
+            }
+        }
     }
 }

@@ -31,6 +31,21 @@ internal static partial class Program
             config = await Read(); AssertFalse((await InstanceResourcePackService.SetAsync(new(instance, config.Revision, "old.zip", true, 4096), store)).IsSuccess);
             AssertTrue((await InstanceResourcePackService.SetAsync(new(instance, config.Revision, "old.zip", true, 4096, true), store)).IsSuccess);
             AssertTrue((await File.ReadAllTextAsync(options)).Contains("incompatibleResourcePacks:[\"file/old.zip\"]", StringComparison.Ordinal));
+            await File.WriteAllTextAsync(options, "resourcePacks:[\"vanilla\",\"file/one.zip\"]\nmusic:0.3\n", new System.Text.UTF8Encoding(true));
+            config = await Read();
+            AssertTrue(config.Packs.Single(p => p.Name == "one.zip").Enabled);
+            AssertTrue((await InstanceResourcePackService.SetAsync(new(instance, config.Revision, "two.zip", true, 4096), store)).IsSuccess);
+            byte[] withBom = await File.ReadAllBytesAsync(options);
+            AssertTrue(withBom.AsSpan().StartsWith(new byte[] { 239, 187, 191 }));
+            config = await Read();
+            AssertTrue(config.Packs.Single(p => p.Name == "one.zip").Enabled);
+            AssertTrue(config.Packs.Single(p => p.Name == "two.zip").Enabled);
+            byte[] damaged = [0xff, 0xfe, 0xff];
+            await File.WriteAllBytesAsync(options, damaged);
+            config = await Read();
+            AssertTrue(config.Problem.Length > 0);
+            AssertTrue((await File.ReadAllBytesAsync(options)).SequenceEqual(damaged));
+
         }
         finally { Directory.Delete(root, true); }
     }
