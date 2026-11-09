@@ -4,6 +4,7 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("segmented downloads verify artifacts before publication", SegmentedDownloadsVerifyArtifactBeforePublication),
         ("download source timeouts fail over", DownloadTimeoutFailsOver),
         ("offline texture rejection preserves registration capacity", OfflineTextureRejectionPreservesCapacity),
         ("pre-launch memory cleanup shares overlap and scopes cancellation", PrelaunchMemoryCleanupSharesOverlapAndScopesCancellation),

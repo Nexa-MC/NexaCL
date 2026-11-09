@@ -46,6 +46,8 @@ public sealed partial class DownloadService
             }
 
             totalLength = probeInfo.Length;
+            if (request.ExpectedSize is { } expectedSize && totalLength != expectedSize)
+                throw new InvalidDataException("Download response length does not match the artifact size.");
         }
         finally
         {
@@ -115,6 +117,15 @@ public sealed partial class DownloadService
                 }
 
                 await output.FlushAsync(cancellationToken).ConfigureAwait(false);
+                if (request.ExpectedArtifact is { } artifact && writer is FileDownloadWriter fileWriter)
+                {
+                    await writer.StopAsync(cancellationToken).ConfigureAwait(false);
+                    if (!await MatchesCacheAsync(fileWriter.TempPath, artifact, cancellationToken).ConfigureAwait(false))
+                    {
+                        File.Delete(fileWriter.TempPath);
+                        throw new InvalidDataException("Artifact digest or size mismatch.");
+                    }
+                }
                 report(new DownloadProgress(DownloadStage.Committing, source, totalLength, totalLength, 0));
                 await writer.FinishAsync(cancellationToken).ConfigureAwait(false);
             }
