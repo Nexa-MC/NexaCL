@@ -12,6 +12,8 @@ namespace Nexa.Services.Minecraft.Management;
 
 public static class InstanceResourcePackService
 {
+    private const int MaximumOptionsBytes = 1024 * 1024;
+    private const int MaximumPackEntries = 4096;
     internal static async Task<InstanceResourcePackConfiguration> ReadSafelyAsync(string instance, string game, string version, IReadOnlyList<InstanceContentEntry> entries, CancellationToken token)
     {
         try { return await ReadAsync(instance, game, version, entries, token).ConfigureAwait(false); }
@@ -72,6 +74,8 @@ public static class InstanceResourcePackService
             var incompatible = ReadList(options.Text, "incompatibleResourcePacks").Where(p => p != name && p != command.Name).ToList();
             if (command.Enabled && pack.Compatible == false) incompatible.Add(name);
             string text = SetList(SetList(options.Text, "resourcePacks", selected), "incompatibleResourcePacks", incompatible);
+            if (Encoding.UTF8.GetByteCount(text) > MaximumOptionsBytes)
+                throw new InvalidDataException("Updated game options exceed the 1 MiB limit.");
             string path = Path.Combine(snapshot.GameDirectory, "options.txt"); RecoveryBlobStore.CheckLinks(path);
             stage = Path.Combine(snapshot.GameDirectory, ".nexa-options-" + Guid.NewGuid().ToString("N"));
             await File.WriteAllTextAsync(stage, text, new UTF8Encoding(false), token).ConfigureAwait(false);
@@ -92,7 +96,7 @@ public static class InstanceResourcePackService
         if (File.Exists(path))
         {
             await using var input = File.OpenRead(path); using var output = new MemoryStream();
-            await ArchiveReadBudget.CopyAsync(input, output, input.Length, 1024 * 1024, new(1024 * 1024), token).ConfigureAwait(false); bytes = output.ToArray();
+            await ArchiveReadBudget.CopyAsync(input, output, input.Length, MaximumOptionsBytes, new(MaximumOptionsBytes), token).ConfigureAwait(false); bytes = output.ToArray();
         }
         return (new UTF8Encoding(false, true).GetString(bytes), Convert.ToHexString(SHA256.HashData(bytes)));
     }
@@ -103,11 +107,12 @@ public static class InstanceResourcePackService
         if (lines.Length > 1) throw new InvalidDataException("Duplicate game option: " + key);
         if (lines.Length == 0) return [];
         var list = JsonNode.Parse(lines[0][(key.Length + 1)..].Trim()) as JsonArray ?? throw new InvalidDataException("Invalid game option: " + key);
-        if (list.Count > 4096 || list.Any(p => p is not JsonValue value || !value.TryGetValue<string>(out var name) || name.Length > 4096)) throw new InvalidDataException("Resource pack list exceeds its budget.");
+        if (list.Count > MaximumPackEntries || list.Any(p => p is not JsonValue value || !value.TryGetValue<string>(out var name) || name.Length > 4096)) throw new InvalidDataException("Resource pack list exceeds its budget.");
         return list.Select(p => p!.GetValue<string>()).Distinct(StringComparer.Ordinal).ToArray();
     }
     private static string SetList(string text, string key, List<string> values)
     {
+        if (values.Count > MaximumPackEntries) throw new InvalidDataException("Resource pack list exceeds its budget.");
         bool hasBom = text.StartsWith('\uFEFF');
         if (hasBom) text = text[1..];
         string newline = text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
