@@ -1,35 +1,35 @@
 {
   "repository": "Nexa-MC/Nexa-Cloud-Market-Sidecar",
-  "commit": "4b802a65f8d79a693262d608cda944ce19c94ada",
-  "buildRun": 41446843034,
+  "commit": "3ab79e3a7d5a64b8326bb96ffeced73faa7d62d0",
+  "buildRun": 42818518506,
   "runtimeVersion": "1.0.0",
   "minimumHostVersion": "2.0.0.alpha.20",
   "hostReference": "09addd2dbcc6d3ad50bd877390fe20341044d28e",
-  "inputRelease": "market-inputs-4b802a65f8d7",
+  "inputRelease": "market-inputs-3ab79e3a7d5a",
   "artifacts": {
-    "linux-arm64": {
-      "size": 7741040,
-      "sha256": "6f3b647e9cd6d4130628deb39ee55419876d63e9782bd8cd4a5cb18780f38b3a"
-    },
-    "linux-x64": {
-      "size": 7405208,
-      "sha256": "9c4bef6476f6bf5b97c7dba06effed1bc65501c1422728eeb34bb20da385bfba"
-    },
-    "osx-arm64": {
-      "size": 6648816,
-      "sha256": "6016111043d7d1e3ee7741a5b73912102023c1104b658992e8ec98b290143ac0"
-    },
-    "osx-x64": {
-      "size": 6851600,
-      "sha256": "33eee82a67e8eba8ed69da9029783496022f72508366858b98a294b08f229a03"
+    "win-x64": {
+      "size": 6533632,
+      "sha256": "2aa211a3d1022361b2b8e885086ddd907e13457a1c8c3ce58764450bb1d74a5a"
     },
     "win-arm64": {
-      "size": 6724096,
-      "sha256": "eeb00976d520673326a122611aeafeed02a72b3900d11c19a9a37d6374f38166"
+      "size": 6748160,
+      "sha256": "846f78d54a51387cf3aef6586dec681f0c272df3318574ac0d590a6f45e71b70"
     },
-    "win-x64": {
-      "size": 6510592,
-      "sha256": "b4a6db340ca149d8dd4e7ad0128aa95c9d7e6ca0606b131bc42b92488cbe1631"
+    "linux-x64": {
+      "size": 7421672,
+      "sha256": "543bfcbd7534ce69f208333b60c8a269e9cbd4ffaba4c55dfe4dd6116e68a841"
+    },
+    "linux-arm64": {
+      "size": 7741136,
+      "sha256": "f27386a25f8e842eb258620257f111efb519acf75332819ac90bfc4e6b6fc891"
+    },
+    "osx-x64": {
+      "size": 6868160,
+      "sha256": "77b1cfefbb28ee6a4a1d6e9e73c96ae90500563cac79b5116fb9cc59c887ae06"
+    },
+    "osx-arm64": {
+      "size": 6648864,
+      "sha256": "082172eebab49deceeb1ea21e240974b43f48aba5f3953af0dd1802ca86174d5"
     }
   },
   "inputRepository": "Nexa-MC/NexaCL"
