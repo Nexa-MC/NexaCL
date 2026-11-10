@@ -45,6 +45,7 @@ public sealed partial class SidecarHostSession : IDisposable
     private XsrNxmlCompiledDocument[] _nxmlCompiled = [];
     private XsrNxmlModuleRuntime.Lease? _nxmlLease;
     private bool _nxmlActivated;
+    public SidecarUpdateRegistration? UpdateRegistration { get; private set; }
     public SidecarExtensionRegistry Extensions { get; private set; } = new();
 
     public SidecarHostSession(
@@ -249,6 +250,7 @@ public sealed partial class SidecarHostSession : IDisposable
             entries.Where(entry => entry.Kind == SidecarRegistrationKind.State).ToList());
         var cache = new SidecarHostCache();
         var extensions = new SidecarExtensionRegistry();
+        SidecarUpdateRegistration? updateRegistration = null;
         // Resources are admitted before modules so required resource references are verified
         // against the complete local cache, independent of declaration order.
         foreach (SidecarRegistrationEntry entry in entries.Where(entry => entry.Kind == SidecarRegistrationKind.Resource))
@@ -256,6 +258,11 @@ public sealed partial class SidecarHostSession : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
             SidecarRegistrationItem declaration = declarations[entry.SemanticId];
             cache.AddResource(entry.SemanticId, declaration.Payload!, declaration.ContentHash!);
+            if (entry.SemanticId.Value == SidecarUpdateRegistration.SemanticId)
+            {
+                if (entry.Flags != 0) throw new SidecarProtocolException("Update registration flags must be zero.");
+                updateRegistration = SidecarUpdateRegistration.Decode(declaration.Payload!);
+            }
         }
         foreach (SidecarRegistrationEntry entry in entries)
         {
@@ -290,6 +297,7 @@ public sealed partial class SidecarHostSession : IDisposable
             _mirror = mirror;
             Cache = cache;
             Extensions = extensions;
+            UpdateRegistration = updateRegistration;
             _functionPatches = functionPatches;
             _automaticFunctions = automaticFunctions;
             _signals = signals;

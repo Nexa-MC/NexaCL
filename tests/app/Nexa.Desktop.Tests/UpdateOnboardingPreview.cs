@@ -4,6 +4,8 @@ using Avalonia.Media.Imaging;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Updates;
 using Nexa.Xsr;
+using Nexa.Xsr.Runtime;
+using Nexa.Sidecar.Protocol;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr.Renderer.Nxml;
@@ -26,9 +28,12 @@ internal static partial class Program
             using var settings = new SettingsPageController(shell, fixture.Intents, fixture.Foundation.Queries,
                 fixture.Foundation.Commands, fixture.Store, fixture.Feedback);
             fixture.Controller.SettingsPage = settings.Page;
-            settings.ConfigureUpdates(fixture.Foundation.Queries, new("2.0.0.alpha.16", "linux-x64", "alpha"), _ => { });
+            var queries = new XsrQueryRouterBuilder();
+            queries.Register<NexaUpdateQuery, NexaUpdateStatus>(NexaUpdateContract.Check, (_, _) =>
+                new(XsrResult.Success(new NexaUpdateStatus(new("2.0.0.alpha.30", "https://example.com/setup", "https://example.com/zip", "https://example.com/notes")))));
+            settings.ConfigureUpdates(queries.Build(new NoopDispatchObserver()), new("2.0.0.alpha.29", "linux-x64", "alpha"), _ => { }, new QueuedLauncherFixture([]));
             var updates = new PreviewSidecarUpdates();
-            settings.ConfigureSidecarUpdates(updates, () => { });
+            settings.ConfigureSidecarUpdates(updates, () => { }, () => new Dictionary<string, SidecarUpdateRegistration> { ["Nexa.Cloud.Market.Sidecar"] = new("Nexa Cloud Market", "1.0.0") });
             Emit(fixture.Intents, "ui.navigation.settings");
             var scene = shell.Render(new(1040, 760));
             Emit(fixture.Intents, "ui.settings.section", FindByKey(shell, scene, "SettingsNav.advanced").Entity);

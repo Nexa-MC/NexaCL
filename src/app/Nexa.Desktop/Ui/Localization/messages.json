@@ -1,4 +1,11 @@
 [
+  {"source": "通道 · {data channel}　上次检查：{data lastCheck}", "en": "Channel · {data channel}　Last checked: {data lastCheck}", "zh-Hant": "通道 · {data channel}　上次檢查：{data lastCheck}"},
+  {"source": "更新中心", "en": "Update center", "zh-Hant": "更新中心"},
+  {"source": "检查所有更新", "en": "Check all updates", "zh-Hant": "檢查所有更新"},
+  {"source": "下载并安装全部", "en": "Download and install all", "zh-Hant": "下載並安裝全部"},
+  {"source": "重新启动以完成更新", "en": "Restart to finish updating", "zh-Hant": "重新啟動以完成更新"},
+  {"source": "等待安装…", "en": "Waiting to install…", "zh-Hant": "等待安裝…"},
+
   {"source":"来自局域网的服务器 {data address}","en":"LAN server {data address}","zh-Hant":"來自區域網路的伺服器 {data address}"},
   {"source": "确定", "en": "OK", "zh-Hant": "確定"},
   {"source": "权限不足", "en": "Insufficient permission", "zh-Hant": "權限不足"},

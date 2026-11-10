@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 using Nexa.Sidecar.Transport;
+using Nexa.Sidecar.Protocol;
 
 namespace Nexa.Xsr.Runtime;
 
@@ -44,6 +45,18 @@ public sealed partial class SidecarSupervisor : IDisposable, IAsyncDisposable
                 .Select(package => package.Child?.Session)
                 .Where(session => session?.State == SidecarSessionState.Active)
                 .Cast<SidecarHostSession>().ToArray());
+        }
+    }
+
+    /// <summary>Declarations are keyed by authenticated package identity, including quiescent sessions.</summary>
+    public IReadOnlyDictionary<string, SidecarUpdateRegistration> UpdateRegistrations
+    {
+        get
+        {
+            lock (_gate) return _packages.Values
+                .Select(package => (package.Name, Registration: package.Child?.Session.UpdateRegistration))
+                .Where(package => package.Registration is not null)
+                .ToDictionary(package => package.Name, package => package.Registration!, StringComparer.Ordinal);
         }
     }
 

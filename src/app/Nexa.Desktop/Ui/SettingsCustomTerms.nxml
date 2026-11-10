@@ -68,6 +68,7 @@
 <Text Key="update.phase.preparing" Content="正在准备安装…" />
 <Text Key="update.phase.activating" Content="正在应用更新…" />
 <Text Key="update.phase.verifying" Content="正在验证更新签名…" />
+<Text Key="update.queued" Content="等待安装…" />
 <Text Key="sidecarUpdate.initial" Content="检查更新以获取 Sidecar 新版本。" />
 <Text Key="sidecarUpdate.none" Content="当前没有已安装的 Sidecar。" />
 <Text Key="sidecarUpdate.checking" Content="正在检查 Sidecar 更新…" />

@@ -155,3 +155,29 @@ with the launch cancellation token. Concurrent launches share an overlapping cle
 attempt; canceling a waiting launch does not cancel another launch's cleanup. A UAC
 rejection or cleanup failure is recorded and the game may continue; explicit launch
 cancellation still stops creation. Other running games retain global-operation guards.
+
+## Unified update center and Sidecar declarations
+
+The Desktop update center projects launcher and Sidecar updates into one list with
+per-item status and a shared check/install/restart toolbar. A single UI-owned queue
+serializes user-requested installs (Sidecars first, launcher last); a failed item
+does not discard the other queued updates. Existing update services retain ownership
+of downloads, signature checks, durable activation, rollback and recovery. Restart
+is explicit and unavailable while checking or installing. Channel changes retire
+queued offers; already-started installations complete on their admitted channel.
+
+A Sidecar proactively declares update presentation during the existing binary
+REGISTER transaction: Resource `nexa.update.registration`, flags/codec zero, a
+SHA-256-bound TLV payload (1: UInt32 schema = 1, 2: String display name, 3: String
+runtime version). Names are 1–128 characters, versions 1–64, without control
+characters. Unknown TLVs are ignored; duplicate required fields are rejected.
+The resource is backward-compatible with older Hosts and requires no new transport
+or registration kind. The Host binds it to the authenticated, signature-admitted
+package, never an ID, path, URL or trust key supplied by the Sidecar. Metadata is
+session-owned and is retired on disconnect, including across recovery. Quiescent
+sessions retain their declaration. Older or failed Sidecars remain visible through
+the installed-package inventory. Missing catalogs do not hide registered packages.
+Only the existing pinned-key signed release catalog can authorize an update; a
+registration cannot supply executable bytes, redirect downloads or grant install
+permission. Desktop consumes these declarations without calling Sidecars from the
+renderer; the same projection works with managed and native update services.

@@ -55,7 +55,7 @@ internal sealed partial class SettingsPageController
     }
 
     private static bool IsUpdateIntent(XsrSemanticId id) => id == CheckUpdate || id == DownloadUpdate || id == PortableUpdate || id == UpdateNotes
-        || id == InstallUpdate || id == RestartUpdate || id == RollbackUpdate || id.Value is "ui.settings.sidecar.install" or "ui.settings.sidecar.restart";
+        || id.Value is "ui.settings.update.all" or "ui.settings.update.restartAll" || id == InstallUpdate || id == RestartUpdate || id == RollbackUpdate || id.Value is "ui.settings.sidecar.install" or "ui.settings.sidecar.restart";
     private void HandleUpdateIntent(DesktopUiIntent intent)
     {
         if (HandleSidecarUpdateIntent(intent)) return;
@@ -64,8 +64,12 @@ internal sealed partial class SettingsPageController
             || _shell.Tree.GetComponent<XsrUiCommandBinding>(intent.Source)?.Command != intent.Command
             || !_shell.Tree.IsAlive(_updateCard)) return;
         var nodes = CatalogNodes(_updateCard);
-        if (intent.Source != nodes["SettingsCheckUpdate"] && !_updateActionViews.ContainsValue(intent.Source)) return;
+        if (intent.Source != nodes["SettingsCheckUpdate"] && intent.Source != nodes["SettingsInstallAllUpdates"]
+            && intent.Source != nodes["SettingsRestartAllUpdates"] && !_updateActionViews.ContainsValue(intent.Source)) return;
         var id = intent.Command;
+        if (id.Value == "ui.settings.update.all") { StartAllUpdates(); return; }
+        if (id.Value == "ui.settings.update.restartAll") { RestartAllUpdates(); return; }
+        if (UpdateCenterBusy) return;
         if (id == RestartUpdate && UpdateNeedsRestart) { _restartForUpdate?.Invoke(); return; }
         if (id == InstallUpdate && !AutomaticUpdateInProgress && _automaticStatus?.CanInstall == true && _automaticUpdates is not null && _updateQuery is not null)
         {
@@ -97,6 +101,7 @@ internal sealed partial class SettingsPageController
         UpdateSidecarUpdates();
         UpdateDiscoveryPreferences();
         UpdateAutomaticState();
+        AdvanceUpdateQueue();
         if (_updateReading is not { IsCompleted: true } task) return;
         _updateReading = null;
         _updateCheckStop?.Dispose(); _updateCheckStop = null;
@@ -144,6 +149,7 @@ internal sealed partial class SettingsPageController
             if (_updateReading is { } retired)
                 _ = retired.ContinueWith(task => { _ = task.Exception; }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             _updateReading = null; _updateReadingQuery = null;
+            RetireUpdateQueue();
             _updateQuery = query; _updateOffer = null; _updateOfferChannel = null;
             if (!AutomaticUpdateInProgress && !UpdateNeedsRestart)
                 _updateStatus = CustomCopy("update.initial");
@@ -151,7 +157,7 @@ internal sealed partial class SettingsPageController
         if (!_startupUpdateChecked)
         {
             _startupUpdateChecked = true;
-            if (policy.AutomaticCheck) StartUpdateCheck();
+            if (policy.AutomaticCheck) { StartUpdateCheck(); CheckSidecarUpdates(); }
         }
         if (changed && _visible && _selected == "advanced" && _catalog is not null) RefreshUpdateCard();
     }
@@ -174,6 +180,7 @@ internal sealed partial class SettingsPageController
             else
             {
                 if (operation.Exception is { } error) _updateFailure?.Invoke(error.InnerException ?? error);
+                if (_automaticStatus is not null) _automaticStatus = _automaticStatus with { Phase = "paused" };
                 _updateStatus = CustomCopy("update.incomplete");
             }
             changed = true;
@@ -223,9 +230,13 @@ internal sealed partial class SettingsPageController
             ["hasOffer"] = Flag(_updateOffer is not null),
             ["icon"] = _updateCheckFailed ? "lucide/circle-x" : _updateLastChecked is not null && _updateOffer is null ? "lucide/circle-check" : "lucide/download",
             ["sidecarStatus"] = SidecarUpdateStatusText(),
+            ["showSidecarNotice"] = Flag(_sidecarSnapshot?.Phase is "failed" or "unpublished"),
             ["busy"] = Flag(AutomaticUpdateInProgress || _updateReading is not null),
-            ["canCheck"] = Flag(_updateReading is null && !AutomaticUpdateInProgress && _updateQuery is not null),
-            ["status"] = AutomaticUpdateInProgress ? CustomCopy("update.phase." + (phase is "downloading" or "preparing" or "activating" ? phase : "verifying"))
+            ["canCheck"] = Flag(!UpdateCenterBusy && _updateQuery is not null),
+            ["canInstallAll"] = Flag(!UpdateCenterBusy && (CanInstallLauncher || SidecarItems.Any(CanInstallSidecar))),
+            ["canRestartAll"] = Flag(!UpdateCenterBusy && (UpdateNeedsRestart || SidecarItems.Any(item => item.Phase == "restart"))),
+            ["centerBusy"] = Flag(UpdateCenterBusy),
+            ["status"] = _queuedLauncherUpdate is not null ? CustomCopy("update.queued") : AutomaticUpdateInProgress ? CustomCopy("update.phase." + (phase is "downloading" or "preparing" or "activating" ? phase : "verifying"))
                 : _updateStatus.Length == 0 ? CustomCopy("update.initial") : _updateStatus,
             ["downloading"] = Flag(phase == "downloading"),
             ["preparing"] = Flag(phase == "preparing"),
@@ -249,14 +260,14 @@ internal sealed partial class SettingsPageController
         List<string> actions = [];
         if (_updateOffer is not null)
         {
-            if (_automaticStatus?.CanInstall == true && !AutomaticUpdateInProgress && _updateQuery?.Channel is "alpha" or "beta" or "stable") actions.Add("Install");
+            if (_automaticStatus?.CanInstall == true && !UpdateCenterBusy && !UpdateNeedsRestart && _updateQuery?.Channel is "alpha" or "beta" or "stable") actions.Add("Install");
             actions.AddRange(["Download", "Portable", "Notes"]);
         }
-        if (UpdateNeedsRestart && _automaticInstalling is null) actions.Add("Restart");
+        if (UpdateNeedsRestart && !UpdateCenterBusy) actions.Add("Restart");
         else if (_updateOffer is null && _automaticStatus?.Version is not null && _automaticStatus.CanInstall
             && _automaticStatus.Channel is "alpha" or "beta" or "stable"
-            && _automaticStatus.Phase is not ("complete" or "rolledback") && _automaticInstalling is null) actions.Add("Resume");
-        if (_automaticStatus?.CanRollback == true && !AutomaticUpdateInProgress) actions.Add("Rollback");
+            && _automaticStatus.Phase is not ("complete" or "rolledback") && !UpdateCenterBusy) actions.Add("Resume");
+        if (_automaticStatus?.CanRollback == true && !UpdateCenterBusy) actions.Add("Rollback");
         foreach (string name in _updateActionViews.Keys.Where(name => !actions.Contains(name)).ToArray())
         { _dynamic.Remove(_updateActionViews[name]); _updateActionViews.Remove(name); }
         foreach (string name in actions)

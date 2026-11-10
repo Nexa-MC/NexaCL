@@ -744,7 +744,7 @@ internal static partial class Program
             if (Path.GetFileNameWithoutExtension(start.FileName).Equals("dotnet", StringComparison.OrdinalIgnoreCase)) start.ArgumentList.Add(Environment.GetCommandLineArgs()[0]);
             _restartAfterExit = () => System.Diagnostics.Process.Start(start)?.Dispose();
             platformActions.RequestClose();
-        });
+        }, () => sidecars.UpdateRegistrations);
         launchPage.SettingsPage = settingsPage.Page;
         using var resourcesRuntime = ResourceCatalogRuntimeComposer.ComposeWithInstallation(source: null, observer: dispatchObservation, host: host,
             favoritesPath: Path.Combine(settingsFolder, "resources-favorites.json"), installer: installRun.Service,

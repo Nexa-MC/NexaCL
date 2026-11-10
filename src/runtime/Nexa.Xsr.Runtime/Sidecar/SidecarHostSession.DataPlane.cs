@@ -411,6 +411,7 @@ public sealed partial class SidecarHostSession
             modules = _uiModuleLease; _uiModuleLease = null; _uiModules = [];
             nxml = _nxmlLease; _nxmlLease = null; _nxmlDocuments = []; _nxmlCompiled = [];
             Extensions = new();
+            UpdateRegistration = null;
         }
         captions?.Dispose(); modules?.Dispose(); nxml?.Dispose();
         OnDeactivated();
