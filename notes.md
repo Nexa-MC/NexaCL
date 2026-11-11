@@ -1,0 +1,1 @@
+Pinned Plugin SDK 0.2.0-alpha.6 build inputs. Apache-2.0. Exact source commit `e73619efa2900c28692b3d4936a1096bba8d0e81`. Includes six Host consumption packages and the reproducible source snapshot. This is not a launcher Alpha release. Integrity is pinned by `eng/plugins/sdk.lock.json`.
