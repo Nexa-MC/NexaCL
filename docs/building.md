@@ -11,6 +11,8 @@ dotnet build NexaCL.slnx -c Release -m:1
 dotnet run --project src/app/Nexa.Desktop -c Release --no-build
 ```
 
+The plugin preparation step downloads the public, hash-pinned SDK feed and verifies every package. It requires no private repository credentials. The build-input release also includes the exact SDK source snapshot; use `--source /path/to/PluginSidecar` to rebuild from a local Git checkout.
+
 Project names and assembly identities remain stable across directory changes. `Directory.Build.props` identifies the repository and product source roots; `Directory.Build.targets` enables automatic instrumentation for product projects under `src/`. Tools and tests do not infer product identity from directory depth; native projects retain explicit instrumentation settings.
 
 ## Native distributions

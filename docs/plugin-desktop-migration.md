@@ -5,7 +5,11 @@ uses the existing authenticated Sidecar command channel to execute Wasm in the
 independent `Nexa.Plugin.Sidecar` process. The immutable SDK source/version is in
 `eng/plugins/sdk.lock.json`; run `python eng/plugins/prepare.py` before restore.
 Only NuGet packages enter the Host project graph, with no external source project
-references. The feed helper checks cached package hashes and the source commit.
+references. The default feed helper downloads public build inputs from the pinned NexaCL prerelease,
+checks the archive size/SHA-256, exact package inventory, source commit and individual
+package hashes. Cached packages are checked again. The release includes the exact SDK
+source snapshot. `--source /path/to/PluginSidecar` rebuilds the pinned commit locally.
+No private repository credentials are needed for normal restore.
 
 The protected Plugins navigation entry displays plugin load state, failure codes,
 stop controls and admitted pages. Safe mode prevents loading. A storage fault
@@ -67,7 +71,9 @@ capabilities are never advertised as successful placeholder implementations.
 
 开发模式可以选择 ZIP，确认插件身份和请求权限后加载；安全模式禁用加载，
 存储错误保留管理页。正式工作进程仍须通过发行签名验证。运行前先执行
-`python eng/plugins/prepare.py`，随后正常 restore/build。
+`python eng/plugins/prepare.py`，随后正常 restore/build。默认下载公开构建输入，
+校验大小、SHA-256、完整包清单及来源提交，无需私有仓库凭据；同一发行项提供
+对应源码快照。使用 `--source /path/to/PluginSidecar` 可从本地仓库重建锁定版本。
 
 尚未完成生产 Market、密钥保管、启用状态持久化及自动离线启动；高级 UI 扩展与
 其余业务路由继续保持不可用。本次代码接入不等于全部 ABI 已实现，也没有发布新 Alpha。

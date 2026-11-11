@@ -412,6 +412,10 @@ jobs:
 
       - name: Verify repository layout and documentation
         run: python3 eng/architecture/verify_layout.py
+      - name: Verify plugin SDK feed integrity boundaries
+        run: python3 eng/plugins/test_prepare.py
+      - name: Prepare pinned plugin SDK packages
+        run: python3 eng/plugins/prepare.py
       - name: Restore
         run: dotnet restore NexaCL.slnx
 

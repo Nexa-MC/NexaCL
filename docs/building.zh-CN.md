@@ -11,6 +11,8 @@ dotnet build NexaCL.slnx -c Release -m:1
 dotnet run --project src/app/Nexa.Desktop -c Release --no-build
 ```
 
+插件准备步骤下载公开、哈希锁定的 SDK 包源，并逐包校验，无需私有仓库凭据。构建输入发行项还提供对应源码快照；使用 `--source /path/to/PluginSidecar` 可从本地 Git 仓库重建。
+
 业务实现、UI 和测试的项目名与程序集身份保持不变。`Directory.Build.props` 定义仓库根和产品源码范围；`Directory.Build.targets` 为 `src/` 下产品项目启用自动插桩。工具与测试不通过目录深度猜测产品身份，原生项目沿用显式插桩配置。
 
 正式原生发布使用统一入口：
