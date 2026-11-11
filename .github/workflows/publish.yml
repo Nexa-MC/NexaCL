@@ -1,0 +1,25 @@
+name: Publish pinned plugin SDK inputs
+on:
+  push:
+    branches: ['build-inputs/plugin-sdk-5cac9ad0c0a7']
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify immutable inputs
+        run: |
+          python3 - <<'PYCODE'
+          import hashlib, json
+          from pathlib import Path
+          d=json.loads(Path('sdk.lock.json').read_text())['distribution']
+          for f,h in [(d['file'],d['sha256']),(d['sourceFile'],d['sourceSha256'])]:
+              assert hashlib.sha256(Path(f).read_bytes()).hexdigest()==h, f
+          PYCODE
+      - name: Publish build inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create plugin-sdk-inputs-5cac9ad0c0a7 Nexa.Plugin.HostSdk.5cac9ad0c0a7.zip PluginSidecar-source-5cac9ad0c0a7.tar.gz --target "$GITHUB_SHA" --prerelease --title 'Plugin SDK build inputs (5cac9ad0c0a7)' --notes-file notes.md
