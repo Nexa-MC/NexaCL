@@ -4,6 +4,8 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("network response cleanup failure releases retired transport", NetworkResponseCleanupFailureReleasesTransport),
+        ("shared cache cancellation failure still drains producers", SharedCacheCancellationFailureDrainsProducers),
         ("download HTTP ranges require byte units", Sync(DownloadRangesRequireBytes)),
         ("safe file canceled replacement removes temporary file", SafeFileCanceledReplacementRemovesTemporary),
         ("safe file large reads preserve bytes with bounded allocation", SafeFileLargeReadAllocation),

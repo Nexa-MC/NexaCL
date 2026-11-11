@@ -53,3 +53,8 @@ File I/O regressions check failed-write temporary-file cleanup (including cancel
 byte-unit admission for HTTP resume ranges, and an 8 MiB read allocation budget.
 The read uses one result array while preserving size-limit, truncation, and growth
 checks; the allocation test compares bytes rather than wall-clock timing.
+
+Exceptional retirement tests inject a failing response-stream disposal and a failing
+cache cancellation callback. Retired HTTP transports must still release their lease,
+and asynchronous cache disposal must drain detached producers before surfacing the
+callback failure, including overlapping disposal calls.
