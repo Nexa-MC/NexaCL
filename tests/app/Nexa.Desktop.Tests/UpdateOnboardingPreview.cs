@@ -3,12 +3,12 @@ using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Updates;
-using Nexa.Xsr;
-using Nexa.Xsr.Runtime;
 using Nexa.Sidecar.Protocol;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
 using Nexa.Xsr.Renderer.Nxml;
+using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Tests;
 

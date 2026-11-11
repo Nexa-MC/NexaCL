@@ -125,4 +125,4 @@ after compiler/runtime and native dependency evidence, never by adding untested 
 
 ## 插件 Desktop 接入
 
-Desktop 持有插件准入、权限、原子注册和业务状态；独立 PluginSidecar 仅执行已验证的无导入 Wasm。继续使用现有认证二进制 Sidecar 通道，分块传输大包；连接失败后不自动重放操作。SDK 从锁定提交生成的公开 NuGet 包消费，源码不加入宿主项目图。插件管理页、权限和操作确认由宿主控制，安全模式禁用执行；存储故障保留管理入口。页面只使用包内引用和模型数据，不能绑定私有宿主状态或发送产品命令。具体映射与验收见 [插件接入](plugin-desktop-migration.md)。
+Desktop 持有插件准入、权限、原子注册和业务状态；独立 PluginSidecar 仅执行已验证的无导入 Wasm。继续使用现有认证二进制 Sidecar 通道，分块传输大包；连接失败后不自动重放操作。SDK 从锁定提交生成的公开 NuGet 包消费，源码不加入宿主项目图。自动插桩检查仍覆盖全部宿主自有程序集；四个明确列出的 `Nexa.Plugin` SDK 程序集只有在输出依赖清单标记为 NuGet 包时才归为外部依赖，不能仅凭名称前缀跳过。插件管理页、权限和操作确认由宿主控制，安全模式禁用执行；存储故障保留管理入口。页面只使用包内引用和模型数据，不能绑定私有宿主状态或发送产品命令。具体映射与验收见 [插件接入](plugin-desktop-migration.md)。

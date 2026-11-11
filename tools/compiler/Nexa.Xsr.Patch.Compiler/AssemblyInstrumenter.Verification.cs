@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text;
+using System.Text.Json;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
@@ -14,12 +15,34 @@ internal sealed partial class AssemblyInstrumenter
         {
             if (Path.GetFileName(path) == "Nexa.Xsr.Patch.Compiler.dll")
                 throw new InvalidDataException("The build compiler must not ship in the product runtime closure.");
+            if (IsExternalPluginSdk(path)) continue;
             if (IsStandaloneNativeEngine(path)) engines++;
             methods += Verify(path); assemblies++;
         }
         if (assemblies == 0) throw new InvalidDataException("No owned product assemblies were found for coverage verification.");
         Console.WriteLine($"Automatic coverage verified: {assemblies} assemblies; {methods} executable bodies; {engines} standalone native engines verified.");
         return 0;
+    }
+
+    internal static bool IsExternalPluginSdk(string path)
+    {
+        string name = Path.GetFileNameWithoutExtension(path);
+        if (name is not ("Nexa.Plugin.Bootstrap.V1" or "Nexa.Plugin.Sdk.Abi100" or "Nexa.Plugin.Hosting" or "Nexa.Plugin.MarketDelivery")) return false;
+        using var module = ModuleDefinition.ReadModule(path, new ReaderParameters { InMemory = true });
+        if (module.Assembly.Name.Name != name) return false;
+        bool package = false;
+        foreach (string manifest in Directory.EnumerateFiles(Path.GetDirectoryName(Path.GetFullPath(path))!, "*.deps.json"))
+        {
+            using var document = JsonDocument.Parse(File.ReadAllBytes(manifest));
+            if (!document.RootElement.TryGetProperty("libraries", out var libraries)) continue;
+            foreach (var library in libraries.EnumerateObject())
+            {
+                if (!library.Name.StartsWith(name + "/", StringComparison.Ordinal)) continue;
+                if (!library.Value.TryGetProperty("type", out var type) || type.GetString() != "package") return false;
+                package = true;
+            }
+        }
+        return package;
     }
 
     internal static bool IsStandaloneNativeEngine(string path)

@@ -16,6 +16,7 @@ internal static partial class Program
             var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator)
                 .Select(path => MetadataReference.CreateFromFile(path)).Append(MetadataReference.CreateFromFile(corePath));
             NativeEngineBoundarySelfTest(directory, corePath, references);
+            ExternalPluginSdkBoundarySelfTest(directory, corePath, references);
             DeterministicSymbolsSelfTest(directory, corePath, references);
             string dependency = Path.Combine(directory, "Nexa.AutomaticDependency.dll");
             var dependencyCompilation = CSharpCompilation.Create("Nexa.AutomaticDependency",

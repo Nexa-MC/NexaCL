@@ -35,7 +35,10 @@ Every yielded business call re-enters the admitted Host capability context.
 Transport loss seals the guest instead of replaying an uncertain operation.
 
 Plugin SDK libraries are consumed from an immutable, pinned external package feed.
-Their implementation sources are never added to the Host build graph. Services
+Their implementation sources are never added to the Host build graph. Automatic
+instrumentation covers Host-owned source assemblies. The four explicitly named
+`Nexa.Plugin` SDK assemblies are external only when the emitted dependency manifest
+identifies them as NuGet packages; the prefix alone never exempts an assembly. Services
 publish plugin presentation state; Desktop controllers translate user intents to
 authorized actions. The renderer does not call the extension process. Plugin
 management/recovery remains Host-owned and safe mode disables plugin execution.

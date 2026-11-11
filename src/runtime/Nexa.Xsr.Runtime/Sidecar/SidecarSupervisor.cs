@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
-using Nexa.Sidecar.Transport;
 using Nexa.Sidecar.Protocol;
+using Nexa.Sidecar.Transport;
 
 namespace Nexa.Xsr.Runtime;
 
