@@ -4,6 +4,32 @@ namespace Nexa.Xsr.Runtime.Tests;
 
 internal static partial class Program
 {
+    private static void StateSubscriptionsAvoidInvocationArrays()
+    {
+        var builder = new XsrStateStoreBuilder();
+        builder.Cell<int>("subscription.cell".AsXsrId(), "Owner");
+        var store = builder.Build();
+        var cell = store.Resolve("subscription.cell".AsXsrId());
+        long Measure()
+        {
+            for (int i = 0; i < 1000; i++) store.Publish(cell, i);
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 1000; i++) store.Publish(cell, i);
+            return GC.GetAllocatedBytesForCurrentThread() - before;
+        }
+        long baseline = Measure();
+        int first = 0, second = 0;
+        Action<XsrStateChange> observer = _ => second++;
+        store.Changed += _ => first++;
+        store.Changed += observer;
+        AssertEqual(baseline, Measure());
+        AssertEqual(2000, first); AssertEqual(2000, second);
+        store.Changed += _ => { store.Changed -= observer; throw new InvalidOperationException("isolated"); };
+        store.Changed += _ => first++;
+        store.Publish(cell, 1); store.Publish(cell, 2);
+        AssertEqual(2004, first); AssertEqual(2001, second);
+    }
+
     private static void StateDerivedTracksLateCommitsAndAvailability()
     {
         var builder = new XsrStateStoreBuilder();

@@ -241,10 +241,18 @@ public sealed class SharedStateCache : ISharedStateCache, IStateCachePressureCon
     }
 
     /// <summary>Physically drains producers, including flights detached by invalidation.</summary>
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        Dispose();
-        lock (_gate) return new(_retirement ??= RetireAsync([.. _physicalFlights]));
+        AggregateException? cancellationFailure = null;
+        try { Dispose(); }
+        catch (AggregateException error) { cancellationFailure = error; }
+        Task retirement;
+        lock (_gate) retirement = _retirement ??= RetireAsync([.. _physicalFlights]);
+        // A failing cancellation callback must not let the owner retire while producers
+        // still use its resources. Preserve the callback error after physical drainage.
+        await retirement.ConfigureAwait(false);
+        if (cancellationFailure is not null)
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(cancellationFailure).Throw();
     }
     private async Task RetireAsync(Flight[] flights)
     {

@@ -5,6 +5,33 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask DownloadCacheReleasesIdleCoordination()
+    {
+        string root = CreateTempDirectory(); using var service = CreateDownloadService();
+        int requests = 0;
+        try
+        {
+            for (int index = 0; index < 64; index++)
+            {
+                byte[] bytes = [(byte)index, 42];
+                var request = new DownloadRequest
+                {
+                    Sources = ["memory://cache"],
+                    DestinationPath = Path.Combine(root, "artifact"),
+                    CacheIdentity = new(Convert.ToHexString(SHA256.HashData(bytes)), bytes.Length),
+                    ConnectionFactory = _ => { requests++; return new RetryBytesConnection(bytes, []); },
+                };
+                AssertTrue((await service.DownloadAsync(request)).Success);
+                AssertEqual(0, service.SessionCacheLockCount);
+                AssertTrue((await service.DownloadAsync(request with { DestinationPath = Path.Combine(root, "copy") })).Success);
+                AssertTrue(File.ReadAllBytes(Path.Combine(root, "copy")).SequenceEqual(bytes));
+                AssertEqual(0, service.SessionCacheLockCount);
+            }
+            AssertEqual(64, requests);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     private static async ValueTask DownloadSessionCacheRejectsBadMirrorAndTriesOfficialSource()
     {
         string root = CreateTempDirectory(); using var service = CreateDownloadService();
@@ -43,14 +70,17 @@ internal static partial class Program
         {
             Task<DownloadTransferResult> download = service.DownloadAsync(request);
             await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            AssertEqual(1, service.SessionCacheLockCount);
             string cache = service.SessionCacheDirectory!;
             using var cancel = new CancellationTokenSource();
             var queued = service.DownloadAsync(request with { DestinationPath = Path.Combine(root, "queued") }, cancellationToken: cancel.Token);
             cancel.Cancel(); await TrustRejectsAsync<OperationCanceledException>(() => queued);
+            AssertEqual(1, service.SessionCacheLockCount);
             service.Dispose(); AssertTrue(Directory.Exists(cache));
             await TrustRejectsAsync<ObjectDisposedException>(() => service.DownloadAsync(request));
             release.SetResult(); AssertTrue((await download).Success);
             AssertFalse(Directory.Exists(cache)); AssertEqual(1, offsets.Count);
+            AssertEqual(0, service.SessionCacheLockCount);
         }
         finally { release.TrySetResult(); Directory.Delete(root, true); }
     }

@@ -9,6 +9,49 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static void ResourceInstalledFilterScansInventoryOnce()
+    {
+        var files = Enumerable.Range(0, 5000).Select(index => new ResourceInstalledFile(
+            new(ResourceProvider.Modrinth, "unrelated" + index), "v1", "unused.jar", "", true)).ToList();
+        files.Add(new(new(ResourceProvider.Modrinth, "present"), "v1", "disabled.jar", "", false));
+        files.Add(new(new(ResourceProvider.CurseForge, "123"), "v1", "merged.jar", "", true));
+        files.Add(new(new(ResourceProvider.Modrinth, "pack"), "v1", "pack.zip", "", true));
+        var inventory = new CountingInstalledInventory(files);
+        using var f = new ContinuousResourceHarness(new("1.20.1", "fabric", inventory, null));
+        f.Page.ConfigureInstanceFilter(new XsrQueryRouterBuilder().Build(new NoopDispatchObserver()), () => new("root", "instance"));
+        f.Complete(0,
+        [
+            ContinuousProject("present", "Installed mod"),
+            ContinuousProject("merged", "Merged installed") with { Sources = [new(ResourceProvider.Modrinth, "merged"), new(ResourceProvider.CurseForge, "123")] },
+            ContinuousProject("present", "Other provider", ResourceProvider.CurseForge),
+            ContinuousProject("pack", "Resource pack") with { Kind = ResourceKind.ResourcePack },
+            ContinuousProject("absent", "Not installed"),
+        ], hasMore: false);
+        f.Pump(() => f.Rows.Length == 5);
+        AssertEqual(0, inventory.Visits);
+        f.Click("ResourceHideInstalled");
+        f.Pump(() => f.Rows.Length == 3);
+        AssertTrue(f.Scene.Nodes.Any(node => node.Text == "Other provider"));
+        AssertTrue(f.Scene.Nodes.Any(node => node.Text == "Resource pack"));
+        AssertTrue(f.Scene.Nodes.Any(node => node.Text == "Not installed"));
+        Console.WriteLine($"Installed filter visited {inventory.Visits} records for {files.Count} installed files.");
+        AssertTrue(inventory.Visits <= files.Count * 2);
+        f.Click("ResourceHideInstalled");
+        f.Pump(() => f.Rows.Length == 5);
+    }
+
+    private sealed class CountingInstalledInventory(IReadOnlyList<ResourceInstalledFile> files) : IReadOnlyList<ResourceInstalledFile>
+    {
+        internal int Visits { get; private set; }
+        public int Count => files.Count;
+        public ResourceInstalledFile this[int index] => files[index];
+        public IEnumerator<ResourceInstalledFile> GetEnumerator()
+        {
+            foreach (var file in files) { Visits++; yield return file; }
+        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
     private static void ResourceContinuousListAppendsOnceAndRetainsRowsScrollAndDraft()
     {
         using var f = new ContinuousResourceHarness();
@@ -510,9 +553,12 @@ internal static partial class Program
                 return snapshot;
             }
         }
-        internal ContinuousResourceHarness()
+        internal ContinuousResourceHarness(ResourceInstanceContext? context = null)
         {
             var queries = new XsrQueryRouterBuilder();
+            if (context is not null)
+                queries.Register<ResourceInstanceQuery, ResourceInstanceContext>(ResourceCatalogContract.Instance,
+                    (_, _) => ValueTask.FromResult(XsrResult.Success(context)));
             queries.Register<ResourceSearchQuery, ResourceSearchResult>(ResourceCatalogContract.Search, async (query, token) =>
             {
                 var read = new ContinuousResourceRead(query, token); Reads.Add(read);

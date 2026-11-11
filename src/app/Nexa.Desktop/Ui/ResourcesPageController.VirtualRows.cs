@@ -101,9 +101,10 @@ internal sealed partial class ResourcesPageController
     private void ReconcileVirtualRows()
     {
         if (_result is null) return;
+        var installed = _hideInstalled && _context is not null
+            ? _context.Installed.Select(file => file.Source).ToHashSet() : null;
         var next = _result.Projects.Where(project => !_hideLibraries || project.Kind != ResourceKind.Mod || !project.IsLibrary)
-            .Where(project => !_hideInstalled || project.Kind != ResourceKind.Mod || _context is null
-                || !project.Sources.Any(reference => _context.Installed.Any(file => file.Source == reference))).ToArray();
+            .Where(project => project.Kind != ResourceKind.Mod || installed is null || !installed.Overlaps(project.Sources)).ToArray();
         bool changed = !_projectProjection.Select(CatalogProjectKey).SequenceEqual(next.Select(CatalogProjectKey), StringComparer.Ordinal);
         _projectProjection.Clear(); _projectProjection.AddRange(next);
         var retained = _result.Projects.Select(CatalogProjectKey).ToHashSet(StringComparer.Ordinal);
