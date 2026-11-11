@@ -5,6 +5,23 @@ namespace Nexa.Services.Tests;
 
 internal static partial class Program
 {
+    private static void FileBatchProgressRetainsSpeeds()
+    {
+        const int count = 8192;
+        long speed = -1; int completed = -1; double fraction = -1;
+        var progress = new FileBatchProgress(count, (value, done, totalSpeed) =>
+        { fraction = value; completed = done; speed = totalSpeed; });
+        for (int i = 0; i < count; i++)
+            progress.Update(i, new(DownloadStage.Downloading, "memory://batch", 0, 100, 10));
+        // Speed updates with no fraction change are throttled but still affect totals.
+        progress.Update(1, new(DownloadStage.Downloading, "memory://batch", 0, 100, 30));
+        progress.Update(2, new(DownloadStage.Downloading, "memory://batch", 0, 100, -1));
+        progress.Complete(0);
+        AssertEqual(count * 10L, speed); AssertEqual(1, completed);
+        for (int i = 1; i < count; i++) progress.Complete(i);
+        AssertEqual(0L, speed); AssertEqual(count, completed); AssertEqual(1d, fraction);
+    }
+
     private static async ValueTask SingleStreamProgressIsBoundedAndKeepsFinalBytes()
     {
         string root = CreateTempDirectory();

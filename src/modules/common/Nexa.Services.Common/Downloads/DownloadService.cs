@@ -84,6 +84,7 @@ public sealed partial class DownloadService : IDisposable
         CancellationToken cancellationToken = default)
     {
         ValidateRequest(request);
+        cancellationToken.ThrowIfCancellationRequested();
         if (request.CacheIdentity is not null)
             return DownloadCachedAsync(request with { DestinationPath = Path.GetFullPath(request.DestinationPath) }, progress, cancellationToken);
         if (WorkScheduler?.CurrentPriority is WorkPriority.Background or WorkPriority.Idle && BackgroundDownloadsEnabled?.Invoke() == false)
@@ -91,6 +92,14 @@ public sealed partial class DownloadService : IDisposable
         request = request with { BandwidthBudget = BandwidthLimiter?.Capture() };
         string destinationPath = Path.GetFullPath(request.DestinationPath);
         _log?.Info(LogModuleName, $"Download requested destination={destinationPath} sources={request.Sources.Count}");
+        DownloadOperation operation = GetOrCreateOperation(destinationPath, request);
+        return operation.TryJoin(progress, out long subscriberId)
+            ? operation.WaitAsync(subscriberId, cancellationToken)
+            : RetryAfterRetirementAsync(operation, request, destinationPath, progress, cancellationToken);
+    }
+
+    private DownloadOperation GetOrCreateOperation(string destinationPath, DownloadRequest request)
+    {
         Lazy<DownloadOperation> lazyOperation = _active.GetOrAdd(
             destinationPath,
             static (path, state) => new Lazy<DownloadOperation>(
@@ -99,8 +108,21 @@ public sealed partial class DownloadService : IDisposable
                     operation => state.Service.ExecuteAndCompleteAsync(path, operation)),
                 LazyThreadSafetyMode.ExecutionAndPublication),
             (Service: this, Request: request));
-        DownloadOperation operation = lazyOperation.Value;
-        return operation.WaitAsync(progress, cancellationToken);
+        return lazyOperation.Value;
+    }
+
+    private async Task<DownloadTransferResult> RetryAfterRetirementAsync(DownloadOperation operation,
+        DownloadRequest request, string destinationPath, Action<DownloadProgress>? progress, CancellationToken token)
+    {
+        // The canceled generation still owns the destination until its writer releases it.
+        // New callers wait for that release, then join a fresh generation with their own token.
+        while (true)
+        {
+            await operation.WaitForRetirementAsync(token).ConfigureAwait(false);
+            operation = GetOrCreateOperation(destinationPath, request);
+            if (operation.TryJoin(progress, out long subscriberId))
+                return await operation.WaitAsync(subscriberId, token).ConfigureAwait(false);
+        }
     }
 
     private IDownloadConnection? CreateConnection(DownloadRequest request, string source, bool probe = false)

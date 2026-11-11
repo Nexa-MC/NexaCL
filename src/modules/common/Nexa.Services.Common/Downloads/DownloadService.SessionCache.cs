@@ -5,11 +5,19 @@ namespace Nexa.Services.Downloads;
 public sealed partial class DownloadService
 {
     private readonly object _cacheGate = new();
-    private readonly Dictionary<string, SemaphoreSlim> _cacheLocks = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, CacheLock> _cacheLocks = new(StringComparer.Ordinal);
     private string? _cacheRoot;
     private int _cacheUsers;
     private bool _cacheDisposed;
     internal string? SessionCacheDirectory { get { lock (_cacheGate) return _cacheRoot; } }
+    internal int SessionCacheLockCount { get { lock (_cacheGate) return _cacheLocks.Count; } }
+
+    private sealed class CacheLock : IDisposable
+    {
+        internal SemaphoreSlim Gate { get; } = new(1, 1);
+        internal int Users { get; set; }
+        public void Dispose() => Gate.Dispose();
+    }
 
     private async Task<DownloadTransferResult> DownloadCachedAsync(DownloadRequest request,
         Action<DownloadProgress>? progress, CancellationToken token)
@@ -18,7 +26,7 @@ public sealed partial class DownloadService
         if (identity.Digest.Length is not (40 or 64 or 128) || !identity.Digest.All(char.IsAsciiHexDigit) || identity.Size < 0)
             throw new ArgumentException("A valid artifact digest and size are required.", nameof(request));
         string key = identity.Digest.ToLowerInvariant() + "-" + (identity.Size?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "unknown");
-        SemaphoreSlim mutex;
+        CacheLock mutex;
         string cached;
         lock (_cacheGate)
         {
@@ -26,14 +34,15 @@ public sealed partial class DownloadService
             _cacheRoot ??= Path.Combine(Path.GetTempPath(), "NexaCL-download-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_cacheRoot);
             if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(_cacheRoot, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-            if (!_cacheLocks.TryGetValue(key, out mutex!)) _cacheLocks.Add(key, mutex = new(1, 1));
+            if (!_cacheLocks.TryGetValue(key, out mutex!)) _cacheLocks.Add(key, mutex = new());
+            mutex.Users++;
             cached = Path.Combine(_cacheRoot, key);
             _cacheUsers++;
         }
         bool entered = false;
         try
         {
-            await mutex.WaitAsync(token).ConfigureAwait(false);
+            await mutex.Gate.WaitAsync(token).ConfigureAwait(false);
             entered = true;
             DownloadTransferResult? transfer = null;
             if (File.Exists(cached) && !await MatchesCacheAsync(cached, identity, token).ConfigureAwait(false)) DeleteCached(cached);
@@ -75,9 +84,14 @@ public sealed partial class DownloadService
         }
         finally
         {
-            if (entered) mutex.Release();
+            if (entered) mutex.Gate.Release();
             lock (_cacheGate)
             {
+                if (--mutex.Users == 0)
+                {
+                    _cacheLocks.Remove(key);
+                    mutex.Dispose();
+                }
                 _cacheUsers--;
                 if (_cacheDisposed && _cacheUsers == 0) ClearSessionCache();
             }

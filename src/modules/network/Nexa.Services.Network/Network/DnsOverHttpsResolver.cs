@@ -66,17 +66,22 @@ internal sealed class DnsOverHttpsResolver : IDisposable
     {
         try
         {
+            // ResponseHeadersRead ends HttpClient's timeout at the headers. Keep the
+            // same deadline alive while reading the bounded DNS response body.
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
+            deadline.CancelAfter(_client.Timeout);
+            CancellationToken requestToken = deadline.Token;
             using var request = new HttpRequestMessage(HttpMethod.Get, endpoint + "?name=" + Uri.EscapeDataString(host) + "&type=" + type);
             request.Headers.Accept.ParseAdd("application/dns-json");
-            using HttpResponseMessage response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
+            using HttpResponseMessage response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, requestToken).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
             if (response.Content.Headers.ContentLength > MaximumResponseBytes) return new([], 0);
-            await using Stream stream = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
+            await using Stream stream = await response.Content.ReadAsStreamAsync(requestToken).ConfigureAwait(false);
             using MemoryStream bounded = new();
             byte[] buffer = new byte[4096];
             while (true)
             {
-                int read = await stream.ReadAsync(buffer.AsMemory(), token).ConfigureAwait(false);
+                int read = await stream.ReadAsync(buffer.AsMemory(), requestToken).ConfigureAwait(false);
                 if (read == 0) break;
                 if (bounded.Length + read > MaximumResponseBytes) return new([], 0);
                 bounded.Write(buffer, 0, read);

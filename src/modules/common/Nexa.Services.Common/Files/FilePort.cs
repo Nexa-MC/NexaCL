@@ -192,9 +192,23 @@ public sealed class SafeFilePort
         }
 
         await using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.Asynchronous);
-        using var output = new MemoryStream();
-        await ArchiveReadBudget.CopyAsync(input, output, input.Length, _maxBytes, new ArchiveReadBudget(_maxBytes), cancellationToken).ConfigureAwait(false);
-        return output.ToArray();
+        long length = input.Length;
+        if (length > _maxBytes || length > Array.MaxLength)
+            throw new InvalidDataException($"文件超过大小上限 {_maxBytes} 字节：{relativePath}");
+        cancellationToken.ThrowIfCancellationRequested();
+        byte[] bytes = GC.AllocateUninitializedArray<byte>((int)length);
+        try
+        {
+            await input.ReadExactlyAsync(bytes, cancellationToken).ConfigureAwait(false);
+        }
+        catch (EndOfStreamException failure)
+        {
+            throw new InvalidDataException("文件实际长度与读取前的长度不一致。", failure);
+        }
+        // Preserve the bounded reader's growth check without an expandable staging copy.
+        if (await input.ReadAsync(new byte[1], cancellationToken).ConfigureAwait(false) != 0)
+            throw new InvalidDataException("文件实际长度与读取前的长度不一致。");
+        return bytes;
     }
 
     /// <summary>
@@ -221,6 +235,7 @@ public sealed class SafeFilePort
             throw new InvalidDataException($"文件超过大小上限 {_maxBytes} 字节：{relativePath}");
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         string destination = _folders.ResolveSafePath(folderName, relativePath);
         EnsureNoLinkEscape(_folders.Root, destination);
         string? directory = Path.GetDirectoryName(destination);
@@ -230,28 +245,28 @@ public sealed class SafeFilePort
         }
 
         string temporary = destination + ".tmp-" + Guid.NewGuid().ToString("N");
-        await File.WriteAllBytesAsync(temporary, content, cancellationToken).ConfigureAwait(false);
-        for (int attempt = 1; ; attempt++)
+        bool published = false;
+        try
         {
-            try
+            await File.WriteAllBytesAsync(temporary, content, cancellationToken).ConfigureAwait(false);
+            for (int attempt = 1; ; attempt++)
             {
-                File.Move(temporary, destination, overwrite: true);
-                return;
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    File.Move(temporary, destination, overwrite: true);
+                    published = true;
+                    return;
+                }
+                catch (IOException) when (attempt < ReplaceAttemptCount)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(25 * attempt), cancellationToken).ConfigureAwait(false);
+                }
             }
-            catch (IOException) when (attempt < ReplaceAttemptCount)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(25 * attempt), cancellationToken).ConfigureAwait(false);
-            }
-            catch (IOException)
-            {
-                TryDelete(temporary);
-                throw;
-            }
-            catch
-            {
-                TryDelete(temporary);
-                throw;
-            }
+        }
+        finally
+        {
+            if (!published) TryDelete(temporary);
         }
     }
 
@@ -275,7 +290,7 @@ public sealed class SafeFilePort
         {
             File.Delete(path);
         }
-        catch (IOException)
+        catch (Exception failure) when (failure is IOException or UnauthorizedAccessException)
         {
             // Best effort cleanup of a failed write.
         }

@@ -8,6 +8,7 @@ internal sealed class FileBatchProgress(int count, Action<double, int, long> rep
     private readonly double[] _fractions = new double[count];
     private readonly long[] _speeds = new long[count];
     private int _completed;
+    private long _totalSpeed;
     private double _sum, _reported = -1;
 
     internal void Update(int index, DownloadProgress progress) => Update(index,
@@ -22,12 +23,14 @@ internal sealed class FileBatchProgress(int count, Action<double, int, long> rep
         {
             _sum += Math.Max(_fractions[index], fraction) - _fractions[index];
             _fractions[index] = Math.Max(_fractions[index], fraction);
-            _speeds[index] = Math.Max(0, speed);
+            long nextSpeed = Math.Max(0, speed);
+            _totalSpeed = checked(_totalSpeed - _speeds[index] + nextSpeed);
+            _speeds[index] = nextSpeed;
             if (complete) _completed++;
             double overall = count == 0 ? 1 : _sum / count;
             if (!complete && overall - _reported < .002) return;
             _reported = overall;
-            report(overall, _completed, _speeds.Sum());
+            report(overall, _completed, _totalSpeed);
         }
     }
 

@@ -171,6 +171,13 @@ public sealed partial class NetworkHttpClientPool : IDisposable
         protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken token) => _inner.ReadAsStreamAsync(token);
         protected override bool TryComputeLength(out long length) { length = _inner.Headers.ContentLength ?? 0; return _inner.Headers.ContentLength is not null; }
         protected override void Dispose(bool disposing)
-        { if (disposing) { _inner.Dispose(); Interlocked.Exchange(ref _lease, null)?.Release(); } base.Dispose(disposing); }
+        {
+            try { if (disposing) _inner.Dispose(); }
+            finally
+            {
+                try { if (disposing) Interlocked.Exchange(ref _lease, null)?.Release(); }
+                finally { base.Dispose(disposing); }
+            }
+        }
     }
 }

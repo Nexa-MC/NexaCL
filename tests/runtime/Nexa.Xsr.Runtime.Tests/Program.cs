@@ -5,6 +5,7 @@ internal static partial class Program
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
         ("update declarations are validated and session owned", UpdateDeclarationsAreValidatedAndSessionOwned),
+        ("state subscriptions allocate no invocation arrays and retain snapshot semantics", Sync(StateSubscriptionsAvoidInvocationArrays)),
         ("automatic Sidecar patches bind ordinary methods without annotations", AutomaticSidecarPatchesOrdinaryMethods),
         ("automatic patch validation rejects invalid shapes and missing authority", AutomaticPatchesRejectUnsafePrograms),
         ("automatic patch groups commit and retire together without no-op allocation", Sync(AutomaticPatchGroupsAreAtomicAndNoopIsAllocationFree)),
