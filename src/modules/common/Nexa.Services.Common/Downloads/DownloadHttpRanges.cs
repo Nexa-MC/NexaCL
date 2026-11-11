@@ -8,7 +8,8 @@ internal static class DownloadHttpRanges
     {
         if (response.StatusCode == HttpStatusCode.PartialContent)
         {
-            if (response.Content.Headers.ContentRange is not { From: { } from, To: { } to, Length: { } total }
+            if (response.Content.Headers.ContentRange is not { Unit: var unit, From: { } from, To: { } to, Length: { } total }
+                || !string.Equals(unit, "bytes", StringComparison.OrdinalIgnoreCase)
                 || from != requestedOffset || to != total - 1
                 || response.Content.Headers.ContentLength is { } length && length != total - from)
                 throw new InvalidDataException("Download response range does not match the requested artifact.");

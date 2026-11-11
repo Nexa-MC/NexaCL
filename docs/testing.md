@@ -48,3 +48,8 @@ still triggers fallback while explicit caller cancellation propagates.
 with 5,003 installed files, merged provider identities, disabled mods, and a non-mod
 result. It bounds inventory enumeration rather than relying on timing: the fixture
 visits 5,003 entries with the index, compared with 25,012 before the optimization.
+
+File I/O regressions check failed-write temporary-file cleanup (including cancellation),
+byte-unit admission for HTTP resume ranges, and an 8 MiB read allocation budget.
+The read uses one result array while preserving size-limit, truncation, and growth
+checks; the allocation test compares bytes rather than wall-clock timing.

@@ -4,6 +4,9 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("download HTTP ranges require byte units", Sync(DownloadRangesRequireBytes)),
+        ("safe file canceled replacement removes temporary file", SafeFileCanceledReplacementRemovesTemporary),
+        ("safe file large reads preserve bytes with bounded allocation", SafeFileLargeReadAllocation),
         ("download cancellation callback failures still drain writers", DownloadCancellationFailuresStillDrainWriters),
         ("download session cache releases idle artifact coordination", DownloadCacheReleasesIdleCoordination),
         ("download new callers wait for canceled writer retirement", DownloadNewCallersWaitForRetirement),
