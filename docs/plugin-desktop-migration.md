@@ -107,8 +107,11 @@ package. Tests use real Wasm over the chunked execution boundary and cover encry
 cache tampering, approved grants, session replacement, disabled persistence,
 contributions, dialogs, model updates, input answers, drawing revisions, shortcuts,
 owned subscriptions, process operations, stale account IDs and retirement. The
-migration also requires managed Desktop tests, architecture/layout checks and
-NativeAOT/trim validation. This document does not turn missing routes into support.
+merged change passed 403 managed Desktop tests, 90 NXML compiler tests and all five
+plugin integration groups under Linux x64 NativeAOT. Architecture checks passed for
+101 projects, repository layout and source-format gates passed, and the pinned SDK
+feed downloaded and verified in a clean directory. NativeAOT retains the existing
+Jint IL2098 trim warning. This document does not turn missing routes into support.
 
 **The remaining business groups are not complete.** Production Market acquisition
 and entitlement/key custody also still require product wiring. Java, installation,
@@ -137,3 +140,8 @@ unavailable. This change publishes neither a launcher Alpha nor a signed worker.
 其余业务接口仍未全部接入，具体范围见上面的 Remaining scope。此轮代码与测试
 不代表全部 ABI 已实现，也不发布启动器 Alpha。SDK 锁定公开构建输入，普通恢复
 无需私有仓库凭据；开发样例和测试夹具另行记录精确来源及摘要。
+
+合入远端最新主分支后，403 项 Desktop 测试、90 项 NXML 测试和 Linux x64
+NativeAOT 的 5 组插件集成测试全部通过；101 个项目的架构、仓库目录及代码格式
+检查通过。公开 SDK 构建输入已在全新目录下载并校验。AOT 保留已有的 Jint IL2098
+裁剪警告。
