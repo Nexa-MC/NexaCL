@@ -12,5 +12,6 @@ public enum SidecarFeatures : uint
     Nxml = 16,
     AutomaticFunctions = 32,
     Pages = 64,
-    All = BinaryPayloads | Streams | Health | Unregistration | Nxml | AutomaticFunctions | Pages,
+    HostRequests = 128,
+    All = BinaryPayloads | Streams | Health | Unregistration | Nxml | AutomaticFunctions | Pages | HostRequests,
 }

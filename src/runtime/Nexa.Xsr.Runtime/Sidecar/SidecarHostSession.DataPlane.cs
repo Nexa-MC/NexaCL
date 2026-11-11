@@ -142,6 +142,9 @@ public sealed partial class SidecarHostSession
             RecordReceivedFrame(frame);
             switch (frame.MessageType)
             {
+                case SidecarMessageType.CommandRequest or SidecarMessageType.QueryRequest:
+                    await AcceptHostRequestAsync(frame, cancellationToken).ConfigureAwait(false); break;
+                case SidecarMessageType.Cancel: CancelHostRequest(frame); break;
                 case SidecarMessageType.CommandResult or SidecarMessageType.QueryResult: CompleteExchange(frame); break;
                 case SidecarMessageType.StateDelta: ApplyStateDelta(frame.Payload.Span); break;
                 case SidecarMessageType.Event: DeliverEvent(frame.Payload.Span); break;

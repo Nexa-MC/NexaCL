@@ -189,11 +189,11 @@ internal static partial class Program
     }
 
     private static async ValueTask<DataApiFixture> DataApiSession(SidecarRegistrationItem[] items,
-        SidecarFeatures features = SidecarFeatures.All, Func<Stream, Stream>? wrap = null)
+        SidecarFeatures features = SidecarFeatures.All, Func<Stream, Stream>? wrap = null, SidecarHostRequestRouter? hostRequests = null, int maxPending = 1024)
     {
         var (host, peer) = SidecarLoopbackStream.CreatePair();
         var connection = new SidecarConnection(peer);
-        var session = new SidecarHostSession(new(wrap?.Invoke(host) ?? host), "DataApiFixture");
+        var session = new SidecarHostSession(new(wrap?.Invoke(host) ?? host), "DataApiFixture", maxPending: maxPending) { HostRequests = hostRequests };
         var handshake = session.HandshakeAsync().AsTask(); var hello = await connection.ReceiveAsync();
         await DataApiFrame(connection, SidecarMessageType.Welcome,
             SidecarHandshake.EncodeWelcome(SidecarProtocol.Version, Guid.NewGuid(), null, features), hello.CorrelationId);

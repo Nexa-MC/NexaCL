@@ -36,3 +36,32 @@ The update center lists launcher and Sidecar versions with status on the right.
 continues after individual failures, and leaves failed entries retryable. Changing
 channels discards pending offers and queued work. **Restart to finish updating**
 becomes available when all operations finish; it does not restart automatically.
+
+## Reverse Host requests (ABI v0.2 transport migration)
+
+`SidecarFeatures.HostRequests` is negotiated independently of binary payloads.
+An admitted Sidecar may then send the existing binary CommandRequest/QueryRequest
+frames to routes installed through `SidecarSupervisor.HostRequests`. Route IDs
+are explicitly owned by Host; capability registration cannot create a Host route.
+The Host supplies package/session identity and checks the route's caller policy,
+request kind and codec before invoking its handler.
+
+Requests do not block the receive loop. The session bounds pending calls, and the
+shared router bounds actual work across sessions. Cancellation or a deadline does
+not release a non-cooperating handler's work slot until it actually completes.
+Cancelled commands with an uncertain outcome return `xsr.operation_outcome_unknown`;
+callers must use their business idempotency/query contract before retrying. Health
+traffic remains available while application work is pending. Retired sessions
+cannot issue new work or publish a late result.
+
+No Desktop business or plugin permission route is installed by this migration.
+The plugin broker must additionally validate its load permit, context, stage,
+capability, target grant and operation identity. A Sidecar session alone is not a
+plugin authorization token.
+
+Validation: 188 runtime tests passed, including reverse routing, policy/codec
+rejection, negotiation, cancellation, health and shared cross-session backpressure.
+The 101-project layout gate passed. Runtime AOT/trim analyzer build passed with
+zero warnings; build-time automatic instrumentation was disabled for that analyzer
+run because its separate compiler is a managed build tool. This is analyzer
+evidence, not a full Desktop NativeAOT publication claim.

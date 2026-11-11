@@ -23,6 +23,7 @@ public sealed partial class SidecarSupervisor : IDisposable, IAsyncDisposable
     private string? _directory;
     private bool _started, _disposed;
     public IReadOnlyDictionary<string, string> PackageOverrides { get; init; } = new Dictionary<string, string>();
+    public SidecarHostRequestRouter? HostRequests { get; init; }
     public XsrFunctionPatchAdmission? FunctionPatchAdmission { get; init; }
     public XsrSignalAdmission? SignalAdmission { get; init; }
     public XsrUiPatchAdmission? UiPatchAdmission { get; init; }
@@ -272,7 +273,7 @@ public sealed partial class SidecarSupervisor : IDisposable, IAsyncDisposable
             }
             await SidecarBootstrap.AuthenticateAsync(stream, challenge, deadline.Token).ConfigureAwait(false);
             session = new(new SidecarConnection(stream), package.Name)
-            { FunctionPatchAdmission = FunctionPatchAdmission, AutomaticFunctionAdmission = AutomaticFunctionAdmission, SignalAdmission = SignalAdmission, UiPatchAdmission = UiPatchAdmission, UiModuleAdmission = UiModuleAdmission, NxmlModules = NxmlModules };
+            { HostRequests = HostRequests, FunctionPatchAdmission = FunctionPatchAdmission, AutomaticFunctionAdmission = AutomaticFunctionAdmission, SignalAdmission = SignalAdmission, UiPatchAdmission = UiPatchAdmission, UiModuleAdmission = UiModuleAdmission, NxmlModules = NxmlModules };
             stream = null;
             await session.HandshakeAsync(deadline.Token).ConfigureAwait(false);
             await session.AcceptRegistrationAsync(deadline.Token).ConfigureAwait(false);

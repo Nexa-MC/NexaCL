@@ -181,3 +181,20 @@ Only the existing pinned-key signed release catalog can authorize an update; a
 registration cannot supply executable bytes, redirect downloads or grant install
 permission. Desktop consumes these declarations without calling Sidecars from the
 renderer; the same projection works with managed and native update services.
+
+### Plugin ABI v0.2: authenticated reverse Sidecar requests
+
+The existing binary CommandRequest/QueryRequest and result frames may flow from an
+admitted Sidecar to Host only after negotiating the append-only HostRequests
+feature. Frame numbers, binary payload encoding and existing outbound semantics
+remain unchanged. Host installs an explicit numeric route table; a Sidecar cannot
+register Host routes or select a CLR service. Each call receives Host-derived
+package/session identity and is checked against that route's admission policy.
+Plugin-level permits remain a separate broker obligation inside those routes.
+
+The one receive loop dispatches reverse calls asynchronously. Bounded concurrency,
+per-route deadlines, cancellation and activation/session retirement apply. Wrong
+codec/kind, absent routes and denied identities never invoke handlers. This
+mechanism does not grant native execution or authorize a plugin merely because
+its parent Sidecar was admitted. It supplies transport plumbing for the plugin
+broker; concrete business routes require explicit registration and validation.
