@@ -1,0 +1,1 @@
+<nxml-dynamic><Button Key="PluginOpenPage" Content="{data name}" Localize="false" Command="ui.plugins.manage" Class="plugin-link" /></nxml-dynamic>

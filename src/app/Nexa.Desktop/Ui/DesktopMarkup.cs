@@ -35,6 +35,12 @@ internal static class DesktopMarkup
     internal static NxmlHostIr Compile(NxmlDocument document) => NxmlCompiler.Compile(document, NxmlComponentLibrary.Default, Styles.Value);
     internal static Nexa.Xsr.Renderer.XsrUiVisualStyle Visual(string className) => Styles.Value.CreateVisual(className);
     internal static Stream Open(string name) => new MemoryStream(System.Text.Encoding.UTF8.GetBytes(Read(name)), writable: false);
+    /// <summary>Parse bounded verified package markup through the same external asset boundary.</summary>
+    internal static NxmlDocument Load(ReadOnlyMemory<char> verifiedSource)
+    {
+        if (verifiedSource.Length > 256 * 1024) throw new NxmlCompileException("Plugin markup budget exceeded.");
+        return NxmlParser.Parse(verifiedSource.ToString());
+    }
     internal static NxmlHostIr Load(string name) => Compile(NxmlParser.Parse(Read(name)));
     internal static string Read(string name)
     {

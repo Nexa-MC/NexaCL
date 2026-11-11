@@ -5,6 +5,7 @@ English | [简体中文](building.zh-CN.md)
 Run commands from the repository root. Install the .NET 10 SDK pinned in `global.json` and Python 3. NativeAOT additionally requires the target OS compiler, linker, and platform libraries. The actual setup is specified by `.github/workflows/launcher-build.yml` and `xsr-ci.yml`.
 
 ```sh
+python eng/plugins/prepare.py
 dotnet restore NexaCL.slnx
 dotnet build NexaCL.slnx -c Release -m:1
 dotnet run --project src/app/Nexa.Desktop -c Release --no-build

@@ -657,6 +657,20 @@ internal static partial class Program
             runtime.Host.StateStore,
             library, feedback, accountCommands: accounts.Commands,
             directoryEffects: new NativeVersionDirectoryEffects(platformActions), installCatalogCommands: installCatalog.Commands, installCatalogQueries: installCatalog.Queries, installRunCommands: installRun.Commands, recoveryQueries: runtime.Queries);
+        var pluginBusiness = new Nexa.Services.Composition.Plugins.PluginBusinessRoutes(host.StateStore, library.Commands, accounts.Commands);
+        await using PluginPageController plugins = new(shell, uiIntents, host.StateStore, feedback,
+            Path.Combine(folders.Root, "plugins", "storage"), pluginBusiness.Routes,
+            (bytes, token) =>
+            {
+                if (safeMode || !sidecars.TryGetSession(PluginSidecar.WasmRuntime.RemoteWasmPluginMachine.PackageName, out var session) || session is null)
+                    throw new IOException("plugin.execution.unavailable");
+                return PluginSidecar.WasmRuntime.RemoteWasmPluginMachine.CreateAsync(new PluginSidecar.WasmRuntime.ChunkedPluginExchange(
+                    new Nexa.Services.Composition.Plugins.PluginSidecarExchange(session)), bytes, token);
+            }, platformActions.PickPluginPackageAsync,
+            () => host.StateStore.Read<bool>(host.StateStore.Resolve(Nexa.Xsr.XsrSemanticId.Parse("developer.enabled"))).Value,
+            () => sidecars.TryGetSession(PluginSidecar.WasmRuntime.RemoteWasmPluginMachine.PackageName, out _),
+            () => sidecars.TryGetSession(PluginSidecar.WasmRuntime.RemoteWasmPluginMachine.PackageName, out var session) ? session!.SessionId : Guid.Empty, safeMode);
+        launchPage.PluginsPage = plugins.Page;
         launchPage.CopyProcessLogText = platformActions.CopyTextAsync;
         launchPage.OpenJavaLauncherStore = platformActions.OpenHttpsUri;
         using WardrobePageController wardrobePage = new(shell, uiIntents, accounts.Queries!, accounts.Commands, host.StateStore, feedback);

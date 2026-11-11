@@ -22,6 +22,7 @@
 安装 `global.json` 指定的 .NET SDK，准备 Python 3；原生编译还需要对应平台的工具链。以下命令从仓库根目录执行：
 
 ```sh
+python eng/plugins/prepare.py
 dotnet restore NexaCL.slnx
 dotnet build NexaCL.slnx -c Release -m:1
 dotnet run --project src/app/Nexa.Desktop -c Release --no-build

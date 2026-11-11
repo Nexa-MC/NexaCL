@@ -7,6 +7,9 @@ public sealed partial class AvaloniaUiPlatformActions
 {
     public Func<string, string>? LocalizeContentPicker { get; set; }
 
+    public Task<string?> PickPluginPackageAsync(CancellationToken token = default) => PickLocalContentAsync(
+        "选择插件开发包", "Nexa Plugin", ["*.zip"], token);
+
     public Task<string?> PickWorkspaceJsonAsync(CancellationToken token = default) => PickLocalContentAsync(
         "选择备份或迁移档案", "JSON", ["*.json"], token);
 

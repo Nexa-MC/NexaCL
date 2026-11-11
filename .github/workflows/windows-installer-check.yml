@@ -33,6 +33,8 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
         with:
           global-json-file: global.json
+      - name: Prepare pinned plugin SDK packages
+        run: python eng/plugins/prepare.py
       - name: Verify update ACL policy and publish the actual NativeAOT helper
         shell: pwsh
         run: |

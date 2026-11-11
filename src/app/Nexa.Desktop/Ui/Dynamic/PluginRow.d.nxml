@@ -1,0 +1,1 @@
+<nxml-dynamic><StackPanel Class="plugin-row"><Text Content="{data name}" Localize="false" Class="plugin-name" /><Text Content="{data state}" Localize="false" Class="plugin-copy" /><Button Key="PluginStop" Content="停用" Command="ui.plugins.manage" Enabled="{data active}" Class="plugin-button" /></StackPanel></nxml-dynamic>

@@ -10,7 +10,7 @@ internal sealed partial class LaunchPageController
     private void OpenBoundDestination(XsrSemanticId command)
     {
         XsrUiEntityId page = command.Value switch
-        { "ui.navigation.settings" => SettingsPage, "ui.navigation.community" => ResourcesPage, _ => default };
+        { "ui.navigation.plugins" => PluginsPage, "ui.navigation.settings" => SettingsPage, "ui.navigation.community" => ResourcesPage, _ => default };
         if (!page.IsAssigned || !_shell.Tree.IsAlive(page))
         {
             _ = _shell.Select(_boundDestination);
@@ -23,7 +23,7 @@ internal sealed partial class LaunchPageController
             return;
         }
         ClearSubpageHistory();
-        _boundDestination = command.Value == "ui.navigation.settings" ? XsrSemanticId.Parse("navigation.settings") : XsrSemanticId.Parse("navigation.community");
+        _boundDestination = XsrSemanticId.Parse(command.Value switch { "ui.navigation.settings" => "navigation.settings", "ui.navigation.plugins" => "navigation.plugins", _ => "navigation.community" });
         _ = _shell.Select(_boundDestination);
         if (_shell.Stage.Navigation.Current != page) _shell.Stage.Navigation.Replace(page);
     }

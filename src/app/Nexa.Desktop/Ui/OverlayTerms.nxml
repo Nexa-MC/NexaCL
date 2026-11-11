@@ -23,4 +23,17 @@
   <Text Key="notification.icon.error" Content="lucide/circle-x" />
   <Text Key="common.close" Content="关闭" />
   <Text Key="common.ok" Content="OK" />
+  <Text Key="plugin.navigation" Content="插件" />
+  <Text Key="plugin.storage-unavailable" Content="插件存储不可用" />
+  <Text Key="plugin.safe-mode" Content="安全模式下已禁用插件" />
+  <Text Key="plugin.engine-ready" Content="插件引擎已连接" />
+  <Text Key="plugin.engine-unavailable" Content="插件引擎未安装或未连接" />
+  <Text Key="plugin.action" Content="插件操作" />
+  <Text Key="plugin.allow" Content="允许" />
+  <Text Key="plugin.cancel" Content="取消" />
+  <Text Key="plugin.developer-load" Content="加载开发插件" />
+  <Text Key="plugin.unsigned" Content="未签名开发包" />
+  <Text Key="plugin.permissions" Content="权限" />
+  <Text Key="plugin.error" Content="插件错误" />
+  <Text Key="plugin.page-rejected" Content="插件页面被拒绝" />
 </StackPanel>

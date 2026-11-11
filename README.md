@@ -21,6 +21,7 @@ Players can find installers and release notes on [Releases](https://github.com/N
 Install the SDK pinned in `global.json` and Python 3. Native compilation also requires the target platform's compiler and libraries.
 
 ```sh
+python eng/plugins/prepare.py
 dotnet restore NexaCL.slnx
 dotnet build NexaCL.slnx -c Release -m:1
 dotnet run --project src/app/Nexa.Desktop -c Release --no-build

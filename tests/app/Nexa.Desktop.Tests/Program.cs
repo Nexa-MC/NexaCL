@@ -447,6 +447,8 @@ internal static partial class Program
         ("Sidecar scroll dispatches active-page observations and user links", SidecarScrollDispatchesOnlyActivePage),
         ("Sidecar links accept only bounded HTTPS destinations", SidecarLinksAllowOnlyUserFacingHttps),
         ("Sidecar standalone pages navigate, return and retire", SidecarStandalonePagesNavigateAndRetire),
+        ("Plugin manager storage recovery safe mode and cancelled approval", PluginManagerRecoveryAndSafeMode),
+        ("Plugin Desktop admission pages actions and business routes", PluginDesktopIntegration),
         ("Unified updates serialize failures and restart", UnifiedUpdatesSerializeFailuresAndRestart),
         ("Sidecar updates publish only verified complete packages", SidecarUpdatesPublishOnlyVerifiedCompletePackages),
         ("Host and Sidecar share one onboarding sequence and persist selected root", FirstRunAndSidecarShareOneOnboardingSequence),

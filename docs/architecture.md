@@ -24,6 +24,24 @@ NativeAOT modules exchange versioned C ABI integers, bounded bytes, buffers, and
 
 Update architecture documentation before changing a public contract or owner, then update implementation, consumers, and verification together. External extension engines remain in their own repositories, without adjacent-workspace source references.
 
+## Plugin Desktop integration
+
+Desktop owns plugin admission, capability grants, atomic lifecycle publication,
+business adapters and presentation state. The independent PluginSidecar executes
+verified import-free Wasm guests. Host/guest continuations use the existing
+authenticated Sidecar binary command channel, with bounded chunk transfers for
+larger payloads; no JSON data plane or new transport message IDs are introduced.
+Every yielded business call re-enters the admitted Host capability context.
+Transport loss seals the guest instead of replaying an uncertain operation.
+
+Plugin SDK libraries are consumed from an immutable, pinned external package feed.
+Their implementation sources are never added to the Host build graph. Services
+publish plugin presentation state; Desktop controllers translate user intents to
+authorized actions. The renderer does not call the extension process. Plugin
+management/recovery remains Host-owned and safe mode disables plugin execution.
+Local developer packages require explicit user admission; the production Market
+source remains responsible for publisher and entitlement verification.
+
 ## Protected Windows update paths
 
 Platform.Runtime owns admission of the update helper's Windows directory chain.

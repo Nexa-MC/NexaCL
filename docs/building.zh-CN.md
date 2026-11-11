@@ -5,6 +5,7 @@
 在仓库根目录执行命令。安装 `global.json` 指定的 .NET 10 SDK；Python 3 用于工程脚本。NativeAOT 还需要目标系统的本地编译器、链接器和平台库，实际安装项以 `.github/workflows/launcher-build.yml`、`xsr-ci.yml` 为准。
 
 ```sh
+python eng/plugins/prepare.py
 dotnet restore NexaCL.slnx
 dotnet build NexaCL.slnx -c Release -m:1
 dotnet run --project src/app/Nexa.Desktop -c Release --no-build

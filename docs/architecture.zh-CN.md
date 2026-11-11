@@ -122,3 +122,7 @@ after compiler/runtime and native dependency evidence, never by adding untested 
 明确取消启动仍阻止创建游戏进程。其他已运行游戏继续受系统级操作保护。
 
 实例管理仅允许经 Core 验证目标为对应 `/private` 目录且目标祖先无链接的 macOS 系统根别名 `/var`、`/tmp`、`/etc`。自定义目录链接仍被拒绝；内容读取与修改采用相同准入规则。
+
+## 插件 Desktop 接入
+
+Desktop 持有插件准入、权限、原子注册和业务状态；独立 PluginSidecar 仅执行已验证的无导入 Wasm。继续使用现有认证二进制 Sidecar 通道，分块传输大包；连接失败后不自动重放操作。SDK 从锁定提交生成的公开 NuGet 包消费，源码不加入宿主项目图。插件管理页、权限和操作确认由宿主控制，安全模式禁用执行；存储故障保留管理入口。页面只使用包内引用和模型数据，不能绑定私有宿主状态或发送产品命令。具体映射与验收见 [插件接入](plugin-desktop-migration.md)。

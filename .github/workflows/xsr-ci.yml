@@ -20,6 +20,8 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: global.json
+      - name: Prepare pinned plugin SDK packages
+        run: python eng/plugins/prepare.py
       - name: Record native desktop environment
         shell: pwsh
         run: |
@@ -56,6 +58,8 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: global.json
+      - name: Prepare pinned plugin SDK packages
+        run: python eng/plugins/prepare.py
       - name: Verify backend motion, input and resource lifetime before packaging
         run: dotnet run --project tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release
 
@@ -72,6 +76,8 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: global.json
+      - name: Prepare pinned plugin SDK packages
+        run: python eng/plugins/prepare.py
       - name: Publish NativeAOT Sidecar tests
         run: dotnet publish tests/sidecar/Nexa.Sidecar.Tests -c Release -p:PublishAot=true -p:StripSymbols=true -o native-sidecar-tests
       - name: Exercise native protocol and IPC without skips
@@ -106,6 +112,8 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: global.json
+      - name: Prepare pinned plugin SDK packages
+        run: python eng/plugins/prepare.py
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
         with:
           distribution: temurin
@@ -134,6 +142,8 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: global.json
+      - name: Prepare pinned plugin SDK packages
+        run: python eng/plugins/prepare.py
       - name: Prepare Linux keyring
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libsecret-tools gnome-keyring dbus-x11 clang zlib1g-dev
@@ -280,6 +290,8 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: global.json
+      - name: Prepare pinned plugin SDK packages
+        run: python eng/plugins/prepare.py
       - name: Prepare Linux native compiler
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev xvfb libx11-6 ffmpeg

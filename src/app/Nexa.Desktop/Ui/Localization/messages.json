@@ -11031,5 +11031,19 @@
   {"source":"选择可选文件 {data index} / {data count}","en":"Optional file {data index} of {data count}","zh-Hant":"選擇可選檔案 {data index} / {data count}"},
   {"source":"选择可选文件 {0} / {1}","en":"Optional file {0} of {1}","zh-Hant":"選擇可選檔案 {0} / {1}","template":true},
   {"source":"随包携带 Java（可选，填写 Java 根目录）","en":"Include Java (optional; enter Java home)","zh-Hant":"隨套件攜帶 Java（可選，填寫 Java 根目錄）"},
-  {"source":"随包携带启动器（可选，填写完整发布包目录）","en":"Include the launcher (optional; enter the complete release directory)","zh-Hant":"隨套件攜帶啟動器（可選，填寫完整發行套件目錄）"}
+  {"source":"随包携带启动器（可选，填写完整发布包目录）","en":"Include the launcher (optional; enter the complete release directory)","zh-Hant":"隨套件攜帶啟動器（可選，填寫完整發行套件目錄）"},
+  {"source": "插件", "en": "Plugins", "zh-Hant": "外掛"},
+  {"source": "插件存储不可用", "en": "Plugin storage unavailable", "zh-Hant": "外掛儲存空間無法使用"},
+  {"source": "安全模式下已禁用插件", "en": "Plugins are disabled in safe mode", "zh-Hant": "安全模式下已停用外掛"},
+  {"source": "插件引擎已连接", "en": "Plugin engine connected", "zh-Hant": "外掛引擎已連線"},
+  {"source": "插件引擎未安装或未连接", "en": "Plugin engine is not installed or connected", "zh-Hant": "外掛引擎尚未安裝或連線"},
+  {"source": "插件操作", "en": "Plugin action", "zh-Hant": "外掛操作"},
+  {"source": "允许", "en": "Allow", "zh-Hant": "允許"},
+  {"source": "加载开发插件", "en": "Load developer plugin", "zh-Hant": "載入開發外掛"},
+  {"source": "未签名开发包", "en": "Unsigned developer package", "zh-Hant": "未簽章的開發套件"},
+  {"source": "权限", "en": "Permissions", "zh-Hant": "權限"},
+  {"source": "插件错误", "en": "Plugin error", "zh-Hant": "外掛錯誤"},
+  {"source": "插件页面被拒绝", "en": "Plugin page rejected", "zh-Hant": "外掛頁面遭拒絕"},
+  {"source": "加载开发包", "en": "Load developer package", "zh-Hant": "載入開發套件"},
+  {"source": "选择插件开发包", "en": "Choose a developer plugin package", "zh-Hant": "選擇開發外掛套件"}
 ]

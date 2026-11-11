@@ -41,8 +41,8 @@ public static class NxmlShellComposer
         state.Publish(state.Resolve(LaunchPageState.TitleRootKey), true);
         state.Publish(state.Resolve(LaunchPageState.InstallNavigationVisibleKey), true);
 
-        // The checked-in product shell deliberately owns its four product destinations, matching
-        // the legacy experimental navigation registry. A composition root must not claim a
+        // The checked-in product shell deliberately owns its five product destinations.
+        // A composition root must not claim a
         // custom navigation contract when the NXML template cannot render it; future product
         // navigation changes are explicit NXML edits.
         if (options.NavigationItems is not null)
@@ -62,7 +62,8 @@ public static class NxmlShellComposer
         XsrUiEntityId navigation = FindDirectChild(tree, body, XsrUiSemanticRole.Navigation);
         XsrUiEntityId content = FindDescendant(tree, body, XsrUiSemanticRole.Content);
 
-        IReadOnlyList<XsrUiShellNavigationItem> defaults = XsrUiShell.DefaultNavigationItems;
+        IReadOnlyList<XsrUiShellNavigationItem> defaults = [.. XsrUiShell.DefaultNavigationItems.Take(3),
+            new("navigation.plugins", DesktopOverlayText.Raw("plugin.navigation"), "lucide/puzzle"), XsrUiShell.DefaultNavigationItems[3]];
         XsrUiEntityId[] itemEntities = [.. tree.Children(navigation)];
         if (itemEntities.Length != defaults.Count)
         {
