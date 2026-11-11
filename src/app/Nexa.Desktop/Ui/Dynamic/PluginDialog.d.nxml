@@ -1,0 +1,5 @@
+<nxml-dynamic><StackPanel Key="PluginDialogChrome" Class="plugin-dialog">
+<Text Content="{data owner}" Localize="false" Class="plugin-name" />
+<Button Key="PluginDialogClose" Content="关闭" Command="ui.plugins.dialog-close" Class="plugin-button" />
+<Dynamic Key="PluginDialogBody" Weight="1" Scroll="true" />
+</StackPanel></nxml-dynamic>

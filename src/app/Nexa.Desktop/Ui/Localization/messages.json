@@ -1,4 +1,10 @@
 [
+  {"source": "保存并启用", "en": "Save and enable", "zh-Hant": "儲存並啟用"},
+  {"source": "仅本次加载", "en": "Load once", "zh-Hant": "僅本次載入"},
+  {"source": "保存后将在开发模式启动时离线恢复此包和本次批准的权限。停用将移除自动恢复授权。", "en": "Saving restores this package and these approved permissions offline when starting in developer mode. Disabling removes automatic restore approval.", "zh-Hant": "儲存後將在開發模式啟動時離線恢復此套件和本次批准的權限。停用將移除自動恢復授權。"},
+  {"source": "插件离线恢复失败，原缓存已保留", "en": "Plugin offline restore failed; the original cache was preserved", "zh-Hant": "插件離線恢復失敗，原快取已保留"},
+  {"source": "插件依赖循环，已阻止自动恢复", "en": "Plugin dependency cycle; automatic restore blocked", "zh-Hant": "插件依賴循環，已阻止自動恢復"},
+
   {"source": "通道 · {data channel}　上次检查：{data lastCheck}", "en": "Channel · {data channel}　Last checked: {data lastCheck}", "zh-Hant": "通道 · {data channel}　上次檢查：{data lastCheck}"},
   {"source": "更新中心", "en": "Update center", "zh-Hant": "更新中心"},
   {"source": "检查所有更新", "en": "Check all updates", "zh-Hant": "檢查所有更新"},

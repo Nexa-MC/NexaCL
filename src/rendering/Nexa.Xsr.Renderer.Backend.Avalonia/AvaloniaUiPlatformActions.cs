@@ -201,6 +201,7 @@ public sealed partial class AvaloniaUiPlatformActions
         _doubleClick.Cancel();
         InputObserved?.Invoke(AvaloniaUiInputKind.Keyboard);
         if (!args.Handled && HandleCommandPaletteKey(args.Key, args.KeyModifiers)) args.Handled = true;
+        if (!args.Handled && ExtensionShortcutRequested?.Invoke(new KeyGesture(args.Key, args.KeyModifiers).ToString()) == true) args.Handled = true;
     }
 
     public void OpenHttpsUri(Uri uri)

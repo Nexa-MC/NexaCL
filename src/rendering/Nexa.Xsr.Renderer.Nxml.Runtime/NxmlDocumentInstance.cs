@@ -29,6 +29,14 @@ public class NxmlDocumentInstance : IDisposable
         catch { Dispose(); throw; }
     }
 
+    /// <summary>Mounts this owned document into an explicit extension slot.</summary>
+    public void Mount(XsrUiEntityId slot)
+    {
+        if (!_tree.IsAlive(Root) || !_tree.IsAlive(slot) || _tree.GetComponent<NxmlDynamicSlot>(slot) is null || Owns(slot))
+            throw new NxmlLoadException("Mount requires a live external Dynamic slot.");
+        _tree.Attach(Root, slot);
+    }
+
     public bool Owns(XsrUiEntityId source)
     {
         if (!_tree.IsAlive(source)) return false;

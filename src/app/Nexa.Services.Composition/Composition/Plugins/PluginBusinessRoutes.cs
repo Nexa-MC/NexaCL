@@ -15,10 +15,11 @@ using Nexa.Xsr.State;
 namespace Nexa.Services.Composition.Plugins;
 
 /// <summary>Explicit projections of public launcher state. Opaque IDs are scoped to one admitted load.</summary>
-public sealed class PluginBusinessRoutes(XsrStateStore store, XsrCommandRouter libraryCommands, XsrCommandRouter accountCommands)
+public sealed partial class PluginBusinessRoutes(XsrStateStore store, XsrCommandRouter libraryCommands, XsrCommandRouter accountCommands, XsrCommandRouter? minecraftCommands = null, XsrQueryRouter? minecraftQueries = null) : IAsyncDisposable
 {
     private readonly byte[] _identity = RandomNumberGenerator.GetBytes(32);
-    public IEnumerable<HostCapabilityRoute> Routes => [
+    public IEnumerable<HostCapabilityRoute> Routes => BasicRoutes.Concat(StateRoutes).Concat(ProcessRoutes);
+    private IEnumerable<HostCapabilityRoute> BasicRoutes => [
         HostRoutes.Typed<InstanceListRequest, Page<InstanceSummary>>("Minecraft.Instances", "List", (c, v) =>
         {
             var snapshot = Library(); var root = Root(c, snapshot.RootDirectory);

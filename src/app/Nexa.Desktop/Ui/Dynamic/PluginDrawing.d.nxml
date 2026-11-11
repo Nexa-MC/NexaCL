@@ -1,0 +1,1 @@
+<nxml-dynamic><Node Key="{data key}" Kind="PluginDrawing" Recipe="StackLayout" Role="Button" Label="{data label}" Localize="false" Width="{data width}" Height="{data height}" Focusable="true" Clickable="true" /></nxml-dynamic>

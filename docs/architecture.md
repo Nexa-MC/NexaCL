@@ -45,6 +45,23 @@ management/recovery remains Host-owned and safe mode disables plugin execution.
 Local developer packages require explicit user admission; the production Market
 source remains responsible for publisher and entitlement verification.
 
+### Offline plugin admission and presentation continuation
+
+Composition owns a bounded, encrypted installation catalog separate from plugin-owned
+storage. Only explicitly approved package bytes and the exact approved grants may be
+saved. A per-record AES-GCM key is wrapped by the existing current-user OS protector;
+plaintext packages and grants are never staged on disk. Restore revalidates packages
+and grants, waits for an authenticated worker, and obtains fresh load identities.
+Developer packages restore only while developer mode is enabled; safe mode never
+restores. Explicit disable deletes saved admission before stopping execution. Worker
+loss retires active guests without replaying pending business calls. Corrupt records
+are isolated and reported; they are not deleted or treated as trusted installs.
+
+Advanced UI registrations remain atomic and owned by the admitted load. Protected
+Host controls cannot be replaced. Platform interactions are supplied by Desktop ports;
+services publish data and never access the renderer directly. Business adapters use
+existing typed commands and public projections with load-scoped opaque handles.
+
 ## Protected Windows update paths
 
 Platform.Runtime owns admission of the update helper's Windows directory chain.
@@ -219,3 +236,9 @@ codec/kind, absent routes and denied identities never invoke handlers. This
 mechanism does not grant native execution or authorize a plugin merely because
 its parent Sidecar was admitted. It supplies transport plumbing for the plugin
 broker; concrete business routes require explicit registration and validation.
+
+NXML owns extension composition and mounting. Generic prepared documents may compose
+already-compiled fragments and mount into explicit Dynamic slots; Desktop supplies
+owned documents and contribution modes, never constructs presentation IR or mutates
+input components. Drawing entities come from external Host templates. This keeps
+extension rendering subject to the same presentation ownership checks as product UI.

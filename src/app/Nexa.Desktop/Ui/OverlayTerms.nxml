@@ -36,4 +36,9 @@
   <Text Key="plugin.permissions" Content="权限" />
   <Text Key="plugin.error" Content="插件错误" />
   <Text Key="plugin.page-rejected" Content="插件页面被拒绝" />
+  <Text Key="plugin.remember" Content="保存并启用" />
+  <Text Key="plugin.once" Content="仅本次加载" />
+  <Text Key="plugin.restore-consent" Content="保存后将在开发模式启动时离线恢复此包和本次批准的权限。停用将移除自动恢复授权。" />
+  <Text Key="plugin.restore-failed" Content="插件离线恢复失败，原缓存已保留" />
+  <Text Key="plugin.restore-dependencies" Content="插件依赖循环，已阻止自动恢复" />
 </StackPanel>

@@ -10,6 +10,8 @@ public sealed partial class AvaloniaUiPlatformActions
     /// <summary>Returns true only when an open product palette consumed Escape.</summary>
     public Func<bool>? CommandPaletteCloseRequested { get; set; }
 
+    public Func<string, bool>? ExtensionShortcutRequested { get; set; }
+
     internal bool HandleCommandPaletteKey(Key key, KeyModifiers modifiers)
     {
         if (key == Key.P && modifiers == (KeyModifiers.Control | KeyModifiers.Shift))

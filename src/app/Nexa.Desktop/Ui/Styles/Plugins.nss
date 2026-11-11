@@ -6,3 +6,4 @@
 .plugin-button { Width: 160; Height: 40; }
 .plugin-link { Height: 44; }
 .plugin-list { Weight: 1; Spacing: 12; }
+.plugin-dialog { Width: 720; Height: 560; Padding: 24; Spacing: 12; Background: #FF202832; }

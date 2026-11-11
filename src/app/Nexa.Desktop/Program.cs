@@ -657,7 +657,7 @@ internal static partial class Program
             runtime.Host.StateStore,
             library, feedback, accountCommands: accounts.Commands,
             directoryEffects: new NativeVersionDirectoryEffects(platformActions), installCatalogCommands: installCatalog.Commands, installCatalogQueries: installCatalog.Queries, installRunCommands: installRun.Commands, recoveryQueries: runtime.Queries);
-        var pluginBusiness = new Nexa.Services.Composition.Plugins.PluginBusinessRoutes(host.StateStore, library.Commands, accounts.Commands);
+        await using var pluginBusiness = new Nexa.Services.Composition.Plugins.PluginBusinessRoutes(host.StateStore, library.Commands, accounts.Commands, minecraft.Commands, minecraft.Queries);
         await using PluginPageController plugins = new(shell, uiIntents, host.StateStore, feedback,
             Path.Combine(folders.Root, "plugins", "storage"), pluginBusiness.Routes,
             (bytes, token) =>
@@ -670,7 +670,9 @@ internal static partial class Program
             () => host.StateStore.Read<bool>(host.StateStore.Resolve(Nexa.Xsr.XsrSemanticId.Parse("developer.enabled"))).Value,
             () => sidecars.TryGetSession(PluginSidecar.WasmRuntime.RemoteWasmPluginMachine.PackageName, out _),
             () => sidecars.TryGetSession(PluginSidecar.WasmRuntime.RemoteWasmPluginMachine.PackageName, out var session) ? session!.SessionId : Guid.Empty, safeMode);
+        plugins.BindBusiness(pluginBusiness);
         launchPage.PluginsPage = plugins.Page;
+        platformActions.ExtensionShortcutRequested = plugins.HandleShortcut;
         launchPage.CopyProcessLogText = platformActions.CopyTextAsync;
         launchPage.OpenJavaLauncherStore = platformActions.OpenHttpsUri;
         using WardrobePageController wardrobePage = new(shell, uiIntents, accounts.Queries!, accounts.Commands, host.StateStore, feedback);

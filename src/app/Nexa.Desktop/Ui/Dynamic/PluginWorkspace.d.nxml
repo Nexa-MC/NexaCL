@@ -2,5 +2,6 @@
 <Text Content="插件" Class="plugin-title" />
 <Text Content="{data status}" Localize="false" Class="plugin-copy" />
 <Button Key="PluginImport" Content="加载开发包" Command="ui.plugins.manage" IsVisible="{data import}" Enabled="{data import}" Class="plugin-button" />
+<Dynamic Key="PluginExtensions" />
 <Dynamic Key="PluginRows" Scroll="true" Class="plugin-list" />
 </StackPanel></nxml-dynamic>

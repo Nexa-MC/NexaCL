@@ -15,7 +15,7 @@ public sealed record PluginPage(PluginIdentity Owner, UIPage Page, string Title,
 public sealed record PluginPresentation(ImmutableArray<PluginStatus> Plugins, ImmutableArray<PluginPage> Pages);
 
 /// <summary>Host-owned admission, lifecycle and presentation data. No renderer or guest objects cross this port.</summary>
-public sealed class PluginApplication : IAsyncDisposable
+public sealed partial class PluginApplication : IAsyncDisposable
 {
     private readonly object _gate = new();
     private readonly SemaphoreSlim _loads = new(1, 1);
@@ -29,18 +29,19 @@ public sealed class PluginApplication : IAsyncDisposable
     private readonly Action<PluginIdentity, UINotification> _notify;
     private readonly Action<PluginIdentity, QualifiedId> _navigate;
     private readonly Action<string> _validatePage;
+    private readonly Action<string> _validateComponent;
     private bool _closed;
     public PluginHostRuntime Runtime { get; }
 
     public PluginApplication(string storage, Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask<IWasmPluginMachine>> machine,
         IEnumerable<HostCapabilityRoute> business, IActionConfirmation confirmation,
-        Action<PluginIdentity, UINotification> notify, Action<PluginIdentity, QualifiedId> navigate, Action<string> validatePage)
+        Action<PluginIdentity, UINotification> notify, Action<PluginIdentity, QualifiedId> navigate, Action<string> validatePage, Action<string>? validateComponent = null)
     {
         if (OperatingSystem.IsWindows()) Directory.CreateDirectory(storage);
         else Directory.CreateDirectory(storage, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        _machine = machine; _notify = notify; _navigate = navigate; _validatePage = validatePage;
+        _machine = machine; _notify = notify; _navigate = navigate; _validatePage = validatePage; _validateComponent = validateComponent ?? validatePage;
         Runtime = new(storage, d => Abi100Schemas.Validate(d.Schema, d.Body), Abi100Schemas.Validate,
-            Routes.Concat(business), new() { ActionConfirmation = confirmation });
+            Routes.Concat(AdvancedUiRoutes).Concat(DrawingRoutes).Concat(business), new() { ActionConfirmation = confirmation });
     }
 
     public PluginPresentation Snapshot()
@@ -69,9 +70,9 @@ public sealed class PluginApplication : IAsyncDisposable
             var assets = new Dictionary<string, byte[]>(StringComparer.Ordinal);
             try
             {
-                foreach (var item in manifest.Payloads.Where(p => p.Path.EndsWith(".nxml", StringComparison.Ordinal)))
+                foreach (var item in manifest.Payloads.Where(p => p.Path != manifest.WebAssemblyEntryPath))
                 {
-                    if (item.Size > 256 * 1024 || assets.Count >= 32) throw new InvalidDataException("Plugin UI asset quota exceeded.");
+                    if (item.Size > (item.Path.EndsWith(".nxml", StringComparison.Ordinal) ? 256 * 1024 : 4 * 1024 * 1024) || assets.Count >= 32 || assets.Values.Sum(b => (long)b.Length) + item.Size > 16 * 1024 * 1024) throw new InvalidDataException("Plugin UI asset quota exceeded.");
                     assets.Add(item.Path, package.CopyPayload(item.Path));
                 }
                 lock (_gate)
@@ -118,6 +119,7 @@ public sealed class PluginApplication : IAsyncDisposable
         lock (_gate)
         {
             if (_assets.Remove(id, out var assets)) foreach (var bytes in assets.Values) CryptographicOperations.ZeroMemory(bytes);
+            ClearAdvancedUi(id); ClearDrawing(id);
             foreach (var key in _navigation.Where(p => p.Value.PluginId == id).Select(p => p.Key).ToArray()) _navigation.Remove(key);
             foreach (var key in _files.Where(p => p.Value.Plugin == id).Select(p => p.Key).ToArray()) _files.Remove(key);
             foreach (var key in _pages.Where(p => p.Value.Owner.PluginId == id).Select(p => p.Key).ToArray()) { _pages.Remove(key); _models.Remove(key); }
@@ -180,13 +182,22 @@ public sealed class PluginApplication : IAsyncDisposable
     }
     private ValueTask<StateSnapshot> PublishModel(HostInvocation c, UIModelUpdate value)
     {
-        var id = new QualifiedId(value.View.Value);
         lock (_gate)
         {
+            if (value.Value is not AbiValue.Map model || model.Value.Values.Any(v => v is not (AbiValue.Utf8String or AbiValue.Bool or AbiValue.Int64 or AbiValue.UInt64 or AbiValue.Float64 or AbiValue.Null)))
+                throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
+            if (_dialogs.TryGetValue(value.View, out var dialog))
+            {
+                if (dialog.Owner != c.Identity) throw new AbiHostException(AbiErrors.HANDLE_INVALID);
+                if (dialog.Page.Page.Schema != value.Schema || !Abi100Schemas.Validate(value.Schema, value.Value)) throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
+                if (value.ExpectedRevision is { } dialogExpected && dialog.Page.Revision != dialogExpected) throw new AbiHostException(AbiErrors.CONFLICT);
+                var updated = new StateSnapshot(value.Value, value.Schema, new(Guid.NewGuid().ToString("N")), DateTimeOffset.UtcNow, null);
+                _dialogs[value.View] = dialog with { Page = dialog.Page with { Model = value.Value, Revision = updated.Revision } };
+                return ValueTask.FromResult(updated);
+            }
+            var id = new QualifiedId(value.View.Value);
             if (!_pages.TryGetValue(id, out var page) || page.Owner != c.Identity) throw new AbiHostException(AbiErrors.HANDLE_INVALID);
             if (page.Page.Schema != value.Schema || !Abi100Schemas.Validate(value.Schema, value.Value)) throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
-            if (value.Value is not AbiValue.Map fields || fields.Value.Values.Any(v => v is not (AbiValue.Utf8String or AbiValue.Bool or AbiValue.Int64 or AbiValue.UInt64 or AbiValue.Float64 or AbiValue.Null)))
-                throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
             if (value.ExpectedRevision is { } expected && _models.GetValueOrDefault(id)?.Revision != expected) throw new AbiHostException(AbiErrors.CONFLICT);
             var snapshot = new StateSnapshot(value.Value, value.Schema, new(Guid.NewGuid().ToString("N")), DateTimeOffset.UtcNow, null);
             _models[id] = snapshot; return ValueTask.FromResult(snapshot);

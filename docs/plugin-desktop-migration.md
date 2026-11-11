@@ -1,79 +1,139 @@
 # Plugin Desktop integration
 
-The Desktop now composes the public PluginSidecar SDK as a trusted Host kernel and
-uses the existing authenticated Sidecar command channel to execute Wasm in the
-independent `Nexa.Plugin.Sidecar` process. The immutable SDK source/version is in
-`eng/plugins/sdk.lock.json`; run `python eng/plugins/prepare.py` before restore.
-Only NuGet packages enter the Host project graph, with no external source project
-references. The default feed helper downloads public build inputs from the pinned NexaCL prerelease,
-checks the archive size/SHA-256, exact package inventory, source commit and individual
-package hashes. Cached packages are checked again. The release includes the exact SDK
-source snapshot. `--source /path/to/PluginSidecar` rebuilds the pinned commit locally.
-No private repository credentials are needed for normal restore.
+Desktop composes the pinned public PluginSidecar SDK as a trusted Host kernel.
+Verified Wasm executes in the authenticated independent `Nexa.Plugin.Sidecar`
+process through the existing numeric binary protocol. The SDK version and public
+build-input hashes are locked in `eng/plugins/sdk.lock.json`. Run
+`python eng/plugins/prepare.py` before restore. Packages and the exact SDK source
+snapshot are downloaded without private-repository credentials; local packages
+are rechecked. `--source /path/to/PluginSidecar` builds the pinned source locally.
+The Host graph never adds external source project references.
 
-The protected Plugins navigation entry displays plugin load state, failure codes,
-stop controls and admitted pages. Safe mode prevents loading. A storage fault
-leaves the management page available. Local unsigned ZIPs require developer mode
-and explicit per-load approval of the manifest's requested permissions. Approval
-uses already parsed, digest-checked bytes; the selected file is not read again.
-The worker itself still requires the existing production `.nsc` release signature.
+## Offline installation and recovery
 
-## Implemented mappings
+Local ZIP admission requires developer mode and explicit approval of the verified
+manifest and grants. Users choose **Save and enable** or **Load once**. Saved
+admission contains those exact package bytes and grants, encrypted with a random
+AES-GCM key wrapped by the current-user OS protector. There is no plaintext disk
+fallback. The catalog permits at most 64 records, each bounded to 27 MiB. Files are
+written atomically. Invalid records remain available for diagnosis and do not
+prevent restoration of other records.
 
-There are 16 application mappings in addition to the SDK kernel's 90 routes:
+Restoration waits for an authenticated worker, checks package digests and grants
+again, orders required dependencies, and obtains fresh load identities. Developer
+packages require developer mode on every restore. Safe mode never restores them.
+A worker replacement retires its guests before restoring saved admission; pending
+actions are not replayed. **Disable** removes saved admission before stopping the
+plugin and removes saved dependents stopped by that operation. Storage faults leave
+the Host management page accessible. The worker retains its release-signature gate.
 
-- Files: OpenPackageFile issues owned references to verified package NXML assets.
-- UI: RegisterPage, RegisterNavigation, PublishModel, UpdateModel, Navigate, Notify.
-- Platform: Notify and QueryArchitecture.
-- Minecraft.Instances: List, ListRoots, ReadIdentity and Select.
-- Accounts: List, ReadPublic and Select.
+## Implemented application mappings
 
-The instance list reflects the current, authoritative library root. Provisional
-or loading state is unavailable, not an empty successful result. Root/file/entity
-references are scoped to the admitted plugin load. Account projections contain
-public views only; selecting an account checks its roster revision. Page cursors
-are bound to the load, collection and snapshot revision.
+There are 40 application routes in addition to the SDK kernel's 90 routes:
 
-Pages register atomically with the existing definition lifecycle. NXML comes from
-verified package assets, not OS paths. Models use registered ABI schemas and scalar
-map fields. `UIModelUpdate.View` is the page's qualified ID string. Navigation labels
-appear in the Host plugin manager. This initial adapter accepts literal localization
-keys and no navigation icons. It rejects private Host state bindings, product
-commands, arbitrary image loading and actionable notifications. An owned
-`ui.plugin.action` intent invokes Actions.Invoke using the original plugin's grants;
-required confirmations use the Host modal service. Cancellation invalidates approval.
-Retirement removes page documents, file handles, model state and pending capabilities.
-Session replacement never redirects an existing machine or replays its effects.
+| Group | Application mappings |
+| --- | --- |
+| Files | OpenPackageFile, Stat, Read |
+| UI | All 19 current UI operations |
+| Platform | Notify, QueryArchitecture |
+| Minecraft.Instances | List, ListRoots, ReadIdentity, Select, Watch, Discover |
+| Accounts | List, ReadPublic, Select, Watch, Remove |
+| Minecraft.Processes | ListSessions, ReadSession, WatchSession, ReadLogRange, Stop |
 
-The developer test package is built from the pinned independent SDK's
-`samples/WasmDesktop`; its source identity and digest are recorded beside the fixture.
-It demonstrates a real Wasm callback through chunked execution, page rendering,
-trusted action approval, public account reads and permission denial. Negative
-coverage includes private-state markup, invalid package paths, retirement, storage
-failure, safe mode and cancelled approval. Existing shell/navigation tests,
-architecture rules, formatting and NativeAOT/trim checks close the migration.
+These adapters call existing typed Host commands and queries. They expose public
+account projections, never credentials. Opaque IDs and cursors belong to one
+admitted load; stale roster revisions cannot select/remove a replacement account.
+Instance reads require the authoritative current root. Incomplete/provisional
+state returns unavailable rather than a successful empty list. Discovery and
+process termination use the existing Tasks operation ledger and cancellation
+lifetime. Logs use the existing bounded, redacted process-output query and
+load/session-bound cursors, with explicit gaps.
 
-## Remaining scope
+Instance, account and session watches accept their respective `InstanceSummary`,
+`AccountPublic` and `GameSession` schemas. Each publishes an initial projection;
+subsequent applied state changes trigger coalesced snapshots in a bounded queue.
+A lost target emits a terminal null. Queue overflow requires resynchronization;
+cursors supplied when opening a new watch set `ResyncRequired`. Release, revoked
+grants and retired loads prevent further delivery. At most 256 business watches
+are retained, with 64 queued snapshots per watch.
 
-This is the first working Desktop integration, not full ABI product coverage.
-Production Market acquisition/key custody, persisted enablement and automatic offline
-startup still need product wiring. UI contributions, replacements, shortcuts, drawing,
-arbitrary dialog answers and the remaining domain methods remain unavailable. This
-change does not publish a signed worker or a launcher Alpha release. Other unavailable
-capabilities are never advertised as successful placeholder implementations.
+## UI extension contract
+
+All registrations participate in the existing atomic definition lifecycle.
+`nexa:plugins/content` is the public Host extension point; protected navigation,
+authentication and confirmation controls cannot be replaced. Contributions use
+owned verified NXML components and support append, prepend, hide, replace and
+wrap, with stable dependency ordering. Replacement pages must match the view
+schema. Commands invoke owned actions with `Empty` input; shortcuts are restricted
+to their declared view and do not fire while editing text or displaying a modal.
+
+Pages and dialogs use registered ABI schemas with scalar model fields. Update a
+page using its qualified ID as `UIModelUpdate.View`; update a dialog using the
+returned dialog entity ID. Expected revisions reject stale writes. Owned text
+input drafts are included in explicit page/dialog action submissions. Required
+action approval always uses Host-owned controls. Dialog identity and close controls
+remain outside guest content; closing a dialog releases its drawing surfaces.
+
+View lifecycle subscriptions return `TextResult` values: `open`, `hidden` (pages),
+and `closed` (dialogs). Page watches use the qualified page ID and admitted load ID
+as view scope; dialogs use their returned ID/scope. The Host reports visibility.
+
+Drawing surfaces target a unique dynamic slot whose key equals the name after
+`:` in the surface's qualified ID. Page scope is the admitted load ID; dialog scope
+is its returned view scope. Each surface is at most 2048 by 2048, with at most eight
+surfaces/eight million pixels in total and 1024 commands per frame. Submitted
+`Surface.Revision` supplies the next revision and `ExpectedRevision` must match the
+current revision. A new frame must use a different revision. Image commands accept
+only owned BlobRefs from verified package files; decoding is bounded.
+
+Input subscriptions expose only the surface's own visible, enabled entity. Host
+confirmations and unrelated overlays block delivery. Pointer coordinates use the
+Host viewport coordinate system. Callbacks receive `{event, gap}`; polling returns
+an initial `TextResult("attached")` followed by event maps containing `kind`,
+`phase`, `x`, `y`, and `text`. Callback delivery coalesces bursts and reports gaps;
+text is bounded to 4096 characters. The renderer emits observations only; it never
+calls the guest or resolves services.
+
+NXML cannot bind private Host state, execute product commands, or fetch arbitrary
+images/files. Assets are bounded to 32 entries/16 MiB per plugin; package blobs are
+load-owned and globally bounded. Navigation and notification labels currently use
+literal localization keys. Navigation icons and actionable notifications remain
+unavailable. A failed extension cannot remove the Host plugin manager.
+
+## Verification and remaining scope
+
+Fixtures record the independent SDK source identity and ZIP SHA-256 beside each
+package. Tests use real Wasm over the chunked execution boundary and cover encrypted
+cache tampering, approved grants, session replacement, disabled persistence,
+contributions, dialogs, model updates, input answers, drawing revisions, shortcuts,
+owned subscriptions, process operations, stale account IDs and retirement. The
+migration also requires managed Desktop tests, architecture/layout checks and
+NativeAOT/trim validation. This document does not turn missing routes into support.
+
+**The remaining business groups are not complete.** Production Market acquisition
+and entitlement/key custody also still require product wiring. Java, installation,
+launch plans, content/worlds, servers, catalog, settings, themes, backups, downloads,
+platform file/clipboard dialogs and other unmapped domain methods remain
+unavailable. This change publishes neither a launcher Alpha nor a signed worker.
 
 ## 简体中文
 
-本次接入通过锁定版本的 SDK 包连接真实 Desktop：插件管理、页面展示、模型更新、
-页面导航、通知、操作确认以及部分实例/账户业务已落地。新增 16 条宿主映射，
-叠加 SDK 运行库的 90 条已实现路由。账户接口不暴露凭据，文件和实体引用绑定
-插件加载实例；停用后旧页面和权限失效。执行仍走现有认证 Sidecar 二进制通道。
+本轮新增加密的本地启用记录与离线恢复。开发包仍需开发者模式和明确授权，用户可
+选择“保存并启用”或“仅本次加载”。缓存使用当前用户的系统保护器封装 AES-GCM
+密钥，恢复前重新验证包与权限，并等待插件引擎完成认证；引擎更换后使用新加载
+身份，绝不重放未完成业务。安全模式不恢复插件，停用先删除保存的授权，损坏记录
+保留并单独报告。生产 Market 的获取与权益验证尚未接入。
 
-开发模式可以选择 ZIP，确认插件身份和请求权限后加载；安全模式禁用加载，
-存储错误保留管理页。正式工作进程仍须通过发行签名验证。运行前先执行
-`python eng/plugins/prepare.py`，随后正常 restore/build。默认下载公开构建输入，
-校验大小、SHA-256、完整包清单及来源提交，无需私有仓库凭据；同一发行项提供
-对应源码快照。使用 `--source /path/to/PluginSidecar` 可从本地仓库重建锁定版本。
+目前共接入 40 条应用路由，叠加 SDK 内核的 90 条。UI 的 19 条当前接口已接入，
+包括组件、扩展、替换、命令、快捷键、对话框、模型、生命周期订阅、绘图与输入。
+宿主仅开放插件管理页内容扩展点，认证、导航和确认控件不可替换。快捷键只在声明
+的页面生效，文本编辑与弹窗期间禁用。绘图只接受有归属的文件引用，并限制尺寸、
+命令数及输入队列；宿主确认框出现时停止向插件传递输入。
 
-尚未完成生产 Market、密钥保管、启用状态持久化及自动离线启动；高级 UI 扩展与
-其余业务路由继续保持不可用。本次代码接入不等于全部 ABI 已实现，也没有发布新 Alpha。
+业务新增实例/账户/进程订阅、实例发现、账户删除、进程列表、详情、日志和停止。
+全部使用现有命令与查询，账户不暴露凭据，ID、游标与订阅绑定加载身份；过期账户
+列表不能删除替代条目。操作进入现有任务账本，停用或撤权后停止交付数据。
+
+其余业务接口仍未全部接入，具体范围见上面的 Remaining scope。此轮代码与测试
+不代表全部 ABI 已实现，也不发布启动器 Alpha。SDK 锁定公开构建输入，普通恢复
+无需私有仓库凭据；开发样例和测试夹具另行记录精确来源及摘要。

@@ -129,6 +129,13 @@ internal static partial class Program
         AssertEqual(draft, renderer.Focused); AssertEqual("keep this", tree.GetComponent<XsrUiTextInput>(draft)!.ReadDraft());
         AssertTrue(coordinator.TryGetExposure(draft, out var owner)); AssertEqual(exposure, owner);
         coordinator.Update([]); AssertFalse(coordinator.TryGetExposure(draft, out _));
+        using var mounted = new NxmlDocumentInstance(tree, store, compiled.AsFragment());
+        AssertThrows<NxmlLoadException>(() => mounted.Mount(root));
+        var slot = NxmlUiLoader.LoadDetached(Compile("<Dynamic Key=\"OwnedSlot\" />"), tree, store);
+        mounted.Mount(slot); AssertEqual(slot, tree.Parent(mounted.Root));
+        AssertThrows<NxmlLoadException>(() => mounted.Mount(mounted.Root));
+        AssertThrows<NxmlLoadException>(() => compiled.Compose(Enumerable.Repeat(
+            new NxmlDocumentContribution(Extension("<StackPanel />"), NxmlContributionMode.Wrap), 128)));
     }
 
     private static void NxmlPresentationIsLateAndTransactional()
