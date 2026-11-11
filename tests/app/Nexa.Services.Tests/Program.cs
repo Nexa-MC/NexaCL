@@ -4,6 +4,10 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("file batch progress retains speeds across throttled reports", Sync(FileBatchProgressRetainsSpeeds)),
+        ("file fingerprints match scalar reference across vector and read boundaries", FingerprintsMatchScalarAcrossReadBoundaries),
+        ("download pre-cancellation does not start transfer", DownloadPreCancellationDoesNotStartTransfer),
+        ("download progress permits reentrant subscriptions", DownloadProgressPermitsReentrantSubscriptions),
         ("pre-launch memory cleanup shares overlap and scopes cancellation", PrelaunchMemoryCleanupSharesOverlapAndScopesCancellation),
         ("pre-launch memory cleanup is opt-in and UAC rejection allows game", PrelaunchMemoryCleanupIsOptInAndUacRejectionAllowsGame),
         ("pre-launch memory cancellation prevents JVM creation", PrelaunchMemoryCancellationPreventsJvmCreation),

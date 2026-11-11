@@ -84,6 +84,7 @@ public sealed partial class DownloadService : IDisposable
         CancellationToken cancellationToken = default)
     {
         ValidateRequest(request);
+        cancellationToken.ThrowIfCancellationRequested();
         if (request.CacheIdentity is not null)
             return DownloadCachedAsync(request with { DestinationPath = Path.GetFullPath(request.DestinationPath) }, progress, cancellationToken);
         if (WorkScheduler?.CurrentPriority is WorkPriority.Background or WorkPriority.Idle && BackgroundDownloadsEnabled?.Invoke() == false)

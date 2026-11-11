@@ -451,7 +451,7 @@ public sealed partial class XsrStateStore
             // State publication must not be changed by a diagnostics observer failure.
         }
         if (Changed is { } subscribers)
-            foreach (Action<XsrStateChange> subscriber in subscribers.GetInvocationList())
+            foreach (Action<XsrStateChange> subscriber in Delegate.EnumerateInvocationList(subscribers))
                 try { subscriber(observed); }
                 catch (Exception exception) when (exception is not OutOfMemoryException and not AccessViolationException) { }
     }

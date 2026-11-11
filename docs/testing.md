@@ -22,3 +22,18 @@ Run Renderer, Sidecar, theme, and native-port suites according to `NexaCL.slnx` 
 `xsr-ci.yml` covers builds, semantic architecture, instrumentation, service/UI regression, NXML/themes, formatting, AOT, and trimming. `native-engines.yml` verifies independent native boundaries. `launcher-build.yml` validates six-RID release closure, reproducibility, real windows, the signed Sidecar, installers, update transactions, complete packages, differential reconstruction, and distribution signatures.
 
 Run graphical and OS integration checks on their native platforms. Record unavailable displays, permissions, credentials, or hardware. Historical reports are not current evidence. Do not hide failures by relaxing dependencies, swallowing exceptions, removing checks, or weakening security contracts.
+
+Resource fingerprints retain the provider's exact SHA and whitespace-filtered Murmur2 identities.
+The normalization loop selects hardware-accelerated 256-bit vectors, 128-bit vectors
+(including ARM64 AdvSimd), or a scalar fallback. No machine-wide instruction-set
+requirement is added. After building, exercise the managed dispatch paths on x64:
+
+```sh
+dotnet tests/app/Nexa.Services.Tests/bin/Release/net10.0/Nexa.Services.Tests.dll "file fingerprints"
+DOTNET_EnableAVX2=0 DOTNET_EnableAVX512F=0 dotnet tests/app/Nexa.Services.Tests/bin/Release/net10.0/Nexa.Services.Tests.dll "file fingerprints"
+DOTNET_EnableHWIntrinsic=0 dotnet tests/app/Nexa.Services.Tests/bin/Release/net10.0/Nexa.Services.Tests.dll "file fingerprints"
+```
+
+These cases compare against a scalar reference at vector and stream-read boundaries.
+Managed feature switches do not establish NativeAOT or ARM64 execution coverage;
+run the same case in the published test executable on each target platform.

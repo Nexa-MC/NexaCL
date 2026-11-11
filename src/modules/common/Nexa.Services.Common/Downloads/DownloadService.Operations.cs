@@ -170,6 +170,7 @@ public sealed partial class DownloadService
         private readonly TaskCompletionSource<DownloadTransferResult> _completion =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly Dictionary<long, Action<DownloadProgress>> _subscribers = [];
+        private Action<DownloadProgress>[] _subscriberSnapshot = [];
         private readonly object _sync = new();
         private readonly Func<DownloadOperation, Task> _start = start;
         private long _subscriberId;
@@ -218,9 +219,11 @@ public sealed partial class DownloadService
 
         public void Report(DownloadProgress progress)
         {
+            // Snapshot changes only on subscription churn. Reentrant callbacks cannot
+            // invalidate this iteration; reporting and unsubscription remain serialized.
             lock (_sync)
             {
-                foreach (Action<DownloadProgress> subscriber in _subscribers.Values)
+                foreach (Action<DownloadProgress> subscriber in _subscriberSnapshot)
                 {
                     try
                     {
@@ -257,6 +260,7 @@ public sealed partial class DownloadService
             lock (_sync)
             {
                 _subscribers.Add(id, progress);
+                _subscriberSnapshot = _subscribers.Values.ToArray();
             }
 
             return id;
@@ -267,6 +271,7 @@ public sealed partial class DownloadService
             lock (_sync)
             {
                 _subscribers.Remove(subscriberId);
+                _subscriberSnapshot = _subscribers.Values.ToArray();
             }
         }
     }
