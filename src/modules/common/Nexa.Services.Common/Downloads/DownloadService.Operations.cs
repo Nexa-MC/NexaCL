@@ -169,6 +169,7 @@ public sealed partial class DownloadService
         private readonly CancellationTokenSource _cancellation = new();
         private readonly TaskCompletionSource<DownloadTransferResult> _completion =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _retirement = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly Dictionary<long, Action<DownloadProgress>> _subscribers = [];
         private Action<DownloadProgress>[] _subscriberSnapshot = [];
         private readonly object _sync = new();
@@ -177,17 +178,35 @@ public sealed partial class DownloadService
         private int _waiterCount;
         private int _started;
         private bool _disposed;
+        private bool _retiring;
+        private bool _canceling;
 
         public DownloadRequest Request { get; } = request;
 
         public CancellationToken CancellationToken => _cancellation.Token;
 
+        public bool TryJoin(Action<DownloadProgress>? progress, out long subscriberId)
+        {
+            lock (_sync)
+            {
+                subscriberId = 0;
+                if (_retiring || _disposed) return false;
+                if (progress is not null) subscriberId = AddSubscriber(progress);
+                _waiterCount++;
+                return true;
+            }
+        }
+
+        public async Task WaitForRetirementAsync(CancellationToken token)
+        {
+            await _retirement.Task.WaitAsync(token).ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
+        }
+
         public async Task<DownloadTransferResult> WaitAsync(
-            Action<DownloadProgress>? progress,
+            long subscriberId,
             CancellationToken cancellationToken)
         {
-            long subscriberId = progress is null ? 0 : AddSubscriber(progress);
-            Interlocked.Increment(ref _waiterCount);
             try
             {
                 if (Interlocked.CompareExchange(ref _started, 1, 0) == 0)
@@ -201,18 +220,34 @@ public sealed partial class DownloadService
             }
             finally
             {
-                if (subscriberId != 0)
+                Task? cancellation = null;
+                lock (_sync)
                 {
-                    RemoveSubscriber(subscriberId);
+                    if (subscriberId != 0) RemoveSubscriber(subscriberId);
+                    if (--_waiterCount == 0 && !_completion.Task.IsCompleted)
+                    {
+                        _retiring = true;
+                        _canceling = true;
+                        cancellation = _cancellation.CancelAsync();
+                    }
+                    else ReleaseCancellationLocked();
                 }
-
-                if (Interlocked.Decrement(ref _waiterCount) == 0 && !_completion.Task.IsCompleted)
+                if (cancellation is not null)
                 {
-                    await _cancellation.CancelAsync().ConfigureAwait(false);
-                    // The last owner must not clean its transaction directory while a writer
-                    // still owns it, or let a retry attach to the canceled transfer.
-                    try { await _completion.Task.ConfigureAwait(false); }
-                    catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException) { }
+                    try
+                    {
+                        try { await cancellation.ConfigureAwait(false); }
+                        finally
+                        {
+                            // Drain the writer even when a cancellation callback fails.
+                            try { await _completion.Task.ConfigureAwait(false); }
+                            catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException) { }
+                        }
+                    }
+                    finally
+                    {
+                        lock (_sync) { _canceling = false; ReleaseCancellationLocked(); }
+                    }
                 }
             }
         }
@@ -245,13 +280,21 @@ public sealed partial class DownloadService
 
         public void Dispose()
         {
-            if (_disposed)
+            lock (_sync)
             {
-                return;
+                if (_disposed) return;
+                _disposed = true;
+                ReleaseCancellationLocked();
             }
+        }
 
-            _disposed = true;
-            _cancellation.Dispose();
+        private void ReleaseCancellationLocked()
+        {
+            if (_disposed && _waiterCount == 0 && !_canceling)
+            {
+                _cancellation.Dispose();
+                _retirement.TrySetResult();
+            }
         }
 
         private long AddSubscriber(Action<DownloadProgress> progress)

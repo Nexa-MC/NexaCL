@@ -37,3 +37,14 @@ DOTNET_EnableHWIntrinsic=0 dotnet tests/app/Nexa.Services.Tests/bin/Release/net1
 These cases compare against a scalar reference at vector and stream-read boundaries.
 Managed feature switches do not establish NativeAOT or ARM64 execution coverage;
 run the same case in the published test executable on each target platform.
+
+Download lifecycle regressions cover new callers arriving while a canceled writer
+is retiring, independently canceled waiters, failing cancellation callbacks, and
+release of per-artifact cache coordination after the last active or queued user.
+DoH tests stall the response body after headers to verify that the request deadline
+still triggers fallback while explicit caller cancellation propagates.
+
+`ResourceInstalledFilterScansInventoryOnce` exercises the real resource-page toggle
+with 5,003 installed files, merged provider identities, disabled mods, and a non-mod
+result. It bounds inventory enumeration rather than relying on timing: the fixture
+visits 5,003 entries with the index, compared with 25,012 before the optimization.

@@ -4,6 +4,10 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("download cancellation callback failures still drain writers", DownloadCancellationFailuresStillDrainWriters),
+        ("download session cache releases idle artifact coordination", DownloadCacheReleasesIdleCoordination),
+        ("download new callers wait for canceled writer retirement", DownloadNewCallersWaitForRetirement),
+        ("DoH timeout covers response body and preserves caller cancellation", DnsTimeoutCoversResponseBody),
         ("file batch progress retains speeds across throttled reports", Sync(FileBatchProgressRetainsSpeeds)),
         ("file fingerprints match scalar reference across vector and read boundaries", FingerprintsMatchScalarAcrossReadBoundaries),
         ("download pre-cancellation does not start transfer", DownloadPreCancellationDoesNotStartTransfer),
