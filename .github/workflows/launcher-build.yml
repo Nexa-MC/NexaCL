@@ -20,7 +20,7 @@ jobs:
   metadata:
     # Publishing an already signed draft must not rebuild and overwrite immutable assets.
     # An empty release created in GitHub still starts its initial build normally.
-    if: github.event_name != 'release' || (!startsWith(github.event.release.tag_name, 'market-inputs-') && !contains(github.event.release.assets.*.name, 'SHA256SUMS.asc'))
+    if: github.event_name != 'release' || (!startsWith(github.event.release.tag_name, 'market-inputs-') && !startsWith(github.event.release.tag_name, 'plugin-sdk-inputs-') && !contains(github.event.release.assets.*.name, 'SHA256SUMS.asc'))
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.version }}
