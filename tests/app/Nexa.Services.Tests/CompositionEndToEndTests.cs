@@ -81,7 +81,7 @@ internal static partial class Program
             remediationHandlers: [remediationHandler]);
         FoundationRuntime runtime = FoundationRuntimeComposer.Compose(host, observer);
 
-        AssertEqual(37, runtime.Commands.Count);
+        AssertEqual(39, runtime.Commands.Count);
         AssertTrue(runtime.Commands.TryResolve(Nexa.Services.Minecraft.Management.InstanceResourcePackContract.Set, out _));
         foreach (var route in new[]
         {
@@ -89,6 +89,7 @@ internal static partial class Program
             SettingsLaunchProfileContract.BeginTemporary, SettingsLaunchProfileContract.EndTemporary,
             Nexa.Services.Minecraft.Management.InstanceIdentityContract.Save,
             Nexa.Services.Minecraft.Management.InstanceManagementContract.RollbackContentUpdate,
+            Nexa.Services.Minecraft.Management.InstanceWorldContract.Rename, Nexa.Services.Minecraft.Management.InstanceWorldContract.SetDataPackOrder,
             Nexa.Services.Minecraft.Management.InstanceWorldContract.Copy, Nexa.Services.Minecraft.Management.InstanceWorldContract.SetLock,
             Nexa.Services.Minecraft.Management.InstanceWorldContract.SetDataPackEnabled, Nexa.Services.Minecraft.Management.InstanceWorldContract.ImportDataPack,
             Nexa.Services.Minecraft.Management.InstanceWorldContract.RemoveDataPack, Nexa.Services.Minecraft.Management.InstanceWorldContract.RestoreDataPack,

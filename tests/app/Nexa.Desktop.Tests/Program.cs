@@ -453,6 +453,7 @@ internal static partial class Program
         ("Plugin Desktop admission pages actions and business routes", PluginDesktopIntegration),
         ("Plugin offline catalog encryption consent and lifecycle restoration", PluginOfflineRestoration),
         ("Plugin file grants revisions symlinks and retirement", PluginFileResourcesAndSymlinks),
+        ("Plugin scoped backups isolate capture retention prune and export", PluginScopedBackups),
         ("Plugin business subscriptions process operations and retirement", PluginBusinessLifecycle),
         ("Plugin managed Java offers license confirmation and revision fencing", PluginManagedJavaInstallation),
         ("Plugin catalog providers query callbacks identity and scoped cursors", PluginCatalogProviders),

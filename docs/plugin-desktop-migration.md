@@ -30,7 +30,7 @@ the Host management page accessible. The worker retains its release-signature ga
 ## Implemented application mappings
 
 The current SDK catalog has 346 operations. The kernel maps 97 and Desktop adds
-200 routes (297 total). A route is still subject to its permission, lifecycle,
+211 routes (308 total). A route is still subject to its permission, lifecycle,
 platform availability, ownership and domain preconditions. This count is not a
 claim that all SDK methods or all providers are implemented.
 
@@ -145,7 +145,7 @@ Still unmapped operations:
 - **Accounts**: `SignOut`, `RegisterProvider`.
 - **Settings**: `RegisterSchema`, `RegisterPage`, `Migrate`.
 - **Themes**: `MigrateOptions`, `ListResources`, `ReadResource`, `ReleaseResource`.
-- **Backups**: `List`, `Read`, `Statistics`, `PrepareCapture`, `Capture`, `PreviewRestore`, `Restore`, `VerifyOffline`, `Export`, `Import`, `PreviewPrune`, `Prune`, `ReadRetention`, `SetRetention`.
+- **Backups**: `PreviewRestore`, `Restore`, `Import`. The current restore request names an existing instance, while the storage owner only restores to a new directory. Import has no destination instance. These routes remain unavailable until explicit target contracts are added.
 - **Downloads**: `RegisterSourceResolver`, `RegisterTransferProvider`.
 - **Tasks**: `Retry`.
 - **Minecraft.Diagnostics**: `RegisterRuleProvider`.
@@ -157,7 +157,7 @@ publishes SDK build inputs; it does not publish a launcher Alpha.
 
 ## 简体中文
 
-目前 SDK 有 346 个操作，内核接入 97 个，Desktop 新增 200 个，共 297 个。
+目前 SDK 有 346 个操作，内核接入 97 个，Desktop 新增 211 个，共 308 个。
 这些路由仍受权限、生命周期、操作系统、归属及业务状态限制，不代表全部接口已完成。
 上方逐项列出仍未接入的方法；后续继续实现，不用成功空结果冒充已完成。
 
@@ -198,4 +198,59 @@ trips. The managed-owner NativeAOT Desktop passes shell, setup and theme validat
 the separate external-module/native-service Desktop graph compiles without warnings.
 This does not replace platform-specific launcher release testing. The SDK alpha.9
 CI passes on Linux, Windows and macOS. Production Market delivery and the remaining
-49 ABI mappings are still tracked above.
+38 ABI mappings are still tracked above.
+
+
+## Instance-scoped backups
+
+The Desktop adapter now maps 11 of the 14 Backups operations through the Setup
+owner. Each admitted instance has a separate durable CAS store under the launcher
+backup directory. Global storage history is not exposed through this API. Listing
+returns load-owned backup IDs and a scope revision; a different plugin load cannot
+reuse those IDs. Counts and sizes describe logical files, including duplicate
+content referenced by more than one snapshot.
+
+Capture accepts an instance with no external target and empty include/exclude
+arrays. It captures the instance directory, not shared assets, shared libraries, Java
+or account data. Offline verification checks the snapshot objects; it does not
+promise that the restored instance can launch without downloads. It uses a single-use, expiring plan, Host confirmation, an idle check and
+the owner's file-stability validation. Capture and prune finish with `Empty`;
+query the task's terminal state, then refresh the backup list. Offline verification
+hashes stored objects and returns an integrity report, including missing objects.
+
+Retention changes use the revision returned by `Backups.List`. The owner compares
+that revision while holding its storage lease, preventing lost updates even when
+another caller changes the policy during confirmation. Supported bounds are
+1–1,024 copies and 1–3,650 days; `MaximumBytes` must be zero. Policies are stored
+per instance and used by explicit prune previews; this integration does not add
+an automatic scoped cleanup scheduler. Prune retains the newest snapshot and
+cannot delete manifests or objects in another instance's store.
+
+Export writes a **thin JSON manifest**, not an archive of file contents. It
+requires a writable file grant, confirmation and a destination that does not
+exist. Importing the manifest into another store does not make that backup
+usable offline unless its referenced objects are already present. The UI or
+plugin must explain this distinction before offering the export.
+
+`PluginBackupTests` exercises real storage through the admitted plugin lifecycle:
+confirmation denial, non-idle capture, single-use plans, foreign-load handles,
+separate instance/global histories, retention CAS, durable reopen, thin export,
+stale prune plans and object-corruption detection. SDK C fixtures use the revised
+canonical-key decoder and are also exercised by the Desktop lifecycle tests.
+
+### 简体中文：备份接入范围
+
+Backups 本轮接入 11/14 项。备份按实例独立保存，插件使用宿主发出的不透明 ID，
+无法借用其他加载会话的句柄。捕获、清理及策略修改经过宿主确认，并在提交时重新
+检查版本与空闲状态。保留策略修改使用 `List` 返回的版本，存储持锁执行比较更新。
+
+当前捕获只支持完整实例；`Target` 必须为空，包含/排除列表必须为空。保留数量为
+1–1,024，天数为 1–3,650，最大字节数只接受零；策略用于手动清理预览，尚未启用
+实例备份的自动清理。导出的是仅含元数据的 JSON 薄清单，不含文件本体，不能单独
+作为可离线恢复的完整备份。导入、恢复预览和恢复仍未接入，需要先补齐明确的目标契约。
+
+Validation for this increment: 408 Desktop tests, the additional concurrent
+retention/permission fixture, 915 foundation service tests, architecture gates for
+101 projects, and NativeAOT Desktop shell/setup/theme smokes passed. Composition
+parity tests now explicitly include the previously added world-edit and process
+interaction routes; their old fixed counts had not been updated with the owners.

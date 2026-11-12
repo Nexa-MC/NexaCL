@@ -1,7 +1,7 @@
 {
-  "repository": "https://github.com/Nexa-MC/PluginSidecar",
-  "commit": "20764bcf85e27ebbbd1551008a1cb0821f6dfb22",
+  "repository": "https://github.com/Nexa-MC/NexaCL-Plugin-SDK",
+  "commit": "a710b6f4013802a4dc68720e8b49deda1cd0245d",
   "sample": "samples/WasmAdvancedUi",
-  "sha256": "dba0a59256c5905264c5c7ed3d2f560303d453adf71683f456e06397322993ed",
+  "sha256": "9672a9ca36318b9afb8171b9ef35c91f75f026a785ae04e0bac4e9c1aab59f41",
   "build": "python eng/build_wasm_sample.py --clang <wasi-clang>"
 }

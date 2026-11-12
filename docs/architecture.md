@@ -388,3 +388,15 @@ Instance reference-name validation is a pure Library.Contracts helper shared by
 Host admission and the metadata owner. Metadata keeps its existing public helper
 as a forwarding method. Native-service composition must not reference metadata
 implementation assemblies merely to validate a path segment.
+
+## Plugin backup boundary (ABI 100 continuation)
+
+Plugin backup operations remain owned by the setup content-addressed backup service.
+Composition must project per-instance opaque backup identities and single-use plans,
+not expose the global backup directory or accept raw source/restore paths. Capture
+and restore require confirmation, revision rechecks and idle-instance fencing.
+Restore creates a new destination; it cannot overwrite a live world or arbitrary
+existing instance. File import/export requires existing load-owned grants. Retention
+and pruning must be scoped to the selected instance rather than applying a plugin
+request to all launcher backups. Compatible SDK additions may express missing
+instance scope while preserving every existing operation and model fingerprint.

@@ -41,3 +41,24 @@ public static class ContentWorkspaceContract
 public sealed record ContentBackupRetentionPolicy(bool Enabled = false, int KeepCount = 32, int KeepDays = 90);
 public sealed record ContentBackupRetentionQuery;
 public sealed record ContentBackupRetentionCommand(ContentBackupRetentionPolicy Policy);
+
+
+/// <summary>Host-owned per-instance backup store; never addresses the global store.</summary>
+public sealed record InstanceBackupSnapshot(IReadOnlyList<ContentBackupManifest> Backups, ContentBackupRetentionPolicy Retention, string Revision);
+public sealed record InstanceBackupQuery(string InstanceDirectory);
+public sealed record InstanceBackupCaptureCommand(string InstanceDirectory, string Label);
+public sealed record InstanceBackupOfflineQuery(string InstanceDirectory, string Identity);
+public sealed record InstanceBackupPruneQuery(string InstanceDirectory, int KeepCount, int KeepDays);
+public sealed record InstanceBackupPruneCommand(string InstanceDirectory, int KeepCount, int KeepDays, string ExpectedRevision);
+public sealed record InstanceBackupRetentionCommand(string InstanceDirectory, ContentBackupRetentionPolicy Policy, string ExpectedRevision);
+public sealed record InstanceBackupExportCommand(string InstanceDirectory, string Identity, string Destination);
+public static class InstanceBackupContract
+{
+    public static readonly Nexa.Xsr.XsrSemanticId Read = Nexa.Xsr.XsrSemanticId.Parse("setup.instance-backups.read");
+    public static readonly Nexa.Xsr.XsrSemanticId Capture = Nexa.Xsr.XsrSemanticId.Parse("setup.instance-backups.capture");
+    public static readonly Nexa.Xsr.XsrSemanticId Offline = Nexa.Xsr.XsrSemanticId.Parse("setup.instance-backups.offline");
+    public static readonly Nexa.Xsr.XsrSemanticId PrunePreview = Nexa.Xsr.XsrSemanticId.Parse("setup.instance-backups.prune.preview");
+    public static readonly Nexa.Xsr.XsrSemanticId Prune = Nexa.Xsr.XsrSemanticId.Parse("setup.instance-backups.prune");
+    public static readonly Nexa.Xsr.XsrSemanticId SetRetention = Nexa.Xsr.XsrSemanticId.Parse("setup.instance-backups.retention.set");
+    public static readonly Nexa.Xsr.XsrSemanticId Export = Nexa.Xsr.XsrSemanticId.Parse("setup.instance-backups.export");
+}

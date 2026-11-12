@@ -10,6 +10,7 @@ using Nexa.Services.Minecraft.Java;
 using Nexa.Services.Minecraft.Launch;
 using Nexa.Services.Minecraft.Libraries;
 using Nexa.Services.Minecraft.ModLoaders;
+using Nexa.Services.Minecraft.Process;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 
@@ -406,8 +407,10 @@ internal static partial class Program
             Directory.CreateDirectory(versionDirectory);
             File.WriteAllText(Path.Combine(versionDirectory, "1.20.1.json"), "{\"id\":\"1.20.1\",\"type\":\"release\"}");
             MinecraftRuntime runtime = MinecraftRuntimeComposer.Compose();
-            AssertEqual(2, runtime.Commands.Count);
-            AssertEqual(4, runtime.Queries.Count);
+            AssertEqual(3, runtime.Commands.Count);
+            AssertEqual(5, runtime.Queries.Count);
+            AssertTrue(runtime.Commands.TryResolve(MinecraftProcessInteractionContract.Interact, out _));
+            AssertTrue(runtime.Queries.TryResolve(MinecraftProcessInteractionContract.Metrics, out _));
             AssertTrue(runtime.Queries.TryResolve(MinecraftRouteIds.VersionsRead, out XsrQueryId versionsId));
             XsrResult<IReadOnlyList<MinecraftVersionDescriptor>> versions = await runtime.Queries.QueryAsync<MinecraftVersionsQuery, IReadOnlyList<MinecraftVersionDescriptor>>(versionsId, new MinecraftVersionsQuery(root));
             AssertTrue(versions.IsSuccess);

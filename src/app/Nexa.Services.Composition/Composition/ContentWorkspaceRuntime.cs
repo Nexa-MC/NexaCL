@@ -11,6 +11,7 @@ public static class ContentWorkspaceRuntime
     public static void Register(XsrCommandRouterBuilder commands, XsrQueryRouterBuilder queries,
         ContentBackupService backups, LegacyMigrationService migration, DurableDiagnosticHistorySink history, DiagnosticAiService? ai = null)
     {
+        RegisterInstanceBackups(commands, queries, backups);
         queries.Register<ContentBackupListQuery, IReadOnlyList<ContentBackupManifest>>(ContentWorkspaceContract.List,
             (_, token) => QueryAsync(() => backups.ListAsync(token), token));
         queries.Register<ContentStoreStatisticsQuery, ContentStoreStatistics>(ContentWorkspaceContract.Statistics,
@@ -50,6 +51,24 @@ public static class ContentWorkspaceRuntime
         if (ai is not null)
             queries.Register<DiagnosticAiSuggestionQuery, DiagnosticAiSuggestion>(DiagnosticWorkspaceContract.AiSuggestion,
                 (query, token) => QueryAsync(() => ai.SuggestAsync(query.Request, query.Preview, query.ApprovedScope, token), token));
+    }
+
+    public static void RegisterInstanceBackups(XsrCommandRouterBuilder commands, XsrQueryRouterBuilder queries, ContentBackupService backups)
+    {
+        queries.Register<InstanceBackupQuery, InstanceBackupSnapshot>(InstanceBackupContract.Read,
+            (v, token) => QueryAsync(() => backups.ForInstance(v.InstanceDirectory).ReadScopeAsync(token), token));
+        queries.Register<InstanceBackupOfflineQuery, OfflineReadinessReport>(InstanceBackupContract.Offline,
+            (v, token) => QueryAsync(() => backups.ForInstance(v.InstanceDirectory).VerifyOfflineAsync(v.Identity, token), token));
+        queries.Register<InstanceBackupPruneQuery, ContentPrunePreview>(InstanceBackupContract.PrunePreview,
+            (v, token) => QueryAsync(() => backups.ForInstance(v.InstanceDirectory).PreviewPruneAsync(v.KeepCount, v.KeepDays, token), token));
+        commands.Register<InstanceBackupCaptureCommand>(InstanceBackupContract.Capture,
+            (v, token) => CommandAsync(async () => { await backups.ForInstance(v.InstanceDirectory).CaptureAsync(v.InstanceDirectory, v.Label, token).ConfigureAwait(false); }, token));
+        commands.Register<InstanceBackupPruneCommand>(InstanceBackupContract.Prune,
+            (v, token) => CommandAsync(() => backups.ForInstance(v.InstanceDirectory).ApplyPruneAsync(v.KeepCount, v.KeepDays, v.ExpectedRevision, token), token));
+        commands.Register<InstanceBackupRetentionCommand>(InstanceBackupContract.SetRetention,
+            (v, token) => CommandAsync(() => backups.ForInstance(v.InstanceDirectory).SetRetentionAsync(v.Policy, v.ExpectedRevision, token), token));
+        commands.Register<InstanceBackupExportCommand>(InstanceBackupContract.Export,
+            (v, token) => CommandAsync(() => backups.ForInstance(v.InstanceDirectory).ExportThinAsync(v.Identity, v.Destination, token), token));
     }
 
     private static async ValueTask<XsrResult<T>> QueryAsync<T>(Func<Task<T>> action, CancellationToken token)

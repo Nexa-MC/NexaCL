@@ -11,6 +11,11 @@ public sealed partial class ContentBackupService
     public async Task<ContentBackupRetentionPolicy> ReadRetentionAsync(CancellationToken token = default)
     {
         await using var lease = await AcquireAsync(token).ConfigureAwait(false);
+        return await ReadRetentionUnderLeaseAsync(token).ConfigureAwait(false);
+    }
+
+    private async Task<ContentBackupRetentionPolicy> ReadRetentionUnderLeaseAsync(CancellationToken token)
+    {
         string path = Path.Combine(_root, ".retention.json"); CheckLinks(path);
         if (!File.Exists(path)) return ApplyConfiguredRetention(new());
         await using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
@@ -22,10 +27,16 @@ public sealed partial class ContentBackupService
         ValidateRetention(policy.KeepCount, policy.KeepDays); return ApplyConfiguredRetention(policy);
     }
 
-    public async Task SetRetentionAsync(ContentBackupRetentionPolicy policy, CancellationToken token = default)
+    public Task SetRetentionAsync(ContentBackupRetentionPolicy policy, CancellationToken token = default) => SetRetentionCoreAsync(policy, null, token);
+
+    public Task SetRetentionAsync(ContentBackupRetentionPolicy policy, string expectedRevision, CancellationToken token = default) => SetRetentionCoreAsync(policy, expectedRevision, token);
+
+    private async Task SetRetentionCoreAsync(ContentBackupRetentionPolicy policy, string? expectedRevision, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(policy); ValidateRetention(policy.KeepCount, policy.KeepDays); EnsureConfiguredCount(policy.KeepCount);
         await using var lease = await AcquireAsync(token).ConfigureAwait(false); EnsureIdle();
+        if (expectedRevision is not null && (await ReadScopeUnderLeaseAsync(token).ConfigureAwait(false)).Revision != expectedRevision)
+            throw new IOException("Backup scope changed; read it again before updating retention.");
         string path = Path.Combine(_root, ".retention.json"), stage = path + "." + Guid.NewGuid().ToString("N") + ".part"; CheckLinks(path);
         try
         {

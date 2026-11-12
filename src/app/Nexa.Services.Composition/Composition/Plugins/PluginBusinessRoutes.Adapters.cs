@@ -53,6 +53,7 @@ public sealed partial class PluginBusinessRoutes
         RetireNetwork(pluginId);
         lock (_planGate)
         {
+            foreach (var key in _backupIdentities.Where(p => p.Value.Owner.PluginId == pluginId).Select(p => p.Key).ToArray()) _backupIdentities.Remove(key);
             foreach (var key in _javaOffers.Where(p => p.Value.Owner.PluginId == pluginId).Select(p => p.Key).ToArray()) _javaOffers.Remove(key);
             foreach (var key in _pluginDownloads.Where(p => p.Value.Owner.PluginId == pluginId).Select(p => p.Key).ToArray()) _pluginDownloads.Remove(key);
             foreach (var key in _installDrafts.Where(p => p.Value.Owner.PluginId == pluginId).Select(p => p.Key).ToArray()) _installDrafts.Remove(key);

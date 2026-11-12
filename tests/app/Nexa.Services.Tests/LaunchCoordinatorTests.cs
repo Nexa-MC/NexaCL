@@ -311,7 +311,9 @@ internal static partial class Program
             AssertTrue(runtime.Commands.TryResolve(LaunchPreflightGate.DecisionCommand, out _));
             AssertTrue(runtime.Commands.TryResolve(MinecraftSafeLaunchSessionContract.Set, out _));
             AssertTrue(runtime.Queries.TryResolve(MinecraftSafeLaunchSessionContract.Query, out _));
-            AssertEqual(9, runtime.Commands.Count);
+            AssertTrue(runtime.Commands.TryResolve(MinecraftRouteIds.ProcessCancel, out _));
+            AssertTrue(runtime.Commands.TryResolve(MinecraftProcessInteractionContract.Interact, out _));
+            AssertEqual(10, runtime.Commands.Count);
         }
         finally
         {
