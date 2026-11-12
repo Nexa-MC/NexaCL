@@ -422,6 +422,11 @@ jobs:
       - name: Build
         run: dotnet build NexaCL.slnx --configuration Release --no-restore -p:XsrVersionChannel=ci
 
+      - name: Verify general Sidecar business ABI generation
+        run: |
+          python3 eng/sidecar/generate_host_business.py --verify
+          python3 eng/xsr/generate_service_wire.py --assembly src/app/Nexa.Services.Composition/bin/Release/net10.0/Nexa.Services.dll --roots eng/sidecar/host-business-roots.txt --output src/app/Nexa.Services.Composition/Composition/Sidecars/BusinessWire.Generated.cs --namespace Nexa.Sidecar.Host.Wire --sidecar-contracts src/sidecar/Nexa.Sidecar.Host.Contracts --check
+
       - name: Validate external NXML component bundle
         shell: bash
         run: |

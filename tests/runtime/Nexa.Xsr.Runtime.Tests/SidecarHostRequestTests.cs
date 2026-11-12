@@ -4,6 +4,34 @@ namespace Nexa.Xsr.Runtime.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask SidecarLargeRequestsRequireNegotiation()
+    {
+        var large = new SidecarBinaryValue(SidecarWireCodecs.GeneratedDto, new byte[70000]);
+        int invoked = 0;
+        var router = new SidecarHostRequestRouter([
+            new(1, true, SidecarWireCodecs.GeneratedDto, SidecarWireCodecs.GeneratedDto, TimeSpan.FromSeconds(5), _ => true,
+                (_, _, _) => { invoked++; return ValueTask.FromResult(XsrResult.Success(large)); })
+        ]);
+        await using (var current = await DataApiSession([], hostRequests: router))
+        {
+            await DataApiFrame(current.Peer, SidecarMessageType.QueryRequest, SidecarDataMessages.EncodeBinaryRequest(1, large));
+            var frame = await current.Peer.ReceiveAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+            var result = SidecarDataMessages.DecodeBinaryResult(frame.Payload.Span);
+            AssertTrue(result.Success); AssertEqual(large.Length, result.Value.Length);
+        }
+        await using (var legacy = await DataApiSession([], SidecarFeatures.BinaryPayloads | SidecarFeatures.HostRequests, hostRequests: router))
+        {
+            await DataApiFrame(legacy.Peer, SidecarMessageType.QueryRequest,
+                SidecarDataMessages.EncodeBinaryRequest(1, new(SidecarWireCodecs.GeneratedDto, [])));
+            var frame = await legacy.Peer.ReceiveAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+            AssertEqual("xsr.feature_unavailable", SidecarDataMessages.DecodeBinaryResult(frame.Payload.Span).ErrorCode);
+            AssertEqual(2, invoked);
+            await DataApiFrame(legacy.Peer, SidecarMessageType.QueryRequest, SidecarDataMessages.EncodeBinaryRequest(1, large));
+            await legacy.ReceiveLoop.WaitAsync(TimeSpan.FromSeconds(5));
+            AssertEqual(SidecarSessionState.Failed, legacy.Session.State); AssertEqual(2, invoked);
+        }
+    }
+
     private static async ValueTask SidecarHostRequestsEnforceBoundaries()
     {
         int invoked = 0;

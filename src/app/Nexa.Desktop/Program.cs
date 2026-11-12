@@ -388,7 +388,15 @@ internal static partial class Program
         using var sidecarUpdates = SidecarStartup.CreateUpdater(sidecarUpdateHttp, folders.Root, buildInfo.ProductVersion);
 #endif
         var sidecarOverrides = await SidecarStartup.ResolveUpdatesAsync(sidecarUpdates, host.Logging).ConfigureAwait(false);
-        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides);
+        SidecarSupervisor? admittedSidecars = null;
+        // Native Sidecars are publisher-verified processes. Grant the general domain API only
+        // to their current active session; guest admission/permissions belong to each Sidecar.
+        var sidecarBusiness = new Nexa.Services.Composition.Sidecars.SidecarBusinessApi((caller, _) =>
+            admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
+                && active!.SessionId == caller.SessionId);
+        sidecarBusiness.BindState(host.StateStore);
+        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, sidecarBusiness.Router);
+        admittedSidecars = sidecars;
         await using var sidecarNetwork = new DesktopSidecarNetwork(sidecars, host.StateStore);
         SidecarHostApi sidecarApi = new(sidecars, dispatchObservation);
         await using var sidecarLifetime = SidecarStartup.StartLifetime(sidecars, host.Logging, !safeMode);
@@ -779,6 +787,16 @@ internal static partial class Program
         await resourcesRuntime.Initialization.ConfigureAwait(false);
 #endif
         pluginBusiness.BindCatalog(resourcesRuntime.Commands!, resourcesRuntime.Queries);
+        sidecarBusiness.Bind("foundation", runtime.Commands, runtime.Queries);
+        sidecarBusiness.Bind("accounts", accounts.Commands, accounts.Queries);
+        sidecarBusiness.Bind("minecraft", minecraft.Commands, minecraft.Queries);
+        sidecarBusiness.Bind("library", library.Commands, null);
+        sidecarBusiness.Bind("catalog", resourcesRuntime.Commands, resourcesRuntime.Queries);
+        sidecarBusiness.Bind("folders", folderImports.Commands, folderImports.Queries);
+        sidecarBusiness.Bind("install.catalog", installCatalog.Commands, installCatalog.Queries);
+        sidecarBusiness.Bind("install.edit", installCatalog.Commands, installCatalog.Queries);
+        sidecarBusiness.Bind("install.run", installRun.Commands, installRun.Queries);
+        sidecarBusiness.CompleteComposition();
         settingsPage.ConfigureOnlineContent(resourcesRuntime.Queries, platformActions.OpenHttpsUri, resourcesRuntime.Commands);
         using var resourcesPage = new ResourcesPageController(shell, uiIntents, resourcesRuntime.Queries,
             host.StateStore, platformActions.OpenHttpsUri, functionPatches, sidecarSignals, sidecarUi);

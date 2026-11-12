@@ -62,6 +62,7 @@ def check_output(directory, names):
         assert (directory / f'{name}.nfp').exists(), name
     assert (directory / 'Consumer.nfp').exists()
     assert not any(p.name.startswith(('Mono.Cecil','Microsoft.CodeAnalysis','Nexa.Xsr.Patch.Compiler')) for p in directory.rglob('*'))
+    assert not any(p.name.startswith(('Nexa.Services.', 'Nexa.Plugin.', 'PluginSidecar.')) for p in directory.rglob('*'))
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--feed',required=True,type=Path);parser.add_argument('--aot',action='store_true')

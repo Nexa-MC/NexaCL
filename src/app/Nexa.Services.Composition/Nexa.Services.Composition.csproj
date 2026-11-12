@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../../sidecar/HostBusinessWire.cs" Link="Sidecars/HostBusinessWire.cs" />
     <PackageReference Include="PluginSidecar.Packages" Version="[0.2.0-alpha.13]" />
     <ProjectReference Include="../Nexa.Services/Nexa.Services.csproj" />
     <ProjectReference Include="../../runtime/Nexa.Xsr.Runtime/Nexa.Xsr.Runtime.csproj" />

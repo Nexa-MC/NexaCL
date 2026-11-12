@@ -130,6 +130,7 @@
     <Project Path="src/runtime/Nexa.Xsr.State/Nexa.Xsr.State.csproj" />
   </Folder>
   <Folder Name="/src/sidecar/">
+    <Project Path="src/sidecar/Nexa.Sidecar.Host.Contracts/Nexa.Sidecar.Host.Contracts.csproj" />
     <Project Path="src/sidecar/Nexa.Sidecar.Protocol/Nexa.Sidecar.Protocol.csproj" />
     <Project Path="src/sidecar/Nexa.Sidecar.Transport/Nexa.Sidecar.Transport.csproj" />
   </Folder>

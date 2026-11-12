@@ -1,7 +1,7 @@
 namespace Nexa.Sidecar.Protocol;
 
 /// <summary>Portable numeric data-plane payloads; legacy text fields retain their wire meaning.</summary>
-public static class SidecarDataMessages
+public static partial class SidecarDataMessages
 {
     public static byte[] EncodeRequest(uint contractId, string? argument) => EncodeText(contractId, argument ?? string.Empty);
     public static (uint ContractId, string Argument) DecodeRequest(ReadOnlySpan<byte> payload)
@@ -36,7 +36,7 @@ public static class SidecarDataMessages
         writer.WriteBoolean(1, success);
         writer.WriteString(3, errorCode ?? string.Empty);
         writer.WriteUInt32(4, value.CodecId);
-        writer.WriteBytes(5, value.Span);
+        WriteValue(writer, 5, value);
         return writer.ToArray();
     }
 
@@ -53,6 +53,7 @@ public static class SidecarDataMessages
         string error = string.Empty;
         uint? codec = null;
         byte[]? bytes = null;
+        var chunks = new ValueChunks(payload.Length);
         var reader = new SidecarPayloadReader(payload);
         while (reader.HasMore)
         {
@@ -64,10 +65,12 @@ public static class SidecarDataMessages
                 case 3: error = field.ReadString(); break;
                 case 4: codec = field.ReadUInt32(); break;
                 case 5: bytes = field.ReadBytes(); break;
+                case 6: chunks.Begin(field.ReadUInt32(), codec, bytes); break;
+                default: chunks.Add(field); break;
             }
         }
         if (success is null) throw new SidecarProtocolException("Sidecar result has no success field.");
-        return (success.Value, FinishValue(text, codec, bytes), error, text is null);
+        return (success.Value, FinishValue(text, codec, chunks.Finish(bytes)), error, text is null);
     }
 
     public static byte[] EncodeStateDelta(uint contractId, ReadOnlySpan<byte> encodedValue) => SidecarStateSnapshot.EncodeItem(contractId, encodedValue);
@@ -115,7 +118,7 @@ public static class SidecarDataMessages
         using var writer = new SidecarPayloadWriter();
         writer.WriteUInt32(1, contractId);
         writer.WriteUInt32(3, value.CodecId);
-        writer.WriteBytes(4, value.Span);
+        WriteValue(writer, 4, value);
         return writer.ToArray();
     }
 
@@ -131,6 +134,7 @@ public static class SidecarDataMessages
         string? text = null;
         uint? codec = null;
         byte[]? bytes = null;
+        var chunks = new ValueChunks(payload.Length);
         var reader = new SidecarPayloadReader(payload);
         while (reader.HasMore)
         {
@@ -141,10 +145,12 @@ public static class SidecarDataMessages
                 case 2: text = field.ReadString(); break;
                 case 3: codec = field.ReadUInt32(); break;
                 case 4: bytes = field.ReadBytes(); break;
+                case 6: chunks.Begin(field.ReadUInt32(), codec, bytes); break;
+                default: chunks.Add(field); break;
             }
         }
         RequireContract(contract);
-        return (contract, FinishValue(text, codec, bytes), text is null);
+        return (contract, FinishValue(text, codec, chunks.Finish(bytes)), text is null);
     }
 
     internal static void RequireContract(uint contractId)

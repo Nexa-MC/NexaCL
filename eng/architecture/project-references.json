@@ -41,13 +41,7 @@
     "Nexa.Xsr.Renderer.Backend.Avalonia",
     "Nexa.Xsr.Runtime"
   ],
-  "Nexa.Desktop.Tests": [
-    "Nexa.Desktop",
-    "Nexa.Services",
-    "Nexa.Services.Composition",
-    "Nexa.Xsr.Renderer",
-    "Nexa.Xsr.State"
-  ],
+  "Nexa.Desktop.Tests": ["Nexa.Desktop", "Nexa.Services", "Nexa.Services.Composition", "Nexa.Xsr.Renderer", "Nexa.Xsr.State", "Nexa.Sidecar.Host.Contracts"],
   "Nexa.Domain": [
     "Nexa.Core"
   ],
@@ -647,5 +641,6 @@
   "Nexa.Native.Updates.Client": ["Nexa.Services.Updates.Contracts", "Nexa.Services.Common.Contracts", "Nexa.Native.Network.Client"],
   "Nexa.Native.Updates.Services.Tests": ["Nexa.Native.Updates.Client"],
   "Nexa.Native.Updates.Codecs": ["Nexa.Core"],
-  "Nexa.Native.Host.Services.Tests": ["Nexa.Native.Network.Client", "Nexa.Native.Updates.Client"]
+  "Nexa.Native.Host.Services.Tests": ["Nexa.Native.Network.Client", "Nexa.Native.Updates.Client"],
+  "Nexa.Sidecar.Host.Contracts": ["Nexa.Core", "Nexa.Sidecar.Protocol", "Nexa.Sidecar.Transport", "Nexa.Xsr.Abstractions", "Nexa.Xsr.Runtime"]
 }

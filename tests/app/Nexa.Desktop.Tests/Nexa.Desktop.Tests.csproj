@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../../../src/sidecar/Nexa.Sidecar.Host.Contracts/Nexa.Sidecar.Host.Contracts.csproj" />
     <Content Include="Fixtures/advanced.zip" Link="plugin-fixtures/advanced.zip" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Fixtures/desktop.zip" Link="plugin-fixtures/desktop.zip" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Compile Include="../../Shared/LicensedAccountFixture.cs" Link="Fixtures/LicensedAccountFixture.cs" />

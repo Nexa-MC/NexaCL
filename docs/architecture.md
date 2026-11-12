@@ -26,6 +26,25 @@ Update architecture documentation before changing a public contract or owner, th
 
 ## Plugin Desktop integration
 
+### Beta boundary (migration target)
+
+PluginSidecar owns plugin package admission, SDK negotiation, permissions,
+lifecycle, offline restoration, business adapters and management UI. The launcher
+must not reference the plugin SDK or contain plugin-specific dispatch routes.
+Sidecars consume the same versioned, asynchronous binary Host ABI; missing domain
+operations are added as general Host capabilities, not plugin forwarding methods.
+The Host remains the authority for its accounts, instances, settings and platform
+effects, while PluginSidecar enforces each guest's narrower grants. Account
+credentials remain in their owning service and are never exported as generic state.
+
+PluginSidecar is an optional signed distribution component. Its absence, failed
+admission, startup failure or later exit cannot prevent the launcher from starting
+or operating its core features. Safe mode suppresses extension execution. Release
+validation must exercise both component presence and absence. The ABI 100 Beta
+baseline is frozen; subsequent plugin contract additions use immutable EXP_IDs.
+This boundary supersedes the in-process ownership described below; the existing
+implementation must be migrated and verified before the Beta is published.
+
 Desktop owns plugin admission, capability grants, atomic lifecycle publication,
 business adapters and presentation state. The independent PluginSidecar executes
 verified import-free Wasm guests. Host/guest continuations use the existing
@@ -426,3 +445,12 @@ new models and operations are additive. Support evidence records original and
 additional methods separately while the complete catalog remains the source for
 code generation. Native service composition continues through its generated
 numeric command/query contracts, including any new account/instance operations.
+
+General Sidecar business DTOs may exceed the legacy 65,535-byte TLV field limit.
+The optional `LargeGeneratedDtos` feature (bit 256) permits up to 8 MiB only for
+codec 6. Existing message numbers, primitive limits, and fields remain unchanged:
+field 6 gives the complete byte length and fields 7 onward contain consecutive
+continuations of the existing first bytes field. Both peers must negotiate this
+feature before sending or accepting a large value. Missing, extra, or out-of-order
+continuations are invalid. This transport extension is independent of frozen
+plugin ABI 100; it does not add a guest SDK operation.

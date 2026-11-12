@@ -15,14 +15,15 @@ internal static class SidecarStartup
     }
     public static SidecarSupervisor Create(LogService log, XsrFunctionPatchAdmission? functionPatches = null,
         XsrSignalAdmission? signals = null, XsrUiPatchAdmission? uiPatches = null, XsrUiModuleAdmission? uiModules = null,
-        XsrNxmlModuleRuntime? nxmlModules = null, IReadOnlyDictionary<string, string>? packageOverrides = null)
+        XsrNxmlModuleRuntime? nxmlModules = null, IReadOnlyDictionary<string, string>? packageOverrides = null,
+        SidecarHostRequestRouter? hostRequests = null)
     {
         using Stream key = typeof(SidecarStartup).Assembly.GetManifestResourceStream("Nexa.Desktop.SidecarReleaseKey.asc")
             ?? throw new InvalidDataException("The pinned Sidecar verification key is missing.");
         using var reader = new StreamReader(key);
         var verifier = new UpdateGpgVerifier(reader.ReadToEnd());
         return new(verifier.VerifyAsync, (name, status) => log.Info("Sidecar", $"{name}: {status}"))
-        { PackageOverrides = packageOverrides ?? new Dictionary<string, string>(), FunctionPatchAdmission = functionPatches, AutomaticFunctionAdmission = new(), SignalAdmission = signals, UiPatchAdmission = uiPatches, UiModuleAdmission = uiModules, NxmlModules = nxmlModules };
+        { PackageOverrides = packageOverrides ?? new Dictionary<string, string>(), HostRequests = hostRequests, FunctionPatchAdmission = functionPatches, AutomaticFunctionAdmission = new(), SignalAdmission = signals, UiPatchAdmission = uiPatches, UiModuleAdmission = uiModules, NxmlModules = nxmlModules };
     }
 
 #if NEXA_NATIVE_SERVICES

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Versioned general Sidecar Host business contracts and asynchronous clients.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../foundation/Nexa.Core/Nexa.Core.csproj" />
+    <ProjectReference Include="../Nexa.Sidecar.Protocol/Nexa.Sidecar.Protocol.csproj" />
+    <ProjectReference Include="../Nexa.Sidecar.Transport/Nexa.Sidecar.Transport.csproj" />
+    <ProjectReference Include="../../runtime/Nexa.Xsr.Abstractions/Nexa.Xsr.Abstractions.csproj" />
+    <ProjectReference Include="../../runtime/Nexa.Xsr.Runtime/Nexa.Xsr.Runtime.csproj" />
+    <Compile Include="../HostBusinessWire.cs" Link="Wire/HostBusinessWire.cs" />
+  </ItemGroup>
+</Project>

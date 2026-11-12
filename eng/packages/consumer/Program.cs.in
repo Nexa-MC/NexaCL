@@ -3,6 +3,9 @@ using Nexa.Core.Patching;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
 using Nexa.Xsr.State;
+using Nexa.Sidecar.Host;
+using Nexa.Sidecar.Host.Data;
+using Nexa.Sidecar.Transport;
 
 await Check.Run();
 Console.WriteLine("PASS: package consumer routes/state/catalogs/automatic-patch install-retire");
@@ -13,6 +16,13 @@ static class Check
     public static int Add(int a, int b) => a + b;
     public static async Task Run()
     {
+        // A package-only client must instantiate without service implementation assemblies,
+        // and cannot invoke any Host operation before authenticated discovery.
+        using var requests = new SidecarHostRequestClient((_, _) => throw new Exception("Unexpected IPC before discovery"));
+        var business = new SidecarBusinessClient(requests, new Observer());
+        if (!business.Commands.TryResolve(MinecraftLibraryRoutes.Select, out var select)) throw new Exception("client route missing");
+        var rejected = await business.Commands.Dispatch(select, new MinecraftLibrarySelectCommand("/games", "test")).Completion;
+        if (rejected.Error?.Code.Value != "xsr.route_not_found") throw new Exception("undiscovered client accepted call");
         if (Add(1, 2) != 3) throw new Exception("original");
         var target = Patch.Catalog.Single(x => x.Signature.Contains("Check::Add``", StringComparison.Ordinal));
         if (target.Status != PatchTargetStatus.Instrumented) throw new Exception("not instrumented");

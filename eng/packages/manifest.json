@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "projects": {
     "Nexa.Core": [],
     "Nexa.Contracts": [
@@ -31,6 +31,13 @@
       "Nexa.Xsr.Abstractions",
       "Nexa.Xsr.Diagnostics",
       "Nexa.Xsr.State"
+    ],
+    "Nexa.Sidecar.Host.Contracts": [
+      "Nexa.Core",
+      "Nexa.Sidecar.Protocol",
+      "Nexa.Sidecar.Transport",
+      "Nexa.Xsr.Abstractions",
+      "Nexa.Xsr.Runtime"
     ]
   },
   "sdk": "10.0.403"

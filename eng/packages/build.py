@@ -62,7 +62,7 @@ def build(output):
     if sdk != SPEC['sdk']:
         raise SystemExit(f"Shared package build requires SDK {SPEC['sdk']}; got {sdk}")
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
-    run('dotnet', 'build', 'src/runtime/Nexa.Xsr.Runtime/Nexa.Xsr.Runtime.csproj', '-c', 'Release', '-t:Rebuild', '-m:2',
+    run('dotnet', 'build', 'src/sidecar/Nexa.Sidecar.Host.Contracts/Nexa.Sidecar.Host.Contracts.csproj', '-c', 'Release', '-t:Rebuild', '-m:1', '-nr:false',
         '-p:DebugType=None', '-p:DebugSymbols=false', '-p:EnableSourceLink=false',
         '-p:PathMap=' + str(ROOT) + '=/_/nexacl', '-p:RestorePackagesWithLockFile=true', '-p:RestoreLockedMode=true')
     output.mkdir(parents=True, exist_ok=True)

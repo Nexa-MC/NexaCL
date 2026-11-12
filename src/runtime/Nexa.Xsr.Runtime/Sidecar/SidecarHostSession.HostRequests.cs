@@ -16,6 +16,8 @@ public sealed partial class SidecarHostSession
         if (!frame.CorrelationId.IsAssigned) throw new SidecarProtocolException("Host request has no correlation ID.");
         var request = SidecarDataMessages.DecodeBinaryRequestDetails(frame.Payload.Span);
         if (!request.IsBinary) throw new SidecarProtocolException("Host requests require binary data.");
+        if (request.Value.Length > SidecarWireCodecs.MaximumValueLength && !NegotiatedFeatures.HasFlag(SidecarFeatures.LargeGeneratedDtos))
+            throw new SidecarProtocolException("Large Host requests were not negotiated.");
         var route = HostRequests?.Resolve(request.ContractId);
         string? error = null;
         CancellationTokenSource? lifetime = null;
@@ -64,6 +66,7 @@ public sealed partial class SidecarHostSession
                     var result = await pending.WaitAsync(lifetime.Token).ConfigureAwait(false);
                     if (!result.IsSuccess) error = result.Error!.Code.Value;
                     else if (result.Value.CodecId != route.OutputCodec) error = "xsr.contract_mismatch";
+                    else if (result.Value.Length > SidecarWireCodecs.MaximumValueLength && !NegotiatedFeatures.HasFlag(SidecarFeatures.LargeGeneratedDtos)) error = "xsr.feature_unavailable";
                     else value = result.Value;
                 }
             }

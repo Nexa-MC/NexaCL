@@ -36,6 +36,7 @@ internal static partial class Program
         ("Reverse Sidecar requests enforce routes, identities and codec", SidecarHostRequestsEnforceBoundaries),
         ("Reverse Sidecar request cancellation retains bounded work", SidecarHostRequestsBoundCancelledWork),
         ("Reverse Sidecar requests require negotiated feature", SidecarHostRequestsRequireNegotiation),
+        ("Large reverse Sidecar DTOs require negotiated feature", SidecarLargeRequestsRequireNegotiation),
         ("Sidecar binary data API uses numeric contracts", SidecarBinaryDataApiUsesDeclaredNumericContracts),
         ("Sidecar data API rejects unavailable features and pre-cancel locally", SidecarDataApiRejectsUnavailableFeaturesAndPreCancellationLocally),
         ("Sidecar data API binds response message and codec", SidecarDataApiBindsResultMessageAndCodec),

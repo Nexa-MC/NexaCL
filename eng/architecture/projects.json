@@ -77,6 +77,7 @@
   "Nexa.Services.Themes.Tests": "tests/modules/themes/Nexa.Services.Themes.Tests",
   "Nexa.Services.Updates": "src/modules/updates/Nexa.Services.Updates",
   "Nexa.Services.Updates.Contracts": "src/modules/updates/Nexa.Services.Updates.Contracts",
+  "Nexa.Sidecar.Host.Contracts": "src/sidecar/Nexa.Sidecar.Host.Contracts",
   "Nexa.Sidecar.Protocol": "src/sidecar/Nexa.Sidecar.Protocol",
   "Nexa.Sidecar.Tests": "tests/sidecar/Nexa.Sidecar.Tests",
   "Nexa.Sidecar.Transport": "src/sidecar/Nexa.Sidecar.Transport",

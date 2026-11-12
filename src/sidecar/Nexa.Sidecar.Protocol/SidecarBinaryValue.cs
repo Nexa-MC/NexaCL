@@ -40,6 +40,7 @@ public static class SidecarWireCodecs
     public const uint Bytes = 5;
     public const uint GeneratedDto = 6;
     public const int MaximumValueLength = ushort.MaxValue;
+    public const int MaximumGeneratedDtoLength = 8 * 1024 * 1024;
     internal static readonly UTF8Encoding Utf8 = new(false, true);
 
     public static bool IsSupported(uint codecId) => codecId <= GeneratedDto;
@@ -47,7 +48,8 @@ public static class SidecarWireCodecs
     public static void Validate(uint codecId, ReadOnlySpan<byte> bytes)
     {
         if (!IsSupported(codecId)) throw new SidecarProtocolException("Unknown Sidecar value codec.");
-        if (bytes.Length > MaximumValueLength) throw new SidecarProtocolException("Sidecar value exceeds its byte budget.");
+        if (bytes.Length > (codecId == GeneratedDto ? MaximumGeneratedDtoLength : MaximumValueLength))
+            throw new SidecarProtocolException("Sidecar value exceeds its byte budget.");
         int expected = codecId switch { Bool => 1, I32 => 4, I64 or F64 => 8, _ => -1 };
         if (expected >= 0 && bytes.Length != expected) throw new SidecarProtocolException("Sidecar value has an invalid primitive shape.");
         if (codecId == Bool && bytes[0] > 1) throw new SidecarProtocolException("Sidecar Boolean must be zero or one.");
@@ -76,7 +78,7 @@ public static class SidecarWireCodecs
     {
         ArgumentNullException.ThrowIfNull(value);
         if (value is string textValue && textValue.Length > MaximumValueLength
-            || value is byte[] blobValue && blobValue.Length > MaximumValueLength)
+            || value is byte[] blobValue && blobValue.Length > (codecId == GeneratedDto ? MaximumGeneratedDtoLength : MaximumValueLength))
             throw new SidecarProtocolException("Sidecar value exceeds its byte budget.");
         byte[] bytes;
         try

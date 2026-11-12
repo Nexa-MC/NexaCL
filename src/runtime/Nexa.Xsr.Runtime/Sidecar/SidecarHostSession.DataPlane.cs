@@ -92,6 +92,8 @@ public sealed partial class SidecarHostSession
         XsrError? rejected = ValidateRequest(entry, binary: true, cancellationToken);
         if (rejected is not null) return XsrResult.Failure<SidecarBinaryValue>(rejected);
         argument ??= new(0, []);
+        if (argument.Length > SidecarWireCodecs.MaximumValueLength && !NegotiatedFeatures.HasFlag(SidecarFeatures.LargeGeneratedDtos))
+            return XsrResult.Failure<SidecarBinaryValue>(ExchangeError("xsr.feature_unavailable"));
         if (argument.CodecId != entry!.CodecId) return XsrResult.Failure<SidecarBinaryValue>(XsrRuntimeErrors.ContractMismatch());
         byte[] payload;
         try { payload = SidecarDataMessages.EncodeBinaryRequest(entry.ContractId, argument); }
@@ -246,6 +248,8 @@ public sealed partial class SidecarHostSession
         var decoded = SidecarDataMessages.DecodeBinaryResultDetails(frame.Payload.Span);
         if (decoded.IsBinary && !NegotiatedFeatures.HasFlag(SidecarFeatures.BinaryPayloads))
             throw new SidecarProtocolException("Binary sidecar results were not negotiated.");
+        if (decoded.Value.Length > SidecarWireCodecs.MaximumValueLength && !NegotiatedFeatures.HasFlag(SidecarFeatures.LargeGeneratedDtos))
+            throw new SidecarProtocolException("Large sidecar results were not negotiated.");
         if (decoded.Success && decoded.Value.CodecId != exchange.ResultCodecId)
             throw new SidecarProtocolException("Sidecar result codec does not match its declared contract.");
         string code = decoded.Success ? string.Empty : NormalizeRemoteError(decoded.ErrorCode);
@@ -275,6 +279,8 @@ public sealed partial class SidecarHostSession
     {
         lock (_gate) { if (!Accepting) return; }
         var decoded = SidecarDataMessages.DecodeBinaryEventDetails(payload);
+        if (decoded.Value.Length > SidecarWireCodecs.MaximumValueLength && !NegotiatedFeatures.HasFlag(SidecarFeatures.LargeGeneratedDtos))
+            throw new SidecarProtocolException("Large sidecar events were not negotiated.");
         var entry = ResolveContract(SidecarRegistrationKind.Event, decoded.ContractId);
         if (entry is null) return;
         if (decoded.Value.CodecId != entry.CodecId || (decoded.IsBinary && !NegotiatedFeatures.HasFlag(SidecarFeatures.BinaryPayloads)))
