@@ -1,7 +1,7 @@
 name: Publish pinned plugin SDK inputs
 on:
   push:
-    branches: ['build-inputs/plugin-sdk-e73619efa290']
+    branches: ['build-inputs/plugin-sdk-015367de8c53']
 permissions:
   contents: write
 jobs:
@@ -22,4 +22,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create plugin-sdk-inputs-e73619efa290 Nexa.Plugin.HostSdk.e73619efa290.zip PluginSidecar-source-e73619efa290.tar.gz --target "$GITHUB_SHA" --prerelease --title 'Plugin SDK build inputs (e73619efa290)' --notes-file notes.md
+          gh release create plugin-sdk-inputs-015367de8c53 Nexa.Plugin.HostSdk.015367de8c53.zip PluginSidecar-source-015367de8c53.tar.gz --target "$GITHUB_SHA" --prerelease --title 'Plugin SDK build inputs (015367de8c53)' --notes-file notes.md
