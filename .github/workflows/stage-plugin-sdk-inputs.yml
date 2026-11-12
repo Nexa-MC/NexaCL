@@ -1,0 +1,46 @@
+name: Stage pinned Plugin SDK inputs
+on:
+  workflow_dispatch:
+    inputs:
+      source_url:
+        required: true
+        type: string
+      source_sha256:
+        required: true
+        type: string
+      sdk_commit:
+        required: true
+        type: string
+      sdk_version:
+        required: true
+        type: string
+permissions:
+  contents: write
+jobs:
+  stage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.403'
+      - name: Verify source and package pinned SDK
+        env:
+          SDK_SOURCE_URL: ${{ inputs.source_url }}
+          SDK_SOURCE_SHA256: ${{ inputs.source_sha256 }}
+          SDK_COMMIT: ${{ inputs.sdk_commit }}
+          SDK_VERSION: ${{ inputs.sdk_version }}
+        run: python3 eng/plugins/stage_inputs.py
+      - name: Publish immutable inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          lock=json.loads(Path('plugin-inputs/sdk.lock.json').read_text())
+          tag=lock['distribution']['release']
+          # Existing releases are never replaced by a rerun.
+          subprocess.run(['gh','release','create',tag,*map(str,sorted(Path('plugin-inputs').glob('*.zip'))),*map(str,sorted(Path('plugin-inputs').glob('*.tar.gz'))),'plugin-inputs/sdk.lock.json','--prerelease','--latest=false','--target','${{ github.sha }}','--title','Plugin SDK build inputs '+lock['version'],'--notes-file','plugin-inputs/notes.md'],check=True)
+          PY
