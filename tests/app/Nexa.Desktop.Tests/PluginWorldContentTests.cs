@@ -54,6 +54,24 @@ internal static partial class Program
         await Complete("Minecraft.Content", "RestoreTrash", ContentChangeRequest.Write(new(instance, [trash.Id], [], trash.Revision)));
         AssertTrue(File.Exists(Path.Combine(path, "screenshots", "fixture.png")));
         AssertFalse((await invoke("Minecraft.Content", "Execute", PlanRequest.Write(new(removePlan.Id, removePlan.Revision, null)))).Success);
+        await Complete("Minecraft.Worlds", "Backup", EntityRequest.Write(new(world.Id)));
+        var backup = Page<BackupSummary>.Read((await invoke("Minecraft.Worlds", "ListBackups", EntityRequest.Write(new(world.Id)))).Value).Items.Single();
+        world = Page<WorldSummary>.Read((await invoke("Minecraft.Worlds", "List", EntityRequest.Write(new(instance)))).Value).Items.Single();
+        AssertFalse((await invoke("Minecraft.Worlds", "PrepareRestoreDestination", WorldRestoreDestination.Write(new(world.Id, "../escape", world.Revision)))).Success);
+        var destination = EntityId.Read((await invoke("Minecraft.Worlds", "PrepareRestoreDestination", WorldRestoreDestination.Write(new(world.Id, "Restored", world.Revision)))).Value);
+        AssertFalse((await invoke("Minecraft.Worlds", "PreviewRestore", BackupRestore.Write(new(backup.Id, destination, new("stale"))))).Success);
+        var restore = MutationPlan.Read((await invoke("Minecraft.Worlds", "PreviewRestore", BackupRestore.Write(new(backup.Id, destination, backup.Revision)))).Value);
+        await Complete("Minecraft.Worlds", "Restore", PlanRequest.Write(new(restore.Id, restore.Revision, null)));
+        AssertTrue(File.Exists(Path.Combine(path, "saves", "Restored", "level.dat")));
+        AssertFalse((await invoke("Minecraft.Worlds", "Restore", PlanRequest.Write(new(restore.Id, restore.Revision, null)))).Success);
+        var restored = Page<WorldSummary>.Read((await invoke("Minecraft.Worlds", "List", EntityRequest.Write(new(instance)))).Value).Items.Single(w => w.Id != world.Id);
+        var deletion = MutationPlan.Read((await invoke("Minecraft.Worlds", "PlanDelete", EntityRequest.Write(new(restored.Id)))).Value);
+        await Complete("Minecraft.Worlds", "Delete", PlanRequest.Write(new(deletion.Id, deletion.Revision, null)));
+        AssertFalse(Directory.Exists(Path.Combine(path, "saves", "Restored")));
+        AssertTrue(Directory.Exists(Path.Combine(path, "saves", "Fixture")));
+        var clear = MutationPlan.Read((await invoke("Minecraft.Content", "PreviewClearTrash", EntityRequest.Write(new(instance)))).Value);
+        await Complete("Minecraft.Content", "ClearTrash", PlanRequest.Write(new(clear.Id, clear.Revision, null)));
+        AssertEqual(0, Page<ContentItem>.Read((await invoke("Minecraft.Content", "ListTrash", EntityRequest.Write(new(instance)))).Value).Items.Length);
         async Task Complete(string group, string method, AbiValue input)
         {
             var response = await invoke(group, method, input); AssertTrue(response.Success); var operation = OperationRef.Read(response.Value);
@@ -62,7 +80,7 @@ internal static partial class Program
             {
                 var status = await invoke("Tasks", "Read", EntityRequest.Write(new(operation.Id))); AssertTrue(status.Success);
                 var record = OperationRecord.Read(status.Value); if (record.State == OperationState.Completed) return;
-                AssertFalse(record.State is OperationState.Failed or OperationState.Cancelled or OperationState.OutcomeUnknown);
+                if (record.State is OperationState.Failed or OperationState.Cancelled or OperationState.OutcomeUnknown) throw new InvalidOperationException(group + "." + method + ": " + record.Failure);
                 await Task.Delay(10, timeout.Token);
             }
         }

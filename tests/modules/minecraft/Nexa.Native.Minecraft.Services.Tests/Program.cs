@@ -105,7 +105,8 @@ try
     Check((await minecraft.CancelProcessAsync(canceled.SessionId, token)).IsSuccess, "Native process cancellation was rejected.");
     await WaitForExit(canceled.ProcessId, token);
     var shutdown = await minecraft.StartProcessAsync(Plan("hold"), "shutdown-fixture", token);
-    await JavaInstallCases.RunAsync(minecraft, root, store, javaExecutable, token);
+    try { await JavaInstallCases.RunAsync(minecraft, root, store, javaExecutable, token); }
+    catch (Exception error) { Console.Error.WriteLine("Native scenario failed before cleanup: " + error); throw; }
     await minecraft.DisposeAsync(); await WaitForExit(shutdown.ProcessId, token);
     Console.WriteLine("Independent native Minecraft discovery, Java inventory, process state, redacted output, cancellation and physical shutdown passed.");
     return 0;

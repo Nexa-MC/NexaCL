@@ -140,12 +140,12 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
             return [];
         }
         if (_instances is null) throw new InvalidOperationException("Minecraft service has not initialized.");
-        if (operation is >= MinecraftServiceProtocol.ManageInstanceExportOptionsSave and <= MinecraftServiceProtocol.ManageInstanceWorldDataPackOrderCommand or MinecraftServiceProtocol.LanDiscover or MinecraftServiceProtocol.ContentInspect or MinecraftServiceProtocol.ScriptExport or MinecraftServiceProtocol.ResourcePackSet)
+        if (operation is >= MinecraftServiceProtocol.ManageInstanceExportOptionsSave and <= MinecraftServiceProtocol.ManageInstanceWorldDataPackOrderCommand or MinecraftServiceProtocol.LanDiscover or MinecraftServiceProtocol.ContentInspect or MinecraftServiceProtocol.ScriptExport or MinecraftServiceProtocol.ResourcePackSet or MinecraftServiceProtocol.ClearContentTrash)
             return await ExecuteManagementAsync(operation, reader, token).ConfigureAwait(false);
         if (operation == MinecraftServiceProtocol.ResourceConfigure) return await ConfigureResourcesAsync(reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.ResourceResourceNetworkPolicyQuery and <= MinecraftServiceProtocol.ResourceResourceModpackUpdateCommand or MinecraftServiceProtocol.ResourceInspectModpack)
             return await ExecuteResourceOperationAsync(operation, reader, token).ConfigureAwait(false);
-        if (operation is >= MinecraftServiceProtocol.LibraryConfigure and <= MinecraftServiceProtocol.LibraryRememberRenamed) return await ExecuteLibraryAsync(operation, reader, token).ConfigureAwait(false);
+        if (operation is >= MinecraftServiceProtocol.LibraryConfigure and <= MinecraftServiceProtocol.LibraryRememberRenamed or MinecraftServiceProtocol.LibraryClone) return await ExecuteLibraryAsync(operation, reader, token).ConfigureAwait(false);
         if (operation == MinecraftServiceProtocol.EnvironmentFacts) return await ReadEnvironmentFactsAsync(reader, token).ConfigureAwait(false);
         if (operation == MinecraftServiceProtocol.LocalDocuments) return await ReadLocalDocumentsAsync(reader, token).ConfigureAwait(false);
         if (operation is MinecraftServiceProtocol.MigrationReceiptAuthorize or MinecraftServiceProtocol.MigrationReceiptVerify)
@@ -155,14 +155,14 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
             return await ExecuteCatalogAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.ModpackUpdatePreview and <= MinecraftServiceProtocol.FolderImport)
             return await ExecuteImportAsync(operation, reader, token).ConfigureAwait(false);
-        if (operation is >= MinecraftServiceProtocol.JavaConfigure and <= MinecraftServiceProtocol.JavaPluginSelection or MinecraftServiceProtocol.JavaPluginRequirements)
+        if (operation is >= MinecraftServiceProtocol.JavaConfigure and <= MinecraftServiceProtocol.JavaPluginSelection or MinecraftServiceProtocol.JavaPluginRequirements or MinecraftServiceProtocol.JavaArchiveInstall)
             return await ExecuteJavaManagementAsync(operation, reader, token).ConfigureAwait(false);
-        if (operation is >= MinecraftServiceProtocol.InstallConfigure and <= MinecraftServiceProtocol.InstallEditRead)
+        if (operation is >= MinecraftServiceProtocol.InstallConfigure and <= MinecraftServiceProtocol.InstallEditRead or MinecraftServiceProtocol.InstallRecoveryList or MinecraftServiceProtocol.InstallRecoveryApply)
             return await ExecuteInstallationAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.RecoveryRead and <= MinecraftServiceProtocol.RecoveryResume)
             return await ExecuteRecoveryAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.LaunchConfigure and <= MinecraftServiceProtocol.LaunchFinalize
-            or MinecraftServiceProtocol.LaunchSafeRead or MinecraftServiceProtocol.LaunchDiagnostics or MinecraftServiceProtocol.LaunchAuthorized or MinecraftServiceProtocol.LaunchAttemptControl)
+            or MinecraftServiceProtocol.LaunchSafeRead or MinecraftServiceProtocol.LaunchDiagnostics or MinecraftServiceProtocol.LaunchAuthorized or MinecraftServiceProtocol.LaunchAttemptControl or MinecraftServiceProtocol.LaunchContributed)
             return await ExecuteLaunchAsync(operation, reader, token).ConfigureAwait(false);
         switch (operation)
         {

@@ -2,5 +2,5 @@
 namespace Nexa.Native.Accounts.Wire;
 internal static class AccountRouteSchema
 {
-    internal const string Fingerprint = "DAECF62447AD3E0A6828B0999EBDC7D91DB041EED997C7A40A3656DD9EE3CFF6";
+    internal const string Fingerprint = "174C6971404F3784811DF3683A284CCDA0A5652DEE405109F6AAF8D894ED7FCE";
 }

@@ -12,7 +12,8 @@ public sealed partial class PluginBusinessRoutes
     private IEnumerable<HostCapabilityRoute> InstanceCreateRoutes => [
         HostRoutes.Typed<InstanceCreateRequest, MutationPlan>("Minecraft.Instances", "PrepareCreate", async (c, v) =>
         {
-            if (v.Template.Value != "nexa:instance/java" || !MinecraftInstanceReference.IsSafe(v.Name) || !MinecraftInstanceReference.IsSafe(v.GameVersion)) throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
+            if (v.Template.Value != "nexa:instance/java") return await PrepareTemplate(c, v).ConfigureAwait(false);
+            if ( !MinecraftInstanceReference.IsSafe(v.Name) || !MinecraftInstanceReference.IsSafe(v.GameVersion)) throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
             string root = Library().Directories.FirstOrDefault(d => Root(c, d.Path) == v.Root)?.Path ?? throw new AbiHostException(AbiErrors.HANDLE_INVALID);
             string path = Path.Combine(root, "versions", v.Name);
             if (Path.Exists(path)) throw new AbiHostException(AbiErrors.CONFLICT);

@@ -39,6 +39,8 @@ public sealed partial class NativeMinecraftClient : IMinecraftLibraryPort
     public Task<XsrResult> ForgetLibraryDirectoryAsync(MinecraftLibraryForgetCommand value, CancellationToken token = default) => LaunchResultAsync(MinecraftServiceProtocol.LibraryForget, writer => writer.MinecraftLibraryForgetCommand(value), token);
     public Task<XsrResult> SelectLibraryInstanceAsync(MinecraftLibrarySelectCommand value, CancellationToken token = default) => LaunchResultAsync(MinecraftServiceProtocol.LibrarySelect, writer => writer.MinecraftLibrarySelectCommand(value), token);
     public Task<XsrResult> RenameLibraryDirectoryAsync(MinecraftLibraryRenameCommand value, CancellationToken token = default) => LaunchResultAsync(MinecraftServiceProtocol.LibraryRename, writer => writer.MinecraftLibraryRenameCommand(value), token);
+    public Task<XsrResult> CloneLibraryInstanceAsync(MinecraftLibraryCloneCommand value, CancellationToken token = default)
+        => LaunchResultAsync(MinecraftServiceProtocol.LibraryClone, writer => writer.MinecraftLibraryCloneCommand(value), token);
     public Task<XsrResult> DeleteLibraryInstanceAsync(MinecraftLibraryDeleteCommand value, CancellationToken token = default) => LaunchResultAsync(MinecraftServiceProtocol.LibraryDelete, writer => writer.MinecraftLibraryDeleteCommand(value), token);
     public Task<XsrResult> RememberRenamedAsync(string root, string previous, string current, CancellationToken cancellationToken = default)
         => LaunchResultAsync(MinecraftServiceProtocol.LibraryRememberRenamed, writer => writer.MinecraftLibraryRememberRenamedCommand(new(root, previous, current)), cancellationToken);

@@ -17,5 +17,6 @@ public static class FoundationRouteIds
 
     public static readonly XsrSemanticId AccountUpsertProfile = XsrSemanticId.Parse("accounts.upsert-profile");
     public static readonly XsrSemanticId AccountSelectProfile = XsrSemanticId.Parse("accounts.select-profile");
+    public static readonly XsrSemanticId AccountSignOut = XsrSemanticId.Parse("accounts.sign-out");
     public static readonly XsrSemanticId AccountRemoveProfile = XsrSemanticId.Parse("accounts.remove-profile");
 }

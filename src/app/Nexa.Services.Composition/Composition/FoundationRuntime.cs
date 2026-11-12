@@ -127,6 +127,8 @@ public static class FoundationRuntimeComposer
             async (command, token) => await InstanceContentTrash.RemoveAsync(command, host.StateStore, token).ConfigureAwait(false));
         commands.Register<InstanceModRemovalCommand>(InstanceManagementContract.RemoveMod,
             async (command, token) => await InstanceModRemovalService.RemoveAsync(command, host.StateStore, token).ConfigureAwait(false));
+        commands.Register<InstanceContentClearTrashCommand>(InstanceManagementContract.ClearTrash,
+            async (command, token) => await InstanceContentTrash.ClearAsync(command, host.StateStore, token).ConfigureAwait(false));
         commands.Register<InstanceContentRestoreCommand>(InstanceManagementContract.RestoreContent,
             async (command, token) => await InstanceContentTrash.RestoreAsync(command, host.StateStore, token).ConfigureAwait(false));
 #endif
@@ -142,6 +144,7 @@ public static class FoundationRuntimeComposer
         commands.Register(
             FoundationRouteIds.AccountSelectProfile,
             FoundationCommands.CreateAccountSelectHandler(host.Accounts));
+        commands.Register(FoundationRouteIds.AccountSignOut, FoundationCommands.CreateAccountSignOutHandler(host.Accounts));
         commands.Register(FoundationRouteIds.AccountRemoveProfile, FoundationCommands.CreateAccountRemoveHandler(host.Accounts));
         commands.Register<SettingsMutation>(SettingsPolicyContract.SetCommand,
             (command, token) => new(Task.Run(() => host.SettingsPolicy.Set(command), token)));
@@ -174,9 +177,11 @@ public static class FoundationRuntimeComposer
         });
 #if NEXA_NATIVE_SERVICES
         commands.Register<Nexa.Services.Minecraft.Java.JavaRuntimeManageCommand>(Nexa.Services.Minecraft.Java.JavaRuntimeInventoryContract.Manage, host.NativeMinecraft.ManageJavaAsync);
+        commands.Register<Nexa.Services.Minecraft.Java.JavaArchiveInstallCommand>(Nexa.Services.Minecraft.Java.JavaRuntimeInventoryContract.InstallArchive, async (request, token) => await host.NativeMinecraft.InstallJavaArchiveAsync(request, token).ConfigureAwait(false));
 #else
         var javaManagement = new Nexa.Services.Minecraft.Java.JavaRuntimeManagementService(host.JavaLocator, host.JavaRegistrations, host.JavaManagedRuntimeRoots);
         commands.Register<Nexa.Services.Minecraft.Java.JavaRuntimeManageCommand>(Nexa.Services.Minecraft.Java.JavaRuntimeInventoryContract.Manage, javaManagement.ManageAsync);
+        commands.Register<Nexa.Services.Minecraft.Java.JavaArchiveInstallCommand>(Nexa.Services.Minecraft.Java.JavaRuntimeInventoryContract.InstallArchive, new Nexa.Services.Minecraft.Java.JavaArchiveInstaller(host.JavaLocator, javaManagement).InstallAsync);
 #endif
 #if !NEXA_NATIVE_SERVICES
         ContentManagementRuntime.Register(commands, queries, host.StateStore, captureWorld, acquireWorldSessionLock);

@@ -1,26 +1,139 @@
 {
   "commands": [
-    [10, "AccountRefreshSkinsCommand", "AccountSkinContract.RefreshRoute", "_skins!.Refresh()"],
-    [11, "AccountLoginStartCommand", "AccountOnboardingRoutes.Start", "_onboarding!.Start(command)"],
-    [12, "AccountLoginCancelCommand", "AccountOnboardingRoutes.Cancel", "_onboarding!.Cancel(command.Generation)"],
-    [13, "AccountChooseCharacterCommand", "AccountOnboardingRoutes.ChooseCharacter", "_onboarding!.ChooseCharacter(command.Generation, command.Uuid)"],
-    [14, "AccountImportCommand", "AccountOnboardingRoutes.Import", "_onboarding!.Import(command)"],
-    [15, "AccountDiscoverImportsCommand", "AccountOnboardingRoutes.DiscoverImports", "_onboarding!.DiscoverImports()"],
-    [16, "AccountWardrobeUploadSkinCommand", "AccountWardrobeContract.UploadSkin", "await _wardrobe!.UploadSkinAsync(command, token).ConfigureAwait(false)"],
-    [17, "AccountWardrobeSetCapeCommand", "AccountWardrobeContract.SetCape", "await _wardrobe!.SetCapeAsync(command, token).ConfigureAwait(false)"],
-    [18, "AccountWardrobeApplyCardCommand", "AccountWardrobeContract.ApplyCard", "await _wardrobe!.ApplyCardAsync(command, token).ConfigureAwait(false)"],
-    [19, "AccountWardrobeApplyPublicCommand", "AccountWardrobeContract.ApplyPublic", "await _wardrobe!.ApplyPublicAsync(command, token).ConfigureAwait(false)"],
-    [20, "AccountUpsertProfileCommand", "FoundationRouteIds.AccountUpsertProfile", "AsResult(AccountLoginProfiles.Upsert(_accounts!, command.Profile))"],
-    [21, "AccountSelectProfileCommand", "FoundationRouteIds.AccountSelectProfile", "AsResult(_accounts!.SelectProfile(command.Index, command.ExpectedRosterRevision))"],
-    [22, "AccountRemoveProfileCommand", "FoundationRouteIds.AccountRemoveProfile", "_accounts!.RemoveProfile(command.Index, command.ExpectedRosterRevision)"]
+    [
+      10,
+      "AccountRefreshSkinsCommand",
+      "AccountSkinContract.RefreshRoute",
+      "_skins!.Refresh()"
+    ],
+    [
+      11,
+      "AccountLoginStartCommand",
+      "AccountOnboardingRoutes.Start",
+      "_onboarding!.Start(command)"
+    ],
+    [
+      12,
+      "AccountLoginCancelCommand",
+      "AccountOnboardingRoutes.Cancel",
+      "_onboarding!.Cancel(command.Generation)"
+    ],
+    [
+      13,
+      "AccountChooseCharacterCommand",
+      "AccountOnboardingRoutes.ChooseCharacter",
+      "_onboarding!.ChooseCharacter(command.Generation, command.Uuid)"
+    ],
+    [
+      14,
+      "AccountImportCommand",
+      "AccountOnboardingRoutes.Import",
+      "_onboarding!.Import(command)"
+    ],
+    [
+      15,
+      "AccountDiscoverImportsCommand",
+      "AccountOnboardingRoutes.DiscoverImports",
+      "_onboarding!.DiscoverImports()"
+    ],
+    [
+      16,
+      "AccountWardrobeUploadSkinCommand",
+      "AccountWardrobeContract.UploadSkin",
+      "await _wardrobe!.UploadSkinAsync(command, token).ConfigureAwait(false)"
+    ],
+    [
+      17,
+      "AccountWardrobeSetCapeCommand",
+      "AccountWardrobeContract.SetCape",
+      "await _wardrobe!.SetCapeAsync(command, token).ConfigureAwait(false)"
+    ],
+    [
+      18,
+      "AccountWardrobeApplyCardCommand",
+      "AccountWardrobeContract.ApplyCard",
+      "await _wardrobe!.ApplyCardAsync(command, token).ConfigureAwait(false)"
+    ],
+    [
+      19,
+      "AccountWardrobeApplyPublicCommand",
+      "AccountWardrobeContract.ApplyPublic",
+      "await _wardrobe!.ApplyPublicAsync(command, token).ConfigureAwait(false)"
+    ],
+    [
+      20,
+      "AccountUpsertProfileCommand",
+      "FoundationRouteIds.AccountUpsertProfile",
+      "AsResult(AccountLoginProfiles.Upsert(_accounts!, command.Profile))"
+    ],
+    [
+      21,
+      "AccountSelectProfileCommand",
+      "FoundationRouteIds.AccountSelectProfile",
+      "AsResult(_accounts!.SelectProfile(command.Index, command.ExpectedRosterRevision))"
+    ],
+    [
+      22,
+      "AccountRemoveProfileCommand",
+      "FoundationRouteIds.AccountRemoveProfile",
+      "_accounts!.RemoveProfile(command.Index, command.ExpectedRosterRevision)"
+    ],
+    [
+      23,
+      "AccountSignOutCommand",
+      "FoundationRouteIds.AccountSignOut",
+      "_accounts!.SignOut(command.Index, command.ExpectedRosterRevision)"
+    ]
   ],
   "queries": [
-    [100, "AccountWardrobeQuery", "AccountWardrobeSnapshot", "AccountWardrobeContract.Read", "_wardrobe!.ReadAsync"],
-    [101, "AccountWardrobeSkinQuery", "AccountWardrobeSkinPreview", "AccountWardrobeContract.ValidateSkin", "_wardrobe!.ValidateSkinAsync"],
-    [102, "AccountWardrobeTextureQuery", "AccountWardrobeResolvedTextures", "AccountWardrobeContract.ReadTexture", "_wardrobe!.ReadTextureAsync"],
-    [103, "WardrobeCatalogSitesQuery", "IReadOnlyList<WardrobeCatalogSite>", "WardrobeCatalogContract.Sites", "_catalog!.SitesAsync"],
-    [104, "WardrobeCatalogQuery", "WardrobeCatalogPage", "WardrobeCatalogContract.Read", "_catalog!.ReadAsync"],
-    [105, "WardrobeCatalogResolveQuery", "WardrobeCatalogItem", "WardrobeCatalogContract.Resolve", "_catalog!.ResolveAsync"],
-    [106, "WardrobeCatalogPreviewQuery", "AccountWardrobeResolvedTextures", "WardrobeCatalogContract.Preview", "_catalog!.PreviewAsync"]
+    [
+      100,
+      "AccountWardrobeQuery",
+      "AccountWardrobeSnapshot",
+      "AccountWardrobeContract.Read",
+      "_wardrobe!.ReadAsync"
+    ],
+    [
+      101,
+      "AccountWardrobeSkinQuery",
+      "AccountWardrobeSkinPreview",
+      "AccountWardrobeContract.ValidateSkin",
+      "_wardrobe!.ValidateSkinAsync"
+    ],
+    [
+      102,
+      "AccountWardrobeTextureQuery",
+      "AccountWardrobeResolvedTextures",
+      "AccountWardrobeContract.ReadTexture",
+      "_wardrobe!.ReadTextureAsync"
+    ],
+    [
+      103,
+      "WardrobeCatalogSitesQuery",
+      "IReadOnlyList<WardrobeCatalogSite>",
+      "WardrobeCatalogContract.Sites",
+      "_catalog!.SitesAsync"
+    ],
+    [
+      104,
+      "WardrobeCatalogQuery",
+      "WardrobeCatalogPage",
+      "WardrobeCatalogContract.Read",
+      "_catalog!.ReadAsync"
+    ],
+    [
+      105,
+      "WardrobeCatalogResolveQuery",
+      "WardrobeCatalogItem",
+      "WardrobeCatalogContract.Resolve",
+      "_catalog!.ResolveAsync"
+    ],
+    [
+      106,
+      "WardrobeCatalogPreviewQuery",
+      "AccountWardrobeResolvedTextures",
+      "WardrobeCatalogContract.Preview",
+      "_catalog!.PreviewAsync"
+    ]
   ]
 }

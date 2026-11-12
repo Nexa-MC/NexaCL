@@ -31,6 +31,14 @@ public sealed partial class PluginApplication
             return blob.Bytes.ToArray();
         }
     }
+    public void ReleaseBlob(PluginIdentity owner, BlobRef reference)
+    {
+        lock (_gate)
+        {
+            if (!_blobs.TryGetValue(reference.Token, out var blob) || blob.Owner != owner || blob.Reference != reference) throw new AbiHostException(AbiErrors.HANDLE_INVALID);
+            CryptographicOperations.ZeroMemory(blob.Bytes); _blobs.Remove(reference.Token);
+        }
+    }
     public BlobRef AddBlob(PluginIdentity owner, byte[] bytes)
     {
         lock (_gate)

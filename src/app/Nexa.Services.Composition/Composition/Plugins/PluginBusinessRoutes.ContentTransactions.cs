@@ -10,6 +10,21 @@ namespace Nexa.Services.Composition.Plugins;
 public sealed partial class PluginBusinessRoutes
 {
     private IEnumerable<HostCapabilityRoute> ContentTransactionRoutes => [
+        HostRoutes.Typed<EntityRequest, MutationPlan>("Minecraft.Content", "PreviewClearTrash", async (c, v) =>
+        {
+            var snapshot = await Management(c, v.Id, c.Options.Cancellation, trash: true).ConfigureAwait(false);
+            var ids = snapshot.Trash.Select(t => t.Id).Order(StringComparer.Ordinal).ToArray();
+            return Plan(c, "content/clear-trash", EntityRequest.Write(v), $"Permanently remove {ids.Length} trashed items", async token =>
+            {
+                var current = await Management(c, v.Id, token, trash: true).ConfigureAwait(false);
+                if (!current.Trash.Select(t => t.Id).Order(StringComparer.Ordinal).SequenceEqual(ids)) throw new AbiHostException(AbiErrors.STALE_REVISION);
+            }, async token =>
+            {
+                await Command(foundationCommands, InstanceManagementContract.ClearTrash, new InstanceContentClearTrashCommand(snapshot.InstanceDirectory, ids), token).ConfigureAwait(false);
+                return Empty.Write(new());
+            });
+        }),
+        HostRoutes.Typed<PlanRequest, OperationRef>("Minecraft.Content", "ClearTrash", (c, v) => ValueTask.FromResult(ExecutePlan(c, v, "content/clear-trash", "nexa.minecraft.content.write", Abi100Schemas.Empty))),
         HostRoutes.Typed<EntityRequest, Page<ContentTransaction>>("Minecraft.Content", "ListTransactions", async (c, v) =>
         {
             var snapshot = await Management(c, v.Id, c.Options.Cancellation, trash: true).ConfigureAwait(false);

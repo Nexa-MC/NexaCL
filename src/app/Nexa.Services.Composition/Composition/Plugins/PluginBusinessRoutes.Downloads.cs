@@ -30,17 +30,30 @@ public sealed partial class PluginBusinessRoutes
         internal readonly TaskCompletionSource Finished = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
     public void BindDownloads(DownloadService downloads) => _downloadService = downloads;
-    private DownloadPlan ResolveDownload(HostInvocation c, DownloadPlan request)
+    private async ValueTask<DownloadPlan> ResolveDownload(HostInvocation c, DownloadPlan request)
     {
         if (request.Sources.Length is < 1 or > 8 || request.Size is < 0 or > MaximumPluginDownloadBytes || request.Sha256 is { } hash && (hash.Length != 64 || !hash.All(char.IsAsciiHexDigit))) throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
-        foreach (var source in request.Sources)
+        var sources = System.Collections.Immutable.ImmutableArray.CreateBuilder<DownloadSource>();
+        foreach (var original in request.Sources)
         {
+            var source = original;
+            if (source.Credential is not null) throw new AbiHostException(AbiErrors.CAPABILITY_DENIED);
+            if (source.Provider is { Value: not "nexa:http" } resolver && Services.HostProviders(SourceResolverKind).Any(p => p.Id == resolver))
+            {
+                source = DownloadSource.Read(await Services.QueryHostProvider(c, SourceResolverKind, resolver, SourceResolverMethod, DownloadSource.Write(source)).ConfigureAwait(false));
+                if (source.Credential is not null) throw new AbiHostException(AbiErrors.CAPABILITY_DENIED);
+            }
             if (!Uri.TryCreate(source.Uri.Value, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http") || uri.UserInfo.Length != 0 || uri.Fragment.Length != 0) throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
-            if (source.Credential is not null || source.Provider is { Value: not "nexa:http" }) throw new AbiHostException(AbiErrors.PROVIDER_UNAVAILABLE);
+            if (source.Provider is { Value: not "nexa:http" } provider)
+            {
+                if (!Services.HostProviders(TransferProviderKind).Any(p => p.Id == provider)) throw new AbiHostException(AbiErrors.PROVIDER_UNAVAILABLE);
+                if (request.Sources.Length != 1 || request.Size is null || request.Sha256 is null) throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
+            }
+            sources.Add(source);
         }
         string path = Application.Files.Resolve(c.Identity, request.Target, true);
         if (Path.Exists(path) || !Directory.Exists(Path.GetDirectoryName(path))) throw new AbiHostException(AbiErrors.CONFLICT);
-        return request with { Sha256 = request.Sha256?.ToUpperInvariant() };
+        return request with { Sources = sources.ToImmutable(), Sha256 = request.Sha256?.ToUpperInvariant() };
     }
     private PluginDownload Download(HostInvocation c, EntityId id)
     {
@@ -53,7 +66,7 @@ public sealed partial class PluginBusinessRoutes
         lock (_planGate) return new(id, item.Paused && item.State == OperationState.Running ? OperationState.Pending : item.State, item.Bytes, item.Total,
             item.Error is { } error ? [new(error, new(error, []), c.Options.CorrelationId, false, [])] : [], new(Token(c, "download:" + id.Value + ":" + item.Revision)));
     }
-    private async ValueTask<AbiReply<AbiValue>> RunDownload(HostInvocation c, PluginDownload item, CancellationToken token)
+    private async ValueTask<AbiReply<AbiValue>> RunDownload(HostInvocation c, PluginDownload item, CancellationToken token, bool requireConfirmation = true)
     {
         lock (_planGate)
         {
@@ -65,7 +78,7 @@ public sealed partial class PluginBusinessRoutes
         string stage = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(item.Path)!, ".nexa-plugin-download-" + Guid.NewGuid().ToString("N"));
         try
         {
-            await Confirm(c, "downloads/start", "Download to " + item.Path, DownloadPlan.Write(item.Plan), token).ConfigureAwait(false);
+            if (requireConfirmation) await Confirm(c, "downloads/start", "Download to " + item.Path, DownloadPlan.Write(item.Plan), token).ConfigureAwait(false);
             while (true)
             {
                 Task? wait;
@@ -82,21 +95,26 @@ public sealed partial class PluginBusinessRoutes
                 {
                     Application.Files.Resolve(c.Identity, item.Plan.Target, true);
                     if (Path.Exists(item.Path)) throw new AbiHostException(AbiErrors.CONFLICT);
-                    var service = _downloadService ?? throw new AbiHostException(AbiErrors.CAPABILITY_UNAVAILABLE);
-                    var result = await service.DownloadAsync(new DownloadRequest
+                    if (item.Plan.Sources[0].Provider is { Value: not "nexa:http" })
+                        await TransferProviderDownload(c, item, stage, transfer.Token).ConfigureAwait(false);
+                    else
                     {
-                        DestinationPath = stage,
-                        Sources = item.Plan.Sources.Select(s => s.Uri.Value).ToArray(),
-                        AllowResume = item.Plan.Sha256 is not null,
-                        CacheIdentity = item.Plan.Sha256 is { } digest ? new(digest, item.Plan.Size) : null,
-                        ConnectionFactory = url => new PluginDownloadConnection(_pluginHttp, url, item.Plan.Size)
-                    }, progress =>
-                    {
-                        lock (_planGate) { item.Bytes = progress.DownloadedBytes; item.Total = progress.TotalBytes >= 0 ? progress.TotalBytes : item.Plan.Size; item.Revision++; }
-                        _changes.Writer.TryWrite(true);
-                    }, transfer.Token).ConfigureAwait(false);
-                    transfer.Token.ThrowIfCancellationRequested();
-                    if (!result.Success) throw new AbiHostException(AbiErrors.CAPABILITY_UNAVAILABLE);
+                        var service = _downloadService ?? throw new AbiHostException(AbiErrors.CAPABILITY_UNAVAILABLE);
+                        var result = await service.DownloadAsync(new DownloadRequest
+                        {
+                            DestinationPath = stage,
+                            Sources = item.Plan.Sources.Select(s => s.Uri.Value).ToArray(),
+                            AllowResume = item.Plan.Sha256 is not null,
+                            CacheIdentity = item.Plan.Sha256 is { } digest ? new(digest, item.Plan.Size) : null,
+                            ConnectionFactory = url => new PluginDownloadConnection(_pluginHttp, url, item.Plan.Size)
+                        }, progress =>
+                        {
+                            lock (_planGate) { item.Bytes = progress.DownloadedBytes; item.Total = progress.TotalBytes >= 0 ? progress.TotalBytes : item.Plan.Size; item.Revision++; }
+                            _changes.Writer.TryWrite(true);
+                        }, transfer.Token).ConfigureAwait(false);
+                        transfer.Token.ThrowIfCancellationRequested();
+                        if (!result.Success) throw new AbiHostException(AbiErrors.CAPABILITY_UNAVAILABLE);
+                    }
                     var info = new FileInfo(stage);
                     if (info.Length > MaximumPluginDownloadBytes || item.Plan.Size is { } size && size != info.Length) throw new AbiHostException(AbiErrors.CONFLICT);
                     await using (var file = File.OpenRead(stage)) item.Digest = Convert.ToHexString(await SHA256.HashDataAsync(file, transfer.Token).ConfigureAwait(false));
@@ -142,17 +160,19 @@ public sealed partial class PluginBusinessRoutes
         }
     }
     private IEnumerable<HostCapabilityRoute> DownloadRoutes => [
-        HostRoutes.Typed<DownloadPlan, DownloadPlan>("Downloads", "Resolve", (c, v) => ValueTask.FromResult(ResolveDownload(c, v))),
-        HostRoutes.Typed<DownloadPlan, OperationRef>("Downloads", "Start", (c, v) =>
+        HostRoutes.Typed<ProviderDescriptor, RegistrationRef>("Downloads", "RegisterSourceResolver", (c, v) => ValueTask.FromResult(Services.RegisterHostProvider(c, SourceResolverKind, v, [SourceResolverMethod]))),
+        HostRoutes.Typed<ProviderDescriptor, RegistrationRef>("Downloads", "RegisterTransferProvider", (c, v) => ValueTask.FromResult(Services.RegisterHostProvider(c, TransferProviderKind, v, [TransferProviderMethod]))),
+        HostRoutes.Typed<DownloadPlan, DownloadPlan>("Downloads", "Resolve", ResolveDownload),
+        HostRoutes.Typed<DownloadPlan, OperationRef>("Downloads", "Start", async (c, v) =>
         {
             if (_downloadService is null) throw new AbiHostException(AbiErrors.CAPABILITY_UNAVAILABLE);
-            var plan = ResolveDownload(c, v); var item = new PluginDownload(c.Identity, plan, Application.Files.Resolve(c.Identity, plan.Target, true));
+            var plan = await ResolveDownload(c, v).ConfigureAwait(false); var item = new PluginDownload(c.Identity, plan, Application.Files.Resolve(c.Identity, plan.Target, true));
             lock (_planGate)
             {
                 if (_pluginDownloads.Count >= 64) throw new AbiHostException(AbiErrors.MESSAGE_TOO_LARGE);
                 if (_downloadsStopped) throw new OperationCanceledException();
                 var operation = Services.StartHostOperation(c, "nexa.downloads.write", Abi100Schemas.FileRef, token => RunDownload(c, item, token));
-                item.Operation = operation; _pluginDownloads.Add(operation.Id, item); return ValueTask.FromResult(operation);
+                item.Operation = operation; _pluginDownloads.Add(operation.Id, item); return operation;
             }
         }),
         HostRoutes.Typed<EntityRequest, DownloadState>("Downloads", "Read", (c, v) => ValueTask.FromResult(ReadDownload(c, v.Id))),

@@ -61,7 +61,10 @@ internal static partial class Program
                 lock (downloaded) downloaded.Add(source);
                 return new ServingConnection(source.Contains("library", StringComparison.Ordinal) ? "LIBCONTENT"u8.ToArray() : PayloadFor(source));
             });
-            AssertTrue((await recovery.Install.RecoverPendingAsync(new([root]))).IsSuccess);
+            var recoveryRecord = (await MinecraftInstallService.ListRecoveryRecordsAsync(new([root]))).Value.Items.Single();
+            AssertFalse((await recovery.Install.ApplyRecoveryRecordAsync(new(root, recoveryRecord.Identity, "stale", false))).IsSuccess);
+            AssertTrue((await recovery.Install.ApplyRecoveryRecordAsync(new(root, recoveryRecord.Identity, recoveryRecord.Revision, false))).IsSuccess);
+            AssertEqual(0, (await MinecraftInstallService.ListRecoveryRecordsAsync(new([root]))).Value.Items.Count);
             AssertTrue(File.Exists(manifest)); AssertEqual(0, metadata.VanillaReads);
             AssertFalse((await new Nexa.Services.Minecraft.MinecraftInstanceMetadataStore().LoadAsync(Path.GetDirectoryName(manifest)!)).InstanceIsolation);
             AssertFalse(File.Exists(Path.Combine(root, "libraries", "attacker.jar")));

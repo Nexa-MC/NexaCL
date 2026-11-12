@@ -17,6 +17,7 @@ public static class ThemesRuntime
         queries.Register<ThemePrepareQuery, ThemeCandidate>(ThemesContract.Prepare, service.PrepareAsync);
         queries.Register<ThemeCandidateQuery, ThemeCandidate>(ThemesContract.Candidate, service.CandidateAsync);
         queries.Register<ThemeCurrentQuery, ThemeCurrentSnapshot>(ThemesContract.Current, service.CurrentAsync);
+        queries.Register<ThemePackagedResourcesQuery, ThemePackagedResources>(ThemesContract.PackagedResources, service.ReadPackagedResourcesAsync);
         queries.Register<ThemeResourceQuery, ThemeResourcePayload>(ThemesContract.ReadResource, service.ReadResourceAsync);
         queries.Register<ThemeResourceListQuery, ThemeResourceListPayload>(ThemesContract.ListResources, service.ListResourcesAsync);
         queries.Register<ThemeWatchQuery, ThemeWatchSnapshot>(ThemesContract.WatchStatus, service.WatchStatusAsync);

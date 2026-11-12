@@ -1,14 +1,14 @@
 {
   "repository": "https://github.com/Nexa-MC/PluginSidecar.git",
-  "commit": "577f819fd4bd1265ffa629885398887feb13bd65",
-  "version": "0.2.0-alpha.9",
+  "commit": "985b016c8d9e3643ceb4e70213c468cf9ca51d2d",
+  "version": "0.2.0-alpha.13",
   "distribution": {
     "repository": "Nexa-MC/NexaCL",
-    "release": "plugin-sdk-inputs-577f819fd4bd",
-    "file": "Nexa.Plugin.HostSdk.577f819fd4bd.zip",
-    "size": 674957,
-    "sha256": "8f30c2c847ca89b432826917cd7de6776f9ccc7461839d05011c863903270ab3",
-    "sourceFile": "PluginSidecar-source-577f819fd4bd.tar.gz",
-    "sourceSha256": "7d3ec93fbf98c38228489805293500569d4faa46fbf14ac10a5926dab35b7ccd"
+    "release": "plugin-sdk-inputs-985b016c8d9e",
+    "file": "Nexa.Plugin.HostSdk.985b016c8d9e.zip",
+    "size": 691625,
+    "sha256": "6639a769a19ae46e32e9d888a1e8b5a1986c1909a43f5c2e8878c450fdb61a65",
+    "sourceFile": "PluginSidecar-source-985b016c8d9e.tar.gz",
+    "sourceSha256": "2355bf7ab9b4d7ec56ae36f3f34b6599fc078b2640748198e1c58f4c84fd5f39"
   }
 }

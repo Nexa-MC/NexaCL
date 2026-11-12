@@ -6,7 +6,7 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
-    private static async Task ExercisePluginLaunch(Func<string, string, AbiValue, ValueTask<AbiReply<AbiValue>>> invoke, EntityId instance, EntityId account, RecordingStartRoute recording)
+    private static async Task ExercisePluginLaunch(Func<string, string, AbiValue, ValueTask<AbiReply<AbiValue>>> invoke, EntityId instance, EntityId account, RecordingStartRoute recording, Action<bool>? blockPreflight = null)
     {
         var eligibility = await invoke("Accounts", "ReadLaunchEligibility", EntityRequest.Write(new(account))); AssertTrue(eligibility.Success);
         AssertTrue(LaunchEligibility.Read(eligibility.Value).Allowed);
@@ -21,7 +21,16 @@ internal static partial class Program
         var grant = LaunchGrant.Read(granted.Value);
         var intent = new LaunchIntent(instance, grant, savedProfile.Id, null);
         AssertFalse((await invoke("Minecraft.Launch", "Prepare", LaunchIntent.Write(intent with { Grant = grant with { Token = Guid.NewGuid() } }))).Success);
+        if (blockPreflight is not null)
+        {
+            blockPreflight(true); AssertFalse((await invoke("Minecraft.Launch", "Prepare", LaunchIntent.Write(intent))).Success); blockPreflight(false);
+        }
         var prepared = await invoke("Minecraft.Launch", "Prepare", LaunchIntent.Write(intent)); AssertTrue(prepared.Success); var plan = LaunchPlan.Read(prepared.Value);
+        if (blockPreflight is not null)
+        {
+            var contributions = LaunchContributionReport.Read((await invoke("Minecraft.Launch", "ExplainContribution", EntityRequest.Write(new(plan.Plan.Id)))).Value);
+            AssertEqual(2, contributions.Accepted.Length);
+        }
         var validate = await invoke("Minecraft.Launch", "ValidatePlan", PlanRequest.Write(new(plan.Plan.Id, plan.Plan.Revision, null))); AssertTrue(validate.Success);
         AssertTrue(ValidationReport.Read(validate.Value).Valid);
         var watched = await invoke("Minecraft.Launch", "WatchAttempt", WatchRequest.Write(new(plan.Plan.Id, null, Abi100Schemas.LaunchAttempt))); AssertTrue(watched.Success);
@@ -35,6 +44,7 @@ internal static partial class Program
             AssertFalse(attempt.State is OperationState.Failed or OperationState.OutcomeUnknown or OperationState.Cancelled);
             await Task.Delay(5, timeout.Token);
         }
+        if (blockPreflight is not null) AssertEqual(3072L, recording.LastCommand!.PluginMemoryMiB!.Value);
         AssertTrue(recording.LastCommand!.ExpectedAccountRosterRevision.HasValue);
         AssertTrue(recording.LastCommand.ExpectedSettingsRevision.HasValue);
         AssertTrue(recording.LastCommand.LaunchProfileId is not null);

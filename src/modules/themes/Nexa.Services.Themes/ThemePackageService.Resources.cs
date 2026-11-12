@@ -9,6 +9,39 @@ public sealed partial class ThemePackageService
     private sealed record ResourceLease(ThemeResourcePayload Payload, Guid? GrantId, string Directory, long Length);
     private readonly Dictionary<Guid, ResourceLease> _leases = [];
 
+    public ValueTask<XsrResult<ThemePackagedResources>> ReadPackagedResourcesAsync(ThemePackagedResourcesQuery query, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            try
+            {
+                CheckLive();
+                var source = FindSource(query.SourceIdentity) ?? throw new InvalidDataException("Unknown theme source.");
+                if (source.Revision != query.SourceRevision) throw new InvalidDataException("Theme source changed.");
+                var result = new List<ThemePackagedResource>(); long total = 0;
+                foreach (var entry in source.Manifest.Appearance.Resources.OrderBy(p => p.Key, StringComparer.Ordinal))
+                {
+                    token.ThrowIfCancellationRequested();
+                    var expression = ThemePaths.Expression(entry.Value.Expression);
+                    // A theme's user grants do not delegate external-file access to plugins.
+                    if (expression.Function != "asset") continue;
+                    if (result.Count >= 128) throw new InvalidDataException("Too many packaged resources.");
+                    string path = ThemePaths.Within(source.Root, expression.Argument);
+                    string contentType = ContentType(path, entry.Value.Kind);
+                    long size = new FileInfo(path).Length;
+                    if (size > 16 * 1024 * 1024 || total + size > 32 * 1024 * 1024) throw new InvalidDataException("Packaged resources exceed their byte budget.");
+                    byte[] bytes = ThemeSourceReader.ReadBounded(path, 16 * 1024 * 1024);
+                    total += bytes.Length;
+                    if (total > 32 * 1024 * 1024) throw new InvalidDataException("Packaged resources exceed their byte budget.");
+                    ValidateResource(bytes, contentType); result.Add(new(entry.Key, bytes));
+                }
+                return ValueTask.FromResult(XsrResult.Success(new ThemePackagedResources(result.AsReadOnly())));
+            }
+            catch (Exception error) when (Recoverable(error)) { return ValueTask.FromResult(Reject<ThemePackagedResources>(error.Message)); }
+        }
+    }
+
     public ValueTask<XsrResult> GrantAsync(ThemeResourceGrantCommand command, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested(); lock (_gate)

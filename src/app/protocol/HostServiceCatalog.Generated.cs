@@ -5,13 +5,13 @@ internal readonly record struct HostServiceDescriptor(int Id, string Name, strin
 
 internal static class HostServiceCatalog
 {
-    internal const string Identity = "nexa-host-services/1/DC27B8021A7EE444C8B2F9A09BF29E50F09A170D478A8FC2D4858010F8E3EB49";
-    internal const string UiIdentity = "nexa-ui/3/DC27B8021A7EE444C8B2F9A09BF29E50F09A170D478A8FC2D4858010F8E3EB49";
+    internal const string Identity = "nexa-host-services/1/74EF821A659B9C2F7C623D1BA62CE0365FE533228FAD9734712428BBE00A8D53";
+    internal const string UiIdentity = "nexa-ui/3/74EF821A659B9C2F7C623D1BA62CE0365FE533228FAD9734712428BBE00A8D53";
     internal static HostServiceDescriptor Get(int id) => id switch
     {
-        1 => new(1, "accounts", "nexa_accounts", "nexa-accounts/1/5C86C5949F692528EFD1E528FA18AF05A172CFDD2BDB62B69F815095F5C278B9/DAECF62447AD3E0A6828B0999EBDC7D91DB041EED997C7A40A3656DD9EE3CFF6"),
+        1 => new(1, "accounts", "nexa_accounts", "nexa-accounts/1/33A9E487050DC7DA9433551B0DE3EB415F615E6FC82F46AEF2EB6ED668405354/174C6971404F3784811DF3683A284CCDA0A5652DEE405109F6AAF8D894ED7FCE"),
         2 => new(2, "network", "nexa_network_service", "nexa-network-service/1/8FAAC6D99374002B1A861B2AC26DE6266D64934271D30D5C84C72D21A97509BB"),
-        3 => new(3, "minecraft", "nexa_minecraft_service", "nexa-minecraft-service/1/error-envelope-1/3BDF39C90D4B902D59514214B8064F1826F4B26064FE19C804BF9562E573AD04"),
+        3 => new(3, "minecraft", "nexa_minecraft_service", "nexa-minecraft-service/1/error-envelope-1/8F905E113EFEE3AFE1DE404BDEDBE02D15BDE64977655087CCC0FF6525649847"),
         4 => new(4, "updates", "nexa_updates_service", "nexa-updates-service/1/error-envelope-1/1058A4F4B6C8F760BA7179FA5665DB7A245A22856F7FEC7A072066D8508E78AE"),
         _ => throw new ArgumentOutOfRangeException(nameof(id)),
     };

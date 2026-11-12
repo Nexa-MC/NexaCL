@@ -673,7 +673,7 @@ internal static partial class Program
         pluginBusiness.BindNetworkHttp(host.CreateHttpClient(allowAutoRedirect: false));
         pluginBusiness.BindJava(host);
         pluginBusiness.BindDownloads(host.Downloads);
-        pluginBusiness.BindInstall(installCatalog.Commands, installCatalog.Queries, installRun.Commands, folderImports.Queries);
+        pluginBusiness.BindInstall(installCatalog.Commands, installCatalog.Queries, installRun.Commands, folderImports.Queries, installRun.Queries);
         pluginBusiness.BindContentImport(folderImports.Commands);
         pluginBusiness.BindAccounts(accounts.Queries);
         pluginBusiness.BindAccountLaunch(host.Accounts, accounts.LaunchIdentityResolver);

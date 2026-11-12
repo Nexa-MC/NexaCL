@@ -8,16 +8,17 @@ namespace Nexa.Services.Composition;
 
 public sealed class MinecraftInstallRuntime : IDisposable
 {
-    public MinecraftInstallRuntime(MinecraftInstallService service, XsrCommandRouter commands, HttpClient ownedHttp)
+    public MinecraftInstallRuntime(MinecraftInstallService service, XsrCommandRouter commands, HttpClient ownedHttp, XsrQueryRouter? queries = null)
     {
         Service = service;
-        Commands = commands;
+        Commands = commands; Queries = queries;
         _ownedHttp = ownedHttp;
     }
 
     public MinecraftInstallService Service { get; }
 
     public XsrCommandRouter Commands { get; }
+    public XsrQueryRouter? Queries { get; }
 
     private readonly HttpClient _ownedHttp;
 
@@ -49,6 +50,9 @@ public static class MinecraftInstallRuntimeComposer
         host.MinecraftRemediations.BindInstall(service);
 #endif
         XsrCommandRouterBuilder commands = new();
+        XsrQueryRouterBuilder queries = new();
+        queries.Register<MinecraftInstallRecoveryListQuery, MinecraftInstallRecoveryListing>(MinecraftInstallRecoveryRecordsContract.List, MinecraftInstallService.ListRecoveryRecordsAsync);
+        commands.Register<MinecraftInstallRecoveryRecordCommand>(MinecraftInstallRecoveryRecordsContract.Apply, service.ApplyRecoveryRecordAsync);
         commands.Register<MinecraftInstallStopCommand>(MinecraftInstallRoutes.Stop,
             async (command, token) => await service.StopAsync(command, token).ConfigureAwait(false));
         commands.Register<MinecraftInstallRecoveryCommand>(MinecraftInstallRoutes.Recover,
@@ -61,7 +65,7 @@ public static class MinecraftInstallRuntimeComposer
                     ? Nexa.Xsr.XsrResult.Success()
                     : Nexa.Xsr.XsrResult.Failure(result.Error!);
             });
-        return new(service, commands.Build(observer ?? new Observer()), http);
+        return new(service, commands.Build(observer ?? new Observer()), http, queries.Build(observer ?? new Observer()));
     }
 
     private sealed class Observer : IXsrDispatchObserver

@@ -77,6 +77,13 @@ internal sealed partial class MinecraftServiceSession
                 var stopped = await installation.StopAsync(new(pause), token).ConfigureAwait(false);
                 if (stopped.IsSuccess) _installationStopped = true;
                 writer.XsrError(stopped.Error); break;
+            case MinecraftServiceProtocol.InstallRecoveryList:
+                var listingQuery = reader.MinecraftInstallRecoveryListQuery() ?? throw new InvalidDataException("Missing recovery list."); reader.End();
+                var listing = await MinecraftInstallService.ListRecoveryRecordsAsync(listingQuery, token).ConfigureAwait(false);
+                writer.XsrError(listing.Error); if (listing.IsSuccess) writer.MinecraftInstallRecoveryListing(listing.Value); break;
+            case MinecraftServiceProtocol.InstallRecoveryApply:
+                var apply = reader.MinecraftInstallRecoveryRecordCommand() ?? throw new InvalidDataException("Missing recovery record."); reader.End();
+                writer.XsrError((await installation.ApplyRecoveryRecordAsync(apply, token).ConfigureAwait(false)).Error); break;
             case MinecraftServiceProtocol.InstallRecover:
                 var recovery = reader.MinecraftInstallRecoveryCommand() ?? throw new InvalidDataException("Missing Minecraft recovery command."); reader.End();
                 writer.XsrError((await installation.RecoverPendingAsync(recovery, token).ConfigureAwait(false)).Error); break;

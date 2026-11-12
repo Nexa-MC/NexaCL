@@ -67,6 +67,11 @@ internal static class JavaInstallCases
             throw new InvalidDataException("Native Java management accepted a stale revision.");
         var settings = new InstallSettings(); minecraft.AttachSettings(settings, settings);
         await minecraft.ConfigureInstallationAsync("US", token: token);
+        var recoveries = await minecraft.ListInstallRecoveryRecordsAsync(new([directory]), token);
+        if (!recoveries.IsSuccess || recoveries.Value.Items.Count != 0 || (await minecraft.ApplyInstallRecoveryRecordAsync(new(directory, "new:" + Guid.NewGuid().ToString("N"), "stale", true), token)).IsSuccess)
+            throw new InvalidDataException("Native recovery records lost typed list or stale admission.");
+        if ((await minecraft.InstallJavaArchiveAsync(new(Path.Combine(directory, "missing.zip"), Path.Combine(directory, "missing-runtime"), 1, new string('0', 64), 21, "X64", registry.Read().Revision), token)).IsSuccess)
+            throw new InvalidDataException("Native Java archive accepted missing bytes.");
         await CatalogCases.RunAsync(minecraft, replicas, token);
         List<string> installationEvents = [];
         minecraft.Installed += root => installationEvents.Add("installed:" + root);

@@ -42,6 +42,7 @@ public sealed partial class PluginBusinessRoutes
         var grant = FindGrant(c, request.Grant, request.Instance);
         var instance = FindInstance(c, request.Instance);
         var profile = await ReadLaunchProfile(c, request.Instance, request.Profile, c.Options.Cancellation).ConfigureAwait(false);
+        var extensions = await ApplyLaunchExtensions(c, profile.Public).ConfigureAwait(false);
         if (request.Target?.World is not null) throw new AbiHostException(AbiErrors.CAPABILITY_UNAVAILABLE);
         string? server = null;
         string? serverRevision = null;
@@ -54,15 +55,17 @@ public sealed partial class PluginBusinessRoutes
             if (index < 0) throw new AbiHostException(AbiErrors.HANDLE_INVALID);
             server = saved.Entries[index].Address; serverRevision = saved.Revision;
         }
-        var plan = Plan(c, "launch/start", LaunchIntent.Write(request), "Launch " + instance.Summary.Name + " with " + profile.Public.Name, async token =>
+        var plan = Plan(c, "launch/start", LaunchIntent.Write(request), "Launch " + instance.Summary.Name + " with " + profile.Public.Name + $" (memory {extensions.Profile.MemoryMiB} MiB, window {extensions.Profile.Width}×{extensions.Profile.Height})", async token =>
         {
             FindGrant(c, request.Grant, request.Instance);
+            ValidateLaunchExtensions(extensions);
             if (FindInstance(c, request.Instance).Summary.Revision != instance.Summary.Revision) throw new AbiHostException(AbiErrors.CONFLICT);
             var current = await ReadLaunchProfile(c, request.Instance, request.Profile, token).ConfigureAwait(false);
             if (current.Public.Revision != profile.Public.Revision) throw new AbiHostException(AbiErrors.CONFLICT);
             if (serverRevision is not null && (await ReadServers(instance.Instance.DirectoryPath, token).ConfigureAwait(false)).Revision != serverRevision) throw new AbiHostException(AbiErrors.CONFLICT);
         }, async token =>
         {
+            await CheckLaunchPreflights(c with { Options = c.Options with { Cancellation = token } }, extensions).ConfigureAwait(false);
             lock (_planGate)
             {
                 FindGrant(c, request.Grant, request.Instance);
@@ -75,13 +78,16 @@ public sealed partial class PluginBusinessRoutes
                 ServerAddress = server,
                 ExpectedAccountRosterRevision = grant.RosterRevision,
                 ExpectedSettingsRevision = profile.Settings.Revision,
-                LaunchProfileId = profile.ProfileId
+                LaunchProfileId = profile.ProfileId,
+                PluginMemoryMiB = extensions.Profile.MemoryMiB != profile.Public.MemoryMiB ? extensions.Profile.MemoryMiB : null,
+                PluginWidth = extensions.Profile.Width != profile.Public.Width ? extensions.Profile.Width : null,
+                PluginHeight = extensions.Profile.Height != profile.Public.Height ? extensions.Profile.Height : null
             }, token).ConfigureAwait(false);
             var session = Sessions().Items.FirstOrDefault(p => !beforeSessions.Contains(p.SessionId) && p.InstanceDirectory == instance.Instance.DirectoryPath);
             if (session is null) throw new AbiHostException(AbiErrors.OUTCOME_UNKNOWN);
             return GameSession.Write(Session(c, session));
         });
-        var result = new LaunchPlan(plan, request.Instance, profile.Public, [], []);
+        var result = new LaunchPlan(plan, request.Instance, extensions.Profile, extensions.Definitions.Where(e => extensions.Accepted.Contains(e.Definition.Id)).Select(e => new NamedValue(e.Definition.Id.Value, new AbiValue.Utf8String(e.Revision.Value))).ToImmutableArray(), extensions.Suppressed);
         lock (_planGate)
         {
             if (_launchPlans.Count >= 256) { _plans.Remove(plan.Id); throw new AbiHostException(AbiErrors.MESSAGE_TOO_LARGE); }

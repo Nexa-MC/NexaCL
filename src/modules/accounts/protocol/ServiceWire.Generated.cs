@@ -95,6 +95,13 @@ internal sealed partial class ServiceWireWriter
         Int32(value.Index);
         Nullable_Int64(value.ExpectedRosterRevision);
     }
+    internal void AccountSignOutCommand(global::Nexa.Services.Foundation.AccountSignOutCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        Int32(value.Index);
+        Int64(value.ExpectedRosterRevision);
+    }
     internal void AccountSkinSnapshot(global::Nexa.Services.Accounts.AccountSkinSnapshot? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -517,6 +524,14 @@ internal sealed partial class ServiceWireReader
         var p1 = Nullable_Int64();
         return new global::Nexa.Services.Foundation.AccountSelectProfileCommand(p0, p1);
     }
+    internal global::Nexa.Services.Foundation.AccountSignOutCommand? AccountSignOutCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = Int32();
+        var p1 = Int64();
+        return new global::Nexa.Services.Foundation.AccountSignOutCommand(p0, p1);
+    }
     internal global::Nexa.Services.Accounts.AccountSkinSnapshot? AccountSkinSnapshot()
     {
         if (!Boolean()) return null;
@@ -868,5 +883,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "573187D5A9B566531EA1F8A748408F04A5BBFD46747849C831DA75B1BD99C603";
+    internal const string Fingerprint = "33A9E487050DC7DA9433551B0DE3EB415F615E6FC82F46AEF2EB6ED668405354";
 }

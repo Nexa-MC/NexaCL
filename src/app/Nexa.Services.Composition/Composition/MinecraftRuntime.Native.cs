@@ -59,7 +59,9 @@ public static class MinecraftRuntimeComposer
         {
             await initialization.WaitAsync(token).ConfigureAwait(false);
             if (command.ExpectedAccountRosterRevision is { } revision)
-                return await client.StartAuthorizedMinecraftAsync(command.InstanceId, command.AccountIndex, command.MinecraftRootDirectory ?? root,
+                return command.PluginMemoryMiB is not null || command.PluginWidth is not null || command.PluginHeight is not null
+                    ? await client.StartContributedMinecraftAsync(command, token).ConfigureAwait(false)
+                    : await client.StartAuthorizedMinecraftAsync(command.InstanceId, command.AccountIndex, command.MinecraftRootDirectory ?? root,
                     command.ServerAddress, revision, command.ExpectedSettingsRevision, command.LaunchProfileId, token).ConfigureAwait(false);
             return await client.StartMinecraftAsync(command.InstanceId, command.AccountIndex, command.MinecraftRootDirectory ?? root, command.ServerAddress, token).ConfigureAwait(false);
         });

@@ -78,6 +78,11 @@ internal sealed partial class AccountsSession
                 var command = reader.AccountRemoveProfileCommand() ?? throw new InvalidDataException("Missing account command."); reader.End();
                 var result = _accounts!.RemoveProfile(command.Index, command.ExpectedRosterRevision); writer.XsrError(result.Error); return;
             }
+            case 23:
+            {
+                var command = reader.AccountSignOutCommand() ?? throw new InvalidDataException("Missing account command."); reader.End();
+                var result = _accounts!.SignOut(command.Index, command.ExpectedRosterRevision); writer.XsrError(result.Error); return;
+            }
             case 100:
             {
                 var query = reader.AccountWardrobeQuery() ?? throw new InvalidDataException("Missing account query."); reader.End();

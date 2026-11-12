@@ -48,6 +48,7 @@ public static class InstanceManagementContract
     public static readonly XsrSemanticId Query = XsrSemanticId.Parse("minecraft.instance.management.query");
     public static readonly XsrSemanticId SetModEnabled = XsrSemanticId.Parse("minecraft.instance.mod.set-enabled");
     public static readonly XsrSemanticId RemoveContent = XsrSemanticId.Parse("minecraft.instance.content.remove");
+    public static readonly XsrSemanticId ClearTrash = XsrSemanticId.Parse("minecraft.instance.content.clear-trash");
     public static readonly XsrSemanticId RestoreContent = XsrSemanticId.Parse("minecraft.instance.content.restore");
     public static readonly XsrSemanticId ModRemovalPreview = XsrSemanticId.Parse("minecraft.instance.mod.removal-preview");
     public static readonly XsrSemanticId RemoveMod = XsrSemanticId.Parse("minecraft.instance.mod.remove");

@@ -125,8 +125,23 @@ public sealed class MinecraftLibraryService : IDisposable, IMinecraftLibraryPort
         return XsrResult.Success();
     }
 
-    public async Task<XsrResult> DeleteInstanceAsync(string root, string instanceId, CancellationToken cancellationToken = default)
+    public async Task<XsrResult> CloneInstanceAsync(MinecraftLibraryCloneCommand command, CancellationToken token = default)
     {
+        bool Validate()
+        {
+            lock (_gate) return !_disposed && !_snapshot.IsProvisional && !_snapshot.IsLoading && _snapshot.Revision == command.ExpectedRevision
+            && PathComparer.Equals(command.SourceRoot, _document.ActiveDirectory) && _snapshot.Instances.Any(i => i.Id == command.SourceId)
+            && _document.Directories.Any(d => PathComparer.Equals(d.Path, command.DestinationRoot));
+        }
+        if (!Validate()) return XsrResult.Failure(MinecraftErrors.InvalidRequest("Clone source or library changed."));
+        var result = await Management.MinecraftInstanceCloneService.CloneAsync(command, _settings.StateStore, Validate, token).ConfigureAwait(false);
+        return result.IsSuccess ? await RefreshAsync(token).ConfigureAwait(false) : result;
+    }
+    public Task<XsrResult> DeleteInstanceAsync(string root, string instanceId, CancellationToken cancellationToken = default)
+        => DeleteInstanceAsync(new MinecraftLibraryDeleteCommand(root, instanceId), cancellationToken);
+    public async Task<XsrResult> DeleteInstanceAsync(MinecraftLibraryDeleteCommand command, CancellationToken cancellationToken = default)
+    {
+        string root = command.RootDirectory, instanceId = command.InstanceId;
         return await Task.Run(async () =>
         {
             Task<XsrResult> refresh;
@@ -136,7 +151,7 @@ public sealed class MinecraftLibraryService : IDisposable, IMinecraftLibraryPort
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
                 cancellationToken.ThrowIfCancellationRequested();
-                if (_snapshot.IsProvisional || _snapshot.IsLoading
+                if (_snapshot.IsProvisional || _snapshot.IsLoading || command.ExpectedRevision is { } expected && _snapshot.Revision != expected
                     || !PathComparer.Equals(root, _document.ActiveDirectory) || !_snapshot.Instances.Any(item => item.Id == instanceId)
                     || string.IsNullOrWhiteSpace(instanceId) || instanceId is "." or ".." || instanceId.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
                     || instanceId.Contains('/') || instanceId.Contains('\\'))
@@ -154,7 +169,9 @@ public sealed class MinecraftLibraryService : IDisposable, IMinecraftLibraryPort
                         if (Directory.Exists(path) && (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
                             return XsrResult.Failure(MinecraftErrors.InvalidRequest("不能移除链接目录中的版本。"));
                     Directory.CreateDirectory(recycle);
-                    Directory.Move(source, Path.Combine(recycle, instanceId + "-" + Guid.NewGuid().ToString("N")));
+                    string recycled = Path.Combine(recycle, instanceId + "-" + Guid.NewGuid().ToString("N"));
+                    Directory.Move(source, recycled);
+                    if (!command.RetainUserData) Management.MinecraftInstanceCloneService.DeleteOwnedTree(recycled);
                     refresh = BeginScanLocked(root, cancellationToken);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)

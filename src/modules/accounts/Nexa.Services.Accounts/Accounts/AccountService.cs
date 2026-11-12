@@ -398,9 +398,25 @@ public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
     }
 
     /// <summary>
-    /// Removes the profile at the given index and persists the whole list atomically. Later
-    /// profiles shift down; published views re-index accordingly.
+    /// Clears local credentials and launch authority while retaining the public profile identity.
     /// </summary>
+    public XsrResult SignOut(int index, long expectedRosterRevision)
+    {
+        lock (_gate)
+        {
+            if (_store.ReadCollection<LaunchProfileView>(_profilesId).Revision != expectedRosterRevision) return XsrResult.Failure(AccountErrors.InvalidProfile("The roster changed."));
+            if (index < 0 || index >= _profiles.Count) return XsrResult.Failure(AccountErrors.ProfileNotFound(index));
+            var profile = _profiles[index];
+            List<LaunchProfile> updated = [.. _profiles];
+            updated[index] = profile with { AccessToken = "", RefreshToken = "", ProviderAccessToken = "", ProviderTokenExpiresAtUnix = 0, ClientToken = "" };
+            var saved = Persist(updated); if (!saved.IsSuccess) return saved;
+            _verifiedOwners.Remove(profile.Uuid); _profiles = updated;
+            if (_selectedIndex == index) { _selectedIndex = -1; _selectionGeneration++; }
+            PublishAll(); PublishSelection(); return XsrResult.Success();
+        }
+    }
+
+    /// <summary>Removes a profile atomically; later profiles shift down and published views are re-indexed.</summary>
     public XsrResult RemoveProfile(int index, long? expectedRosterRevision = null)
     {
         lock (_gate)

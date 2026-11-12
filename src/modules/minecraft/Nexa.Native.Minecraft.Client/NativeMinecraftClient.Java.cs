@@ -9,6 +9,8 @@ namespace Nexa.Native.Minecraft.Client;
 
 public sealed partial class NativeMinecraftClient : IConfirmedJavaRuntimeInstaller
 {
+    public Task<XsrResult> InstallJavaArchiveAsync(JavaArchiveInstallCommand command, CancellationToken token = default)
+        => LaunchResultAsync(MinecraftServiceProtocol.JavaArchiveInstall, writer => writer.JavaArchiveInstallCommand(command), token);
     public event Action? RuntimesChanged;
     private readonly ConcurrentDictionary<long, JavaProgressSink> _javaProgress = new();
     private long _nextJava;

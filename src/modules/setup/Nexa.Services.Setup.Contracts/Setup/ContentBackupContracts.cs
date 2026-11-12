@@ -52,8 +52,12 @@ public sealed record InstanceBackupPruneQuery(string InstanceDirectory, int Keep
 public sealed record InstanceBackupPruneCommand(string InstanceDirectory, int KeepCount, int KeepDays, string ExpectedRevision);
 public sealed record InstanceBackupRetentionCommand(string InstanceDirectory, ContentBackupRetentionPolicy Policy, string ExpectedRevision);
 public sealed record InstanceBackupExportCommand(string InstanceDirectory, string Identity, string Destination);
+public sealed record InstanceBackupRestoreCommand(string InstanceDirectory, string Identity, string Destination);
+public sealed record InstanceBackupImportCommand(string InstanceDirectory, string Source);
 public static class InstanceBackupContract
 {
+    public static readonly Nexa.Xsr.XsrSemanticId Restore = Nexa.Xsr.XsrSemanticId.Parse("setup.instance-backups.restore");
+    public static readonly Nexa.Xsr.XsrSemanticId Import = Nexa.Xsr.XsrSemanticId.Parse("setup.instance-backups.import");
     public static readonly Nexa.Xsr.XsrSemanticId Read = Nexa.Xsr.XsrSemanticId.Parse("setup.instance-backups.read");
     public static readonly Nexa.Xsr.XsrSemanticId Capture = Nexa.Xsr.XsrSemanticId.Parse("setup.instance-backups.capture");
     public static readonly Nexa.Xsr.XsrSemanticId Offline = Nexa.Xsr.XsrSemanticId.Parse("setup.instance-backups.offline");

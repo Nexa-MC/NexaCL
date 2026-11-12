@@ -49,7 +49,8 @@ public sealed partial class PluginBusinessRoutes
             if (!Enum.TryParse<ThemeOptionKind>(DataCodec.ReadString(DataCodec.Field(map, "kind")), out var kind) || !Enum.IsDefined(kind)) throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
             string value = DataCodec.ReadString(DataCodec.Field(map, "value"));
             var values = DataCodec.ReadArray(DataCodec.Field(map, "values"), (v, _) => DataCodec.ReadString(v), 0);
-            return new ThemeOptionValue(kind, value, values);
+            if (kind != ThemeOptionKind.Files && values.Length != 0) throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
+            return new ThemeOptionValue(kind, value, kind == ThemeOptionKind.Files ? values : null);
         }, StringComparer.Ordinal);
     }
     private async ValueTask<ThemeOptions> SaveThemeOptions(HostInvocation c, ThemeOptionChange change)
@@ -61,7 +62,7 @@ public sealed partial class PluginBusinessRoutes
         Require(await ThemeEffects.Save(new(theme.SourceIdentity, values, current.Revision), c.Options.Cancellation).ConfigureAwait(false));
         return ProjectOptions(c, theme, await ThemeCurrent(c.Options.Cancellation).ConfigureAwait(false));
     }
-    private IEnumerable<HostCapabilityRoute> ThemeRoutes => ThemeActivationRoutes.Concat(ThemeReadRoutes);
+    private IEnumerable<HostCapabilityRoute> ThemeRoutes => ThemeActivationRoutes.Concat(ThemeReadRoutes).Concat(ThemeResourceRoutes);
     private IEnumerable<HostCapabilityRoute> ThemeReadRoutes => [
         HostRoutes.Typed<PageRequest, Page<ThemeSummary>>("Themes", "List", async (c, v) =>
         {

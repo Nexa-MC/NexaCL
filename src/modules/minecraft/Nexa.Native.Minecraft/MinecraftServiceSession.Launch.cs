@@ -78,6 +78,13 @@ internal sealed partial class MinecraftServiceSession
                     }
                     break;
                 }
+            case MinecraftServiceProtocol.LaunchContributed:
+                {
+                    var command = reader.MinecraftStartCommand() ?? throw new InvalidDataException("Missing contributed launch request."); reader.End();
+                    if (command.ExpectedAccountRosterRevision is not { } roster || command.MinecraftRootDirectory is not { } root) throw new InvalidDataException("Missing launch authority.");
+                    writer.XsrError((await launch.StartContributedAsync(command.InstanceId, command.AccountIndex, root, command.ServerAddress, roster,
+                        command.ExpectedSettingsRevision, command.LaunchProfileId, command.PluginMemoryMiB, command.PluginWidth, command.PluginHeight, token).ConfigureAwait(false)).Error); break;
+                }
             case MinecraftServiceProtocol.LaunchAuthorized:
                 {
                     string instance = reader.String() ?? ""; int account = reader.Int32(); string root = reader.String() ?? ""; string? address = reader.String();

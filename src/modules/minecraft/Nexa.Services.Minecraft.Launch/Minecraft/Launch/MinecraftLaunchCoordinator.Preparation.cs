@@ -67,6 +67,20 @@ public sealed partial class MinecraftLaunchCoordinator
             }
             if (_expectedSettingsRevision is { } expectedSettings && effectiveSettings?.Revision != expectedSettings)
                 return XsrResult.Failure<MinecraftLaunchPreparation>(MinecraftErrors.InvalidRequest("Launch settings changed after the plugin plan was prepared."));
+            if (_pluginMemoryMiB is not null || _pluginWidth is not null || _pluginHeight is not null)
+            {
+                if (effectiveSettings is null) return XsrResult.Failure<MinecraftLaunchPreparation>(MinecraftErrors.InvalidRequest("Launch settings are unavailable."));
+                var overrides = new Dictionary<string, long?> { ["game.memory"] = _pluginMemoryMiB, ["game.width"] = _pluginWidth, ["game.height"] = _pluginHeight };
+                var values = effectiveSettings.Values.Select(value =>
+                {
+                    if (overrides.GetValueOrDefault(value.Key) is not { } number) return value;
+                    var replacement = new SettingsOverride(value.Key == "game.memory" && number == 0 ? SettingsOverrideMode.Auto : SettingsOverrideMode.Custom,
+                        value.Key == "game.memory" && number == 0 ? null : number.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    if (SettingsPolicySchema.ByKey[value.Key].Validate(replacement) is not null) throw new InvalidDataException("Invalid plugin launch contribution.");
+                    return value with { Value = replacement, Source = SettingsLayer.Temporary, ValidationError = null };
+                }).ToArray();
+                effectiveSettings = effectiveSettings with { Values = values };
+            }
             string method = string.Empty;
             XsrResult<MinecraftLaunchIdentity> identityResult =
                 XsrResult.Failure<MinecraftLaunchIdentity>(MinecraftErrors.InvalidRequest("the account was not resolved."));

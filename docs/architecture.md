@@ -400,3 +400,29 @@ existing instance. File import/export requires existing load-owned grants. Reten
 and pruning must be scoped to the selected instance rather than applying a plugin
 request to all launcher backups. Compatible SDK additions may express missing
 instance scope while preserving every existing operation and model fingerprint.
+
+## Completing the ABI 100 business surface
+
+The remaining current-catalog methods are completed as real owner adapters. New
+restore destinations and trash previews are additive contracts: an opaque target
+must be minted from a caller-owned writable grant or an admitted world/name pair.
+Restoration creates a new destination and never silently overwrites an existing
+instance. The legacy import form may use an existing backup as an explicit scope
+anchor; an additive instance/file request supports the first import into a scope.
+
+Provider registrations use the runtime's staged publication and retirement ledger.
+Read callbacks return typed descriptions; the host validates them and retains
+ownership of downloads, filesystem publication, credentials and process launch.
+Callback kinds, methods, schemas and consumers are documented together. Registering
+a provider without a working consumer is not a completed mapping. Definitions,
+settings and resource handles remain load-owned; persistent plugin settings retain
+revision and schema-version checks across restarts. Task retries are admitted only
+for explicitly replayable work or plugin-owned failed/cancelled tasks; ambiguous
+or completed effects cannot be replayed by the generic retry API.
+
+Shared private runtime changes consume the same canonical SDK contracts and headers
+as the public SDK. Original method IDs and model fingerprints remain unchanged;
+new models and operations are additive. Support evidence records original and
+additional methods separately while the complete catalog remains the source for
+code generation. Native service composition continues through its generated
+numeric command/query contracts, including any new account/instance operations.

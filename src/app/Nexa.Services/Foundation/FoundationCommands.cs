@@ -16,6 +16,13 @@ namespace Nexa.Services.Foundation;
 /// </summary>
 public static class FoundationCommands
 {
+    public static XsrCommandHandler<AccountSignOutCommand> CreateAccountSignOutHandler(AccountService accounts) =>
+#if NEXA_NATIVE_SERVICES
+        accounts.DispatchAccountSignOutCommandAsync;
+#else
+        (command, _) => ValueTask.FromResult(accounts.SignOut(command.Index, command.ExpectedRosterRevision));
+#endif
+
     public static XsrCommandHandler<AccountRemoveProfileCommand> CreateAccountRemoveHandler(AccountService accounts) =>
 #if NEXA_NATIVE_SERVICES
         accounts.RemoveAsync;

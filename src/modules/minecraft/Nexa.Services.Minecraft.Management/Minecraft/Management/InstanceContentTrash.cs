@@ -137,6 +137,36 @@ public static class InstanceContentTrash
         { return XsrResult.Failure(MinecraftErrors.InvalidRequest(error.Message)); }
     }
 
+    public static async Task<XsrResult> ClearAsync(InstanceContentClearTrashCommand command, XsrStateStore store, CancellationToken token = default)
+    {
+        try
+        {
+            if (command.ExpectedIds.Count > 1000 || command.ExpectedIds.Distinct(StringComparer.Ordinal).Count() != command.ExpectedIds.Count
+                || command.ExpectedIds.Any(id => !Guid.TryParseExact(id, "N", out _))) throw new InvalidDataException("Invalid trash selection.");
+            var snapshot = await InstanceManagementService.ReadAsync(new(command.InstanceDirectory), token).ConfigureAwait(false);
+            using var lease = await InstanceRecoveryOperationGate.EnterRestoreAsync(Directory.GetParent(snapshot.InstanceDirectory)!.Parent!.FullName, token).ConfigureAwait(false);
+            snapshot = await InstanceManagementService.ReadAsync(new(command.InstanceDirectory), token).ConfigureAwait(false);
+            RejectRunning(snapshot, store, token);
+            string root = Path.Combine(snapshot.GameDirectory, TrashFolder); RecoveryBlobStore.CheckLinks(root);
+            if (Directory.Exists(root) && Directory.EnumerateDirectories(root).Take(1001).Count() > 1000) throw new InvalidDataException("Trash exceeds the enumeration budget.");
+            var actual = Read(snapshot.InstanceDirectory, snapshot.GameDirectory).Select(v => v.Id).Order(StringComparer.Ordinal);
+            if (!actual.SequenceEqual(command.ExpectedIds.Order(StringComparer.Ordinal))) throw new IOException("Trash changed after preview.");
+            int nodes = 0;
+            void CheckTree(string path, int depth = 0)
+            {
+                token.ThrowIfCancellationRequested(); RecoveryBlobStore.CheckLinks(path);
+                if (++nodes > 32768 || depth > 64) throw new InvalidDataException("Trash exceeds the file budget.");
+                if (Directory.Exists(path)) foreach (string child in Directory.EnumerateFileSystemEntries(path)) CheckTree(child, depth + 1);
+            }
+            foreach (string id in command.ExpectedIds) { ReadRecord(Path.Combine(root, id), snapshot.InstanceDirectory, snapshot.GameDirectory); CheckTree(Path.Combine(root, id)); }
+            foreach (string id in command.ExpectedIds) { token.ThrowIfCancellationRequested(); RejectRunning(snapshot, store, token); InstanceWorldService.DeleteOwnedTree(Path.Combine(root, id)); }
+            return XsrResult.Success();
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { return XsrResult.Failure(XsrRuntimeErrors.Cancelled()); }
+        catch (Exception error) when (error is InvalidDataException or IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or System.Text.Json.JsonException)
+        { return XsrResult.Failure(MinecraftErrors.InvalidRequest(error.Message)); }
+    }
+
     internal static IReadOnlyList<InstanceTrashedContent> Read(string instance, string game)
     {
         string root = Path.Combine(game, TrashFolder);

@@ -7,11 +7,12 @@ using Nexa.Xsr.Runtime;
 
 namespace Nexa.Services.Composition;
 
-public sealed class MinecraftInstallRuntime(NativeMinecraftClient service, Task initialization, XsrCommandRouter commands) : IDisposable
+public sealed class MinecraftInstallRuntime(NativeMinecraftClient service, Task initialization, XsrCommandRouter commands, XsrQueryRouter? queries = null) : IDisposable
 {
     public NativeMinecraftClient Service { get; } = service;
     public Task Initialization { get; } = initialization;
     public XsrCommandRouter Commands { get; } = commands;
+    public XsrQueryRouter? Queries { get; } = queries;
     public void Dispose() { }
 }
 public static class MinecraftInstallRuntimeComposer
@@ -29,7 +30,11 @@ public static class MinecraftInstallRuntimeComposer
         Task initialization = InitializeAsync();
         _ = initialization.ContinueWith(static task => { _ = task.Exception; }, CancellationToken.None,
             TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-        XsrCommandRouterBuilder commands = new();
+        XsrCommandRouterBuilder commands = new(); XsrQueryRouterBuilder queries = new();
+        queries.Register<MinecraftInstallRecoveryListQuery, MinecraftInstallRecoveryListing>(MinecraftInstallRecoveryRecordsContract.List, async (query, token) =>
+        { await initialization.WaitAsync(token).ConfigureAwait(false); return await client.ListInstallRecoveryRecordsAsync(query, token).ConfigureAwait(false); });
+        commands.Register<MinecraftInstallRecoveryRecordCommand>(MinecraftInstallRecoveryRecordsContract.Apply, async (command, token) =>
+        { await initialization.WaitAsync(token).ConfigureAwait(false); return await client.ApplyInstallRecoveryRecordAsync(command, token).ConfigureAwait(false); });
         commands.Register<MinecraftInstallStopCommand>(MinecraftInstallRoutes.Stop, async (command, token) =>
         { await initialization.WaitAsync(token).ConfigureAwait(false); return await client.StopInstallationAsync(command.Pause, token).ConfigureAwait(false); });
         commands.Register<MinecraftInstallRecoveryCommand>(MinecraftInstallRoutes.Recover, async (command, token) =>
@@ -40,7 +45,7 @@ public static class MinecraftInstallRuntimeComposer
             var result = await client.InstallMinecraftAsync(command, token).ConfigureAwait(false);
             return result.IsSuccess ? XsrResult.Success() : XsrResult.Failure(result.Error!);
         });
-        return new(client, initialization, commands.Build(observer ?? new Observer()));
+        return new(client, initialization, commands.Build(observer ?? new Observer()), queries.Build(observer ?? new Observer()));
     }
     private sealed class Observer : IXsrDispatchObserver { public void OnCompleted(XsrDispatchObservation observation) { } }
 }

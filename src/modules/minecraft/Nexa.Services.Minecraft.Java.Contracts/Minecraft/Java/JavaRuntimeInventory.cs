@@ -6,6 +6,7 @@ public static class JavaRuntimeInventoryContract
 {
     public static readonly XsrSemanticId Query = XsrSemanticId.Parse("java.runtime.inventory.read");
     public static readonly XsrSemanticId Manage = XsrSemanticId.Parse("java.runtime.registry.manage");
+    public static readonly XsrSemanticId InstallArchive = XsrSemanticId.Parse("java.runtime.archive.install");
     public const string RegistryKey = "NexaJavaRuntimeRegistry";
 }
 public sealed record JavaRuntimeInventoryQuery(bool Refresh = false);
@@ -36,3 +37,5 @@ public interface IAsyncJavaRuntimeRegistrationStore
     ValueTask<XsrResult> WriteAsync(long expectedRevision, IReadOnlyList<JavaRuntimeRegistration> registrations,
         CancellationToken token = default);
 }
+
+public sealed record JavaArchiveInstallCommand(string Archive, string Destination, long Size, string Sha256, int Major, string Architecture, long ExpectedRegistryRevision);

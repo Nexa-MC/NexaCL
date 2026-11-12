@@ -192,6 +192,26 @@ internal sealed class NativeMinecraftLibraryOwner : IAsyncDisposable
         }
         finally { _mutation.Release(); }
     }
+    internal async Task<XsrResult> CloneAsync(MinecraftLibraryCloneCommand command, CancellationToken token)
+    {
+        Task<XsrResult>? scan = null;
+        var roots = new[] { command.SourceRoot, command.DestinationRoot }.Distinct(Comparer).Order(Comparer).ToArray();
+        using var sourceLease = await InstanceRecoveryOperationGate.EnterRestoreAsync(roots[0], token).ConfigureAwait(false);
+        using var destinationLease = roots.Length == 1 ? null : await InstanceRecoveryOperationGate.EnterRestoreAsync(roots[1], token).ConfigureAwait(false);
+        await _mutation.WaitAsync(token).ConfigureAwait(false);
+        try
+        {
+            bool Validate() => !_closed && !_snapshot.IsProvisional && !_snapshot.IsLoading && _snapshot.Revision == command.ExpectedRevision
+                && Comparer.Equals(command.SourceRoot, _configuration.ActiveDirectory) && _snapshot.Instances.Any(i => i.Id == command.SourceId)
+                && _configuration.Directories.Any(d => Comparer.Equals(d.Path, command.DestinationRoot));
+            if (!Validate()) return XsrResult.Failure(MinecraftErrors.InvalidRequest("Clone source or library changed."));
+            var result = await MinecraftInstanceCloneService.CloneLeasedAsync(command, _store, Validate, token).ConfigureAwait(false);
+            if (!result.IsSuccess) return result;
+            scan = BeginScan(token);
+        }
+        finally { _mutation.Release(); }
+        return await scan.ConfigureAwait(false);
+    }
     internal async Task<XsrResult> DeleteAsync(MinecraftLibraryDeleteCommand command, CancellationToken token)
     {
         using var recovery = await InstanceRecoveryOperationGate.EnterOperationAsync(Path.GetFullPath(command.RootDirectory), token).ConfigureAwait(false);
@@ -200,7 +220,7 @@ internal sealed class NativeMinecraftLibraryOwner : IAsyncDisposable
         try
         {
             ObjectDisposedException.ThrowIf(_closed, this);
-            if (_snapshot.IsProvisional || _snapshot.IsLoading || !Comparer.Equals(command.RootDirectory, _configuration.ActiveDirectory)
+            if (_snapshot.IsProvisional || _snapshot.IsLoading || command.ExpectedRevision is { } expected && _snapshot.Revision != expected || !Comparer.Equals(command.RootDirectory, _configuration.ActiveDirectory)
                 || !MinecraftVersionPaths.IsSafeReference(command.InstanceId) || !_snapshot.Instances.Any(item => item.Id == command.InstanceId)) return XsrResult.Failure(MinecraftErrors.InvalidRequest("版本路径无效。"));
             string source = Path.Combine(command.RootDirectory, "versions", command.InstanceId);
             if (_store.ReadCollection<MinecraftProcessSnapshot>(_store.Resolve(MinecraftProcessStateComposition.SessionsKey), token).Items.Any(item => item.State is MinecraftProcessState.Created or MinecraftProcessState.Running
@@ -208,7 +228,8 @@ internal sealed class NativeMinecraftLibraryOwner : IAsyncDisposable
             string recycle = Path.Combine(command.RootDirectory, ".recycle");
             for (string? path = source; path is not null; path = Path.GetDirectoryName(path)) if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0) return XsrResult.Failure(MinecraftErrors.InvalidRequest("不能移除链接目录中的版本。"));
             if (Directory.Exists(recycle) && (File.GetAttributes(recycle) & FileAttributes.ReparsePoint) != 0) return XsrResult.Failure(MinecraftErrors.InvalidRequest("不能移除链接目录中的版本。"));
-            Directory.CreateDirectory(recycle); token.ThrowIfCancellationRequested(); Directory.Move(source, Path.Combine(recycle, command.InstanceId + "-" + Guid.NewGuid().ToString("N")));
+            Directory.CreateDirectory(recycle); token.ThrowIfCancellationRequested(); string recycled = Path.Combine(recycle, command.InstanceId + "-" + Guid.NewGuid().ToString("N"));
+            Directory.Move(source, recycled); if (!command.RetainUserData) MinecraftInstanceCloneService.DeleteOwnedTree(recycled);
             scan = BeginScan(token);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException) { return XsrResult.Failure(MinecraftErrors.InvalidRequest(error.Message)); }

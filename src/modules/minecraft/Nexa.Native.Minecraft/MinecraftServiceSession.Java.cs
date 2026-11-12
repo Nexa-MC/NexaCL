@@ -73,6 +73,9 @@ internal sealed partial class MinecraftServiceSession
                     ? await _javaDiagnostics!.ReadPropertiesAsync(new(diagnosticExecutable, revision), token).ConfigureAwait(false)
                     : await _javaDiagnostics!.ReadModulesAsync(new(diagnosticExecutable, revision), token).ConfigureAwait(false);
                 writer.XsrError(diagnostic.Error); if (diagnostic.IsSuccess) writer.JavaRuntimeDiagnosticsSnapshot(diagnostic.Value); break;
+            case MinecraftServiceProtocol.JavaArchiveInstall:
+                var archive = reader.JavaArchiveInstallCommand() ?? throw new InvalidDataException("Missing Java archive request."); reader.End();
+                writer.XsrError((await new JavaArchiveInstaller(_javaLocator!, _javaManagement!).InstallAsync(archive, token).ConfigureAwait(false)).Error); break;
             case MinecraftServiceProtocol.JavaManage:
                 var manage = reader.JavaRuntimeManageCommand() ?? throw new InvalidDataException("Missing Java management command."); reader.End();
                 writer.XsrError((await _javaManagement!.ManageAsync(manage, token).ConfigureAwait(false)).Error); break;

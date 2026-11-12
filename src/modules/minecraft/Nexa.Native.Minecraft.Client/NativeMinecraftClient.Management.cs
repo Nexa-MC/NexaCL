@@ -7,6 +7,12 @@ namespace Nexa.Native.Minecraft.Client;
 
 public sealed partial class NativeMinecraftClient
 {
+    public async ValueTask<XsrResult> DispatchInstanceContentClearTrashCommandAsync(InstanceContentClearTrashCommand value, CancellationToken token = default)
+    {
+        byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.ClearContentTrash, writer => writer.InstanceContentClearTrashCommand(value), token).ConfigureAwait(false);
+        using var reader = new ServiceWireReader(bytes);
+        var error = reader.XsrError(); reader.End(); return error is null ? XsrResult.Success() : XsrResult.Failure(error);
+    }
     public async ValueTask<XsrResult<ContentInspectionSnapshot>> InspectContentAsync(ContentInspectionQuery value, CancellationToken token = default)
     {
         byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.ContentInspect, writer => writer.ContentInspectionQuery(value), token).ConfigureAwait(false);

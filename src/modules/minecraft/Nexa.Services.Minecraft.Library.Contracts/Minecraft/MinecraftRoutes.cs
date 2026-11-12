@@ -13,6 +13,9 @@ public sealed record MinecraftStartCommand(string InstanceId, int AccountIndex)
     public long? ExpectedAccountRosterRevision { get; init; }
     public long? ExpectedSettingsRevision { get; init; }
     public string? LaunchProfileId { get; init; }
+    public long? PluginMemoryMiB { get; init; }
+    public long? PluginWidth { get; init; }
+    public long? PluginHeight { get; init; }
 }
 public sealed record MinecraftLaunchCommand(MinecraftLaunchRequest Request);
 public sealed record MinecraftCancelProcessCommand(Guid SessionId);

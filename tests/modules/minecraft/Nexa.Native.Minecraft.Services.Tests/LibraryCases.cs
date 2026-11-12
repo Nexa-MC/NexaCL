@@ -74,6 +74,15 @@ internal static class LibraryCases
             || Directory.Exists(removable) || !Directory.EnumerateFiles(Path.Combine(root, ".recycle"), "native-remove.jar", SearchOption.AllDirectories).Any()
             || Read().SelectedInstanceId != "renamed-game" || !Directory.Exists(instance))
             throw new InvalidDataException("Native library deletion lost recycling or changed another selection.");
+        var beforeClone = Read();
+        var cloning = new MinecraftLibraryCloneCommand(root, "renamed-game", root, "native-copy", beforeClone.Revision);
+        if ((await client.CloneLibraryInstanceAsync(cloning with { ExpectedRevision = beforeClone.Revision + 1 }, token)).IsSuccess
+            || !(await client.CloneLibraryInstanceAsync(cloning, token)).IsSuccess)
+            throw new InvalidDataException("Native clone lost source revision admission.");
+        string copy = Path.Combine(root, "versions", "native-copy");
+        if (!File.Exists(Path.Combine(copy, "native-copy.json")) || !Directory.Exists(instance)) throw new InvalidDataException("Native clone did not publish an independent manifest.");
+        if (!(await client.DeleteLibraryInstanceAsync(new(root, "native-copy") { ExpectedRevision = Read().Revision, RetainUserData = false }, token)).IsSuccess || Directory.Exists(copy))
+            throw new InvalidDataException("Native permanent deletion did not consume its revisioned request.");
         Console.WriteLine("Native library preserved durable selection, async generation cancellation, normalized directory edits and instance recycling.");
     }
 }

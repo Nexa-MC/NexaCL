@@ -33,8 +33,9 @@ public static class MinecraftLibraryRuntimeComposer
             await service.ChangeDirectoryAsync(command.Path, command.Add, token).ConfigureAwait(false));
         commands.Register<MinecraftLibraryForgetCommand>(MinecraftLibraryRoutes.Forget, async (command, token) =>
             await service.ForgetDirectoryAsync(command.Path, token).ConfigureAwait(false));
+        commands.Register<MinecraftLibraryCloneCommand>(MinecraftLibraryRoutes.Clone, async (command, token) => await service.CloneInstanceAsync(command, token).ConfigureAwait(false));
         commands.Register<MinecraftLibraryDeleteCommand>(MinecraftLibraryRoutes.Delete, async (command, token) =>
-            await service.DeleteInstanceAsync(command.RootDirectory, command.InstanceId, token).ConfigureAwait(false));
+            await service.DeleteInstanceAsync(command, token).ConfigureAwait(false));
         commands.Register<MinecraftLibrarySelectCommand>(MinecraftLibraryRoutes.Select, (command, _) =>
             ValueTask.FromResult(service.SelectInstance(command.RootDirectory, command.InstanceId)));
         commands.Register<MinecraftLibraryRenameCommand>(MinecraftLibraryRoutes.Rename, (command, _) =>

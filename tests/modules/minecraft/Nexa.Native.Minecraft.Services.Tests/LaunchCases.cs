@@ -79,7 +79,8 @@ internal static class LaunchCases
         if (!repaired.Succeeded) throw new InvalidDataException("Native Java remediation failed: " + repaired.Message);
         repaired = await client.RemediateAsync(new("remediation.game.repair_files", new Dictionary<string, string> { ["instanceDirectory"] = instanceDirectory }, Confirmed: true), token);
         if (!repaired.Succeeded) throw new InvalidDataException("Native file remediation failed: " + repaired.Message);
-        var launched = await client.StartMinecraftAsync("renamed-game", 0, root, token: token);
+        var launched = await client.StartContributedMinecraftAsync(new("renamed-game", 0)
+        { MinecraftRootDirectory = root, ExpectedAccountRosterRevision = 7, PluginMemoryMiB = 3072, PluginWidth = 1280, PluginHeight = 720 }, token);
         if (!launched.IsSuccess) throw new InvalidDataException("Native full launch failed: " + launched.Error!.Message);
         progress = store.Read<MinecraftLaunchProgressSnapshot>(store.Resolve(MinecraftLaunchProgressState.SnapshotKey), token);
         if (visible != 1 || cleanups != 1 || progress.Value.SessionId is not { } session)
@@ -91,7 +92,7 @@ internal static class LaunchCases
         if ((await client.DispatchInstanceServerListSaveCommandAsync(new(instanceDirectory, servers.Revision, servers.Entries), token)).IsSuccess)
             throw new InvalidDataException("Native management ignored the launch owner's active process guard.");
         var diagnostic = await client.ReadLaunchDiagnosticsAsync(new(instanceDirectory), token);
-        if (diagnostic.CapturedAt is null || diagnostic.MainClass != "fixture.Main")
+        if (diagnostic.CapturedAt is null || diagnostic.MainClass != "fixture.Main" || diagnostic.HeapLimitMiB != 3072)
             throw new InvalidDataException("Native launch diagnostics lost its actual plan.");
         await client.WaitForFinalizationAsync(token);
         if (client.HasPendingFinalization) throw new InvalidDataException("Native finalization completed before its state retired.");
@@ -119,6 +120,8 @@ internal static class LaunchCases
         public XsrResult<LaunchProfile> GetProfile(int index) => throw new InvalidOperationException("Launch must use asynchronous account access.");
         public async ValueTask<XsrResult<LaunchProfile>> GetProfileAsync(int index, CancellationToken cancellationToken = default)
         { await Task.Yield(); cancellationToken.ThrowIfCancellationRequested(); return XsrResult.Success(new LaunchProfile { Username = "NativePlayer", Kind = LaunchProfileKind.Offline }); }
+        public ValueTask<XsrResult<LaunchProfile>> GetProfileAsync(int index, long expectedRosterRevision, CancellationToken cancellationToken = default)
+            => expectedRosterRevision == 7 ? GetProfileAsync(index, cancellationToken) : ValueTask.FromResult(XsrResult.Failure<LaunchProfile>(AccountErrors.InvalidProfile("Stale fixture roster.")));
         public async ValueTask<XsrResult<MinecraftLaunchIdentity>> ResolveAsync(int accountIndex, LaunchProfile profile, CancellationToken cancellationToken = default)
         { await Task.Yield(); cancellationToken.ThrowIfCancellationRequested(); return XsrResult.Success(new MinecraftLaunchIdentity(profile.Username, "0123456789abcdef0123456789abcdef", "0", MinecraftLaunchIdentityMode.Offline)); }
     }

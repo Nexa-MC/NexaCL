@@ -182,3 +182,11 @@ Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.
 
 Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceWorldRenameCommand
 Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceWorldDataPackOrderCommand
+Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceContentClearTrashCommand
+
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftStartCommand
+Nexa.Services.Minecraft.Java.Contracts|Nexa.Services.Minecraft.Java.JavaArchiveInstallCommand
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallRecoveryListQuery
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallRecoveryListing
+Nexa.Services.Minecraft.Install.Contracts|Nexa.Services.Minecraft.Install.MinecraftInstallRecoveryRecordCommand
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftLibraryCloneCommand

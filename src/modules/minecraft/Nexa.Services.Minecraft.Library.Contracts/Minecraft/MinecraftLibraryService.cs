@@ -43,6 +43,11 @@ public sealed record MinecraftLibrarySnapshot(long Revision, IReadOnlyList<Minec
 public sealed record MinecraftLibraryRefreshCommand;
 public sealed record MinecraftLibraryDirectoryCommand(string Path, bool Add = false);
 public sealed record MinecraftLibraryForgetCommand(string Path);
-public sealed record MinecraftLibraryDeleteCommand(string RootDirectory, string InstanceId);
+public sealed record MinecraftLibraryDeleteCommand(string RootDirectory, string InstanceId)
+{
+    public long? ExpectedRevision { get; init; }
+    public bool RetainUserData { get; init; } = true;
+}
+public sealed record MinecraftLibraryCloneCommand(string SourceRoot, string SourceId, string DestinationRoot, string Name, long ExpectedRevision);
 public sealed record MinecraftLibrarySelectCommand(string RootDirectory, string InstanceId);
 public sealed record MinecraftLibraryRenameCommand(string Path, string Name);

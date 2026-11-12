@@ -41,6 +41,8 @@ internal sealed partial class MinecraftServiceSession
                 var select = reader.MinecraftLibrarySelectCommand() ?? throw new InvalidDataException("Missing library selection."); reader.End(); result = await library.SelectAsync(select, token).ConfigureAwait(false); break;
             case MinecraftServiceProtocol.LibraryRename:
                 var rename = reader.MinecraftLibraryRenameCommand() ?? throw new InvalidDataException("Missing library name."); reader.End(); result = await library.RenameDirectoryAsync(rename, token).ConfigureAwait(false); break;
+            case MinecraftServiceProtocol.LibraryClone:
+                var clone = reader.MinecraftLibraryCloneCommand() ?? throw new InvalidDataException("Missing clone request."); reader.End(); result = await library.CloneAsync(clone, token).ConfigureAwait(false); break;
             case MinecraftServiceProtocol.LibraryDelete:
                 var delete = reader.MinecraftLibraryDeleteCommand() ?? throw new InvalidDataException("Missing library deletion."); reader.End(); result = await library.DeleteAsync(delete, token).ConfigureAwait(false); break;
             case MinecraftServiceProtocol.LibraryRememberRenamed:

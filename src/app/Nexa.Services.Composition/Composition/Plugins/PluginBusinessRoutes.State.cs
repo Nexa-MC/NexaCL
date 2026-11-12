@@ -73,6 +73,14 @@ public sealed partial class PluginBusinessRoutes
                 return AbiReply<AbiValue>.Ok(Empty.Write(new()));
             }));
         }),
+        HostRoutes.Typed<EntityRequest, Empty>("Accounts", "SignOut", async (c, v) =>
+        {
+            var account = FindAccount(c, v.Id);
+            await Confirm(c, "accounts/sign-out", "Sign out " + account.Profile.Username, EntityRequest.Write(v), c.Options.Cancellation).ConfigureAwait(false);
+            var router = foundationCommands ?? accountCommands;
+            await Command(router, FoundationRouteIds.AccountSignOut, new AccountSignOutCommand(account.Profile.Index, account.Revision), c.Options.Cancellation).ConfigureAwait(false);
+            return new Empty();
+        }),
         HostRoutes.Typed<EntityRequest, Empty>("Accounts", "Remove", async (c, v) =>
         {
             var account = FindAccount(c, v.Id);

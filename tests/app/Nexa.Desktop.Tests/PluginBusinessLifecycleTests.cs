@@ -37,7 +37,9 @@ internal static partial class Program
         await PreparePluginWorldFixture(instancePath);
         var descriptor = Instance("fixture"); instances.Add(descriptor with { DirectoryPath = instancePath, Version = descriptor.Version with { DirectoryPath = instancePath } });
         await fixture.Library.Service.RefreshAsync();
-        await using var business = new PluginBusinessRoutes(fixture.Store, fixture.Library.Commands, fixture.Onboarding.Commands, fixture.Minecraft.Commands, fixture.Minecraft.Queries, fixture.Foundation.Commands, fixture.Foundation.Queries);
+        var worldBackups = new Nexa.Services.Setup.ContentBackupService(Path.Combine(fixture.TemporaryDirectory, "world-backups"));
+        var pluginFoundation = FoundationRuntimeComposer.ComposeWithRoutes(fixture.Foundation.Host, configureRoutes: (commands, queries) => WorldSnapshotRuntime.Register(commands, queries, fixture.Store, worldBackups));
+        await using var business = new PluginBusinessRoutes(fixture.Store, fixture.Library.Commands, fixture.Onboarding.Commands, fixture.Minecraft.Commands, fixture.Minecraft.Queries, pluginFoundation.Commands, pluginFoundation.Queries);
         business.BindAccountLaunch(fixture.Service, fixture.Onboarding.LaunchIdentityResolver);
         business.BindAccounts(fixture.Onboarding.Queries);
         business.BindDownloads(fixture.Foundation.Host.Downloads);
@@ -172,13 +174,32 @@ internal static partial class Program
         await ExercisePluginDownloads(Invoke, path => controller.Application.Files.GrantPath(controller.Application.Runtime.Active.Single(), path, true), fixture.TemporaryDirectory);
         recording.OnStart = command => Publish(new MinecraftProcessSnapshot(Guid.NewGuid(), command.InstanceId, 43, MinecraftProcessState.Running, null, DateTimeOffset.UtcNow, null) { InstanceDirectory = instancePath });
         await ExercisePluginInstall(Invoke, instanceSummary.Id); AssertEqual(1, installCalls);
-        await ExercisePluginLaunch(Invoke, instanceSummary.Id, account.Id, recording);
+        bool preflightBlocked = false; int preflightCalls = 0;
+        var launchExtension = new CompletionPluginEntry("example.launch-extension");
+        launchExtension.Callbacks.Add("contribute", input => ValueTask.FromResult(AbiReply<AbiValue>.Ok(LaunchProfile.Write(LaunchProfile.Read(input) with { MemoryMiB = 3072 }))));
+        launchExtension.Callbacks.Add("preflight", input =>
+        {
+            preflightCalls++; AssertEqual(3072L, LaunchProfile.Read(input).MemoryMiB);
+            return ValueTask.FromResult(AbiReply<AbiValue>.Ok(ValidationReport.Write(new(!preflightBlocked, []))));
+        });
+        launchExtension.Initialize = async api =>
+        {
+            CompletionValue(await api.Minecraft.Launch.RegisterContribution(new(new("example.launch-extension:memory"), ["MemoryMiB"], launchExtension.Handlers["contribute"], true), CompletionPluginEntry.Options()));
+            CompletionValue(await api.Minecraft.Launch.RegisterPreflight(new(new("example.launch-extension:preflight"), [], launchExtension.Handlers["preflight"], true), CompletionPluginEntry.Options()));
+        };
+        AssertEqual(LoadState.Active, (await controller.Application.Runtime.LoadAsync([launchExtension.Source()])).Single().State);
+        await ExercisePluginLaunch(Invoke, instanceSummary.Id, account.Id, recording, blocked => preflightBlocked = blocked);
+        AssertTrue(preflightCalls >= 3);
+        await controller.Application.Runtime.StopAsync("example.launch-extension");
         var signIn = await Invoke("Accounts", "BeginSignIn", SignInRequest.Write(new(new("nexa:accounts/offline"), "application"))); AssertTrue(signIn.Success);
         var signInFlow = SignInChallenge.Read(signIn.Value); AssertEqual(SignInState.Challenge, signInFlow.State);
         var pollSignIn = await Invoke("Accounts", "ContinueSignIn", SignInContinue.Write(new(signInFlow.Flow, Empty.Write(new()), Abi100Schemas.Empty))); AssertTrue(pollSignIn.Success);
         AssertTrue((await Invoke("Accounts", "CancelSignIn", EntityRequest.Write(new(signInFlow.Flow)))).Success);
         var cancelledSignIn = await Invoke("Accounts", "ContinueSignIn", SignInContinue.Write(new(signInFlow.Flow, Empty.Write(new()), Abi100Schemas.Empty))); AssertTrue(cancelledSignIn.Success);
         AssertEqual(SignInState.Cancelled, SignInChallenge.Read(cancelledSignIn.Value).State);
+        AssertTrue((await Invoke("Accounts", "SignOut", EntityRequest.Write(new(account.Id)))).Success);
+        AssertFalse((await Invoke("Accounts", "SignOut", EntityRequest.Write(new(account.Id)))).Success);
+        account = Page<AccountPublic>.Read((await Invoke("Accounts", "List", PageRequest.Write(new(null, 32)))).Value).Items.Single();
         AssertTrue((await Invoke("Accounts", "Remove", EntityRequest.Write(new(account.Id)))).Success);
         AssertFalse((await Invoke("Accounts", "Remove", EntityRequest.Write(new(account.Id)))).Success);
         AssertFalse((await Invoke("Accounts", "RequestLaunchGrant", GrantRequest.Write(new(account.Id, instanceSummary.Id)))).Success);

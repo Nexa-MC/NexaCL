@@ -29,6 +29,7 @@ public sealed partial class PluginBusinessRoutes
     }
     private async ValueTask<EffectiveSetting> ReadSetting(HostInvocation c, SettingQuery request)
     {
+        if (CustomSetting(request.Id)) return await ReadPluginSetting(c, request).ConfigureAwait(false);
         string key = SettingKey(request.Id); string? instance = SettingsTarget(c, request.Target);
         return ProjectSetting(c, await ReadSettings(instance, c.Options.Cancellation).ConfigureAwait(false), key);
     }
@@ -41,11 +42,13 @@ public sealed partial class PluginBusinessRoutes
         if (!Enum.TryParse<SettingsOverrideMode>(mode, out var parsed) || !Enum.IsDefined(parsed)) throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
         return new(parsed, value is AbiValue.Null ? null : DataCodec.ReadString(value));
     }
-    private IEnumerable<HostCapabilityRoute> SettingsRoutes => [
+    private IEnumerable<HostCapabilityRoute> SettingsRoutes => PluginSettingRoutes.Concat(BuiltInSettingRoutes);
+    private IEnumerable<HostCapabilityRoute> BuiltInSettingRoutes => [
         HostRoutes.Typed<SettingQuery, StateSnapshot>("Settings", "Get", async (c, v) => SettingState(await ReadSetting(c, v).ConfigureAwait(false))),
         HostRoutes.Typed<SettingQuery, EffectiveSetting>("Settings", "GetEffective", ReadSetting),
         HostRoutes.Typed<SettingChange, MutationPlan>("Settings", "PreviewChange", async (c, v) =>
         {
+            if (CustomSetting(v.Id)) return await PreviewPluginSetting(c, v).ConfigureAwait(false);
             string key = SettingKey(v.Id); string? instance = SettingsTarget(c, v.Target);
             var before = await ReadSettings(instance, c.Options.Cancellation).ConfigureAwait(false);
             if (v.ExpectedRevision != PolicyRevision(c, before.Revision)) throw new AbiHostException(AbiErrors.CONFLICT);
@@ -65,6 +68,13 @@ public sealed partial class PluginBusinessRoutes
         HostRoutes.Typed<PlanRequest, OperationRef>("Settings", "Apply", (c, v) => ValueTask.FromResult(ExecutePlan(c, v, "settings/apply", "nexa.settings.write", Abi100Schemas.EffectiveSetting))),
         HostRoutes.Typed<SettingQuery, StateSnapshot>("Settings", "Reset", async (c, v) =>
         {
+            if (CustomSetting(v.Id))
+            {
+                var schema = PluginSettingSchema(c, v.Id);
+                var pluginBefore = await ReadPluginSetting(c, v).ConfigureAwait(false);
+                await Confirm(c, "settings/reset", "Reset " + v.Id.Value, SettingQuery.Write(v), c.Options.Cancellation).ConfigureAwait(false);
+                return SettingState(await WritePluginSetting(c, new(v.Id, v.Target, schema.Schema.Default, pluginBefore.Revision)).ConfigureAwait(false));
+            }
             string key = SettingKey(v.Id); string? instance = SettingsTarget(c, v.Target);
             var before = await ReadSettings(instance, c.Options.Cancellation).ConfigureAwait(false);
             await Confirm(c, "settings/reset", "Reset " + key, SettingQuery.Write(v), c.Options.Cancellation).ConfigureAwait(false);

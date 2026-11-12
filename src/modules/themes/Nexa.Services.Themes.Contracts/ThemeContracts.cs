@@ -67,6 +67,9 @@ public sealed record ThemeOptionsSaveCommand(string SourceIdentity, IReadOnlyDic
 public sealed record ThemeResourceGrantCommand(string SourceIdentity, ThemeResourceKind Kind, ThemeGrantScope Scope, string SelectedPath);
 public sealed record ThemeResourceRevokeCommand(Guid GrantId);
 public sealed record ThemeRemoveCommand(string SourceIdentity);
+public sealed record ThemePackagedResourcesQuery(string SourceIdentity, string SourceRevision);
+public sealed record ThemePackagedResource(string Name, byte[] Bytes);
+public sealed record ThemePackagedResources(IReadOnlyList<ThemePackagedResource> Items);
 public sealed record ThemeResourceQuery(Guid CandidateId, string Expression, ThemeResourceKind Kind);
 public sealed record ThemeResourceListQuery(Guid CandidateId, string Expression, ThemeResourceKind Kind);
 public sealed record ThemeResourceReleaseCommand(Guid LeaseId);
@@ -90,6 +93,7 @@ public interface IThemePackageService : IDisposable
     ValueTask<XsrResult> GrantAsync(ThemeResourceGrantCommand command, CancellationToken token = default);
     ValueTask<XsrResult> RevokeAsync(ThemeResourceRevokeCommand command, CancellationToken token = default);
     ValueTask<XsrResult> RemoveAsync(ThemeRemoveCommand command, CancellationToken token = default);
+    ValueTask<XsrResult<ThemePackagedResources>> ReadPackagedResourcesAsync(ThemePackagedResourcesQuery query, CancellationToken token = default);
     ValueTask<XsrResult<ThemeResourcePayload>> ReadResourceAsync(ThemeResourceQuery query, CancellationToken token = default);
     ValueTask<XsrResult<ThemeResourceListPayload>> ListResourcesAsync(ThemeResourceListQuery query, CancellationToken token = default);
     ValueTask<XsrResult> ReleaseResourceAsync(ThemeResourceReleaseCommand command, CancellationToken token = default);
@@ -113,6 +117,7 @@ public static class ThemesContract
     public static readonly XsrSemanticId Grant = XsrSemanticId.Parse("themes.resource.grant");
     public static readonly XsrSemanticId Revoke = XsrSemanticId.Parse("themes.resource.revoke");
     public static readonly XsrSemanticId Remove = XsrSemanticId.Parse("themes.remove");
+    public static readonly XsrSemanticId PackagedResources = XsrSemanticId.Parse("themes.resources.packaged");
     public static readonly XsrSemanticId ReadResource = XsrSemanticId.Parse("themes.resource.read");
     public static readonly XsrSemanticId ListResources = XsrSemanticId.Parse("themes.resource.list");
     public static readonly XsrSemanticId ReleaseResource = XsrSemanticId.Parse("themes.resource.release");

@@ -12,9 +12,9 @@ namespace Nexa.Services.Composition.Plugins;
 public sealed partial class PluginBusinessRoutes
 {
     private XsrCommandRouter? _installCatalogCommands, _installCommands;
-    private XsrQueryRouter? _installQueries, _folderQueries;
-    public void BindInstall(XsrCommandRouter catalogCommands, XsrQueryRouter queries, XsrCommandRouter commands, XsrQueryRouter? folderQueries = null)
-    { _installCatalogCommands = catalogCommands; _installQueries = queries; _installCommands = commands; _folderQueries = folderQueries; }
+    private XsrQueryRouter? _installQueries, _folderQueries, _installRecoveryQueries;
+    public void BindInstall(XsrCommandRouter catalogCommands, XsrQueryRouter queries, XsrCommandRouter commands, XsrQueryRouter? folderQueries = null, XsrQueryRouter? recoveryQueries = null)
+    { _installCatalogCommands = catalogCommands; _installQueries = queries; _installCommands = commands; _folderQueries = folderQueries; _installRecoveryQueries = recoveryQueries; }
     private sealed record PluginInstallDraft(PluginIdentity Owner, InstallDraft Public, MinecraftInstallEditSnapshot Original);
     private readonly Dictionary<EntityId, PluginInstallDraft> _installDrafts = [];
     private readonly Dictionary<EntityId, (PluginIdentity Owner, InstallPlan Plan)> _installPlans = [];
@@ -95,7 +95,10 @@ public sealed partial class PluginBusinessRoutes
         }
         return result;
     }
+    private static readonly QualifiedId LoaderProviderKind = new("nexa:install/loader-catalog");
+    private static readonly BusinessProviderMethod LoaderProviderMethod = new("ListVersions", Abi100Schemas.LoaderVersionRequest, Abi100Schemas.PageOfLoaderVersion);
     private IEnumerable<HostCapabilityRoute> InstallRoutes => [
+        HostRoutes.Typed<ProviderDescriptor, RegistrationRef>("Minecraft.Install", "RegisterLoaderProvider", (c, v) => ValueTask.FromResult(Services.RegisterHostProvider(c, LoaderProviderKind, v, [LoaderProviderMethod]))),
         HostRoutes.Typed<PageRequest, Page<GameVersion>>("Minecraft.Install", "ListGameVersions", async (c, v) =>
         {
             var catalog = await ReadInstallCatalog("", null, c.Options.Cancellation).ConfigureAwait(false);
@@ -105,6 +108,18 @@ public sealed partial class PluginBusinessRoutes
         }),
         HostRoutes.Typed<LoaderVersionRequest, Page<LoaderVersion>>("Minecraft.Install", "ListLoaderVersions", async (c, v) =>
         {
+            if (!v.Loader.Value.StartsWith("nexa:loader/", StringComparison.Ordinal))
+            {
+                string scope = "loader:" + v.Loader.Value + ":" + v.GameVersion;
+                var input = v with { Page = UnwrapCatalogCursor(c, v.Page, scope) };
+                var result = Nexa.Plugin.Sdk.Abi100.Data.Page<LoaderVersion>.Read(await Services.QueryHostProvider(c, LoaderProviderKind, v.Loader, LoaderProviderMethod, LoaderVersionRequest.Write(input)).ConfigureAwait(false));
+                foreach (var item in result.Items)
+                {
+                    _ = Loader(item.Loader);
+                    if (item.GameVersion != v.GameVersion || item.Version.Length is < 1 or > 256 || item.Version.Any(char.IsControl)) throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
+                }
+                return WrapCatalogPage(c, result, v.Page, scope);
+            }
             var catalog = await ReadInstallCatalog(v.GameVersion, Loader(v.Loader), c.Options.Cancellation).ConfigureAwait(false);
             return ContentPage(catalog.Versions.Select(p => new LoaderVersion(v.Loader, p.Id, v.GameVersion, p.Stable)).ToImmutableArray(), v.Page);
         }),

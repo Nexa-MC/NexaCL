@@ -53,6 +53,12 @@ public sealed partial class PluginBusinessRoutes
         RetireNetwork(pluginId);
         lock (_planGate)
         {
+            foreach (var key in _installRecoveries.Where(p => p.Value.Owner.PluginId == pluginId).Select(p => p.Key).ToArray()) _installRecoveries.Remove(key);
+            foreach (var key in _settingsNamespaces.Where(p => p.Value.Namespace.Value == pluginId + ":host-settings").Select(p => p.Key).ToArray()) _settingsNamespaces.Remove(key);
+            foreach (var key in _themeResources.Where(p => p.Value.Owner.PluginId == pluginId).Select(p => p.Key).ToArray()) _themeResources.Remove(key);
+            foreach (var key in _backupDestinations.Where(p => p.Value.Owner.PluginId == pluginId).Select(p => p.Key).ToArray()) _backupDestinations.Remove(key);
+            foreach (var key in _worldBackups.Where(p => p.Value.Owner.PluginId == pluginId).Select(p => p.Key).ToArray()) _worldBackups.Remove(key);
+            foreach (var key in _worldDestinations.Where(p => p.Value.Owner.PluginId == pluginId).Select(p => p.Key).ToArray()) _worldDestinations.Remove(key);
             foreach (var key in _backupIdentities.Where(p => p.Value.Owner.PluginId == pluginId).Select(p => p.Key).ToArray()) _backupIdentities.Remove(key);
             foreach (var key in _javaOffers.Where(p => p.Value.Owner.PluginId == pluginId).Select(p => p.Key).ToArray()) _javaOffers.Remove(key);
             foreach (var key in _pluginDownloads.Where(p => p.Value.Owner.PluginId == pluginId).Select(p => p.Key).ToArray()) _pluginDownloads.Remove(key);

@@ -9,6 +9,15 @@ public sealed partial class NativeMinecraftClient
 {
     private Task? _installationConfiguration;
     private string? _installationCountry, _installationApiKey;
+    public async ValueTask<XsrResult<MinecraftInstallRecoveryListing>> ListInstallRecoveryRecordsAsync(MinecraftInstallRecoveryListQuery query, CancellationToken token = default)
+    {
+        byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.InstallRecoveryList, writer => writer.MinecraftInstallRecoveryListQuery(query), token).ConfigureAwait(false);
+        using var reader = new ServiceWireReader(bytes); var error = reader.XsrError();
+        if (error is not null) { reader.End(); return XsrResult.Failure<MinecraftInstallRecoveryListing>(error); }
+        var value = reader.MinecraftInstallRecoveryListing() ?? throw new InvalidDataException("Missing recovery listing."); reader.End(); return XsrResult.Success(value);
+    }
+    public Task<XsrResult> ApplyInstallRecoveryRecordAsync(MinecraftInstallRecoveryRecordCommand command, CancellationToken token = default)
+        => LaunchResultAsync(MinecraftServiceProtocol.InstallRecoveryApply, writer => writer.MinecraftInstallRecoveryRecordCommand(command), token);
     public Task EnsureInstallationConfiguredAsync(string countryCode, string? curseForgeApiKey = null, CancellationToken token = default)
     {
         lock (_gate)

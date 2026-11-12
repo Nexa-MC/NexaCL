@@ -18,6 +18,8 @@ public sealed record AccountUpsertProfileCommand(LaunchProfile Profile);
 public sealed record AccountSelectProfileCommand(int Index, long? ExpectedRosterRevision = null);
 
 /// <summary>Removes only the local profile displayed at this roster revision.</summary>
+public sealed record AccountSignOutCommand(int Index, long ExpectedRosterRevision);
+
 public sealed record AccountRemoveProfileCommand(int Index, long ExpectedRosterRevision);
 
 /// <summary>One foundation query: read one setting's raw value.</summary>

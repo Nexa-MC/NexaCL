@@ -36,3 +36,5 @@ Nexa.Xsr.Abstractions|Nexa.Xsr.XsrError
 Nexa.Services.Foundation.Contracts|Nexa.Services.Foundation.AccountUpsertProfileCommand
 Nexa.Services.Foundation.Contracts|Nexa.Services.Foundation.AccountSelectProfileCommand
 Nexa.Services.Foundation.Contracts|Nexa.Services.Foundation.AccountRemoveProfileCommand
+
+Nexa.Services.Foundation.Contracts|Nexa.Services.Foundation.AccountSignOutCommand

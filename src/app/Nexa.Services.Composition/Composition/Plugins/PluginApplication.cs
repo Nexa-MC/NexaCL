@@ -142,21 +142,8 @@ public sealed partial class PluginApplication : IAsyncDisposable
                 return ValueTask.FromResult(new FileRef(id, c.Identity.LoadInstanceId, "package"));
             }
         }),
-        HostRoutes.Typed<UIPage, RegistrationRef>("UI", "RegisterPage", (c, v) =>
-        {
-            string source;
-            lock (_gate)
-            {
-                if (v.EntryFile.LoadInstanceId != c.Identity.LoadInstanceId || v.EntryFile.Scope != "package" ||
-                    !_files.TryGetValue(v.EntryFile.Token, out var file) || file.Owner != c.Identity.LoadInstanceId ||
-                    !_assets.TryGetValue(file.Plugin, out var assets) || !assets.TryGetValue(file.Path, out var bytes)) throw new AbiHostException(AbiErrors.HANDLE_INVALID);
-                source = new UTF8Encoding(false, true).GetString(bytes);
-            }
-            _validatePage(source);
-            var reference = Runtime.Definitions.Stage(c, [new(v.Id, new("nexa:ui/pages"), Abi100Schemas.UIPage, UIPage.Write(v), [])]).Single();
-            lock (_gate) _pages.Add(v.Id, (c.Identity, v, source, reference));
-            return ValueTask.FromResult(reference);
-        }),
+        HostRoutes.Typed<UIPage, RegistrationRef>("UI", "RegisterPage", RegisterPage),
+        HostRoutes.Typed<UIPage, RegistrationRef>("Settings", "RegisterPage", RegisterPage),
         HostRoutes.Typed<UINavigation, RegistrationRef>("UI", "RegisterNavigation", (c, v) =>
         {
             lock (_gate)
@@ -183,6 +170,21 @@ public sealed partial class PluginApplication : IAsyncDisposable
             throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
         if (value.Action is not null) throw new AbiHostException(AbiErrors.CAPABILITY_UNAVAILABLE);
         _notify(c.Identity, value); return ValueTask.FromResult(new Empty());
+    }
+    private ValueTask<RegistrationRef> RegisterPage(HostInvocation c, UIPage v)
+    {
+        string source;
+        lock (_gate)
+        {
+            if (v.EntryFile.LoadInstanceId != c.Identity.LoadInstanceId || v.EntryFile.Scope != "package" ||
+                !_files.TryGetValue(v.EntryFile.Token, out var file) || file.Owner != c.Identity.LoadInstanceId ||
+                !_assets.TryGetValue(file.Plugin, out var assets) || !assets.TryGetValue(file.Path, out var bytes)) throw new AbiHostException(AbiErrors.HANDLE_INVALID);
+            source = new UTF8Encoding(false, true).GetString(bytes);
+        }
+        _validatePage(source);
+        var reference = Runtime.Definitions.Stage(c, [new(v.Id, new("nexa:ui/pages"), Abi100Schemas.UIPage, UIPage.Write(v), [])]).Single();
+        lock (_gate) _pages.Add(v.Id, (c.Identity, v, source, reference));
+        return ValueTask.FromResult(reference);
     }
     private ValueTask<StateSnapshot> PublishModel(HostInvocation c, UIModelUpdate value)
     {

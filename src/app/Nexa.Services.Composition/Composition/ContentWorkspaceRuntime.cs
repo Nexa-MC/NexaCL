@@ -67,6 +67,10 @@ public static class ContentWorkspaceRuntime
             (v, token) => CommandAsync(() => backups.ForInstance(v.InstanceDirectory).ApplyPruneAsync(v.KeepCount, v.KeepDays, v.ExpectedRevision, token), token));
         commands.Register<InstanceBackupRetentionCommand>(InstanceBackupContract.SetRetention,
             (v, token) => CommandAsync(() => backups.ForInstance(v.InstanceDirectory).SetRetentionAsync(v.Policy, v.ExpectedRevision, token), token));
+        commands.Register<InstanceBackupRestoreCommand>(InstanceBackupContract.Restore,
+            (v, token) => CommandAsync(() => backups.ForInstance(v.InstanceDirectory).RestoreAsync(v.Identity, v.Destination, token), token));
+        commands.Register<InstanceBackupImportCommand>(InstanceBackupContract.Import,
+            (v, token) => CommandAsync(async () => { await backups.ForInstance(v.InstanceDirectory).ImportThinAsync(v.Source, token).ConfigureAwait(false); }, token));
         commands.Register<InstanceBackupExportCommand>(InstanceBackupContract.Export,
             (v, token) => CommandAsync(() => backups.ForInstance(v.InstanceDirectory).ExportThinAsync(v.Identity, v.Destination, token), token));
     }

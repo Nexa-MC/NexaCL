@@ -10,13 +10,14 @@ public sealed partial class MinecraftLaunchCoordinator
     private long? _expectedAccountRosterRevision;
     private long? _expectedSettingsRevision;
     private string? _authorizedProfileId;
+    private long? _pluginMemoryMiB, _pluginWidth, _pluginHeight;
     private int _launchDisposed;
     private Guid _attemptId;
     private Action<MinecraftProcessSnapshot>? _sessionEnded;
     private readonly Dictionary<Guid, MinecraftLaunchCoordinator> _attempts = [];
     private readonly Dictionary<string, Guid> _instanceAttempts = new(Nexa.Core.PathIdentity.Comparer);
 
-    private async ValueTask<XsrResult> StartConcurrentAsync(string instance, int account, string root, string? server, CancellationToken token, long? expectedAccountRosterRevision = null, long? expectedSettingsRevision = null, string? profileId = null)
+    private async ValueTask<XsrResult> StartConcurrentAsync(string instance, int account, string root, string? server, CancellationToken token, long? expectedAccountRosterRevision = null, long? expectedSettingsRevision = null, string? profileId = null, long? pluginMemoryMiB = null, long? pluginWidth = null, long? pluginHeight = null)
     {
         if (!MinecraftVersionPaths.IsSafeReference(instance) || !Path.IsPathFullyQualified(root))
             return XsrResult.Failure(MinecraftErrors.InvalidRequest("Invalid instance launch target."));
@@ -38,6 +39,9 @@ public sealed partial class MinecraftLaunchCoordinator
                 _expectedAccountRosterRevision = expectedAccountRosterRevision,
                 _expectedSettingsRevision = expectedSettingsRevision,
                 _authorizedProfileId = profileId,
+                _pluginMemoryMiB = pluginMemoryMiB,
+                _pluginWidth = pluginWidth,
+                _pluginHeight = pluginHeight,
                 _attemptId = id,
                 _safeLaunchRequired = Volatile.Read(ref _safeLaunchRequired),
                 WorkScheduler = WorkScheduler,

@@ -13,6 +13,7 @@ public sealed partial class PluginBusinessRoutes
         public PluginIdentity Owner { get; } = owner;
         public EntityId Id { get; } = id;
         public AccountLoginProvider Provider { get; } = provider;
+        public string? ProviderServer;
         public long? Generation;
         public bool Cancelled;
         public readonly SignInGate Gate = new();
@@ -65,11 +66,21 @@ public sealed partial class PluginBusinessRoutes
         flow.Generation = checked(current.Generation + 1);
         if (LoginState().Generation != flow.Generation) throw new AbiHostException(AbiErrors.CONFLICT);
     }
+    private static readonly QualifiedId AccountProviderKind = new("nexa:accounts/authentication");
+    private static readonly BusinessProviderMethod AccountProviderMethod = new("ResolveSignIn", Abi100Schemas.SignInRequest, Abi100Schemas.AccountProviderConfiguration);
     private IEnumerable<HostCapabilityRoute> SignInRoutes => [
+        HostRoutes.Typed<ProviderDescriptor, RegistrationRef>("Accounts", "RegisterProvider", (c, v) => ValueTask.FromResult(Services.RegisterHostProvider(c, AccountProviderKind, v, [AccountProviderMethod]))),
         HostRoutes.Typed<SignInRequest, SignInChallenge>("Accounts", "BeginSignIn", async (c, v) =>
         {
             if (v.Scope != "application") throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
-            var provider = v.Provider.Value switch
+            AccountProviderConfiguration? custom = null;
+            if (!v.Provider.Value.StartsWith("nexa:accounts/", StringComparison.Ordinal))
+            {
+                custom = AccountProviderConfiguration.Read(await Services.QueryHostProvider(c, AccountProviderKind, v.Provider, AccountProviderMethod, SignInRequest.Write(v)).ConfigureAwait(false));
+                if (custom.Protocol is not ("yggdrasil" or "nide8") || !Uri.TryCreate(custom.AuthServer.Value, UriKind.Absolute, out var server)
+                    || server.Scheme != Uri.UriSchemeHttps || server.UserInfo.Length != 0 || server.Fragment.Length != 0) throw new AbiHostException(AbiErrors.SCHEMA_INVALID);
+            }
+            var provider = custom is not null ? custom.Protocol == "nide8" ? AccountLoginProvider.Nide8 : AccountLoginProvider.ThirdParty : v.Provider.Value switch
             {
                 "nexa:accounts/offline" => AccountLoginProvider.Offline,
                 "nexa:accounts/microsoft" => AccountLoginProvider.Microsoft,
@@ -79,7 +90,7 @@ public sealed partial class PluginBusinessRoutes
                 _ => throw new AbiHostException(AbiErrors.HANDLE_INVALID)
             };
             await Confirm(c, "accounts/sign-in", "Sign in with " + provider, SignInRequest.Write(v), c.Options.Cancellation).ConfigureAwait(false);
-            var flow = new SignInFlow(c.Identity, new(Guid.NewGuid().ToString("N")), provider);
+            var flow = new SignInFlow(c.Identity, new(Guid.NewGuid().ToString("N")), provider) { ProviderServer = custom?.AuthServer.Value };
             lock (_planGate)
             {
                 if (_signInFlows.Count >= 32) throw new AbiHostException(AbiErrors.MESSAGE_TOO_LARGE);
@@ -124,6 +135,7 @@ public sealed partial class PluginBusinessRoutes
                     string username = DataCodec.ReadString(DataCodec.Field(map, "username"));
                     string password = DataCodec.ReadString(DataCodec.Field(map, "password"));
                     string server = DataCodec.ReadString(DataCodec.Field(map, "server"));
+                    if (flow.ProviderServer is { } admittedServer) { if (server.Length != 0 && server != admittedServer) throw new AbiHostException(AbiErrors.CAPABILITY_DENIED); server = admittedServer; }
                     if (username.Length > 256 || password.Length > 4096 || server.Length > 2048) throw new AbiHostException(AbiErrors.MESSAGE_TOO_LARGE);
                     await StartSignIn(c, flow, username, password, server, c.Options.Cancellation).ConfigureAwait(false);
                 }

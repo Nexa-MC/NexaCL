@@ -62,6 +62,13 @@ internal static class ManagementCases
         if (File.Exists(screenshot) || !(await client.DispatchInstanceContentRestoreCommandAsync(new(instance, trash.Id), token)).IsSuccess || !File.Exists(screenshot))
             throw new InvalidDataException("Native trash restore lost its actual file.");
 
+        file = new(screenshot);
+        if (!(await client.DispatchInstanceContentRemoveCommandAsync(new(instance, "screenshots", file.Name, false, file.Length, file.LastWriteTimeUtc.Ticks), token)).IsSuccess) throw new InvalidDataException("Native clear-trash setup failed.");
+        trash = (await client.QueryInstanceManagementQueryAsync(new(instance) { IncludeTrash = true }, token)).Value!.Trash.Single();
+        if ((await client.DispatchInstanceContentClearTrashCommandAsync(new(instance, [Guid.NewGuid().ToString("N")]), token)).IsSuccess
+            || !(await client.DispatchInstanceContentClearTrashCommandAsync(new(instance, [trash.Id]), token)).IsSuccess
+            || (await client.QueryInstanceManagementQueryAsync(new(instance) { IncludeTrash = true }, token)).Value!.Trash.Count != 0)
+            throw new InvalidDataException("Native clear-trash ignored its expected selection.");
         string world = Path.Combine(game, "saves", "NativeWorld"); Directory.CreateDirectory(world);
         await File.WriteAllBytesAsync(Path.Combine(world, "level.dat"), WorldNbt(), token);
         await File.WriteAllTextAsync(Path.Combine(world, "session.lock"), "native session sentinel", token);

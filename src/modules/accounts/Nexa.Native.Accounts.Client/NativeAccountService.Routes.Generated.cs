@@ -35,6 +35,8 @@ public sealed partial class NativeAccountService
         CommandAsync(21, writer => writer.AccountSelectProfileCommand(command), token);
     public ValueTask<XsrResult> DispatchAccountRemoveProfileCommandAsync(AccountRemoveProfileCommand command, CancellationToken token = default) =>
         CommandAsync(22, writer => writer.AccountRemoveProfileCommand(command), token);
+    public ValueTask<XsrResult> DispatchAccountSignOutCommandAsync(AccountSignOutCommand command, CancellationToken token = default) =>
+        CommandAsync(23, writer => writer.AccountSignOutCommand(command), token);
     public ValueTask<XsrResult<AccountWardrobeSnapshot>> QueryAccountWardrobeQueryAsync(AccountWardrobeQuery query, CancellationToken token = default) =>
         QueryAsync(100, writer => writer.AccountWardrobeQuery(query), reader => reader.AccountWardrobeSnapshot()!, token);
     public ValueTask<XsrResult<AccountWardrobeSkinPreview>> QueryAccountWardrobeSkinQueryAsync(AccountWardrobeSkinQuery query, CancellationToken token = default) =>
