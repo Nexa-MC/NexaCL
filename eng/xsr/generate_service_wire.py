@@ -34,7 +34,7 @@ def main():
         if args.check and client_destination:
             for name in ("BusinessData.Generated.cs", "BusinessWire.Generated.cs"):
                 expected = args.sidecar_contracts / name
-                if not expected.exists() or (client_destination / name).read_bytes() != expected.read_bytes():
+                if not expected.exists() or (client_destination / name).read_text(encoding="utf-8") != expected.read_text(encoding="utf-8"):
                     raise SystemExit("Sidecar client DTO schema is stale: " + str(expected))
 
 
