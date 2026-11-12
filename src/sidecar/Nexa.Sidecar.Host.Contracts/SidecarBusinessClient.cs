@@ -1,8 +1,8 @@
+using Nexa.Sidecar.Host.Wire;
 using Nexa.Sidecar.Protocol;
 using Nexa.Sidecar.Transport;
 using Nexa.Xsr;
 using Nexa.Xsr.Runtime;
-using Nexa.Sidecar.Host.Wire;
 
 namespace Nexa.Sidecar.Host;
 

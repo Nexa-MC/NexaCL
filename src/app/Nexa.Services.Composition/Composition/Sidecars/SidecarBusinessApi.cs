@@ -1,7 +1,7 @@
-using Nexa.Xsr.Runtime;
-using Nexa.Xsr;
-using Nexa.Sidecar.Protocol;
 using Nexa.Sidecar.Host.Wire;
+using Nexa.Sidecar.Protocol;
+using Nexa.Xsr;
+using Nexa.Xsr.Runtime;
 
 namespace Nexa.Services.Composition.Sidecars;
 
