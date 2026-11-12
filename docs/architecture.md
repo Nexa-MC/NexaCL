@@ -454,3 +454,16 @@ continuations of the existing first bytes field. Both peers must negotiate this
 feature before sending or accepting a large value. Missing, extra, or out-of-order
 continuations are invalid. This transport extension is independent of frozen
 plugin ABI 100; it does not add a guest SDK operation.
+
+### General Host effects catalog
+
+The base business catalog (discovery 255) and its DTO fingerprint remain stable.
+An independent effects catalog (discovery 511, operations 512–522) exposes
+credential-free account eligibility and refresh, Java inspection/selection and
+requirements, power projections, composed preflight reports, and public settings
+metadata/validation, process cancellation, and world snapshot listings. Each catalog has its own immutable version and fingerprint;
+adding another catalog does not invalidate clients of the base catalog. These
+operations are general launcher capabilities and contain no guest or SDK types.
+Account refresh resolves a revision-checked profile entirely inside the Host and
+returns no identity or token. Capability objects and settings validator delegates
+remain inside the Host; only their plain results cross the generated binary ABI.

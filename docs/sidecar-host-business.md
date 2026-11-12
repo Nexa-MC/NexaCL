@@ -14,11 +14,47 @@ The Desktop authorizes only the current active session of a publisher-verified p
 
 `eng/sidecar/host-business.json` assigns explicit numeric IDs to 90 domain commands and queries. The reserved query 255 discovers capabilities; query 254 reads public state. Route names identify the underlying domains: accounts, library, game processes, install, content, settings, themes, and resources. A declared route is advertised only if its domain router actually supplies it.
 
-`Nexa.Sidecar.Host.Data` contains independent client records. Generated codecs translate these records to the Host's domain DTOs using a bounded binary wire format. No CLR object crosses the process boundary. Values are bounded to 8 MiB. With `LargeGeneratedDtos`, the existing binary bytes field carries the first 65,535 bytes, field 6 declares total length, and fields 7 onward carry consecutive continuations. Without negotiation, large calls are rejected before execution and large query replies report feature unavailable. Legacy payload bytes and primitive limits are unchanged. Generated DTO `ToString()` returns only the type name, so logging a request cannot dump credential fields. Init-only fields without constructor parameters are required in the client so callers cannot accidentally substitute zero values for Host defaults. Regenerate both ends together before publishing a schema change; an incompatible fingerprint is rejected before business calls.
+`Nexa.Sidecar.Host.Data` contains independent client records. Generated codecs translate these records to the Host's domain DTOs using a bounded binary wire format. No CLR object crosses the process boundary. Values are bounded to 8 MiB. With `LargeGeneratedDtos`, the existing binary bytes field carries the first 65,535 bytes, field 6 declares total length, and fields 7 onward carry consecutive continuations. Without negotiation, large calls are rejected before execution and large query replies report feature unavailable. Legacy payload bytes and primitive limits are unchanged. Generated DTO `ToString()` returns only the type name, so logging a request cannot dump credential fields. Init-only fields without constructor parameters are required in the client so callers cannot accidentally substitute zero values for Host defaults. An incompatible fingerprint is rejected before business calls; published catalog schemas remain available when a new catalog is added.
 
 Public state consists of library, account display records, game sessions, installation catalogs, login progress, character choices, and the settings revision. Account credentials and private profiles are excluded. Each field has its own domain revision. Missing domains have revision -1 and null content. The aggregate is not a cross-domain transaction: commands must still validate their expected revisions. Login progress includes the user-visible authorization code and URL, not the provider polling secret or access token.
 
 State polling is a snapshot mechanism, not a replay log. A consumer must refresh after a completed mutation before relying on the resulting state. Watcher adapters belong in the consuming Sidecar and must handle disappearing identities and revoked sessions.
+
+## General effects (package 0.1.0-alpha.3)
+
+`SidecarEffectsClient` uses the same authenticated connection and has its own
+`DiscoverAsync`, command router, and query router. Discover each client you use.
+Its discovery query is 511; `eng/sidecar/host-effects.json` assigns IDs 512–522.
+The base catalog at 255 and its fingerprints are unchanged. Discovery failure in
+one client does not clear the other client's cache. Older Hosts report the effects
+catalog unavailable; the consumer must disable dependent operations.
+
+| Operation | Input and behavior | Result |
+| --- | --- | --- |
+| Account eligibility | Account index and expected roster revision; reads the profile inside Accounts | Whether launch is allowed and whether provider validation is required at launch |
+| Account refresh | Same revision-checked identity; resolves through the configured account provider | Success or domain failure; no token or resolved identity |
+| Java inspect | Absolute executable path; inspects that executable | Candidate or null |
+| Java selection | Optional absolute instance directory and version-local flag; version-local requires an instance | Selected candidate or null |
+| Java requirements | Absolute instance directory | Requirement range, recommended component and failure classification |
+| Power | Empty request | Battery status, optional percentage, power-saving state; unavailable if required observations are missing |
+| Preflight | Absolute instance/root directories and instance ID | Issues from a refreshed scope and the exact snapshot evaluated by the preflight service |
+| Settings definitions | Empty request | Public definitions and the version-local Java sentinel; excludes proxy credentials and non-exportable settings |
+| Stop game process | Session ID for a managed game process | Domain cancellation result |
+| World snapshots | Instance directory and world name | Snapshot identities, creation times, file counts and sizes |
+| Settings validation | Public setting key and proposed override | Validation result; does not mutate settings |
+
+These are general Host capabilities. A native Sidecar executing guests must still
+apply each guest's grants, confirm sensitive actions, and own its opaque handles.
+The Host does not accept a guest identity or interpret plugin permissions.
+Preflight sends plain issue fields, never capability interfaces or runtime objects.
+A failed refresh can have provider-side effects; do not automatically retry it.
+Settings mutations still go through the version-checked base domain commands.
+
+The version-1 base and effects catalogs are immutable once released. New shapes or
+operations require another independently discovered catalog, or an explicitly
+negotiated version retaining the old schema. Do not modify a frozen fingerprint
+and call that a compatible addition. These transport contracts do not add a guest
+SDK operation or allocate a guest EXP_ID.
 
 ## Failure and lifetime
 
@@ -41,6 +77,14 @@ python eng/xsr/generate_service_wire.py \
   --sidecar-contracts src/sidecar/Nexa.Sidecar.Host.Contracts
 python eng/sidecar/generate_host_business.py
 ```
+
+Generate the independent effects codec with the same script using
+`host-effects-roots.txt`, the `Effects/BusinessWire.Generated.cs` output,
+`--namespace Nexa.Sidecar.Host.Effects.Wire`,
+`--sidecar-contracts src/sidecar/Nexa.Sidecar.Host.Contracts/Effects`, and
+`--sidecar-data-namespace Nexa.Sidecar.Host.Effects.Data`. Its assembly is
+`Nexa.Services.Composition.dll`. Generate its routes with
+`python eng/sidecar/generate_host_business.py --catalog host-effects.json`.
 
 Add `--check` to the codec command and `--verify` to the route command to verify without modifying files. Desktop tests exercise the independent codecs, authority revocation, unavailable state, UTF-8 paths, and preserved domain errors. Sidecar transport tests cover concurrency, cancellation, malformed replies, and backpressure. The package consumer verifies that the client works without launcher service assemblies, including NativeAOT.
 

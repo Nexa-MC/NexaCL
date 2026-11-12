@@ -47,7 +47,7 @@ if (args.Length > 4) ExportSidecarContracts(args[4]);
 
 void ExportSidecarContracts(string destination)
 {
-    const string dataNamespace = "Nexa.Sidecar.Host.Data";
+    string dataNamespace = args.Length > 5 ? args[5] : "Nexa.Sidecar.Host.Data";
     var contracts = types.Values.Where(t => t.IsEnum || !Special(t) && !t.IsGenericType && !t.IsArray)
         .OrderBy(Id, StringComparer.Ordinal).ToArray();
     string Rename(string text)

@@ -23,6 +23,10 @@ static class Check
         if (!business.Commands.TryResolve(MinecraftLibraryRoutes.Select, out var select)) throw new Exception("client route missing");
         var rejected = await business.Commands.Dispatch(select, new MinecraftLibrarySelectCommand("/games", "test")).Completion;
         if (rejected.Error?.Code.Value != "xsr.route_not_found") throw new Exception("undiscovered client accepted call");
+        var effects = new SidecarEffectsClient(requests, new Observer());
+        if (!effects.Commands.TryResolve(Nexa.Sidecar.Host.Effects.Data.SidecarEffectsRoutes.AccountRefresh, out var refresh)) throw new Exception("effects route missing");
+        var denied = await effects.Commands.Dispatch(refresh, new Nexa.Sidecar.Host.Effects.Data.HostAccountRequest(0, 1)).Completion;
+        if (denied.Error?.Code.Value != "xsr.route_not_found") throw new Exception("undiscovered effects accepted call");
         if (Add(1, 2) != 3) throw new Exception("original");
         var target = Patch.Catalog.Single(x => x.Signature.Contains("Check::Add``", StringComparison.Ordinal));
         if (target.Status != PatchTargetStatus.Instrumented) throw new Exception("not instrumented");

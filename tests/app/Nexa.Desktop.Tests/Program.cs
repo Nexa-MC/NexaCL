@@ -20,7 +20,7 @@ internal static partial class Program
     public static void Main(string[] args)
     {
         if (args is ["--sidecar-business-smoke"])
-        { SidecarBusinessAbi(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
+        { SidecarBusinessAbi(); SidecarEffectsAbi(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
         if (args is ["--native-memory-preview", var memoryPreview])
         { Environment.ExitCode = RunNativeMemoryCleanupPreview(memoryPreview); return; }
         if (args is ["--update-onboarding-preview", var previewOutput])
@@ -345,6 +345,7 @@ internal static partial class Program
         ("single instance waits for closing owner before reopening", DesktopSingleInstanceWaitsForClosingOwner),
         ("desktop branding and safe default single-instance bootstrap", DesktopBrandAndBootstrapDefaults),
         ("sidecar external activation requires owned opt-in", SidecarExternalActivationRequiresOwnedOptIn),
+        ("general Sidecar effects keep credentials and runtime objects in Host", SidecarEffectsAbi),
         ("general Sidecar business ABI preserves authority and typed results", SidecarBusinessAbi),
         ("desktop protocol routes and registration preserve arguments", DesktopProtocolRoutesAndRegistrationCommands),
         ("single instance forwards across processes bounds queue and releases", DesktopSingleInstanceForwardsAcrossProcessesAndReleases),

@@ -391,11 +391,13 @@ internal static partial class Program
         SidecarSupervisor? admittedSidecars = null;
         // Native Sidecars are publisher-verified processes. Grant the general domain API only
         // to their current active session; guest admission/permissions belong to each Sidecar.
-        var sidecarBusiness = new Nexa.Services.Composition.Sidecars.SidecarBusinessApi((caller, _) =>
+        bool AuthorizeHost(Nexa.Xsr.Runtime.SidecarHostCaller caller, string _) =>
             admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
-                && active!.SessionId == caller.SessionId);
+                && active!.SessionId == caller.SessionId;
+        var sidecarBusiness = new Nexa.Services.Composition.Sidecars.SidecarBusinessApi(AuthorizeHost);
+        var sidecarEffects = new Nexa.Services.Composition.Sidecars.SidecarEffectsApi(AuthorizeHost);
         sidecarBusiness.BindState(host.StateStore);
-        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, sidecarBusiness.Router);
+        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes)));
         admittedSidecars = sidecars;
         await using var sidecarNetwork = new DesktopSidecarNetwork(sidecars, host.StateStore);
         SidecarHostApi sidecarApi = new(sidecars, dispatchObservation);
@@ -796,6 +798,10 @@ internal static partial class Program
         sidecarBusiness.Bind("install.catalog", installCatalog.Commands, installCatalog.Queries);
         sidecarBusiness.Bind("install.edit", installCatalog.Commands, installCatalog.Queries);
         sidecarBusiness.Bind("install.run", installRun.Commands, installRun.Queries);
+        var hostEffects = CreateSidecarHostEffects(host, accounts.LaunchIdentityResolver ?? host.Accounts, runtime.Queries, dispatchObservation);
+        sidecarEffects.Bind("effects", hostEffects.Commands, hostEffects.Queries);
+        sidecarEffects.Bind("minecraft", minecraft.Commands, minecraft.Queries);
+        sidecarEffects.CompleteComposition();
         sidecarBusiness.CompleteComposition();
         settingsPage.ConfigureOnlineContent(resourcesRuntime.Queries, platformActions.OpenHttpsUri, resourcesRuntime.Commands);
         using var resourcesPage = new ResourcesPageController(shell, uiIntents, resourcesRuntime.Queries,

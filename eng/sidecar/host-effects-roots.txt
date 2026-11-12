@@ -1,0 +1,17 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostAccountEligibility
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostAccountRequest
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostEmptyRequest
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostJavaCandidate
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostJavaInspectRequest
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostJavaRequirementsRequest
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostJavaSelectRequest
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPowerState
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPreflightReport
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPreflightRequest
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostSettingsDefinitions
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostSettingsValidateRequest
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostSettingsValidation
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostWorldSnapshots
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostWorldSnapshotsRequest
+Nexa.Services.Minecraft.Java.Contracts|Nexa.Services.Minecraft.Java.JavaRequirementResolution
+Nexa.Services.Minecraft.Library.Contracts|Nexa.Services.Minecraft.MinecraftCancelProcessCommand
