@@ -11,7 +11,7 @@
       "nexa.contracts": {
         "type": "Project",
         "dependencies": {
-          "Nexa.Core": "[2.0.0-alpha.19, )"
+          "Nexa.Core": "[2.0.0-alpha.29, )"
         }
       },
       "nexa.core": {
@@ -20,8 +20,8 @@
       "nexa.xsr.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Nexa.Contracts": "[2.0.0-alpha.19, )",
-          "Nexa.Core": "[2.0.0-alpha.19, )"
+          "Nexa.Contracts": "[2.0.0-alpha.29, )",
+          "Nexa.Core": "[2.0.0-alpha.29, )"
         }
       }
     }

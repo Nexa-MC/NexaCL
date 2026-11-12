@@ -24,6 +24,7 @@ public sealed record InstanceExportOptionsSave(string Path, InstanceExportOption
 public sealed record InstanceModpackExportCommand(string InstanceDirectory, string DestinationPath, string Name, string Version,
     IReadOnlyList<string> Categories)
 {
+    public IReadOnlyList<string>? IncludedPaths { get; init; }
     public IReadOnlyList<string> ExcludedPaths { get; init; } = [];
     public string Summary { get; init; } = "";
     public InstanceExportFormat Format { get; init; }

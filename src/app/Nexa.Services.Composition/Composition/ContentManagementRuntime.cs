@@ -15,6 +15,10 @@ public static class ContentManagementRuntime
             async (query, token) => XsrResult.Success(await InstanceContentIntegrityService.ReadAsync(query, token).ConfigureAwait(false)));
         commands.Register<InstanceContentUpdateRollbackCommand>(InstanceManagementContract.RollbackContentUpdate,
             async (command, token) => await InstanceContentUpdateTransaction.RollbackAsync(command, store, token).ConfigureAwait(false));
+        commands.Register<InstanceWorldRenameCommand>(InstanceWorldContract.Rename,
+            async (command, token) => await InstanceWorldService.RenameAsync(command, store, acquireWorldSessionLock, token).ConfigureAwait(false));
+        commands.Register<InstanceWorldDataPackOrderCommand>(InstanceWorldContract.SetDataPackOrder,
+            async (command, token) => await InstanceWorldService.SetDataPackOrderAsync(command, store, acquireWorldSessionLock, token).ConfigureAwait(false));
         commands.Register<InstanceWorldCopyCommand>(InstanceWorldContract.Copy,
             async (command, token) => await InstanceWorldService.CopyAsync(command, store, acquireWorldSessionLock, token).ConfigureAwait(false));
         if (captureWorld is not null) commands.Register<InstanceWorldBackupCommand>(InstanceWorldContract.Backup,

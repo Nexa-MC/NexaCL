@@ -58,6 +58,9 @@ public static class MinecraftRuntimeComposer
         commands.Register<MinecraftStartCommand>(MinecraftRouteIds.Start, async (command, token) =>
         {
             await initialization.WaitAsync(token).ConfigureAwait(false);
+            if (command.ExpectedAccountRosterRevision is { } revision)
+                return await client.StartAuthorizedMinecraftAsync(command.InstanceId, command.AccountIndex, command.MinecraftRootDirectory ?? root,
+                    command.ServerAddress, revision, command.ExpectedSettingsRevision, command.LaunchProfileId, token).ConfigureAwait(false);
             return await client.StartMinecraftAsync(command.InstanceId, command.AccountIndex, command.MinecraftRootDirectory ?? root, command.ServerAddress, token).ConfigureAwait(false);
         });
         commands.Register<MinecraftCancelLaunchCommand>(MinecraftRouteIds.LaunchCancel, async (command, token) =>
@@ -75,6 +78,8 @@ public static class MinecraftRuntimeComposer
         { await initialization.WaitAsync(token).ConfigureAwait(false); return await client.SetSafeLaunchAsync(command.Required, token).ConfigureAwait(false); });
         queries.Register<MinecraftSafeLaunchSessionQuery, MinecraftSafeLaunchSessionSnapshot>(MinecraftSafeLaunchSessionContract.Query,
             async (_, token) => XsrResult.Success(await client.ReadSafeLaunchAsync(token).ConfigureAwait(false)));
+        commands.Register<MinecraftProcessInteractionCommand>(MinecraftProcessInteractionContract.Interact, client.InteractProcessAsync);
+        queries.Register<MinecraftProcessMetricsQuery, MinecraftProcessMetrics>(MinecraftProcessInteractionContract.Metrics, client.ReadProcessMetricsAsync);
         queries.Register<MinecraftProcessOutputQuery, MinecraftProcessOutputSnapshot>(MinecraftProcessOutputContract.Query,
             async (query, token) => await client.ReadOutputAsync(query.SessionId, token).ConfigureAwait(false));
         NativeMinecraftReadRouters.Register(queries, client); JavaManualDownloadRuntime.Register(queries, commands, client);

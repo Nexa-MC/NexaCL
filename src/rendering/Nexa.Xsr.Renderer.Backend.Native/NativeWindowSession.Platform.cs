@@ -5,6 +5,21 @@ namespace Nexa.Xsr.Renderer.Backend.Native;
 
 public sealed partial class NativeWindowSession
 {
+    public async Task<(string? Text, byte[]? Image)> ReadExtensionClipboardAsync(CancellationToken token = default)
+    {
+        using var result = PlatformResult(await PlatformAsync(WindowPlatformCommand.ReadExtensionClipboard, null, token).ConfigureAwait(false), WindowPlatformCommand.ReadExtensionClipboard);
+        string? text = result.String(); byte[]? image = result.Boolean() ? result.Buffer() : null; result.End(); return (text, image);
+    }
+    public Task WriteExtensionClipboardAsync(string? text, byte[]? image, CancellationToken token = default) =>
+        PlatformEffectAsync(WindowPlatformCommand.WriteExtensionClipboard, writer => { writer.String(text); writer.Boolean(image is not null); if (image is not null) writer.Buffer(image); }, token);
+    public async Task<(string Id, int Width, int Height, double Scale)[]> ReadExtensionDisplaysAsync(CancellationToken token = default)
+    {
+        using var result = PlatformResult(await PlatformAsync(WindowPlatformCommand.ReadExtensionDisplays, null, token).ConfigureAwait(false), WindowPlatformCommand.ReadExtensionDisplays);
+        int count = result.Int32(); if (count is < 0 or > 32) throw new InvalidDataException("Invalid native display count.");
+        var displays = new (string, int, int, double)[count];
+        for (int i = 0; i < count; i++) displays[i] = (result.String() ?? throw new InvalidDataException("Missing display identity."), result.Int32(), result.Int32(), result.Double());
+        result.End(); return displays;
+    }
     private Task<byte[]> PlatformAsync(WindowPlatformCommand command, Action<UiWireWriter>? arguments, CancellationToken token)
     {
         using var writer = WindowControlProtocol.Write((int)WindowCommand.Platform);
@@ -120,6 +135,10 @@ public sealed partial class NativeWindowSession
 
     public Task<string?> PickThemeOptionsFileAsync(CancellationToken cancellationToken = default)
         => PlatformStringAsync(WindowPlatformCommand.PickThemeOptions, null, cancellationToken);
+
+    public Task<string?> PickExtensionFileAsync(string title, int kind, string[] extensions, CancellationToken cancellationToken = default)
+        => PlatformStringAsync(WindowPlatformCommand.PickExtensionFile, writer =>
+        { writer.String(title); writer.Int32(kind); writer.Count(extensions.Length); foreach (string extension in extensions) writer.String(extension); }, cancellationToken);
 
     public Task<string?> PickWorkspaceJsonAsync(CancellationToken cancellationToken = default)
         => PlatformStringAsync(WindowPlatformCommand.PickWorkspace, null, cancellationToken);

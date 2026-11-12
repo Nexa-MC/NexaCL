@@ -13,7 +13,12 @@ internal static partial class Program
             var project = new ResourceProject("A", "Title", "Summary", "Author", 1000, "https://modrinth.com/project/A")
             { Kind = ResourceKind.Shader, ChineseName = "中文", Sources = [new(ResourceProvider.Modrinth, "A"), new(ResourceProvider.CurseForge, "123")] };
             await service.SetAsync(new(project, true), default);
-            await service.SetAsync(new(project with { Title = "Changed" }, true), default);
+            var before = await service.ReadAsync(default);
+            await service.SetAsync(new(project with { Title = "Changed" }, true) { ExpectedRevision = before.Revision }, default);
+            bool stale = false;
+            try { await service.SetAsync(new(project, false) { ExpectedRevision = before.Revision }, default); }
+            catch (IOException) { stale = true; }
+            AssertTrue(stale);
             var loaded = await new ResourceFavoritesService(file).ReadAsync(default);
             AssertEqual(1, loaded.Projects.Count); AssertEqual("Changed", loaded.Projects[0].Title);
             AssertEqual("中文", loaded.Projects[0].DisplayName); AssertEqual(ResourceKind.Shader, loaded.Projects[0].Kind);

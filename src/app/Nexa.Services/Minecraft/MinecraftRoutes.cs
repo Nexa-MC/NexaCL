@@ -12,6 +12,9 @@ public static class MinecraftCommands
         {
             ArgumentNullException.ThrowIfNull(command);
             ArgumentNullException.ThrowIfNull(coordinator);
+            if (command.ExpectedAccountRosterRevision is { } revision)
+                return await coordinator.StartAuthorizedAsync(command.InstanceId, command.AccountIndex, command.MinecraftRootDirectory ?? throw new ArgumentException("An authorized launch requires its root."),
+                    command.ServerAddress, revision, command.ExpectedSettingsRevision, command.LaunchProfileId, cancellationToken).ConfigureAwait(false);
             if (command.ServerAddress is { } server)
                 return await coordinator.StartServerAsync(command.InstanceId, command.AccountIndex, command.MinecraftRootDirectory, server, cancellationToken).ConfigureAwait(false);
             return command.MinecraftRootDirectory is { } root

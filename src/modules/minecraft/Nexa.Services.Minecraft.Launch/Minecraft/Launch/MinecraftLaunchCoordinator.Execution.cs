@@ -35,6 +35,14 @@ public sealed partial class MinecraftLaunchCoordinator
         CancellationToken cancellationToken = default)
         => StartCoreAsync(instanceId, accountIndex, minecraftRootDirectory, null, cancellationToken);
 
+    public ValueTask<XsrResult> StartAuthorizedAsync(string instanceId, int accountIndex, string minecraftRootDirectory, string? serverAddress,
+        long expectedAccountRosterRevision, long? expectedSettingsRevision = null, string? profileId = null, CancellationToken cancellationToken = default)
+    {
+        if (expectedAccountRosterRevision < 0 || serverAddress is { } server && (string.IsNullOrWhiteSpace(server) || server.Length > 512 || server.Any(char.IsWhiteSpace) || server.Any(char.IsControl) || server.Contains("://", StringComparison.Ordinal)))
+            return ValueTask.FromResult(XsrResult.Failure(MinecraftErrors.InvalidRequest("Invalid authorized launch request.")));
+        return StartConcurrentAsync(instanceId, accountIndex, minecraftRootDirectory, serverAddress, cancellationToken, expectedAccountRosterRevision, expectedSettingsRevision, profileId);
+    }
+
     private async ValueTask<XsrResult> StartCoreAsync(string instanceId, int accountIndex, string minecraftRootDirectory, string? serverAddress,
         CancellationToken cancellationToken)
     {

@@ -628,6 +628,7 @@ internal sealed partial class ServiceWireWriter
         String(value.Warning);
         String(value.ForgeRequirement);
         String(value.FabricRequirement);
+        Nullable_DateTimeOffset(value.ReleasedAt);
     }
     internal void InstallDownload(global::Nexa.Services.Minecraft.Install.InstallDownload? value)
     {
@@ -1104,6 +1105,7 @@ internal sealed partial class ServiceWireWriter
         Boolean(value.IncludeAssets);
         Boolean(value.IncludeGameCore);
         Boolean(value.IncludeLibraries);
+        IReadOnlyList_String(value.IncludedPaths);
         String(value.JavaDirectory);
         String(value.LauncherDirectory);
         String(value.Summary);
@@ -1381,6 +1383,15 @@ internal sealed partial class ServiceWireWriter
         String(value.SourcePath);
         String(value.ExpectedRevision);
     }
+    internal void InstanceWorldDataPackOrderCommand(global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackOrderCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+        IReadOnlyList_String(value.EnabledOrder);
+        String(value.ExpectedRevision);
+    }
     internal void InstanceWorldDataPackRemoveCommand(global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackRemoveCommand? value)
     {
         Boolean(value is not null); if (value is null) return;
@@ -1450,6 +1461,15 @@ internal sealed partial class ServiceWireWriter
         using var scope = EnterValue();
         String(value.InstanceDirectory);
         String(value.WorldName);
+    }
+    internal void InstanceWorldRenameCommand(global::Nexa.Services.Minecraft.Management.InstanceWorldRenameCommand? value)
+    {
+        Boolean(value is not null); if (value is null) return;
+        using var scope = EnterValue();
+        String(value.InstanceDirectory);
+        String(value.WorldName);
+        String(value.DisplayName);
+        String(value.ExpectedRevision);
     }
     internal void InstanceWorldSnapshot(global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshot? value)
     {
@@ -2818,6 +2838,7 @@ internal sealed partial class ServiceWireWriter
         String(value.VersionId);
         String(value.DestinationDirectory);
         Boolean(value.MirrorFirst);
+        ResourceFile(value.ExpectedFile);
         Boolean(value.Refresh);
     }
     internal void ResourceFavoriteCommand(global::Nexa.Services.Resources.ResourceFavoriteCommand? value)
@@ -2826,6 +2847,7 @@ internal sealed partial class ServiceWireWriter
         using var scope = EnterValue();
         ResourceProject(value.Project);
         Boolean(value.Saved);
+        Nullable_Int64(value.ExpectedRevision);
     }
     internal void ResourceFavoritesQuery(global::Nexa.Services.Resources.ResourceFavoritesQuery? value)
     {
@@ -2837,6 +2859,7 @@ internal sealed partial class ServiceWireWriter
         Boolean(value is not null); if (value is null) return;
         using var scope = EnterValue();
         IReadOnlyList_ResourceProject(value.Projects);
+        Int64(value.Revision);
     }
     internal void ResourceFile(global::Nexa.Services.Resources.ResourceFile? value)
     {
@@ -2904,6 +2927,7 @@ internal sealed partial class ServiceWireWriter
         ResourceReference(value.Source);
         String(value.VersionId);
         ResourceInstanceQuery(value.Instance);
+        String(value.ExpectedPlanFingerprint);
         IReadOnlyList_ResourceReference(value.OptionalDependencies);
     }
     internal void ResourceModPlanQuery(global::Nexa.Services.Resources.ResourceModPlanQuery? value)
@@ -3962,7 +3986,8 @@ internal sealed partial class ServiceWireReader
         var p4 = String();
         var p5 = String();
         var p6 = String();
-        return new global::Nexa.Services.Minecraft.Install.InstallCatalogVersion(p0!, p1!, p2, p3!, p4!, p5!, p6!);
+        var p7 = Nullable_DateTimeOffset();
+        return new global::Nexa.Services.Minecraft.Install.InstallCatalogVersion(p0!, p1!, p2, p3!, p4!, p5!, p6!) { ReleasedAt = p7 };
     }
     internal global::Nexa.Services.Minecraft.Install.InstallDownload? InstallDownload()
     {
@@ -4485,10 +4510,11 @@ internal sealed partial class ServiceWireReader
         var p7 = Boolean();
         var p8 = Boolean();
         var p9 = Boolean();
-        var p10 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p10 = IReadOnlyList_String();
         var p11 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p12 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
-        return new global::Nexa.Services.Minecraft.Management.InstanceModpackExportCommand(p0!, p1!, p2!, p3!, p4!) { ExcludedPaths = p5!, Format = p6, IncludeAssets = p7, IncludeGameCore = p8, IncludeLibraries = p9, JavaDirectory = p10!, LauncherDirectory = p11!, Summary = p12! };
+        var p13 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceModpackExportCommand(p0!, p1!, p2!, p3!, p4!) { ExcludedPaths = p5!, Format = p6, IncludeAssets = p7, IncludeGameCore = p8, IncludeLibraries = p9, IncludedPaths = p10!, JavaDirectory = p11!, LauncherDirectory = p12!, Summary = p13! };
     }
     internal global::Nexa.Services.Minecraft.Management.InstanceModpackExportPreview? InstanceModpackExportPreview()
     {
@@ -4793,6 +4819,16 @@ internal sealed partial class ServiceWireReader
         var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         return new global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackImportCommand(p0!, p1!, p2!, p3!);
     }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackOrderCommand? InstanceWorldDataPackOrderCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = IReadOnlyList_String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackOrderCommand(p0!, p1!, p2!, p3!);
+    }
     internal global::Nexa.Services.Minecraft.Management.InstanceWorldDataPackRemoveCommand? InstanceWorldDataPackRemoveCommand()
     {
         if (!Boolean()) return null;
@@ -4869,6 +4905,16 @@ internal sealed partial class ServiceWireReader
         var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         return new global::Nexa.Services.Minecraft.Management.InstanceWorldMetadataQuery(p0!, p1!);
+    }
+    internal global::Nexa.Services.Minecraft.Management.InstanceWorldRenameCommand? InstanceWorldRenameCommand()
+    {
+        if (!Boolean()) return null;
+        using var scope = EnterValue();
+        var p0 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p1 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Minecraft.Management.InstanceWorldRenameCommand(p0!, p1!, p2!, p3!);
     }
     internal global::Nexa.Services.Minecraft.Management.InstanceWorldSnapshot? InstanceWorldSnapshot()
     {
@@ -6352,8 +6398,9 @@ internal sealed partial class ServiceWireReader
         var p2 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p3 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p4 = Boolean();
-        var p5 = Boolean();
-        return new global::Nexa.Services.Resources.ResourceDownloadCommand(p0, p1!, p2!, p3!, p4) { Refresh = p5 };
+        var p5 = ResourceFile();
+        var p6 = Boolean();
+        return new global::Nexa.Services.Resources.ResourceDownloadCommand(p0, p1!, p2!, p3!, p4) { ExpectedFile = p5!, Refresh = p6 };
     }
     internal global::Nexa.Services.Resources.ResourceFavoriteCommand? ResourceFavoriteCommand()
     {
@@ -6361,7 +6408,8 @@ internal sealed partial class ServiceWireReader
         using var scope = EnterValue();
         var p0 = ResourceProject() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p1 = Boolean();
-        return new global::Nexa.Services.Resources.ResourceFavoriteCommand(p0!, p1);
+        var p2 = Nullable_Int64();
+        return new global::Nexa.Services.Resources.ResourceFavoriteCommand(p0!, p1) { ExpectedRevision = p2 };
     }
     internal global::Nexa.Services.Resources.ResourceFavoritesQuery? ResourceFavoritesQuery()
     {
@@ -6374,7 +6422,8 @@ internal sealed partial class ServiceWireReader
         if (!Boolean()) return null;
         using var scope = EnterValue();
         var p0 = IReadOnlyList_ResourceProject() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
-        return new global::Nexa.Services.Resources.ResourceFavoritesSnapshot(p0!);
+        var p1 = Int64();
+        return new global::Nexa.Services.Resources.ResourceFavoritesSnapshot(p0!) { Revision = p1 };
     }
     internal global::Nexa.Services.Resources.ResourceFile? ResourceFile()
     {
@@ -6449,8 +6498,9 @@ internal sealed partial class ServiceWireReader
         var p0 = ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p1 = String();
         var p2 = ResourceInstanceQuery() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
-        var p3 = IReadOnlyList_ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
-        return new global::Nexa.Services.Resources.ResourceModInstallCommand(p0!, p1!, p2!) { OptionalDependencies = p3! };
+        var p3 = String();
+        var p4 = IReadOnlyList_ResourceReference() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
+        return new global::Nexa.Services.Resources.ResourceModInstallCommand(p0!, p1!, p2!) { ExpectedPlanFingerprint = p3!, OptionalDependencies = p4! };
     }
     internal global::Nexa.Services.Resources.ResourceModPlanQuery? ResourceModPlanQuery()
     {
@@ -6823,5 +6873,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "3BDF39C90D4B902D59514214B8064F1826F4B26064FE19C804BF9562E573AD04";
+    internal const string Fingerprint = "491812BD8779F7D0C4FFC76D14C40E8B310B53F6D3B0C2E022252BC8D9D62316";
 }

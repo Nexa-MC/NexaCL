@@ -24,7 +24,7 @@ public sealed record AccountImportCommand(string Path);
 public sealed record AccountDiscoverImportsCommand;
 
 /// <summary>Trusted command payload, not public state. Avoid record-generated credential ToString output.</summary>
-public sealed class AccountLoginStartCommand(AccountLoginProvider provider, string username = "", string server = "", string password = "", string offlineUuid = "", string offlineSkinPath = "", string offlineCapePath = "", bool offlineSlim = false)
+public sealed class AccountLoginStartCommand(AccountLoginProvider provider, string username = "", string server = "", string password = "", string offlineUuid = "", string offlineSkinPath = "", string offlineCapePath = "", bool offlineSlim = false, long? expectedGeneration = null)
 {
     public AccountLoginProvider Provider { get; } = provider;
     public string Username { get; } = username;
@@ -34,6 +34,7 @@ public sealed class AccountLoginStartCommand(AccountLoginProvider provider, stri
     public string OfflineSkinPath { get; } = offlineSkinPath;
     public string OfflineCapePath { get; } = offlineCapePath;
     public bool OfflineSlim { get; } = offlineSlim;
+    public long? ExpectedGeneration { get; } = expectedGeneration;
 }
 
 public static class AccountOnboardingState

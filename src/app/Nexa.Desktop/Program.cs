@@ -657,7 +657,7 @@ internal static partial class Program
             runtime.Host.StateStore,
             library, feedback, accountCommands: accounts.Commands,
             directoryEffects: new NativeVersionDirectoryEffects(platformActions), installCatalogCommands: installCatalog.Commands, installCatalogQueries: installCatalog.Queries, installRunCommands: installRun.Commands, recoveryQueries: runtime.Queries);
-        await using var pluginBusiness = new Nexa.Services.Composition.Plugins.PluginBusinessRoutes(host.StateStore, library.Commands, accounts.Commands, minecraft.Commands, minecraft.Queries);
+        await using var pluginBusiness = new Nexa.Services.Composition.Plugins.PluginBusinessRoutes(host.StateStore, library.Commands, accounts.Commands, minecraft.Commands, minecraft.Queries, runtime.Commands, runtime.Queries);
         await using PluginPageController plugins = new(shell, uiIntents, host.StateStore, feedback,
             Path.Combine(folders.Root, "plugins", "storage"), pluginBusiness.Routes,
             (bytes, token) =>
@@ -667,9 +667,19 @@ internal static partial class Program
                 return PluginSidecar.WasmRuntime.RemoteWasmPluginMachine.CreateAsync(new PluginSidecar.WasmRuntime.ChunkedPluginExchange(
                     new Nexa.Services.Composition.Plugins.PluginSidecarExchange(session)), bytes, token);
             }, platformActions.PickPluginPackageAsync,
-            () => host.StateStore.Read<bool>(host.StateStore.Resolve(Nexa.Xsr.XsrSemanticId.Parse("developer.enabled"))).Value,
+            () => pluginBusiness.DeveloperEnabled,
             () => sidecars.TryGetSession(PluginSidecar.WasmRuntime.RemoteWasmPluginMachine.PackageName, out _),
             () => sidecars.TryGetSession(PluginSidecar.WasmRuntime.RemoteWasmPluginMachine.PackageName, out var session) ? session!.SessionId : Guid.Empty, safeMode);
+        pluginBusiness.BindNetworkHttp(host.CreateHttpClient(allowAutoRedirect: false));
+        pluginBusiness.BindJava(host);
+        pluginBusiness.BindDownloads(host.Downloads);
+        pluginBusiness.BindInstall(installCatalog.Commands, installCatalog.Queries, installRun.Commands, folderImports.Queries);
+        pluginBusiness.BindContentImport(folderImports.Commands);
+        pluginBusiness.BindAccounts(accounts.Queries);
+        pluginBusiness.BindAccountLaunch(host.Accounts, accounts.LaunchIdentityResolver);
+        pluginBusiness.BindThemes(new(themes.SaveOptionsAsync, themes.ResetOptionsAsync, themes.ImportOptionsAsync, themes.ActivatePluginAsync, themes.EndPluginPreviewAsync));
+        pluginBusiness.BindPlatform(new(platformActions.PickExtensionFileAsync, platformActions.OpenDirectory, platformActions.OpenHttpsUri,
+            platformActions.ReadExtensionClipboardAsync, platformActions.WriteExtensionClipboardAsync, platformActions.ReadExtensionDisplaysAsync));
         plugins.BindBusiness(pluginBusiness);
         launchPage.PluginsPage = plugins.Page;
         platformActions.ExtensionShortcutRequested = plugins.HandleShortcut;
@@ -768,6 +778,7 @@ internal static partial class Program
 #if NEXA_NATIVE_SERVICES
         await resourcesRuntime.Initialization.ConfigureAwait(false);
 #endif
+        pluginBusiness.BindCatalog(resourcesRuntime.Commands!, resourcesRuntime.Queries);
         settingsPage.ConfigureOnlineContent(resourcesRuntime.Queries, platformActions.OpenHttpsUri, resourcesRuntime.Commands);
         using var resourcesPage = new ResourcesPageController(shell, uiIntents, resourcesRuntime.Queries,
             host.StateStore, platformActions.OpenHttpsUri, functionPatches, sidecarSignals, sidecarUi);

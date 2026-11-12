@@ -49,7 +49,7 @@ internal sealed partial class PluginPageController : IAsyncDisposable
     private Guid _restoreAttempt;
     internal PluginApplication Application => _application ?? throw new IOException("Plugin storage unavailable.");
     internal XsrUiEntityId Page { get; }
-    internal void BindBusiness(PluginBusinessRoutes business) { if (_application is not null) business.Bind(_application.Runtime.Services); }
+    internal void BindBusiness(PluginBusinessRoutes business) { if (_application is not null) { business.BindApplication(_application); business.BindConfirmation(_confirmation); business.Bind(_application.Runtime.Services); } }
 
     internal PluginPageController(XsrUiShell shell, DesktopUiIntentSink intents, XsrStateStore store, DesktopFeedbackService feedback,
         string storage, IEnumerable<HostCapabilityRoute> business,

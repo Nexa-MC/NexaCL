@@ -6,11 +6,12 @@ public sealed class ResourceFavoritesService(string? storagePath)
 {
     private readonly SemaphoreSlim _gate = new(1);
     private List<ResourceProject>? _items;
+    private long _revision;
     public Task<ResourceFavoritesSnapshot> ReadAsync(CancellationToken token) => Task.Run(() => ReadCoreAsync(token), token);
     private async Task<ResourceFavoritesSnapshot> ReadCoreAsync(CancellationToken token)
     {
         await _gate.WaitAsync(token).ConfigureAwait(false);
-        try { await LoadAsync(token).ConfigureAwait(false); return new(_items!.ToArray()); }
+        try { await LoadAsync(token).ConfigureAwait(false); return new(_items!.ToArray()) { Revision = _revision }; }
         finally { _gate.Release(); }
     }
     public Task SetAsync(ResourceFavoriteCommand command, CancellationToken token) => Task.Run(() => SetCoreAsync(command, token), token);
@@ -21,6 +22,7 @@ public sealed class ResourceFavoritesService(string? storagePath)
         try
         {
             await LoadAsync(token).ConfigureAwait(false);
+            if (command.ExpectedRevision is { } expected && expected != _revision) throw new IOException("The favorites changed; refresh before applying this change.");
             var next = _items!.Where(p => !p.Sources.Intersect(command.Project.Sources).Any()).ToList();
             if (command.Saved) next.Insert(0, command.Project);
             if (next.Count > 1000) throw new InvalidDataException("收藏夹最多保存 1000 项。");
@@ -50,7 +52,7 @@ public sealed class ResourceFavoritesService(string? storagePath)
                 try { await File.WriteAllTextAsync(temporary, array.ToJsonString(), token).ConfigureAwait(false); token.ThrowIfCancellationRequested(); File.Move(temporary, storagePath, true); }
                 finally { if (File.Exists(temporary)) File.Delete(temporary); }
             }
-            _items = next;
+            _items = next; _revision++;
         }
         finally { _gate.Release(); }
     }

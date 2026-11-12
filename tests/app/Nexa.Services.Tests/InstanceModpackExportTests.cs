@@ -53,6 +53,16 @@ internal static partial class Program
                 AssertTrue(zip.Entries.Any(entry => entry.FullName.EndsWith("mods/example.jar", StringComparison.Ordinal)));
                 AssertFalse(zip.Entries.Any(entry => entry.FullName.EndsWith("base.jar", StringComparison.Ordinal) || entry.FullName.Contains("libraries/", StringComparison.Ordinal)));
             }
+            await File.WriteAllBytesAsync(Path.Combine(instance, "mods", "added-after-preview.jar"), ResourceJar("unselected"));
+            var restricted = command with { DestinationPath = Path.Combine(root, "restricted.zip"), IncludedPaths = ["mods/example.jar"] };
+            AssertTrue((await exporter.ExportAsync(restricted)).IsSuccess);
+            using (var zip = ZipFile.OpenRead(restricted.DestinationPath))
+            {
+                AssertTrue(zip.Entries.Any(entry => entry.FullName.EndsWith("/mods/example.jar", StringComparison.Ordinal)));
+                AssertFalse(zip.Entries.Any(entry => entry.FullName.Contains("added-after-preview", StringComparison.Ordinal)));
+            }
+            var missingSelection = restricted with { DestinationPath = Path.Combine(root, "missing-selection.zip"), IncludedPaths = ["mods/missing.jar"] };
+            AssertFalse((await exporter.ExportAsync(missingSelection)).IsSuccess); AssertFalse(File.Exists(missingSelection.DestinationPath));
             var bundled = command with { DestinationPath = Path.Combine(root, "bundled.zip"), IncludeGameCore = true, IncludeLibraries = true, IncludeAssets = true };
             var result = await exporter.ExportAsync(bundled); AssertTrue(result.IsSuccess, result.Error?.Message ?? "");
             using (var zip = ZipFile.OpenRead(bundled.DestinationPath))

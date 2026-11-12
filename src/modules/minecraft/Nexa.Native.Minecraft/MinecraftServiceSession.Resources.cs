@@ -83,6 +83,8 @@ internal sealed partial class MinecraftServiceSession
     private static bool ExpectedResourceError(int operation, Exception error, CancellationToken token)
     {
         if (error is ResourceFailure) return true;
+        if (operation == MinecraftServiceProtocol.ResourceResourceFavoriteCommand)
+            return error is IOException or UnauthorizedAccessException or ArgumentException;
         if (operation is MinecraftServiceProtocol.ResourceResourceModpackInstallCommand or MinecraftServiceProtocol.ResourceResourceModpackUpdateCommand
             or MinecraftServiceProtocol.ResourceInspectModpack or MinecraftServiceProtocol.ResourceResourceModpackOnlineQuery or MinecraftServiceProtocol.ResourceResourceModpackPreviewQuery)
             return !token.IsCancellationRequested && (ResourceOnlineInformationCache.Recoverable(error) || error is ArgumentException);
@@ -98,6 +100,7 @@ internal sealed partial class MinecraftServiceSession
         if (error is ResourceFailure failure) return failure.Error;
         string? code = operation switch
         {
+            MinecraftServiceProtocol.ResourceResourceFavoriteCommand => "resources.favorite.failed",
             MinecraftServiceProtocol.ResourceResourceModPlanQuery => "resources.plan.failed",
             MinecraftServiceProtocol.ResourceResourceModInstallCommand => "resources.install.failed",
             MinecraftServiceProtocol.ResourceResourceDownloadCommand => "resources.download.failed",

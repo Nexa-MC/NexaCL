@@ -444,6 +444,17 @@ public sealed class AccountService : IAsyncDisposable, IAccountLaunchAccess
     /// Resolves one full launch profile inside the Services boundary. Credentials are returned
     /// only to trusted launch/account orchestration and are never published into host state.
     /// </summary>
+    public ValueTask<XsrResult<LaunchProfile>> GetProfileAsync(int index, long expectedRosterRevision, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (_store.ReadCollection<LaunchProfileView>(_profilesId, cancellationToken).Revision != expectedRosterRevision)
+                return ValueTask.FromResult(XsrResult.Failure<LaunchProfile>(AccountErrors.InvalidProfile("The account roster changed before launch.")));
+            return ValueTask.FromResult(GetProfile(index));
+        }
+    }
+
     public XsrResult<LaunchProfile> GetProfile(int index)
     {
         lock (_gate)

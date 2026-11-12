@@ -14,7 +14,7 @@
       "nexa.sidecar.protocol": {
         "type": "Project",
         "dependencies": {
-          "Nexa.Core": "[2.0.0-alpha.19, )"
+          "Nexa.Core": "[2.0.0-alpha.29, )"
         }
       }
     }

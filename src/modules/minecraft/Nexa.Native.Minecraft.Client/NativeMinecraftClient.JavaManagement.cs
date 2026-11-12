@@ -7,6 +7,23 @@ namespace Nexa.Native.Minecraft.Client;
 
 public sealed partial class NativeMinecraftClient
 {
+    public ValueTask<JavaRuntimeCandidate?> SelectPluginJavaAsync(string? instance, CancellationToken token = default) => SelectPluginJavaAsync(instance, instance is not null, token);
+    public async ValueTask<JavaRuntimeCandidate?> SelectPluginJavaAsync(string? instance, bool versionLocal, CancellationToken token = default)
+    {
+        await _javaConfiguration.WaitAsync(token).ConfigureAwait(false);
+        byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.JavaPluginSelection, writer => { writer.String(instance); writer.Boolean(versionLocal); }, token).ConfigureAwait(false);
+        using var reader = new ServiceWireReader(bytes); var result = reader.JavaRuntimeCandidate(); reader.End(); return result;
+    }
+    public async ValueTask<JavaRequirementResolution> ReadPluginJavaRequirementsAsync(string instance, CancellationToken token = default)
+    {
+        await _javaConfiguration.WaitAsync(token).ConfigureAwait(false);
+        byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.JavaPluginRequirements, writer => writer.String(instance), token).ConfigureAwait(false);
+        using var reader = new ServiceWireReader(bytes);
+        bool success = reader.Boolean(); var minimum = Version.Parse(reader.String()!); var maximum = Version.Parse(reader.String()!);
+        string? component = reader.String(); var reason = (JavaRequirementFailureReason)reader.Int32(); string? detail = reader.String(); reader.End();
+        if (!Enum.IsDefined(reason) || success && reason != JavaRequirementFailureReason.None) throw new InvalidDataException("Invalid Java requirement result.");
+        return new() { Success = success, Range = new(minimum, maximum), RecommendedComponent = component, FailureReason = reason, Detail = detail };
+    }
     public async ValueTask<JavaRuntimeCandidate?> InspectJavaAsync(string executable, CancellationToken token = default)
     {
         await _javaConfiguration.WaitAsync(token).ConfigureAwait(false);

@@ -55,6 +55,8 @@ public sealed class AccountOnboardingService : IDisposable
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
+            if (command.ExpectedGeneration is { } expected && (_generation != expected || _snapshot.IsBusy))
+                return XsrResult.Failure(AccountErrors.InvalidProfile("The sign-in flow changed or is already busy."));
             Operation operation = Begin("AccountLogin", $"provider={command.Provider}");
             _running = Task.Run(() => RunLogin(operation, command));
             _draining = Task.WhenAll(_draining, _running);

@@ -49,6 +49,17 @@ int result = NativeWindowSession.RunApplicationOnMainThread(async () =>
     var discarded = XsrUiShellComposer.Compose(new XsrStateStoreBuilder().Build());
     await session.PrepareShellAsync(discarded);
     await session.WarmUpShellAsync();
+    var displays = await session.ReadExtensionDisplaysAsync();
+    if (displays.Length == 0 || displays.Any(display => display.Width <= 0 || display.Height <= 0 || display.Scale <= 0))
+        throw new InvalidOperationException("Native plugin display metadata was lost.");
+    await session.WriteExtensionClipboardAsync("native plugin clipboard", null);
+    var clipboard = await session.ReadExtensionClipboardAsync();
+    if (clipboard.Text != "native plugin clipboard") throw new InvalidOperationException("Native plugin clipboard text did not round trip.");
+    await session.WriteExtensionClipboardAsync(null, tinyPng);
+    clipboard = await session.ReadExtensionClipboardAsync();
+    if (clipboard.Image is null || Nexa.Core.Media.PngImage.TryCreate(clipboard.Image) is not { Width: 1, Height: 1 })
+        throw new InvalidOperationException("Native plugin clipboard image did not round trip.");
+    await session.WriteExtensionClipboardAsync(null, null);
     await using (var activation = await session.SubscribeFileActivationsAsync(_ => { })) { }
     await using (var activation = await session.SubscribeFileActivationsAsync(_ => { })) { }
     if (OperatingSystem.IsMacOS())

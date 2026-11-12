@@ -242,3 +242,149 @@ already-compiled fragments and mount into explicit Dynamic slots; Desktop suppli
 owned documents and contribution modes, never constructs presentation IR or mutates
 input components. Drawing entities come from external Host templates. This keeps
 extension rendering subject to the same presentation ownership checks as product UI.
+
+### Plugin application service adapters
+
+ABI 100 business handlers are explicit typed adapters over the existing command and
+query routers. Application resources (files, plans, subscriptions and opaque IDs)
+are bound to the admitted load, retired on stop, bounded, and never reconstructed
+from guest paths. User-selected files are granted by a native picker; package files
+remain read-only. Mutations retain owner-service revision checks and Host-owned
+confirmation. A guest confirmation string is not authorization. Desktop supplies
+platform effects through explicit callbacks; service composition remains independent
+of renderer and platform UI types. Developer mode is projected from the effective
+settings query, refreshed by the policy revision cell, not an invented state key.
+
+The Minecraft owner appends binary Java selection operation 69 (nullable instance
+directory -> nullable runtime candidate) for plugin selection. Both managed and
+native execution use the existing Java selection service; instance-local discovery
+and executable probes stay in the Minecraft owner. Existing numeric operations
+and codecs retain their wire identities.
+
+Native window command 45 carries the bounded extension file picker request
+(title, file/directory/save kind, extension filters). Both window backends use the
+same native picker implementation. No guest-supplied filesystem path is accepted
+as picker authorization.
+
+Plugin world/content adapters project the existing instance-management snapshots
+into load-owned IDs. A retained content identity contains only an instance ID,
+page and entry name; every read resolves it again through the authoritative owner.
+Mutations preserve the owner's metadata revision and session-lock checks. World
+metadata is an explicit scalar projection, never an unrestricted NBT or path API.
+Plans retain the exact reviewed source revision and are retired with their load.
+
+World editing adds two append-only management messages: 237 renames the level's
+public display name, and 238 atomically sets the enabled data-pack order. Both
+execute under the existing recovery/session gate with the expected level.dat
+revision and read-only-world policy. They never implement order as a sequence of
+individually committed enable/disable operations. Their generated binary shapes
+are shared by managed and native Minecraft adapters.
+
+Window platform operations 46–48 add bounded clipboard read/write (UTF-8 text
+plus PNG, including explicit clear) and display enumeration. Clipboard access
+remains a Host-confirmed plugin operation. The window process owns UI-thread and
+OS clipboard access; the composition layer receives only text/bytes and numeric
+display facts. These asynchronous numeric messages do not expose UI objects.
+
+Minecraft process operations 25 (interaction) and 26 (metrics) resolve a retained
+session inside the process owner. No plugin supplies an OS PID. Close requests
+and window reveal use the retained process object and platform window adapter;
+unsupported platforms return unavailable. Metrics sample the retained process
+across a bounded interval and normalize CPU usage to the machine processor count.
+The managed and native command/query routes share these semantics.
+
+Plugin Catalog reads delegate to the existing resource owner and its source
+policy/cache. Public provider IDs are nexa:modrinth and nexa:curseforge; kinds use
+nexa:resource/<kind> and loaders nexa:loader/<loader>. Search cursors bind the
+normalized query, source page and page revision. A catalog file's SHA-256 string
+is empty when the upstream does not publish that digest; it is never fabricated
+from SHA-1/SHA-512. Installation continues to use the owner's published hashes.
+Unpinned dependency version IDs are empty, preserving the upstream distinction.
+
+Resource favorites now expose an owner revision, and the favorite mutation carries
+an optional expected revision. The resource owner's existing mutex compares it
+before persistence, so a plugin's reviewed change cannot overwrite a concurrent
+Desktop change. Native resource DTOs append these fields and retain strict schema
+fingerprint negotiation; existing UI callers may omit the optional comparison.
+
+Plugin account appearance calls use the existing account runtime query/command routers. A wardrobe
+identity is captured for the requested public account and must match the currently selected account;
+no plugin request silently changes selection. Uploads and cape changes retain the account owner's
+roster/selection generation checks. Skin preview uses a bounded owned blob and a private temporary
+file passed to the existing validator, then removes that file. Account credentials never cross the
+plugin ABI. Dependency-graph projections retain missing and runtime dependencies as explicit nodes,
+and incomplete graphs remain unavailable rather than being reported as complete.
+
+Plugin launch grants bind a public account roster revision and an instance to one admitted load.
+The revision is checked by the account owner while holding its roster lock, when launch obtains
+its privileged profile. A composition-side precheck alone is insufficient. Trusted launch access
+adds an explicit revision-checked overload; implementations without that capability reject it.
+Existing UI launches retain their existing overload. Native account operation 202, Minecraft host
+callback 2302, and Minecraft launch operation 106 carry bounded numeric revision fields. The
+revision is retained by the per-attempt coordinator, including concurrent launches.
+Launch-profile projections use the policy reader's explicit profile selection, without changing
+persistent selection. Auto memory is represented by zero and automatic Java by a null runtime.
+Profiles containing values changed by the Host's secret redactor are not exported. Writes retain
+unrepresented settings/overlays and use the policy owner's revision compare-and-swap. Authorized
+launch carries the captured settings revision and explicit profile to the per-attempt owner; it
+rejects changed settings before preparing the process. Temporary layers still follow owner policy.
+A launch operation is recorded in the SDK task ledger. The launch adapter delegates read/cancel to
+the existing task handlers only after checking that the operation belongs to its retained launch
+record and the admitted load. This permits launch-specific read/cancel permissions without granting
+arbitrary task access. Launch grants expire after ten minutes, are consumed once, and are retired
+with the load. Their public form contains no provider credentials. Eligibility reports local
+readiness; online session validation remains an explicit launch-stage operation.
+Plugin sign-in owns its onboarding generation. Start accepts an optional expected generation and
+rejects busy/replaced onboarding under the service lock. The default UI start behavior is unchanged.
+Microsoft and LittleSkin use the existing device-code flow. Offline/third-party form responses use
+ABI NamedValue with name `credentials` and a closed map (`username`, `password`, `server`); character
+selection uses NamedValue `character` with the chosen UUID. Empty responses poll an owned flow.
+Plugin retirement cancels only its matching busy generation through the SDK cleanup ledger.
+Plugin installation drafts are load-owned edits, separate from the user's visible install draft.
+Reading an instance draft captures the installation owner's edit fingerprint. Resolve/execute use
+the same eligibility query and install command as Desktop, retaining fingerprint checks and normal
+recovery/task handling. Creation is restricted to registered roots and safe instance names. Game
+catalogue DTOs carry the upstream release timestamp; old cache entries without this field require
+refresh before serving the ABI's non-null timestamp. Cancellation targets only retained plugin
+install operations, never the user's unrelated installation.
+
+Plugin diagnostic adapters consume the exact instance-scoped machine capability snapshot and its existing preflight evaluator. Public finding IDs are `nexa:findings/<code>`; diagnostic text passes through the log redactor. Repair previews bind the instance/library and settings revisions plus the selected findings and their available scoped remediation. Execution re-evaluates those findings after Host confirmation and invokes only Minecraft's existing instance-scoped repair handlers. The first supported remediation in the owner's ordered list is retained; a finding without a supported remediation remains an explicit unavailable repair, never a successful no-op.
+
+Native resource favorite revision conflicts are expected domain rejections on the typed result channel, matching managed routing. They must not escape as transport failures that abort independent callers.
+
+Plugin catalog installation previews bind the canonical resource dependency plan fingerprint. `ResourceModInstallCommand.ExpectedPlanFingerprint` is optional for existing product callers; plugin execution always supplies it. The resource owner recomputes and compares that fingerprint after resolving the actual execution plan and before creating staging or downloading files. Plugin content updates delegate to the existing transaction owner with exact original file size/timestamp and pinned catalog version; plans retain their public changes for review and are consumed once after confirmation.
+
+Plugin Java requirements and selection use the launch owner's manifest/loader requirement resolver for the exact instance. Automatic and version-local preferences share those constraints; no plugin selection may substitute the unconstrained Java range for an instance. Native Java messages append a typed requirement query and an explicit version-local selection flag; no manifests or account credentials cross this boundary.
+
+Plugin downloads use the existing streaming download owner and the configured Host HTTP pool, with load-owned records and Tasks operations. Pause cancels only the current transfer attempt and retains its partial file; the same SDK operation waits for Resume, while its download-specific state is Pending. Cancel or load retirement terminates that operation and removes its staging files. Only an explicitly granted, absent destination may be published, after bounded size/SHA-256 verification and a final grant/absence check. No response is buffered into a plugin Blob. Custom source/transfer providers still require a defined callback contract.
+
+The download destination is created only at the commit boundary; Pause and completion arbitrate under the same load record lock. Native transfer descriptions carry the same maximum/exact length and redirect policy as managed connections. Download Verify compares the current bytes with the digest computed at publication, including when the caller did not supply a digest.
+
+Plugin content transfers reuse the folder/JAR import owner and instance export owner. Imports inspect the explicitly granted file and pass its SHA-256-bearing artifact to the existing Mod import command for the exact instance. Export accepts the existing Mrpack, ZIP, CurseForge, MCBBS and MultiMC formats and filters the owner's preview by admitted content IDs. It stages beside the granted destination and publishes only if that destination is still absent; launcher/account files are never added outside the export owner's category policy.
+
+Managed Java plugin offers retain the install owner's multi-file preview, registry revision, license URLs and expiration. ABI 100 adds offer listing and plan preparation without altering the legacy single-archive distribution model. Installation consumes the reviewed preview through the existing Java owner, and returns a runtime only after verified registration.
+
+Plugin-selected content export supplies an optional exact path allowlist to the export owner. Filtering occurs inside the existing recovery operation lease after collection, so files added after preview cannot enter a restricted export. Existing callers omit the allowlist and retain category-based exports.
+
+Content transaction listing projects the existing update journal and provides a load-owned rollback plan per record. Rollback rechecks the journal record after confirmation, then delegates hash validation and recovery locking to the transaction owner. Already rolled-back journals remain visible and cannot be replayed.
+
+Native Minecraft task publications retain their newest immutable snapshot before
+Desktop attaches its task consumer. Attachment replays that snapshot outside the
+client lock; the task center's monotonically increasing revision rejects any
+replay overtaken by a newer callback. This preserves completed task history across
+composition order without adding a transport round trip or embedding the owner.
+
+Catalog plugin providers use the SDK's additive BusinessProviderCall contract and
+existing staged registration lifecycle. Desktop owns a closed read-method table
+and validates returned resource/version identities, bounded pages, file metadata,
+and dependency references. Explicit custom-provider selection dispatches through
+the query-only callback boundary; built-in providers continue using their existing
+resource owner. Provider cursors are authenticated for the caller and query, and
+cannot be reused across searches. Mixed built-in/custom pagination is rejected
+until an aggregate cursor contract is defined. Registration does not confer file
+installation or favorite mutation authority; those still require domain owners.
+
+Instance reference-name validation is a pure Library.Contracts helper shared by
+Host admission and the metadata owner. Metadata keeps its existing public helper
+as a forwarding method. Native-service composition must not reference metadata
+implementation assemblies merely to validate a path segment.

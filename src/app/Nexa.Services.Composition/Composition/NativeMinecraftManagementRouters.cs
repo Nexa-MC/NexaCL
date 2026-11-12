@@ -18,6 +18,8 @@ internal static class NativeMinecraftManagementRouters
         commands.Register<InstanceModRemovalCommand>(InstanceManagementContract.RemoveMod, client.DispatchInstanceModRemovalCommandAsync);
         commands.Register<InstanceContentRestoreCommand>(InstanceManagementContract.RestoreContent, client.DispatchInstanceContentRestoreCommandAsync);
         commands.Register<InstanceContentUpdateRollbackCommand>(InstanceManagementContract.RollbackContentUpdate, client.DispatchInstanceContentUpdateRollbackCommandAsync);
+        commands.Register<InstanceWorldRenameCommand>(InstanceWorldContract.Rename, client.RenameWorldAsync);
+        commands.Register<InstanceWorldDataPackOrderCommand>(InstanceWorldContract.SetDataPackOrder, client.SetWorldDataPackOrderAsync);
         commands.Register<InstanceWorldCopyCommand>(InstanceWorldContract.Copy, client.DispatchInstanceWorldCopyCommandAsync);
         commands.Register<InstanceWorldBackupCommand>(InstanceWorldContract.Backup, client.DispatchInstanceWorldBackupCommandAsync);
         commands.Register<InstanceWorldLockCommand>(InstanceWorldContract.SetLock, client.DispatchInstanceWorldLockCommandAsync);

@@ -155,6 +155,16 @@ internal static partial class Program
             using (var raw = new MemoryStream())
             { await gzip.CopyToAsync(raw); AssertEqual("unchanged sentinel", ServerNbt.Parse(raw.ToArray()).Children.Single(item => item.Name == "Data").String("PreserveUnknown")); }
             AssertTrue(File.Exists(Path.Combine(world, "level.dat.nexa-backup")));
+            string previousRevision = metadata.Revision;
+            AssertTrue((await InstanceWorldService.RenameAsync(new(instance, "Fixture", "Renamed 世界", previousRevision), store)).IsSuccess);
+            AssertFalse((await InstanceWorldService.RenameAsync(new(instance, "Fixture", "Stale rename", previousRevision), store)).IsSuccess);
+            metadata = await InstanceWorldService.ReadMetadataAsync(world); AssertEqual("Renamed 世界", metadata.LevelName);
+            AssertFalse((await InstanceWorldService.SetDataPackOrderAsync(new(instance, "Fixture", ["file/fixture.zip"], metadata.Revision), store)).IsSuccess);
+            AssertFalse((await InstanceWorldService.SetDataPackOrderAsync(new(instance, "Fixture", ["vanilla", "file/missing.zip"], metadata.Revision), store)).IsSuccess);
+            AssertTrue((await InstanceWorldService.SetDataPackOrderAsync(new(instance, "Fixture", ["file/fixture.zip", "vanilla"], metadata.Revision), store)).IsSuccess);
+            AssertFalse((await InstanceWorldService.SetDataPackOrderAsync(new(instance, "Fixture", ["vanilla"], metadata.Revision), store)).IsSuccess);
+            metadata = await InstanceWorldService.ReadMetadataAsync(world);
+            AssertEqual("file/fixture.zip", metadata.DataPacks.Where(p => p.Enabled).First().Id);
             AssertFalse((await InstanceWorldService.RemoveDataPackAsync(new(instance, "Fixture", "fixture.zip", metadata.Revision), store)).IsSuccess);
             AssertTrue((await InstanceWorldService.SetLockAsync(new(instance, "Fixture", true, metadata.Revision), store)).IsSuccess);
             AssertFalse((await InstanceWorldService.CopyAsync(new(instance, "Fixture", "LockedCopy", metadata.Revision), store)).IsSuccess);
@@ -189,7 +199,7 @@ internal static partial class Program
             AssertTrue(File.Exists(Path.Combine(world, "datapacks", "import.zip")));
             using (var locked = new FileStream(Path.Combine(world, "session.lock"), FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
                 AssertFalse((await InstanceWorldService.CopyAsync(new(instance, "Fixture", "InUse", metadata.Revision), store)).IsSuccess);
-            var snapshot = await InstanceManagementService.ReadAsync(new(instance)); AssertEqual("Fixture 世界", snapshot.Contents.Single(page => page.PageId == "saves").Entries.Single(item => item.Name == "Fixture").DisplayName);
+            var snapshot = await InstanceManagementService.ReadAsync(new(instance)); AssertEqual("Renamed 世界", snapshot.Contents.Single(page => page.PageId == "saves").Entries.Single(item => item.Name == "Fixture").DisplayName);
         }
         finally { Directory.Delete(root, true); }
     }

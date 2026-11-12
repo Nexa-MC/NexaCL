@@ -61,10 +61,12 @@ public sealed partial class MinecraftLaunchCoordinator
             SettingsEffectiveSnapshot? effectiveSettings = null;
             if (_settingsPolicy is not null)
             {
-                var policy = await _settingsPolicy.ReadAsync(new(instance.DirectoryPath), cancellationToken).ConfigureAwait(false);
+                var policy = await _settingsPolicy.ReadAsync(new(instance.DirectoryPath) { ProfileId = _authorizedProfileId }, cancellationToken).ConfigureAwait(false);
                 if (!policy.IsSuccess) throw new InvalidOperationException("无法读取版本启动设置。");
                 effectiveSettings = policy.Value;
             }
+            if (_expectedSettingsRevision is { } expectedSettings && effectiveSettings?.Revision != expectedSettings)
+                return XsrResult.Failure<MinecraftLaunchPreparation>(MinecraftErrors.InvalidRequest("Launch settings changed after the plugin plan was prepared."));
             string method = string.Empty;
             XsrResult<MinecraftLaunchIdentity> identityResult =
                 XsrResult.Failure<MinecraftLaunchIdentity>(MinecraftErrors.InvalidRequest("the account was not resolved."));
@@ -77,7 +79,9 @@ public sealed partial class MinecraftLaunchCoordinator
                 method,
                 async token =>
                 {
-                    profileResult = await _accounts.GetProfileAsync(accountIndex, token).ConfigureAwait(false);
+                    profileResult = _expectedAccountRosterRevision is { } expected
+                        ? await _accounts.GetProfileAsync(accountIndex, expected, token).ConfigureAwait(false)
+                        : await _accounts.GetProfileAsync(accountIndex, token).ConfigureAwait(false);
                     if (!profileResult.IsSuccess)
                     {
                         return;

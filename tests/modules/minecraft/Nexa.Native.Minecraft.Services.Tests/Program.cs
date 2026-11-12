@@ -97,6 +97,11 @@ try
         "Native process state did not preserve its source revision and terminal observation.");
 
     var canceled = await minecraft.StartProcessAsync(Plan("hold"), "cancel-fixture", token);
+    var metrics = await minecraft.ReadProcessMetricsAsync(new(canceled.SessionId), token);
+    Check(metrics.IsSuccess && metrics.Value!.WorkingSetBytes > 0 && metrics.Value.CpuPercent is >= 0 and <= 100, "Native metrics did not sample the owned process.");
+    Check(!(await minecraft.ReadProcessMetricsAsync(new(Guid.NewGuid()), token)).IsSuccess, "Native metrics accepted an unknown session.");
+    Check(!(await minecraft.InteractProcessAsync(new(Guid.NewGuid(), MinecraftProcessInteraction.RequestClose), token)).IsSuccess, "Native window interaction accepted an unknown session.");
+    Check(!(await minecraft.InteractProcessAsync(new(canceled.SessionId, (MinecraftProcessInteraction)999), token)).IsSuccess, "Native window interaction accepted an unknown command.");
     Check((await minecraft.CancelProcessAsync(canceled.SessionId, token)).IsSuccess, "Native process cancellation was rejected.");
     await WaitForExit(canceled.ProcessId, token);
     var shutdown = await minecraft.StartProcessAsync(Plan("hold"), "shutdown-fixture", token);

@@ -140,7 +140,7 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
             return [];
         }
         if (_instances is null) throw new InvalidOperationException("Minecraft service has not initialized.");
-        if (operation is >= MinecraftServiceProtocol.ManageInstanceExportOptionsSave and <= MinecraftServiceProtocol.ManageInstanceWorldSnapshotVerifyQuery or MinecraftServiceProtocol.LanDiscover or MinecraftServiceProtocol.ContentInspect or MinecraftServiceProtocol.ScriptExport or MinecraftServiceProtocol.ResourcePackSet)
+        if (operation is >= MinecraftServiceProtocol.ManageInstanceExportOptionsSave and <= MinecraftServiceProtocol.ManageInstanceWorldDataPackOrderCommand or MinecraftServiceProtocol.LanDiscover or MinecraftServiceProtocol.ContentInspect or MinecraftServiceProtocol.ScriptExport or MinecraftServiceProtocol.ResourcePackSet)
             return await ExecuteManagementAsync(operation, reader, token).ConfigureAwait(false);
         if (operation == MinecraftServiceProtocol.ResourceConfigure) return await ConfigureResourcesAsync(reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.ResourceResourceNetworkPolicyQuery and <= MinecraftServiceProtocol.ResourceResourceModpackUpdateCommand or MinecraftServiceProtocol.ResourceInspectModpack)
@@ -155,14 +155,14 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
             return await ExecuteCatalogAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.ModpackUpdatePreview and <= MinecraftServiceProtocol.FolderImport)
             return await ExecuteImportAsync(operation, reader, token).ConfigureAwait(false);
-        if (operation is >= MinecraftServiceProtocol.JavaConfigure and <= MinecraftServiceProtocol.JavaModules)
+        if (operation is >= MinecraftServiceProtocol.JavaConfigure and <= MinecraftServiceProtocol.JavaPluginSelection or MinecraftServiceProtocol.JavaPluginRequirements)
             return await ExecuteJavaManagementAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.InstallConfigure and <= MinecraftServiceProtocol.InstallEditRead)
             return await ExecuteInstallationAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.RecoveryRead and <= MinecraftServiceProtocol.RecoveryResume)
             return await ExecuteRecoveryAsync(operation, reader, token).ConfigureAwait(false);
         if (operation is >= MinecraftServiceProtocol.LaunchConfigure and <= MinecraftServiceProtocol.LaunchFinalize
-            or MinecraftServiceProtocol.LaunchSafeRead or MinecraftServiceProtocol.LaunchDiagnostics or MinecraftServiceProtocol.LaunchAttemptControl)
+            or MinecraftServiceProtocol.LaunchSafeRead or MinecraftServiceProtocol.LaunchDiagnostics or MinecraftServiceProtocol.LaunchAuthorized or MinecraftServiceProtocol.LaunchAttemptControl)
             return await ExecuteLaunchAsync(operation, reader, token).ConfigureAwait(false);
         switch (operation)
         {
@@ -192,6 +192,14 @@ internal sealed partial class MinecraftServiceSession : IAsyncDisposable
                 var sessionId = reader.Guid(); reader.End();
                 var output = await _processes!.ReadOutputAsync(sessionId, token).ConfigureAwait(false);
                 writer.XsrError(output.Error); if (output.IsSuccess) writer.MinecraftProcessOutputSnapshot(output.Value);
+                break;
+            case MinecraftServiceProtocol.ProcessInteract:
+                var interactionId = reader.Guid(); int interaction = reader.Int32(); reader.End();
+                writer.XsrError((await _processes!.InteractAsync(new(interactionId, (MinecraftProcessInteraction)interaction), token).ConfigureAwait(false)).Error); break;
+            case MinecraftServiceProtocol.ProcessMetrics:
+                var metricsId = reader.Guid(); reader.End();
+                var metrics = await _processes!.ReadMetricsAsync(new(metricsId), token).ConfigureAwait(false); writer.XsrError(metrics.Error);
+                if (metrics.IsSuccess) { writer.Int64(metrics.Value!.WorkingSetBytes); writer.Double(metrics.Value.CpuPercent); writer.DateTimeOffset(metrics.Value.ObservedAt); }
                 break;
             case MinecraftServiceProtocol.CancelProcess:
                 var canceledId = reader.Guid(); reader.End();

@@ -191,6 +191,7 @@ internal static partial class Program
     private sealed class RecordingStartRoute
     {
         public MinecraftStartCommand? LastCommand { get; private set; }
+        public Action<MinecraftStartCommand>? OnStart { get; set; }
         internal System.Collections.Concurrent.ConcurrentQueue<MinecraftStartCommand> Commands { get; } = new();
         internal Guid? LastCancelledAttempt;
 
@@ -220,6 +221,7 @@ internal static partial class Program
         {
             LastCommand = command;
             Commands.Enqueue(command);
+            OnStart?.Invoke(command);
             if (ProgressStore is not null && !string.IsNullOrWhiteSpace(Stage))
             {
                 try

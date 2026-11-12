@@ -18,6 +18,14 @@ internal sealed class RemoteMinecraftAccounts(ServiceEndpoint endpoint) : IAccou
         var result = error is null ? XsrResult.Success(reader.LaunchProfile() ?? throw new InvalidDataException("Missing launch profile."))
             : XsrResult.Failure<LaunchProfile>(error); reader.End(); return result;
     }
+    public async ValueTask<XsrResult<LaunchProfile>> GetProfileAsync(int index, long expectedRosterRevision, CancellationToken cancellationToken = default)
+    {
+        using var request = MinecraftServiceProtocol.Request(MinecraftHostOperations.AccountProfileRevision); request.Int32(index); request.Int64(expectedRosterRevision);
+        byte[] bytes = await endpoint.InvokeAsync(request.Finish(), cancellationToken).ConfigureAwait(false);
+        using var reader = new ServiceWireReader(bytes); var error = reader.XsrError();
+        var result = error is null ? XsrResult.Success(reader.LaunchProfile() ?? throw new InvalidDataException("Missing launch profile."))
+            : XsrResult.Failure<LaunchProfile>(error); reader.End(); return result;
+    }
     public async ValueTask<XsrResult<MinecraftLaunchIdentity>> ResolveAsync(int accountIndex, LaunchProfile profile, CancellationToken cancellationToken = default)
     {
         using var request = MinecraftServiceProtocol.Request(MinecraftHostOperations.AccountIdentity); request.Int32(accountIndex); request.LaunchProfile(profile);

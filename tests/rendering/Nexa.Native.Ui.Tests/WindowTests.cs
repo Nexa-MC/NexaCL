@@ -302,6 +302,19 @@ internal static partial class Program
             });
             using (var clipboard = PlatformResult(await Platform(WindowPlatformCommand.ReadClipboard), WindowPlatformCommand.ReadClipboard))
             { Equal("native clipboard before malformed request", clipboard.String()); clipboard.End(); }
+            string longClipboard = new('x', 4096);
+            await Platform(WindowPlatformCommand.WriteExtensionClipboard, writer => { writer.String(longClipboard); writer.Boolean(false); });
+            using (var clipboard = PlatformResult(await Platform(WindowPlatformCommand.ReadExtensionClipboard), WindowPlatformCommand.ReadExtensionClipboard))
+            { Equal(longClipboard, clipboard.String()); Equal(false, clipboard.Boolean()); clipboard.End(); }
+            await Platform(WindowPlatformCommand.WriteExtensionClipboard, writer => { writer.String(null); writer.Boolean(false); });
+            using (var clipboard = PlatformResult(await Platform(WindowPlatformCommand.ReadExtensionClipboard), WindowPlatformCommand.ReadExtensionClipboard))
+            { Equal<string?>(null, clipboard.String()); Equal(false, clipboard.Boolean()); clipboard.End(); }
+            using (var displays = PlatformResult(await Platform(WindowPlatformCommand.ReadExtensionDisplays), WindowPlatformCommand.ReadExtensionDisplays))
+            {
+                int count = displays.Int32(); True(count is >= 0 and <= 32);
+                for (int i = 0; i < count; i++) { True(displays.String() is not null); True(displays.Int32() > 0); True(displays.Int32() > 0); True(displays.Double() > 0); }
+                displays.End();
+            }
             using (var progress = PlatformResult(await Platform(WindowPlatformCommand.TaskbarProgress,
                 writer => { writer.Boolean(false); writer.Boolean(false); }), WindowPlatformCommand.TaskbarProgress))
             { _ = progress.Boolean(); progress.End(); }

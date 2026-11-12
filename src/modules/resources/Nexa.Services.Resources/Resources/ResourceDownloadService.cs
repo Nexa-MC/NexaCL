@@ -48,6 +48,7 @@ public sealed class ResourceDownloadService(IResourceCatalogSource catalog, Down
                 file = detail.Versions.FirstOrDefault(v => v.Id == command.VersionId && v.Provider == command.Provider && v.ProjectId == command.ProjectId)?.File;
             }
             if (file is null) throw new IOException("作者未开放此文件的直接下载，请前往项目主页下载。");
+            if (command.ExpectedFile is { } expectedFile && expectedFile != file) throw new IOException("The reviewed resource file changed; prepare installation again.");
             Validate(file, CountryPolicy);
             string directory = Path.GetFullPath(command.DestinationDirectory);
             CheckDirectory(directory);

@@ -173,6 +173,18 @@ public sealed partial class NativeMinecraftClient : IAsyncDisposable
         var result = error is null ? XsrResult.Success(reader.MinecraftProcessOutputSnapshot() ?? throw new InvalidDataException("Missing process output."))
             : XsrResult.Failure<MinecraftProcessOutputSnapshot>(error); reader.End(); return result;
     }
+    public async ValueTask<XsrResult> InteractProcessAsync(MinecraftProcessInteractionCommand command, CancellationToken token = default)
+    {
+        byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.ProcessInteract, writer => { writer.Guid(command.SessionId); writer.Int32((int)command.Interaction); }, token).ConfigureAwait(false);
+        using var reader = new ServiceWireReader(bytes); var error = reader.XsrError(); reader.End(); return error is null ? XsrResult.Success() : XsrResult.Failure(error);
+    }
+    public async ValueTask<XsrResult<MinecraftProcessMetrics>> ReadProcessMetricsAsync(MinecraftProcessMetricsQuery query, CancellationToken token = default)
+    {
+        byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.ProcessMetrics, writer => writer.Guid(query.SessionId), token).ConfigureAwait(false);
+        using var reader = new ServiceWireReader(bytes); var error = reader.XsrError();
+        var result = error is null ? XsrResult.Success(new MinecraftProcessMetrics(reader.Int64(), reader.Double(), reader.DateTimeOffset())) : XsrResult.Failure<MinecraftProcessMetrics>(error);
+        reader.End(); return result;
+    }
     public async Task<XsrResult> CancelProcessAsync(Guid sessionId, CancellationToken token = default)
     {
         byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.CancelProcess, writer => writer.Guid(sessionId), token).ConfigureAwait(false);

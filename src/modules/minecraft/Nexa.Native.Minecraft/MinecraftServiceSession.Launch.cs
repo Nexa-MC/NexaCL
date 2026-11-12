@@ -78,6 +78,12 @@ internal sealed partial class MinecraftServiceSession
                     }
                     break;
                 }
+            case MinecraftServiceProtocol.LaunchAuthorized:
+                {
+                    string instance = reader.String() ?? ""; int account = reader.Int32(); string root = reader.String() ?? ""; string? address = reader.String();
+                    long revision = reader.Int64(); long? settingsRevision = reader.Boolean() ? reader.Int64() : null; string? profileId = reader.String(); reader.End();
+                    writer.XsrError((await launch.StartAuthorizedAsync(instance, account, root, address, revision, settingsRevision, profileId, token).ConfigureAwait(false)).Error); break;
+                }
             case MinecraftServiceProtocol.LaunchStart:
                 string startInstance = reader.String() ?? ""; int startAccount = reader.Int32(); string startRoot = reader.String() ?? "";
                 string? server = reader.String(); reader.End();

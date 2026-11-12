@@ -70,6 +70,12 @@ public sealed partial class NativeMinecraftClient
         byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.LaunchDiagnostics, writer => writer.String(query.InstanceDirectory), token).ConfigureAwait(false);
         using var reader = new ServiceWireReader(bytes); var value = reader.MinecraftLaunchPlanDiagnosticSnapshot() ?? throw new InvalidDataException("Missing launch diagnostics."); reader.End(); return value;
     }
+    public Task<XsrResult> StartAuthorizedMinecraftAsync(string instance, int account, string root, string? server, long revision, long? settingsRevision, string? profileId, CancellationToken token = default)
+        => LaunchResultAsync(MinecraftServiceProtocol.LaunchAuthorized, writer =>
+        {
+            writer.String(instance); writer.Int32(account); writer.String(root); writer.String(server); writer.Int64(revision);
+            writer.Boolean(settingsRevision.HasValue); if (settingsRevision is { } settings) writer.Int64(settings); writer.String(profileId);
+        }, token);
     public Task<XsrResult> StartMinecraftAsync(string instance, int account, string root, string? server = null, CancellationToken token = default)
         => LaunchResultAsync(MinecraftServiceProtocol.LaunchStart, writer => { writer.String(instance); writer.Int32(account); writer.String(root); writer.String(server); }, token);
     public Task<bool> CancelLaunchAsync(CancellationToken token = default) => CancelLaunchAsync(null, token);

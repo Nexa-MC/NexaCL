@@ -27,6 +27,11 @@ public sealed partial class NativeMinecraftClient
             reader.End(); var result = await accounts.GetProfileAsync(index, token).ConfigureAwait(false);
             writer.XsrError(result.Error); if (result.IsSuccess) writer.LaunchProfile(result.Value);
         }
+        else if (operation == MinecraftHostOperations.AccountProfileRevision)
+        {
+            long revision = reader.Int64(); reader.End(); var result = await accounts.GetProfileAsync(index, revision, token).ConfigureAwait(false);
+            writer.XsrError(result.Error); if (result.IsSuccess) writer.LaunchProfile(result.Value);
+        }
         else
         {
             var profile = reader.LaunchProfile() ?? throw new InvalidDataException("Missing launch profile."); reader.End();

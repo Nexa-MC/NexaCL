@@ -21,8 +21,12 @@ public sealed record InstanceWorldDataPackCommand(string InstanceDirectory, stri
 public sealed record InstanceWorldDataPackImportCommand(string InstanceDirectory, string WorldName, string SourcePath, string ExpectedRevision);
 public sealed record InstanceWorldDataPackRemoveCommand(string InstanceDirectory, string WorldName, string Name, string ExpectedRevision);
 public sealed record InstanceWorldDataPackRestoreCommand(string InstanceDirectory, string WorldName, string TrashName, string ExpectedRevision);
+public sealed record InstanceWorldRenameCommand(string InstanceDirectory, string WorldName, string DisplayName, string ExpectedRevision);
+public sealed record InstanceWorldDataPackOrderCommand(string InstanceDirectory, string WorldName, IReadOnlyList<string> EnabledOrder, string ExpectedRevision);
 public static class InstanceWorldContract
 {
+    public static readonly XsrSemanticId Rename = XsrSemanticId.Parse("minecraft.instance.world.rename");
+    public static readonly XsrSemanticId SetDataPackOrder = XsrSemanticId.Parse("minecraft.instance.world.datapack.set-order");
     public static readonly XsrSemanticId Copy = XsrSemanticId.Parse("minecraft.instance.world.copy");
     public static readonly XsrSemanticId Read = XsrSemanticId.Parse("minecraft.instance.world.read");
     public static readonly XsrSemanticId Backup = XsrSemanticId.Parse("minecraft.instance.world.backup");

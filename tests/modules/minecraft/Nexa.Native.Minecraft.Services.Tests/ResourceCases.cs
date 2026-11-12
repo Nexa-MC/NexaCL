@@ -52,7 +52,8 @@ internal static class ResourceCases
         var detail = await client.QueryResourceDetailQueryAsync(new(ProjectId, "1.20.1", "fabric") { Sources = [new(ResourceProvider.Modrinth, ProjectId)] }, token);
         if (detail.Value!.Versions.Count != 2 || (await client.QueryResourceChangelogQueryAsync(new(new(ResourceProvider.Modrinth, ProjectId), "NativeV2"), token)).Value!.Text != "native changelog")
             throw new InvalidDataException("Native provider detail/changelog did not use typed metadata.");
-        if (!(await client.DispatchResourceFavoriteCommandAsync(new(project, true), token)).IsSuccess
+        var favoriteBefore = (await client.QueryResourceFavoritesQueryAsync(new(), token)).Value!;
+        if (!(await client.DispatchResourceFavoriteCommandAsync(new(project, true) { ExpectedRevision = favoriteBefore.Revision }, token)).IsSuccess
             || (await client.QueryResourceFavoritesQueryAsync(new(), token)).Value!.Projects.Single().Id != ProjectId || !File.Exists(favorites))
             throw new InvalidDataException("Native favorites lost durable state.");
         string downloads = Path.Combine(directory, "native-resource-downloads"); Directory.CreateDirectory(downloads);
@@ -70,6 +71,8 @@ internal static class ResourceCases
         if (context.Value!.Loader != "fabric" || context.Value.Game != "1.20.1") throw new InvalidDataException("Native resource context lost inherited game/loader identity.");
         var mod = new ResourceModInstallCommand(new(ResourceProvider.Modrinth, ProjectId), "NativeV1", new(root, "native-fabric"));
         var plan = await client.QueryResourceModPlanQueryAsync(new(mod), token);
+        if ((await client.DispatchResourceModInstallCommandAsync(mod with { ExpectedPlanFingerprint = "stale" }, token)).IsSuccess) throw new InvalidDataException("Native install accepted a stale dependency plan.");
+        mod = mod with { ExpectedPlanFingerprint = ResourceInstallPlanIdentity.Fingerprint(plan.Value!.Versions) };
         if (!plan.IsSuccess || plan.Value!.Versions.Single().Id != "NativeV1" || !(await client.DispatchResourceModInstallCommandAsync(mod, token)).IsSuccess)
             throw new InvalidDataException("Native dependency plan/install lost its admitted version.");
         string mods = Path.Combine(context.Value.GameDirectory, "mods"); var file = new FileInfo(Path.Combine(mods, "native-1.jar"));
@@ -83,6 +86,8 @@ internal static class ResourceCases
             || Hash(await File.ReadAllBytesAsync(Path.Combine(mods, "native-2.jar"), token)) != Hash(SecondJar)
             || File.Exists(file.FullName) || (await client.DispatchResourceContentUpdateCommandAsync(update, token)).IsSuccess)
             throw new InvalidDataException("Native content update lost its reviewed replacement or accepted a stale file.");
+        if ((await client.DispatchResourceFavoriteCommandAsync(new(project, false) { ExpectedRevision = favoriteBefore.Revision }, token)).IsSuccess)
+            throw new InvalidDataException("Native favorites accepted a stale revision.");
         Console.WriteLine("Native resources parsed provider HTTP, persisted favorites and verified downloads, dependency plans and content updates.");
     }
 }

@@ -15,10 +15,10 @@ using Nexa.Xsr.State;
 namespace Nexa.Services.Composition.Plugins;
 
 /// <summary>Explicit projections of public launcher state. Opaque IDs are scoped to one admitted load.</summary>
-public sealed partial class PluginBusinessRoutes(XsrStateStore store, XsrCommandRouter libraryCommands, XsrCommandRouter accountCommands, XsrCommandRouter? minecraftCommands = null, XsrQueryRouter? minecraftQueries = null) : IAsyncDisposable
+public sealed partial class PluginBusinessRoutes(XsrStateStore store, XsrCommandRouter libraryCommands, XsrCommandRouter accountCommands, XsrCommandRouter? minecraftCommands = null, XsrQueryRouter? minecraftQueries = null, XsrCommandRouter? foundationCommands = null, XsrQueryRouter? foundationQueries = null) : IAsyncDisposable
 {
     private readonly byte[] _identity = RandomNumberGenerator.GetBytes(32);
-    public IEnumerable<HostCapabilityRoute> Routes => BasicRoutes.Concat(StateRoutes).Concat(ProcessRoutes);
+    public IEnumerable<HostCapabilityRoute> Routes => BasicRoutes.Concat(StateRoutes).Concat(ProcessRoutes).Concat(SettingsRoutes).Concat(FileRoutes).Concat(InstanceRoutes).Concat(ServerRoutes).Concat(NetworkRoutes).Concat(JavaRoutes).Concat(JavaInstallRoutes).Concat(ProfileRoutes).Concat(ThemeRoutes).Concat(OverlayRoutes).Concat(WorldRoutes).Concat(WorldEditRoutes).Concat(ContentRoutes).Concat(PlatformRoutes).Concat(CatalogRoutes).Concat(AccountAppearanceRoutes).Concat(ContentGraphRoutes).Concat(LaunchProfileRoutes).Concat(LaunchRoutes).Concat(AccountLaunchRoutes).Concat(AsyncWatchRoutes).Concat(SignInRoutes).Concat(InstallRoutes).Concat(InstanceCreateRoutes).Concat(DiagnosticRoutes).Concat(CatalogInstallRoutes).Concat(DownloadRoutes).Concat(ContentTransferRoutes).Concat(ContentTransactionRoutes);
     private IEnumerable<HostCapabilityRoute> BasicRoutes => [
         HostRoutes.Typed<InstanceListRequest, Page<InstanceSummary>>("Minecraft.Instances", "List", (c, v) =>
         {
@@ -47,7 +47,8 @@ public sealed partial class PluginBusinessRoutes(XsrStateStore store, XsrCommand
         HostRoutes.Typed<EntityRequest, AccountPublic>("Accounts", "Select", async (c, v) =>
         {
             var account = FindAccount(c, v.Id);
-            var result = await accountCommands.Dispatch(Resolve(accountCommands, FoundationRouteIds.AccountSelectProfile),
+            var baseAccounts = foundationCommands ?? accountCommands;
+            var result = await baseAccounts.Dispatch(Resolve(baseAccounts, FoundationRouteIds.AccountSelectProfile),
                 new AccountSelectProfileCommand(account.Profile.Index, account.Revision), cancellationToken: c.Options.Cancellation).Completion.ConfigureAwait(false);
             Require(result); return account.Public;
         }),
@@ -104,5 +105,14 @@ public sealed partial class PluginBusinessRoutes(XsrStateStore store, XsrCommand
         return new(page, end < items.Length ? stamp + ":" + end.ToString(CultureInfo.InvariantCulture) : null, new(stamp));
     }
     private static XsrCommandId Resolve(XsrCommandRouter router, XsrSemanticId name) => router.TryResolve(name, out var id) ? id : throw new AbiHostException(AbiErrors.CAPABILITY_UNAVAILABLE);
-    private static void Require(XsrResult result) { if (!result.IsSuccess) throw new AbiHostException(AbiErrors.CAPABILITY_UNAVAILABLE); }
+    private static string ErrorCode(XsrError? error) => error?.Kind switch
+    {
+        XsrErrorKind.Cancelled => AbiErrors.CANCELLED,
+        XsrErrorKind.TimedOut => AbiErrors.DEADLINE_EXCEEDED,
+        XsrErrorKind.NotFound => AbiErrors.NOT_FOUND,
+        XsrErrorKind.Rejected => AbiErrors.CONFLICT,
+        XsrErrorKind.ContractMismatch => AbiErrors.SCHEMA_INVALID,
+        _ => AbiErrors.CAPABILITY_UNAVAILABLE
+    };
+    private static void Require(XsrResult result) { if (!result.IsSuccess) throw new AbiHostException(ErrorCode(result.Error)); }
 }

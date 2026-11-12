@@ -119,6 +119,8 @@ public sealed partial class NativeAccountService : IAccountLaunchAccess, IAsyncD
     }
     public ValueTask<XsrResult<LaunchProfile>> GetProfileAsync(int index, CancellationToken cancellationToken = default) =>
         QueryAsync(200, writer => writer.Int32(index), reader => reader.LaunchProfile() ?? throw new InvalidDataException("Missing launch profile."), cancellationToken);
+    public ValueTask<XsrResult<LaunchProfile>> GetProfileAsync(int index, long expectedRosterRevision, CancellationToken cancellationToken = default) =>
+        QueryAsync(202, writer => { writer.Int32(index); writer.Int64(expectedRosterRevision); }, reader => reader.LaunchProfile() ?? throw new InvalidDataException("Missing launch profile."), cancellationToken);
     public XsrResult<LaunchProfile> GetProfile(int index) => throw new NotSupportedException("Use asynchronous privileged account access.");
     public ValueTask<XsrResult> UpsertAsync(Nexa.Services.Foundation.AccountUpsertProfileCommand command, CancellationToken token = default) =>
         CommandAsync(20, writer => writer.AccountUpsertProfileCommand(command), token);

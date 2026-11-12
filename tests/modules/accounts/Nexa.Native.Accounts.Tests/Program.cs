@@ -26,6 +26,8 @@ Check(accounts.SelectedIndex == 0, "Initial selection was not replicated.");
 Check(!string.Join('\n', store.CaptureSnapshot().Entries.Select(entry => entry.Value)).Contains(secret, StringComparison.Ordinal), "Credentials entered public state.");
 var privateProfile = await accounts.GetProfileAsync(1);
 Check(privateProfile.IsSuccess && privateProfile.Value.AccessToken == secret, "Privileged profile values changed across runtimes.");
+Check((await accounts.GetProfileAsync(1, profiles.Revision)).IsSuccess, "Revision-checked profile read failed.");
+Check(!(await accounts.GetProfileAsync(1, profiles.Revision + 1)).IsSuccess, "Stale launch grant read a profile.");
 await accounts.ConfigureRuntimeAsync(new("native-fixture-client", null), null);
 Console.WriteLine("PASS: native provider runtime configured");
 var offline = await accounts.GetProfileAsync(0);
@@ -42,7 +44,7 @@ var sites = await accounts.QueryWardrobeCatalogSitesQueryAsync(new());
 Check(sites.IsSuccess && sites.Value.Count > 0 && sites.Value.All(site => site.BaseUri.IsAbsoluteUri), "Catalog query lost typed values.");
 var absent = await accounts.GetProfileAsync(42);
 Check(!absent.IsSuccess && absent.Error?.Code == AccountErrors.ProfileNotFoundCode, "Stable account errors changed.");
-try { await accounts.GetProfileAsync(0, new(true)); throw new InvalidOperationException("Pre-canceled request was accepted."); }
+try { await accounts.GetProfileAsync(0, new CancellationToken(true)); throw new InvalidOperationException("Pre-canceled request was accepted."); }
 catch (OperationCanceledException) { }
 var reads = await Task.WhenAll(Enumerable.Range(0, 16).Select(_ => accounts.GetProfileAsync(0).AsTask()));
 Check(reads.All(result => result.IsSuccess), "Concurrent native queries failed.");
@@ -51,12 +53,16 @@ Check(selections.All(result => result.IsSuccess), "Concurrent selection commands
 var settled = await accounts.SelectAsync(new(0, profiles.Revision));
 Check(settled.IsSuccess && accounts.SelectedIndex == 0, "Coalesced state did not settle before command completion.");
 Console.WriteLine("PASS: typed, concurrent and coalesced account state queries");
-var login = await accounts.DispatchAccountLoginStartCommandAsync(new(AccountLoginProvider.Microsoft));
+var beforeLogin = store.Read<AccountLoginSnapshot>(store.Resolve(AccountOnboardingState.Login)).Value.Generation;
+Check(!(await accounts.DispatchAccountLoginStartCommandAsync(new(AccountLoginProvider.Microsoft, expectedGeneration: beforeLogin + 1))).IsSuccess, "A stale plugin login replaced onboarding.");
+var login = await accounts.DispatchAccountLoginStartCommandAsync(new(AccountLoginProvider.Microsoft, expectedGeneration: beforeLogin));
 Check(login.IsSuccess, "Device login was not admitted.");
 await network.Polling.Task.WaitAsync(TimeSpan.FromSeconds(10));
 var progress = store.Read<AccountLoginSnapshot>(store.Resolve(AccountOnboardingState.Login));
 Check(progress.Value.UserCode == "TEST-CODE" && progress.Value.Phase == AccountLoginPhase.AwaitingAuthorization,
     "Credential-free device progress was not replicated.");
+Check(!(await accounts.DispatchAccountLoginStartCommandAsync(new(AccountLoginProvider.Microsoft, expectedGeneration: progress.Value.Generation))).IsSuccess, "Plugin login replaced a busy onboarding flow.");
+Check(store.Read<AccountLoginSnapshot>(store.Resolve(AccountOnboardingState.Login)).Value.Generation == progress.Value.Generation, "Rejected login changed the flow generation.");
 var canceled = await accounts.DispatchAccountLoginCancelCommandAsync(new(progress.Value.Generation));
 Check(canceled.IsSuccess, "Native login cancellation was rejected.");
 await network.Canceled.Task.WaitAsync(TimeSpan.FromSeconds(10));

@@ -32,6 +32,8 @@ public sealed partial class PluginApplication : IAsyncDisposable
     private readonly Action<string> _validateComponent;
     private bool _closed;
     public PluginHostRuntime Runtime { get; }
+    public PluginFileResources Files { get; } = new();
+    public event Action<string>? ResourcesRetired;
 
     public PluginApplication(string storage, Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask<IWasmPluginMachine>> machine,
         IEnumerable<HostCapabilityRoute> business, IActionConfirmation confirmation,
@@ -42,6 +44,7 @@ public sealed partial class PluginApplication : IAsyncDisposable
         _machine = machine; _notify = notify; _navigate = navigate; _validatePage = validatePage; _validateComponent = validateComponent ?? validatePage;
         Runtime = new(storage, d => Abi100Schemas.Validate(d.Schema, d.Body), Abi100Schemas.Validate,
             Routes.Concat(AdvancedUiRoutes).Concat(DrawingRoutes).Concat(business), new() { ActionConfirmation = confirmation });
+        Files.IsOwnerActive = owner => Runtime.Active.Contains(owner);
     }
 
     public PluginPresentation Snapshot()
@@ -116,6 +119,7 @@ public sealed partial class PluginApplication : IAsyncDisposable
     }
     private void ClearAssets(string id)
     {
+        Files.Retire(id); ResourcesRetired?.Invoke(id);
         lock (_gate)
         {
             if (_assets.Remove(id, out var assets)) foreach (var bytes in assets.Values) CryptographicOperations.ZeroMemory(bytes);
@@ -210,7 +214,7 @@ public sealed partial class PluginApplication : IAsyncDisposable
         {
             if (_closed) return; _closed = true;
             try { await Runtime.DisposeAsync().ConfigureAwait(false); }
-            finally { string[] ids; lock (_gate) ids = _assets.Keys.ToArray(); foreach (var id in ids) ClearAssets(id); }
+            finally { string[] ids; lock (_gate) ids = _assets.Keys.ToArray(); foreach (var id in ids) ClearAssets(id); Files.Dispose(); }
         }
         finally { _loads.Release(); }
     }

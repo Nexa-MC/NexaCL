@@ -66,6 +66,15 @@ internal static class ManagementCases
         await File.WriteAllBytesAsync(Path.Combine(world, "level.dat"), WorldNbt(), token);
         await File.WriteAllTextAsync(Path.Combine(world, "session.lock"), "native session sentinel", token);
         var metadata = (await client.QueryInstanceWorldMetadataQueryAsync(new(instance, "NativeWorld"), token)).Value!;
+        if (!(await client.RenameWorldAsync(new(instance, "NativeWorld", "Renamed native world", metadata.Revision), token)).IsSuccess
+            || (await client.RenameWorldAsync(new(instance, "NativeWorld", "Stale", metadata.Revision), token)).IsSuccess)
+            throw new InvalidDataException("Native world rename did not preserve revision checks.");
+        metadata = (await client.QueryInstanceWorldMetadataQueryAsync(new(instance, "NativeWorld"), token)).Value!;
+        if (metadata.LevelName != "Renamed native world" || !(await client.SetWorldDataPackOrderAsync(new(instance, "NativeWorld", ["vanilla"], metadata.Revision), token)).IsSuccess)
+            throw new InvalidDataException("Native world rename or ordered data-pack edit was lost.");
+        metadata = (await client.QueryInstanceWorldMetadataQueryAsync(new(instance, "NativeWorld"), token)).Value!;
+        if ((await client.SetWorldDataPackOrderAsync(new(instance, "NativeWorld", [], metadata.Revision), token)).IsSuccess)
+            throw new InvalidDataException("Native data-pack edit removed vanilla.");
         if (!(await client.DispatchInstanceWorldCopyCommandAsync(new(instance, "NativeWorld", "NativeCopy", metadata.Revision), token)).IsSuccess
             || File.Exists(Path.Combine(game, "saves", "NativeCopy", "session.lock"))
             || (await client.DispatchInstanceWorldCopyCommandAsync(new(instance, "NativeWorld", "StaleCopy", "stale"), token)).IsSuccess)
@@ -89,6 +98,7 @@ internal static class ManagementCases
         void Header(byte type, string name) { body.WriteByte(type); Text(name); }
         Header(10, ""); Header(10, "Data"); Header(8, "LevelName"); Text("Native fixture");
         Header(3, "DataVersion"); Span<byte> version = stackalloc byte[4]; BinaryPrimitives.WriteInt32BigEndian(version, 3955); body.Write(version);
+        Header(10, "DataPacks"); Header(9, "Enabled"); body.WriteByte(8); body.Write(new byte[] { 0, 0, 0, 1 }); Text("vanilla"); body.WriteByte(0);
         body.WriteByte(0); body.WriteByte(0);
         using var result = new MemoryStream(); using (var gzip = new GZipStream(result, CompressionLevel.Optimal, leaveOpen: true)) gzip.Write(body.ToArray()); return result.ToArray();
     }

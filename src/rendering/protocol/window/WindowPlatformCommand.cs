@@ -46,6 +46,10 @@ internal enum WindowPlatformCommand
     LocalizeCaptions = 42,
     Facts = 43,
     NotifyWithAction = 44,
+    PickExtensionFile = 45,
+    ReadExtensionClipboard = 46,
+    WriteExtensionClipboard = 47,
+    ReadExtensionDisplays = 48,
 }
 
 internal static class WindowPlatformContract

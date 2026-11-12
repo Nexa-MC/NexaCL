@@ -96,7 +96,7 @@ public sealed partial class XsrUiRenderer
         if (TryHitScrollbar(point, out XsrUiEntityId scrollEntity, out XsrUiScrollbarSnapshot scrollbar))
             return BeginScrollbarGesture(scrollEntity, scrollbar, point);
         XsrUiEntityId entity = InputAt(point);
-        ObserveInput(entity, new("Pointer", "pressed", point.X, point.Y));
+        ObserveInput(entity, "Pointer", "pressed", point.X, point.Y);
         XsrUiInput? input = entity.IsAssigned ? _tree.GetComponent<XsrUiInput>(entity) : null;
         if (entity.IsAssigned && _tree.GetComponent<XsrUiTextInput>(entity) is not null && IsEnabled(input))
         {
@@ -149,7 +149,7 @@ public sealed partial class XsrUiRenderer
         }
 
         XsrUiEntityId pressed = _pressed;
-        ObserveInput(pressed, new("Pointer", "released", point.X, point.Y));
+        ObserveInput(pressed, "Pointer", "released", point.X, point.Y);
         XsrUiInput? input = _tree.GetComponent<XsrUiInput>(pressed);
         if (input is not null)
         {
@@ -194,7 +194,7 @@ public sealed partial class XsrUiRenderer
         if (MoveScrollGesture(point)) return true;
         if (MovePagerGesture(point)) { AbandonScrollGesture(); return true; }
         XsrUiEntityId entity = InputAt(point);
-        ObserveInput(entity, new("Pointer", "moved", point.X, point.Y));
+        ObserveInput(entity, "Pointer", "moved", point.X, point.Y);
         XsrUiEntityId stable = StableHoverTarget(point, entity);
         if (stable == entity) _hoverDecisionPoint = point;
         entity = stable;
@@ -310,7 +310,7 @@ public sealed partial class XsrUiRenderer
         }
 
         _focused = entity;
-        ObserveInput(entity, new("Focus", "focused"));
+        ObserveInput(entity, "Focus", "focused");
         input.IsFocused = true;
         input.IsFocusVisible = showIndicator;
         MarkInputDirty(entity);
@@ -389,7 +389,7 @@ public sealed partial class XsrUiRenderer
     /// </summary>
     public bool HandleKey(XsrUiKey key)
     {
-        ObserveInput(_focused, new("Key", "pressed", Text: key.ToString()));
+        ObserveInput(_focused, "Key", "pressed", text: key.ToString());
         if (MoveRangeForKey(key)) return true;
         if (MoveSegmentForKey(key)) return true;
         if (MoveCapsuleCaptionForKey(key)) return true;

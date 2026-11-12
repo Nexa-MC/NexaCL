@@ -15,7 +15,7 @@ public sealed partial class HttpInstallCatalogSource(HttpClient http, string? cu
     {
         using JsonDocument json = JsonDocument.Parse(await ReadAsync("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json", token).ConfigureAwait(false));
         return Array.AsReadOnly(json.RootElement.GetProperty("versions").EnumerateArray().Select(v =>
-            new InstallCatalogVersion(Text(v, "id"), Text(v, "type"), Text(v, "type") == "release")).ToArray());
+            new InstallCatalogVersion(Text(v, "id"), Text(v, "type"), Text(v, "type") == "release") { ReleasedAt = v.TryGetProperty("releaseTime", out var released) && released.TryGetDateTimeOffset(out var timestamp) ? timestamp : null }).ToArray());
     }
     public async Task<IReadOnlyList<InstallCatalogVersion>> GetLoadersAsync(InstallLoader loader, string game, CancellationToken token)
     {

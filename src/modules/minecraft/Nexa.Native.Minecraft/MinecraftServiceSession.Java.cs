@@ -1,6 +1,7 @@
 using Nexa.Native.Minecraft.Services;
 using Nexa.Native.Services.Wire;
 using Nexa.Services.Minecraft.Java;
+using Nexa.Services.Minecraft.Launch;
 using Nexa.Xsr;
 
 namespace Nexa.Native.Minecraft;
@@ -49,6 +50,18 @@ internal sealed partial class MinecraftServiceSession
         if (!_javaConfigured) throw new InvalidOperationException("Canonical Java services are not configured.");
         switch (operation)
         {
+            case MinecraftServiceProtocol.JavaPluginSelection:
+                string? instance = reader.String(); bool versionLocal = reader.Boolean(); reader.End();
+                if (versionLocal && instance is null) throw new InvalidDataException("Version-local Java needs an instance.");
+                var requirement = instance is null ? JavaRequirementResolution.Valid(JavaVersionRange.Any) : await MinecraftPluginJavaPolicy.ReadAsync(instance, token).ConfigureAwait(false);
+                var selected = await new JavaSelectionService(_javaLocator!).SelectAsync(requirement,
+                    versionLocal ? new InstanceJavaPreference(instance!) : new AutoSelectJavaPreference(), token).ConfigureAwait(false);
+                writer.JavaRuntimeCandidate(selected.SelectedJava); break;
+            case MinecraftServiceProtocol.JavaPluginRequirements:
+                string requirementInstance = reader.String() ?? throw new InvalidDataException("Missing instance."); reader.End();
+                var required = await MinecraftPluginJavaPolicy.ReadAsync(requirementInstance, token).ConfigureAwait(false);
+                writer.Boolean(required.Success); writer.String(required.Range.Minimum.ToString()); writer.String(required.Range.Maximum.ToString());
+                writer.String(required.RecommendedComponent); writer.Int32((int)required.FailureReason); writer.String(required.Detail); break;
             case MinecraftServiceProtocol.JavaInspect:
                 string executable = reader.String() ?? throw new InvalidDataException("Missing Java executable."); reader.End();
                 writer.JavaRuntimeCandidate(await _javaLocator!.InspectAsync(executable, token).ConfigureAwait(false)); break;

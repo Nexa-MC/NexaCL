@@ -68,7 +68,7 @@ public sealed record ResourceTranslationQuery(ResourceReference Source, string O
 public sealed record ResourceTranslation(string? Description)
 { public string? Notice { get; init; } }
 public sealed record ResourceDownloadCommand(ResourceProvider Provider, string ProjectId, string VersionId, string DestinationDirectory, bool MirrorFirst = true)
-{ public bool Refresh { get; init; } }
+{ public bool Refresh { get; init; } public ResourceFile? ExpectedFile { get; init; } }
 
 public interface IResourceCatalogSource
 {
@@ -88,13 +88,13 @@ public sealed record ResourceInstalledFile(ResourceReference Source, string Vers
 public sealed record ResourceInstanceContext(string Game, string Loader, IReadOnlyList<ResourceInstalledFile> Installed, string? Notice)
 { public string GameDirectory { get; init; } = ""; }
 public sealed record ResourceModInstallCommand(ResourceReference Source, string? VersionId, ResourceInstanceQuery Instance)
-{ public IReadOnlyList<ResourceReference> OptionalDependencies { get; init; } = []; }
+{ public IReadOnlyList<ResourceReference> OptionalDependencies { get; init; } = []; public string? ExpectedPlanFingerprint { get; init; } }
 public sealed record ResourceModPlanQuery(ResourceModInstallCommand Command);
 public sealed record ResourceOptionalDependency(ResourceReference Source, string? VersionId, string Name);
 public sealed record ResourceInstallPlan(IReadOnlyList<ResourceVersion> Versions, IReadOnlyList<ResourceOptionalDependency> Optional, bool HasCycles);
 public sealed record ResourceFavoritesQuery;
-public sealed record ResourceFavoritesSnapshot(IReadOnlyList<ResourceProject> Projects);
-public sealed record ResourceFavoriteCommand(ResourceProject Project, bool Saved);
+public sealed record ResourceFavoritesSnapshot(IReadOnlyList<ResourceProject> Projects) { public long Revision { get; init; } }
+public sealed record ResourceFavoriteCommand(ResourceProject Project, bool Saved) { public long? ExpectedRevision { get; init; } }
 public sealed record ResourceContentOnlineQuery(string InstanceDirectory, string PageId, string Name, long ExpectedSize, long ExpectedModifiedUtcTicks)
 { public bool MirrorFirst { get; init; } = true; public bool Refresh { get; init; } public bool WaitForRefresh { get; init; } }
 public sealed record ResourceContentOnline(ResourceProject? Project, string? InstalledVersion, IReadOnlyList<ResourceVersion> Versions, string? Notice)

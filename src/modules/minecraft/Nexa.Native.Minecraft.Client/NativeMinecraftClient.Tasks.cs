@@ -9,21 +9,35 @@ public sealed partial class NativeMinecraftClient : IExternalTaskCenterSource
 {
     public string Prefix => "native-minecraft:" + _context.ToString(CultureInfo.InvariantCulture) + ":";
     private Action<long, IReadOnlyList<TaskCenterEntry>>? _tasks;
+    private long _taskRevision;
+    private IReadOnlyList<TaskCenterEntry> _taskSnapshot = [];
     public void AttachTasks(Action<long, IReadOnlyList<TaskCenterEntry>> publish)
     {
         ArgumentNullException.ThrowIfNull(publish);
+        long revision; IReadOnlyList<TaskCenterEntry> entries;
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_closed, this);
             if (_tasks is not null) throw new InvalidOperationException("Minecraft task source is already attached.");
             _tasks = publish;
+            revision = _taskRevision; entries = _taskSnapshot;
         }
+        // The consumer rejects older revisions if a newer publication overtakes this replay.
+        if (revision > 0) publish(revision, entries);
     }
     private byte[] ApplyTaskState(ServiceWireReader reader, long revision, int count)
     {
         TaskCenterEntry[] entries = new TaskCenterEntry[count];
         for (int index = 0; index < count; index++) entries[index] = reader.TaskCenterEntry() ?? throw new InvalidDataException("Missing native task.");
-        reader.End(); _tasks?.Invoke(revision, Array.AsReadOnly(entries)); return [];
+        reader.End();
+        Action<long, IReadOnlyList<TaskCenterEntry>>? publish;
+        IReadOnlyList<TaskCenterEntry> snapshot = Array.AsReadOnly(entries);
+        lock (_gate)
+        {
+            if (revision <= _taskRevision) return [];
+            _taskRevision = revision; _taskSnapshot = snapshot; publish = _tasks;
+        }
+        publish?.Invoke(revision, snapshot); return [];
     }
     public async Task<bool> RetryAsync(string taskId, CancellationToken token = default)
     {

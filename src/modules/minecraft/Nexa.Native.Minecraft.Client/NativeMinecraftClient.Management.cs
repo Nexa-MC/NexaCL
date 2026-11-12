@@ -82,6 +82,18 @@ public sealed partial class NativeMinecraftClient
         using var reader = new ServiceWireReader(bytes);
         var error = reader.XsrError(); reader.End(); return error is null ? XsrResult.Success() : XsrResult.Failure(error);
     }
+    public async ValueTask<XsrResult> RenameWorldAsync(InstanceWorldRenameCommand value, CancellationToken token = default)
+    {
+        byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.ManageInstanceWorldRenameCommand, writer => writer.InstanceWorldRenameCommand(value), token).ConfigureAwait(false);
+        using var reader = new ServiceWireReader(bytes); var error = reader.XsrError(); reader.End();
+        return error is null ? XsrResult.Success() : XsrResult.Failure(error);
+    }
+    public async ValueTask<XsrResult> SetWorldDataPackOrderAsync(InstanceWorldDataPackOrderCommand value, CancellationToken token = default)
+    {
+        byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.ManageInstanceWorldDataPackOrderCommand, writer => writer.InstanceWorldDataPackOrderCommand(value), token).ConfigureAwait(false);
+        using var reader = new ServiceWireReader(bytes); var error = reader.XsrError(); reader.End();
+        return error is null ? XsrResult.Success() : XsrResult.Failure(error);
+    }
     public async ValueTask<XsrResult> DispatchInstanceWorldCopyCommandAsync(InstanceWorldCopyCommand value, CancellationToken token = default)
     {
         byte[] bytes = await InvokeAsync(MinecraftServiceProtocol.ManageInstanceWorldCopyCommand, writer => writer.InstanceWorldCopyCommand(value), token).ConfigureAwait(false);

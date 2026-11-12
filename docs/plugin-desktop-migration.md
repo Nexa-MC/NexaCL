@@ -29,33 +29,51 @@ the Host management page accessible. The worker retains its release-signature ga
 
 ## Implemented application mappings
 
-There are 40 application routes in addition to the SDK kernel's 90 routes:
+The current SDK catalog has 346 operations. The kernel maps 97 and Desktop adds
+200 routes (297 total). A route is still subject to its permission, lifecycle,
+platform availability, ownership and domain preconditions. This count is not a
+claim that all SDK methods or all providers are implemented.
 
-| Group | Application mappings |
+| Area | Integrated behavior |
 | --- | --- |
-| Files | OpenPackageFile, Stat, Read |
-| UI | All 19 current UI operations |
-| Platform | Notify, QueryArchitecture |
-| Minecraft.Instances | List, ListRoots, ReadIdentity, Select, Watch, Discover |
-| Accounts | List, ReadPublic, Select, Watch, Remove |
-| Minecraft.Processes | ListSessions, ReadSession, WatchSession, ReadLogRange, Stop |
+| Instances and launch | Registered roots, discovery, selection, creation, profile CAS, account-bound launch grants, reviewed launch plans, start/cancel and attempt watches |
+| Accounts | Public roster, device-code/form sign-in, eligibility/refresh, selected-profile skin/cape operations; credentials remain in the account owner |
+| Installation and Java | Isolated install drafts, version/loader catalogs, plan execution and cancellation; exact instance Java requirements, version-local selection, multi-file managed Java offers and reviewed installation |
+| Content and worlds | Content identities, graph/integrity, enabled state, catalog install/update plans, trash restore, imports/exports, transaction rollback, metadata, data packs and world snapshots |
+| Catalog and servers | Modrinth/CurseForge queries, revision-bound favorites, dependency previews, saved server list, SRV-aware status, LAN discovery and join |
+| Settings and themes | Effective settings, profiles and temporary overlays; reviewed theme activation/preview/revert and option import/export |
+| System services | Granted file access, explicit symlink admission, clipboard/window/process operations, bounded HTTP/socket resources, real streaming downloads with pause/resume/cancel and verification |
+| UI and diagnostics | All 19 UI operations, owned subscriptions, scoped machine preflight and reviewed existing remediation handlers |
 
-These adapters call existing typed Host commands and queries. They expose public
-account projections, never credentials. Opaque IDs and cursors belong to one
-admitted load; stale roster revisions cannot select/remove a replacement account.
-Instance reads require the authoritative current root. Incomplete/provisional
-state returns unavailable rather than a successful empty list. Discovery and
-process termination use the existing Tasks operation ledger and cancellation
-lifetime. Logs use the existing bounded, redacted process-output query and
-load/session-bound cursors, with explicit gaps.
+Mutation plans are load-owned, expire, bind reviewed inputs/revisions, require Host
+confirmation and are consumed once. Executors revalidate after confirmation and
+use the existing domain owners. Resource installs carry the dependency-plan
+fingerprint all the way into the native resource owner. Selected exports carry an
+exact path allowlist into the exporter. Public IDs and cursors are opaque and
+cannot substitute raw Host paths or credentials.
 
-Instance, account and session watches accept their respective `InstanceSummary`,
-`AccountPublic` and `GameSession` schemas. Each publishes an initial projection;
-subsequent applied state changes trigger coalesced snapshots in a bounded queue.
-A lost target emits a terminal null. Queue overflow requires resynchronization;
-cursors supplied when opening a new watch set `ResyncRequired`. Release, revoked
-grants and retired loads prevent further delivery. At most 256 business watches
-are retained, with 64 queued snapshots per watch.
+Current domain limits remain explicit: content import accepts inspected local Mod
+JARs; catalog install/update plans have one primary item; optional installer files
+and world-targeted launch are not yet represented by their adapters. Launch-profile
+arguments reject empty values, embedded double quotes and control characters,
+because the current launch-policy tokenizer cannot round-trip them. Network
+credential references and custom provider callbacks are not implicitly accepted.
+
+Managed Java uses the additive `ListManagedDistributions` and
+`PrepareManagedInstall` methods: Mojang distributes a file manifest, not one
+archive. The original single-archive contract is unchanged. License URLs, file
+count, bytes, registry revision and expiration are retained; the result becomes a
+Java runtime only after the owner has verified and registered it.
+
+Downloads publish only to explicitly granted absent targets. Files stream through
+the existing download owner, are bounded and hashed before atomic publication.
+Pause retains partial bytes and the same task; cancellation/retirement cleans up
+staging. Verify checks the current file against its published digest even when the
+request omitted a checksum. Operations currently retain the SDK five-minute budget.
+
+Watches have bounded queues and explicit retirement. Gaps require resynchronization;
+watch handles belong to their original load and cannot survive reload. Unavailable
+or incomplete owner state is an error rather than a successful empty projection.
 
 ## UI extension contract
 
@@ -102,46 +120,82 @@ unavailable. A failed extension cannot remove the Host plugin manager.
 
 ## Verification and remaining scope
 
-Fixtures record the independent SDK source identity and ZIP SHA-256 beside each
-package. Tests use real Wasm over the chunked execution boundary and cover encrypted
-cache tampering, approved grants, session replacement, disabled persistence,
-contributions, dialogs, model updates, input answers, drawing revisions, shortcuts,
-owned subscriptions, process operations, stale account IDs and retirement. The
-merged change passed 403 managed Desktop tests, 90 NXML compiler tests and all five
-plugin integration groups under Linux x64 NativeAOT. Architecture checks passed for
-101 projects, repository layout and source-format gates passed, and the pinned SDK
-feed downloaded and verified in a clean directory. NativeAOT retains the existing
-Jint IL2098 trim warning. This document does not turn missing routes into support.
+The SDK extensions preserve every existing operation and model. SDK validation
+covers managed and NativeAOT runs, 368 current/legacy C calls, 300 model/collection
+round trips, event ownership, command-only permissions, atomic migration rollback,
+concurrent writers, retired handles and restart persistence. A separate NuGet-only
+consumer verifies the packaged runtime. Public build inputs are generated by the
+`Stage pinned Plugin SDK inputs` workflow from a hashed exact source snapshot.
 
-**The remaining business groups are not complete.** Production Market acquisition
-and entitlement/key custody also still require product wiring. Java, installation,
-launch plans, content/worlds, servers, catalog, settings, themes, backups, downloads,
-platform file/clipboard dialogs and other unmapped domain methods remain
-unavailable. This change publishes neither a launcher Alpha nor a signed worker.
+Desktop fixtures use actual Wasm and authenticated chunked execution, plus real
+file/HTTP/domain owners for the operations under test. The separate native service
+suite covers account roster fencing, Java requirement selection, resource install
+fingerprints and favorite conflicts. Tests and platform-specific smoke runs must
+pass before this migration is declared complete.
+
+Still unmapped operations:
+
+- **Minecraft.Instances**: `PrepareClone`, `CommitClone`, `PrepareDelete`, `CommitDelete`.
+- **Minecraft.Install**: `ListRecoveries`, `ResumeRecovery`, `DiscardRecovery`, `RegisterTemplate`, `RegisterLoaderProvider`.
+- **Minecraft.Java**: `ListDistributions`, `PrepareInstall`, `RegisterDistributionProvider`.
+- **Minecraft.Launch**: `RegisterContribution`, `RegisterPreflight`, `ExplainContribution`.
+- **Minecraft.Content**: `ClearTrash`, `RegisterFormatProvider`.
+- **Minecraft.Worlds**: `PlanDelete`, `PreviewRestore`, `Restore`.
+- **Catalog**: `RegisterCollection`, `RegisterTranslationProvider`.
+- **Accounts**: `SignOut`, `RegisterProvider`.
+- **Settings**: `RegisterSchema`, `RegisterPage`, `Migrate`.
+- **Themes**: `MigrateOptions`, `ListResources`, `ReadResource`, `ReleaseResource`.
+- **Backups**: `List`, `Read`, `Statistics`, `PrepareCapture`, `Capture`, `PreviewRestore`, `Restore`, `VerifyOffline`, `Export`, `Import`, `PreviewPrune`, `Prune`, `ReadRetention`, `SetRetention`.
+- **Downloads**: `RegisterSourceResolver`, `RegisterTransferProvider`.
+- **Tasks**: `Retry`.
+- **Minecraft.Diagnostics**: `RegisterRuleProvider`.
+
+Additional provider families and production Market acquisition/key custody remain
+separate implementation work. Local developer-package offline recovery already
+works, but it does not stand in for production Market entitlement. This migration
+publishes SDK build inputs; it does not publish a launcher Alpha.
 
 ## 简体中文
 
-本轮新增加密的本地启用记录与离线恢复。开发包仍需开发者模式和明确授权，用户可
-选择“保存并启用”或“仅本次加载”。缓存使用当前用户的系统保护器封装 AES-GCM
-密钥，恢复前重新验证包与权限，并等待插件引擎完成认证；引擎更换后使用新加载
-身份，绝不重放未完成业务。安全模式不恢复插件，停用先删除保存的授权，损坏记录
-保留并单独报告。生产 Market 的获取与权益验证尚未接入。
+目前 SDK 有 346 个操作，内核接入 97 个，Desktop 新增 200 个，共 297 个。
+这些路由仍受权限、生命周期、操作系统、归属及业务状态限制，不代表全部接口已完成。
+上方逐项列出仍未接入的方法；后续继续实现，不用成功空结果冒充已完成。
 
-目前共接入 40 条应用路由，叠加 SDK 内核的 90 条。UI 的 19 条当前接口已接入，
-包括组件、扩展、替换、命令、快捷键、对话框、模型、生命周期订阅、绘图与输入。
-宿主仅开放插件管理页内容扩展点，认证、导航和确认控件不可替换。快捷键只在声明
-的页面生效，文本编辑与弹窗期间禁用。绘图只接受有归属的文件引用，并限制尺寸、
-命令数及输入队列；宿主确认框出现时停止向插件传递输入。
+本轮接入实例/账户/Java/安装/启动、内容和存档、目录市场、设置、主题、网络下载、
+平台操作及诊断。修改类操作绑定用户审阅的输入与版本，在宿主确认后重新检查，
+通过原业务服务执行。账户凭据不暴露给插件；ID、计划、游标和订阅归属当前加载。
+Java 新增兼容的多文件分发契约，保留许可证、大小和有效期，安装后须通过验证和登记。
+事件退订保留旧入口并增加可用的句柄契约，私有存储迁移原子提交且拒绝并发覆盖。
 
-业务新增实例/账户/进程订阅、实例发现、账户删除、进程列表、详情、日志和停止。
-全部使用现有命令与查询，账户不暴露凭据，ID、游标与订阅绑定加载身份；过期账户
-列表不能删除替代条目。操作进入现有任务账本，停用或撤权后停止交付数据。
+SDK 的托管、NativeAOT、跨语言和独立 NuGet 使用方测试已通过。Desktop 和独立
+原生业务测试继续验证本轮接入；详细能力边界和未实现项以上方清单为准。
+生产 Market 的获取、权益与密钥托管尚未接入。本次发布的是 SDK 构建依赖，不是启动器 Alpha。
 
-其余业务接口仍未全部接入，具体范围见上面的 Remaining scope。此轮代码与测试
-不代表全部 ABI 已实现，也不发布启动器 Alpha。SDK 锁定公开构建输入，普通恢复
-无需私有仓库凭据；开发样例和测试夹具另行记录精确来源及摘要。
+## Custom catalog providers
 
-合入远端最新主分支后，403 项 Desktop 测试、90 项 NXML 测试和 Linux x64
-NativeAOT 的 5 组插件集成测试全部通过；101 个项目的架构、仓库目录及代码格式
-检查通过。公开 SDK 构建输入已在全新目录下载并校验。AOT 保留已有的 Jint IL2098
-裁剪警告。
+SDK alpha.9 supplies the typed business-provider callback envelope. Desktop accepts
+`nexa:catalog` providers with Search, ReadProject, ListVersions, ReadVersion,
+ReadChangelog, ResolveFiles and ResolveDependencies capabilities. Registrations
+activate atomically; callbacks run under the query-only boundary. Self-calls and
+cyclic provider callback chains are rejected. Returned project
+and version references must match the selected provider/request. File names, HTTPS
+URLs, hashes, collection sizes and dependencies are validated before exposure.
+Search/version cursors are authenticated for the requesting plugin and query.
+
+Custom catalog searches select exactly one provider. Default and mixed built-in
+searches retain the canonical resource owner's behavior. Custom-provider favorites
+and installation are not mapped by this read adapter. Unsupported registration
+policies are rejected explicitly; see the SDK business-provider contract.
+
+## Validation of this integration
+
+The Linux Desktop suite passes 407 tests, including independent catalog provider
+callbacks, cursor isolation and forged-result rejection. Architecture checks pass
+for 101 projects; generated UI/window wire and repository formatting checks pass.
+Independent NativeAOT Minecraft and Accounts tests pass. The NativeAOT window
+probe passes with a real Xvfb display, including plugin clipboard text/image round
+trips. The managed-owner NativeAOT Desktop passes shell, setup and theme validation;
+the separate external-module/native-service Desktop graph compiles without warnings.
+This does not replace platform-specific launcher release testing. The SDK alpha.9
+CI passes on Linux, Windows and macOS. Production Market delivery and the remaining
+49 ABI mappings are still tracked above.

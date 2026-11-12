@@ -5,8 +5,8 @@ public sealed record XsrUiInputObservation(string Kind, string Phase, double X =
 public sealed partial class XsrUiRenderer
 {
     public event Action<XsrUiEntityId, XsrUiInputObservation>? InputObserved;
-    private void ObserveInput(XsrUiEntityId entity, XsrUiInputObservation value)
+    private void ObserveInput(XsrUiEntityId entity, string kind, string phase, double x = 0, double y = 0, string? text = null)
     {
-        if (entity.IsAssigned && _tree.IsAlive(entity) && IsInVisibleTree(entity) && IsEnabled(_tree.GetComponent<XsrUiInput>(entity))) InputObserved?.Invoke(entity, value);
+        if (InputObserved is { } observer && entity.IsAssigned && _tree.IsAlive(entity) && IsInVisibleTree(entity) && IsEnabled(_tree.GetComponent<XsrUiInput>(entity))) observer(entity, new(kind, phase, x, y, text));
     }
 }

@@ -96,6 +96,12 @@ internal sealed partial class AccountsSession : IAsyncDisposable
             int index = reader.Int32(); reader.End(); var result = _accounts!.GetProfile(index);
             writer.XsrError(result.Error); if (result.IsSuccess) writer.LaunchProfile(result.Value);
         }
+        else if (operation == 202)
+        {
+            int index = reader.Int32(); long revision = reader.Int64(); reader.End();
+            var result = await _accounts!.GetProfileAsync(index, revision, token).ConfigureAwait(false);
+            writer.XsrError(result.Error); if (result.IsSuccess) writer.LaunchProfile(result.Value);
+        }
         else if (operation == 201)
         {
             int index = reader.Int32(); var profile = reader.LaunchProfile() ?? throw new InvalidDataException("Missing profile."); reader.End();

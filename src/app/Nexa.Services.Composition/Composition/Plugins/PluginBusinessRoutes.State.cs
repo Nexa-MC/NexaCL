@@ -21,7 +21,7 @@ public sealed partial class PluginBusinessRoutes
     public void Bind(PluginRuntimeServices services)
     {
         if (_services is not null) throw new InvalidOperationException("Plugin business routes already bound.");
-        _services = services; store.Changed += Changed; _watchWorker = PumpAsync();
+        _services = services; store.Changed += Changed; _watchWorker = PumpAsync(); _changes.Writer.TryWrite(true); _fileWatchWorker = WatchFilesAsync(); _lanWatchWorker = WatchLanAsync(); _logWatchWorker = WatchLogsAsync(); _asyncWatchWorker = WatchAsyncQueries();
     }
     private PluginRuntimeServices Services => _services ?? throw new AbiHostException(AbiErrors.CAPABILITY_UNAVAILABLE);
     private void Changed(XsrStateChange _) => _changes.Writer.TryWrite(true);
@@ -40,6 +40,8 @@ public sealed partial class PluginBusinessRoutes
     {
         await foreach (var _ in _changes.Reader.ReadAllAsync().ConfigureAwait(false))
         {
+            await RefreshDeveloperModeAsync().ConfigureAwait(false);
+            await RefreshSettingWatchesAsync().ConfigureAwait(false);
             lock (_watchGate)
                 foreach (var watch in _watches.Values.ToArray())
                 {
@@ -74,16 +76,28 @@ public sealed partial class PluginBusinessRoutes
         HostRoutes.Typed<EntityRequest, Empty>("Accounts", "Remove", async (c, v) =>
         {
             var account = FindAccount(c, v.Id);
-            Require(await accountCommands.Dispatch(Resolve(accountCommands, FoundationRouteIds.AccountRemoveProfile),
+            var baseAccounts = foundationCommands ?? accountCommands;
+            Require(await baseAccounts.Dispatch(Resolve(baseAccounts, FoundationRouteIds.AccountRemoveProfile),
                 new AccountRemoveProfileCommand(account.Profile.Index, account.Revision), cancellationToken: c.Options.Cancellation).Completion.ConfigureAwait(false));
             return new Empty();
         })
     ];
     public async ValueTask DisposeAsync()
     {
+        if (_application is not null) _application.ResourcesRetired -= RetireResources;
+        Task[] downloads; lock (_planGate) { _downloadsStopped = true; downloads = _downloadWorkers.Select(w => w.Task).ToArray(); }
+        _resourceStop.Cancel();
+        await Task.WhenAll(downloads).ConfigureAwait(false);
+        RetireNetwork(null); _pluginHttp.Dispose();
+        if (_fileWatchWorker is not null) await _fileWatchWorker.ConfigureAwait(false);
+        if (_lanWatchWorker is not null) await _lanWatchWorker.ConfigureAwait(false);
+        if (_logWatchWorker is not null) await _logWatchWorker.ConfigureAwait(false);
+        if (_asyncWatchWorker is not null) await _asyncWatchWorker.ConfigureAwait(false);
+        _resourceStop.Dispose();
         store.Changed -= Changed; _changes.Writer.TryComplete();
         if (_watchWorker is not null) await _watchWorker.ConfigureAwait(false);
-        lock (_watchGate) _watches.Clear();
+        lock (_watchGate) { _watches.Clear(); _settingWatches.Clear(); _fileWatches.Clear(); _lanWatches.Clear(); _logWatches.Clear(); _asyncWatches.Clear(); }
+        lock (_planGate) { _plans.Clear(); _contentIdentities.Clear(); _launchGrants.Clear(); _launchPlans.Clear(); _installDrafts.Clear(); _installPlans.Clear(); _installOperations.Clear(); _signInFlows.Clear(); _pluginDownloads.Clear(); _javaOffers.Clear(); }
         System.Security.Cryptography.CryptographicOperations.ZeroMemory(_identity);
     }
 }

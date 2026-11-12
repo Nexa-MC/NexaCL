@@ -10,6 +10,9 @@ public sealed record MinecraftStartCommand(string InstanceId, int AccountIndex)
 {
     public string? MinecraftRootDirectory { get; init; }
     public string? ServerAddress { get; init; }
+    public long? ExpectedAccountRosterRevision { get; init; }
+    public long? ExpectedSettingsRevision { get; init; }
+    public string? LaunchProfileId { get; init; }
 }
 public sealed record MinecraftLaunchCommand(MinecraftLaunchRequest Request);
 public sealed record MinecraftCancelProcessCommand(Guid SessionId);

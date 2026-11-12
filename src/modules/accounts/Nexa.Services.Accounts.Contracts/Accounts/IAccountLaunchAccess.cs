@@ -11,6 +11,12 @@ public interface IAccountLaunchAccess : IAccountLaunchIdentityResolver
 {
     XsrResult<LaunchProfile> GetProfile(int index);
 
+    ValueTask<XsrResult<LaunchProfile>> GetProfileAsync(int index, long expectedRosterRevision, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(XsrResult.Failure<LaunchProfile>(AccountErrors.InvalidProfile("Revision-checked launch access is unavailable.")));
+    }
+
     ValueTask<XsrResult<LaunchProfile>> GetProfileAsync(int index, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

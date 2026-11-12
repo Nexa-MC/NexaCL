@@ -75,6 +75,16 @@ internal sealed partial class MinecraftServiceSession
                     var value = reader.InstanceContentUpdateRollbackCommand() ?? throw new InvalidDataException("Missing management request."); reader.End();
                     writer.XsrError((await InstanceContentUpdateTransaction.RollbackAsync(value, _store, token).ConfigureAwait(false)).Error); break;
                 }
+            case MinecraftServiceProtocol.ManageInstanceWorldRenameCommand:
+                {
+                    var value = reader.InstanceWorldRenameCommand() ?? throw new InvalidDataException("Missing management request."); reader.End();
+                    writer.XsrError((await InstanceWorldService.RenameAsync(value, _store, WorldSessionLock, token).ConfigureAwait(false)).Error); break;
+                }
+            case MinecraftServiceProtocol.ManageInstanceWorldDataPackOrderCommand:
+                {
+                    var value = reader.InstanceWorldDataPackOrderCommand() ?? throw new InvalidDataException("Missing management request."); reader.End();
+                    writer.XsrError((await InstanceWorldService.SetDataPackOrderAsync(value, _store, WorldSessionLock, token).ConfigureAwait(false)).Error); break;
+                }
             case MinecraftServiceProtocol.ManageInstanceWorldCopyCommand:
                 {
                     var value = reader.InstanceWorldCopyCommand() ?? throw new InvalidDataException("Missing management request."); reader.End();

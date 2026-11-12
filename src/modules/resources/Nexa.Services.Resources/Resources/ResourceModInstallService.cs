@@ -31,6 +31,8 @@ public sealed class ResourceModInstallService(IResourceCatalogSource catalog, Re
             var context = await instances.ReadAsync(command.Instance, token).ConfigureAwait(false);
             var plan = await new ResourceDependencyPlanner(catalog) { AutoInstallDependencies = AutoInstallDependencies?.Invoke() ?? true }
                 .PlanAsync(command, context, token).ConfigureAwait(false);
+            if (command.ExpectedPlanFingerprint is { } expected && expected != ResourceInstallPlanIdentity.Fingerprint(plan))
+                throw new IOException("The reviewed dependency plan changed; prepare installation again.");
             if (plan.Count == 0) { task.Complete("模组及必需依赖已安装。"); return; }
             staging = Path.Combine(Path.GetFullPath(command.Instance.Root), ".nexa-resource-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(staging);
@@ -42,7 +44,7 @@ public sealed class ResourceModInstallService(IResourceCatalogSource catalog, Re
                 Directory.CreateDirectory(directory);
                 task.Report("下载", version.Name, (double)i / plan.Count, i, plan.Count, 0);
                 int completed = i;
-                await downloads.DownloadInTransactionAsync(new(version.Provider, version.ProjectId, version.Id, directory, command.Instance.MirrorFirst),
+                await downloads.DownloadInTransactionAsync(new(version.Provider, version.ProjectId, version.Id, directory, command.Instance.MirrorFirst) { ExpectedFile = command.ExpectedPlanFingerprint is null ? null : version.File },
                     (_, detail, fraction, _, _, speed) => task.Report("下载", detail, (completed + fraction) / plan.Count,
                         completed + (fraction >= 1 ? 1 : 0), plan.Count, speed), token).ConfigureAwait(false);
                 artifacts.Add(await MinecraftLocalJarService.InspectAsync(Path.Combine(directory, version.File!.Name), token).ConfigureAwait(false));

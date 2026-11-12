@@ -99,7 +99,7 @@ internal static partial class Program
     }
     private static async ValueTask ResourceModInstallationVerifiesActualDependenciesBeforeImport()
     {
-        foreach (string scenario in new[] { "complete", "aliases", "missing", "old" })
+        foreach (string scenario in new[] { "complete", "aliases", "missing", "old", "stale-plan" })
         {
             string root = CreateTempDirectory();
             try
@@ -129,11 +129,16 @@ internal static partial class Program
                 using var installer = new MinecraftInstallService(tasks, downloads, http: http) { CountryPolicy = new("US") };
                 var service = new ResourceModInstallService(source, new(new(http, "")), new(source, downloads, tasks, http), new(tasks, store, installer), tasks);
                 bool failed = false;
-                try { await service.InstallAsync(new(new(ResourceProvider.Modrinth, "A"), "A1", new(root, "fixture", false)), default); }
+                try
+                {
+                    var request = new ResourceModInstallCommand(new(ResourceProvider.Modrinth, "A"), "A1", new(root, "fixture", false));
+                    var reviewed = await new ResourceDependencyPlanner(source).PlanAsync(request, new("1.21.1", "fabric", [], null), default);
+                    await service.InstallAsync(request with { ExpectedPlanFingerprint = scenario == "stale-plan" ? "stale" : ResourceInstallPlanIdentity.Fingerprint(reviewed) }, default);
+                }
                 catch (IOException) { failed = true; }
                 bool succeeds = scenario is "complete" or "aliases";
                 AssertEqual(!succeeds, failed);
-                AssertEqual(scenario == "missing" ? "A.jar" : "B.jar,A.jar", string.Join(',', order));
+                AssertEqual(scenario == "stale-plan" ? "" : scenario == "missing" ? "A.jar" : "B.jar,A.jar", string.Join(',', order));
                 AssertEqual(succeeds, File.Exists(Path.Combine(instance, "mods", "A.jar")));
                 AssertEqual(succeeds, File.Exists(Path.Combine(instance, "mods", "B.jar")));
                 AssertFalse(Directory.EnumerateDirectories(root, ".nexa-resource-*").Any());

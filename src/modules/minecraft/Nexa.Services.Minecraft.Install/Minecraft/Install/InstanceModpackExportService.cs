@@ -81,6 +81,13 @@ public sealed partial class InstanceModpackExportService(TaskCenterService tasks
             if (command.Summary.Length > 4096 || command.ExcludedPaths.Count > 50000) throw new InvalidDataException("导出选项超过限制。");
             var excluded = command.ExcludedPaths.Select(MinecraftModpackArchive.SafeRelative).ToHashSet(StringComparer.Ordinal);
             files.RemoveAll(file => excluded.Contains(file.Relative));
+            if (command.IncludedPaths is { } selection)
+            {
+                if (selection.Count > 50000) throw new InvalidDataException("Export selection exceeds its budget.");
+                var included = selection.Select(MinecraftModpackArchive.SafeRelative).ToHashSet(StringComparer.Ordinal);
+                files.RemoveAll(file => !included.Contains(file.Relative));
+                if (files.Count != included.Count) throw new IOException("Export selection changed after preview.");
+            }
             if (zip) files = await CollectZipAsync(snapshot, command, files, token).ConfigureAwait(false);
             string destination = Path.GetFullPath(command.DestinationPath), directory = Path.GetDirectoryName(destination)!;
             RecoveryBlobStore.CheckLinks(directory); RecoveryBlobStore.CheckLinks(destination);

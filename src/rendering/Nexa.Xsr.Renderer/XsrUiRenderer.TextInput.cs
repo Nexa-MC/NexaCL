@@ -4,7 +4,7 @@ public sealed partial class XsrUiRenderer
 {
     public bool InsertText(string text)
     {
-        ObserveInput(_focused, new("Text", "input", Text: text));
+        ObserveInput(_focused, "Text", "input", text: text);
         if (!CanEdit(_focused, out XsrUiTextInput? input)) return false;
         input.ReplaceSelection(text);
         _tree.MarkDirty(_focused, XsrUiDirtyKinds.Paint);

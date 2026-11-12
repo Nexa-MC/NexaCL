@@ -20,6 +20,22 @@ internal sealed partial class WindowSession
                     await _actions.CopyTextAsync(text);
                     break;
                 }
+            case WindowPlatformCommand.ReadExtensionClipboard:
+                {
+                    reader.End(); var value = await _actions.ReadExtensionClipboardAsync(token);
+                    writer.String(value.Text); writer.Boolean(value.Image is not null); if (value.Image is not null) writer.Buffer(value.Image); break;
+                }
+            case WindowPlatformCommand.WriteExtensionClipboard:
+                {
+                    string? text = reader.String(); byte[]? image = reader.Boolean() ? reader.Buffer() : null; reader.End();
+                    await _actions.WriteExtensionClipboardAsync(text, image, token); break;
+                }
+            case WindowPlatformCommand.ReadExtensionDisplays:
+                {
+                    reader.End(); var displays = await _actions.ReadExtensionDisplaysAsync(token); writer.Int32(displays.Length);
+                    foreach (var display in displays) { writer.String(display.Id); writer.Int32(display.Width); writer.Int32(display.Height); writer.Double(display.Scale); }
+                    break;
+                }
             case WindowPlatformCommand.ReadClipboard:
                 {
                     reader.End();
@@ -141,6 +157,15 @@ internal sealed partial class WindowSession
                     token.ThrowIfCancellationRequested();
                     writer.String(await _actions.PickThemeOptionsFileAsync(token));
                     break;
+                }
+            case WindowPlatformCommand.PickExtensionFile:
+                {
+                    string title = reader.String() ?? throw new InvalidDataException("Missing picker title.");
+                    int kind = reader.Int32(), count = reader.Count();
+                    if (count > 32) throw new InvalidDataException("Too many picker filters.");
+                    string[] extensions = new string[count];
+                    for (int i = 0; i < count; i++) extensions[i] = reader.String() ?? throw new InvalidDataException("Missing picker filter.");
+                    reader.End(); writer.String(await _actions.PickExtensionFileAsync(title, kind, extensions, token)); break;
                 }
             case WindowPlatformCommand.PickWorkspace:
                 {

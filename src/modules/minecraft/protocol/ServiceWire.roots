@@ -179,3 +179,6 @@ Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.
 Nexa.Services.Resources.Contracts|Nexa.Services.Resources.ResourceModpackInspectQuery
 
 Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceResourcePackCommand
+
+Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceWorldRenameCommand
+Nexa.Services.Minecraft.Management.Contracts|Nexa.Services.Minecraft.Management.InstanceWorldDataPackOrderCommand

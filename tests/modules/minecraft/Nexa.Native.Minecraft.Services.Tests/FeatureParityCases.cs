@@ -20,6 +20,10 @@ internal static class FeatureParityCases
         }
         try
         {
+            var requirements = await client.ReadPluginJavaRequirementsAsync(instance, token);
+            if (!requirements.Success || !requirements.Range.Contains(new Version(17, 0, 10))) throw new InvalidDataException("Native Java requirements differ from launch compatibility.");
+            var selected = await client.SelectPluginJavaAsync(instance, token);
+            if (selected is null || selected.Installation.JavaExecutablePath != local) throw new InvalidDataException("Native plugin Java selection ignored the instance runtime.");
             var present = await client.QueryInstanceOfflineReadinessQueryAsync(new(instance), token);
             if (!present.IsSuccess || present.Value!.JavaCompatible != true || present.Value.JavaVersion != "17.0.10")
                 throw new InvalidDataException("Native instance Java lost version-local probing or compatibility.");
@@ -54,6 +58,14 @@ internal static class FeatureParityCases
         management = await client.QueryInstanceManagementQueryAsync(new(instance), token);
         if (!enabled.IsSuccess || !management.Value!.ResourcePacks!.Packs.Single(item => item.Name == "native-check.zip").Enabled)
             throw new InvalidDataException("Native resource pack enablement did not reach options.txt.");
+        string selectedExport = Path.Combine(root, "selected-content.zip");
+        File.Copy(Path.Combine(packs, "native-check.zip"), Path.Combine(packs, "unselected.zip"));
+        var selected = await client.DispatchInstanceModpackExportCommandAsync(new(instance, selectedExport, "Selected", "1", ["resourcepacks"])
+        { Format = InstanceExportFormat.Zip, IncludedPaths = ["resourcepacks/native-check.zip"] }, token);
+        if (!selected.IsSuccess) throw new InvalidDataException("Native selected content export failed: " + selected.Error?.Message);
+        using (var zip = ZipFile.OpenRead(selectedExport))
+            if (!zip.Entries.Any(e => e.FullName.EndsWith("/resourcepacks/native-check.zip", StringComparison.Ordinal)) || zip.Entries.Any(e => e.FullName.Contains("unselected", StringComparison.Ordinal)))
+                throw new InvalidDataException("Native content export lost the reviewed file allowlist.");
         var lan = await client.DiscoverLanGamesAsync(new(250), token);
         if (!lan.IsSuccess || lan.Value is null) throw new InvalidDataException("Native LAN query did not return a typed snapshot.");
         string script = Path.Combine(root, "launch.sh");

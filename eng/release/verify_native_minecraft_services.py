@@ -1,6 +1,7 @@
 """Exercise Minecraft ownership from an independent NativeAOT caller and OS children."""
 import argparse
 import json
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -11,6 +12,13 @@ from publish_launcher import ROOT, module_name, stable_ui_properties, engine_ser
 
 
 def verify(rid, output, payload=None):
+    protocol = (ROOT / "src/modules/minecraft/protocol/MinecraftServiceProtocol.cs").read_text()
+    ids = {}
+    for declaration in re.findall(r"internal const int ([^;]+);", protocol):
+        for name, value in re.findall(r"(\w+)\s*=\s*(\d+)", declaration):
+            if value in ids:
+                raise RuntimeError(f"Duplicate Minecraft operation {value}: {ids[value]} and {name}")
+            ids[value] = name
     output.mkdir(parents=True, exist_ok=True)
     owner, caller = output / "minecraft", output / "caller"
     common = ["-c", "Release", "-r", rid, "-m:1", "-nr:false", "-p:PublishAot=true", "-p:StripSymbols=true", *stable_ui_properties([])]

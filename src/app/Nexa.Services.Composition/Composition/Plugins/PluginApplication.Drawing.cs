@@ -31,6 +31,16 @@ public sealed partial class PluginApplication
             return blob.Bytes.ToArray();
         }
     }
+    public BlobRef AddBlob(PluginIdentity owner, byte[] bytes)
+    {
+        lock (_gate)
+        {
+            if (!Runtime.Active.Contains(owner)) throw new AbiHostException(AbiErrors.PLUGIN_STOPPED);
+            if (_blobs.Count >= 128 || _blobs.Values.Sum(b => (long)b.Bytes.Length) + bytes.Length > 32 * 1024 * 1024) throw new AbiHostException(AbiErrors.MESSAGE_TOO_LARGE);
+            var reference = new BlobRef(Guid.NewGuid(), owner.LoadInstanceId, bytes.Length, Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant());
+            _blobs.Add(reference.Token, (owner, reference, bytes.ToArray())); return reference;
+        }
+    }
     private void ClearDrawing(string id)
     {
         foreach (var key in _drawings.Where(p => p.Value.Owner.PluginId == id).Select(p => p.Key).ToArray()) _drawings.Remove(key);
@@ -45,16 +55,18 @@ public sealed partial class PluginApplication
         return bytes;
     }
     private IEnumerable<HostCapabilityRoute> DrawingRoutes => [
-        HostRoutes.Typed<FileRef, FileStat>("Files", "Stat", (c, v) =>
+        HostRoutes.Typed<FileRef, FileStat>("Files", "Stat", async (c, v) =>
         {
+            if (v.Scope != "package") return await Files.StatAsync(c.Identity, v, c.Options.Cancellation).ConfigureAwait(false);
             lock (_gate)
             {
                 var bytes = FileBytes(c, v); var path = _files[v.Token].Path;
-                return ValueTask.FromResult(new FileStat(v, Path.GetFileName(path), false, bytes.Length, DateTimeOffset.UnixEpoch, new(Convert.ToHexString(SHA256.HashData(bytes)))));
+                return new FileStat(v, Path.GetFileName(path), false, bytes.Length, DateTimeOffset.UnixEpoch, new(Convert.ToHexString(SHA256.HashData(bytes))));
             }
         }),
-        HostRoutes.Typed<FileRead, BlobRef>("Files", "Read", (c, v) =>
+        HostRoutes.Typed<FileRead, BlobRef>("Files", "Read", async (c, v) =>
         {
+            if (v.File.Scope != "package") return AddBlob(c.Identity, await Files.ReadAsync(c.Identity, v, c.Options.Cancellation).ConfigureAwait(false));
             lock (_gate)
             {
                 var bytes = FileBytes(c, v.File);
@@ -62,7 +74,7 @@ public sealed partial class PluginApplication
                 if (_blobs.Count >= 128 || _blobs.Values.Sum(b => (long)b.Bytes.Length) + v.Length > 32 * 1024 * 1024) throw new AbiHostException(AbiErrors.MESSAGE_TOO_LARGE);
                 byte[] data = bytes.AsSpan((int)v.Offset, (int)v.Length).ToArray();
                 var blob = new BlobRef(Guid.NewGuid(), c.Identity.LoadInstanceId, data.Length, Convert.ToHexString(SHA256.HashData(data)).ToLowerInvariant());
-                _blobs.Add(blob.Token, (c.Identity, blob, data)); return ValueTask.FromResult(blob);
+                _blobs.Add(blob.Token, (c.Identity, blob, data)); return blob;
             }
         }),
         HostRoutes.Typed<DrawingSurfaceRequest, DrawingSurfaceRef>("UI", "CreateDrawingSurface", (c, v) =>

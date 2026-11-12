@@ -36,6 +36,11 @@ internal static class JavaInstallCases
         var registeredInventory = await minecraft.ReadJavaInventoryAsync(new(true), token);
         if (!registeredInventory.IsSuccess || registeredInventory.Value!.RegistryRevision != 0)
             throw new InvalidDataException("Native Java inventory lost its canonical registry revision.");
+        // The earlier export case now creates a real canonical task; isolate this case's task assertions.
+        var priorTasks = tasks.ReadEntries();
+        if (priorTasks.Count != 1 || priorTasks.Any(entry => entry.State != TaskCenterEntryState.Finished)
+            || priorTasks.Count != 0 && !await tasks.DismissFinishedAsync(priorTasks, token))
+            throw new InvalidDataException("Late task attachment did not replay the completed export snapshot.");
         var diagnostics = await minecraft.ReadJavaPropertiesAsync(new("relative-java", 0), token);
         if (!diagnostics.IsSuccess || diagnostics.Value!.Status != JavaRuntimeDiagnosticStatus.Rejected)
             throw new InvalidDataException("Native Java diagnostics bypassed executable admission.");

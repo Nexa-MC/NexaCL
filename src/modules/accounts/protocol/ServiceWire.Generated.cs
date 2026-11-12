@@ -67,6 +67,7 @@ internal sealed partial class ServiceWireWriter
         String(value.OfflineSkinPath);
         String(value.OfflineCapePath);
         Boolean(value.OfflineSlim);
+        Nullable_Int64(value.ExpectedGeneration);
     }
     internal void AccountOnboardingOptions(global::Nexa.Services.Accounts.AccountOnboardingOptions? value)
     {
@@ -483,7 +484,8 @@ internal sealed partial class ServiceWireReader
         var p5 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p6 = String() ?? throw new global::System.IO.InvalidDataException("Missing service field.");
         var p7 = Boolean();
-        return new global::Nexa.Services.Accounts.AccountLoginStartCommand(p0, p1!, p2!, p3!, p4!, p5!, p6!, p7);
+        var p8 = Nullable_Int64();
+        return new global::Nexa.Services.Accounts.AccountLoginStartCommand(p0, p1!, p2!, p3!, p4!, p5!, p6!, p7, p8);
     }
     internal global::Nexa.Services.Accounts.AccountOnboardingOptions? AccountOnboardingOptions()
     {
@@ -866,5 +868,5 @@ internal sealed partial class ServiceWireReader
 
 internal static class ServiceWireSchema
 {
-    internal const string Fingerprint = "5C86C5949F692528EFD1E528FA18AF05A172CFDD2BDB62B69F815095F5C278B9";
+    internal const string Fingerprint = "573187D5A9B566531EA1F8A748408F04A5BBFD46747849C831DA75B1BD99C603";
 }

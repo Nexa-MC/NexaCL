@@ -91,6 +91,29 @@ internal static partial class Program
         AssertEqual(fixture.Current().Selection!.SourceIdentity, fixture.Session.Snapshot.PresentedSourceIdentity);
     }
 
+    private static void PluginThemePreviewRetiresOnlyItsOwnPresentation()
+    {
+        using var fixture = new ThemeLifecycleFixture();
+        string theme = fixture.MakeTheme("plugin-preview", "Text#TitleMain{Foreground:#102030;}");
+        AssertTrue(fixture.Run(fixture.Session.ImportAsync(theme, ThemeSourceKind.Directory, false, CancellationToken.None)).IsSuccess);
+        var source = fixture.Session.Snapshot.Catalogue.Themes.Single(t => t.Manifest.Id == "fixture.plugin-preview");
+        AssertTrue(fixture.Run(fixture.Session.ActivateAsync("builtin", false, CancellationToken.None)).IsSuccess);
+        var stale = fixture.Run(fixture.Session.ActivatePluginAsync(source.SourceIdentity, "stale", fixture.Current().Revision, true, CancellationToken.None));
+        AssertFalse(stale.IsSuccess); AssertEqual("builtin", fixture.Session.Snapshot.PresentedSourceIdentity);
+        var preview = fixture.Run(fixture.Session.ActivatePluginAsync(source.SourceIdentity, source.SourceRevision, fixture.Current().Revision, true, CancellationToken.None));
+        AssertTrue(preview.IsSuccess); AssertTrue(fixture.Session.Snapshot.IsPreview);
+        long before = fixture.Appearance.Current!.Generation;
+        fixture.Fixture.Store.Publish(fixture.Fixture.Store.Resolve(XsrSemanticId.Parse("UiDarkMode")), 1);
+        fixture.Pump(() => fixture.Appearance.Current!.Generation > before && fixture.Session.Snapshot.IsDark);
+        AssertTrue(fixture.Run(fixture.Session.EndPluginPreviewAsync(preview.Value, CancellationToken.None)).IsSuccess);
+        AssertFalse(fixture.Session.Snapshot.IsPreview); AssertEqual("builtin", fixture.Session.Snapshot.PresentedSourceIdentity);
+        preview = fixture.Run(fixture.Session.ActivatePluginAsync(source.SourceIdentity, source.SourceRevision, fixture.Current().Revision, true, CancellationToken.None));
+        AssertTrue(preview.IsSuccess);
+        AssertTrue(fixture.Run(fixture.Session.ActivateAsync(source.SourceIdentity, false, CancellationToken.None)).IsSuccess);
+        AssertTrue(fixture.Run(fixture.Session.EndPluginPreviewAsync(preview.Value, CancellationToken.None)).IsSuccess);
+        AssertEqual(source.SourceIdentity, fixture.Session.Snapshot.PresentedSourceIdentity); AssertFalse(fixture.Session.Snapshot.IsPreview);
+    }
+
     private static void ThemeLifecycleMirrorFailureCannotRollbackDurableCommit()
     {
         using var fixture = new ThemeLifecycleFixture(failMirror: true);

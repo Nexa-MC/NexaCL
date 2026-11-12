@@ -55,7 +55,7 @@ public sealed partial class NativeMinecraftClient
             return ExecuteWorkAsync(bytes, token);
         if (operation is >= DownloadProtocol.AcquireQuiet and <= DownloadProtocol.GraceQuiet)
             return ExecuteWorkAsync(bytes, token);
-        if (operation is MinecraftHostOperations.AccountProfile or MinecraftHostOperations.AccountIdentity)
+        if (operation is MinecraftHostOperations.AccountProfile or MinecraftHostOperations.AccountIdentity or MinecraftHostOperations.AccountProfileRevision)
             return ExecuteAccountsAsync(operation, bytes, token);
         if (operation is MinecraftHostOperations.WindowProbe or MinecraftHostOperations.PreflightEvaluate or MinecraftHostOperations.RecordObservation or MinecraftHostOperations.BeforeProcessStart)
             return ExecuteLaunchHostAsync(operation, bytes, token);
