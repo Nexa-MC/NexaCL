@@ -5,6 +5,47 @@ namespace Nexa.Xsr.Runtime.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask NxmlRouteReadsDoNotDeadlockSourceReplacement()
+    {
+        XsrStateStoreBuilder builder = new(); builder.Cell<XsrNxmlModuleSnapshot>(NxmlModuleState, "Test");
+        var store = builder.Build(); var state = store.Resolve(NxmlModuleState); var command = XsrSemanticId.Parse("test.form");
+        XsrNxmlModuleRuntime runtime = new(store, state, (_, _) => new("page", [command]));
+        var (session, peer) = await PatchSession(new(CaptionPoint),
+            [new(SidecarRegistrationKind.Command, command.Value, 0, SidecarWireCodecs.GeneratedDto), NxmlItem()], features: SidecarFeatures.All, nxml: runtime);
+        await SnapshotAll(session, peer); await session.ActivateAsync(); await DataPlaneReceiveAsync(peer);
+        using var start = new Barrier(2);
+        int finished = 0;
+        var writer = Task.Run(async () =>
+        {
+            start.SignalAndWait();
+            try
+            {
+                for (int i = 0; i < 300; i++) await session.ReplacePresentationAsync(i, [DynamicPage("Page")]);
+            }
+            finally { Volatile.Write(ref finished, 1); }
+        });
+        var reader = Task.Run(() =>
+        {
+            start.SignalAndWait();
+            do
+            {
+                var exposure = store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Single().Exposure;
+                _ = runtime.ReadCommandRoute(exposure, command);
+                _ = runtime.UsesFormSubmission(exposure, command);
+            } while (Volatile.Read(ref finished) == 0);
+        });
+        try
+        {
+            await Task.WhenAll(writer, reader).WaitAsync(TimeSpan.FromSeconds(10));
+            AssertEqual(300L, session.PresentationRevision);
+        }
+        finally
+        {
+            // A regression must report its timeout instead of deadlocking the test runner's cleanup.
+            if (writer.IsCompleted && reader.IsCompleted) { session.Dispose(); peer.Dispose(); }
+        }
+    }
+
     private static async ValueTask NxmlFormsRequireNegotiatedFeatures()
     {
         foreach (var features in new[] { SidecarFeatures.All & ~SidecarFeatures.UiForms, SidecarFeatures.All & ~SidecarFeatures.LargeGeneratedDtos })

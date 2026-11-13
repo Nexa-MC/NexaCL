@@ -81,7 +81,8 @@ internal sealed partial class AssemblyInstrumenter
         {
             module.Write(staged, new WriterParameters
             {
-                WriteSymbols = module.HasSymbols, DeterministicMvid = true,
+                WriteSymbols = module.HasSymbols,
+                DeterministicMvid = true,
                 // Cecil creates a symbol writer when a provider is present, even if WriteSymbols is false.
                 // A synthetic PDB survives a no-symbol MSBuild clean and mismatches the next compiler output.
                 SymbolWriterProvider = module.HasSymbols ? new StableSymbolWriterProvider() : null

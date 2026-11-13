@@ -136,7 +136,7 @@ public sealed class XsrNxmlModuleRuntime
             if (lease is null || lease.Retired) return XsrNxmlCommandRoute.Inactive;
             int index = Array.IndexOf(lease.Exposures, exposure);
             if (!lease.Compiled[index].Commands.Contains(command)) return XsrNxmlCommandRoute.Inactive;
-            return lease.Session.Registration?.TryResolve(SidecarRegistrationKind.Command, command) is not null
+            return lease.Registration.TryResolve(SidecarRegistrationKind.Command, command) is not null
                 ? XsrNxmlCommandRoute.Sidecar : XsrNxmlCommandRoute.Host;
         }
     }
@@ -165,8 +165,8 @@ public sealed class XsrNxmlModuleRuntime
         {
             var lease = _leases.FirstOrDefault(item => !item.Retired && item.Exposures.Contains(exposure));
             return lease is not null && lease.Compiled[Array.IndexOf(lease.Exposures, exposure)].Commands.Contains(command)
-                && lease.Session.NegotiatedFeatures.HasFlag(SidecarFeatures.BinaryPayloads | SidecarFeatures.UiForms)
-                && lease.Session.Registration?.TryResolve(SidecarRegistrationKind.Command, command)?.CodecId == SidecarWireCodecs.GeneratedDto;
+                && lease.Features.HasFlag(SidecarFeatures.BinaryPayloads | SidecarFeatures.UiForms)
+                && lease.Registration.TryResolve(SidecarRegistrationKind.Command, command)?.CodecId == SidecarWireCodecs.GeneratedDto;
         }
     }
 
@@ -258,6 +258,10 @@ public sealed class XsrNxmlModuleRuntime
         private IReadOnlyDictionary<string, string>[] _models = models;
         internal Guid[] Exposures { get; } = documents.Select(_ => Guid.NewGuid()).ToArray();
         internal SidecarHostSession Session { get; } = session;
+        // Registration/features freeze at READY. Capture before entering the presentation
+        // owner lock: replacing presentation already holds the session lock in the other order.
+        internal SidecarRegistrationSet Registration { get; } = session.Registration ?? throw new InvalidOperationException("Missing session registration.");
+        internal SidecarFeatures Features { get; } = session.NegotiatedFeatures;
         internal CancellationTokenSource Stop { get; } = new();
         private int _retired, _worker;
         private long _version;

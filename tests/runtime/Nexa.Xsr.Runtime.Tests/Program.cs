@@ -18,6 +18,7 @@ internal static partial class Program
         ("dynamic NXML budgets and cancellation preserve predecessor", DynamicNxmlBudgetsAndCancellationPreservePredecessor),
         ("dynamic NXML models retain exposures and survive reactivation", DynamicNxmlModelsRetainExposures),
         ("NXML forms require feature and large-value negotiation", NxmlFormsRequireNegotiatedFeatures),
+        ("NXML route reads do not deadlock source replacement", NxmlRouteReadsDoNotDeadlockSourceReplacement),
         ("NXML modules reject unsupported or invalid documents before activation", NxmlModulesRejectUnsupportedAndInvalidDocuments),
         ("Standalone pages require negotiation and resolve only within their session", NxmlPagesAreSessionScoped),
         ("Host facade preserves admission cancellation and shutdown errors", HostFacadePreservesAdmissionCancellationAndShutdownErrors),
