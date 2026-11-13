@@ -14,5 +14,6 @@ public enum SidecarFeatures : uint
     Pages = 64,
     HostRequests = 128,
     LargeGeneratedDtos = 256,
-    All = BinaryPayloads | Streams | Health | Unregistration | Nxml | AutomaticFunctions | Pages | HostRequests | LargeGeneratedDtos,
+    UiForms = 512,
+    All = BinaryPayloads | Streams | Health | Unregistration | Nxml | AutomaticFunctions | Pages | HostRequests | LargeGeneratedDtos | UiForms,
 }

@@ -498,3 +498,27 @@ Model keys and values are owned copies; a session retains at most 4 MiB of model
 text, with 4,096 entries per document and 512 KiB per value. Session mirror values
 remain the base; a document's explicit model overrides matching keys only for
 that document. Deactivation/reactivation retains the last committed models.
+
+### Session-owned form submissions
+
+The optional `UiForms` feature (bit 512) lets an NXML command registered with
+generated DTO codec 6 receive a typed form submission. Scalar commands keep their
+existing representation. The generated, fingerprinted binary envelope contains
+the action argument and an ordinally sorted list of named UTF-8 input drafts.
+It carries no guest SDK types, plugin identifiers or permission decisions.
+
+Desktop captures drafts on its UI thread and only from controls owned by the
+invoking document exposure. Nested mounts owned by another exposure, other pages
+and Host controls are excluded. Duplicate or unnamed inputs reject the submission;
+they are never silently merged. A submission allows 128 fields, 256 characters per
+key, 512 KiB per value and a 4 MiB encoded envelope. Large envelopes additionally
+require `LargeGeneratedDtos`. Retired exposures cannot submit, and retirement
+cancels pending commands. Sidecar owns translation into guest actions and models.
+
+The framework-neutral renderer, NXML compiler and NXML runtime are also shared
+packages. Their closure contains Core/XSR contracts and state only; it excludes
+Desktop, Avalonia, Host services and the plugin SDK. The compiler package owns the
+canonical component and stylesheet files and copies them into `Ui/Components`
+and `Ui/Styles` for both build and publish. Sidecar uses this same compiler to
+validate guest documents before publication; guest-specific policy remains in
+Sidecar. Sharing the compiler does not delegate Host UI access or admission.

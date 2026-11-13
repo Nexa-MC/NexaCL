@@ -31,6 +31,9 @@ def verify(feed, aot):
                 assert f'buildTransitive/{name}.targets' in paths
                 assert f'lib/net10.0/{name}.dll' in paths
                 assert not any('CodeAnalysis' in p or 'Cecil' in p for p in paths)
+                if name == 'Nexa.Xsr.Renderer.Nxml.Compiler':
+                    assert 'assets/Ui/Components/Button.c.nxml' in paths
+                    assert 'assets/Ui/Styles/Renderer.nss' in paths
             else:
                 assert not any(p.startswith('lib/') for p in paths)
                 assert 'tools/net10.0/Nexa.Xsr.Patch.Compiler.dll' in paths
@@ -61,8 +64,11 @@ def check_output(directory, names):
     for name in names - {'Nexa.Xsr.BuildTools'}:
         assert (directory / f'{name}.nfp').exists(), name
     assert (directory / 'Consumer.nfp').exists()
+    assert (directory / 'Ui/Components/Button.c.nxml').exists()
+    assert (directory / 'Ui/Styles/Renderer.nss').exists()
     assert not any(p.name.startswith(('Mono.Cecil','Microsoft.CodeAnalysis','Nexa.Xsr.Patch.Compiler')) for p in directory.rglob('*'))
     assert not any(p.name.startswith(('Nexa.Services.', 'Nexa.Plugin.', 'PluginSidecar.')) for p in directory.rglob('*'))
+    assert not any(p.name.startswith(('Avalonia.', 'Nexa.Desktop')) for p in directory.rglob('*'))
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--feed',required=True,type=Path);parser.add_argument('--aot',action='store_true')

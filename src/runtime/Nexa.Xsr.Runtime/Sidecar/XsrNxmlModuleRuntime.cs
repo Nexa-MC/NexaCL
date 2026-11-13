@@ -159,8 +159,32 @@ public sealed class XsrNxmlModuleRuntime
         }
     }
 
-    public async ValueTask<XsrResult> DispatchAsync(Guid exposure, XsrSemanticId command, string argument,
+    public bool UsesFormSubmission(Guid exposure, XsrSemanticId command)
+    {
+        lock (_gate)
+        {
+            var lease = _leases.FirstOrDefault(item => !item.Retired && item.Exposures.Contains(exposure));
+            return lease is not null && lease.Compiled[Array.IndexOf(lease.Exposures, exposure)].Commands.Contains(command)
+                && lease.Session.NegotiatedFeatures.HasFlag(SidecarFeatures.BinaryPayloads | SidecarFeatures.UiForms)
+                && lease.Session.Registration?.TryResolve(SidecarRegistrationKind.Command, command)?.CodecId == SidecarWireCodecs.GeneratedDto;
+        }
+    }
+
+    public ValueTask<XsrResult> DispatchAsync(Guid exposure, XsrSemanticId command, string argument,
         CancellationToken cancellationToken = default)
+        => DispatchCoreAsync(exposure, command, argument, null, cancellationToken);
+
+    public ValueTask<XsrResult> DispatchFormAsync(Guid exposure, XsrSemanticId command, string argument,
+        IReadOnlyDictionary<string, string> fields, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(fields);
+        return UsesFormSubmission(exposure, command)
+            ? DispatchCoreAsync(exposure, command, argument, fields, cancellationToken)
+            : ValueTask.FromResult(XsrResult.Failure(XsrRuntimeErrors.ContractMismatch()));
+    }
+
+    private async ValueTask<XsrResult> DispatchCoreAsync(Guid exposure, XsrSemanticId command, string argument,
+        IReadOnlyDictionary<string, string>? fields, CancellationToken cancellationToken)
     {
         Lease? lease; int index;
         lock (_gate)
@@ -186,10 +210,15 @@ public sealed class XsrNxmlModuleRuntime
                 SidecarWireCodecs.I32 => SidecarWireCodecs.Encode(registered.CodecId, int.Parse(argument, CultureInfo.InvariantCulture)),
                 SidecarWireCodecs.I64 => SidecarWireCodecs.Encode(registered.CodecId, long.Parse(argument, CultureInfo.InvariantCulture)),
                 SidecarWireCodecs.F64 => SidecarWireCodecs.Encode(registered.CodecId, double.Parse(argument, CultureInfo.InvariantCulture)),
+                SidecarWireCodecs.GeneratedDto when lease.Session.NegotiatedFeatures.HasFlag(SidecarFeatures.UiForms)
+                    => SidecarUiForms.Encode(argument, fields ?? new Dictionary<string, string>()),
                 _ => throw new FormatException("UI command requires a supported scalar value."),
             };
         }
-        catch (FormatException) { return XsrResult.Failure(XsrRuntimeErrors.ContractMismatch()); }
+        catch (Exception error) when (error is FormatException or InvalidDataException or ArgumentException or OverflowException)
+        { return XsrResult.Failure(XsrRuntimeErrors.ContractMismatch()); }
+        if (payload.Length > SidecarWireCodecs.MaximumValueLength && !lease.Session.NegotiatedFeatures.HasFlag(SidecarFeatures.LargeGeneratedDtos))
+            return XsrResult.Failure(XsrRuntimeErrors.ContractMismatch());
         var outcome = await lease.Session.SendBinaryCommandByIdAsync(registered.ContractId,
             new(registered.CodecId, payload), TimeSpan.FromSeconds(10), stop.Token).ConfigureAwait(false);
         return outcome.IsSuccess ? XsrResult.Success() : XsrResult.Failure(outcome.Error!);

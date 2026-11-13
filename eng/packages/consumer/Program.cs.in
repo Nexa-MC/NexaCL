@@ -6,6 +6,8 @@ using Nexa.Xsr.State;
 using Nexa.Sidecar.Host;
 using Nexa.Sidecar.Host.Data;
 using Nexa.Sidecar.Transport;
+using Nexa.Sidecar.Protocol;
+using Nexa.Xsr.Renderer.Nxml;
 
 await Check.Run();
 Console.WriteLine("PASS: package consumer routes/state/catalogs/automatic-patch install-retire");
@@ -16,6 +18,13 @@ static class Check
     public static int Add(int a, int b) => a + b;
     public static async Task Run()
     {
+        var nxml = new NxmlExtensionProgram("page.nxml", new Dictionary<string, string>
+        {
+            ["page.nxml"] = "<Page Key=\"ConsumerPage\"><StackPanel><Text Content=\"{data title}\" /><Button Key=\"Save\" Content=\"Save\" Command=\"consumer.save\" /></StackPanel></Page>"
+        }).Compile(new Dictionary<string, string> { ["title"] = "Package-only view" });
+        if (nxml.Root.Root.Key != "ConsumerPage" || nxml.Commands.Single().Value != "consumer.save") throw new Exception("NXML assets or compiler missing");
+        var form = SidecarUiForms.Decode(SidecarUiForms.Encode("save", new Dictionary<string, string> { ["draft"] = "package input" }));
+        if (form.Fields.Single().Key != "draft") throw new Exception("form codec missing");
         // A package-only client must instantiate without service implementation assemblies,
         // and cannot invoke any Host operation before authenticated discovery.
         using var requests = new SidecarHostRequestClient((_, _) => throw new Exception("Unexpected IPC before discovery"));

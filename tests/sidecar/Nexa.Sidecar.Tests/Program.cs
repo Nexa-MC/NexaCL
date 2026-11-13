@@ -7,6 +7,7 @@ internal static partial class Program
 {
     private static readonly (string Name, Func<ValueTask> Body)[] TestCases =
     [
+        ("UI forms are bounded canonical and schema checked", Sync(UiFormsRejectMalformedAndAmbiguousInputs)),
         ("Host request client enforces lifecycle correlation and cancellation", HostRequestClientLifecycle),
         ("large generated DTOs preserve legacy fields and require negotiation", LargeGeneratedDtosRoundTrip),
         ("NXML source bundles round trip and reject ambiguity", Sync(NxmlSourceBundlesRoundTripAndRejectAmbiguity)),

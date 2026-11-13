@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0-alpha.5",
+  "version": "0.1.0-alpha.6",
   "projects": {
     "Nexa.Core": [],
     "Nexa.Contracts": [
@@ -30,6 +30,23 @@
       "Nexa.Sidecar.Transport",
       "Nexa.Xsr.Abstractions",
       "Nexa.Xsr.Diagnostics",
+      "Nexa.Xsr.State"
+    ],
+    "Nexa.Xsr.Renderer": [
+      "Nexa.Core",
+      "Nexa.Xsr.Abstractions",
+      "Nexa.Xsr.State"
+    ],
+    "Nexa.Xsr.Renderer.Nxml.Compiler": [
+      "Nexa.Core",
+      "Nexa.Xsr.Abstractions",
+      "Nexa.Xsr.Renderer"
+    ],
+    "Nexa.Xsr.Renderer.Nxml.Runtime": [
+      "Nexa.Core",
+      "Nexa.Xsr.Renderer",
+      "Nexa.Xsr.Renderer.Nxml.Compiler",
+      "Nexa.Xsr.Abstractions",
       "Nexa.Xsr.State"
     ],
     "Nexa.Sidecar.Host.Contracts": [

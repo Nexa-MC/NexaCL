@@ -173,6 +173,48 @@ Generate the independent effects codec with the same script using
 
 Add `--check` to the codec command and `--verify` to the route command to verify without modifying files. Desktop tests exercise the independent codecs, authority revocation, unavailable state, UTF-8 paths, and preserved domain errors. Sidecar transport tests cover concurrency, cancellation, malformed replies, and backpressure. The package consumer verifies that the client works without launcher service assemblies, including NativeAOT.
 
+## Receiving document-local form submissions
+
+Negotiate `BinaryPayloads | Nxml | UiForms` and register the UI command with input
+codec `SidecarWireCodecs.GeneratedDto` (6). Add `Pages` for standalone pages and
+`LargeGeneratedDtos` if a form may exceed 65,535 bytes. The registered result codec
+still governs the reply; form inputs do not change it. Older peers keep their
+scalar command format. Do not enable `UiForms` until your command handlers decode
+the form envelope.
+
+When the user invokes that command, Desktop snapshots input drafts from the
+invoking document. This includes its hidden inputs, as with a normal form, but
+excludes Host controls, other pages and nested content owned by another exposure.
+Each key is the input's NXML `Key`. A duplicate, empty, control-character-containing
+or overlong key rejects the entire submission. Capture happens on the UI thread;
+no renderer objects cross the connection.
+
+```csharp
+var request = SidecarDataMessages.DecodeBinaryRequest(frame.Payload.Span);
+if (request.Value.CodecId != SidecarWireCodecs.GeneratedDto)
+    throw new InvalidDataException("Unexpected UI input codec.");
+var form = SidecarUiForms.Decode(request.Value.ToArray());
+// form.Argument is the clicked control's action argument.
+// form.Fields contains ordinally sorted keys and strict UTF-8 byte values.
+foreach (var field in form.Fields)
+    HandleField(field.Key, System.Text.Encoding.UTF8.GetString(field.Utf8Value));
+```
+
+The envelope begins with version 1 and an exact schema fingerprint; it rejects
+unknown schemas, trailing data, malformed UTF-8 and non-increasing keys. Limits
+are 128 fields, 256 characters per key, 512 KiB per value, 32 KiB of UTF-8 action
+argument and 4 MiB for the complete encoded envelope. Rejecting an oversized form
+does not truncate or partially dispatch its values. Empty drafts are valid.
+The source exposure and registered command must still be active. Replacing the
+source or retiring the session cancels outstanding calls. Model-only updates
+retain exposures and input drafts.
+
+The binary codec is generated from `eng/sidecar/ui-forms-roots.txt` using
+`generate_service_wire.py`, with the Protocol assembly and output namespace
+`Nexa.Sidecar.Protocol.Forms.Wire`. The shared package consumer verifies this
+codec and the canonical NXML component/style bundle without any Host service or
+window backend dependency, in managed and NativeAOT execution.
+
 ## Migration status
 
 This API is the first production boundary for moving plugin business adapters out of Desktop. Existing in-process plugin integration remains during migration. Do not interpret the generic route count as a claim that the plugin UI and all 358 SDK operations have already moved to the worker. The SDK Beta release remains blocked until that cutover and the worker packaging checks are complete.

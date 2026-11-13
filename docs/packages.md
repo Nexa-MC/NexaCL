@@ -1,6 +1,8 @@
 # Shared packages
 
-`eng/packages/manifest.json` defines shared packages independently of product Alpha/Beta versions. The closure includes Core, Contracts, Sidecar.Protocol, Sidecar.Transport, Sidecar.Host.Contracts, XSR Abstractions, Diagnostics, State, Runtime, and separate BuildTools. Renderer and platform implementations are outside this closure.
+`eng/packages/manifest.json` defines shared packages independently of product Alpha/Beta versions. The closure includes Core, Contracts, Sidecar.Protocol, Sidecar.Transport, Sidecar.Host.Contracts, XSR Abstractions, Diagnostics, State, Runtime, the framework-neutral Renderer and NXML Compiler/Runtime, and separate BuildTools. Desktop, Avalonia, native platform implementations and Host services are outside this closure.
+
+Version `0.1.0-alpha.6` adds negotiated, document-local form submissions and the canonical NXML compiler packages. Referencing `Nexa.Xsr.Renderer.Nxml.Runtime` brings the compiler's standard `Ui/Components/*.c.nxml` and `Ui/Styles/*.nss` files into both build and publish output. Keep these files with your executable: default component/style resolution uses `AppContext.BaseDirectory`, not the working directory. Shared NXML compilation is available without a window backend or launcher installation.
 
 Version `0.1.0-alpha.5` adds `SidecarViewStateClient` for binary NXML bundles and document-local model updates. The base catalog (`0.1.0-alpha.2`), effects catalog (`0.1.0-alpha.3`) and presentation catalog (`0.1.0-alpha.4`) remain unchanged.
 

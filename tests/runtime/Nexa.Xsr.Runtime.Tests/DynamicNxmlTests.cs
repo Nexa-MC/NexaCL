@@ -5,6 +5,26 @@ namespace Nexa.Xsr.Runtime.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask NxmlFormsRequireNegotiatedFeatures()
+    {
+        foreach (var features in new[] { SidecarFeatures.All & ~SidecarFeatures.UiForms, SidecarFeatures.All & ~SidecarFeatures.LargeGeneratedDtos })
+        {
+            XsrStateStoreBuilder builder = new(); builder.Cell<XsrNxmlModuleSnapshot>(NxmlModuleState, "Test");
+            var store = builder.Build(); var state = store.Resolve(NxmlModuleState); var command = XsrSemanticId.Parse("test.form");
+            XsrNxmlModuleRuntime runtime = new(store, state, (_, _) => new("form", [command]));
+            var (session, peer) = await PatchSession(new(CaptionPoint),
+                [new(SidecarRegistrationKind.Command, command.Value, 0, SidecarWireCodecs.GeneratedDto), NxmlItem()], features: features, nxml: runtime);
+            using (session) using (peer)
+            {
+                await SnapshotAll(session, peer); await session.ActivateAsync(); await DataPlaneReceiveAsync(peer);
+                var exposure = store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Single().Exposure;
+                AssertEqual(features.HasFlag(SidecarFeatures.UiForms), runtime.UsesFormSubmission(exposure, command));
+                AssertFalse((await runtime.DispatchFormAsync(exposure, command, "save", new Dictionary<string, string> { ["draft"] = new('x', 70000) })).IsSuccess);
+                AssertFalse((await runtime.DispatchFormAsync(exposure, command, "save", new Dictionary<string, string> { ["bad"] = "\ud800" })).IsSuccess);
+            }
+        }
+    }
+
     private static async ValueTask DynamicNxmlModelsRetainExposures()
     {
         XsrStateStoreBuilder builder = new(); builder.Cell<XsrNxmlModuleSnapshot>(NxmlModuleState, "Test");

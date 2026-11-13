@@ -115,13 +115,51 @@ internal sealed partial class DesktopSidecarNxml
             if (route == XsrNxmlCommandRoute.Host) return false;
             string value = _shell.Renderer.ReadIntentArgument(intent.Source);
             var pageStop = _pages.TryGetValue(exposure, out var page) ? page.Stop.Token : _stop.Token;
-            _ = Dispatch(exposure, intent.Command, value, pageStop);
+            IReadOnlyDictionary<string, string>? fields = null;
+            if (_owner.Runtime.UsesFormSubmission(exposure, intent.Command))
+            {
+                if (!CanSubmit(intent)) return true;
+                try { fields = ReadForm(exposure); }
+                catch (InvalidDataException) { _warn("NXML form could not be submitted."); return true; }
+            }
+            _ = Dispatch(exposure, intent.Command, value, pageStop, fields);
             return true;
         }
-        private async Task Dispatch(Guid exposure, Nexa.Xsr.XsrSemanticId command, string value, CancellationToken pageStop)
+        private bool CanSubmit(DesktopUiIntent intent)
+        {
+            if (_pages.Values.Any(page => page.Owns(intent.Source) && _shell.Stage.Navigation.Current != page.Root)) return false;
+            if (!_shell.Tree.IsAlive(intent.Source)
+                || _shell.Tree.GetComponent<XsrUiCommandBinding>(intent.Source)?.Command != intent.Command
+                || _shell.Tree.GetComponent<XsrUiInput>(intent.Source) is not { Enabled: true, Clickable: true }) return false;
+            for (var node = intent.Source; node.IsAssigned; node = _shell.Tree.Parent(node))
+                if (_shell.Tree.GetComponent<XsrUiElement>(node) is { IsVisible: false }) return false;
+            return true;
+        }
+        private Dictionary<string, string> ReadForm(Guid exposure)
+        {
+            Dictionary<string, string> fields = new(StringComparer.Ordinal);
+            foreach (var node in _shell.Tree.LiveEntities)
+            {
+                if (_shell.Tree.GetComponent<XsrUiTextInput>(node) is not { } input) continue;
+                // Mounted content takes precedence over an enclosing standalone page.
+                if (!_coordinator.TryGetExposure(node, out var owner) && !TryGetPageExposure(node, out owner)) continue;
+                if (owner != exposure) continue;
+                string key = _shell.Tree.Name(node);
+                if (string.IsNullOrWhiteSpace(key) || key.Length > SidecarUiForms.MaximumKeyLength || key.Any(char.IsControl)
+                    || fields.Count >= SidecarUiForms.MaximumFields || !fields.TryAdd(key, input.ReadDraft()))
+                    throw new InvalidDataException("Invalid form input set.");
+            }
+            return fields;
+        }
+        private async Task Dispatch(Guid exposure, Nexa.Xsr.XsrSemanticId command, string value, CancellationToken pageStop,
+            IReadOnlyDictionary<string, string>? fields = null)
         {
             using var stop = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token, pageStop);
-            try { await _owner.Runtime.DispatchAsync(exposure, command, value, stop.Token).ConfigureAwait(false); }
+            try
+            {
+                if (fields is null) await _owner.Runtime.DispatchAsync(exposure, command, value, stop.Token).ConfigureAwait(false);
+                else await _owner.Runtime.DispatchFormAsync(exposure, command, value, fields, stop.Token).ConfigureAwait(false);
+            }
             catch (OperationCanceledException) { }
             catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
             { _warn("NXML action failed: " + error.Message); }

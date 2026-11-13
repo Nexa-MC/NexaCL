@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Nexa.Xsr.Runtime" Version="[@VERSION@]" />
     <PackageReference Include="Nexa.Sidecar.Host.Contracts" Version="[@VERSION@]" />
+    <PackageReference Include="Nexa.Xsr.Renderer.Nxml.Runtime" Version="[@VERSION@]" />
     <PackageReference Include="Nexa.Xsr.BuildTools" Version="[@VERSION@]" PrivateAssets="all" />
   </ItemGroup>
 </Project>

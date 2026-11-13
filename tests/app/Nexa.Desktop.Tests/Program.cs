@@ -20,7 +20,7 @@ internal static partial class Program
     public static void Main(string[] args)
     {
         if (args is ["--sidecar-business-smoke"])
-        { SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
+        { SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
         if (args is ["--native-memory-preview", var memoryPreview])
         { Environment.ExitCode = RunNativeMemoryCleanupPreview(memoryPreview); return; }
         if (args is ["--update-onboarding-preview", var previewOutput])
@@ -348,6 +348,7 @@ internal static partial class Program
         ("general Sidecar effects keep credentials and runtime objects in Host", SidecarEffectsAbi),
         ("general Sidecar presentation publishes and retires session-owned pages", SidecarPresentationAbi),
         ("general Sidecar view-state updates retain navigation and drafts", SidecarViewStateAbi),
+        ("Sidecar forms capture only the invoking document exposure", SidecarFormsCaptureOnlyInvokingExposure),
         ("general Sidecar business ABI preserves authority and typed results", SidecarBusinessAbi),
         ("desktop protocol routes and registration preserve arguments", DesktopProtocolRoutesAndRegistrationCommands),
         ("single instance forwards across processes bounds queue and releases", DesktopSingleInstanceForwardsAcrossProcessesAndReleases),

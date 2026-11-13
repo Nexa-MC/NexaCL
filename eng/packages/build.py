@@ -62,9 +62,10 @@ def build(output):
     if sdk != SPEC['sdk']:
         raise SystemExit(f"Shared package build requires SDK {SPEC['sdk']}; got {sdk}")
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
-    run('dotnet', 'build', 'src/sidecar/Nexa.Sidecar.Host.Contracts/Nexa.Sidecar.Host.Contracts.csproj', '-c', 'Release', '-t:Rebuild', '-m:1', '-nr:false',
-        '-p:DebugType=None', '-p:DebugSymbols=false', '-p:EnableSourceLink=false',
-        '-p:PathMap=' + str(ROOT) + '=/_/nexacl', '-p:RestorePackagesWithLockFile=true', '-p:RestoreLockedMode=true')
+    for name in ('Nexa.Sidecar.Host.Contracts', 'Nexa.Xsr.Renderer.Nxml.Runtime'):
+        run('dotnet', 'build', str(ROOT / PROJECTS[name] / (name + '.csproj')), '-c', 'Release', '-t:Rebuild', '-m:1', '-nr:false',
+            '-p:DebugType=None', '-p:DebugSymbols=false', '-p:EnableSourceLink=false',
+            '-p:PathMap=' + str(ROOT) + '=/_/nexacl', '-p:RestorePackagesWithLockFile=true', '-p:RestoreLockedMode=true')
     output.mkdir(parents=True, exist_ok=True)
     result = {'source_commit': commit, 'version': SPEC['version'], 'sdk': sdk, 'packages': []}
     for name, dependencies in [*SPEC['projects'].items(), ('Nexa.Xsr.BuildTools', [])]:
@@ -93,7 +94,16 @@ def build(output):
             target = f'''<Project><ItemGroup>
 <None Include="$(MSBuildThisFileDirectory)../catalogs/{name}.nfp" Link="{name}.nfp"
       CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Visible="false" />
-</ItemGroup></Project>\n'''
+</ItemGroup>'''
+            if name == 'Nexa.Xsr.Renderer.Nxml.Compiler':
+                for folder, pattern in (('Components', '*.c.nxml'), ('Styles', '*.nss')):
+                    files = sorted((ROOT / PROJECTS['Nexa.Xsr.Renderer'] / folder).glob(pattern))
+                    if not files: raise RuntimeError('Missing canonical NXML assets: ' + folder)
+                    for file in files:
+                        entries[f'assets/Ui/{folder}/{file.name}'] = file.read_bytes()
+                        target += f'''<ItemGroup><None Include="$(MSBuildThisFileDirectory)../assets/Ui/{folder}/{file.name}"
+Link="Ui/{folder}/{file.name}" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Visible="false" /></ItemGroup>'''
+            target += '</Project>\n'
             entries[f'buildTransitive/{name}.targets'] = target.encode()
         result['packages'].append(write_package(output, name, entries))
     (output / 'feed-manifest.json').write_text(json.dumps(result, indent=2) + '\n')
