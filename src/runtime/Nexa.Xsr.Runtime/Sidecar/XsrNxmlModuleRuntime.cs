@@ -16,6 +16,17 @@ public sealed class XsrNxmlModuleSnapshot
     internal XsrNxmlModuleSnapshot(XsrNxmlModuleView[] modules) => Modules = Array.AsReadOnly(modules);
 }
 
+/// <summary>Local immutable ownership snapshot; no UI work may run under its owners' locks.</summary>
+public sealed record XsrNxmlControlDocument(int Index, Guid Exposure, SidecarNxmlDocument Source);
+public sealed class XsrNxmlControlSnapshot
+{
+    public long Revision { get; }
+    public IReadOnlyList<XsrNxmlControlDocument> Documents { get; }
+    public CancellationToken Retirement { get; }
+    internal XsrNxmlControlSnapshot(long revision, XsrNxmlControlDocument[] documents, CancellationToken retirement)
+    { Revision = revision; Documents = Array.AsReadOnly(documents); Retirement = retirement; }
+}
+
 /// <summary>
 /// Owns global NXML registration, compilation, state projection and asynchronous command dispatch.
 /// The one shared compiler is supplied at composition; there are no per-page or per-control grants.
@@ -274,6 +285,14 @@ public sealed class XsrNxmlModuleRuntime
                 if (Retired || !owner._leases.Contains(this)) throw new InvalidOperationException("Presentation has retired.");
                 _models = models; Compiled = compiled;
                 Interlocked.Increment(ref _version); owner.QueueLocked();
+            }
+        }
+        internal XsrNxmlControlSnapshot Capture(long revision)
+        {
+            lock (owner._gate)
+            {
+                if (Retired || !owner._leases.Contains(this)) throw new InvalidOperationException("Presentation has retired.");
+                return new(revision, Documents.Select((document, index) => new XsrNxmlControlDocument(index, Exposures[index], document)).ToArray(), Stop.Token);
             }
         }
         private void OnChanged(XsrStateChange change) => RequestRefresh();

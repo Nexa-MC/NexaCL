@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "extension": "PageControl",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 1280,
+      "kind": "query",
+      "scope": "pages",
+      "route": "SidecarPageControlRoutes.State",
+      "input": "HostPageQuery",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostPageQuery",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarPageControlRoutes",
+      "semantic": "presentation.pages.state",
+      "output": "HostPageState",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostPageState",
+      "outputAssembly": "Nexa.Services.Composition"
+    },
+    {
+      "id": 1281,
+      "kind": "command",
+      "scope": "pages",
+      "route": "SidecarPageControlRoutes.Open",
+      "input": "HostPageChange",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostPageChange",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarPageControlRoutes",
+      "semantic": "presentation.pages.open"
+    },
+    {
+      "id": 1282,
+      "kind": "command",
+      "scope": "pages",
+      "route": "SidecarPageControlRoutes.Close",
+      "input": "HostPageChange",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostPageChange",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarPageControlRoutes",
+      "semantic": "presentation.pages.close"
+    }
+  ]
+}

@@ -67,6 +67,12 @@ internal sealed partial class DesktopSidecarNxml
             XsrStateStore store, Action<string> warn, XsrUiEntityId onboardingFallback, Action<Uri>? openLink, Func<string, CancellationToken, Task<XsrResult>>? importTheme, Action? imported, Func<string, Task>? copyText, DesktopOnboardingHistory? onboarding, FirstRunController? firstRun)
         {
             _firstRun = firstRun; _onboardingHistory = onboarding; _copyText = copyText; _importTheme = importTheme; _imported = imported; _owner = owner; _shell = shell; _store = store; _warn = warn; _openLink = openLink;
+            ControlLifetime = _stop.Token;
+            lock (owner._controlGate)
+            {
+                if (owner._attached is not null) throw new InvalidOperationException("Presentation is already attached.");
+                owner._attached = this;
+            }
             _onboardingFallback = onboardingFallback;
             _coordinator = new(shell.Tree, store);
             shell.Renderer.PresentationPreparing += Frame;
@@ -103,6 +109,7 @@ internal sealed partial class DesktopSidecarNxml
             AdvanceOnboarding();
             ObserveScroll();
             OpenExternal();
+            ProcessPageControls();
         }
         private void StyleChanged(object? sender, EventArgs args) => _styledStructure = -1;
         private bool Intent(DesktopUiIntent intent)
@@ -166,6 +173,8 @@ internal sealed partial class DesktopSidecarNxml
         }
         public void Dispose()
         {
+            lock (_owner._controlGate)
+                if (ReferenceEquals(_owner._attached, this)) _owner._attached = null;
             _shell.Renderer.PresentationPreparing -= Frame; _route.Dispose();
             _shell.StyleChanged -= StyleChanged;
             _stop.Cancel(); _coordinator.Dispose(); _stop.Dispose();

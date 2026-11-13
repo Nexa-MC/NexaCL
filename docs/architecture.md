@@ -522,3 +522,22 @@ canonical component and stylesheet files and copies them into `Ui/Components`
 and `Ui/Styles` for both build and publish. Sidecar uses this same compiler to
 validate guest documents before publication; guest-specific policy remains in
 Sidecar. Sharing the compiler does not delegate Host UI access or admission.
+
+### Session-owned page control
+
+The independent page-control catalog (discovery 1279, operations 1280–1282)
+queries page visibility and opens or closes ordinary pages published by the
+invoking Sidecar. Requests identify a document index and expected presentation
+revision, never another session or a global page name. Onboarding remains under
+Host control. Queries report actual UI navigation, not a requested visibility.
+
+Desktop schedules these operations on its UI thread through a bounded queue
+(64 total, 8 per session). A separate state pulse wakes rendering without
+republishing a potentially stale document snapshot. Requests expire after five
+seconds; cancellation, presentation retirement and UI detachment free queued
+capacity. The UI frame revalidates ownership and revision before acting. Session
+and presentation locks protect snapshots only; UI work and cancellation callbacks
+run outside these locks. A close affects only the caller's currently visible
+page and restores a live fallback. Host services depend on abstract asynchronous
+ports; the catalog carries no plugin SDK types. This is a compatible general Host
+extension, not a guest ABI change or an SDK Beta release.

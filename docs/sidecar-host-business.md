@@ -218,3 +218,59 @@ window backend dependency, in managed and NativeAOT execution.
 ## Migration status
 
 This API is the first production boundary for moving plugin business adapters out of Desktop. Existing in-process plugin integration remains during migration. Do not interpret the generic route count as a claim that the plugin UI and all 358 SDK operations have already moved to the worker. The SDK Beta release remains blocked until that cutover and the worker packaging checks are complete.
+
+## Page control (shared packages 0.1.0-alpha.9)
+
+`SidecarPageControlClient` discovers catalog **1279** independently of presentation
+and view state. Use it after publishing NXML ordinary pages. The wire schema is
+`46D5C780DCD36136E0F3B0EE1E528E820A7FEBA2F80268C114764FDBA3AE59D4`.
+
+| ID | Route | Request | Result |
+| --- | --- | --- | --- |
+| 1280 | `presentation.pages.state` | `HostPageQuery(ExpectedRevision)` | `HostPageState(Revision, Pages)` |
+| 1281 | `presentation.pages.open` | `HostPageChange(ExpectedRevision, Document)` | Completion |
+| 1282 | `presentation.pages.close` | `HostPageChange(ExpectedRevision, Document)` | Completion |
+
+`Document` is the zero-based index in your own last committed source set, including
+non-page documents in the indexing. `Pages` contains only ordinary pages in that
+set, each with its document index, target and actual `Visible` value. Targets are
+informational: requests cannot address another session by target. Onboarding pages
+are excluded. An empty source set produces an empty result.
+
+```csharp
+using Nexa.Sidecar.Host;
+using Nexa.Sidecar.Host.PageControl.Data;
+
+var pages = new SidecarPageControlClient(requests, observer);
+var discovery = await pages.DiscoverAsync(token);
+if (!discovery.IsSuccess) return; // This Host does not offer this exact catalog.
+pages.Commands.TryResolve(SidecarPageControlRoutes.Open, out var open);
+var opened = await pages.Commands.Dispatch(open,
+    new HostPageChange(expectedPresentationRevision, documentIndex),
+    cancellationToken: token).Completion;
+```
+
+Read the current revision through the presentation or view-state catalog and
+serialize your own source/model writes with page requests. Every committed source
+or model update advances that revision. A queued request is checked again on the
+UI thread; an intervening update rejects it instead of applying it to a new page.
+After a conflict, reread the revision and reconcile your intended source set before
+retrying. Source replacement retires old identities; model-only updates preserve
+navigation and input drafts. Opening an already visible page and closing a hidden
+page are harmless. Closing a visible page restores its live return target; it
+cannot close another session's page. Host onboarding prevents programmatic page
+navigation until it completes.
+
+Calls complete after a UI frame processes them. Do not block the receive loop that
+must deliver their replies. A detached UI, invalid index, non-page document, stale
+revision, unavailable mounted page, exhausted queue or missing return target yields
+`xsr.rejected`. Cancelled requests and retired sessions/presentations yield
+`xsr.cancelled`. A request waiting five seconds without execution yields
+`xsr.timed_out`; it cannot execute on a later frame. At most eight requests per
+session and 64 requests globally can wait. Cancellation frees this capacity even
+when rendering is paused. Unauthorized or unavailable sessions have no routes.
+
+The client and catalog are general Sidecar APIs. Guest page ownership, guest
+permissions, action-token translation and guest visibility events remain the
+responsibility of PluginSidecar. This catalog does not complete the legacy plugin
+controller migration or change the frozen guest ABI.

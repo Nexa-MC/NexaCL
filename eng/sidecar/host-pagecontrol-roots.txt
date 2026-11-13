@@ -1,0 +1,3 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPageQuery
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPageChange
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPageState

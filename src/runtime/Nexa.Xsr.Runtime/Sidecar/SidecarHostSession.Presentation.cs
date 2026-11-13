@@ -10,6 +10,18 @@ public sealed partial class SidecarHostSession
     /// <summary>Revision of the current session's complete, committed NXML document set.</summary>
     public long PresentationRevision { get { lock (_gate) return _presentationRevision; } }
 
+    /// <summary>Captures only the invoking session's current document identities and retirement token.</summary>
+    public XsrNxmlControlSnapshot CapturePresentation(long expectedRevision)
+    {
+        lock (_gate)
+        {
+            ValidatePresentationRevision(expectedRevision);
+            return _nxmlLease is null
+                ? new(expectedRevision, [], _activationEnded.Token)
+                : _nxmlLease.Capture(expectedRevision);
+        }
+    }
+
     /// <summary>Replaces only this active session's presentation. Failed compilation preserves its predecessor.</summary>
     public ValueTask ReplacePresentationAsync(long expectedRevision, IReadOnlyList<SidecarNxmlDocument> documents,
         CancellationToken cancellationToken = default)
