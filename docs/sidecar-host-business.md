@@ -20,6 +20,45 @@ Public state consists of library, account display records, game sessions, instal
 
 State polling is a snapshot mechanism, not a replay log. A consumer must refresh after a completed mutation before relying on the resulting state. Watcher adapters belong in the consuming Sidecar and must handle disappearing identities and revoked sessions.
 
+## View state (package 0.1.0-alpha.5)
+
+Use `SidecarViewStateClient` when source files or model values exceed the generic
+string codec's 32 KiB limit, or when a model refresh must retain the current page
+and input drafts. Discover this catalog independently after activation. It shares
+the session's presentation revision with `SidecarPresentationClient`; a successful
+write through either client invalidates the other's previously read revision.
+
+| ID | Kind | Semantic route | Input / result |
+| --- | --- | --- | --- |
+| 1023 | Query | Catalog discovery | Empty / version, fingerprints, admitted IDs |
+| 1024 | Query | `presentation.viewstate.revision` | `HostViewEmpty` / `HostViewRevision` |
+| 1025 | Command | `presentation.viewstate.replace` | `HostViewReplace` / domain outcome |
+| 1026 | Command | `presentation.viewstate.models.update` | `HostViewModelsUpdate` / domain outcome |
+
+For replacement, encode each document using `SidecarNxmlDocument.Encode` and pass
+the resulting byte arrays in `Documents`. Each optional `HostViewModel` names a
+zero-based document index and its complete model. Each `HostViewValue` supplies a
+key and strict UTF-8 bytes. Omitted models start empty. The Host merges a document's
+model over its session mirror values for compilation; it never writes those model
+values into the mirror or another document.
+
+For a data refresh, send a nonempty array of `HostViewModel` values to the model
+update command. It replaces each named document's entire explicit model; omitted
+documents keep theirs. All affected documents compile before publication. Exposure
+handles remain stable, allowing the renderer to preserve navigation, control
+identity and unsaved drafts. A later source replacement retires these handles.
+Stale revisions, duplicate document indices, duplicate keys, invalid UTF-8 and
+invalid NXML/model combinations reject the whole update. No partial model publishes.
+
+The source limits of the presentation catalog still apply. Models additionally
+allow at most 4 MiB of UTF-8 key/value text per session, 4,096 fields per document,
+256 characters per key and 512 KiB per value. The 8 MiB generated-message limit
+also includes encoding overhead; the individual maxima cannot all be combined in
+one request. Source replacement clears prior models unless new models are supplied.
+Deactivation and reactivation retain committed models. A model update does not
+register new command contracts, grant guest permissions or provide access to
+another Sidecar's documents.
+
 ## Dynamic presentation (package 0.1.0-alpha.4)
 
 `SidecarPresentationClient` publishes NXML documents through the same Host request
@@ -38,6 +77,8 @@ Read the revision first. Supply it as `ExpectedRevision` with the **complete**
 desired document set, including any initial registration documents to retain.
 Each document includes its target, NXML operation, entry point, source files and
 onboarding revision. Pass `"1"` for an ordinary document's onboarding revision.
+This catalog uses the generic 32 KiB limit for each string field; use the view-state
+catalog above for larger individual source files.
 An empty document array removes the invoking session's complete presentation.
 On success the revision increases by one; a stale revision rejects the request.
 The request does not accept a package name or session ID: transport authentication

@@ -2,7 +2,7 @@
 
 `eng/packages/manifest.json` defines shared packages independently of product Alpha/Beta versions. The closure includes Core, Contracts, Sidecar.Protocol, Sidecar.Transport, Sidecar.Host.Contracts, XSR Abstractions, Diagnostics, State, Runtime, and separate BuildTools. Renderer and platform implementations are outside this closure.
 
-Version `0.1.0-alpha.4` adds the independent `SidecarPresentationClient` for session-owned dynamic NXML pages. The base catalog remains compatible with `0.1.0-alpha.2`; the effects catalog added in `0.1.0-alpha.3` is unchanged.
+Version `0.1.0-alpha.5` adds `SidecarViewStateClient` for binary NXML bundles and document-local model updates. The base catalog (`0.1.0-alpha.2`), effects catalog (`0.1.0-alpha.3`) and presentation catalog (`0.1.0-alpha.4`) remain unchanged.
 
 Version `0.1.0-alpha.2` introduced `SidecarHostRequestClient` and `Nexa.Sidecar.Host.Contracts`. These are general Sidecar APIs, independent of the plugin SDK. The client contains its own DTOs and generated binary codecs; it does not reference launcher service implementation assemblies. See [the Host business ABI](sidecar-host-business.md) for session admission, schema discovery, and cancellation semantics.
 

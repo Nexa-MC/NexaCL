@@ -486,3 +486,15 @@ retires old exposures and their command leases. An empty set removes all of the
 session's documents. Deactivation removes presentation, reactivation restores the
 latest committed set with new exposures, and disconnect retires everything.
 No guest SDK models, plugin identities or permission decisions enter this API.
+
+The independent view-state catalog (discovery 1023, operations 1024–1026) extends
+this boundary without modifying the presentation catalog. It accepts existing
+binary NXML bundles, including source files larger than the generic string codec's
+32 KiB limit, and document-local UTF-8 model values. Model updates compile before
+publication and retain exposure handles, navigation and control identity. Source
+replacement still retires exposures. Both operations share the presentation
+revision, so model publishers and source publishers cannot overwrite one another.
+Model keys and values are owned copies; a session retains at most 4 MiB of model
+text, with 4,096 entries per document and 512 KiB per value. Session mirror values
+remain the base; a document's explicit model overrides matching keys only for
+that document. Deactivation/reactivation retains the last committed models.

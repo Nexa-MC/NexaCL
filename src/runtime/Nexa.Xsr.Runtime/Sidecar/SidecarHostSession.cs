@@ -455,7 +455,7 @@ public sealed partial class SidecarHostSession : IDisposable
         XsrUiModuleRuntime.ModuleLease? moduleLease = null;
         try
         {
-            if (_nxmlActivated) _nxmlCompiled = NxmlModules?.Compile(_nxmlDocuments, this) ?? [];
+            if (_nxmlActivated) _nxmlCompiled = NxmlModules?.Compile(_nxmlDocuments, this, _nxmlModels) ?? [];
             await SendTrackedAsync(new SidecarFrame(
                 SidecarProtocol.Version, SidecarMessageType.Activate, SidecarFrameTraits.None,
                 SidecarCorrelationId.Create(), Array.Empty<byte>()), cancellationToken).ConfigureAwait(false);
@@ -470,7 +470,7 @@ public sealed partial class SidecarHostSession : IDisposable
                 _uiPatchLease = captionLease;
                 moduleLease = UiModuleAdmission?.Runtime.Activate(_uiModules, this);
                 _uiModuleLease = moduleLease;
-                _nxmlLease = _nxmlDocuments.Length == 0 ? null : NxmlModules?.Activate(_nxmlDocuments, _nxmlCompiled, this);
+                _nxmlLease = _nxmlDocuments.Length == 0 ? null : NxmlModules?.Activate(_nxmlDocuments, _nxmlCompiled, this, _nxmlModels);
                 _nxmlActivated = true;
                 _state = SidecarSessionState.Active;
                 if (_signalLease is { } lease)

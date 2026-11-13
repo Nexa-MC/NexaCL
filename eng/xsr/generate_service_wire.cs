@@ -175,8 +175,11 @@ void Emit(Type type, bool write)
     else if (Element(type) is { } element)
     {
         if (write) schema.AppendLine(id + ":list " + Id(element));
+        string allocationElement = Name(element), arraySuffix = "";
+        while (allocationElement.EndsWith("[]", StringComparison.Ordinal))
+        { allocationElement = allocationElement[..^2]; arraySuffix += "[]"; }
         code.Append(write ? $"        if (value is null) {{ Int32(-1); return; }}\n        using var scope = EnterValue();\n        Count(value.{(type.IsArray ? "Length" : "Count")});\n        foreach (var item in value) {Id(element)}(item);\n"
-            : $"        int count = Count(); if (count == -1) return null;\n        using var scope = EnterValue();\n        var value = new {Name(element)}[count];\n        for (int index = 0; index < count; index++) value[index] = {Id(element)}(){(!element.IsValueType ? " ?? throw new global::System.IO.InvalidDataException(\"Missing service item.\")" : "")};\n        return value;\n");
+            : $"        int count = Count(); if (count == -1) return null;\n        using var scope = EnterValue();\n        var value = new {allocationElement}[count]{arraySuffix};\n        for (int index = 0; index < count; index++) value[index] = {Id(element)}(){(!element.IsValueType ? " ?? throw new global::System.IO.InvalidDataException(\"Missing service item.\")" : "")};\n        return value;\n");
     }
     else
     {

@@ -1,0 +1,4 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostViewEmpty
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostViewModelsUpdate
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostViewReplace
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostViewRevision

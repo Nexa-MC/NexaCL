@@ -5,6 +5,44 @@ namespace Nexa.Xsr.Runtime.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask DynamicNxmlModelsRetainExposures()
+    {
+        XsrStateStoreBuilder builder = new(); builder.Cell<XsrNxmlModuleSnapshot>(NxmlModuleState, "Test");
+        var store = builder.Build(); var state = store.Resolve(NxmlModuleState);
+        XsrNxmlModuleRuntime runtime = new(store, state, (_, data) =>
+            data.GetValueOrDefault("text") == "invalid" ? throw new InvalidDataException("Bad model") : new(data.GetValueOrDefault("text", "empty"), []));
+        var (session, peer) = await PatchSession(new(CaptionPoint), [], features: SidecarFeatures.All, nxml: runtime);
+        using (session) using (peer)
+        {
+            await SnapshotAll(session, peer); await session.ActivateAsync(); await DataPlaneReceiveAsync(peer);
+            Dictionary<string, string> callerModel = new() { ["text"] = "initial" };
+            await session.ReplacePresentationWithModelsAsync(0, [DynamicPage("First"), DynamicPage("Second")], [callerModel, new Dictionary<string, string>()]);
+            callerModel["text"] = "mutated caller memory";
+            var before = store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.ToArray();
+            AssertEqual("initial", (string)before[0].Presentation.Artifact);
+            await session.UpdatePresentationModelsAsync(1, new Dictionary<int, IReadOnlyDictionary<string, string>> { [0] = new Dictionary<string, string> { ["text"] = "updated" } });
+            var after = store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules;
+            AssertEqual(before[0].Exposure, after[0].Exposure); AssertEqual(before[1].Exposure, after[1].Exposure);
+            AssertEqual("updated", (string)after[0].Presentation.Artifact); AssertEqual("empty", (string)after[1].Presentation.Artifact);
+            await AssertThrowsAsync<InvalidDataException>(async () => await session.UpdatePresentationModelsAsync(2,
+                new Dictionary<int, IReadOnlyDictionary<string, string>> { [0] = new Dictionary<string, string> { ["text"] = "invalid" } }));
+            await AssertThrowsAsync<InvalidOperationException>(async () => await session.UpdatePresentationModelsAsync(1,
+                new Dictionary<int, IReadOnlyDictionary<string, string>> { [0] = new Dictionary<string, string>() }));
+            await AssertThrowsAsync<SidecarProtocolException>(async () => await session.UpdatePresentationModelsAsync(2,
+                new Dictionary<int, IReadOnlyDictionary<string, string>> { [2] = new Dictionary<string, string>() }));
+            await AssertThrowsAsync<SidecarProtocolException>(async () => await session.UpdatePresentationModelsAsync(2,
+                new Dictionary<int, IReadOnlyDictionary<string, string>> { [0] = new Dictionary<string, string> { ["text"] = new string('a', 512 * 1024 + 1) } }));
+            AssertEqual(2L, session.PresentationRevision);
+            await session.DeactivateAsync(); await DataPlaneReceiveAsync(peer);
+            await session.ActivateAsync(); await DataPlaneReceiveAsync(peer);
+            var restored = store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules;
+            AssertEqual("updated", (string)restored[0].Presentation.Artifact);
+            AssertFalse(before[0].Exposure == restored[0].Exposure);
+            await session.ReplacePresentationAsync(2, [DynamicPage("Reset")]);
+            AssertEqual("empty", (string)store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Single().Presentation.Artifact);
+        }
+    }
+
     private static SidecarNxmlDocument DynamicPage(string target, string source = "<Page />") =>
         new("#" + target, SidecarNxmlOperation.Page, "main.nxml", new Dictionary<string, string> { ["main.nxml"] = source });
 

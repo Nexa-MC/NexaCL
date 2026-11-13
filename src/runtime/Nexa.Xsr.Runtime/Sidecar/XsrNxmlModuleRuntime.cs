@@ -64,23 +64,32 @@ public sealed class XsrNxmlModuleRuntime
         return documents.ToArray();
     }
 
-    internal XsrNxmlCompiledDocument[] Compile(SidecarNxmlDocument[] documents, SidecarHostSession session)
+    internal XsrNxmlCompiledDocument[] Compile(SidecarNxmlDocument[] documents, SidecarHostSession session,
+        IReadOnlyDictionary<string, string>[]? models = null)
     {
         if (documents.Length == 0) return [];
         var data = ReadData(session);
-        return documents.Select(document => _compile(document, data)).ToArray();
+        return documents.Select((document, index) =>
+        {
+            if (models is null || models.Length == 0 || models[index].Count == 0) return _compile(document, data);
+            var merged = new Dictionary<string, string>(data, StringComparer.Ordinal);
+            foreach (var entry in models[index]) merged[entry.Key] = entry.Value;
+            return _compile(document, merged);
+        }).ToArray();
     }
 
-    internal Lease Activate(SidecarNxmlDocument[] documents, XsrNxmlCompiledDocument[] compiled, SidecarHostSession session)
+    internal Lease Activate(SidecarNxmlDocument[] documents, XsrNxmlCompiledDocument[] compiled, SidecarHostSession session,
+        IReadOnlyDictionary<string, string>[]? models = null)
     {
-        var lease = Replace(null, documents, compiled, session);
+        var lease = Replace(null, documents, compiled, session, models);
         lease.RequestRefresh();
         return lease;
     }
 
-    internal Lease Replace(Lease? prior, SidecarNxmlDocument[] documents, XsrNxmlCompiledDocument[] compiled, SidecarHostSession session)
+    internal Lease Replace(Lease? prior, SidecarNxmlDocument[] documents, XsrNxmlCompiledDocument[] compiled, SidecarHostSession session,
+        IReadOnlyDictionary<string, string>[]? models = null)
     {
-        var lease = new Lease(this, documents, compiled, session);
+        var lease = new Lease(this, documents, compiled, session, models ?? []);
         lock (_gate)
         {
             if (prior is not null && (prior.Session != session || !prior.Retired && !_leases.Contains(prior)))
@@ -213,10 +222,11 @@ public sealed class XsrNxmlModuleRuntime
     }
 
     internal sealed class Lease(XsrNxmlModuleRuntime owner, SidecarNxmlDocument[] documents,
-        XsrNxmlCompiledDocument[] compiled, SidecarHostSession session) : IDisposable
+        XsrNxmlCompiledDocument[] compiled, SidecarHostSession session, IReadOnlyDictionary<string, string>[] models) : IDisposable
     {
         internal SidecarNxmlDocument[] Documents { get; } = documents;
         internal XsrNxmlCompiledDocument[] Compiled { get; private set; } = compiled;
+        private IReadOnlyDictionary<string, string>[] _models = models;
         internal Guid[] Exposures { get; } = documents.Select(_ => Guid.NewGuid()).ToArray();
         internal SidecarHostSession Session { get; } = session;
         internal CancellationTokenSource Stop { get; } = new();
@@ -224,6 +234,15 @@ public sealed class XsrNxmlModuleRuntime
         private long _version;
         internal bool Retired => Volatile.Read(ref _retired) != 0;
         internal void Attach() { if (Session.Mirror is { } mirror) mirror.Store.Changed += OnChanged; }
+        internal void UpdateModels(IReadOnlyDictionary<string, string>[] models, XsrNxmlCompiledDocument[] compiled)
+        {
+            lock (owner._gate)
+            {
+                if (Retired || !owner._leases.Contains(this)) throw new InvalidOperationException("Presentation has retired.");
+                _models = models; Compiled = compiled;
+                Interlocked.Increment(ref _version); owner.QueueLocked();
+            }
+        }
         private void OnChanged(XsrStateChange change) => RequestRefresh();
         internal void RequestRefresh()
         {
@@ -238,7 +257,7 @@ public sealed class XsrNxmlModuleRuntime
                 while (!Retired)
                 {
                     version = Volatile.Read(ref _version);
-                    var next = owner.Compile(Documents, Session);
+                    var next = owner.Compile(Documents, Session, Volatile.Read(ref _models));
                     lock (owner._gate)
                     {
                         if (Retired) return;

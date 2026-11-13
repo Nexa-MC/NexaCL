@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "extension": "ViewState",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 1024,
+      "kind": "query",
+      "scope": "viewstate",
+      "route": "SidecarViewStateRoutes.Revision",
+      "input": "HostViewEmpty",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostViewEmpty",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarViewStateRoutes",
+      "semantic": "presentation.viewstate.revision",
+      "output": "HostViewRevision",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostViewRevision",
+      "outputAssembly": "Nexa.Services.Composition"
+    },
+    {
+      "id": 1025,
+      "kind": "command",
+      "scope": "viewstate",
+      "route": "SidecarViewStateRoutes.Replace",
+      "input": "HostViewReplace",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostViewReplace",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarViewStateRoutes",
+      "semantic": "presentation.viewstate.replace"
+    },
+    {
+      "id": 1026,
+      "kind": "command",
+      "scope": "viewstate",
+      "route": "SidecarViewStateRoutes.Models",
+      "input": "HostViewModelsUpdate",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostViewModelsUpdate",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarViewStateRoutes",
+      "semantic": "presentation.viewstate.models.update"
+    }
+  ]
+}

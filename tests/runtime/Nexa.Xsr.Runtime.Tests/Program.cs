@@ -16,6 +16,7 @@ internal static partial class Program
         ("dynamic NXML replacement is atomic and session owned", DynamicNxmlReplacementIsAtomicAndSessionOwned),
         ("dynamic NXML disconnect during compilation cannot publish", DynamicNxmlDisconnectDuringCompilationCannotPublish),
         ("dynamic NXML budgets and cancellation preserve predecessor", DynamicNxmlBudgetsAndCancellationPreservePredecessor),
+        ("dynamic NXML models retain exposures and survive reactivation", DynamicNxmlModelsRetainExposures),
         ("NXML modules reject unsupported or invalid documents before activation", NxmlModulesRejectUnsupportedAndInvalidDocuments),
         ("Standalone pages require negotiation and resolve only within their session", NxmlPagesAreSessionScoped),
         ("Host facade preserves admission cancellation and shutdown errors", HostFacadePreservesAdmissionCancellationAndShutdownErrors),
