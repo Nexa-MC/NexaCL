@@ -4,6 +4,11 @@
 
 Version `0.1.0-alpha.6` adds negotiated, document-local form submissions and the canonical NXML compiler packages. Referencing `Nexa.Xsr.Renderer.Nxml.Runtime` brings the compiler's standard `Ui/Components/*.c.nxml` and `Ui/Styles/*.nss` files into both build and publish output. Keep these files with your executable: default component/style resolution uses `AppContext.BaseDirectory`, not the working directory. Shared NXML compilation is available without a window backend or launcher installation.
 
+Use `0.1.0-alpha.7` for this package closure. It fixes the clean-build failure in
+the Alpha 6 package pipeline: instrumentation no longer emits a synthetic PDB
+for an assembly compiled without debug symbols. The UI form and Host catalogs
+retain their existing wire layouts and fingerprints.
+
 Version `0.1.0-alpha.5` adds `SidecarViewStateClient` for binary NXML bundles and document-local model updates. The base catalog (`0.1.0-alpha.2`), effects catalog (`0.1.0-alpha.3`) and presentation catalog (`0.1.0-alpha.4`) remain unchanged.
 
 Version `0.1.0-alpha.2` introduced `SidecarHostRequestClient` and `Nexa.Sidecar.Host.Contracts`. These are general Sidecar APIs, independent of the plugin SDK. The client contains its own DTOs and generated binary codecs; it does not reference launcher service implementation assemblies. See [the Host business ABI](sidecar-host-business.md) for session admission, schema discovery, and cancellation semantics.

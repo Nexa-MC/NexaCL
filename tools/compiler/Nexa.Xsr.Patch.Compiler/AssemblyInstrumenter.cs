@@ -79,7 +79,13 @@ internal sealed partial class AssemblyInstrumenter
         string staged = Path.Combine(temporary, Path.GetFileName(assemblyPath));
         try
         {
-            module.Write(staged, new WriterParameters { WriteSymbols = module.HasSymbols, DeterministicMvid = true, SymbolWriterProvider = new StableSymbolWriterProvider() });
+            module.Write(staged, new WriterParameters
+            {
+                WriteSymbols = module.HasSymbols, DeterministicMvid = true,
+                // Cecil creates a symbol writer when a provider is present, even if WriteSymbols is false.
+                // A synthetic PDB survives a no-symbol MSBuild clean and mismatches the next compiler output.
+                SymbolWriterProvider = module.HasSymbols ? new StableSymbolWriterProvider() : null
+            });
             module.Dispose();
             File.Move(staged, assemblyPath, overwrite: true);
             if (File.Exists(Path.ChangeExtension(staged, ".pdb"))) File.Move(Path.ChangeExtension(staged, ".pdb"), pdb, overwrite: true);

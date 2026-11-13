@@ -35,4 +35,20 @@ internal static partial class Program
                 throw new InvalidDataException("The instrumented debug identity leaked a random staging path.");
         }
     }
+
+    private static void NoSymbolsRebuildSelfTest(string directory, string corePath, IEnumerable<PortableExecutableReference> references)
+    {
+        string path = Path.Combine(directory, "NoSymbols.dll");
+        for (int index = 0; index < 2; index++)
+        {
+            var compilation = CSharpCompilation.Create("NoSymbols",
+                [CSharpSyntaxTree.ParseText("public static class Sample { public static int Value() => " + index + "; }")], references,
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, optimizationLevel: OptimizationLevel.Release));
+            var emitted = compilation.Emit(path);
+            if (!emitted.Success) throw new InvalidDataException(string.Join(Environment.NewLine, emitted.Diagnostics));
+            AssemblyInstrumenter.Run(path, corePath, Path.ChangeExtension(path, ".nfp"));
+            _ = AssemblyInstrumenter.Verify(path);
+            if (File.Exists(Path.ChangeExtension(path, ".pdb"))) throw new InvalidDataException("No-symbol instrumentation created a stale PDB for the next rebuild.");
+        }
+    }
 }
