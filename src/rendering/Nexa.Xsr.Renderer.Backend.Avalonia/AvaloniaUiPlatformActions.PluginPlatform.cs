@@ -56,7 +56,12 @@ public sealed partial class AvaloniaUiPlatformActions
                 await clipboard.SetDataAsync(data).ConfigureAwait(true);
             }
             var previous = _clipboardScreenshot; _clipboardScreenshot = bitmap; previous?.Dispose();
-            try { await clipboard.FlushAsync().ConfigureAwait(true); } catch (NotSupportedException) { }
+            if (text is not null || bitmap is not null)
+            {
+                // Clearing leaves no delayed data object to persist. A successful write is
+                // still usable in this session when the platform cannot flush its ownership.
+                try { await clipboard.FlushAsync().ConfigureAwait(true); } catch (Exception) { }
+            }
         }
         catch { if (!ReferenceEquals(_clipboardScreenshot, bitmap)) bitmap?.Dispose(); throw; }
     }
