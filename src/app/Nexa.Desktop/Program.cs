@@ -396,8 +396,11 @@ internal static partial class Program
                 && active!.SessionId == caller.SessionId;
         var sidecarBusiness = new Nexa.Services.Composition.Sidecars.SidecarBusinessApi(AuthorizeHost);
         var sidecarEffects = new Nexa.Services.Composition.Sidecars.SidecarEffectsApi(AuthorizeHost);
+        var sidecarPresentation = new Nexa.Services.Composition.Sidecars.SidecarPresentationApi(caller =>
+            admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
+                && active!.SessionId == caller.SessionId ? active : null, dispatchObservation);
         sidecarBusiness.BindState(host.StateStore);
-        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes)));
+        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes).Concat(sidecarPresentation.Routes)));
         admittedSidecars = sidecars;
         await using var sidecarNetwork = new DesktopSidecarNetwork(sidecars, host.StateStore);
         SidecarHostApi sidecarApi = new(sidecars, dispatchObservation);

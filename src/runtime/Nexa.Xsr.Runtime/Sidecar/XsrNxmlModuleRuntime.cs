@@ -73,14 +73,24 @@ public sealed class XsrNxmlModuleRuntime
 
     internal Lease Activate(SidecarNxmlDocument[] documents, XsrNxmlCompiledDocument[] compiled, SidecarHostSession session)
     {
+        var lease = Replace(null, documents, compiled, session);
+        lease.RequestRefresh();
+        return lease;
+    }
+
+    internal Lease Replace(Lease? prior, SidecarNxmlDocument[] documents, XsrNxmlCompiledDocument[] compiled, SidecarHostSession session)
+    {
         var lease = new Lease(this, documents, compiled, session);
         lock (_gate)
         {
-            if (_leases.Sum(item => item.Documents.Length) + documents.Length > 128)
+            if (prior is not null && (prior.Session != session || !prior.Retired && !_leases.Contains(prior)))
+                throw new SidecarProtocolException("The presentation lease has retired.");
+            if (_leases.Where(item => item != prior).Sum(item => item.Documents.Length) + documents.Length > 128)
                 throw new SidecarProtocolException("Active NXML document budget exceeded.");
+            if (prior is not null) { prior.MarkRetired(); _leases.Remove(prior); }
             _leases.Add(lease); QueueLocked();
+            lease.Attach();
         }
-        lease.Attach();
         return lease;
     }
 
@@ -214,7 +224,8 @@ public sealed class XsrNxmlModuleRuntime
         private long _version;
         internal bool Retired => Volatile.Read(ref _retired) != 0;
         internal void Attach() { if (Session.Mirror is { } mirror) mirror.Store.Changed += OnChanged; }
-        private void OnChanged(XsrStateChange change)
+        private void OnChanged(XsrStateChange change) => RequestRefresh();
+        internal void RequestRefresh()
         {
             Interlocked.Increment(ref _version);
             if (!Retired && Interlocked.CompareExchange(ref _worker, 1, 0) == 0) _ = Task.Run(Refresh);
@@ -249,11 +260,20 @@ public sealed class XsrNxmlModuleRuntime
         }
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref _retired, 1) != 0) return;
-            if (Session.Mirror is { } mirror) mirror.Store.Changed -= OnChanged;
-            Stop.Cancel();
-            lock (owner._gate) { owner._leases.Remove(this); owner.QueueLocked(); }
+            lock (owner._gate)
+            {
+                if (!MarkRetired()) return;
+                owner._leases.Remove(this); owner.QueueLocked();
+            }
+            FinishRetirement();
             owner.Publish();
+        }
+        internal bool MarkRetired() => Interlocked.Exchange(ref _retired, 1) == 0;
+        internal void FinishRetirement()
+        {
+            if (Session.Mirror is { } mirror) mirror.Store.Changed -= OnChanged;
+            try { Stop.Cancel(); }
+            catch (AggregateException) { /* A consumer's cancellation callback cannot retain presentation. */ }
         }
     }
 }

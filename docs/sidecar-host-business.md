@@ -20,6 +20,50 @@ Public state consists of library, account display records, game sessions, instal
 
 State polling is a snapshot mechanism, not a replay log. A consumer must refresh after a completed mutation before relying on the resulting state. Watcher adapters belong in the consuming Sidecar and must handle disappearing identities and revoked sessions.
 
+## Dynamic presentation (package 0.1.0-alpha.4)
+
+`SidecarPresentationClient` publishes NXML documents through the same Host request
+transport. Call its `DiscoverAsync` after activation, then use its generated
+`Queries` and `Commands` routers. This catalog has its own fingerprint and does
+not change the base or effects catalog. Hosts without this catalog cannot accept
+dynamic pages; a consumer must keep those features unavailable.
+
+| ID | Kind | Semantic route | Input / result |
+| --- | --- | --- | --- |
+| 767 | Query | Catalog discovery | Empty / version, fingerprints, admitted IDs |
+| 768 | Query | `presentation.nxml.revision` | `HostPresentationEmpty` / `HostPresentationRevision` |
+| 769 | Command | `presentation.nxml.replace` | `HostPresentationReplace` / domain outcome |
+
+Read the revision first. Supply it as `ExpectedRevision` with the **complete**
+desired document set, including any initial registration documents to retain.
+Each document includes its target, NXML operation, entry point, source files and
+onboarding revision. Pass `"1"` for an ordinary document's onboarding revision.
+An empty document array removes the invoking session's complete presentation.
+On success the revision increases by one; a stale revision rejects the request.
+The request does not accept a package name or session ID: transport authentication
+selects the owner, including when two admitted packages use the same page target.
+
+Candidates use the same compiler and admission limits as initial NXML registration:
+32 documents and 4 MiB of encoded document payloads per session, 128 active
+documents globally, and the existing 512 KiB source budget per document. Page
+operations also require negotiated `Pages` support and unique single-key targets
+within the document set. Large requests require `LargeGeneratedDtos`. The entire
+candidate compiles before replacement. Compilation failure, a stale revision,
+budget rejection or cancellation before commit leaves the previous set intact.
+
+Replacement invalidates previous exposure handles and cancels their pending UI
+commands. Deactivation removes the presentation; reactivation restores the latest
+committed set with fresh exposures and the same revision. Disconnect removes all
+of the session's presentation. A lost acknowledgement does not prove a command
+failed: read the current revision before deciding whether another update is needed.
+Serialize writes within the Sidecar so its page and model publishers cannot race.
+
+This is a general presentation capability. The Host does not parse guest manifests,
+plugin permissions, registration handles or SDK models. A plugin Sidecar must
+validate its guests and translate their models and actions before calling it.
+The production PluginSidecar UI migration is still in progress; availability of
+this catalog alone does not mean that the old Host plugin UI has been removed.
+
 ## General effects (package 0.1.0-alpha.3)
 
 `SidecarEffectsClient` uses the same authenticated connection and has its own

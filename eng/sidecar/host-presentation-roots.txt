@@ -1,0 +1,3 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPresentationEmpty
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPresentationReplace
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPresentationRevision

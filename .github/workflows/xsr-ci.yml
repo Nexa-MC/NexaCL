@@ -426,9 +426,11 @@ jobs:
         run: |
           python3 eng/sidecar/generate_host_business.py --verify
           python3 eng/sidecar/generate_host_business.py --catalog host-effects.json --verify
+          python3 eng/sidecar/generate_host_business.py --catalog host-presentation.json --verify
           python3 eng/xsr/generate_service_wire.py --assembly src/app/Nexa.Services.Composition/bin/Release/net10.0/Nexa.Services.dll --roots eng/sidecar/host-business-roots.txt --output src/app/Nexa.Services.Composition/Composition/Sidecars/BusinessWire.Generated.cs --namespace Nexa.Sidecar.Host.Wire --sidecar-contracts src/sidecar/Nexa.Sidecar.Host.Contracts --check
 
           python3 eng/xsr/generate_service_wire.py --assembly src/app/Nexa.Services.Composition/bin/Release/net10.0/Nexa.Services.Composition.dll --roots eng/sidecar/host-effects-roots.txt --output src/app/Nexa.Services.Composition/Composition/Sidecars/Effects/BusinessWire.Generated.cs --namespace Nexa.Sidecar.Host.Effects.Wire --sidecar-contracts src/sidecar/Nexa.Sidecar.Host.Contracts/Effects --sidecar-data-namespace Nexa.Sidecar.Host.Effects.Data --check
+          python3 eng/xsr/generate_service_wire.py --assembly src/app/Nexa.Services.Composition/bin/Release/net10.0/Nexa.Services.Composition.dll --roots eng/sidecar/host-presentation-roots.txt --output src/app/Nexa.Services.Composition/Composition/Sidecars/Presentation/BusinessWire.Generated.cs --namespace Nexa.Sidecar.Host.Presentation.Wire --sidecar-contracts src/sidecar/Nexa.Sidecar.Host.Contracts/Presentation --sidecar-data-namespace Nexa.Sidecar.Host.Presentation.Data --check
 
       - name: Validate external NXML component bundle
         shell: bash

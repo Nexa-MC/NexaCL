@@ -130,6 +130,15 @@ void Emit(Type type, bool write)
     if (Special(type) && !type.IsEnum) { if (write) schema.AppendLine(type.FullName + ":scalar"); return; }
     if (type.IsEnum)
     {
+        if (Enum.GetUnderlyingType(type) == typeof(uint))
+        {
+            uint[] unsigned = Enum.GetValues(type).Cast<object>().Select(Convert.ToUInt32).Distinct().ToArray();
+            if (write) schema.AppendLine(type.FullName + ":uint32:" + string.Join(',', Enum.GetValues(type).Cast<object>().Select(value => value + "=" + Convert.ToUInt32(value))));
+            string accepted = type.IsDefined(typeof(FlagsAttribute)) ? $"(value & ~{unsigned.Aggregate(0u, (mask, value) => mask | value)}u) == 0" : "value is " + string.Join(" or ", unsigned.Select(value => value + "u"));
+            code.Append(write ? $"    internal void {id}({name} value) => UInt32((uint)value);\n"
+                : $"    internal {name} {id}() {{ uint value = UInt32(); return {accepted} ? ({name})value : throw new global::System.IO.InvalidDataException(\"Invalid service enum.\"); }}\n");
+            return;
+        }
         if (Enum.GetUnderlyingType(type) != typeof(int)) throw new InvalidOperationException("Unsupported enum storage: " + type);
         int[] values = Enum.GetValues(type).Cast<object>().Select(Convert.ToInt32).Distinct().ToArray();
         if (write) schema.AppendLine(type.FullName + ":" + string.Join(',', Enum.GetValues(type).Cast<object>().Select(value => value + "=" + Convert.ToInt32(value))));

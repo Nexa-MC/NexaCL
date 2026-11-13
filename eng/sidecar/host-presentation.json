@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "extension": "Presentation",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 768,
+      "kind": "query",
+      "scope": "presentation",
+      "route": "SidecarPresentationRoutes.Revision",
+      "input": "HostPresentationEmpty",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostPresentationEmpty",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarPresentationRoutes",
+      "semantic": "presentation.nxml.revision",
+      "output": "HostPresentationRevision",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostPresentationRevision",
+      "outputAssembly": "Nexa.Services.Composition"
+    },
+    {
+      "id": 769,
+      "kind": "command",
+      "scope": "presentation",
+      "route": "SidecarPresentationRoutes.Replace",
+      "input": "HostPresentationReplace",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostPresentationReplace",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarPresentationRoutes",
+      "semantic": "presentation.nxml.replace"
+    }
+  ]
+}

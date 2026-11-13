@@ -467,3 +467,22 @@ operations are general launcher capabilities and contain no guest or SDK types.
 Account refresh resolves a revision-checked profile entirely inside the Host and
 returns no identity or token. Capability objects and settings validator delegates
 remain inside the Host; only their plain results cross the generated binary ABI.
+
+### Session-owned dynamic presentation
+
+A separate presentation catalog (discovery 767, revision query 768, replace
+command 769) lets any admitted Sidecar replace its complete NXML document set
+after activation. The caller is the authenticated transport session, never a
+package/session identifier supplied in the request. A nonnegative expected
+revision prevents concurrent writers from overwriting each other. The initial
+revision is zero; each successful replacement increments it once. Cancellation
+after publication has an unknown outcome and must be resolved by reading the
+revision, not by blindly replaying a mutation.
+
+The existing NXML compiler, page negotiation and source budgets apply unchanged.
+All candidate documents compile before one atomic publication; an invalid
+candidate leaves the previous document set and revision intact. Replacement
+retires old exposures and their command leases. An empty set removes all of the
+session's documents. Deactivation removes presentation, reactivation restores the
+latest committed set with new exposures, and disconnect retires everything.
+No guest SDK models, plugin identities or permission decisions enter this API.

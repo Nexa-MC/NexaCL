@@ -34,9 +34,11 @@ def generate(catalog="host-business.json"):
         else:
             client.append('            if (!reply.Success) return XsrResult.Failure(Error(reply.ErrorCode));\n            using var reader = new ServiceWireReader(reply.Value.ToArray());\n            var error = ReadOutcome(reader); reader.End();\n            return error is null ? XsrResult.Success() : XsrResult.Failure(error);\n')
         client.append('        });\n')
-        host.append(f'        yield return new({identifier}, {str(query).lower()}, SidecarWireCodecs.GeneratedDto, SidecarWireCodecs.GeneratedDto, TimeSpan.FromMinutes(5),\n            caller => _authorize(caller, "{semantic}"), async (_, bytes, token) =>\n        {{\n')
+        caller_name = 'caller' if spec.get('sessionScoped') else '_'
+        caller_argument = ', caller' if spec.get('sessionScoped') else ''
+        host.append(f'        yield return new({identifier}, {str(query).lower()}, SidecarWireCodecs.GeneratedDto, SidecarWireCodecs.GeneratedDto, TimeSpan.FromMinutes(5),\n            caller => _authorize(caller, "{semantic}"), async ({caller_name}, bytes, token) =>\n        {{\n')
         host.append(f'            using var reader = new ServiceWireReader(bytes.ToArray()); var input = reader.{request}() ?? throw new InvalidDataException("Missing Host request."); reader.End();\n')
-        host.append(f'            var router = {"Queries" if query else "Commands"}("{op["scope"]}");\n            if (router is null || !router.TryResolve(global::{op["routeType"]}.{op["route"].split(".")[-1]}, out var route)) return XsrResult.Failure<SidecarBinaryValue>(XsrRuntimeErrors.RouteNotFound());\n')
+        host.append(f'            var router = {"Queries" if query else "Commands"}("{op["scope"]}"{caller_argument});\n            if (router is null || !router.TryResolve(global::{op["routeType"]}.{op["route"].split(".")[-1]}, out var route)) return XsrResult.Failure<SidecarBinaryValue>(XsrRuntimeErrors.RouteNotFound());\n')
         if query:
             host.append(f'            var result = await router.QueryAsync<global::{op["inputType"]}, global::{op["outputType"]}>(route, input, cancellationToken: token).ConfigureAwait(false);\n            using var writer = new ServiceWireWriter(); WriteOutcome(writer, result.Error);\n            if (result.IsSuccess) writer.{response}(result.Value);\n            return XsrResult.Success(new SidecarBinaryValue(SidecarWireCodecs.GeneratedDto, writer.Finish()));\n')
         else:
@@ -44,7 +46,7 @@ def generate(catalog="host-business.json"):
         host.append('        });\n')
         owner, field = op['route'].split('.')
         owners.setdefault(owner, []).append((field, semantic))
-        availability.append(f'        if (_authorize(caller, "{semantic}") && {"Queries" if query else "Commands"}("{op["scope"]}")?.TryResolve(global::{op["routeType"]}.{field}, out _) == true) result.Add({identifier});\n')
+        availability.append(f'        if (_authorize(caller, "{semantic}") && {"Queries" if query else "Commands"}("{op["scope"]}"{caller_argument})?.TryResolve(global::{op["routeType"]}.{field}, out _) == true) result.Add({identifier});\n')
     client.append('    }\n    private const string CatalogFingerprint = "' + fingerprint + '";\n}\n')
     host.append('    }\n    private IReadOnlyList<uint> Available(SidecarHostCaller caller)\n    {\n        List<uint> result = [];\n' + ''.join(availability) + '        return result;\n    }\n    private const string CatalogFingerprint = "' + fingerprint + '";\n}\n')
     for owner, fields in sorted(owners.items()):

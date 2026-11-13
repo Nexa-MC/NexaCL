@@ -27,6 +27,10 @@ static class Check
         if (!effects.Commands.TryResolve(Nexa.Sidecar.Host.Effects.Data.SidecarEffectsRoutes.AccountRefresh, out var refresh)) throw new Exception("effects route missing");
         var denied = await effects.Commands.Dispatch(refresh, new Nexa.Sidecar.Host.Effects.Data.HostAccountRequest(0, 1)).Completion;
         if (denied.Error?.Code.Value != "xsr.route_not_found") throw new Exception("undiscovered effects accepted call");
+        var presentation = new SidecarPresentationClient(requests, new Observer());
+        if (!presentation.Commands.TryResolve(Nexa.Sidecar.Host.Presentation.Data.SidecarPresentationRoutes.Replace, out var replace)) throw new Exception("presentation route missing");
+        var hidden = await presentation.Commands.Dispatch(replace, new Nexa.Sidecar.Host.Presentation.Data.HostPresentationReplace(0, [])).Completion;
+        if (hidden.Error?.Code.Value != "xsr.route_not_found") throw new Exception("undiscovered presentation accepted call");
         if (Add(1, 2) != 3) throw new Exception("original");
         var target = Patch.Catalog.Single(x => x.Signature.Contains("Check::Add``", StringComparison.Ordinal));
         if (target.Status != PatchTargetStatus.Instrumented) throw new Exception("not instrumented");
