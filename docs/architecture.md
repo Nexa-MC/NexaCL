@@ -703,3 +703,29 @@ guest invocation before consuming a result and releases known transfer IDs using
 an independent, bounded cleanup token, including after an uncertain begin reply.
 Cleanup failures are reported; Host expiry remains the final resource bound.
 Existing guest ABI 100 and the older Host catalogs are unchanged.
+
+
+### General Sidecar runtime context and readiness
+
+The Context catalog (discovery 3327, snapshot query 3328) exposes the launcher
+version, its absolute data root as strict UTF-8 bytes, and two independent facts:
+business startup phase and native window availability. It contains no plugin
+paths, permissions, activation policy or guest ABI types. An authenticated native
+Sidecar may use the root for its own compatibility layout; this is not a grant
+of filesystem access to a guest. The Sidecar must enforce guest storage policy.
+
+Business startup advances from Composing to Ready only after normal startup
+preparation completes. Stopping is terminal. Native-window readiness is false
+while the shell is being prepared invisibly, before native attachment, and after
+closure; it does not depend on foreground focus or tray visibility. A context
+snapshot is advisory and cannot reserve future availability. Sidecars still
+handle unavailable/cancelled operations and retire restoration with activation.
+Headless shell validation never advertises Ready. Shutdown marks Stopping before
+disposing controllers. A readiness query does not wait for Sidecars to finish
+restoring: activation must complete independently to avoid a startup cycle.
+
+Clients poll the cheap read-only snapshot with bounded, cancellable backoff until
+the capabilities they need are ready. The Host does not schedule plugin recovery.
+The production plugin restoration owner remains unchanged until Worker migration
+is complete. This separate catalog preserves all existing Host fingerprints and
+the frozen guest ABI 100.

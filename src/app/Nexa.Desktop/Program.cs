@@ -410,6 +410,9 @@ internal static partial class Program
         var sidecarDecisions = new Nexa.Services.Composition.Sidecars.SidecarConfirmationApi(caller =>
             admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
                 && active!.SessionId == caller.SessionId ? active : null, dispatchObservation, sidecarConfirmation.AskAsync);
+        using var sidecarContext = new Nexa.Services.Composition.Sidecars.SidecarContextApi(caller =>
+            admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
+                && active!.SessionId == caller.SessionId ? active : null, dispatchObservation, ResolveInformationalVersion(), folders.Root);
         using var sidecarClipboard = new Nexa.Services.Composition.Sidecars.SidecarClipboardApi(caller =>
             admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
                 && active!.SessionId == caller.SessionId ? active : null, dispatchObservation);
@@ -430,7 +433,7 @@ internal static partial class Program
                 && active!.SessionId == caller.SessionId ? active : null, dispatchObservation,
             error => host.Logging.Warn("Themes", error.Message));
         sidecarBusiness.BindState(host.StateStore);
-        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes).Concat(sidecarPresentation.Routes).Concat(sidecarViewState.Routes).Concat(sidecarPages.Routes).Concat(sidecarDecisions.Routes).Concat(sidecarShell.Routes).Concat(sidecarThemeOptions.Routes).Concat(sidecarThemeActivation.Routes).Concat(sidecarNotifications.Routes).Concat(sidecarFilePicker.Routes).Concat(sidecarClipboard.Routes)));
+        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes).Concat(sidecarPresentation.Routes).Concat(sidecarViewState.Routes).Concat(sidecarPages.Routes).Concat(sidecarDecisions.Routes).Concat(sidecarShell.Routes).Concat(sidecarThemeOptions.Routes).Concat(sidecarThemeActivation.Routes).Concat(sidecarNotifications.Routes).Concat(sidecarFilePicker.Routes).Concat(sidecarClipboard.Routes).Concat(sidecarContext.Routes)));
         admittedSidecars = sidecars;
         await using var sidecarNetwork = new DesktopSidecarNetwork(sidecars, host.StateStore);
         SidecarHostApi sidecarApi = new(sidecars, dispatchObservation);
@@ -934,6 +937,7 @@ internal static partial class Program
             }
             Console.WriteLine($"NXML shell and dynamic network templates validated: {scene.Count} shell semantic nodes.");
             host.Logging.Info("Launcher", $"Headless shell validation completed nodes={scene.Count}");
+            sidecarContext.MarkStopping();
             setStage("shutdown");
             session.Enter(XsrLifecyclePhase.Stopping);
             session.Enter(XsrLifecyclePhase.Stopped);
@@ -988,6 +992,7 @@ internal static partial class Program
             await PrepareNormalStartupAsync(startup, shell, platformActions, launchPage, settingsPage, versionSettings,
                 resourcesPage, customAppearance, mediaSession, presentationSession, systemPreferences, setStage, host.Logging,
                 desktopIntegration, sidecarLifetime, host.StateStore, themes).ConfigureAwait(false);
+            sidecarContext.MarkReady(() => platformActions.IsNativeWindowReady);
             using var communityHttp = host.CreateHttpClient(allowAutoRedirect: false);
 #if NEXA_NATIVE_SERVICES
             await networking.Updates.ConfigureCommunityAsync(Path.Combine(folders.Root, "community-state.json")).ConfigureAwait(false);
@@ -1025,6 +1030,7 @@ internal static partial class Program
         }
         finally
         {
+            sidecarContext.MarkStopping();
             // Dispose UI objects on the GUI thread before the first asynchronous handoff.
             gamepadEntry.Dispose();
             appearanceSession.Dispose();

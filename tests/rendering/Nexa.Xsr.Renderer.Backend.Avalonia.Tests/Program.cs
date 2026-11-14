@@ -49,6 +49,7 @@ internal static partial class Program
         ("document transfers bound actual bytes and replace atomically", DocumentTransfersBoundActualBytesAndReplaceAtomically),
         ("lifetime: splash never owns the process and main window close terminates", LifetimeSplashNeverOwnsProcessAndMainWindowCloseTerminates),
         ("window entrance preserves prepared input and retires motion", WindowEntrancePreservesPreparedInputAndRetiresMotion),
+        ("native readiness follows presentation and current owner", NativeReadinessFollowsPresentationAndCurrentOwner),
         ("tray visibility retargets retained content and retires lifetimes", TrayVisibilityRetargetsRetainedContentAndRetiresLifetimes),
         ("memory pressure observations follow only current native owner", MemoryPressureObservationsFollowOnlyCurrentNativeOwner),
         ("native share delegates balance their unmanaged references", () => AssertTrue(WindowsScreenshotShare.VerifyDelegateOwnership())),
@@ -73,6 +74,14 @@ internal static partial class Program
 
     private static int Main(string[] args)
     {
+        if (args is ["--native-readiness-smoke"])
+        {
+            AppBuilder.Configure<Application>().UseSkia()
+                .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
+            NativeReadinessFollowsPresentationAndCurrentOwner();
+            Console.WriteLine("PASS: native readiness follows presentation and current owner");
+            return 0;
+        }
         if (args is ["--backend-port-smoke"])
         {
             AppBuilder.Configure<Application>().UseSkia()

@@ -18,16 +18,41 @@ public sealed partial class AvaloniaUiPlatformActions
     private IPointer? _consumedPointer;
     private WindowState? _stateBeforeMinimize;
     private bool _startupHidden;
+    private bool _nativeOpened;
+    private int _nativeWindowReady;
+    /// <summary>True after native opening and startup presentation, until physical closure; safe to read off-thread.</summary>
+    public bool IsNativeWindowReady => Volatile.Read(ref _nativeWindowReady) != 0;
     internal void AttachForStartup(TopLevel owner)
     {
         _startupHidden = true;
         Attach(owner);
     }
-    internal void CompleteStartup() => _startupHidden = false;
+    internal void CompleteStartup()
+    {
+        _startupHidden = false;
+        Volatile.Write(ref _nativeWindowReady, _nativeOpened ? 1 : 0);
+    }
     internal void Attach(TopLevel owner)
     {
         if (_owner is AvaloniaUiShellWindow previous) previous.MemoryPressureObserved -= OnMemoryPressure;
         _owner = owner;
+        _nativeOpened = owner is Window { IsVisible: true };
+        Volatile.Write(ref _nativeWindowReady, _nativeOpened && !_startupHidden ? 1 : 0);
+        if (owner is Window nativeWindow)
+        {
+            nativeWindow.Opened += (_, _) =>
+            {
+                if (!ReferenceEquals(_owner, nativeWindow)) return;
+                _nativeOpened = true;
+                Volatile.Write(ref _nativeWindowReady, _startupHidden ? 0 : 1);
+            };
+            nativeWindow.Closed += (_, _) =>
+            {
+                if (!ReferenceEquals(_owner, nativeWindow)) return;
+                _nativeOpened = false;
+                Volatile.Write(ref _nativeWindowReady, 0);
+            };
+        }
         if (owner is AvaloniaUiShellWindow pressureOwner) pressureOwner.MemoryPressureObserved += OnMemoryPressure;
         AttachAppearance(owner);
         AttachThemeAppearance(owner);

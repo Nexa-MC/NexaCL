@@ -46,6 +46,9 @@ static class Check
         var themeOptions = new SidecarThemeOptionsClient(requests, new Observer());
         if (!themeOptions.Commands.TryResolve(Nexa.Sidecar.Host.ThemeOptions.Data.SidecarThemeOptionsRoutes.Reset, out var resetOptions)) throw new Exception("theme options route missing");
         if ((await themeOptions.Commands.Dispatch(resetOptions, new Nexa.Sidecar.Host.ThemeOptions.Data.ThemeOptionsResetCommand("builtin", 0)).Completion).IsSuccess) throw new Exception("undiscovered theme options admitted");
+        var context = new SidecarContextClient(requests, new Observer());
+        if (!context.Queries.TryResolve(Nexa.Sidecar.Host.Context.Data.SidecarContextRoutes.Snapshot, out var contextSnapshot)) throw new Exception("context route missing");
+        if ((await context.Queries.QueryAsync<Nexa.Sidecar.Host.Context.Data.HostContextQuery, Nexa.Sidecar.Host.Context.Data.HostContextSnapshot>(contextSnapshot, new())).IsSuccess) throw new Exception("undiscovered context admitted");
         var clipboard = new SidecarClipboardClient(requests, new Observer());
         if (!clipboard.Queries.TryResolve(Nexa.Sidecar.Host.Clipboard.Data.SidecarClipboardRoutes.Read, out var readClipboard)) throw new Exception("clipboard route missing");
         if ((await clipboard.Queries.QueryAsync<Nexa.Sidecar.Host.Clipboard.Data.HostClipboardTransfer, Nexa.Sidecar.Host.Clipboard.Data.HostClipboardSnapshot>(readClipboard, new(1))).IsSuccess) throw new Exception("undiscovered clipboard admitted");

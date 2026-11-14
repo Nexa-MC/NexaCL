@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "extension": "Context",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 3328,
+      "kind": "query",
+      "scope": "context",
+      "route": "SidecarContextRoutes.Snapshot",
+      "input": "HostContextQuery",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostContextQuery",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarContextRoutes",
+      "semantic": "host.context.snapshot",
+      "output": "HostContextSnapshot",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostContextSnapshot",
+      "outputAssembly": "Nexa.Services.Composition"
+    }
+  ]
+}

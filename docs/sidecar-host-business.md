@@ -652,3 +652,35 @@ This Host API knows only the authenticated Sidecar session. The adapter checks g
 cancellation again after IPC, releases transfers with an independent one-second
 budget and reports cleanup failures; Host expiry is the final cleanup bound.
 Production worker composition remains a separate migration step.
+
+
+## Runtime context and startup readiness
+
+Discover `SidecarContextClient` using catalog query **3327**, then read
+`SidecarContextRoutes.Snapshot` (**3328**, `HostContextQuery` →
+`HostContextSnapshot`). Discovery checks the exact schema and catalog fingerprint.
+The snapshot operation requires an active authenticated session and negotiated
+`LargeGeneratedDtos`; discovery remains available without that feature and
+advertises an empty operation set. Never infer readiness from successful discovery.
+
+The reply contains:
+
+| Field | Meaning |
+| --- | --- |
+| `Version` | The launcher's informational version, at most 256 UTF-16 code units. |
+| `Utf8DataRoot` | Absolute launcher data root encoded as strict UTF-8, at most 131072 bytes. Decode with invalid-byte rejection. This is a native Sidecar fact, not guest filesystem authorization. |
+| `Phase` | `Composing` (0), `Ready` (1), or terminal `Stopping` (2). Ready follows normal startup preparation; headless validation stays Composing. |
+| `NativeWindowReady` | True only while the native window has opened, hidden startup preparation has completed, and the Host remains Ready. Tray hiding does not make the window unavailable. |
+
+Use Ready for restoration that needs business routes. Also require
+NativeWindowReady for work requiring an actual native owner. Poll with bounded,
+cancellable backoff, and stop on activation retirement or Stopping. Complete the
+Sidecar activation handshake before starting this wait: Host startup itself waits
+for admitted Sidecars, so awaiting readiness inside activation would deadlock.
+Keep the restoration task supervised and surface startup errors.
+
+A successful snapshot neither reserves a window nor guarantees that a later
+operation will succeed. Continue to handle cancellation and unavailable replies.
+The Host never creates plugin storage directories or selects plugin recovery
+policy. The production Worker still uses its previous restoration owner during
+this incremental migration; adding the Context route does not start a second one.

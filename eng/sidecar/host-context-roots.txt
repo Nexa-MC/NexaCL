@@ -1,0 +1,2 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostContextQuery
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostContextSnapshot
