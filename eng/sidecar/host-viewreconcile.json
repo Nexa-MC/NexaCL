@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "extension": "ViewReconcile",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 3840,
+      "kind": "command",
+      "scope": "viewreconcile",
+      "route": "SidecarViewReconcileRoutes.Reconcile",
+      "input": "HostViewReconcileRequest",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostViewReconcileRequest",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarViewReconcileRoutes",
+      "semantic": "presentation.viewstate.reconcile"
+    }
+  ]
+}

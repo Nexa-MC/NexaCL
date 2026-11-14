@@ -99,13 +99,32 @@ public sealed class XsrNxmlModuleRuntime
     }
 
     internal Lease Replace(Lease? prior, SidecarNxmlDocument[] documents, XsrNxmlCompiledDocument[] compiled, SidecarHostSession session,
-        IReadOnlyDictionary<string, string>[]? models = null)
+        IReadOnlyDictionary<string, string>[]? models = null, int[]? retainedDocuments = null)
     {
-        var lease = new Lease(this, documents, compiled, session, models ?? []);
+        DocumentLifetime[]? identities = null;
+        if (retainedDocuments is not null)
+        {
+            if (retainedDocuments.Length != documents.Length) throw new SidecarProtocolException("Retention map does not match the document set.");
+            HashSet<int> retained = [];
+            identities = new DocumentLifetime[documents.Length];
+            for (int index = 0; index < documents.Length; index++)
+            {
+                int previous = retainedDocuments[index];
+                if (previous == -1) { identities[index] = new(); continue; }
+                if (prior is null || (uint)previous >= (uint)prior.Documents.Length || !retained.Add(previous)
+                    || !ReferenceEquals(documents[index], prior.Documents[previous]))
+                    throw new SidecarProtocolException("A retained document must be a unique unchanged source from the prior set.");
+                identities[index] = prior.DocumentLifetimes[previous];
+            }
+        }
+        var lease = new Lease(this, documents, compiled, session, models ?? [],
+            identities ?? documents.Select(_ => new DocumentLifetime()).ToArray());
         lock (_gate)
         {
             if (prior is not null && (prior.Session != session || !prior.Retired && !_leases.Contains(prior)))
                 throw new SidecarProtocolException("The presentation lease has retired.");
+            if (retainedDocuments?.Any(index => index >= 0) == true && (prior is null || prior.Retired || !_leases.Contains(prior)))
+                throw new SidecarProtocolException("A retired presentation cannot transfer document identities.");
             if (_leases.Where(item => item != prior).Sum(item => item.Documents.Length) + documents.Length > 128)
                 throw new SidecarProtocolException("Active NXML document budget exceeded.");
             if (prior is not null) { prior.MarkRetired(); _leases.Remove(prior); }
@@ -198,17 +217,18 @@ public sealed class XsrNxmlModuleRuntime
     private async ValueTask<XsrResult> DispatchCoreAsync(Guid exposure, XsrSemanticId command, string argument,
         IReadOnlyDictionary<string, string>? fields, CancellationToken cancellationToken)
     {
-        Lease? lease; int index;
+        Lease? lease; int index; CancellationToken documentLifetime;
         lock (_gate)
         {
             lease = _leases.FirstOrDefault(item => item.Exposures.Contains(exposure));
             index = lease is null ? -1 : Array.IndexOf(lease.Exposures, exposure);
             if (lease is null || lease.Retired || !lease.Compiled[index].Commands.Contains(command))
                 return XsrResult.Failure(XsrRuntimeErrors.ContractMismatch());
+            documentLifetime = lease.DocumentLifetimes[index].Stop.Token;
         }
         var registered = lease.Session.Registration?.TryResolve(SidecarRegistrationKind.Command, command);
         if (registered is null || argument.Length > 32768) return XsrResult.Failure(XsrRuntimeErrors.ContractMismatch());
-        using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, lease.Stop.Token);
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, documentLifetime);
         if (stop.IsCancellationRequested) return XsrResult.Failure(XsrRuntimeErrors.Cancelled());
         if (!lease.Session.NegotiatedFeatures.HasFlag(SidecarFeatures.BinaryPayloads))
             return await lease.Session.SendCommandByIdAsync(registered.ContractId, argument, TimeSpan.FromSeconds(10), stop.Token).ConfigureAwait(false);
@@ -262,13 +282,21 @@ public sealed class XsrNxmlModuleRuntime
             ? Convert.ToString(value.Value, CultureInfo.InvariantCulture) ?? "" : "";
     }
 
+    internal sealed class DocumentLifetime
+    {
+        internal Guid Exposure { get; } = Guid.NewGuid();
+        internal CancellationTokenSource Stop { get; } = new();
+    }
+
     internal sealed class Lease(XsrNxmlModuleRuntime owner, SidecarNxmlDocument[] documents,
-        XsrNxmlCompiledDocument[] compiled, SidecarHostSession session, IReadOnlyDictionary<string, string>[] models) : IDisposable
+        XsrNxmlCompiledDocument[] compiled, SidecarHostSession session, IReadOnlyDictionary<string, string>[] models,
+        DocumentLifetime[] identities) : IDisposable
     {
         internal SidecarNxmlDocument[] Documents { get; } = documents;
         internal XsrNxmlCompiledDocument[] Compiled { get; private set; } = compiled;
         private IReadOnlyDictionary<string, string>[] _models = models;
-        internal Guid[] Exposures { get; } = documents.Select(_ => Guid.NewGuid()).ToArray();
+        internal DocumentLifetime[] DocumentLifetimes { get; } = identities;
+        internal Guid[] Exposures { get; } = identities.Select(identity => identity.Exposure).ToArray();
         internal SidecarHostSession Session { get; } = session;
         // Registration/features freeze at READY. Capture before entering the presentation
         // owner lock: replacing presentation already holds the session lock in the other order.
@@ -341,11 +369,19 @@ public sealed class XsrNxmlModuleRuntime
             owner.Publish();
         }
         internal bool MarkRetired() => Interlocked.Exchange(ref _retired, 1) == 0;
-        internal void FinishRetirement()
+        internal void FinishRetirement(DocumentLifetime[]? preserved = null)
         {
             if (Session.Mirror is { } mirror) mirror.Store.Changed -= OnChanged;
-            try { Stop.Cancel(); }
-            catch (AggregateException) { /* A consumer's cancellation callback cannot retain presentation. */ }
+            Cancel(Stop);
+            HashSet<DocumentLifetime>? retained = preserved is null ? null : new(preserved);
+            foreach (var identity in DocumentLifetimes)
+                if (retained?.Contains(identity) != true) Cancel(identity.Stop);
+
+            static void Cancel(CancellationTokenSource stop)
+            {
+                try { stop.Cancel(); }
+                catch (AggregateException) { /* A consumer's cancellation callback cannot retain presentation. */ }
+            }
         }
     }
 }

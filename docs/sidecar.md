@@ -6,7 +6,7 @@ Host verifies source and signature, creates an authenticated local connection, a
 
 The data plane uses generated numeric IDs, binary frames, and extensible fields. Unknown fields follow skip rules; existing message IDs and field semantics cannot be reused. Command/query completion, state revisions, events, credits, cancellation, and session termination are explicit. Synchronous IPC, JSON hot paths, reflection dispatch, and cross-process CLR objects are prohibited.
 
-Protocol versions and feature bits negotiate separately: shared NXML uses bit 16, AutomaticFunctions 32, Pages 64, and modal Dialogs 1024. Source UI packages currently use schema 3 while retaining public decoding compatibility. `SidecarNxmlOperation.Dialog` (9) requires Dialogs independently of ordinary Pages; discover the DialogControl catalog before opening it. Large registrations use ordered contiguous chunks; verify the complete reassembled digest and budget.
+Protocol versions and feature bits negotiate separately: shared NXML uses bit 16, AutomaticFunctions 32, Pages 64, modal Dialogs 1024, and RetainedDocuments 2048. Source UI packages currently use schema 3 while retaining public decoding compatibility. `SidecarNxmlOperation.Dialog` (9) requires Dialogs independently of ordinary Pages; discover the DialogControl catalog before opening it. Large registrations use ordered contiguous chunks; verify the complete reassembled digest and budget.
 
 Shared UI renders locally in Host Renderer. Sidecars provide admitted semantic declarations and resources, never direct manipulation of Host UI objects. Resources and function extensions belong to sessions. Shutdown closes admission, completes pending requests, and retires associated resources.
 

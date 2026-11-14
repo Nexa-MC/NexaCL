@@ -2,6 +2,14 @@
 
 `eng/packages/manifest.json` defines shared packages independently of product Alpha/Beta versions. The closure includes Core, Contracts, Sidecar.Protocol, Sidecar.Transport, Sidecar.Host.Contracts, XSR Abstractions, Diagnostics, State, Runtime, the framework-neutral Renderer and NXML Compiler/Runtime, and separate BuildTools. Desktop, Avalonia, native platform implementations and Host services are outside this closure.
 
+Version `0.1.0-alpha.19` adds opt-in retained document reconciliation and
+`SidecarViewReconcileClient`. A caller supplies an ordered mixture of retained
+source indices and new source bundles, with complete models, at an expected
+presentation revision. Retained documents keep their identities, drafts, open
+state and pending actions. Ordinary whole-set replacement still retires them.
+See [retaining documents](sidecar-host-business.md#retaining-documents-shared-packages-010-alpha19)
+for limits, atomic rejection and uncertain-result handling.
+
 Version `0.1.0-alpha.18` adds opt-in modal NXML documents and
 `SidecarDialogControlClient`. The new capability and independent discovery catalog
 preserve existing document encodings and Host fingerprints. The Host owns modal

@@ -780,3 +780,34 @@ render frame: append/prepend and replacement content lead to their mount target;
 before/after content leads to the target parent. Physical document ownership
 continues to delimit form fields. This prevents closed modal components from
 submitting and binds their pending requests to the enclosing modal lifetime.
+
+### Retaining documents across a source-set update
+
+A whole-set replacement remains an explicit retirement boundary: existing
+`ViewState.Replace` retires every exposure. A separate, opt-in `ViewReconcile`
+catalog (discovery 3839, command 3840) adds document retention for Sidecars that
+negotiate `RetainedDocuments = 2048`. It introduces no guest-specific identity.
+Shared packages advance to alpha 19; existing catalog fingerprints do not change.
+
+A reconciliation supplies an expected session revision and an ordered list of
+candidates. Each candidate either retains a unique index from the previous set
+without supplying source bytes, or supplies a new source with previous index -1.
+Every candidate supplies its complete document-local model. The Host resolves
+retained sources from the authenticated session, validates the complete source
+set and models, and compiles it before an atomic commit. Reordering retained
+entries changes their indices but preserves their exposure identities. Existing
+source/model budgets, capability checks and standalone-target uniqueness apply.
+
+The source-set lease and each document have separate cancellation lifetimes.
+Any source-set mutation retires old control snapshots, so queued requests cannot
+reuse stale indices. Only removed or replaced documents lose their action
+lifetimes; retained documents keep pending submissions, input drafts, navigation
+identity and open modal state. Retirement callbacks and snapshot publication run
+outside ownership locks. A rejected candidate leaves the prior set intact.
+Session shutdown and the original whole-set replacement still retire everything.
+
+A Sidecar must serialize reconciliation with its other presentation operations.
+The Host does not reopen any modal during reconciliation. This distinction lets
+independent windows survive additions elsewhere without reopening a window that
+the user has closed. Plugin view references, opaque action tokens and decisions
+about guest lifecycle events remain private to PluginSidecar.

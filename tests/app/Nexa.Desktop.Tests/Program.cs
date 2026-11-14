@@ -20,7 +20,7 @@ internal static partial class Program
     public static void Main(string[] args)
     {
         if (args is ["--sidecar-business-smoke"])
-        { SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarDialogControlAbi(); SidecarDialogFormsRetireWithWindow(); SidecarDialogLimits(); SidecarConfirmationAbi(); SidecarNotificationsAbi(); SidecarFilePickerAbi(); SidecarClipboardAbi(); SidecarContextAbi(); SidecarShellAbi(); SidecarThemeOptionsAbi(); SidecarThemeActivationAbi(); SidecarThemeActivationRaces(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
+        { SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarDialogControlAbi(); SidecarViewReconcileAbi(); SidecarDialogFormsRetireWithWindow(); SidecarDialogLimits(); SidecarConfirmationAbi(); SidecarNotificationsAbi(); SidecarFilePickerAbi(); SidecarClipboardAbi(); SidecarContextAbi(); SidecarShellAbi(); SidecarThemeOptionsAbi(); SidecarThemeActivationAbi(); SidecarThemeActivationRaces(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
         if (args is ["--native-memory-preview", var memoryPreview])
         { Environment.ExitCode = RunNativeMemoryCleanupPreview(memoryPreview); return; }
         if (args is ["--update-onboarding-preview", var previewOutput])
@@ -348,6 +348,7 @@ internal static partial class Program
         ("general Sidecar effects keep credentials and runtime objects in Host", SidecarEffectsAbi),
         ("general Sidecar presentation publishes and retires session-owned pages", SidecarPresentationAbi),
         ("general Sidecar view-state updates retain navigation and drafts", SidecarViewStateAbi),
+        ("general Sidecar reconciliation preserves modal drafts, lifetime and native close", SidecarViewReconcileAbi),
         ("general Sidecar confirmations preserve Host decisions and retire requests", SidecarConfirmationAbi),
         ("general Sidecar context separates startup and native readiness", SidecarContextAbi),
         ("general Sidecar clipboard transfers enforce ownership, bounds and cancellation", SidecarClipboardAbi),

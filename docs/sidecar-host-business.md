@@ -745,3 +745,83 @@ same target. Session retirement and UI detach also close owned windows and cance
 queued requests. Native closure is visible in the state query; the Sidecar decides
 whether that closes an application-level dialog or merely hides a view. No guest
 SDK, plugin identity or plugin-specific lifecycle policy is part of this catalog.
+
+
+## Retaining documents (shared packages 0.1.0-alpha.19)
+
+Use reconciliation when one document changes but other documents in the same
+Sidecar activation must remain visible. For example, publishing a second modal
+must not close the first modal or discard its input. The Host retains only the
+indices explicitly selected by the authenticated caller. It does not recognize
+guest plugin IDs or infer application lifecycle policy.
+
+Negotiate `Nxml` and `RetainedDocuments` (`2048`), then discover
+`SidecarViewReconcileClient` with query **3839**. Its independent schema is
+`D68929EB52E7BB891A4B1783601A41B6B9A120E09C940989CCAC7D333D169715`;
+its catalog fingerprint is
+`CF18AEE13178DE6491BC4112DF6AD5226D2C1D5C8782BFF633A4FB7FE36C6A31`.
+Existing ViewState and DialogControl catalogs are unchanged.
+
+Command **3840**, `presentation.viewstate.reconcile`, accepts
+`HostViewReconcileRequest(ExpectedRevision, Documents)` and returns completion.
+The request describes the **entire next source set**, in its desired order.
+Each `HostViewCandidate` has these fields:
+
+| Field | Meaning |
+| --- | --- |
+| `PreviousDocument` | A unique zero-based index in this session's current source set, or `-1` to add a new document. It is not an index in the candidate set. |
+| `Source` | Empty bytes when retaining an index; otherwise a complete encoded `SidecarNxmlDocument`. A retained source cannot be replaced in place. |
+| `Model` | Complete document-local model, expressed as `HostViewCandidateValue(Key, Utf8Text)` entries. Omitted keys disappear; this is not a patch. |
+
+For example, keep previous document 2 as the new first document, drop all other
+old documents, and append a newly compiled source:
+
+```csharp
+using Nexa.Sidecar.Host;
+using Nexa.Sidecar.Host.ViewReconcile.Data;
+using Nexa.Sidecar.Protocol;
+using System.Text;
+
+var views = new SidecarViewReconcileClient(requests, observer);
+if (!(await views.DiscoverAsync(token)).IsSuccess) return;
+if (!views.Commands.TryResolve(SidecarViewReconcileRoutes.Reconcile, out var reconcile)) return;
+var request = new HostViewReconcileRequest(expectedRevision,
+[
+    new HostViewCandidate(2, [],
+        [new HostViewCandidateValue("caption", Encoding.UTF8.GetBytes("Updated"))]),
+    new HostViewCandidate(-1, SidecarNxmlDocument.Encode(newSource), [])
+]);
+var result = await views.Commands.Dispatch(reconcile, request,
+    cancellationToken: token).Completion;
+// Advance the locally owned revision only after a successful completion.
+```
+
+Admission checks the active session, negotiated features and exact expected
+revision. Duplicate or missing previous indices, a retired identity, conflicting
+standalone targets, invalid UTF-8, duplicate model keys and compilation failures
+reject the complete candidate set. An empty set retires every document. Limits
+remain 32 sources and 4 MiB of encoded source per session, 128 sources globally,
+4096 model fields per document, 512 KiB per value and 4 MiB of model keys/values
+in total. Keys must be nonblank, at most 256 UTF-16 code units and contain no
+control characters. Retained source bytes still count toward the source budget.
+
+A successful commit increments the presentation revision once. Retained sources
+keep their exposure identity, input drafts, navigation/modal state and pending
+UI actions even if their indices change. Their models are recompiled before the
+commit. Removed documents cancel pending actions and close owned windows. A
+retained modal that the user already closed remains closed. The new source set
+never implies an open request; use the separately discovered DialogControl API.
+
+Queued page/modal controls captured against the old source set are cancelled,
+including when all sources are retained. Issue subsequent controls using the new
+revision and new indices. Existing `ViewState.Replace` deliberately keeps its
+whole-set retirement semantics. Session retirement, invalid presentation and UI
+detach remain retirement boundaries; a retired exposure cannot be resurrected.
+
+Serialize presentation mutations in the Sidecar. Cancellation observed before commit
+leaves the old set intact, but a lost reply can hide a completed commit. Do not
+blindly replay the request or reopen modals based on a pre-update snapshot.
+Read the current ViewState revision and reconcile the acknowledged source set;
+if ownership cannot be established, seal action admission and recover explicitly
+with fresh sources. A fresh whole-set replacement may close windows and must not
+be presented as successful retention.
