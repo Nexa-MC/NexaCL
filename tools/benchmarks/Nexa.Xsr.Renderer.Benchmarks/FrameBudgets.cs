@@ -41,6 +41,16 @@ internal static partial class Program
             tree.MarkDirty(leaf, XsrUiDirtyKinds.Layout);
             return renderer.Render();
         });
+        // One pointer move as a backend routes it: hover, cursor, then a commit that finds nothing dirty.
+        int travelled = 0;
+        Measure("pointer-1600", () =>
+        {
+            XsrUiPoint point = new(travelled % 760 + 20.5, travelled / 760 % 560 + 20.5);
+            travelled += 37;
+            _ = renderer.PointerMoved(point);
+            _ = renderer.PointerCursorAt(point);
+            return renderer.Render();
+        });
         XsrUiRenderer large = BuildGridRenderer(100, 100, out XsrUiTree largeTree, out _);
         XsrUiEntityId largeLeaf = FindFirstLeaf(largeTree, out _);
         Measure("paint-10000-materialized", () => { largeTree.MarkDirty(largeLeaf, XsrUiDirtyKinds.Paint); return large.Render(); }, routine: false);

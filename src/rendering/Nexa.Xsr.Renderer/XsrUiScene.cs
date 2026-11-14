@@ -121,7 +121,8 @@ public sealed class XsrUiScene(long version, XsrUiSceneNode[] nodes, IReadOnlyLi
 
     public int Count => _nodes.Length;
 
-    public XsrUiSceneNode this[int index] => _nodes[index];
+    /// <summary>One node by reference: reading a member does not copy the whole node.</summary>
+    public ref readonly XsrUiSceneNode this[int index] => ref _nodes[index];
 
     public IReadOnlyList<XsrUiSceneNode> Nodes => _nodes;
 

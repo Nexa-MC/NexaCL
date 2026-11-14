@@ -15,9 +15,10 @@ public sealed partial class XsrUiRenderer
     {
         get
         {
-            if (EffectiveReducedMotion || _scene is null) return false;
+            // Backends ask this around every commit. Without themed styles there is nothing to scan.
+            if (EffectiveReducedMotion || _scene is null || _themeStyles.Count == 0) return false;
             DateTimeOffset now = _gestureTime.GetUtcNow();
-            foreach (var node in _scene.Nodes)
+            foreach (ref readonly XsrUiSceneNode node in _scene.AsSpan())
             {
                 if (node.Rect.Width <= 0 || node.Rect.Height <= 0 || !_tree.IsAlive(node.Entity)
                     || !_themeStyles.TryGetValue(node.Entity, out var entry) || entry.Style.Animations is not { Count: > 0 } animations) continue;
