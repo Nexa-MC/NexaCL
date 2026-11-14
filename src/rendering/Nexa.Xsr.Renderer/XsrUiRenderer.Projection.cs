@@ -6,29 +6,47 @@ namespace Nexa.Xsr.Renderer;
 
 public sealed partial class XsrUiRenderer
 {
-    private XsrUiSceneNode[] CollectNodes(XsrUiEntityId root, int depth)
+    private XsrUiSceneNode[] CollectNodes(XsrUiEntityId root, int depth, bool sameNodeCount)
     {
         _outgoingLayers.Clear();
         _entryOrders.Clear();
-        // A scene node is a large value and a frame holds thousands of them. Most frames keep
-        // the previous node count, so nodes are written straight into an array of that size
-        // and it becomes the scene without passing through a second copy.
-        _sceneNodes = new XsrUiSceneNode[Math.Max(16, _scene?.Count ?? 0)];
+        // A scene node is a large value and a frame holds thousands of them. A frame expected
+        // to keep the previous node count writes straight into an array of that size, which
+        // then becomes the scene. Any other frame collects into the retained scratch array and
+        // copies exactly what it produced: guessing a size there would allocate the guess, its
+        // growth and the exact result.
+        _sceneDirect = sameNodeCount && _scene is { Count: > 0 };
+        _sceneNodes = _sceneDirect ? new XsrUiSceneNode[_scene!.Count] : _sceneScratch;
         _sceneNodeCount = 0;
         XsrUiEntityId parent = _tree.Parent(root);
         CollectNode(root, depth, stable: parent.IsAssigned && IsStableContent(parent));
-        XsrUiSceneNode[] snapshot = _sceneNodeCount == _sceneNodes.Length
+        XsrUiSceneNode[] snapshot = _sceneDirect && _sceneNodeCount == _sceneNodes.Length
             ? _sceneNodes : _sceneNodes.AsSpan(0, _sceneNodeCount).ToArray();
-        _sceneNodes = []; // The scene owns the array now; keep no reference to its nodes.
+        // The scratch array keeps its capacity, never the nodes it carried.
+        if (!_sceneDirect) Array.Clear(_sceneScratch, 0, _sceneNodeCount);
+        _sceneNodes = [];
         return snapshot;
     }
 
     private XsrUiSceneNode[] _sceneNodes = [];
+    private XsrUiSceneNode[] _sceneScratch = [];
     private int _sceneNodeCount;
+    private bool _sceneDirect;
 
     private void AddSceneNode(in XsrUiSceneNode node)
     {
-        if (_sceneNodeCount == _sceneNodes.Length) Array.Resize(ref _sceneNodes, _sceneNodes.Length * 2);
+        if (_sceneNodeCount == _sceneNodes.Length)
+        {
+            // The frame holds more nodes than its array; it continues in the scratch array.
+            int capacity = Math.Max(16, _sceneNodeCount * 2);
+            if (_sceneScratch.Length < capacity) Array.Resize(ref _sceneScratch, capacity);
+            if (_sceneDirect)
+            {
+                Array.Copy(_sceneNodes, _sceneScratch, _sceneNodeCount);
+                _sceneDirect = false;
+            }
+            _sceneNodes = _sceneScratch;
+        }
         _sceneNodes[_sceneNodeCount++] = node;
     }
 
