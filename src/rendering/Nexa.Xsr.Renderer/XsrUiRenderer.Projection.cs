@@ -10,17 +10,33 @@ public sealed partial class XsrUiRenderer
     {
         _outgoingLayers.Clear();
         _entryOrders.Clear();
-        _collectedNodes.Clear();
-        CollectNode(root, depth, _collectedNodes);
-        var snapshot = _collectedNodes.ToArray();
-        _collectedNodes.Clear(); // Release node references; retain only reusable capacity.
+        // A scene node is a large value and a frame holds thousands of them. Most frames keep
+        // the previous node count, so nodes are written straight into an array of that size
+        // and it becomes the scene without passing through a second copy.
+        _sceneNodes = new XsrUiSceneNode[Math.Max(16, _scene?.Count ?? 0)];
+        _sceneNodeCount = 0;
+        XsrUiEntityId parent = _tree.Parent(root);
+        CollectNode(root, depth, stable: parent.IsAssigned && IsStableContent(parent));
+        XsrUiSceneNode[] snapshot = _sceneNodeCount == _sceneNodes.Length
+            ? _sceneNodes : _sceneNodes.AsSpan(0, _sceneNodeCount).ToArray();
+        _sceneNodes = []; // The scene owns the array now; keep no reference to its nodes.
         return snapshot;
     }
 
-    private void CollectNode(XsrUiEntityId entity, int depth, List<XsrUiSceneNode> nodes,
+    private XsrUiSceneNode[] _sceneNodes = [];
+    private int _sceneNodeCount;
+
+    private void AddSceneNode(in XsrUiSceneNode node)
+    {
+        if (_sceneNodeCount == _sceneNodes.Length) Array.Resize(ref _sceneNodes, _sceneNodes.Length * 2);
+        _sceneNodes[_sceneNodeCount++] = node;
+    }
+
+    private void CollectNode(XsrUiEntityId entity, int depth,
         XsrUiRect? clip = null, bool accessible = true, double offsetX = 0, double offsetY = 0,
         double opacity = 1, XsrUiOverlayMotionKind overlayMotion = XsrUiOverlayMotionKind.None,
-        bool overlayClosing = false, XsrUiRect? overlayAnchor = null, XsrUiSceneTransform? parentTransform = null, IReadOnlyList<XsrUiSceneClip>? clipGeometry = null, string? entryKey = null)
+        bool overlayClosing = false, XsrUiRect? overlayAnchor = null, XsrUiSceneTransform? parentTransform = null, IReadOnlyList<XsrUiSceneClip>? clipGeometry = null, string? entryKey = null,
+        bool stable = false)
     {
         if (!IsVisible(entity))
         {
@@ -28,6 +44,9 @@ public sealed partial class XsrUiRenderer
         }
 
         var components = _tree.ReadComponents(entity);
+        // Stable content is inherited: the flag travels down with the walk instead of every
+        // node climbing back to the root to rediscover it.
+        stable = stable || components.Get<XsrUiStableContent>() is not null;
         XsrUiSemantic? semantic = components.Get<XsrUiSemantic>();
         XsrUiText? text = components.Get<XsrUiText>();
         string? content = text is null ? null : ResolveText(text);
@@ -40,7 +59,7 @@ public sealed partial class XsrUiRenderer
         XsrUiImage? image = components.Get<XsrUiImage>();
         XsrUiTransition? transition = components.Get<XsrUiTransition>();
         bool entryGroup = transition is { IndependentChildren: true, MovesSelf: false };
-        if (entryKey is not null && !IsStableContent(entity) && _tree.Children(entity).Count == 0
+        if (entryKey is not null && !stable && _tree.ChildCount(entity) == 0
             && (transition is null || transition.IndependentEntry)
             && (text is not null || image is not null || components.Get<XsrUiInput>() is not null))
         {
@@ -117,7 +136,7 @@ public sealed partial class XsrUiRenderer
         {
             scrollSnapshot = ProjectScroll(entity, scrollState, layoutRect);
         }
-        nodes.Add(new XsrUiSceneNode(
+        AddSceneNode(new XsrUiSceneNode(
             entity,
             rect,
             depth,
@@ -154,7 +173,7 @@ public sealed partial class XsrUiRenderer
             scrollSnapshot,
             components.Get<XsrUiSegmentReveal>() is { } reveal ? new(reveal.Expanded, reveal.Progress) : null,
             components.Get<XsrUiScrollGesture>() is { } motion ? new(motion.Revision, motion.Dragging, motion.Velocity) { Direction = motion.Direction } : null,
-            IsStableContent(entity), ProjectTextRuns(text?.Runs))
+            stable, ProjectTextRuns(text?.Runs))
         {
             ProgressRing = components.Get<XsrUiProgress>() is { Ring: true } ring ? new(ring.Indeterminate, ring.Presented) : null,
             ColorScheme = _colorScheme,
@@ -195,7 +214,7 @@ public sealed partial class XsrUiRenderer
             thumbTransition.Outgoing = [];
             XsrUiRect presented = target with { X = track.Dragging ? track.DragX : target.X + thumbTransition.PresentedOffsetX };
             XsrUiRect presentedBounds = sceneTransform?.Bounds(presented) ?? presented;
-            nodes.Add(new XsrUiSceneNode(track.Thumb, presentedBounds, depth + 1, XsrUiSemanticRole.None,
+            AddSceneNode(new XsrUiSceneNode(track.Thumb, presentedBounds, depth + 1, XsrUiSemanticRole.None,
                 null, null, null, false, null, null,
                 ProjectThemeStyle(track.Thumb),
                 IsEnabled: false, ClipRect: Intersect(visibleClip ?? rect, presentedBounds), IsAccessible: false,
@@ -237,9 +256,9 @@ public sealed partial class XsrUiRenderer
             offsetY += transition.PresentedOffsetY;
         }
 
-        XsrUiEntityId[] children = [.. OrderedChildren(entity).Where(IsVisible)];
+        List<XsrUiEntityId> children = VisibleChildren(entity, depth);
         int modalIndex = -1;
-        for (int index = 0; index < children.Length; index++)
+        for (int index = 0; index < children.Count; index++)
         {
             if (_tree.GetComponent<XsrUiOverlayLayer>(children[index])?.IsModal == true)
             {
@@ -248,16 +267,35 @@ public sealed partial class XsrUiRenderer
         }
 
         int pageIndex = 0;
-        for (int index = 0; index < children.Length; index++)
+        for (int index = 0; index < children.Count; index++)
         {
             XsrUiEntityId child = children[index];
-            CollectNode(child, depth + 1, nodes, childClip,
+            CollectNode(child, depth + 1, childClip,
                 accessible
                 && (pageContainer is null || pageContainer.PageIndex == pageIndex)
                 && (modalIndex < 0 || index >= modalIndex),
-                offsetX, offsetY, opacity, overlayMotion, overlayClosing, overlayAnchor, sceneTransform, clipGeometry, entryKey);
+                offsetX, offsetY, opacity, overlayMotion, overlayClosing, overlayAnchor, sceneTransform, clipGeometry, entryKey,
+                stable);
             pageIndex++;
         }
+    }
+
+    // One reusable list per depth: a node finishes reading its own list before the walk returns
+    // to that depth, while its descendants only ever use deeper ones.
+    private readonly List<List<XsrUiEntityId>> _visibleChildren = [];
+
+    private List<XsrUiEntityId> VisibleChildren(XsrUiEntityId entity, int depth)
+    {
+        while (_visibleChildren.Count <= depth) _visibleChildren.Add([]);
+        List<XsrUiEntityId> children = _visibleChildren[depth];
+        children.Clear();
+        if (_themeProgram is null) _tree.CopyChildren(entity, children);
+        else children.AddRange(OrderedChildren(entity));
+        int kept = 0;
+        for (int index = 0; index < children.Count; index++)
+            if (IsVisible(children[index])) children[kept++] = children[index];
+        children.RemoveRange(kept, children.Count - kept);
+        return children;
     }
 
     private bool IsStableContent(XsrUiEntityId entity)

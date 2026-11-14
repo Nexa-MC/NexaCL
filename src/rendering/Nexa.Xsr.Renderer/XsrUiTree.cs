@@ -60,8 +60,9 @@ public sealed class XsrUiTree
 
         EntityLifetimeRevision++;
         StructureRevision++;
-        _entities[index] = new XsrUiEntity(name);
-        return new XsrUiEntityId(index, _generations[index]);
+        uint generation = _generations[index];
+        _entities[index] = new XsrUiEntity(name, generation);
+        return new XsrUiEntityId(index, generation);
     }
 
     /// <summary>
@@ -165,13 +166,22 @@ public sealed class XsrUiTree
     /// </summary>
     public IReadOnlyList<XsrUiEntityId> Children(XsrUiEntityId entity)
     {
-        XsrUiEntity value = Require(entity);
-        return [.. value.Children.Select(IndexToHandle)];
+        // Frame traversals snapshot every node's children, so the copy is one array and
+        // leaves share the empty instance.
+        List<int> children = Require(entity).Children;
+        if (children.Count == 0) return [];
+        XsrUiEntityId[] snapshot = new XsrUiEntityId[children.Count];
+        for (int index = 0; index < snapshot.Length; index++) snapshot[index] = IndexToHandle(children[index]);
+        return snapshot;
     }
 
     // Allocation-free owner-thread traversal; callers must not mutate the hierarchy mid-read.
     internal int ChildCount(XsrUiEntityId entity) => Require(entity).Children.Count;
     internal XsrUiEntityId ChildAt(XsrUiEntityId entity, int index) => IndexToHandle(Require(entity).Children[index]);
+    internal void CopyChildren(XsrUiEntityId entity, List<XsrUiEntityId> destination)
+    {
+        foreach (int child in Require(entity).Children) destination.Add(IndexToHandle(child));
+    }
 
     /// <summary>
     /// Gets a value indicating whether the handle refers to a live entity. A stale handle —
@@ -179,9 +189,8 @@ public sealed class XsrUiTree
     /// </summary>
     public bool IsAlive(XsrUiEntityId entity) =>
         entity.IsAssigned
-        && _entities.ContainsKey(entity.Index)
-        && _generations.TryGetValue(entity.Index, out uint generation)
-        && generation == entity.Generation;
+        && _entities.TryGetValue(entity.Index, out XsrUiEntity? value)
+        && value.Generation == entity.Generation;
 
     /// <summary>
     /// Gets a value indicating whether an index currently hosts a live entity. Used for cache
@@ -314,6 +323,38 @@ public sealed class XsrUiTree
         value.OwnDirty = XsrUiDirtyKinds.None;
         _ = _dirtyEntities.Remove(entity.Index);
         RecomputeSubtreeUpwards(entity.Index);
+    }
+
+    /// <summary>
+    /// Clears the own dirty flags of every entity in one dirty subtree. The result equals clearing
+    /// each entity individually, but subtree flags settle in one pass: per-entity clearing rescans
+    /// the already clean siblings of every row, which is quadratic for a freshly built list.
+    /// </summary>
+    internal void ClearDirtySubtree(XsrUiEntityId root)
+    {
+        XsrUiEntity value = Require(root);
+        if (!value.SubtreeDirty) return;
+        ClearDirtySubtree(root.Index, value);
+        if (value.Parent.IsAssigned) RecomputeSubtreeUpwards(value.Parent.Index);
+    }
+
+    private void ClearDirtySubtree(int index, XsrUiEntity entity)
+    {
+        if (entity.OwnDirty != XsrUiDirtyKinds.None)
+        {
+            entity.OwnDirty = XsrUiDirtyKinds.None;
+            _ = _dirtyEntities.Remove(index);
+        }
+
+        List<int> children = entity.Children;
+        for (int position = 0; position < children.Count; position++)
+        {
+            XsrUiEntity child = _entities[children[position]];
+            if (child.SubtreeDirty) ClearDirtySubtree(children[position], child);
+        }
+
+        entity.SubtreeDirty = false;
+        entity.SubtreeLayoutDirty = false;
     }
 
     /// <summary>
@@ -572,29 +613,46 @@ public sealed class XsrUiTree
 
     private void RecomputeFlags(XsrUiEntity entity)
     {
-        entity.SubtreeDirty = entity.OwnDirty != XsrUiDirtyKinds.None
-            || entity.Children.Any(child => _entities[child].SubtreeDirty);
-        entity.SubtreeLayoutDirty = (entity.OwnDirty & LayoutRelevantKinds) != 0
-            || entity.Children.Any(child => _entities[child].SubtreeLayoutDirty);
-    }
-
-    private XsrUiEntity Require(XsrUiEntityId entity)
-    {
-        if (!IsAlive(entity))
+        bool dirty = entity.OwnDirty != XsrUiDirtyKinds.None;
+        bool layoutDirty = (entity.OwnDirty & LayoutRelevantKinds) != 0;
+        List<int> children = entity.Children;
+        for (int index = 0; index < children.Count && !(dirty && layoutDirty); index++)
         {
-            throw new InvalidOperationException($"The UI entity '{entity}' is not alive.");
+            XsrUiEntity child = _entities[children[index]];
+            dirty |= child.SubtreeDirty;
+            layoutDirty |= child.SubtreeLayoutDirty;
         }
 
-        return _entities[entity.Index];
+        entity.SubtreeDirty = dirty;
+        entity.SubtreeLayoutDirty = layoutDirty;
     }
+
+    // Every component, hierarchy and dirty read enters here, so liveness is one lookup: a live
+    // entity carries the generation its index had when it was created.
+    private XsrUiEntity Require(XsrUiEntityId entity)
+    {
+        if (entity.IsAssigned
+            && _entities.TryGetValue(entity.Index, out XsrUiEntity? value)
+            && value.Generation == entity.Generation)
+        {
+            return value;
+        }
+
+        return ThrowNotAlive(entity);
+    }
+
+    private static XsrUiEntity ThrowNotAlive(XsrUiEntityId entity) =>
+        throw new InvalidOperationException($"The UI entity '{entity}' is not alive.");
 
     private static int _nextComponentSlot;
     private static class ComponentSlot<T> where T : class
     { internal static readonly int Index = Interlocked.Increment(ref _nextComponentSlot) - 1; }
 
-    private sealed class XsrUiEntity(string? name)
+    private sealed class XsrUiEntity(string? name, uint generation)
     {
         public string Name { get; } = name ?? string.Empty;
+
+        public uint Generation { get; } = generation;
 
         public XsrUiEntityId Parent { get; set; }
 

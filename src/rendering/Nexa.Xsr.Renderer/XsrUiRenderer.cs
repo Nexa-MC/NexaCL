@@ -262,11 +262,7 @@ public sealed partial class XsrUiRenderer : IXsrUiBackendRenderer
             _inputVisited.TrimExcess(inputCapacity);
         LastLayoutVisits = _layoutVisits;
 
-        _tree.Walk(_root, entity =>
-        {
-            _tree.ClearDirty(entity);
-            return true;
-        }, entity => _tree.HasDirtySubtree(entity));
+        _tree.ClearDirtySubtree(_root);
 
         _tree.FinishFrame(_root);
         return _scene;
@@ -292,29 +288,45 @@ public sealed partial class XsrUiRenderer : IXsrUiBackendRenderer
 
     private void PruneDeadCacheEntries()
     {
+        // Component edits are structural too, yet only a destroyed entity can leave an entry
+        // behind. Scanning every cache is skipped until an entity lifetime actually changed.
+        long lifetime = _tree.EntityLifetimeRevision;
+        if (lifetime == _prunedLifetimeRevision) return;
+        _prunedLifetimeRevision = lifetime;
         foreach (XsrUiEntityId entity in _themeGridMeasurements.Keys.Where(entity => !_tree.IsAlive(entity)).ToArray())
             _themeGridMeasurements.Remove(entity);
-        foreach (int id in _desiredSizes.Keys.Where(id => !_tree.IsIndexAlive(id)).ToArray())
+        foreach (int id in DeadIndexes(_desiredSizes))
         {
             _ = _desiredSizes.Remove(id);
             _ = _measureConstraints.Remove(id);
             _ = _widthSensitiveMeasures.Remove(id);
         }
 
-        foreach (int id in _paintRects.Keys.Where(id => !_tree.IsIndexAlive(id)).ToArray())
+        foreach (int id in DeadIndexes(_paintRects))
         {
             _ = _paintRects.Remove(id);
         }
 
-        foreach (int id in _arrangedSlots.Keys.Where(id => !_tree.IsIndexAlive(id)).ToArray())
+        foreach (int id in DeadIndexes(_arrangedSlots))
         {
             _ = _arrangedSlots.Remove(id);
         }
 
-        foreach (int id in _stackContentSizes.Keys.Where(id => !_tree.IsIndexAlive(id)).ToArray())
+        foreach (int id in DeadIndexes(_stackContentSizes))
         {
             _ = _stackContentSizes.Remove(id);
         }
+    }
+
+    private long _prunedLifetimeRevision = -1;
+    private readonly List<int> _deadIndexes = [];
+
+    // The reused list is consumed before the next cache is scanned.
+    private List<int> DeadIndexes<TValue>(Dictionary<int, TValue> cache)
+    {
+        _deadIndexes.Clear();
+        foreach (int id in cache.Keys) if (!_tree.IsIndexAlive(id)) _deadIndexes.Add(id);
+        return _deadIndexes;
     }
 
     /// <summary>Advances a transition group's scene geometry on the render thread.</summary>
@@ -410,6 +422,5 @@ public sealed partial class XsrUiRenderer : IXsrUiBackendRenderer
     private readonly HashSet<int> _inputVisited = [];
 
     private readonly List<XsrUiOutgoingLayer> _outgoingLayers = [];
-    private readonly List<XsrUiSceneNode> _collectedNodes = [];
     private readonly Dictionary<string, int> _entryOrders = [];
 }

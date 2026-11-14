@@ -100,9 +100,11 @@ public sealed class XsrUiPresentation
         }
     }
 
-    public T? GetComponent<T>(XsrUiEntityId entity) where T : class
+    public T? GetComponent<T>(XsrUiEntityId entity) where T : class =>
+        _mounts.Count == 0 ? _source.GetComponent<T>(entity) : GetMountedComponent<T>(entity);
+
+    private T? GetMountedComponent<T>(XsrUiEntityId entity) where T : class
     {
-        if (_mounts.Count == 0) return _source.GetComponent<T>(entity);
         if (_byTarget.TryGetValue(entity, out var layers))
             for (int index = layers.Count - 1; index >= 0; index--)
             {
@@ -131,6 +133,8 @@ public sealed class XsrUiPresentation
 
     internal ComponentView ReadComponents(XsrUiEntityId entity)
     {
+        // Scene projection reads every visible node each frame; without mounts nothing can override it.
+        if (_byTarget.Count == 0) return new(_source.ReadComponents(entity), null, entity);
         bool overridden = false;
         if (_byTarget.TryGetValue(entity, out var layers))
             foreach (var mount in layers)
@@ -139,6 +143,7 @@ public sealed class XsrUiPresentation
     }
     internal XsrUiElement? ReplacedHostElement(XsrUiEntityId entity)
     {
+        if (_byTarget.Count == 0) return null;
         if (_byTarget.TryGetValue(entity, out var layers))
             foreach (var mount in layers)
                 if (mount.Operation == XsrUiMountOperation.Replace) return _source.GetComponent<XsrUiElement>(entity);
@@ -182,8 +187,14 @@ public sealed class XsrUiPresentation
 
     internal int ChildCount(XsrUiEntityId entity) => _mounts.Count == 0 ? _source.ChildCount(entity) : Children(entity).Count;
     internal XsrUiEntityId ChildAt(XsrUiEntityId entity, int index) => _mounts.Count == 0 ? _source.ChildAt(entity, index) : Children(entity)[index];
-    internal XsrUiEntityId Parent(XsrUiEntityId entity) => _parents.TryGetValue(entity, out var parent) && _source.IsAlive(parent)
-        ? parent : _source.Parent(entity);
+    internal void CopyChildren(XsrUiEntityId entity, List<XsrUiEntityId> destination)
+    {
+        if (_mounts.Count == 0) _source.CopyChildren(entity, destination);
+        else destination.AddRange(Children(entity));
+    }
+    internal XsrUiEntityId Parent(XsrUiEntityId entity) =>
+        _parents.Count != 0 && _parents.TryGetValue(entity, out var parent) && _source.IsAlive(parent)
+            ? parent : _source.Parent(entity);
     internal string Name(XsrUiEntityId entity) => _source.Name(entity);
     internal bool IsAlive(XsrUiEntityId entity) => _source.IsAlive(entity);
     internal bool IsIndexAlive(int index) => _source.IsIndexAlive(index);
@@ -191,6 +202,12 @@ public sealed class XsrUiPresentation
     internal bool HasDirtySubtree(XsrUiEntityId entity) => _source.HasDirtySubtree(entity);
     internal bool HasDirtyLayoutSubtree(XsrUiEntityId entity) => _source.HasDirtyLayoutSubtree(entity);
     internal void ClearDirty(XsrUiEntityId entity) => _source.ClearDirty(entity);
+    internal void ClearDirtySubtree(XsrUiEntityId root)
+    {
+        if (_mounts.Count == 0) { _source.ClearDirtySubtree(root); return; }
+        // Mounted content hangs below its target only in the presentation graph.
+        Walk(root, entity => { _source.ClearDirty(entity); return true; }, entity => _source.HasDirtySubtree(entity));
+    }
     internal void MarkDirty(XsrUiEntityId entity, XsrUiDirtyKinds kinds)
     {
         _source.MarkDirty(entity, kinds);
