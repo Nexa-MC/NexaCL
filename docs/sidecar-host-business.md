@@ -425,10 +425,70 @@ work. Replies preserve the owner's error kind and code. A lost acknowledgement
 does not establish whether the operation committed: reread current state before
 asking the user to submit another mutation. Neither discovery nor successful
 configuration grants a preview lease. Activation and session-owned preview cleanup
-remain separate migration work; the production plugin controller has not yet moved
-to the worker.
+use the separate catalog below. The production plugin controller has not yet
+moved to the worker.
 
 The contract tests exercise the generated client against a real Desktop theme
 session, including save/reset/import, revision conflicts, mismatch cleanup,
 safe mode and binding retirement. Private Sidecar tests independently decode the
 frozen binary layout and verify local document rejection before IPC.
+
+## Theme activation catalog
+
+`SidecarThemeActivationClient` is available in shared packages
+`0.1.0-alpha.13`. Discover contract `2303` before using these commands:
+
+| ID | Route | Request | Meaning |
+| --- | --- | --- | --- |
+| 2304 | `themes.activation.commit` | `HostThemeActivation` | Prepare and persist the selected theme |
+| 2305 | `themes.activation.preview` | `HostThemePreview` | Temporarily display a theme under the caller's lease |
+| 2306 | `themes.activation.end_preview` | `HostThemePreviewEnd` | Retire only the caller's named preview |
+
+An activation contains the catalogue's `SourceIdentity` and `SourceRevision`,
+and the current snapshot's `ExpectedRevision`. The Host checks them before
+preparation and rechecks the actual source. Existing resource admission, downgrade
+confirmation and safe-mode rules remain in force. A committed selection survives
+Sidecar exit. A lost commit reply therefore requires a state refresh, not an
+automatic activation retry or rollback.
+
+For a preview, allocate a positive `LeaseId` before sending the command. IDs must
+strictly increase for the whole Sidecar activation, including across UI rebindings
+and client instances. Reserve IDs centrally if multiple guests or components share
+one transport. Concurrent requests can reach the Host out of order; an older ID
+that arrives after a newer one is rejected. This is intentional stale-request
+rejection, not an invitation to resend automatically. No native UI generation is
+exposed through the wire.
+
+End the same ID on guest retirement and after a failed or uncertain preview
+result, using an independent cancellation budget. Ending an unknown or already
+retired ID succeeds without affecting another preview. It also advances that
+caller's ID watermark: an end that arrives before its delayed preview prevents the
+preview from appearing later. One Sidecar cannot end another Sidecar's lease.
+A deactivation cancels all previews belonging to that activation; reactivation
+creates a new lifetime and ID scope. Replacing ordinary NXML pages does not end
+previews.
+
+The Host reserves ownership before invoking Desktop. Request cancellation,
+session retirement and UI detachment cancel pending native work and retire the
+lease. If activation completes late, cleanup waits for its result and ends only
+that native preview identity. A later manual selection remains untouched. If a
+user action interrupts restoration, Desktop waits behind it and rechecks the
+lease; failure of that user action cannot strand the old preview. If the committed
+source can no longer be restored, Desktop falls back to the built-in
+theme. Cleanup runs with its own five-second budget and reports failures. Shutdown
+bounds draining; Desktop disposes its native resources when the window is gone.
+
+The API admits at most 64 outstanding native operations and 128 active session
+scopes. Cancelled calls continue consuming operation capacity until their native
+callbacks and compensation finish, so cancellation cannot create unbounded
+background work. Reaching the operation limit returns `xsr.backpressure`. An
+absent UI rejects activation with `xsr.unavailable`, but end requests can still
+record retirement. Source identities and revisions each allow at most 4096
+characters, exclude null characters and must be non-empty.
+
+Tests cover real Desktop activation and restoration, manual-selection protection,
+source corruption fallback, foreign-session isolation, NXML replacement,
+deactivate/reactivate, UI rebinds, late native completion, end-before-activation
+and cancellation capacity. The Sidecar adapter is tested against an independently
+encoded binary fixture, including lost acknowledgements and failed compensation.
+This contract does not switch the production worker or change guest ABI 100.

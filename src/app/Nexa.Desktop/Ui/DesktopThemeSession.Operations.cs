@@ -26,7 +26,7 @@ internal sealed partial class DesktopThemeSession
                 if (candidate.Value.IsDowngrade && !approved) return XsrResult.Success();
                 CheckRequest(request, cancellation);
                 activationStarted = true;
-                return RetirePluginPreview(await ActivateCandidateCoreAsync(candidate.Value, preview, request, cancellation, allowDowngrade: approved).ConfigureAwait(false));
+                return RetireExternalPreview(await ActivateCandidateCoreAsync(candidate.Value, preview, request, cancellation, allowDowngrade: approved).ConfigureAwait(false));
             }
             finally
             {
@@ -40,7 +40,7 @@ internal sealed partial class DesktopThemeSession
             await RefreshSnapshotAsync(cancellation).ConfigureAwait(false);
             var entry = Snapshot.Catalogue.Themes.FirstOrDefault(theme => theme.SourceIdentity == sourceIdentity);
             if (entry is null) return XsrResult.Failure(XsrRuntimeErrors.TargetNotFound("The theme is no longer installed."));
-            return RetirePluginPreview(await ActivateSourceCoreAsync(entry, preview, request, cancellation).ConfigureAwait(false));
+            return RetireExternalPreview(await ActivateSourceCoreAsync(entry, preview, request, cancellation).ConfigureAwait(false));
         }, token, true);
 
     public Task<XsrResult> EndPreviewAsync(CancellationToken token) => ExclusiveAsync(async (request, cancellation) =>
@@ -50,7 +50,7 @@ internal sealed partial class DesktopThemeSession
         var entry = Snapshot.Catalogue.Themes.FirstOrDefault(theme => theme.SourceIdentity == committed?.Candidate.SourceIdentity)
             ?? Snapshot.Catalogue.Themes.First(theme => theme.SourceKind == ThemeSourceKind.BuiltIn);
         // Reprepare from the immutable committed source and current saved options/environment.
-        return RetirePluginPreview(await ActivateSourceCoreAsync(entry, false, request, cancellation, committedSource: true).ConfigureAwait(false));
+        return RetireExternalPreview(await ActivateSourceCoreAsync(entry, false, request, cancellation, committedSource: true).ConfigureAwait(false));
     }, token, true);
 
     public Task<XsrResult> SaveOptionsAsync(ThemeOptionsSaveCommand command, CancellationToken token) =>

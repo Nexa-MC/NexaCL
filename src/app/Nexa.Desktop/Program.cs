@@ -416,8 +416,12 @@ internal static partial class Program
         using var sidecarThemeOptions = new Nexa.Services.Composition.Sidecars.SidecarThemeOptionsApi(caller =>
             admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
                 && active!.SessionId == caller.SessionId ? active : null, dispatchObservation);
+        await using var sidecarThemeActivation = new Nexa.Services.Composition.Sidecars.SidecarThemeActivationApi(caller =>
+            admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
+                && active!.SessionId == caller.SessionId ? active : null, dispatchObservation,
+            error => host.Logging.Warn("Themes", error.Message));
         sidecarBusiness.BindState(host.StateStore);
-        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes).Concat(sidecarPresentation.Routes).Concat(sidecarViewState.Routes).Concat(sidecarPages.Routes).Concat(sidecarDecisions.Routes).Concat(sidecarShell.Routes).Concat(sidecarThemeOptions.Routes)));
+        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes).Concat(sidecarPresentation.Routes).Concat(sidecarViewState.Routes).Concat(sidecarPages.Routes).Concat(sidecarDecisions.Routes).Concat(sidecarShell.Routes).Concat(sidecarThemeOptions.Routes).Concat(sidecarThemeActivation.Routes)));
         admittedSidecars = sidecars;
         await using var sidecarNetwork = new DesktopSidecarNetwork(sidecars, host.StateStore);
         SidecarHostApi sidecarApi = new(sidecars, dispatchObservation);
@@ -629,6 +633,9 @@ internal static partial class Program
         using var sidecarThemeOptionsUi = sidecarThemeOptions.Bind(new(themes.SaveOptionsAsync, themes.ResetOptionsAsync,
             (input, token) => themes.ImportOptionsAsync(new(input.SourceIdentity, input.Values, input.ExpectedRevision),
                 input.ThemeId, input.SchemaVersion, token)));
+        using var sidecarThemeActivationUi = sidecarThemeActivation.Bind(new(
+            (input, preview, token) => themes.ActivateExternalAsync(input.SourceIdentity, input.SourceRevision, input.ExpectedRevision, preview, token),
+            themes.EndExternalPreviewAsync));
         watchedThemes = themes;
         using var sidecarNxmlSession = sidecarNxml.Attach(shell, uiIntents, host.StateStore,
             message => { host.Logging.Warn("Sidecar", message); feedback.Warn(message); },
@@ -716,7 +723,7 @@ internal static partial class Program
         pluginBusiness.BindContentImport(folderImports.Commands);
         pluginBusiness.BindAccounts(accounts.Queries);
         pluginBusiness.BindAccountLaunch(host.Accounts, accounts.LaunchIdentityResolver);
-        pluginBusiness.BindThemes(new(themes.SaveOptionsAsync, themes.ResetOptionsAsync, themes.ImportOptionsAsync, themes.ActivatePluginAsync, themes.EndPluginPreviewAsync));
+        pluginBusiness.BindThemes(new(themes.SaveOptionsAsync, themes.ResetOptionsAsync, themes.ImportOptionsAsync, themes.ActivateExternalAsync, themes.EndExternalPreviewAsync));
         pluginBusiness.BindPlatform(new(platformActions.PickExtensionFileAsync, platformActions.OpenDirectory, platformActions.OpenHttpsUri,
             platformActions.ReadExtensionClipboardAsync, platformActions.WriteExtensionClipboardAsync, platformActions.ReadExtensionDisplaysAsync));
         plugins.BindBusiness(pluginBusiness);

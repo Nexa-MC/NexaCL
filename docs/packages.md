@@ -2,6 +2,12 @@
 
 `eng/packages/manifest.json` defines shared packages independently of product Alpha/Beta versions. The closure includes Core, Contracts, Sidecar.Protocol, Sidecar.Transport, Sidecar.Host.Contracts, XSR Abstractions, Diagnostics, State, Runtime, the framework-neutral Renderer and NXML Compiler/Runtime, and separate BuildTools. Desktop, Avalonia, native platform implementations and Host services are outside this closure.
 
+Version `0.1.0-alpha.13` adds `SidecarThemeActivationClient` for persistent theme
+activation and session-owned previews. Preview retirement is independent of NXML
+replacement and survives UI rebindings. See [theme activation](sidecar-host-business.md#theme-activation-catalog)
+for lease ordering, uncertain-result handling, cancellation and admission limits.
+This is a general Host extension; guest ABI 100 stays unchanged.
+
 Version `0.1.0-alpha.12` adds `SidecarThemeOptionsClient` for revision-checked
 save, reset and typed import of theme configuration. It builds on the independently
 discovered page control (`alpha.9`), confirmation (`alpha.10`) and shell (`alpha.11`)

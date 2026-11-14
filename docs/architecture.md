@@ -586,3 +586,31 @@ because acknowledgement was lost. Existing theme downgrade, resource admission,
 safe-mode and persisted-option rules remain authoritative. Preview activation and
 session-owned restoration require a separate lifecycle contract and are not part
 of this configuration catalog. Existing catalogs and guest ABI 100 stay frozen.
+
+## Session-owned theme activation and previews
+
+Theme activation uses a separate general Sidecar catalog. Persistent activation
+commits through Desktop's theme owner and is not undone on a lost reply. Preview
+requests carry a positive, monotonically increasing caller lease ID. The Host
+reserves it before invoking the UI and associates it with the authenticated
+session's current activation lifetime, independently of its NXML documents.
+An end request addresses only that caller's lease. Ending an unseen ID advances
+the caller's high-water mark, so a concurrently delayed preview cannot resurrect
+an already-ended lease. IDs cannot be reused within an activation.
+
+Cancellation, session retirement and UI-binding detachment retire previews. The
+Host waits for an in-flight activation before ending its exact native generation;
+a late cleanup cannot revert a later user selection. If a user action supersedes
+restoration, Desktop rechecks the exact lease after that action: a failed action
+must not strand the old preview, and a successful replacement must remain intact.
+Outstanding native operations retain bounded admission slots until their callbacks and compensation complete,
+even when the request has already timed out. Cleanup has its own bounded token,
+not the cancelled request token, and failures are reported. Application shutdown
+cancels admission and bounds draining; Desktop remains responsible for disposing
+its native theme resources if the window has already stopped rendering.
+
+The Sidecar retains guest plans, permissions, confirmation, opaque handles and
+per-guest cleanup registration. It allocates the wire lease ID before sending a
+preview and sends an idempotent end request after an uncertain result. It never
+retries activation automatically. Existing guest ABI and Host catalogs remain
+unchanged. Production worker composition is a separate migration step.

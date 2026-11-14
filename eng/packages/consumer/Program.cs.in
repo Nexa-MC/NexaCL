@@ -46,6 +46,9 @@ static class Check
         var themeOptions = new SidecarThemeOptionsClient(requests, new Observer());
         if (!themeOptions.Commands.TryResolve(Nexa.Sidecar.Host.ThemeOptions.Data.SidecarThemeOptionsRoutes.Reset, out var resetOptions)) throw new Exception("theme options route missing");
         if ((await themeOptions.Commands.Dispatch(resetOptions, new Nexa.Sidecar.Host.ThemeOptions.Data.ThemeOptionsResetCommand("builtin", 0)).Completion).IsSuccess) throw new Exception("undiscovered theme options admitted");
+        var activation = new SidecarThemeActivationClient(requests, new Observer());
+        if (!activation.Commands.TryResolve(Nexa.Sidecar.Host.ThemeActivation.Data.SidecarThemeActivationRoutes.EndPreview, out var endPreview)) throw new Exception("theme activation route missing");
+        if ((await activation.Commands.Dispatch(endPreview, new Nexa.Sidecar.Host.ThemeActivation.Data.HostThemePreviewEnd(1)).Completion).IsSuccess) throw new Exception("undiscovered theme activation admitted");
         var decisions = new SidecarConfirmationClient(requests, new Observer());
         if (!decisions.Queries.TryResolve(Nexa.Sidecar.Host.Confirmation.Data.SidecarConfirmationRoutes.Ask, out var askDecision)) throw new Exception("confirmation route missing");
         if ((await decisions.Queries.QueryAsync<Nexa.Sidecar.Host.Confirmation.Data.HostConfirmationRequest, Nexa.Sidecar.Host.Confirmation.Data.HostConfirmationDecision>(askDecision, new("Test", [65]))).IsSuccess) throw new Exception("undiscovered confirmation admitted");

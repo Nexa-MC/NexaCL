@@ -109,6 +109,16 @@ public sealed partial class SidecarHostSession
     private SidecarRegistrationEntry? ResolveContract(SidecarRegistrationKind kind, uint contractId)
     { lock (_gate) return _registration?.TryResolveId(kind, contractId); }
 
+    /// <summary>Captures this admitted activation's lifetime, independently of presentation revisions.</summary>
+    public CancellationToken CaptureActivationLifetime()
+    {
+        lock (_gate)
+        {
+            if (!Accepting) throw new InvalidOperationException("The Sidecar session is not accepting work.");
+            return _activationEnded.Token;
+        }
+    }
+
     private bool Accepting => !_stopped && !_admissionClosed && _activationAccepting && _state == SidecarSessionState.Active;
 
     private XsrError? ValidateRequest(SidecarRegistrationEntry? entry, bool binary, CancellationToken cancellationToken)

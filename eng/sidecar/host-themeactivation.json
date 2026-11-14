@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "extension": "ThemeActivation",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 2304,
+      "kind": "command",
+      "scope": "themeactivation",
+      "route": "SidecarThemeActivationRoutes.Activate",
+      "input": "HostThemeActivation",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostThemeActivation",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarThemeActivationRoutes",
+      "semantic": "themes.activation.commit"
+    },
+    {
+      "id": 2305,
+      "kind": "command",
+      "scope": "themeactivation",
+      "route": "SidecarThemeActivationRoutes.Preview",
+      "input": "HostThemePreview",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostThemePreview",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarThemeActivationRoutes",
+      "semantic": "themes.activation.preview"
+    },
+    {
+      "id": 2306,
+      "kind": "command",
+      "scope": "themeactivation",
+      "route": "SidecarThemeActivationRoutes.EndPreview",
+      "input": "HostThemePreviewEnd",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostThemePreviewEnd",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarThemeActivationRoutes",
+      "semantic": "themes.activation.end_preview"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostThemeActivation
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostThemePreview
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostThemePreviewEnd
