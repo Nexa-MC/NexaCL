@@ -126,8 +126,11 @@ internal sealed class NxmlControlModel
 
     public bool TryGetProperty(string name, out NxmlControlPropertyModel property)
     {
-        foreach (NxmlControlPropertyModel candidate in Properties)
+        // Indexed, not foreach: enumerating through IReadOnlyList allocates per lookup.
+        IReadOnlyList<NxmlControlPropertyModel> properties = Properties;
+        for (int index = 0; index < properties.Count; index++)
         {
+            NxmlControlPropertyModel candidate = properties[index];
             if (candidate.Name == name)
             {
                 property = candidate;

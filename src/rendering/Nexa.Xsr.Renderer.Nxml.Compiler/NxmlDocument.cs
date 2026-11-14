@@ -65,8 +65,12 @@ public sealed class NxmlElement
 
     public NxmlValue? FindProperty(string name)
     {
-        foreach (NxmlProperty attribute in Attributes)
+        // Indexed, not foreach: the compiler asks each element for dozens of properties, and
+        // enumerating an array through IReadOnlyList allocates an enumerator per lookup.
+        IReadOnlyList<NxmlProperty> attributes = Attributes;
+        for (int index = 0; index < attributes.Count; index++)
         {
+            NxmlProperty attribute = attributes[index];
             if (attribute.Name == name)
             {
                 return attribute.Value;
