@@ -233,6 +233,9 @@ public sealed partial class XsrUiRenderer : IXsrUiBackendRenderer
         }
 
 
+        // Read before layout settles anything: only structure, layout or state dirt can add or
+        // remove scene nodes, apart from a node sliding out of its clip.
+        bool sameNodeCount = !_tree.HasDirtyLayoutSubtree(_root);
         Layout(_root, new XsrUiRect(0, 0, _viewport.Width, _viewport.Height));
 
         // Hidden subtrees were not measured this frame. Their dirt is still acknowledged below,
@@ -251,7 +254,7 @@ public sealed partial class XsrUiRenderer : IXsrUiBackendRenderer
         }, entity => _tree.HasDirtyLayoutSubtree(entity));
 
         RetireScrollGesture();
-        XsrUiSceneNode[] nodes = CollectNodes(_root, depth: 0);
+        XsrUiSceneNode[] nodes = CollectNodes(_root, depth: 0, sameNodeCount);
         RecordThemeAnimationScene(nodes);
         _sceneVersion++;
         _scene = new XsrUiScene(_sceneVersion, nodes, _outgoingLayers.ToArray());

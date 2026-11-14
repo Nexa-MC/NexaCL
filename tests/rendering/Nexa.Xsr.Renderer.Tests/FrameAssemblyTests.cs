@@ -99,6 +99,22 @@ internal static partial class Program
         AssertFalse(shrunk.Nodes.Any(node => node.Entity == lastCell || !tree.IsAlive(node.Entity)));
         AssertEqual(16 + added.Length, grown.Count);
         AssertEqual(lastCell, grown.Nodes[grown.Count - 1].Entity);
+
+        // A frame that carries only paint dirt is expected to keep its node count. When it does
+        // not, the scene still holds exactly what is visible and earlier scenes are untouched.
+        tree.GetComponent<XsrUiElement>(lastCell)!.IsVisible = true;
+        tree.MarkDirty(firstRow, XsrUiDirtyKinds.Paint);
+        XsrUiScene more = renderer.Render();
+        AssertEqual(16, more.Count);
+        AssertEqual(lastCell, more.Nodes[15].Entity);
+        tree.GetComponent<XsrUiElement>(lastCell)!.IsVisible = false;
+        tree.MarkDirty(firstRow, XsrUiDirtyKinds.Paint);
+        XsrUiScene fewer = renderer.Render();
+        AssertEqual(15, fewer.Count);
+        AssertFalse(fewer.Nodes.Any(node => node.Entity == lastCell));
+        AssertEqual(15, shrunk.Count);
+        AssertEqual(16, more.Count);
+        AssertEqual(lastCell, more.Nodes[15].Entity);
     }
 
     private static void StableContentReachesEveryDescendantButNoSibling()
