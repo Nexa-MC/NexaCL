@@ -104,6 +104,10 @@ internal sealed partial class AssemblyInstrumenter
         byte[] catalog = resource.GetResourceData();
         if (!File.ReadAllBytes(Path.ChangeExtension(path, ".nfp")).AsSpan().SequenceEqual(catalog))
             throw new InvalidDataException("Published function catalog does not match its assembly: " + path);
+        int minimumBody = module.Resources.OfType<EmbeddedResource>().SingleOrDefault(item => item.Name == ScopeMarker) is { } scope
+            ? ParseMinimumBody(Encoding.UTF8.GetString(scope.GetResourceData())) : 0;
+        if (minimumBody != 0 && !RenderingAssembly(module.Assembly.Name.Name))
+            throw new InvalidDataException("Only rendering assemblies may narrow their automatic coverage: " + path);
         using var source = new MemoryStream(catalog, writable: false);
         using var compression = new BrotliStream(source, CompressionMode.Decompress);
         using var reader = new BinaryReader(compression, Encoding.UTF8);
@@ -141,15 +145,27 @@ internal sealed partial class AssemblyInstrumenter
                     throw new InvalidDataException("Invalid no-body function inventory: " + signature);
                 continue;
             }
-            if (entry.Status != 0 || entry.Slot < 0
-                || !method.Body.Instructions.Any(item => item.OpCode == OpCodes.Ldfld && item.Operand is FieldReference field
-                    && field.DeclaringType.FullName == RuntimeNamespace(module) + ".PatchAssembly" && field.Name == "Enabled")
-                || !method.Body.Instructions.Any(item => item.OpCode == OpCodes.Call && item.Operand is MethodReference called
-                    && called.DeclaringType.FullName == RuntimeNamespace(module) + ".Patch" && called.Name == "Enter"))
+            bool readsSites = method.Body.Instructions.Any(item => item.OpCode == OpCodes.Ldfld && item.Operand is FieldReference field
+                && field.DeclaringType.FullName == RuntimeNamespace(module) + ".PatchAssembly" && field.Name == "Enabled");
+            bool enters = method.Body.Instructions.Any(item => item.OpCode == OpCodes.Call && item.Operand is MethodReference called
+                && called.DeclaringType.FullName == RuntimeNamespace(module) + ".Patch" && called.Name == "Enter");
+            if (entry.Status == InternalStatus)
+            {
+                // Recomputed from the shipped body: the scope cannot hide a major body or a half-woven one.
+                if (minimumBody == 0 || entry.Slot != -1 || readsSites || enters || Major(method, minimumBody))
+                    throw new InvalidDataException("Function is left without an automatic entry outside its assembly's scope: " + signature);
+                continue;
+            }
+            if (entry.Status != 0 || entry.Slot < 0 || !readsSites || !enters)
                 throw new InvalidDataException("Function is cataloged without its automatic entry: " + signature);
+            if (minimumBody != 0 && !Major(method, 1))
+                throw new InvalidDataException("Function carries an automatic entry its assembly's scope excludes: " + signature);
             bodies++;
         }
         if (entries.Count != 0) throw new InvalidDataException("Compiled catalog contains missing functions: " + path);
         return bodies;
     }
+
+    private static bool RenderingAssembly(string name) => name is "Nexa.Xsr.Renderer" or "Nexa.Native.Window"
+        || name.StartsWith("Nexa.Xsr.Renderer.", StringComparison.Ordinal);
 }

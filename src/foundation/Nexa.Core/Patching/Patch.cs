@@ -10,7 +10,8 @@ namespace Nexa.Core.Patching;
 #endif
 
 public enum PatchPhase : byte { Head = 1, Args = 2, Tail = 3, Return = 4, Replace = 5 }
-public enum PatchTargetStatus : byte { Instrumented, Abstract, RuntimeProvided, Infrastructure }
+/// <summary><see cref="Internal"/> is a managed body its assembly's instrumentation scope leaves without an entry.</summary>
+public enum PatchTargetStatus : byte { Instrumented, Abstract, RuntimeProvided, Infrastructure, Internal }
 [Flags]
 public enum PatchTypeTraits : byte { None = 0, Value = 1, ByReference = 2, StackOnly = 4, Out = 8, Address = 16 }
 public sealed record PatchParameter(string Name, string Type, PatchTypeTraits Flags);

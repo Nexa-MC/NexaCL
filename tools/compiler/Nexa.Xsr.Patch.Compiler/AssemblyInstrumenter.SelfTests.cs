@@ -19,6 +19,7 @@ internal static partial class Program
             ExternalPluginSdkBoundarySelfTest(directory, corePath, references);
             DeterministicSymbolsSelfTest(directory, corePath, references);
             NoSymbolsRebuildSelfTest(directory, corePath, references);
+            ScopedCoverageSelfTest(directory, corePath, references);
             string dependency = Path.Combine(directory, "Nexa.AutomaticDependency.dll");
             var dependencyCompilation = CSharpCompilation.Create("Nexa.AutomaticDependency",
                 [CSharpSyntaxTree.ParseText("public static class Unloaded { public static int Value() => 7; }")], references,

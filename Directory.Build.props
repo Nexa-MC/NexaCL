@@ -3,6 +3,8 @@
     <NexaRepositoryRoot>$(MSBuildThisFileDirectory)</NexaRepositoryRoot>
     <NexaSourceRoot>$([MSBuild]::NormalizeDirectory('$(NexaRepositoryRoot)', 'src'))</NexaSourceRoot>
     <NexaProductSource Condition="$([System.String]::Copy('$(MSBuildProjectDirectory)').StartsWith('$(NexaSourceRoot)'))">true</NexaProductSource>
+    <NexaRenderingRoot>$([MSBuild]::NormalizeDirectory('$(NexaSourceRoot)', 'rendering'))</NexaRenderingRoot>
+    <NexaRenderingSource Condition="$([System.String]::Copy('$(MSBuildProjectDirectory)').StartsWith('$(NexaRenderingRoot)'))">true</NexaRenderingSource>
   </PropertyGroup>
   <Import Project="$(MSBuildThisFileDirectory)eng/xsr/Xsr.Version.props" />
 

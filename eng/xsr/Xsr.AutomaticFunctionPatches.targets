@@ -3,6 +3,9 @@
     <_NexaAutomaticCompilerProject>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'tools', 'compiler', 'Nexa.Xsr.Patch.Compiler', 'Nexa.Xsr.Patch.Compiler.csproj'))</_NexaAutomaticCompilerProject>
     <_NexaAutomaticDotnet Condition="'$(DOTNET_HOST_PATH)' != ''">$(DOTNET_HOST_PATH)</_NexaAutomaticDotnet>
     <_NexaAutomaticDotnet Condition="'$(_NexaAutomaticDotnet)' == ''">dotnet</_NexaAutomaticDotnet>
+    <!-- Rendering weaves only its major bodies: an entry on every accessor and per-node helper stops them from being inlined. -->
+    <NexaAutomaticFunctionPatchMinimumBody Condition="'$(NexaRenderingSource)' == 'true'">256</NexaAutomaticFunctionPatchMinimumBody>
+    <_NexaAutomaticScope Condition="'$(NexaAutomaticFunctionPatchMinimumBody)' != ''">--minimum-body $(NexaAutomaticFunctionPatchMinimumBody)</_NexaAutomaticScope>
   </PropertyGroup>
   <Target Name="DeclareNexaAutomaticCatalog" BeforeTargets="AssignTargetPaths" Condition="'$(DesignTimeBuild)' != 'true'">
     <ItemGroup>
@@ -34,7 +37,7 @@
           Condition="'$(DesignTimeBuild)' != 'true' and '$(SkipCompilerExecution)' != 'true'">
     <Error Condition="'$(_NexaAutomaticCore)' == ''" Text="NXRP: automatic interception requires the shared Core ABI." />
     <WriteLinesToFile File="$(_NexaAutomaticReferences)" Lines="@(ReferencePath->'%(FullPath)')" Overwrite="true" />
-    <Exec Command="&quot;$(_NexaAutomaticDotnet)&quot; &quot;$(_NexaAutomaticCompiler)&quot; --instrument &quot;$(_NexaAutomaticAssembly)&quot; --core &quot;$(_NexaAutomaticCore)&quot; --catalog &quot;$(_NexaAutomaticCatalog)&quot; --references &quot;$(_NexaAutomaticReferences)&quot;" />
+    <Exec Command="&quot;$(_NexaAutomaticDotnet)&quot; &quot;$(_NexaAutomaticCompiler)&quot; --instrument &quot;$(_NexaAutomaticAssembly)&quot; --core &quot;$(_NexaAutomaticCore)&quot; --catalog &quot;$(_NexaAutomaticCatalog)&quot; --references &quot;$(_NexaAutomaticReferences)&quot; $(_NexaAutomaticScope)" />
     <ItemGroup><FileWrites Include="$(_NexaAutomaticCatalog);$(_NexaAutomaticReferences);$(_NexaAutomaticAssembly).unpatched.dll;$([System.IO.Path]::ChangeExtension('$(_NexaAutomaticAssembly).unpatched.dll', '.pdb'))" /></ItemGroup>
   </Target>
 </Project>

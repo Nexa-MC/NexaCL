@@ -64,6 +64,7 @@ internal static partial class Program
         ("component changes mark structure dirty", Sync(ComponentChangesMarkStructureDirty)),
         ("dirty flags bubble to ancestors and clear precisely", Sync(DirtyFlagsBubbleAndClear)),
         ("dirty enumeration is ascending and deterministic", Sync(DirtyEnumerationIsDeterministic)),
+        ("rendering keeps automatic entries on major bodies only", Sync(RenderingKeepsAutomaticEntriesOnMajorBodiesOnly)),
         ("state bridge marks only bound entities dirty", Sync(StateBridgeMarksOnlyBoundEntities)),
         ("destroyed entities drop state dependencies", Sync(DestroyedEntitiesDropStateDependencies)),
         ("entities carry multiple state bindings", Sync(EntitiesCarryMultipleStateBindings)),
