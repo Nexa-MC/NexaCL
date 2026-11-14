@@ -43,6 +43,9 @@ static class Check
         var shell = new SidecarShellClient(requests, new Observer());
         if (!shell.Queries.TryResolve(Nexa.Sidecar.Host.Shell.Data.SidecarShellRoutes.Displays, out var displays)) throw new Exception("shell route missing");
         if ((await shell.Queries.QueryAsync<Nexa.Sidecar.Host.Shell.Data.HostShellEmpty, Nexa.Sidecar.Host.Shell.Data.HostDisplays>(displays, new())).IsSuccess) throw new Exception("undiscovered shell admitted");
+        var themeOptions = new SidecarThemeOptionsClient(requests, new Observer());
+        if (!themeOptions.Commands.TryResolve(Nexa.Sidecar.Host.ThemeOptions.Data.SidecarThemeOptionsRoutes.Reset, out var resetOptions)) throw new Exception("theme options route missing");
+        if ((await themeOptions.Commands.Dispatch(resetOptions, new Nexa.Sidecar.Host.ThemeOptions.Data.ThemeOptionsResetCommand("builtin", 0)).Completion).IsSuccess) throw new Exception("undiscovered theme options admitted");
         var decisions = new SidecarConfirmationClient(requests, new Observer());
         if (!decisions.Queries.TryResolve(Nexa.Sidecar.Host.Confirmation.Data.SidecarConfirmationRoutes.Ask, out var askDecision)) throw new Exception("confirmation route missing");
         if ((await decisions.Queries.QueryAsync<Nexa.Sidecar.Host.Confirmation.Data.HostConfirmationRequest, Nexa.Sidecar.Host.Confirmation.Data.HostConfirmationDecision>(askDecision, new("Test", [65]))).IsSuccess) throw new Exception("undiscovered confirmation admitted");

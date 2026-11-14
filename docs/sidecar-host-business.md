@@ -365,3 +365,70 @@ file-handle ownership are enforced by the Sidecar before invoking this catalog.
 
 This catalog covers shell handoff and display enumeration only. File selection,
 clipboard images and theme mutation require their own contracts and lifetimes.
+
+## Theme configuration catalog
+
+`SidecarThemeOptionsClient` discovers contract `2047` before sending configuration
+mutations. It uses the same authenticated request transport as the other catalogs,
+but has its own schema fingerprint and operation availability. Package consumers
+need shared contracts `0.1.0-alpha.12` or later.
+
+| ID | Route | Request | Successful completion |
+| --- | --- | --- | --- |
+| 2048 | `themes.options.save` | `ThemeOptionsSaveCommand` | Values validated and applied through the theme owner |
+| 2049 | `themes.options.reset` | `ThemeOptionsResetCommand` | Declared defaults applied through the theme owner |
+| 2050 | `themes.options.import` | `HostThemeOptionsImport` | Imported identity, schema and values validated and applied |
+
+Read the general business catalog's theme catalogue and current snapshot first.
+Use the catalogue's `SourceIdentity` and the current snapshot's `Revision` in the
+mutation. This revision prevents an older UI or concurrently running Sidecar from
+overwriting a more recent theme configuration. Refresh the snapshot after success;
+do not predict the new revision or automatically retry a failed mutation.
+
+```csharp
+using Nexa.Sidecar.Host;
+using Nexa.Sidecar.Host.ThemeOptions.Data;
+
+var options = new SidecarThemeOptionsClient(requests, observer);
+var discovery = await options.DiscoverAsync(token);
+if (!discovery.IsSuccess) return;
+if (!options.Commands.TryResolve(SidecarThemeOptionsRoutes.Save, out var save)) return;
+var values = new Dictionary<string, ThemeOptionValue>
+{
+    ["music.enabled"] = new(ThemeOptionKind.Boolean, "true")
+};
+var result = await options.Commands.Dispatch(save,
+    new ThemeOptionsSaveCommand(sourceIdentity, values, currentRevision),
+    cancellationToken: token).Completion;
+```
+
+The example assumes the selected theme declares a Boolean option named
+`music.enabled`. Option IDs and kinds come from that theme's manifest, not a global
+list. Save applies supplied overrides; reset restores all declared defaults. The
+Host validates each value against the actual prepared manifest and uses its
+existing appearance/resource preparation and persistence flow. An import carries
+`ThemeId`, `SchemaVersion` and typed `Values`; the Sidecar reads and parses an
+NTP-options file locally. Sending a JSON string as a command is not supported.
+The Host independently compares the imported header to the prepared candidate,
+and releases that candidate without activation if either field differs.
+
+Requests allow at most 256 options, IDs of 1–128 characters, scalar strings of at
+most 4096 characters, and at most 256 paths per `Files` value. `Files` requires an
+empty scalar and a non-null list; other kinds require a null list. Null characters
+are forbidden; only `Text` permits other control characters. These transport bounds
+do not replace manifest-specific value, path or resource admission checks.
+
+A stale revision, unknown option, wrong kind, schema mismatch, or invalid resource
+is rejected by the theme owner. Safe mode returns `themes.safe_mode`. An absent UI
+binding returns `xsr.unavailable`; cancellation or detachment cancels outstanding
+work. Replies preserve the owner's error kind and code. A lost acknowledgement
+does not establish whether the operation committed: reread current state before
+asking the user to submit another mutation. Neither discovery nor successful
+configuration grants a preview lease. Activation and session-owned preview cleanup
+remain separate migration work; the production plugin controller has not yet moved
+to the worker.
+
+The contract tests exercise the generated client against a real Desktop theme
+session, including save/reset/import, revision conflicts, mismatch cleanup,
+safe mode and binding retirement. Private Sidecar tests independently decode the
+frozen binary layout and verify local document rejection before IPC.

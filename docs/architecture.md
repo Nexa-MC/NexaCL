@@ -570,3 +570,19 @@ Only HTTPS addresses without user information and existing absolute directory
 paths are accepted. Display results are bounded and validated before encoding.
 Guest permissions, file grants and confirmation remain owned by the Sidecar.
 This catalog does not change existing catalogs or the guest ABI.
+
+## General Sidecar theme options
+
+Theme configuration mutations use a separate ThemeOptions catalog: save, reset,
+and import. Desktop remains the owner of validated preparation and coherent
+render/style/appearance activation; Composition binds asynchronous operations
+without importing a guest SDK. Requests carry the expected current revision.
+The Sidecar owns guest permission checks, confirmation, file grants and parsing
+of the NTP-options file. Import crosses IPC as typed theme ID, schema version and
+option values, never a JSON command. Desktop rechecks the imported header against
+the actual prepared candidate before any activation and retires mismatches.
+UI binding retirement cancels outstanding work; results are never retried merely
+because acknowledgement was lost. Existing theme downgrade, resource admission,
+safe-mode and persisted-option rules remain authoritative. Preview activation and
+session-owned restoration require a separate lifecycle contract and are not part
+of this configuration catalog. Existing catalogs and guest ABI 100 stay frozen.

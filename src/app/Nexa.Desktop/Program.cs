@@ -413,8 +413,11 @@ internal static partial class Program
         using var sidecarShell = new Nexa.Services.Composition.Sidecars.SidecarShellApi(caller =>
             admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
                 && active!.SessionId == caller.SessionId ? active : null, dispatchObservation);
+        using var sidecarThemeOptions = new Nexa.Services.Composition.Sidecars.SidecarThemeOptionsApi(caller =>
+            admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
+                && active!.SessionId == caller.SessionId ? active : null, dispatchObservation);
         sidecarBusiness.BindState(host.StateStore);
-        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes).Concat(sidecarPresentation.Routes).Concat(sidecarViewState.Routes).Concat(sidecarPages.Routes).Concat(sidecarDecisions.Routes).Concat(sidecarShell.Routes)));
+        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes).Concat(sidecarPresentation.Routes).Concat(sidecarViewState.Routes).Concat(sidecarPages.Routes).Concat(sidecarDecisions.Routes).Concat(sidecarShell.Routes).Concat(sidecarThemeOptions.Routes)));
         admittedSidecars = sidecars;
         await using var sidecarNetwork = new DesktopSidecarNetwork(sidecars, host.StateStore);
         SidecarHostApi sidecarApi = new(sidecars, dispatchObservation);
@@ -623,6 +626,9 @@ internal static partial class Program
         var effectiveAppearance = new DesktopEffectiveAppearanceSource();
         await using var themes = new DesktopThemeSession(runtime.Queries, runtime.Commands, host.StateStore,
             shell, platformActions, effectiveAppearance, message => host.Logging.Warn("Themes", message), safeMode);
+        using var sidecarThemeOptionsUi = sidecarThemeOptions.Bind(new(themes.SaveOptionsAsync, themes.ResetOptionsAsync,
+            (input, token) => themes.ImportOptionsAsync(new(input.SourceIdentity, input.Values, input.ExpectedRevision),
+                input.ThemeId, input.SchemaVersion, token)));
         watchedThemes = themes;
         using var sidecarNxmlSession = sidecarNxml.Attach(shell, uiIntents, host.StateStore,
             message => { host.Logging.Warn("Sidecar", message); feedback.Warn(message); },

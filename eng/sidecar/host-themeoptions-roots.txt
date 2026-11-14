@@ -1,0 +1,3 @@
+Nexa.Services.Themes.Contracts|Nexa.Services.Themes.ThemeOptionsSaveCommand
+Nexa.Services.Themes.Contracts|Nexa.Services.Themes.ThemeOptionsResetCommand
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostThemeOptionsImport

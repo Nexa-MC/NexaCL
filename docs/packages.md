@@ -2,6 +2,13 @@
 
 `eng/packages/manifest.json` defines shared packages independently of product Alpha/Beta versions. The closure includes Core, Contracts, Sidecar.Protocol, Sidecar.Transport, Sidecar.Host.Contracts, XSR Abstractions, Diagnostics, State, Runtime, the framework-neutral Renderer and NXML Compiler/Runtime, and separate BuildTools. Desktop, Avalonia, native platform implementations and Host services are outside this closure.
 
+Version `0.1.0-alpha.12` adds `SidecarThemeOptionsClient` for revision-checked
+save, reset and typed import of theme configuration. It builds on the independently
+discovered page control (`alpha.9`), confirmation (`alpha.10`) and shell (`alpha.11`)
+catalogs. Existing catalog fingerprints and the guest SDK ABI remain unchanged.
+See [theme configuration](sidecar-host-business.md#theme-configuration-catalog) for
+inputs, failure semantics and the remaining preview migration work.
+
 Version `0.1.0-alpha.6` adds negotiated, document-local form submissions and the canonical NXML compiler packages. Referencing `Nexa.Xsr.Renderer.Nxml.Runtime` brings the compiler's standard `Ui/Components/*.c.nxml` and `Ui/Styles/*.nss` files into both build and publish output. Keep these files with your executable: default component/style resolution uses `AppContext.BaseDirectory`, not the working directory. Shared NXML compilation is available without a window backend or launcher installation.
 
 Version `0.1.0-alpha.7` fixes the clean-build failure in

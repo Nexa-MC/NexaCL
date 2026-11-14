@@ -67,20 +67,37 @@ internal sealed partial class DesktopThemeSession
     public Task<XsrResult> ImportOptionsAsync(ThemeOptionsImportCommand command, CancellationToken token) =>
         PrepareOptionsAsync(command.SourceIdentity, command.ExpectedRevision, null, command.Json, token);
 
+    internal Task<XsrResult> ImportOptionsAsync(ThemeOptionsSaveCommand command, string themeId, int schemaVersion, CancellationToken token) =>
+        PrepareOptionsAsync(command.SourceIdentity, command.ExpectedRevision, command.Values, null, token, themeId, schemaVersion);
+
     private Task<XsrResult> PrepareOptionsAsync(string identity, long revision,
-        IReadOnlyDictionary<string, ThemeOptionValue>? overrides, string? document, CancellationToken token) =>
-        ExclusiveAsync((request, cancellation) => PrepareOptionsCoreAsync(identity, revision, overrides, document, request, cancellation), token, true);
+        IReadOnlyDictionary<string, ThemeOptionValue>? overrides, string? document, CancellationToken token,
+        string? importedThemeId = null, int? importedSchemaVersion = null) =>
+        ExclusiveAsync((request, cancellation) => PrepareOptionsCoreAsync(identity, revision, overrides, document, request, cancellation,
+            importedThemeId, importedSchemaVersion), token, true);
 
     private async Task<XsrResult> PrepareOptionsCoreAsync(string identity, long revision,
-        IReadOnlyDictionary<string, ThemeOptionValue>? overrides, string? document, long request, CancellationToken token)
+        IReadOnlyDictionary<string, ThemeOptionValue>? overrides, string? document, long request, CancellationToken token,
+        string? importedThemeId = null, int? importedSchemaVersion = null)
     {
         if (_safeMode) return XsrResult.Failure(new(XsrErrorKind.Rejected, XsrSemanticId.Parse("themes.safe_mode"), "Safe mode uses the built-in defaults."));
         await RefreshSnapshotAsync(token).ConfigureAwait(false);
         var source = Snapshot.Catalogue.Themes.FirstOrDefault(theme => theme.SourceIdentity == identity);
         if (source is null) return XsrResult.Failure(XsrRuntimeErrors.TargetNotFound("The theme is no longer installed."));
+        // Reject an unrelated document before allocating a candidate. Check again
+        // against the prepared manifest below in case the source changed meanwhile.
+        if (importedThemeId is not null && (source.Manifest.Id != importedThemeId
+            || source.Manifest.OptionsVersion != importedSchemaVersion))
+            return Failure(new InvalidDataException("Options import theme or schema does not match."));
         var candidate = await QueryAsync<ThemePrepareQuery, ThemeCandidate>(ThemesContract.Prepare,
             new ThemePrepareQuery("", source.SourceKind, identity) { OptionsOverride = overrides, OptionsDocument = document, ExpectedRevision = revision }, token).ConfigureAwait(false);
         if (!candidate.IsSuccess) return XsrResult.Failure(candidate.Error!);
+        if (importedThemeId is not null && (candidate.Value!.Manifest.Id != importedThemeId
+            || candidate.Value.Manifest.OptionsVersion != importedSchemaVersion))
+        {
+            await CommandAsync(ThemesContract.Revert, new ThemeRevertCommand(candidate.Value.CandidateId), CancellationToken.None).ConfigureAwait(false);
+            return Failure(new InvalidDataException("Options import theme or schema does not match."));
+        }
         bool preview = Snapshot.IsPreview;
         async Task SavePreviewOptions(CancellationToken cancellation)
         {

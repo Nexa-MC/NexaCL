@@ -20,7 +20,7 @@ internal static partial class Program
     public static void Main(string[] args)
     {
         if (args is ["--sidecar-business-smoke"])
-        { SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarConfirmationAbi(); SidecarShellAbi(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
+        { SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarConfirmationAbi(); SidecarShellAbi(); SidecarThemeOptionsAbi(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
         if (args is ["--native-memory-preview", var memoryPreview])
         { Environment.ExitCode = RunNativeMemoryCleanupPreview(memoryPreview); return; }
         if (args is ["--update-onboarding-preview", var previewOutput])
@@ -349,6 +349,7 @@ internal static partial class Program
         ("general Sidecar presentation publishes and retires session-owned pages", SidecarPresentationAbi),
         ("general Sidecar view-state updates retain navigation and drafts", SidecarViewStateAbi),
         ("general Sidecar confirmations preserve Host decisions and retire requests", SidecarConfirmationAbi),
+        ("general Sidecar theme options preserve owner validation and binding lifetime", SidecarThemeOptionsAbi),
         ("general Sidecar shell effects validate callers and cancel detached bindings", SidecarShellAbi),
         ("general Sidecar page control enforces ownership, retirement and queue bounds", SidecarPageControlAbi),
         ("Sidecar forms capture only the invoking document exposure", SidecarFormsCaptureOnlyInvokingExposure),

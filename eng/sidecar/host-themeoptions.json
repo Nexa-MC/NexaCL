@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "extension": "ThemeOptions",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 2048,
+      "kind": "command",
+      "scope": "themeoptions",
+      "route": "SidecarThemeOptionsRoutes.Save",
+      "input": "ThemeOptionsSaveCommand",
+      "inputAssembly": "Nexa.Services.Themes.Contracts",
+      "inputType": "Nexa.Services.Themes.ThemeOptionsSaveCommand",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarThemeOptionsRoutes",
+      "semantic": "themes.options.save"
+    },
+    {
+      "id": 2049,
+      "kind": "command",
+      "scope": "themeoptions",
+      "route": "SidecarThemeOptionsRoutes.Reset",
+      "input": "ThemeOptionsResetCommand",
+      "inputAssembly": "Nexa.Services.Themes.Contracts",
+      "inputType": "Nexa.Services.Themes.ThemeOptionsResetCommand",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarThemeOptionsRoutes",
+      "semantic": "themes.options.reset"
+    },
+    {
+      "id": 2050,
+      "kind": "command",
+      "scope": "themeoptions",
+      "route": "SidecarThemeOptionsRoutes.Import",
+      "input": "HostThemeOptionsImport",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostThemeOptionsImport",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarThemeOptionsRoutes",
+      "semantic": "themes.options.import"
+    }
+  ]
+}
