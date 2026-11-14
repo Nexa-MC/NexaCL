@@ -1,0 +1,6 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostClipboardTransfer
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostClipboardSnapshot
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostClipboardReadChunk
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostClipboardChunk
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostClipboardWrite
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostClipboardAppend

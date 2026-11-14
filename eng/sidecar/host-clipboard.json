@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "extension": "Clipboard",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 3072,
+      "kind": "query",
+      "scope": "clipboard",
+      "route": "SidecarClipboardRoutes.Read",
+      "input": "HostClipboardTransfer",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostClipboardTransfer",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarClipboardRoutes",
+      "semantic": "interaction.clipboard.read",
+      "output": "HostClipboardSnapshot",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostClipboardSnapshot",
+      "outputAssembly": "Nexa.Services.Composition"
+    },
+    {
+      "id": 3073,
+      "kind": "query",
+      "scope": "clipboard",
+      "route": "SidecarClipboardRoutes.ReadChunk",
+      "input": "HostClipboardReadChunk",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostClipboardReadChunk",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarClipboardRoutes",
+      "semantic": "interaction.clipboard.read_chunk",
+      "output": "HostClipboardChunk",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostClipboardChunk",
+      "outputAssembly": "Nexa.Services.Composition"
+    },
+    {
+      "id": 3074,
+      "kind": "command",
+      "scope": "clipboard",
+      "route": "SidecarClipboardRoutes.BeginWrite",
+      "input": "HostClipboardWrite",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostClipboardWrite",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarClipboardRoutes",
+      "semantic": "interaction.clipboard.begin_write"
+    },
+    {
+      "id": 3075,
+      "kind": "command",
+      "scope": "clipboard",
+      "route": "SidecarClipboardRoutes.Append",
+      "input": "HostClipboardAppend",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostClipboardAppend",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarClipboardRoutes",
+      "semantic": "interaction.clipboard.append"
+    },
+    {
+      "id": 3076,
+      "kind": "command",
+      "scope": "clipboard",
+      "route": "SidecarClipboardRoutes.Commit",
+      "input": "HostClipboardTransfer",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostClipboardTransfer",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarClipboardRoutes",
+      "semantic": "interaction.clipboard.commit"
+    },
+    {
+      "id": 3077,
+      "kind": "command",
+      "scope": "clipboard",
+      "route": "SidecarClipboardRoutes.Release",
+      "input": "HostClipboardTransfer",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostClipboardTransfer",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarClipboardRoutes",
+      "semantic": "interaction.clipboard.release"
+    }
+  ]
+}

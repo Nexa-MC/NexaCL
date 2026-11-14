@@ -592,3 +592,63 @@ encoding above 32 KiB, malformed inputs, prompt cancellation, a noncooperative
 native callback, a late native exception, UI rebinding and session retirement.
 Production worker composition is still pending; this catalog alone does not switch
 plugin execution out of the launcher.
+
+## Clipboard snapshots and staged writes
+
+`SidecarClipboardClient` requires `LargeGeneratedDtos` and authenticated discovery
+`3071`. It adds six operations, without changing the existing catalogs or guest
+ABI 100:
+
+| ID | Operation | Request → result |
+| --- | --- | --- |
+| 3072 | `interaction.clipboard.read` | `HostClipboardTransfer` → `HostClipboardSnapshot` |
+| 3073 | `interaction.clipboard.read_chunk` | `HostClipboardReadChunk` → `HostClipboardChunk` |
+| 3074 | `interaction.clipboard.begin_write` | `HostClipboardWrite` → acknowledgement |
+| 3075 | `interaction.clipboard.append` | `HostClipboardAppend` → acknowledgement |
+| 3076 | `interaction.clipboard.commit` | `HostClipboardTransfer` → acknowledgement |
+| 3077 | `interaction.clipboard.release` | `HostClipboardTransfer` → acknowledgement |
+
+Allocate a positive, increasing `TransferId` **before** sending a read or begin-write
+request. Serialize those begin requests on a connection. Every admitted begin ID
+is consumed, including a request rejected for capacity or unavailable UI. Release
+with that same ID in a `finally` block, using a separate cleanup deadline. Releasing
+an unknown ID also consumes it: a delayed begin cannot recreate an abandoned
+transfer. These fences belong to the Sidecar activation and survive UI rebinding.
+IDs cannot be shared across sessions or reused within an activation.
+
+A read captures text and PNG bytes once. `TextUtf8` is strict UTF-8, bounded to
+65,536 UTF-16 code units after decoding. `ImageLength = -1` and a null
+`ImageSha256` mean no image; otherwise the length is 33 bytes through 16 MiB and
+the digest is exactly 32 bytes. Read image chunks by offset, each at most 256 KiB;
+validate the returned offset, length and final SHA-256 before consuming the image.
+Chunks refer to the immutable snapshot, even if another application subsequently
+changes the clipboard. The caller must release text-only snapshots too.
+
+For a write, send text and the image descriptor in `begin_write`, then append
+nonempty image chunks at exactly the next expected offset. Commit only after all
+bytes have been acknowledged. The Host checks completeness, digest, PNG signature,
+IHDR length, dimensions (1–4096) and pixel count (at most 4 × 1024 × 1024).
+The native owner decodes the full PNG before modifying the OS clipboard. A null
+text differs from `""`; null text with no image clears the clipboard.
+
+The Host admits at most eight transfers overall, two per activation, with a 64 MiB
+reservation budget and one outstanding native clipboard call. Each transfer expires
+after two minutes without requiring another request. This is a transfer-storage
+budget, not a bound on process RSS: codecs and the native image decoder also need
+bounded temporary buffers. Cancellation, UI detachment and session retirement
+invalidate transfers immediately; unfinished native calls retain their slot and
+reservation until they actually return.
+
+Missing native UI yields `xsr.unavailable`; exhausted capacity yields
+`xsr.backpressure`; invalid descriptors, stale IDs, incomplete writes and digest
+mismatches yield `xsr.rejected`. Native failures yield `xsr.unavailable` and
+cancellation yields `xsr.cancelled`. A failed or missing commit acknowledgement does
+**not** prove the clipboard is unchanged. Do not replay begin, append or commit
+automatically, and do not restore an earlier clipboard snapshot: another
+application may already have replaced the content. Release is safe to repeat.
+
+Plugin confirmation, permissions and opaque blob ownership belong to PluginSidecar.
+This Host API knows only the authenticated Sidecar session. The adapter checks guest
+cancellation again after IPC, releases transfers with an independent one-second
+budget and reports cleanup failures; Host expiry is the final cleanup bound.
+Production worker composition remains a separate migration step.

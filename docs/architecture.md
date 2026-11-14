@@ -662,3 +662,44 @@ Plugin identity, permissions, opaque file grants and interpreting cancellation
 remain in the Sidecar. It awaits the Host response and rechecks the invocation's
 cancellation before granting a path. It does not retry the picker automatically.
 The guest ABI stays unchanged. Worker composition remains a separate cutover.
+
+## General Sidecar clipboard transfers
+
+Clipboard access uses an independent, generated Host catalog over the existing
+bidirectional request channel. It requires `LargeGeneratedDtos`; the existing
+stream API opens streams in the opposite direction and is not repurposed here.
+Text remains bounded to 65536 UTF-16 code units and travels as strict UTF-8 bytes.
+PNG data retains its 16 MiB encoded limit, 4096-pixel dimension limits and four
+million pixel budget. Pictures cross the boundary in chunks of at most 256 KiB,
+with declared lengths, exact append offsets and a SHA-256 digest. A single frame
+never needs to contain the whole image.
+
+Each authenticated activation owns a monotonic positive transfer ID sequence.
+The Sidecar allocates an ID before sending a begin request and serializes begin
+requests. Releasing an unknown ID advances the owner's high-water mark: a delayed
+begin cannot recreate a transfer after its caller has abandoned it. That mark
+survives native UI rebinding and retires with the activation. Releases affect only
+the requesting activation; repeated release is safe. Read chunks are repeatable,
+whereas appends must use the next exact offset and commits are single-use.
+
+Admission permits eight transfers globally, two per activation and 64 MiB of
+reserved transfer storage, with at most one native clipboard operation at a time.
+A two-minute transfer lifetime releases abandoned storage even when no subsequent
+request arrives. Cancellation, session retirement and UI detachment also retire
+transfers. An operation that is still preparing a buffer or awaiting a native
+callback retains its reservation until that work actually completes; cancelling
+the caller cannot evade memory or native-operation admission. Native callbacks
+and cancellation run outside the transfer lock.
+
+Read operations expose an immutable snapshot after capture. Write operations
+stage bytes privately and check completeness, digest and PNG bounds before calling
+the native owner once. Null text differs from empty text; null text and absent
+image mean clear the clipboard. A cancelled or lost write acknowledgement does
+not prove the native effect was rolled back. Neither retries nor clipboard
+restoration happen automatically, since another application may have changed it.
+
+The Sidecar owns guest confirmation, permissions and blob handles. It rechecks the
+guest invocation before consuming a result and releases known transfer IDs using
+an independent, bounded cleanup token, including after an uncertain begin reply.
+Cleanup failures are reported; Host expiry remains the final resource bound.
+Existing guest ABI 100 and the older Host catalogs are unchanged.

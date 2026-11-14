@@ -46,6 +46,7 @@ public sealed partial class AvaloniaUiPlatformActions
         }
         try
         {
+            token.ThrowIfCancellationRequested();
             if (text is null && bitmap is null) await clipboard.ClearAsync().ConfigureAwait(true);
             else
             {
