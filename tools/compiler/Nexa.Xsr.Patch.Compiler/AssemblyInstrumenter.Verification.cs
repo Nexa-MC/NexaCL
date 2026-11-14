@@ -10,18 +10,36 @@ internal sealed partial class AssemblyInstrumenter
 {
     internal static int VerifyDirectory(string directory)
     {
-        int assemblies = 0, methods = 0, engines = 0;
+        int assemblies = 0, methods = 0, engines = 0, rendering = 0;
         foreach (string path in Directory.EnumerateFiles(directory, "Nexa.*.dll").Order(StringComparer.Ordinal))
         {
             if (Path.GetFileName(path) == "Nexa.Xsr.Patch.Compiler.dll")
                 throw new InvalidDataException("The build compiler must not ship in the product runtime closure.");
             if (IsExternalPluginSdk(path)) continue;
+            if (IsRendering(path)) { rendering++; continue; }
             if (IsStandaloneNativeEngine(path)) engines++;
             methods += Verify(path); assemblies++;
         }
         if (assemblies == 0) throw new InvalidDataException("No owned product assemblies were found for coverage verification.");
-        Console.WriteLine($"Automatic coverage verified: {assemblies} assemblies; {methods} executable bodies; {engines} standalone native engines verified.");
+        Console.WriteLine($"Automatic coverage verified: {assemblies} assemblies; {methods} executable bodies; {engines} standalone native engines verified; {rendering} rendering assemblies carry no entries.");
         return 0;
+    }
+
+    /// <summary>
+    /// Rendering is the one Host-owned group without automatic entries: extensions reach the
+    /// interface through admitted UI declarations, and an entry on every accessor and per-node
+    /// helper keeps them from being inlined. The assembly identity only selects the rule; the
+    /// assembly must then really be free of entries.
+    /// </summary>
+    internal static bool IsRendering(string path)
+    {
+        using var module = ModuleDefinition.ReadModule(path, new ReaderParameters { InMemory = true });
+        string name = module.Assembly.Name.Name;
+        if (name != "Nexa.Xsr.Renderer" && !name.StartsWith("Nexa.Xsr.Renderer.", StringComparison.Ordinal)) return false;
+        if (AutomaticAssembly(module.Assembly) || module.GetType("__NexaPatchSites") is not null
+            || module.Resources.Any(resource => resource.Name.StartsWith(Marker, StringComparison.Ordinal)))
+            throw new InvalidDataException("Rendering assemblies must not carry automatic entries: " + path);
+        return true;
     }
 
     internal static bool IsExternalPluginSdk(string path)
@@ -104,10 +122,6 @@ internal sealed partial class AssemblyInstrumenter
         byte[] catalog = resource.GetResourceData();
         if (!File.ReadAllBytes(Path.ChangeExtension(path, ".nfp")).AsSpan().SequenceEqual(catalog))
             throw new InvalidDataException("Published function catalog does not match its assembly: " + path);
-        int minimumBody = module.Resources.OfType<EmbeddedResource>().SingleOrDefault(item => item.Name == ScopeMarker) is { } scope
-            ? ParseMinimumBody(Encoding.UTF8.GetString(scope.GetResourceData())) : 0;
-        if (minimumBody != 0 && !RenderingAssembly(module.Assembly.Name.Name))
-            throw new InvalidDataException("Only rendering assemblies may narrow their automatic coverage: " + path);
         using var source = new MemoryStream(catalog, writable: false);
         using var compression = new BrotliStream(source, CompressionMode.Decompress);
         using var reader = new BinaryReader(compression, Encoding.UTF8);
@@ -145,27 +159,15 @@ internal sealed partial class AssemblyInstrumenter
                     throw new InvalidDataException("Invalid no-body function inventory: " + signature);
                 continue;
             }
-            bool readsSites = method.Body.Instructions.Any(item => item.OpCode == OpCodes.Ldfld && item.Operand is FieldReference field
-                && field.DeclaringType.FullName == RuntimeNamespace(module) + ".PatchAssembly" && field.Name == "Enabled");
-            bool enters = method.Body.Instructions.Any(item => item.OpCode == OpCodes.Call && item.Operand is MethodReference called
-                && called.DeclaringType.FullName == RuntimeNamespace(module) + ".Patch" && called.Name == "Enter");
-            if (entry.Status == InternalStatus)
-            {
-                // Recomputed from the shipped body: the scope cannot hide a major body or a half-woven one.
-                if (minimumBody == 0 || entry.Slot != -1 || readsSites || enters || Major(method, minimumBody))
-                    throw new InvalidDataException("Function is left without an automatic entry outside its assembly's scope: " + signature);
-                continue;
-            }
-            if (entry.Status != 0 || entry.Slot < 0 || !readsSites || !enters)
+            if (entry.Status != 0 || entry.Slot < 0
+                || !method.Body.Instructions.Any(item => item.OpCode == OpCodes.Ldfld && item.Operand is FieldReference field
+                    && field.DeclaringType.FullName == RuntimeNamespace(module) + ".PatchAssembly" && field.Name == "Enabled")
+                || !method.Body.Instructions.Any(item => item.OpCode == OpCodes.Call && item.Operand is MethodReference called
+                    && called.DeclaringType.FullName == RuntimeNamespace(module) + ".Patch" && called.Name == "Enter"))
                 throw new InvalidDataException("Function is cataloged without its automatic entry: " + signature);
-            if (minimumBody != 0 && !Major(method, 1))
-                throw new InvalidDataException("Function carries an automatic entry its assembly's scope excludes: " + signature);
             bodies++;
         }
         if (entries.Count != 0) throw new InvalidDataException("Compiled catalog contains missing functions: " + path);
         return bodies;
     }
-
-    private static bool RenderingAssembly(string name) => name is "Nexa.Xsr.Renderer" or "Nexa.Native.Window"
-        || name.StartsWith("Nexa.Xsr.Renderer.", StringComparison.Ordinal);
 }

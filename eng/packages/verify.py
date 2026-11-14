@@ -12,6 +12,10 @@ import xml.etree.ElementTree as ET
 import zipfile
 ROOT = Path(__file__).resolve().parents[2]
 
+def cataloged(name):
+    # Rendering assemblies carry no automatic entries, so they ship no catalog.
+    return name != 'Nexa.Xsr.Renderer' and not name.startswith('Nexa.Xsr.Renderer.')
+
 def verify(feed, aot):
     manifest = json.loads((feed / 'feed-manifest.json').read_text())
     spec = json.loads((ROOT / 'eng/packages/manifest.json').read_text())
@@ -27,7 +31,7 @@ def verify(feed, aot):
             actual.add(name)
             assert 'LICENSE' in paths and 'README.md' in paths
             if name != 'Nexa.Xsr.BuildTools':
-                assert f'catalogs/{name}.nfp' in paths
+                assert (f'catalogs/{name}.nfp' in paths) == cataloged(name), name
                 assert f'buildTransitive/{name}.targets' in paths
                 assert f'lib/net10.0/{name}.dll' in paths
                 assert not any('CodeAnalysis' in p or 'Cecil' in p for p in paths)
@@ -62,7 +66,7 @@ def verify(feed, aot):
 
 def check_output(directory, names):
     for name in names - {'Nexa.Xsr.BuildTools'}:
-        assert (directory / f'{name}.nfp').exists(), name
+        assert (directory / f'{name}.nfp').exists() == cataloged(name), name
     assert (directory / 'Consumer.nfp').exists()
     assert (directory / 'Ui/Components/Button.c.nxml').exists()
     assert (directory / 'Ui/Styles/Renderer.nss').exists()

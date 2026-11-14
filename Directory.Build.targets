@@ -1,7 +1,8 @@
 <Project>
   <!-- A build dependency only: no compiler/Mono.Cecil assembly enters the product closure. -->
   <PropertyGroup>
-    <NexaAutomaticFunctionPatches Condition="'$(NexaAutomaticFunctionPatches)' == '' and '$(NexaProductSource)' == 'true' and '$(IsRoslynComponent)' != 'true'">true</NexaAutomaticFunctionPatches>
+    <!-- Rendering carries no entries: one on every accessor and per-node helper keeps them from being inlined. Extensions use the UI interface. -->
+    <NexaAutomaticFunctionPatches Condition="'$(NexaAutomaticFunctionPatches)' == '' and '$(NexaProductSource)' == 'true' and '$(NexaRenderingSource)' != 'true' and '$(IsRoslynComponent)' != 'true'">true</NexaAutomaticFunctionPatches>
   </PropertyGroup>
   <ItemGroup Condition="'$(NexaAutomaticFunctionPatches)' == 'true' or '@(NexaFunctionPatchSource)' != ''">
     <ProjectReference Include="$(MSBuildThisFileDirectory)tools/compiler/Nexa.Xsr.Patch.Compiler/Nexa.Xsr.Patch.Compiler.csproj"

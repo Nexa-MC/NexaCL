@@ -55,9 +55,9 @@ Transport loss seals the guest instead of replaying an uncertain operation.
 
 Plugin SDK libraries are consumed from an immutable, pinned external package feed.
 Their implementation sources are never added to the Host build graph. Automatic
-instrumentation covers Host-owned source assemblies. Rendering assemblies keep
-entries on their major bodies only; their remaining bodies are inventoried as
-internal and cannot be intercepted (see [instrumentation](instrumentation.md)).
+instrumentation covers Host-owned source assemblies except rendering: renderer
+functions carry no entries, and extensions change the interface only through
+admitted UI declarations (see [instrumentation](instrumentation.md)).
 The four explicitly named
 `Nexa.Plugin` SDK assemblies are external only when the emitted dependency manifest
 identifies them as NuGet packages; the prefix alone never exempts an assembly. Services
