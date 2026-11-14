@@ -107,4 +107,40 @@ internal static partial class Program
             first.Dispose(); AssertFalse(runtime.TryResolvePage(caller, "#First", out _));
         }
     }
+
+    private static async ValueTask NxmlDialogsRequireSeparateNegotiation()
+    {
+        static SidecarRegistrationItem Document(string key, SidecarNxmlOperation operation)
+        {
+            byte[] bytes = SidecarNxmlDocument.Encode(new("#" + key, operation, "main.nxml",
+                new Dictionary<string, string> { ["main.nxml"] = "<Page />" }));
+            return new(SidecarRegistrationKind.UiModule, "document." + operation + "." + key, 0, 0, bytes, SHA256.HashData(bytes));
+        }
+        XsrStateStoreBuilder builder = new(); builder.Cell<XsrNxmlModuleSnapshot>(NxmlModuleState, "Test");
+        var store = builder.Build(); var state = store.Resolve(NxmlModuleState);
+        XsrNxmlModuleRuntime runtime = new(store, state, (source, _) => new(source.Target, []));
+        await AssertThrowsAsync<SidecarProtocolException>(async () =>
+        {
+            var (unsupported, peer) = await PatchSession(new(CaptionPoint), [Document("Modal", SidecarNxmlOperation.Dialog)],
+                features: SidecarFeatures.All & ~SidecarFeatures.Dialogs, nxml: runtime);
+            unsupported.Dispose(); peer.Dispose();
+        });
+        await AssertThrowsAsync<SidecarProtocolException>(async () =>
+        {
+            var (duplicate, peer) = await PatchSession(new(CaptionPoint),
+                [Document("Same", SidecarNxmlOperation.Page), Document("Same", SidecarNxmlOperation.Dialog)],
+                features: SidecarFeatures.All, nxml: runtime);
+            duplicate.Dispose(); peer.Dispose();
+        });
+        var (session, channel) = await PatchSession(new(CaptionPoint), [Document("Modal", SidecarNxmlOperation.Dialog)],
+            features: SidecarFeatures.All & ~SidecarFeatures.Pages, nxml: runtime);
+        using (session) using (channel)
+        {
+            await SnapshotAll(session, channel); await session.ActivateAsync(); await DataPlaneReceiveAsync(channel);
+            var modal = store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Single();
+            AssertEqual(SidecarNxmlOperation.Dialog, modal.Source.Operation);
+            AssertFalse(runtime.TryResolvePage(modal.Exposure, "#Modal", out _));
+            session.Dispose(); AssertEqual(0, store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Count);
+        }
+    }
 }

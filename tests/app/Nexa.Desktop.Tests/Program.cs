@@ -20,7 +20,7 @@ internal static partial class Program
     public static void Main(string[] args)
     {
         if (args is ["--sidecar-business-smoke"])
-        { SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarConfirmationAbi(); SidecarNotificationsAbi(); SidecarFilePickerAbi(); SidecarClipboardAbi(); SidecarContextAbi(); SidecarShellAbi(); SidecarThemeOptionsAbi(); SidecarThemeActivationAbi(); SidecarThemeActivationRaces(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
+        { SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarDialogControlAbi(); SidecarDialogFormsRetireWithWindow(); SidecarDialogLimits(); SidecarConfirmationAbi(); SidecarNotificationsAbi(); SidecarFilePickerAbi(); SidecarClipboardAbi(); SidecarContextAbi(); SidecarShellAbi(); SidecarThemeOptionsAbi(); SidecarThemeActivationAbi(); SidecarThemeActivationRaces(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
         if (args is ["--native-memory-preview", var memoryPreview])
         { Environment.ExitCode = RunNativeMemoryCleanupPreview(memoryPreview); return; }
         if (args is ["--update-onboarding-preview", var previewOutput])
@@ -358,6 +358,9 @@ internal static partial class Program
         ("general Sidecar theme options preserve owner validation and binding lifetime", SidecarThemeOptionsAbi),
         ("general Sidecar shell effects validate callers and cancel detached bindings", SidecarShellAbi),
         ("general Sidecar page control enforces ownership, retirement and queue bounds", SidecarPageControlAbi),
+        ("general Sidecar modal documents enforce ownership, priority and retirement", SidecarDialogControlAbi),
+        ("general Sidecar modal documents isolate forms and cancel nested submissions", SidecarDialogFormsRetireWithWindow),
+        ("general Sidecar modal documents enforce session and global limits", SidecarDialogLimits),
         ("Sidecar forms capture only the invoking document exposure", SidecarFormsCaptureOnlyInvokingExposure),
         ("general Sidecar business ABI preserves authority and typed results", SidecarBusinessAbi),
         ("desktop protocol routes and registration preserve arguments", DesktopProtocolRoutesAndRegistrationCommands),

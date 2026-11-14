@@ -1,0 +1,3 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostDialogQuery
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostDialogChange
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostDialogState

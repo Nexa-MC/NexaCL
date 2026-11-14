@@ -2,6 +2,12 @@
 
 `eng/packages/manifest.json` defines shared packages independently of product Alpha/Beta versions. The closure includes Core, Contracts, Sidecar.Protocol, Sidecar.Transport, Sidecar.Host.Contracts, XSR Abstractions, Diagnostics, State, Runtime, the framework-neutral Renderer and NXML Compiler/Runtime, and separate BuildTools. Desktop, Avalonia, native platform implementations and Host services are outside this closure.
 
+Version `0.1.0-alpha.18` adds opt-in modal NXML documents and
+`SidecarDialogControlClient`. The new capability and independent discovery catalog
+preserve existing document encodings and Host fingerprints. The Host owns modal
+chrome, source attribution, input priority and retirement; Sidecars retain their
+business lifecycle. See [modal documents](sidecar-host-business.md#modal-documents-shared-packages-010-alpha18).
+
 Version `0.1.0-alpha.15` adds `SidecarFilePickerClient` for native open, directory
 and save dialogs. Selection remains owned by the authenticated Sidecar activation;
 cancelled requests cannot grant late results. See [file selection](sidecar-host-business.md#file-picker-catalog)

@@ -31,7 +31,8 @@ internal static partial class Program
         AssertEqual(document.Target, SidecarNxmlDocument.Decode(transported.Payload).Target);
         AssertEqual(document.Target, copy.Target);
         AssertEqual(document.Operation, copy.Operation);
-        foreach (var operation in new[] { SidecarNxmlOperation.Page, SidecarNxmlOperation.OnboardingPage })
+        AssertEqual(1024u, (uint)SidecarFeatures.Dialogs);
+        foreach (var operation in new[] { SidecarNxmlOperation.Page, SidecarNxmlOperation.OnboardingPage, SidecarNxmlOperation.Dialog })
         {
             var page = new SidecarNxmlDocument("#FuturePage", operation, "main.nxml", document.Files);
             AssertEqual(operation, SidecarNxmlDocument.Decode(SidecarNxmlDocument.Encode(page)).Operation);

@@ -63,12 +63,13 @@ public sealed class XsrNxmlModuleRuntime
             bytes += entry.Payload!.Length;
             if (documents.Count >= 32 || bytes > 4 * 1024 * 1024) throw new SidecarProtocolException("Session NXML source budget exceeded.");
             var document = SidecarNxmlDocument.Decode(entry.Payload);
-            if (document.Operation is SidecarNxmlOperation.Page or SidecarNxmlOperation.OnboardingPage)
+            if (document.Operation is SidecarNxmlOperation.Page or SidecarNxmlOperation.OnboardingPage or SidecarNxmlOperation.Dialog)
             {
-                if (!features.HasFlag(SidecarFeatures.Pages) || document.Target.Length < 2
+                var required = document.Operation == SidecarNxmlOperation.Dialog ? SidecarFeatures.Dialogs : SidecarFeatures.Pages;
+                if (!features.HasFlag(required) || document.Target.Length < 2
                     || document.Target[0] != '#' || document.Target.AsSpan(1).ContainsAny('#', '/', ' ')
                     || !pages.Add(document.Target))
-                    throw new SidecarProtocolException("Pages require negotiated support and unique single-key targets.");
+                    throw new SidecarProtocolException("Standalone documents require negotiated support and unique single-key targets.");
             }
             documents.Add(document);
         }

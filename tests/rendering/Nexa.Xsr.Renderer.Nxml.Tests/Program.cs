@@ -17,6 +17,7 @@ internal static partial class Program
         ("global NXML replacement preserves live host state and restores layers", GlobalNxmlReplacementRestoresLiveState),
         ("extensions share components styles dynamics and preserve input drafts", NxmlExtensionsShareTheHostSuite),
         ("NXML presentation follows logical projection and isolates invalid mounts", NxmlPresentationIsLateAndTransactional),
+        ("Mounted ancestry resolves before rendering and retires with content", MountedAncestryDoesNotRequireRenderedFrame),
         ("NXML command arguments read local form values and reject reference cycles", NxmlCommandArgumentsReadLocalValues),
         ("progress rings retain square geometry and reload facts", ProgressRingsRetainSquareGeometryAndReloadFacts),
         ("inverse visibility is boolean only and retains content", InverseVisibilityIsBooleanOnlyAndRetainsContent),

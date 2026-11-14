@@ -741,3 +741,42 @@ when another publisher is already draining it, a committed mutation may return
 before observers receive the new immutable snapshot. Readers must wait for the
 expected projection instead of treating acknowledgement as an observer-drain
 fence. Publication and cancellation callbacks remain outside ownership locks.
+
+### General Sidecar modal documents
+
+Modal documents are an opt-in extension of the existing NXML source bundle:
+`Dialog = 9` retains schema 3 and requires the negotiated `Dialogs = 1024`
+feature. Existing document values and encodings remain unchanged. Dialog roots
+must be matching-key Pages, with unique standalone targets within a session.
+They do not enter ordinary navigation or onboarding. The separate DialogControl
+catalog uses discovery 3583, state query 3584 and open/close commands 3585/3586;
+existing catalog fingerprints remain unchanged.
+
+Commands address a document index and expected presentation revision in the
+authenticated invoking session. The Host queues UI work with cancellation,
+session/source retirement and a five-second deadline, bounded to 64 requests
+globally and eight per session. It checks ownership and revision again on the UI
+thread. At most 16 modal documents may be open globally and eight per session.
+State queries report which of that session's modal documents are open; no CLR
+view, guest identity, permission or plugin SDK object crosses the channel.
+
+The Host owns modal chrome and its close control. It labels the source using the
+authenticated Sidecar package name, keeps Host confirmations above Sidecar
+content, and refuses to open a Sidecar modal over Host-owned modal UI or onboarding.
+Input is accepted only from the current modal layer. Document-local forms retain
+their existing exposure boundaries. Model updates preserve the open document and
+drafts; source replacement, session retirement and UI detach dismiss its modal
+and cancel queued work. Sidecars observe native closure through the state query
+and decide their own application lifecycle. The Host never adapts a plugin dialog.
+
+This additive shared-contract change advances the shared package set beyond
+`0.1.0-alpha.17`. Consumers remain pinned to their existing immutable source until
+the new contract, Desktop behavior and clean package feed have been verified.
+
+Modal admission and submission lifetimes follow the presentation ancestry,
+including detached component roots mounted by `NxmlPresentationCoordinator`.
+The coordinator exposes `GetPresentationParent` without relying on a previous
+render frame: append/prepend and replacement content lead to their mount target;
+before/after content leads to the target parent. Physical document ownership
+continues to delimit form fields. This prevents closed modal components from
+submitting and binds their pending requests to the enclosing modal lifetime.

@@ -80,6 +80,19 @@ public sealed class NxmlPresentationCoordinator(XsrUiTree tree, XsrStateStore st
         exposure = default; return false;
     }
 
+    /// <summary>Resolves ancestry across detached mounted roots without requiring a rendered frame.</summary>
+    public XsrUiEntityId GetPresentationParent(XsrUiEntityId source)
+    {
+        if (!tree.IsAlive(source)) return default;
+        var parent = tree.Parent(source);
+        if (parent.IsAssigned) return parent;
+        foreach (var instance in _instances.Values)
+            if (instance.Root == source && tree.IsAlive(instance.Target))
+                return instance.Operation is XsrUiMountOperation.Before or XsrUiMountOperation.After
+                    ? tree.Parent(instance.Target) : instance.Target;
+        return default;
+    }
+
     public static void ValidateTarget(string target)
     {
         if (string.IsNullOrWhiteSpace(target) || target.Length > 512 || target.Split('/').Any(part => part.Length < 2
@@ -112,6 +125,9 @@ public sealed class NxmlPresentationCoordinator(XsrUiTree tree, XsrStateStore st
         private IDisposable? _mount;
         private readonly List<XsrUiEntityId> _fragments = [];
         internal Guid Exposure { get; } = exposure;
+        internal XsrUiEntityId Root => root;
+        internal XsrUiEntityId Target => target;
+        internal XsrUiMountOperation Operation => operation;
         internal NxmlPreparedDocument Document { get; private set; } = document;
 
         internal static Instance Create(NxmlPresentationLayer layer, XsrUiEntityId target, XsrUiTree tree, XsrStateStore state)

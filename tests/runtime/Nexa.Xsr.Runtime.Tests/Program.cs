@@ -22,6 +22,7 @@ internal static partial class Program
         ("NXML route reads do not deadlock source replacement", NxmlRouteReadsDoNotDeadlockSourceReplacement),
         ("NXML modules reject unsupported or invalid documents before activation", NxmlModulesRejectUnsupportedAndInvalidDocuments),
         ("Standalone pages require negotiation and resolve only within their session", NxmlPagesAreSessionScoped),
+        ("Modal documents negotiate independently and do not enter ordinary navigation", NxmlDialogsRequireSeparateNegotiation),
         ("Host facade preserves admission cancellation and shutdown errors", HostFacadePreservesAdmissionCancellationAndShutdownErrors),
         ("Host facade returns stable catalog budget failure", HostFacadeReloadReturnsStableFailureForCatalogBudget),
         ("initial snapshot preserves store and owns candidate values", Sync(CoreInitialSnapshotPreservesStoreAndOwnsCandidateValues)),

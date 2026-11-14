@@ -684,3 +684,64 @@ operation will succeed. Continue to handle cancellation and unavailable replies.
 The Host never creates plugin storage directories or selects plugin recovery
 policy. The production Worker still uses its previous restoration owner during
 this incremental migration; adding the Context route does not start a second one.
+
+
+## Modal documents (shared packages 0.1.0-alpha.18)
+
+Negotiate `Nxml` and `Dialogs` (`1024`) before publishing a
+`SidecarNxmlOperation.Dialog` (`9`). The source bundle still uses schema 3. Its
+root must be a `Page` whose key matches the single-key target. Standalone targets
+must be unique within a session. Modal documents are excluded from ordinary page
+navigation, onboarding and the PageControl catalog.
+
+Discover `SidecarDialogControlClient` with query **3583**. The independent wire
+schema is `A71C4011DE44E975B9AC4739B69972D33A92781A74E3E20D9B02BB9112AC2409`;
+the catalog fingerprint is
+`1096DA93777680CBF63BA34AE34B273B8438A361C0581B55093234B34313CD31`.
+
+| ID | Route | Request | Result |
+| --- | --- | --- | --- |
+| 3584 | `presentation.dialogs.state` | `HostDialogQuery(ExpectedRevision)` | `HostDialogState(Revision, Dialogs)` |
+| 3585 | `presentation.dialogs.open` | `HostDialogChange(ExpectedRevision, Document)` | Completion |
+| 3586 | `presentation.dialogs.close` | `HostDialogChange(ExpectedRevision, Document)` | Completion |
+
+`Document` is the zero-based index in the caller's complete committed source set,
+including non-modal documents. A state entry contains that index, the source
+`Target` and whether it is currently `Open`. Targets are informational; they do not
+let a caller select another session. A new modal document starts closed.
+
+```csharp
+using Nexa.Sidecar.Host;
+using Nexa.Sidecar.Host.DialogControl.Data;
+
+var dialogs = new SidecarDialogControlClient(requests, observer);
+if (!(await dialogs.DiscoverAsync(token)).IsSuccess) return;
+dialogs.Commands.TryResolve(SidecarDialogControlRoutes.Open, out var open);
+var result = await dialogs.Commands.Dispatch(open,
+    new HostDialogChange(expectedPresentationRevision, documentIndex),
+    cancellationToken: token).Completion;
+```
+
+The Host validates revision and ownership at admission and again on the UI thread.
+It admits at most 64 queued modal requests globally and eight per session, with a
+five-second deadline. At most 16 modal documents can be open globally and eight
+per session. An ordinary-page index, stale revision, missing capability, retired
+session, full queue or unavailable UI fails without opening a different document.
+Opening an already open modal and closing an already closed modal are idempotent
+within the current revision. An uncertain reply must be reconciled by querying
+state; do not automatically replay an open command.
+
+The Host supplies the outer frame and close button, displaying the authenticated
+Sidecar package name as the source. A Sidecar modal cannot open over Host-owned
+modal UI or onboarding. Host confirmations can appear above existing Sidecar
+modals, and only the top modal layer accepts input. Form fields remain scoped to
+the invoking exposure. Closing a modal cancels its in-flight UI submissions, including submissions from
+components mounted inside it. Reopening starts a new submission lifetime while
+preserving input drafts.
+
+Model-only changes retain the modal and its input drafts. Replacing sources
+retires old identities and closes their modals, even if a replacement uses the
+same target. Session retirement and UI detach also close owned windows and cancel
+queued requests. Native closure is visible in the state query; the Sidecar decides
+whether that closes an application-level dialog or merely hides a view. No guest
+SDK, plugin identity or plugin-specific lifecycle policy is part of this catalog.

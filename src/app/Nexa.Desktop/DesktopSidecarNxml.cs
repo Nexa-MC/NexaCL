@@ -29,7 +29,7 @@ internal sealed partial class DesktopSidecarNxml
             NxmlPresentationCoordinator.ValidateTarget(source.Target);
             var program = _programs.GetValue(source, item => new(item.EntryPoint, item.Files, styles: DesktopMarkup.SharedStyles));
             var document = program.Compile(data);
-            if (source.Operation is SidecarNxmlOperation.Page or SidecarNxmlOperation.OnboardingPage
+            if (source.Operation is SidecarNxmlOperation.Page or SidecarNxmlOperation.OnboardingPage or SidecarNxmlOperation.Dialog
                 && (document.Root.Root.Role != XsrUiSemanticRole.Page || document.Root.Root.Key != source.Target[1..]))
                 throw new NxmlCompileException("Standalone pages require a Page root matching their target key.");
             NxmlUiLoader.ValidateBindings(document.Root, store);
@@ -87,6 +87,7 @@ internal sealed partial class DesktopSidecarNxml
                 _snapshot = read.Value;
                 _styledStructure = -1;
                 UpdatePages(_snapshot!.Modules);
+                UpdateDialogs(_snapshot.Modules);
                 _layers = _snapshot.Modules.Where(module => module.Source.Operation <= SidecarNxmlOperation.Replace).Select(module => new NxmlPresentationLayer(module.Exposure,
                     module.Source.Target, (XsrUiMountOperation)((int)module.Source.Operation - 1),
                     (NxmlPreparedDocument)module.Presentation.Artifact)).ToArray();
@@ -110,18 +111,24 @@ internal sealed partial class DesktopSidecarNxml
             ObserveScroll();
             OpenExternal();
             ProcessPageControls();
+            ObserveClosedDialogs();
+            ProcessDialogControls();
         }
         private void StyleChanged(object? sender, EventArgs args) => _styledStructure = -1;
         private bool Intent(DesktopUiIntent intent)
         {
+            if (DialogCloseIntent(intent)) return true;
             if (GuideIntent(intent)) return true;
-            if (!_coordinator.TryGetExposure(intent.Source, out var exposure) && !TryGetPageExposure(intent.Source, out exposure)) return false;
+            if (!_coordinator.TryGetExposure(intent.Source, out var exposure) && !TryGetPageExposure(intent.Source, out exposure)
+                && !TryGetDialogExposure(intent.Source, out exposure)) return false;
+            if (!ModalInputAllowed(intent.Source)) return true;
             var route = _owner.Runtime.ReadCommandRoute(exposure, intent.Command);
             if (route == XsrNxmlCommandRoute.Inactive) return true;
             if (PageIntent(exposure, intent)) return true;
             if (route == XsrNxmlCommandRoute.Host) return false;
             string value = _shell.Renderer.ReadIntentArgument(intent.Source);
-            var pageStop = _pages.TryGetValue(exposure, out var page) ? page.Stop.Token : _stop.Token;
+            var dialogStop = DialogLifetime(intent.Source);
+            var pageStop = dialogStop.CanBeCanceled ? dialogStop : _pages.TryGetValue(exposure, out var page) ? page.Stop.Token : _stop.Token;
             IReadOnlyDictionary<string, string>? fields = null;
             if (_owner.Runtime.UsesFormSubmission(exposure, intent.Command))
             {
@@ -134,11 +141,12 @@ internal sealed partial class DesktopSidecarNxml
         }
         private bool CanSubmit(DesktopUiIntent intent)
         {
+            if (!ModalInputAllowed(intent.Source)) return false;
             if (_pages.Values.Any(page => page.Owns(intent.Source) && _shell.Stage.Navigation.Current != page.Root)) return false;
             if (!_shell.Tree.IsAlive(intent.Source)
                 || _shell.Tree.GetComponent<XsrUiCommandBinding>(intent.Source)?.Command != intent.Command
                 || _shell.Tree.GetComponent<XsrUiInput>(intent.Source) is not { Enabled: true, Clickable: true }) return false;
-            for (var node = intent.Source; node.IsAssigned; node = _shell.Tree.Parent(node))
+            for (var node = intent.Source; node.IsAssigned; node = _coordinator.GetPresentationParent(node))
                 if (_shell.Tree.GetComponent<XsrUiElement>(node) is { IsVisible: false }) return false;
             return true;
         }
@@ -149,7 +157,7 @@ internal sealed partial class DesktopSidecarNxml
             {
                 if (_shell.Tree.GetComponent<XsrUiTextInput>(node) is not { } input) continue;
                 // Mounted content takes precedence over an enclosing standalone page.
-                if (!_coordinator.TryGetExposure(node, out var owner) && !TryGetPageExposure(node, out owner)) continue;
+                if (!_coordinator.TryGetExposure(node, out var owner) && !TryGetPageExposure(node, out owner) && !TryGetDialogExposure(node, out owner)) continue;
                 if (owner != exposure) continue;
                 string key = _shell.Tree.Name(node);
                 if (string.IsNullOrWhiteSpace(key) || key.Length > SidecarUiForms.MaximumKeyLength || key.Any(char.IsControl)
@@ -179,6 +187,7 @@ internal sealed partial class DesktopSidecarNxml
             _shell.StyleChanged -= StyleChanged;
             _stop.Cancel(); _coordinator.Dispose(); _stop.Dispose();
             DisposePages();
+            foreach (var exposure in _dialogs.Keys.ToArray()) RetireDialog(exposure);
         }
     }
 }

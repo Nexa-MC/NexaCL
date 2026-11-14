@@ -5,6 +5,29 @@ namespace Nexa.Xsr.Renderer.Nxml.Tests;
 
 internal static partial class Program
 {
+    private static void MountedAncestryDoesNotRequireRenderedFrame()
+    {
+        var tree = new XsrUiTree(); var store = new XsrStateStoreBuilder().Build();
+        var root = NxmlUiLoader.LoadDetached(Compile("<StackPanel Key=\"Host\"><StackPanel Key=\"Target\" /></StackPanel>"), tree, store);
+        var target = tree.Children(root).Single();
+        using var coordinator = new NxmlPresentationCoordinator(tree, store);
+        foreach (var operation in Enum.GetValues<XsrUiMountOperation>())
+        {
+            coordinator.Update([new(Guid.NewGuid(), "#Target", operation,
+                Extension("<StackPanel Key=\"Mounted\"><Text Key=\"Nested\" Content=\"Nested\" /></StackPanel>"))]);
+            var mounted = tree.LiveEntities.Single(node => tree.Name(node) == "Mounted");
+            var nested = tree.LiveEntities.Single(node => tree.Name(node) == "Nested");
+            AssertFalse(tree.Parent(mounted).IsAssigned);
+            AssertEqual(mounted, coordinator.GetPresentationParent(nested));
+            AssertEqual(operation is XsrUiMountOperation.Before or XsrUiMountOperation.After ? root : target,
+                coordinator.GetPresentationParent(mounted));
+            AssertEqual(root, coordinator.GetPresentationParent(target));
+            coordinator.Update([]);
+            AssertFalse(coordinator.GetPresentationParent(mounted).IsAssigned);
+        }
+        AssertFalse(coordinator.GetPresentationParent(root).IsAssigned);
+    }
+
     private static void StandaloneDocumentReloadPreservesInput()
     {
         var tree = new XsrUiTree(); var store = new XsrStateStoreBuilder().Build();

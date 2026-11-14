@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "extension": "DialogControl",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 3584,
+      "kind": "query",
+      "scope": "dialogs",
+      "route": "SidecarDialogControlRoutes.State",
+      "input": "HostDialogQuery",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostDialogQuery",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarDialogControlRoutes",
+      "semantic": "presentation.dialogs.state",
+      "output": "HostDialogState",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostDialogState",
+      "outputAssembly": "Nexa.Services.Composition"
+    },
+    {
+      "id": 3585,
+      "kind": "command",
+      "scope": "dialogs",
+      "route": "SidecarDialogControlRoutes.Open",
+      "input": "HostDialogChange",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostDialogChange",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarDialogControlRoutes",
+      "semantic": "presentation.dialogs.open"
+    },
+    {
+      "id": 3586,
+      "kind": "command",
+      "scope": "dialogs",
+      "route": "SidecarDialogControlRoutes.Close",
+      "input": "HostDialogChange",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostDialogChange",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarDialogControlRoutes",
+      "semantic": "presentation.dialogs.close"
+    }
+  ]
+}

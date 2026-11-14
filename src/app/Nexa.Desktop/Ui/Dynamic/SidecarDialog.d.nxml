@@ -1,0 +1,7 @@
+<nxml-dynamic>
+  <Dialog Key="{data chrome}" Label="{data owner}" Localize="false" HorizontalAlignment="Center" VerticalAlignment="Center" Class="feedback-dialog-card" Width="720" Height="560" Padding="24" Spacing="12">
+    <Text Content="{data owner}" Localize="false" Height="28" FontSize="16" FontWeight="600" />
+    <Button Key="{data close}" Content="关闭" Height="42" Command="ui.sidecar.dialog.close" />
+    <Dynamic Key="{data body}" Weight="1" Scroll="true" />
+  </Dialog>
+</nxml-dynamic>

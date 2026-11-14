@@ -68,6 +68,10 @@ static class Check
         var pages = new SidecarPageControlClient(requests, new Observer());
         if (!pages.Commands.TryResolve(Nexa.Sidecar.Host.PageControl.Data.SidecarPageControlRoutes.Open, out var openPage)) throw new Exception("page-control route missing");
         if ((await pages.Commands.Dispatch(openPage, new Nexa.Sidecar.Host.PageControl.Data.HostPageChange(0, 0)).Completion).IsSuccess) throw new Exception("undiscovered page control admitted");
+        var dialogs = new SidecarDialogControlClient(requests, new Observer());
+        if (!dialogs.Commands.TryResolve(Nexa.Sidecar.Host.DialogControl.Data.SidecarDialogControlRoutes.Open, out var openDialog)) throw new Exception("dialog-control route missing");
+        if ((await dialogs.Commands.Dispatch(openDialog, new Nexa.Sidecar.Host.DialogControl.Data.HostDialogChange(0, 0)).Completion).IsSuccess) throw new Exception("undiscovered dialog control admitted");
+        if ((uint)SidecarFeatures.Dialogs != 1024 || (uint)SidecarNxmlOperation.Dialog != 9) throw new Exception("modal document negotiation drift");
         var viewState = new SidecarViewStateClient(requests, new Observer());
         if (!viewState.Commands.TryResolve(Nexa.Sidecar.Host.ViewState.Data.SidecarViewStateRoutes.Replace, out var setView)) throw new Exception("view-state route missing");
         var undiscovered = await viewState.Commands.Dispatch(setView, new Nexa.Sidecar.Host.ViewState.Data.HostViewReplace(0, [], [])).Completion;
