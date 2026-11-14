@@ -192,7 +192,22 @@ internal static partial class Program
             }
             var first = sessions[0].Session;
             // Replacement at the global limit charges the candidate instead of both old and new sets.
-            await first.ReplacePresentationAsync(1, [DynamicPage("Reduced")]);
+            // A concurrent mirror refresh can own the publication drain. The source commit
+            // is immediate, but the serialized state projection completes on that publisher.
+            var reduced = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            void ObserveReduced(XsrStateChange _)
+            {
+                if (store.Read<XsrNxmlModuleSnapshot>(state).Value?.Modules.Count == 97) reduced.TrySetResult();
+            }
+            store.Changed += ObserveReduced;
+            try
+            {
+                await first.ReplacePresentationAsync(1, [DynamicPage("Reduced")]);
+                ObserveReduced(default);
+                await reduced.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            finally { store.Changed -= ObserveReduced; }
+            AssertEqual(1, first.CapturePresentation(2).Documents.Count);
             AssertEqual(97, store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Count);
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
             await AssertThrowsAsync<OperationCanceledException>(async () => await first.ReplacePresentationAsync(2, [], cancelled.Token));
