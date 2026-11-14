@@ -43,15 +43,16 @@ internal sealed partial class DesktopSidecarNxml
             NxmlDocumentInstance? document = null;
             try
             {
-                var chromeTemplate = DesktopMarkup.Dynamic("SidecarDialog.d.nxml", new Dictionary<string, string>
+                var chromeProgram = new NxmlExtensionProgram("dialog.nxml",
+                    new Dictionary<string, string> { ["dialog.nxml"] = DesktopMarkup.Read("SidecarDialog.d.nxml") }, styles: DesktopMarkup.SharedStyles);
+                var chromeTemplate = chromeProgram.Compile(new Dictionary<string, string>
                 {
                     ["chrome"] = "SidecarDialog_" + suffix,
                     ["close"] = "SidecarDialogClose_" + suffix,
                     ["body"] = "SidecarDialogBody_" + suffix,
                     ["owner"] = module.PackageName
                 });
-                // The bound template is a standalone overlay, not content mounted into a Dynamic slot.
-                chrome = NxmlUiLoader.LoadDetached(new(chromeTemplate.Root), _shell.Tree, _store);
+                chrome = NxmlUiLoader.LoadDetached(chromeTemplate.Root, _shell.Tree, _store);
                 XsrUiEntityId body = default, close = default;
                 _shell.Tree.Walk(chrome, node =>
                 {
