@@ -15,6 +15,20 @@ internal static partial class Program
         foreach (var (name, path) in projects.Where(item => Path.GetRelativePath(root, item.Value).Replace('\\', '/').StartsWith("src/", StringComparison.Ordinal)))
             if (Elements(XDocument.Load(path), "NexaAutomaticFunctionPatches").Any(item => item.Value != "true"))
                 failures.Add($"{name} must not opt out of automatic product instrumentation.");
+        // Rendering is exempt as a whole, by the common build; coverage verification selects the
+        // same group by assembly identity, so that identity must not exist anywhere else.
+        var properties = XDocument.Load(RepositoryPath(root, "Directory.Build.props"));
+        if (enabled?.Attribute("Condition")?.Value.Contains("'$(NexaRenderingSource)' != 'true'", StringComparison.Ordinal) != true
+            || Elements(properties, "NexaRenderingRoot").SingleOrDefault()?.Value.Contains("'rendering'", StringComparison.Ordinal) != true
+            || Elements(properties, "NexaRenderingSource").SingleOrDefault()?.Attribute("Condition")?.Value.Contains("$(NexaRenderingRoot)", StringComparison.Ordinal) != true)
+            failures.Add("Only the rendering root is exempt from automatic instrumentation, through the common build.");
+        foreach (var (name, path) in projects.Where(item => item.Key == "Nexa.Xsr.Renderer" || item.Key.StartsWith("Nexa.Xsr.Renderer.", StringComparison.Ordinal)))
+        {
+            // Tests and tools may share the prefix; they are neither instrumented nor shipped.
+            string location = Path.GetRelativePath(root, path).Replace('\\', '/');
+            if (location.StartsWith("src/", StringComparison.Ordinal) && !location.StartsWith("src/rendering/", StringComparison.Ordinal))
+                failures.Add($"{name} is a product assembly with the rendering identity outside the rendering root.");
+        }
 
         var target = XDocument.Load(RepositoryPath(root, "eng/xsr/Xsr.AutomaticFunctionPatches.targets"));
         var instrument = Elements(target, "Target").SingleOrDefault(item => item.Attribute("Name")?.Value == "InstrumentNexaFunctions");
@@ -24,18 +38,6 @@ internal static partial class Program
             || !Elements(target, "Content").Any(item => item.Attribute("CopyToPublishDirectory")?.Value == "PreserveNewest"
                 && item.Attribute("TargetPath")?.Value == "$(AssemblyName).nfp"))
             failures.Add("Automatic instrumentation must weave lowered bodies before publish and ship the matching function catalog.");
-        // Narrowing coverage is one build decision for the rendering root, never a project's own choice.
-        var properties = XDocument.Load(RepositoryPath(root, "Directory.Build.props"));
-        var minimumBody = Elements(target, "NexaAutomaticFunctionPatchMinimumBody").SingleOrDefault();
-        if (Elements(properties, "NexaRenderingRoot").SingleOrDefault()?.Value.Contains("'rendering'", StringComparison.Ordinal) != true
-            || Elements(properties, "NexaRenderingSource").SingleOrDefault()?.Attribute("Condition")?.Value.Contains("$(NexaRenderingRoot)", StringComparison.Ordinal) != true
-            || minimumBody?.Attribute("Condition")?.Value != "'$(NexaRenderingSource)' == 'true'"
-            || !int.TryParse(minimumBody.Value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int bytes) || bytes < 1
-            || !Elements(target, "Exec").Any(item => item.Attribute("Command")?.Value.Contains("$(_NexaAutomaticScope)", StringComparison.Ordinal) == true))
-            failures.Add("Only the rendering root may narrow automatic instrumentation to its major bodies, through the common build.");
-        foreach (var (name, path) in projects)
-            if (Elements(XDocument.Load(path), "NexaAutomaticFunctionPatchMinimumBody").Any())
-                failures.Add($"{name} must not choose its own automatic instrumentation scope.");
         var reference = Elements(common, "ProjectReference").Single();
         if (!Elements(common, "AssemblyMetadata").Any(item => item.Attribute("Include")?.Value == "Nexa.AutomaticFunctionPatches"
             && item.Attribute("Value")?.Value == "1"))

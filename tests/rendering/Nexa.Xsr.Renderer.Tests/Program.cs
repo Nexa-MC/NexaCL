@@ -67,7 +67,7 @@ internal static partial class Program
         ("frame clears every dirty flag below its root only", Sync(FrameClearsEveryDirtyFlagBelowItsRootOnly)),
         ("scene arrays follow node count changes without aliasing", Sync(SceneArraysFollowNodeCountChangesWithoutAliasing)),
         ("stable content reaches every descendant but no sibling", Sync(StableContentReachesEveryDescendantButNoSibling)),
-        ("rendering keeps automatic entries on major bodies only", Sync(RenderingKeepsAutomaticEntriesOnMajorBodiesOnly)),
+        ("rendering registers no automatic entries", Sync(RenderingRegistersNoAutomaticEntries)),
         ("state bridge marks only bound entities dirty", Sync(StateBridgeMarksOnlyBoundEntities)),
         ("destroyed entities drop state dependencies", Sync(DestroyedEntitiesDropStateDependencies)),
         ("entities carry multiple state bindings", Sync(EntitiesCarryMultipleStateBindings)),

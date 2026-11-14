@@ -44,7 +44,7 @@ python eng/packages/verify.py --feed /absolute/path/to/feed --aot
 
 Use the pinned .NET 10 SDK, Python 3, and required native dependencies. The local feed manifest records source SHA, dependencies, and package SHA-256. Building a feed does not publish it to a public registry.
 
-Runtime packages contain assemblies, licenses, documentation, matching `.nfp` catalogs, and buildTransitive copy targets. BuildTools contains private build dependencies only; Roslyn and Mono.Cecil must not enter product output. Consumers explicitly reference BuildTools with `PrivateAssets=all` and set `NexaAutomaticFunctionPatches=true` to instrument their own code.
+Runtime packages contain assemblies, licenses, documentation, matching `.nfp` catalogs, and buildTransitive copy targets. Rendering packages carry no automatic entries and therefore no catalog. BuildTools contains private build dependencies only; Roslyn and Mono.Cecil must not enter product output. Consumers explicitly reference BuildTools with `PrivateAssets=all` and set `NexaAutomaticFunctionPatches=true` to instrument their own code.
 
 Verification uses independent consumer projects and fresh caches to check command acceptance/completion, state, instrumentation installation/retirement, incremental builds, and managed/AOT output. Consumers do not reference NexaCL workspace paths. Referencing Runtime alone does not start Sidecars or enable remote plugins.
 

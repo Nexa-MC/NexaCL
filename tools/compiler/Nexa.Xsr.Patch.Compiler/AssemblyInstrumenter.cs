@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
@@ -12,11 +11,8 @@ internal sealed partial class AssemblyInstrumenter
 {
     private const string Marker = "Nexa.FunctionPatches.Catalog.v1";
     private const string AutomaticAbi = "Nexa.AutomaticFunctionPatches";
-    internal const string ScopeMarker = Marker + ".MinimumBody";
-    private const byte InternalStatus = 4;
     private readonly ModuleDefinition _module;
     private readonly ModuleDefinition _core;
-    private readonly int _minimumBody;
     private readonly TypeReference _assemblyType, _frameType;
     private readonly MethodReference _register, _enter, _reference, _default, _originalReturn;
     private readonly MethodReference _argument, _arguments, _argumentSource, _returnSource, _result, _complete, _shouldSkip;
@@ -24,9 +20,9 @@ internal sealed partial class AssemblyInstrumenter
     private FieldDefinition _sites = null!;
     private sealed record Descriptor(MethodDefinition Method, string Id, string Signature, byte Status, int Slot);
 
-    private AssemblyInstrumenter(ModuleDefinition module, ModuleDefinition core, int minimumBody)
+    private AssemblyInstrumenter(ModuleDefinition module, ModuleDefinition core)
     {
-        _module = module; _core = core; _minimumBody = minimumBody;
+        _module = module; _core = core;
         _assemblyType = ImportType("PatchAssembly"); _frameType = ImportType("PatchFrame");
         _register = ImportMethod("Patch", "Register"); _enter = ImportMethod("Patch", "Enter");
         _reference = ImportMethod("Patch", "Reference"); _default = ImportMethod("Patch", "get_DefaultValue");
@@ -39,12 +35,7 @@ internal sealed partial class AssemblyInstrumenter
         _evaluating = module.ImportReference(CoreType("Patch").Fields.Single(field => field.Name == "Evaluating"));
     }
 
-    internal static int ParseMinimumBody(string text) =>
-        int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out int value) && value is > 0 and <= ushort.MaxValue
-            ? value : throw new InvalidDataException("NXRP: a minimum body is 1 to 65535 IL bytes.");
-
-    /// <summary>A minimum body narrows the assembly to its major bodies; zero weaves every executable body.</summary>
-    internal static int Run(string assemblyPath, string corePath, string catalogPath, string? references = null, int minimumBody = 0)
+    internal static int Run(string assemblyPath, string corePath, string catalogPath, string? references = null)
     {
         assemblyPath = Path.GetFullPath(assemblyPath); corePath = Path.GetFullPath(corePath);
         using var resolver = new DefaultAssemblyResolver();
@@ -55,8 +46,6 @@ internal sealed partial class AssemblyInstrumenter
                 resolver.AddSearchDirectory(directory);
         string pdb = Path.ChangeExtension(assemblyPath, ".pdb");
         string fingerprint = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(typeof(AssemblyInstrumenter).Assembly.Location)));
-        // The scope decides which bodies are woven, so changing it must weave the clean assembly again.
-        if (minimumBody != 0) fingerprint += ";minimum-body=" + minimumBody.ToString(CultureInfo.InvariantCulture);
         string sourceAssembly = assemblyPath;
         using (var inspect = ModuleDefinition.ReadModule(assemblyPath, new ReaderParameters { InMemory = true, AssemblyResolver = resolver }))
         {
@@ -80,12 +69,9 @@ internal sealed partial class AssemblyInstrumenter
         using var module = ModuleDefinition.ReadModule(sourceAssembly, new ReaderParameters
         { InMemory = true, AssemblyResolver = resolver, ReadSymbols = File.Exists(Path.ChangeExtension(sourceAssembly, ".pdb")), SymbolReaderProvider = new DefaultSymbolReaderProvider(false) });
         using var core = assemblyPath == corePath ? null : ModuleDefinition.ReadModule(corePath, new ReaderParameters { InMemory = true, AssemblyResolver = resolver });
-        var instrumenter = new AssemblyInstrumenter(module, core ?? module, minimumBody);
+        var instrumenter = new AssemblyInstrumenter(module, core ?? module);
         byte[] catalog = instrumenter.Instrument();
         module.Resources.Add(new EmbeddedResource(Marker + ".Compiler", ManifestResourceAttributes.Private, Encoding.UTF8.GetBytes(fingerprint)));
-        if (minimumBody != 0)
-            module.Resources.Add(new EmbeddedResource(ScopeMarker, ManifestResourceAttributes.Private,
-                Encoding.UTF8.GetBytes(minimumBody.ToString(CultureInfo.InvariantCulture))));
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(catalogPath))!);
         File.WriteAllBytes(catalogPath, catalog);
         string temporary = Path.Combine(Path.GetDirectoryName(assemblyPath)!, ".nexa-weave-" + Guid.NewGuid().ToString("N"));
@@ -116,16 +102,13 @@ internal sealed partial class AssemblyInstrumenter
     private byte[] Instrument()
     {
         var methods = _module.GetTypes().SelectMany(type => type.Methods).ToArray();
-        // A native facade exists only to carry an entry; a scoped assembly keeps its imports direct.
-        if (_minimumBody == 0)
-            foreach (var method in methods.Where(method => method.IsPInvokeImpl)) CreateNativeFacade(method);
+        foreach (var method in methods.Where(method => method.IsPInvokeImpl)) CreateNativeFacade(method);
         int slot = 0;
         var descriptors = methods.Select(method =>
         {
             string signature = Signature(method);
             byte status = Infrastructure(method.DeclaringType) ? (byte)3
-                : method.IsAbstract ? (byte)1 : RuntimeAccessor(method) ? (byte)2 : !method.HasBody ? (byte)2
-                : Major(method, _minimumBody) ? (byte)0 : InternalStatus;
+                : method.IsAbstract ? (byte)1 : RuntimeAccessor(method) ? (byte)2 : method.HasBody ? (byte)0 : (byte)2;
             string id = Identity(_module.Assembly.Name.Name, signature);
             return new Descriptor(method, id, signature, status, -1);
         }).OrderBy(item => item.Id, StringComparer.Ordinal).Select(item => item with { Slot = item.Status == 0 ? slot++ : -1 }).ToArray();
@@ -135,40 +118,8 @@ internal sealed partial class AssemblyInstrumenter
         CreateSites(catalog);
         foreach (var descriptor in descriptors.Where(item => item.Status == 0)) Weave(descriptor.Method, descriptor.Slot);
         _module.Resources.Add(new EmbeddedResource(Marker, ManifestResourceAttributes.Private, catalog));
-        int kept = descriptors.Count(item => item.Status == InternalStatus);
-        Console.WriteLine(kept == 0
-            ? $"NXRP: {_module.Assembly.Name.Name}: {slot} executable bodies instrumented; {descriptors.Length - slot} declarations inventoried."
-            : $"NXRP: {_module.Assembly.Name.Name}: {slot} major bodies instrumented; {kept} bodies kept internal; {descriptors.Length - slot - kept} declarations inventoried.");
+        Console.WriteLine($"NXRP: {_module.Assembly.Name.Name}: {slot} executable bodies instrumented; {descriptors.Length - slot} declarations inventoried.");
         return catalog;
-    }
-
-    // A scoped assembly keeps entries on its major bodies only. Accessors, value construction,
-    // synthesized members and small helpers stay exactly as compiled, so they remain inlinable
-    // on per-node and per-frame paths.
-    private static bool Major(MethodDefinition method, int minimumBody)
-    {
-        if (minimumBody == 0) return true;
-        if (method.IsConstructor && method.DeclaringType.IsValueType || CompilerGenerated(method)) return false;
-        for (TypeDefinition? type = method.DeclaringType; type is not null; type = type.DeclaringType)
-            if (CompilerGenerated(type)) return false;
-        return BodySize(method) >= minimumBody;
-    }
-
-    private static bool CompilerGenerated(ICustomAttributeProvider member) => member.HasCustomAttributes
-        && member.CustomAttributes.Any(attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute");
-
-    private static int BodySize(MethodDefinition method)
-    {
-        int size = method.Body.Instructions.Sum(instruction => instruction.GetSize());
-        // An async or iterator method is only a stub; its statements live in the state machine.
-        foreach (var attribute in method.CustomAttributes)
-            if (attribute.AttributeType.FullName is "System.Runtime.CompilerServices.AsyncStateMachineAttribute"
-                    or "System.Runtime.CompilerServices.IteratorStateMachineAttribute"
-                    or "System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute"
-                && attribute.ConstructorArguments is [{ Value: TypeReference machine }]
-                && machine.Resolve()?.Methods.FirstOrDefault(candidate => candidate.Name == "MoveNext" && candidate.HasBody) is { } next)
-                size = Math.Max(size, next.Body.Instructions.Sum(instruction => instruction.GetSize()));
-        return size;
     }
 
     private static string Signature(MethodDefinition method) => (method.IsStatic ? "static " : "instance ")

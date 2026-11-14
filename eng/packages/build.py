@@ -90,8 +90,11 @@ def build(output):
         else:
             built = ROOT / PROJECTS[name] / 'bin/Release/net10.0'
             entries[f'lib/net10.0/{name}.dll'] = (built / f'{name}.dll').read_bytes()
-            entries[f'catalogs/{name}.nfp'] = (built / f'{name}.nfp').read_bytes()
-            target = f'''<Project><ItemGroup>
+            target = '<Project>'
+            # Rendering assemblies carry no automatic entries, so they have no catalog to ship.
+            if name != 'Nexa.Xsr.Renderer' and not name.startswith('Nexa.Xsr.Renderer.'):
+                entries[f'catalogs/{name}.nfp'] = (built / f'{name}.nfp').read_bytes()
+                target += f'''<ItemGroup>
 <None Include="$(MSBuildThisFileDirectory)../catalogs/{name}.nfp" Link="{name}.nfp"
       CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Visible="false" />
 </ItemGroup>'''

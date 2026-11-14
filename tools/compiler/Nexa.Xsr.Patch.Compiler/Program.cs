@@ -16,8 +16,6 @@ internal static partial class Program
                 return AssemblyInstrumenter.Run(assembly, core, catalog);
             if (args is ["--instrument", var target, "--core", var abi, "--catalog", var inventory, "--references", var references])
                 return AssemblyInstrumenter.Run(target, abi, inventory, references);
-            if (args is ["--instrument", var scoped, "--core", var scopedCore, "--catalog", var scopedCatalog, "--references", var scopedReferences, "--minimum-body", var minimumBody])
-                return AssemblyInstrumenter.Run(scoped, scopedCore, scopedCatalog, scopedReferences, AssemblyInstrumenter.ParseMinimumBody(minimumBody));
             if (args is not ["--input", var input, "--output", var output])
                 throw new InvalidDataException("NXRP001: expected --input FILE --output FILE or --self-test.");
             var source = new FileInfo(input);
