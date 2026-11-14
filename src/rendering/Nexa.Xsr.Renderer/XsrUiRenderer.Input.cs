@@ -20,7 +20,8 @@ public sealed partial class XsrUiRenderer
 
         for (int index = _scene.Count - 1; index >= 0; index--)
         {
-            XsrUiSceneNode node = _scene[index];
+            // Pointer routing scans the scene for every event; nodes are read in place.
+            ref readonly XsrUiSceneNode node = ref _scene[index];
             if (!_tree.IsAlive(node.Entity)) continue;
             // Transparent nonmodal composition layers do not become hit targets merely
             // because they span the viewport. Their real children remain reachable.
@@ -36,11 +37,11 @@ public sealed partial class XsrUiRenderer
         return default;
     }
 
-    private static bool SceneNodeContains(XsrUiSceneNode node, XsrUiPoint point) =>
+    private static bool SceneNodeContains(in XsrUiSceneNode node, XsrUiPoint point) =>
         node.Transform is { } transform && node.LayoutRect is { } layout
             ? layout.Contains(transform.Unmap(point)) : node.Rect.Contains(point);
 
-    private static bool SceneNodeClipContains(XsrUiSceneNode node, XsrUiPoint point)
+    private static bool SceneNodeClipContains(in XsrUiSceneNode node, XsrUiPoint point)
     {
         if (node.ClipRect is { } bounds && !bounds.Contains(point)) return false;
         if (node.ClipGeometry is null) return true;
@@ -331,7 +332,7 @@ public sealed partial class XsrUiRenderer
         HashSet<int> visited = [];
         for (int index = _scene.Count - 1; index >= 0; index--)
         {
-            XsrUiSceneNode node = _scene[index];
+            ref readonly XsrUiSceneNode node = ref _scene[index];
             if (!node.IsAccessible || !node.Rect.Contains(point)
                 || node.ClipRect is { } clip && !clip.Contains(point))
             {
@@ -415,7 +416,7 @@ public sealed partial class XsrUiRenderer
 
         for (int index = _scene.Count - 1; index >= 0; index--)
         {
-            XsrUiSceneNode node = _scene[index];
+            ref readonly XsrUiSceneNode node = ref _scene[index];
             if (!node.IsAccessible || !_tree.IsAlive(node.Entity) || !IsInVisibleTree(node.Entity)) continue;
             XsrUiDismissBinding? binding = _tree.GetComponent<XsrUiDismissBinding>(node.Entity);
             if (binding is null || !binding.Command.IsAssigned)
@@ -516,7 +517,7 @@ public sealed partial class XsrUiRenderer
         _inputVisited.Clear();
         for (int index = _scene.Count - 1; index >= 0; index--)
         {
-            XsrUiSceneNode node = _scene[index];
+            ref readonly XsrUiSceneNode node = ref _scene[index];
             if (!node.IsAccessible || !node.Rect.Contains(point)
                 || node.ClipRect is { } clip && !clip.Contains(point))
             {

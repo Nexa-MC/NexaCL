@@ -494,6 +494,9 @@ jobs:
       - name: Verify theme animations yield to input
         run: dotnet run --project tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release --no-build -- --theme-animation-smoke
 
+      - name: Verify scene commits stay within their allocation budget
+        run: dotnet run --project tests/rendering/Nexa.Xsr.Renderer.Backend.Avalonia.Tests -c Release --no-build -- --scene-commit-smoke
+
       - name: Publish and run NativeAOT renderer tests
         run: |
           dotnet publish tests/rendering/Nexa.Xsr.Renderer.Tests/Nexa.Xsr.Renderer.Tests.csproj \

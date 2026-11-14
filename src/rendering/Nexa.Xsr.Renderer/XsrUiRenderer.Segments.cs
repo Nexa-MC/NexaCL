@@ -101,12 +101,17 @@ public sealed partial class XsrUiRenderer
     private bool BeginSegmentDrag(XsrUiPoint point)
     {
         if (_scene is null) return false;
-        foreach (XsrUiSceneNode node in _scene.Nodes)
+        ReadOnlySpan<XsrUiSceneNode> nodes = _scene.AsSpan();
+        foreach (ref readonly XsrUiSceneNode node in nodes)
         {
             if (!_tree.IsAlive(node.Entity) || !node.IsAccessible) continue;
             if (_tree.GetComponent<XsrUiSegmentedTrack>(node.Entity) is not { } track || !SceneNodeContains(node, point) || !SceneNodeClipContains(node, point)) continue;
-            XsrUiSceneNode thumb = _scene.Nodes.FirstOrDefault(n => n.Entity == track.Thumb);
-            if (!thumb.Entity.IsAssigned || !SceneNodeContains(thumb, point) || !SceneNodeClipContains(thumb, point)) return false;
+            int thumbIndex = -1;
+            for (int index = 0; index < nodes.Length && thumbIndex < 0; index++)
+                if (nodes[index].Entity == track.Thumb) thumbIndex = index;
+            if (thumbIndex < 0) return false;
+            ref readonly XsrUiSceneNode thumb = ref nodes[thumbIndex];
+            if (!SceneNodeContains(thumb, point) || !SceneNodeClipContains(thumb, point)) return false;
             point = ScenePointFor(node.Entity, point);
             XsrUiRect thumbRect = thumb.LayoutRect ?? thumb.Rect;
             XsrUiRect nodeRect = node.LayoutRect ?? node.Rect;

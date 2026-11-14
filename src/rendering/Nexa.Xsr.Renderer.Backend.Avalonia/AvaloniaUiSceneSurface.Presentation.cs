@@ -17,13 +17,13 @@ public sealed partial class AvaloniaUiSceneSurface
     private void ApplyScene(XsrUiScene scene)
     {
         foreach (AvaloniaUiSceneNodeControl control in _outgoingControls) Children.Remove(control);
-        _currentEntities.Clear();
-        _sceneNodes.Clear();
-        foreach (var node in scene.Nodes) { _currentEntities.Add(node.Entity); _sceneNodes.Add(node.Entity, node); }
+        ReadOnlySpan<XsrUiSceneNode> nodes = scene.AsSpan();
+        _sceneIndexes.Clear();
+        for (int index = 0; index < nodes.Length; index++) _sceneIndexes.Add(nodes[index].Entity, index);
         bool geometryChanged = false;
         _retiredEntities.Clear();
         foreach (var entity in _controls.Keys)
-            if (!_currentEntities.Contains(entity)) _retiredEntities.Add(entity);
+            if (!_sceneIndexes.ContainsKey(entity)) _retiredEntities.Add(entity);
         foreach (var entity in _retiredEntities)
         {
             var control = _controls[entity];
@@ -50,9 +50,9 @@ public sealed partial class AvaloniaUiSceneSurface
 
         _childIndexes.Clear();
         for (int index = 0; index < Children.Count; index++) _childIndexes[Children[index]] = index;
-        for (int index = 0; index < scene.Count; index++)
+        for (int index = 0; index < nodes.Length; index++)
         {
-            XsrUiSceneNode node = scene[index];
+            ref readonly XsrUiSceneNode node = ref nodes[index];
             if (!_controls.TryGetValue(node.Entity, out AvaloniaUiSceneNodeControl? control))
             {
                 control = new AvaloniaUiSceneNodeControl(
@@ -71,15 +71,15 @@ public sealed partial class AvaloniaUiSceneSurface
             }
 
             geometryChanged |= control.Node.Rect != node.Rect || control.Node.LayoutRect != node.LayoutRect;
-            control.SetThemeResources(ResourcesFor(node));
+            control.SetThemeResources(ResourcesFor(node.ThemeActivationGeneration));
             control.SetRasterPresentationEnabled(_rasterPresentationEnabled);
-            control.Apply(node, new XsrUiSize(Bounds.Width, Bounds.Height));
-            DriveSegmentReveal(node);
-            DriveSegmentScroll(node);
-            DriveScrollInertia(node);
-            DriveCapsuleGeometry(node);
-            DrivePagerGeometry(node);
-            DriveProgressGeometry(node);
+            control.Apply(in node, new XsrUiSize(Bounds.Width, Bounds.Height));
+            DriveSegmentReveal(in node);
+            DriveSegmentScroll(in node);
+            DriveScrollInertia(in node);
+            DriveCapsuleGeometry(in node);
+            DrivePagerGeometry(in node);
+            DriveProgressGeometry(in node);
             int currentIndex = _childIndexes[control];
             if (currentIndex != index)
             {
@@ -114,26 +114,33 @@ public sealed partial class AvaloniaUiSceneSurface
             _ => null,
         };
     }
-    private void DriveScrollInertia(XsrUiSceneNode node)
+    // Every committed scene runs the Drive methods for each of its nodes, and almost all of
+    // those calls only compare against the last target. The node arrives by reference and the
+    // motion callbacks live in the Animate methods: a callback that captured the node parameter
+    // would allocate its closure, node included, on entry to every one of those calls.
+    private const double ScrollInertiaDecay = 5;
+
+    private void DriveScrollInertia(in XsrUiSceneNode node)
     {
         if (node.ScrollMotion is not { } motion || node.Scroll is not { } scroll) return;
         if (_scrollRevisions.TryGetValue(node.Entity, out long revision) && revision == motion.Revision) return;
         _scrollRevisions[node.Entity] = motion.Revision;
         AvaloniaUiMotion.Cancel(this, ("scroll-inertia", node.Entity));
         if (motion.Dragging || Math.Abs(motion.Velocity) < 5 || _shell.Renderer.EffectiveReducedMotion) return;
-        const double decay = 5;
-        double duration = Math.Clamp(Math.Log(Math.Abs(motion.Velocity) / 5) / decay, .08, 1.4);
-        double fraction = 1 - Math.Exp(-decay * duration);
+        double duration = Math.Clamp(Math.Log(Math.Abs(motion.Velocity) / 5) / ScrollInertiaDecay, .08, 1.4);
+        double fraction = 1 - Math.Exp(-ScrollInertiaDecay * duration);
         double offset = motion.Direction == XsrUiOrientation.Horizontal ? scroll.OffsetX : scroll.OffsetY;
-        double target = offset + motion.Velocity / decay * fraction;
-        AvaloniaUiMotion.Animate(this, ("scroll-inertia", node.Entity),
-            () => _shell.Renderer.GetScrollPresentationOffset(node.Entity),
-            value => _shell.Renderer.SetScrollPresentationOffset(node.Entity, value),
-            target, duration * 1000, progress => (1 - Math.Exp(-decay * duration * progress)) / fraction,
-            completed: () => _shell.Renderer.FinishScrollInertia(node.Entity),
-            reducedMotion: () => _shell.Renderer.EffectiveReducedMotion);
+        AnimateScrollInertia(node.Entity, offset + motion.Velocity / ScrollInertiaDecay * fraction, duration, fraction);
     }
-    private void DriveSegmentScroll(XsrUiSceneNode node)
+    private void AnimateScrollInertia(XsrUiEntityId entity, double target, double duration, double fraction) =>
+        AvaloniaUiMotion.Animate(this, ("scroll-inertia", entity),
+            () => _shell.Renderer.GetScrollPresentationOffset(entity),
+            value => _shell.Renderer.SetScrollPresentationOffset(entity, value),
+            target, duration * 1000, progress => (1 - Math.Exp(-ScrollInertiaDecay * duration * progress)) / fraction,
+            completed: () => _shell.Renderer.FinishScrollInertia(entity),
+            reducedMotion: () => _shell.Renderer.EffectiveReducedMotion);
+
+    private void DriveSegmentScroll(in XsrUiSceneNode node)
     {
         if (node.SegmentScroll is not { } target)
         {
@@ -142,47 +149,61 @@ public sealed partial class AvaloniaUiSceneSurface
         }
         if (_segmentScrollTargets.TryGetValue(node.Entity, out var previous) && previous == target) return;
         _segmentScrollTargets[node.Entity] = target;
-        AvaloniaUiMotion.AnimateSpring(this, ("segment-scroll", node.Entity),
-            () => _shell.Renderer.GetSegmentScrollPresentationOffset(node.Entity),
-            value => _shell.Renderer.SetSegmentScrollPresentationOffset(node.Entity, value, target.Revision),
+        AnimateSegmentScroll(node.Entity, target);
+    }
+    private void AnimateSegmentScroll(XsrUiEntityId entity, XsrUiSegmentScrollSnapshot target) =>
+        AvaloniaUiMotion.AnimateSpring(this, ("segment-scroll", entity),
+            () => _shell.Renderer.GetSegmentScrollPresentationOffset(entity),
+            value => _shell.Renderer.SetSegmentScrollPresentationOffset(entity, value, target.Revision),
             target.Target, AvaloniaMotionTokens.SegmentScrollSpringResponseSeconds,
             () => _shell.Renderer.EffectiveReducedMotion, readCurrentPosition: true);
-    }
-    private void DriveSegmentReveal(XsrUiSceneNode node)
+
+    private void DriveSegmentReveal(in XsrUiSceneNode node)
     {
         if (node.SegmentReveal is not { } reveal) return;
         if (_segmentTargets.TryGetValue(node.Entity, out bool target) && target == reveal.Expanded) return;
         _segmentTargets[node.Entity] = reveal.Expanded;
-        AvaloniaUiMotion.AnimateSpring(this, ("segment-reveal", node.Entity),
-            () => _shell.Renderer.GetSegmentRevealProgress(node.Entity),
-            value => _shell.Renderer.SetSegmentRevealProgress(node.Entity, value),
-            reveal.Expanded ? 1 : 0, .25, () => _shell.Renderer.EffectiveReducedMotion);
+        AnimateSegmentReveal(node.Entity, reveal.Expanded);
     }
+    private void AnimateSegmentReveal(XsrUiEntityId entity, bool expanded) =>
+        AvaloniaUiMotion.AnimateSpring(this, ("segment-reveal", entity),
+            () => _shell.Renderer.GetSegmentRevealProgress(entity),
+            value => _shell.Renderer.SetSegmentRevealProgress(entity, value),
+            expanded ? 1 : 0, .25, () => _shell.Renderer.EffectiveReducedMotion);
 
     private void SynchronizeNativeFocus(XsrUiScene scene)
     {
-        XsrUiSceneNode focused = scene.Nodes.FirstOrDefault(node => node.IsFocused && node.IsFocusable);
-        if (focused.Entity.IsAssigned && _controls.TryGetValue(focused.Entity, out AvaloniaUiSceneNodeControl? control)
+        // This runs for every commit, changed or not; walk by reference and stop at the focus.
+        XsrUiEntityId focused = default;
+        bool focusVisible = false;
+        foreach (ref readonly XsrUiSceneNode node in scene.AsSpan())
+        {
+            if (!node.IsFocused || !node.IsFocusable) continue;
+            focused = node.Entity; focusVisible = node.IsFocusVisible;
+            break;
+        }
+        if (focused.IsAssigned && _controls.TryGetValue(focused, out AvaloniaUiSceneNodeControl? control)
             && !control.IsFocused)
-            control.Focus(focused.IsFocusVisible ? NavigationMethod.Tab : NavigationMethod.Pointer);
-        else if (!focused.Entity.IsAssigned && !IsFocused)
+            control.Focus(focusVisible ? NavigationMethod.Tab : NavigationMethod.Pointer);
+        else if (!focused.IsAssigned && !IsFocused)
             Focus(NavigationMethod.Pointer);
     }
 
-    private void DriveCapsuleGeometry(XsrUiSceneNode node)
+    private void DriveCapsuleGeometry(in XsrUiSceneNode node)
     {
         if (!node.VisualStyle.HoverExpand) return;
         double target = node.IsEnabled && (node.IsHovered || node.IsFocusVisible) ? 1 : 0;
         if (_capsuleTargets.TryGetValue(node.Entity, out double previous) && previous == target) return;
         _capsuleTargets[node.Entity] = target;
-        AvaloniaUiMotion.AnimateSpring(this, ("capsule", node.Entity),
-            () => _scene is not null && TryGetNode(_scene, node.Entity, out XsrUiSceneNode current)
-                ? current.CapsuleExpansionProgress : node.CapsuleExpansionProgress,
-            progress => _shell.Renderer.SetCapsulePresentationProgress(node.Entity, progress),
-            target, AvaloniaMotionTokens.CapsuleSpringResponseSeconds, () => _shell.Renderer.EffectiveReducedMotion);
+        AnimateCapsule(node.Entity, node.CapsuleExpansionProgress, target);
     }
+    private void AnimateCapsule(XsrUiEntityId entity, double presented, double target) =>
+        AvaloniaUiMotion.AnimateSpring(this, ("capsule", entity),
+            () => TryGetNode(entity, out XsrUiSceneNode current) ? current.CapsuleExpansionProgress : presented,
+            progress => _shell.Renderer.SetCapsulePresentationProgress(entity, progress),
+            target, AvaloniaMotionTokens.CapsuleSpringResponseSeconds, () => _shell.Renderer.EffectiveReducedMotion);
 
-    private void DriveProgressGeometry(XsrUiSceneNode node)
+    private void DriveProgressGeometry(in XsrUiSceneNode node)
     {
         if (node.Progress is not { } presented || node.ProgressRing is { Indeterminate: true }) return;
         double target = _shell.Renderer.GetProgressTarget(node.Entity);
@@ -194,15 +215,16 @@ public sealed partial class AvaloniaUiSceneSurface
             return;
         }
 
-        AvaloniaUiMotion.Animate(this, ("progress", node.Entity),
-            () => _scene is not null && TryGetNode(_scene, node.Entity, out XsrUiSceneNode current)
-                ? current.Progress ?? 0 : presented,
-            value => _shell.Renderer.SetProgressPresentation(node.Entity, value),
+        AnimateProgress(node.Entity, presented, target);
+    }
+    private void AnimateProgress(XsrUiEntityId entity, double presented, double target) =>
+        AvaloniaUiMotion.Animate(this, ("progress", entity),
+            () => TryGetNode(entity, out XsrUiSceneNode current) ? current.Progress ?? 0 : presented,
+            value => _shell.Renderer.SetProgressPresentation(entity, value),
             target, AvaloniaMotionTokens.ProgressFillMilliseconds, AvaloniaUiMotion.EaseOut,
             reducedMotion: () => _shell.Renderer.EffectiveReducedMotion);
-    }
 
-    private void DrivePagerGeometry(XsrUiSceneNode node)
+    private void DrivePagerGeometry(in XsrUiSceneNode node)
     {
         if (node.Pager is not { } pager) return;
         if (_pagerRevisions.TryGetValue(node.Entity, out long revision) && revision == pager.Revision) return;
@@ -212,12 +234,14 @@ public sealed partial class AvaloniaUiSceneSurface
             AvaloniaUiMotion.Cancel(this, ("pager", node.Entity));
             return;
         }
-        AvaloniaUiMotion.AnimateSpring(this, ("pager", node.Entity), () => pager.Position,
-            position => _shell.Renderer.SetPagerPresentationPosition(node.Entity, position),
+        AnimatePager(node.Entity, pager);
+    }
+    private void AnimatePager(XsrUiEntityId entity, XsrUiPagerSnapshot pager) =>
+        AvaloniaUiMotion.AnimateSpring(this, ("pager", entity), () => pager.Position,
+            position => _shell.Renderer.SetPagerPresentationPosition(entity, position),
             pager.PageIndex, AvaloniaMotionTokens.PagerSpringResponseSeconds,
             () => _shell.Renderer.EffectiveReducedMotion,
             pager.ReleaseVelocity == 0 ? null : pager.ReleaseVelocity);
-    }
 
     /// <summary>
     /// Runs each declared spatial track independently. Undeclared scenes retain a simple
@@ -229,19 +253,21 @@ public sealed partial class AvaloniaUiSceneSurface
         bool navigated = pageRoot != _lastPageRoot || _shell.SelectedNavigationId != _lastNavigation;
         _lastPageRoot = pageRoot;
         _lastNavigation = _shell.SelectedNavigationId;
-        HashSet<XsrUiEntityId> animated = [], retained = [];
+        ReadOnlySpan<XsrUiSceneNode> nodes = scene.AsSpan();
+        HashSet<XsrUiEntityId> animated = _enterAnimated, retained = _transitionRetained;
+        animated.Clear(); retained.Clear();
         bool hasSpatialContent = _shell.HasContentTransition, inPage = false;
         int pageDepth = 0;
-        foreach (XsrUiSceneNode candidate in scene.Nodes)
+        foreach (ref readonly XsrUiSceneNode candidate in nodes)
         {
             if (candidate.Entity == pageRoot) { inPage = true; pageDepth = candidate.Depth; }
             else if (inPage && candidate.Depth <= pageDepth) break;
             if (inPage && (candidate.TransitionOffsetX != 0 || candidate.TransitionOffsetY != 0))
             { hasSpatialContent = true; break; }
         }
-        for (int index = 0; index < scene.Count; index++)
+        for (int index = 0; index < nodes.Length; index++)
         {
-            XsrUiSceneNode node = scene[index];
+            ref readonly XsrUiSceneNode node = ref nodes[index];
             bool changed = navigated && node.Entity == pageRoot && !hasSpatialContent;
             if (node.TransitionKey is { } key)
             {
@@ -270,15 +296,17 @@ public sealed partial class AvaloniaUiSceneSurface
             }
             // A card and its descendants form one layer; chrome keeps its background in place.
             int first = node.Role == XsrUiSemanticRole.TitleBar ? index + 1 : index;
-            for (int child = first; child < scene.Count && (child == index || scene[child].Depth > node.Depth); child++)
+            for (int child = first; child < nodes.Length && (child == index || nodes[child].Depth > node.Depth); child++)
             {
-                XsrUiEntityId entity = scene[child].Entity;
-                if (!scene[child].SuppressEntryAnimation && animated.Add(entity) && _controls.TryGetValue(entity, out AvaloniaUiSceneNodeControl? control))
+                XsrUiEntityId entity = nodes[child].Entity;
+                if (!nodes[child].SuppressEntryAnimation && animated.Add(entity) && _controls.TryGetValue(entity, out AvaloniaUiSceneNodeControl? control))
                     control.RunEnterAnimation();
             }
         }
-        foreach (XsrUiEntityId entity in _transitionKeys.Keys.Where(entity => !retained.Contains(entity)).ToArray())
-            _transitionKeys.Remove(entity);
+        _retiredEntities.Clear();
+        foreach (XsrUiEntityId entity in _transitionKeys.Keys)
+            if (!retained.Contains(entity)) _retiredEntities.Add(entity);
+        foreach (XsrUiEntityId entity in _retiredEntities) _transitionKeys.Remove(entity);
     }
 
     /// <summary>
@@ -315,21 +343,23 @@ public sealed partial class AvaloniaUiSceneSurface
             control.ResetSelectionRelationships();
         }
 
-        Stack<XsrUiSceneNode> ancestors = [];
-        for (int index = 0; index < scene.Count; index++)
+        // The ancestor chain is positions in the scene, nearest last.
+        ReadOnlySpan<XsrUiSceneNode> nodes = scene.AsSpan();
+        List<int> ancestors = _ancestorIndexes;
+        ancestors.Clear();
+        for (int index = 0; index < nodes.Length; index++)
         {
-            XsrUiSceneNode node = scene[index];
-            while (ancestors.Count > node.Depth)
-            {
-                _ = ancestors.Pop();
-            }
+            ref readonly XsrUiSceneNode node = ref nodes[index];
+            if (ancestors.Count > node.Depth) ancestors.RemoveRange(node.Depth, ancestors.Count - node.Depth);
 
             if (node.Role is XsrUiSemanticRole.NavigationItem or XsrUiSemanticRole.RadioButton
                 && _controls.TryGetValue(node.Entity, out AvaloniaUiSceneNodeControl? item))
             {
-                foreach (XsrUiSceneNode ancestor in ancestors)
+                XsrUiSemanticRole container = node.Role == XsrUiSemanticRole.RadioButton ? XsrUiSemanticRole.RadioGroup : XsrUiSemanticRole.Navigation;
+                for (int position = ancestors.Count - 1; position >= 0; position--)
                 {
-                    if (ancestor.Role != (node.Role == XsrUiSemanticRole.RadioButton ? XsrUiSemanticRole.RadioGroup : XsrUiSemanticRole.Navigation)
+                    ref readonly XsrUiSceneNode ancestor = ref nodes[ancestors[position]];
+                    if (ancestor.Role != container
                         || !_controls.TryGetValue(ancestor.Entity, out AvaloniaUiSceneNodeControl? navigation))
                     {
                         continue;
@@ -341,7 +371,7 @@ public sealed partial class AvaloniaUiSceneSurface
                 }
             }
 
-            ancestors.Push(node);
+            ancestors.Add(index);
         }
     }
 
@@ -406,8 +436,17 @@ public sealed partial class AvaloniaUiSceneSurface
             TitleBarDragRequested?.Invoke(this, args);
     }
 
-    private bool TryGetNode(XsrUiScene scene, XsrUiEntityId entity, out XsrUiSceneNode result) =>
-        _sceneNodes.TryGetValue(entity, out result);
+    private bool TryGetNode(XsrUiEntityId entity, out XsrUiSceneNode result)
+    {
+        if (_scene is not null && _sceneIndexes.TryGetValue(entity, out int index))
+        {
+            result = _scene.AsSpan()[index];
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
 
     private void OnTreeRenderInvalidated(object? sender, EventArgs e) => RequestCommit();
 

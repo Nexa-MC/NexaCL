@@ -81,6 +81,14 @@ internal static partial class Program
             Console.WriteLine("PASS: backend port invalidation coalescing and subscription retirement");
             return 0;
         }
+        if (args is ["--scene-commit-smoke"])
+        {
+            AppBuilder.Configure<Application>().UseSkia()
+                .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
+            SceneCommitAllocationStaysWithinOneSceneNodePerNode();
+            Console.WriteLine("PASS: scene commit allocation stays within one scene node per node");
+            return 0;
+        }
         if (args is ["--theme-animation-smoke"])
         {
             AppBuilder.Configure<Application>().UseSkia()

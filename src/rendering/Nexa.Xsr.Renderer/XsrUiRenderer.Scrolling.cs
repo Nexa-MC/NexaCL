@@ -39,7 +39,7 @@ public sealed partial class XsrUiRenderer
         if (_scene is null) return false;
         for (int index = _scene.Count - 1; index >= 0; index--)
         {
-            XsrUiSceneNode node = _scene[index];
+            ref readonly XsrUiSceneNode node = ref _scene[index];
             if (!node.IsAccessible || !SceneNodeContains(node, point) || !SceneNodeClipContains(node, point)) continue;
             XsrUiPoint logicalPoint = node.Transform?.Unmap(point) ?? point;
             // Content is clipped to the viewport excluding its own gutters. The first painted
@@ -118,7 +118,7 @@ public sealed partial class XsrUiRenderer
         if (_scene is null) return false;
         for (int index = 0; index < _scene.Count; index++)
         {
-            XsrUiSceneNode node = _scene[index];
+            ref readonly XsrUiSceneNode node = ref _scene[index];
             if (node.Entity != entity) continue;
             XsrUiScrollbarSnapshot? bar = direction == XsrUiOrientation.Vertical ? node.VerticalScrollbar : node.HorizontalScrollbar;
             if (!node.IsAccessible || !node.IsEnabled || bar is null) return false;

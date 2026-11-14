@@ -18,7 +18,7 @@ public sealed partial class AvaloniaUiSceneSurface
                 if (index == _outgoingControls.Count)
                     _outgoingControls.Add(new(_ => { }, _ => { }, () => true));
                 AvaloniaUiSceneNodeControl control = _outgoingControls[index++];
-                control.SetThemeResources(ResourcesFor(node));
+                control.SetThemeResources(ResourcesFor(node.ThemeActivationGeneration));
                 control.SetRasterPresentationEnabled(_rasterPresentationEnabled);
                 control.Apply(node, new XsrUiSize(Bounds.Width, Bounds.Height));
                 Children.Insert(insertion++, control);

@@ -33,13 +33,15 @@ public sealed partial class AvaloniaUiSceneSurface
         RequestCommit();
     }
 
-    private AvaloniaUiPreparedThemeAppearance? ResourcesFor(XsrUiSceneNode node) => _revokedThemeGenerations.Contains(node.ThemeActivationGeneration) ? null
-        : node.ThemeActivationGeneration == 0 ? _themeResources : _themeResourceHistory.GetValueOrDefault(node.ThemeActivationGeneration);
+    private AvaloniaUiPreparedThemeAppearance? ResourcesFor(long generation) => _revokedThemeGenerations.Contains(generation) ? null
+        : generation == 0 ? _themeResources : _themeResourceHistory.GetValueOrDefault(generation);
 
     private void RetireUnusedThemeResources(XsrUiScene scene)
     {
         HashSet<long> used = [_themeResources?.Appearance.Generation ?? 0];
-        foreach (XsrUiSceneNode node in scene.Nodes.Concat(scene.Outgoing.SelectMany(layer => layer.Nodes))) used.Add(node.ThemeActivationGeneration);
+        foreach (ref readonly XsrUiSceneNode node in scene.AsSpan()) used.Add(node.ThemeActivationGeneration);
+        foreach (XsrUiOutgoingLayer layer in scene.Outgoing)
+            foreach (XsrUiSceneNode node in layer.Nodes) used.Add(node.ThemeActivationGeneration);
         _revokedThemeGenerations.RemoveWhere(generation => !used.Contains(generation));
         foreach (long generation in _themeResourceHistory.Keys.Where(key => !used.Contains(key)).ToArray())
         {

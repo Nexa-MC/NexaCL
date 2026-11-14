@@ -113,7 +113,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl
         return false;
     }
 
-    private static bool RasterVisible(XsrUiSceneNode node, XsrUiSize? viewport)
+    private static bool RasterVisible(in XsrUiSceneNode node, XsrUiSize? viewport)
     {
         XsrUiRect rect = node.Rect;
         if (!(node.PresentationOpacity > 0) || !double.IsFinite(rect.X) || !double.IsFinite(rect.Y)
