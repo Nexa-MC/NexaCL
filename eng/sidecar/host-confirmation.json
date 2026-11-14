@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "extension": "Confirmation",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 1536,
+      "kind": "query",
+      "scope": "confirmation",
+      "route": "SidecarConfirmationRoutes.Ask",
+      "input": "HostConfirmationRequest",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostConfirmationRequest",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarConfirmationRoutes",
+      "semantic": "interaction.confirmation.ask",
+      "output": "HostConfirmationDecision",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostConfirmationDecision",
+      "outputAssembly": "Nexa.Services.Composition"
+    }
+  ]
+}

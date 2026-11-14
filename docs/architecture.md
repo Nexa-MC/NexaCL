@@ -541,3 +541,18 @@ run outside these locks. A close affects only the caller's currently visible
 page and restores a live fallback. Host services depend on abstract asynchronous
 ports; the catalog carries no plugin SDK types. This is a compatible general Host
 extension, not a guest ABI change or an SDK Beta release.
+
+### Session-owned confirmation requests
+
+The independent confirmation catalog (discovery 1535, query 1536) accepts a plain
+text title and UTF-8 details and returns an explicit user decision. The Host binds
+each request to the authenticated Sidecar session, displays that package identity
+in a Host-owned title, and supplies its own accept/cancel controls. Guest action
+identities, schemas, permissions and confirmation policy remain in Sidecar.
+
+A request cannot replace an existing modal. An unavailable UI or busy modal is a
+rejection, not approval. Request cancellation, session retirement, UI detachment
+and a two-minute deadline retire the exact dialog and its pending decision. The
+feedback service is thread-safe and its renderer consumes snapshots; IPC workers
+never mutate UI entities. Supplied text is literal and never localized or parsed
+as markup. Details are bounded to 256 KiB UTF-8 and the title to 256 characters.

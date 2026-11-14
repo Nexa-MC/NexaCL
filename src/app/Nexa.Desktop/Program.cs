@@ -381,6 +381,7 @@ internal static partial class Program
         DesktopSidecarSignals sidecarSignals = new();
         DesktopSidecarUiPatches sidecarUi = new(host.StateStore);
         DesktopSidecarNxml sidecarNxml = new(host.StateStore);
+        using DesktopSidecarConfirmation sidecarConfirmation = new();
         using var sidecarUpdateHttp = host.CreateHttpClient();
 #if NEXA_NATIVE_SERVICES
         await using var sidecarUpdates = SidecarStartup.CreateUpdater(sidecarUpdateHttp, folders.Root, buildInfo.ProductVersion);
@@ -406,8 +407,11 @@ internal static partial class Program
             admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
                 && active!.SessionId == caller.SessionId ? active : null, dispatchObservation,
             sidecarNxml.ReadPagesAsync, sidecarNxml.ChangePageAsync);
+        var sidecarDecisions = new Nexa.Services.Composition.Sidecars.SidecarConfirmationApi(caller =>
+            admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
+                && active!.SessionId == caller.SessionId ? active : null, dispatchObservation, sidecarConfirmation.AskAsync);
         sidecarBusiness.BindState(host.StateStore);
-        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes).Concat(sidecarPresentation.Routes).Concat(sidecarViewState.Routes).Concat(sidecarPages.Routes)));
+        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes).Concat(sidecarPresentation.Routes).Concat(sidecarViewState.Routes).Concat(sidecarPages.Routes).Concat(sidecarDecisions.Routes)));
         admittedSidecars = sidecars;
         await using var sidecarNetwork = new DesktopSidecarNetwork(sidecars, host.StateStore);
         SidecarHostApi sidecarApi = new(sidecars, dispatchObservation);
@@ -576,6 +580,7 @@ internal static partial class Program
         using var languageSession = new DesktopLanguageSession(shell, host.StateStore);
 
         using DesktopFeedbackService feedback = new();
+        using var sidecarConfirmationUi = sidecarConfirmation.Attach(feedback);
         using DesktopFeedbackPresenter feedbackPresenter = new(
             shell, uiIntents, feedback, runtime.Host.StateStore);
         if (storageStartupError is not null)

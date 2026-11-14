@@ -274,3 +274,46 @@ The client and catalog are general Sidecar APIs. Guest page ownership, guest
 permissions, action-token translation and guest visibility events remain the
 responsibility of PluginSidecar. This catalog does not complete the legacy plugin
 controller migration or change the frozen guest ABI.
+
+## Confirmation (shared packages 0.1.0-alpha.10)
+
+`SidecarConfirmationClient` discovers catalog **1535** and invokes query **1536**,
+`interaction.confirmation.ask`. Its independent wire schema is
+`05C1E5C77E48F23A3210C86227090656C5E3F3D2773AB2BD2981FB41132C7E36`.
+The request is `HostConfirmationRequest(Title, Utf8Details)`; the response is
+`HostConfirmationDecision(Accepted)`.
+
+```csharp
+using System.Text;
+using Nexa.Sidecar.Host;
+using Nexa.Sidecar.Host.Confirmation.Data;
+
+var confirmations = new SidecarConfirmationClient(requests, observer);
+if (!(await confirmations.DiscoverAsync(token)).IsSuccess) return;
+confirmations.Queries.TryResolve(SidecarConfirmationRoutes.Ask, out var ask);
+var result = await confirmations.Queries.QueryAsync<HostConfirmationRequest, HostConfirmationDecision>(
+    ask, new("Replace saved configuration", Encoding.UTF8.GetBytes(details)), cancellationToken: token);
+if (!result.IsSuccess || !result.Value.Accepted) return;
+// Revalidate your own operation's identity and revision before executing it.
+```
+
+The Host supplies the buttons and displays the authenticated Sidecar package name
+in the modal title. `Title` and details appear as literal body text: they cannot
+select translation keys, introduce markup or replace Host controls. The title
+must contain 1–256 characters without control characters. Details must be valid
+UTF-8, nonblank and no larger than 256 KiB; line breaks and tabs are permitted,
+other control characters are rejected. A UTF-8 byte array avoids the generic
+string codec's 32 KiB limit. Large requests require the negotiated large-DTO
+feature under the ordinary transport rules.
+
+The request cannot displace any existing Host or Sidecar modal. Busy or unattached
+UI, invalid text and stale authorization return errors. Explicit decline is a
+successful response with `Accepted = false`. Cancellation, session retirement
+and UI detachment dismiss the exact dialog; the two-minute deadline returns
+`xsr.timed_out`. A stale button cannot approve a later request. A caller must keep
+its receive loop running while waiting for the decision.
+
+This API asks for a decision only. It neither executes a business operation nor
+grants a reusable permission. Sidecar remains responsible for operation policy,
+input binding, revalidation and execution. Never treat a failed query as consent,
+and do not retry an uncertain effect merely because a confirmation reply was lost.

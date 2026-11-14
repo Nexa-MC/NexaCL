@@ -211,6 +211,28 @@ internal sealed class DesktopFeedbackService : IDisposable
         return ShowDialogCore(key, title, message, acceptLabel, cancelLabel, resolve, alternateLabel, alternate, localizeMessage, localizeTitle);
     }
 
+    /// <summary>Admits a decision only when no modal is active; existing Host decisions are never displaced.</summary>
+    public bool TryShowDecisionDialog(string key, string title, string message, string acceptLabel,
+        string cancelLabel, Action<bool> resolve, out Guid dialogId, bool localizeMessage = true, bool localizeTitle = true)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        ArgumentException.ThrowIfNullOrWhiteSpace(acceptLabel);
+        ArgumentException.ThrowIfNullOrWhiteSpace(cancelLabel);
+        ArgumentNullException.ThrowIfNull(resolve);
+        dialogId = default;
+        lock (_gate)
+        {
+            if (_disposed || _dialog is not null) return false;
+            dialogId = Guid.NewGuid();
+            _dialog = new DesktopDialog(dialogId, key, title, message, acceptLabel, cancelLabel, resolve,
+                LocalizeMessage: localizeMessage, LocalizeTitle: localizeTitle);
+        }
+        RaiseChanged();
+        return true;
+    }
+
     /// <summary>Shows an informational dialog with one explicit acknowledgement action.</summary>
     public Guid ShowMessageDialog(
         string key,

@@ -40,6 +40,9 @@ static class Check
         if (!presentation.Commands.TryResolve(Nexa.Sidecar.Host.Presentation.Data.SidecarPresentationRoutes.Replace, out var replace)) throw new Exception("presentation route missing");
         var hidden = await presentation.Commands.Dispatch(replace, new Nexa.Sidecar.Host.Presentation.Data.HostPresentationReplace(0, [])).Completion;
         if (hidden.Error?.Code.Value != "xsr.route_not_found") throw new Exception("undiscovered presentation accepted call");
+        var decisions = new SidecarConfirmationClient(requests, new Observer());
+        if (!decisions.Queries.TryResolve(Nexa.Sidecar.Host.Confirmation.Data.SidecarConfirmationRoutes.Ask, out var askDecision)) throw new Exception("confirmation route missing");
+        if ((await decisions.Queries.QueryAsync<Nexa.Sidecar.Host.Confirmation.Data.HostConfirmationRequest, Nexa.Sidecar.Host.Confirmation.Data.HostConfirmationDecision>(askDecision, new("Test", [65]))).IsSuccess) throw new Exception("undiscovered confirmation admitted");
         var pages = new SidecarPageControlClient(requests, new Observer());
         if (!pages.Commands.TryResolve(Nexa.Sidecar.Host.PageControl.Data.SidecarPageControlRoutes.Open, out var openPage)) throw new Exception("page-control route missing");
         if ((await pages.Commands.Dispatch(openPage, new Nexa.Sidecar.Host.PageControl.Data.HostPageChange(0, 0)).Completion).IsSuccess) throw new Exception("undiscovered page control admitted");

@@ -1,0 +1,2 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostConfirmationRequest
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostConfirmationDecision

@@ -22,6 +22,8 @@
   <Text Key="notification.icon.warn" Content="lucide/triangle-alert" />
   <Text Key="notification.icon.error" Content="lucide/circle-x" />
   <Text Key="common.close" Content="关闭" />
+  <Text Key="common.confirm" Content="确认" />
+  <Text Key="common.cancel" Content="取消" />
   <Text Key="common.ok" Content="OK" />
   <Text Key="plugin.navigation" Content="插件" />
   <Text Key="plugin.storage-unavailable" Content="插件存储不可用" />
