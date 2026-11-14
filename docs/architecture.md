@@ -729,3 +729,15 @@ the capabilities they need are ready. The Host does not schedule plugin recovery
 The production plugin restoration owner remains unchanged until Worker migration
 is complete. This separate catalog preserves all existing Host fingerprints and
 the frozen guest ABI 100.
+
+
+### Presentation acknowledgement and observable snapshots
+
+A successful Sidecar presentation replacement commits its session revision and
+lease ownership before returning. `CapturePresentation` and command admission
+read that authoritative ownership immediately, so retired exposures cannot keep
+accepting input. The shared `XsrNxmlModuleSnapshot` is a coalesced UI projection:
+when another publisher is already draining it, a committed mutation may return
+before observers receive the new immutable snapshot. Readers must wait for the
+expected projection instead of treating acknowledgement as an observer-drain
+fence. Publication and cancellation callbacks remain outside ownership locks.

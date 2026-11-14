@@ -147,7 +147,11 @@ internal static partial class Program
 
             shell.Renderer.ReducedMotion = false;
             actions.HideWindow();
-            await WaitForTrayMotionAsync(() => content.Opacity is > 0 and < 1);
+            // Close while Hide is queued, before its first frame. A loaded dispatcher may
+            // skip every intermediate opacity; the cancellation contract must not depend
+            // on sampling one. Earlier scenarios exercise reversal from an actual frame.
+            AssertTrue(window.IsVisible && window.IsHidingToTray);
+            AssertEqual(1d, content.Opacity);
             window.RequestClose();
             await WaitForTrayMotionAsync(() => !window.IsVisible);
             actions.RestoreWindow(); AssertFalse(window.IsVisible);

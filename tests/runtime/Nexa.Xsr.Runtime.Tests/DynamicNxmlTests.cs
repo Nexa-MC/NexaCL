@@ -122,7 +122,11 @@ internal static partial class Program
             await first.ReplacePresentationAsync(0, [DynamicPage("First")]);
             await other.ReplacePresentationAsync(0, [DynamicPage("Other")]);
             AssertEqual(1L, first.PresentationRevision);
-            var exposure = store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Single(m => m.Source.Target == "#First").Exposure;
+            var exposure = first.CapturePresentation(1).Documents.Single().Exposure;
+            var otherExposure = other.CapturePresentation(1).Documents.Single().Exposure;
+            await WaitUntil(() => store.Read<XsrNxmlModuleSnapshot>(state).Value is { } snapshot
+                && snapshot.Modules.Count == 2 && snapshot.Modules.Any(module => module.Exposure == exposure)
+                && snapshot.Modules.Any(module => module.Exposure == otherExposure));
             AssertFalse(runtime.TryResolvePage(exposure, "#Other", out _));
             await AssertThrowsAsync<InvalidDataException>(async () => await first.ReplacePresentationAsync(1, [DynamicPage("Bad", "invalid")]));
             await AssertThrowsAsync<InvalidOperationException>(async () => await first.ReplacePresentationAsync(0, []));
@@ -133,16 +137,68 @@ internal static partial class Program
             // A renderer rejection retires exposures, but the active owner can submit a corrected set.
             await first.ReplacePresentationAsync(1, [DynamicPage("Second")]);
             AssertFalse(runtime.TryResolvePage(exposure, "#First", out _));
-            var second = store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Single(m => m.Source.Target == "#Second").Exposure;
+            var second = first.CapturePresentation(2).Documents.Single().Exposure;
+            await WaitUntil(() => store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Any(module => module.Exposure == second));
             await first.DeactivateAsync(); await DataPlaneReceiveAsync(peer);
-            AssertEqual(1, store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Count);
+            AssertFalse(runtime.TryResolvePage(second, "#Second", out _));
+            await WaitUntil(() => store.Read<XsrNxmlModuleSnapshot>(state).Value is { } snapshot
+                && snapshot.Modules.Count == 1 && snapshot.Modules[0].Exposure == otherExposure);
             await first.ActivateAsync(); await DataPlaneReceiveAsync(peer);
             AssertEqual(2L, first.PresentationRevision);
-            AssertFalse(second == store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Single(m => m.Source.Target == "#Second").Exposure);
+            var restored = first.CapturePresentation(2).Documents.Single().Exposure;
+            AssertFalse(second == restored);
+            await WaitUntil(() => store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Any(module => module.Exposure == restored));
             await first.ReplacePresentationAsync(2, []);
             AssertEqual(3L, first.PresentationRevision);
-            AssertEqual("#Other", store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Single().Source.Target);
-            other.Dispose(); AssertEqual(0, store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Count);
+            AssertEqual(0, first.CapturePresentation(3).Documents.Count);
+            AssertFalse(runtime.TryResolvePage(restored, "#Second", out _));
+            await WaitUntil(() => store.Read<XsrNxmlModuleSnapshot>(state).Value is { } snapshot
+                && snapshot.Modules.Count == 1 && snapshot.Modules[0].Source.Target == "#Other");
+            other.Dispose();
+            AssertFalse(runtime.TryResolvePage(otherExposure, "#Other", out _));
+            await WaitUntil(() => store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Count == 0);
+        }
+    }
+
+    private static async ValueTask NxmlCommitDoesNotWaitForBlockedProjectionObserver()
+    {
+        XsrStateStoreBuilder builder = new(); builder.Cell<XsrNxmlModuleSnapshot>(NxmlModuleState, "Test");
+        var store = builder.Build(); var state = store.Resolve(NxmlModuleState);
+        XsrNxmlModuleRuntime runtime = new(store, state, (document, _) => new(document.Target, []));
+        var (session, peer) = await PatchSession(new(CaptionPoint), [], features: SidecarFeatures.All, nxml: runtime);
+        using (session) using (peer)
+        using (var release = new ManualResetEventSlim())
+        {
+            await SnapshotAll(session, peer); await session.ActivateAsync(); await DataPlaneReceiveAsync(peer);
+            var entered = new TaskCompletionSource<Guid>(TaskCreationOptions.RunContinuationsAsynchronously);
+            int blocked = 0;
+            void Observe(XsrStateChange change)
+            {
+                var snapshot = store.Read<XsrNxmlModuleSnapshot>(state).Value;
+                if (snapshot is null || snapshot.Modules.Count != 1 || snapshot.Modules[0].Source.Target != "#Blocked"
+                    || Interlocked.CompareExchange(ref blocked, 1, 0) != 0) return;
+                entered.TrySetResult(snapshot.Modules[0].Exposure);
+                if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("Projection observer was not released.");
+            }
+            store.Changed += Observe;
+            var replacing = Task.Run(async () => await session.ReplacePresentationAsync(0, [DynamicPage("Blocked")]));
+            try
+            {
+                Guid exposure = await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                await session.ReplacePresentationAsync(1, []).AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+                AssertEqual(2L, session.PresentationRevision);
+                AssertEqual(0, session.CapturePresentation(2).Documents.Count);
+                AssertFalse(runtime.TryResolvePage(exposure, "#Blocked", out _));
+                AssertEqual(exposure, store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Single().Exposure);
+                release.Set();
+                await replacing.WaitAsync(TimeSpan.FromSeconds(5));
+                await WaitUntil(() => store.Read<XsrNxmlModuleSnapshot>(state).Value!.Modules.Count == 0);
+            }
+            finally
+            {
+                release.Set(); store.Changed -= Observe;
+                await replacing.WaitAsync(TimeSpan.FromSeconds(5));
+            }
         }
     }
 

@@ -14,6 +14,7 @@ internal static partial class Program
         ("automatic constructors async and iterators retain semantics", AutomaticConstructorsAsyncAndIteratorsRetainSemantics),
         ("NXML modules compile before ready and retire with their session", NxmlModulesCompileBeforeReadyAndRetire),
         ("dynamic NXML replacement is atomic and session owned", DynamicNxmlReplacementIsAtomicAndSessionOwned),
+        ("NXML commit retires input while its observable projection drains", NxmlCommitDoesNotWaitForBlockedProjectionObserver),
         ("dynamic NXML disconnect during compilation cannot publish", DynamicNxmlDisconnectDuringCompilationCannotPublish),
         ("dynamic NXML budgets and cancellation preserve predecessor", DynamicNxmlBudgetsAndCancellationPreservePredecessor),
         ("dynamic NXML models retain exposures and survive reactivation", DynamicNxmlModelsRetainExposures),
