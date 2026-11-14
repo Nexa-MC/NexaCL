@@ -532,3 +532,63 @@ reentrant detachment and session retirement. Independent Sidecar tests decode a
 frozen wire fixture and invoke the real guest notification route, including
 permission denial, idempotency, pending acknowledgement, cancellation and lost
 replies. Worker application composition remains a separate migration step.
+
+## File picker catalog
+
+Shared packages `0.1.0-alpha.15` provide `SidecarFilePickerClient`. Discover catalog
+`2815` before calling query `2816`, `interaction.filepicker.pick`. The Host checks
+the authenticated Sidecar activation and whether its native UI binding is present.
+No plugin manifest, permission or guest handle crosses this boundary.
+
+| Field | Meaning and limits |
+| --- | --- |
+| `HostFilePick.Kind` | `OpenFile = 0`, `Directory = 1`, or `SaveFile = 2`; selects one local item. |
+| `Title` | Literal title, at most 256 UTF-16 code units, without control characters. Desktop prepends the verified Sidecar package name. |
+| `Extensions` | Zero to 32 filters, each 1–32 ASCII letters, digits or dots; a filter cannot consist only of dots. An empty list means all files. `zip`, `.zip` and `tar.gz` are valid. Directory selection ignores file filters. |
+| `HostFileSelection.Utf8Path` | Null if the user dismisses the dialog or the provider cannot supply a local path; otherwise strict UTF-8 bytes for an absolute path of at most 32768 UTF-16 code units. |
+
+Paths use a bounded byte field because a valid Unicode path can exceed the general
+codec's 32 KiB string limit. Do not interpret null as an empty path, decode malformed
+UTF-8 with replacement characters, or assume a save destination already exists.
+The Host does not normalize a chosen path into a guest grant; that is the caller's
+responsibility after validating its own owner and cancellation state.
+
+```csharp
+var picker = new SidecarFilePickerClient(requests, observer);
+var discovery = await picker.DiscoverAsync(cancellation);
+if (!discovery.IsSuccess) return;
+if (!picker.Queries.TryResolve(SidecarFilePickerRoutes.Pick, out var route)) return;
+var result = await picker.Queries.QueryAsync<HostFilePick, HostFileSelection>(route,
+    new(HostFilePickKind.OpenFile, "Select an archive", ["zip"]),
+    cancellationToken: cancellation);
+cancellation.ThrowIfCancellationRequested();
+if (result.IsSuccess && result.Value.Utf8Path is { } bytes)
+{
+    string selectedPath = new System.Text.UTF8Encoding(false, true).GetString(bytes);
+    // Validate the current owner before recording access to selectedPath.
+}
+```
+
+Use `Nexa.Sidecar.Host`, `Nexa.Sidecar.Host.FilePicker.Data` and `Nexa.Xsr` for the
+client, DTOs and router extensions. The connection owner must keep receiving replies
+while this query awaits the native dialog.
+
+The Host permits one outstanding Sidecar picker across all sessions. A concurrent
+request receives `xsr.backpressure`; there is no queue. Missing UI returns
+`xsr.unavailable`; invalid requests or paths are rejected. Native failures return
+`xsr.unavailable`. A null successful result means no local selection, not a failure
+of the transport. A client must not reopen the dialog automatically after an error
+or an uncertain response.
+
+The Host cancels a request after two minutes, on session deactivation, on UI-binding
+retirement or when the peer cancels it. Cancellation need not close the OS dialog.
+Its admission slot remains occupied until native completion, including across a
+UI rebind, and the Host discards any late selection. Callers must recheck their own
+cancellation before consuming the reply. The Sidecar business adapter maps null to
+guest `CANCELLED` and creates an owner-scoped file grant only after this final check.
+
+Validation covers generated binary discovery, all three selection kinds, path
+encoding above 32 KiB, malformed inputs, prompt cancellation, a noncooperative
+native callback, a late native exception, UI rebinding and session retirement.
+Production worker composition is still pending; this catalog alone does not switch
+plugin execution out of the launcher.

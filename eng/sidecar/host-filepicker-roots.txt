@@ -1,0 +1,2 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostFilePick
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostFileSelection

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "extension": "FilePicker",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 2816,
+      "kind": "query",
+      "scope": "filepicker",
+      "route": "SidecarFilePickerRoutes.Pick",
+      "input": "HostFilePick",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostFilePick",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarFilePickerRoutes",
+      "semantic": "interaction.filepicker.pick",
+      "output": "HostFileSelection",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostFileSelection",
+      "outputAssembly": "Nexa.Services.Composition"
+    }
+  ]
+}

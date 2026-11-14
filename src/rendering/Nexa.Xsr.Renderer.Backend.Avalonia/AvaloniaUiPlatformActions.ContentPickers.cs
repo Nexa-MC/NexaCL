@@ -5,16 +5,36 @@ namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
 public sealed partial class AvaloniaUiPlatformActions
 {
-    public Task<string?> PickExtensionFileAsync(string title, int kind, string[] extensions, CancellationToken token = default) =>
-        Dispatcher.UIThread.CheckAccess() ? PickExtensionFileOnUiAsync(title, kind, extensions, token)
-            : Dispatcher.UIThread.InvokeAsync(() => PickExtensionFileOnUiAsync(title, kind, extensions, token));
+    public Task<string?> PickExtensionFileAsync(string title, int kind, string[] extensions, CancellationToken token = default)
+    {
+        ValidateExternalPicker(title, kind, extensions, 256);
+        return PickExternalFileAsync(title, kind, extensions, token);
+    }
+
+    /// <summary>Native picker for a Host-attributed external request; the Host supplies its source label.</summary>
+    public Task<string?> PickExternalFileAsync(string title, int kind, string[] extensions, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        ValidateExternalPicker(title, kind, extensions, 4096);
+        string[] filters = extensions.ToArray();
+        return Dispatcher.UIThread.CheckAccess() ? PickExtensionFileOnUiAsync(title, kind, filters, token)
+            : Dispatcher.UIThread.InvokeAsync(() => PickExtensionFileOnUiAsync(title, kind, filters, token));
+    }
+
+    private static void ValidateExternalPicker(string title, int kind, string[] extensions, int titleLimit)
+    {
+        if (title is null || title.Length > titleLimit || title.Any(char.IsControl) || kind is < 0 or > 2
+            || extensions is null || extensions.Length > 32
+            || extensions.Any(extension => extension is null || extension.Length is < 1 or > 32
+                || extension.All(character => character == '.')
+                || extension.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '.')))
+            throw new ArgumentException("Invalid file picker title, kind or filter.");
+    }
 
     private async Task<string?> PickExtensionFileOnUiAsync(string title, int kind, string[] extensions, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
         if (_owner?.StorageProvider is not { } storage) throw new InvalidOperationException("The native file picker is not ready.");
-        if (title.Length > 256 || extensions.Length > 32 || extensions.Any(e => e.Length is < 1 or > 32 || e.Any(ch => !char.IsAsciiLetterOrDigit(ch) && ch != '.')))
-            throw new ArgumentException("Invalid file picker filter.");
         string[] patterns = extensions.Length == 0 ? ["*"] : extensions.Select(e => "*." + e.TrimStart('.')).ToArray();
         IStorageItem? selected;
         switch (kind)

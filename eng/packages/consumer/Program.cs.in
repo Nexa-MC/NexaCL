@@ -46,6 +46,10 @@ static class Check
         var themeOptions = new SidecarThemeOptionsClient(requests, new Observer());
         if (!themeOptions.Commands.TryResolve(Nexa.Sidecar.Host.ThemeOptions.Data.SidecarThemeOptionsRoutes.Reset, out var resetOptions)) throw new Exception("theme options route missing");
         if ((await themeOptions.Commands.Dispatch(resetOptions, new Nexa.Sidecar.Host.ThemeOptions.Data.ThemeOptionsResetCommand("builtin", 0)).Completion).IsSuccess) throw new Exception("undiscovered theme options admitted");
+        var filePicker = new SidecarFilePickerClient(requests, new Observer());
+        if (!filePicker.Queries.TryResolve(Nexa.Sidecar.Host.FilePicker.Data.SidecarFilePickerRoutes.Pick, out var pickFile)) throw new Exception("file picker route missing");
+        if ((await filePicker.Queries.QueryAsync<Nexa.Sidecar.Host.FilePicker.Data.HostFilePick, Nexa.Sidecar.Host.FilePicker.Data.HostFileSelection>(pickFile,
+            new(Nexa.Sidecar.Host.FilePicker.Data.HostFilePickKind.OpenFile, "File", []))).IsSuccess) throw new Exception("undiscovered file picker admitted");
         var notifications = new SidecarNotificationsClient(requests, new Observer());
         if (!notifications.Commands.TryResolve(Nexa.Sidecar.Host.Notifications.Data.SidecarNotificationsRoutes.Publish, out var notify)) throw new Exception("notification route missing");
         if ((await notifications.Commands.Dispatch(notify, new Nexa.Sidecar.Host.Notifications.Data.HostNotification(Nexa.Sidecar.Host.Notifications.Data.HostNotificationLevel.Info, "Title", "Body")).Completion).IsSuccess) throw new Exception("undiscovered notification admitted");

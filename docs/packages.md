@@ -2,6 +2,11 @@
 
 `eng/packages/manifest.json` defines shared packages independently of product Alpha/Beta versions. The closure includes Core, Contracts, Sidecar.Protocol, Sidecar.Transport, Sidecar.Host.Contracts, XSR Abstractions, Diagnostics, State, Runtime, the framework-neutral Renderer and NXML Compiler/Runtime, and separate BuildTools. Desktop, Avalonia, native platform implementations and Host services are outside this closure.
 
+Version `0.1.0-alpha.15` adds `SidecarFilePickerClient` for native open, directory
+and save dialogs. Selection remains owned by the authenticated Sidecar activation;
+cancelled requests cannot grant late results. See [file selection](sidecar-host-business.md#file-picker-catalog)
+for the single-dialog limit, UTF-8 path encoding and cancellation semantics.
+
 Version `0.1.0-alpha.14` adds `SidecarNotificationsClient` for acknowledged,
 literal Host feedback with authenticated source attribution. Existing feedback
 limits and expiry apply. See [notifications](sidecar-host-business.md#notifications-catalog).

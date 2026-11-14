@@ -637,3 +637,28 @@ Guest identity, notification permissions, unsupported action checks and text
 translation remain in the Sidecar. Its application awaits the asynchronous adapter
 before reporting completion. Existing guest ABI 100 is unchanged; the worker is
 not switched until all required application and presentation ports are composed.
+
+## General Sidecar file selection
+
+File selection is a general, independently discovered Host query, with no guest
+SDK types. The Host authenticates the current Sidecar activation and opens one
+native file, directory or save dialog. Its title includes the verified Sidecar
+package name followed by caller-supplied literal text. The request allows a title
+of 256 UTF-16 code units and at most 32 simple extension filters. The result is
+an absolute local path encoded as strict UTF-8 bytes, or null when the user makes
+no selection. A byte field preserves paths exceeding the general codec's 32 KiB
+string limit without changing existing wire schemas; paths remain bounded to
+32768 UTF-16 code units.
+
+There is one outstanding Sidecar native picker across all sessions and bindings,
+with no waiting queue. Its slot stays occupied until the native operation actually
+returns, even if the requesting session exits, the UI binding is replaced or the
+two-minute request deadline expires. Cancellation returns promptly but cannot
+necessarily dismiss the OS dialog. A late selection is discarded; it never grants
+file access. Native completion, including a late exception, is always observed.
+The new UI binding cannot bypass an old dialog's admission slot.
+
+Plugin identity, permissions, opaque file grants and interpreting cancellation
+remain in the Sidecar. It awaits the Host response and rechecks the invocation's
+cancellation before granting a path. It does not retry the picker automatically.
+The guest ABI stays unchanged. Worker composition remains a separate cutover.
