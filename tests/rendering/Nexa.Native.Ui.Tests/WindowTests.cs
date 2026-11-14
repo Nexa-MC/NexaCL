@@ -21,7 +21,7 @@ internal static partial class Program
         NativeUiCallTable control = default, ui = default;
         Equal(0, open(&hostControl, &hostUi, &control, &ui));
         owner.Connect(control, ui);
-        int probe = EnableWindowProbe(library);
+        int probe = EnableWindowBoundaryProbe(library);
         Equal(0, run(control.Context)); // macOS must enter on the original process thread.
         var hits = (delegate* unmanaged[Cdecl]<int, long>)NativeLibrary.GetExport(library, "nexa_instrumentation_hits_v1");
         True(hits(probe) > 0);
@@ -40,21 +40,28 @@ internal static partial class Program
         Console.WriteLine("PASS: independent native window painted Host scenes, measured text and drained both runtimes without CoreCLR");
     }
 
-    private static unsafe int EnableWindowProbe(nint library)
+    private static unsafe int EnableWindowBoundaryProbe(nint library)
     {
         var target = (delegate* unmanaged[Cdecl]<int, byte*, int, int>)NativeLibrary.GetExport(library, "nexa_instrumentation_target_v1");
         var configure = (delegate* unmanaged[Cdecl]<int, int, int>)NativeLibrary.GetExport(library, "nexa_instrumentation_probe_v1");
         int count = target(-1, null, 0); True(count > 0);
+        int probe = -1;
         for (int i = 0; i < count; i++)
         {
             int length = target(i, null, 0); True(length > 0);
             byte[] bytes = new byte[length];
             fixed (byte* output = bytes) Equal(length, target(i, output, length));
-            string signature = System.Text.Encoding.UTF8.GetString(bytes);
-            if (!signature.Contains("AvaloniaUiStartupSession::ReportStage``0(", StringComparison.Ordinal)) continue;
-            Equal(0, configure(i, 1)); return i;
+            string[] fields = System.Text.Encoding.UTF8.GetString(bytes).Split('\t', 3);
+            Equal(3, fields.Length); string signature = fields[2];
+            // The renderer is uninstrumented; the native ABI owner retains its
+            // native-engine settings. Check the declaring type, not parameter types.
+            if (signature.StartsWith("instance Nexa.Xsr.Renderer.", StringComparison.Ordinal)
+                || signature.StartsWith("static Nexa.Xsr.Renderer.", StringComparison.Ordinal))
+                throw new InvalidOperationException("The native window instruments a renderer implementation: " + signature);
+            if (signature.Contains("Nexa.Native.Window.WindowSession::RunMain``0(", StringComparison.Ordinal)) probe = i;
         }
-        throw new InvalidOperationException("The window probe catalog does not cover the actual backend.");
+        if (probe < 0) throw new InvalidOperationException("The window catalog does not cover its native ABI entry.");
+        Equal(0, configure(probe, 1)); return probe;
     }
 
     private sealed partial class WindowOwner : IAsyncDisposable

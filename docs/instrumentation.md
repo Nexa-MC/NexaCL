@@ -15,3 +15,5 @@ dotnet run --project tools/compiler/Nexa.Xsr.Patch.Compiler -c Release --no-buil
 ```
 
 Shared-package BuildTools use the same targets but require explicit consumer opt-in. Shipping a catalog does not install an extension into a consumer. Cross-process extensions also negotiate feature bits, authorization, and session resource lifetimes.
+
+The independent native-window contract test checks that the loaded library exposes no renderer implementation entries and that its native ABI entry probe records execution. Startup stage round trips, committed scenes, paint callbacks and physical retirement are verified through the window ABI. No renderer function probe is required.
