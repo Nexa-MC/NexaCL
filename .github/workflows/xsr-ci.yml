@@ -410,6 +410,9 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Verify CI commit version restore and product identity
+        run: python3 eng/xsr/test_version.py
+
       - name: Verify repository layout and documentation
         run: python3 eng/architecture/verify_layout.py
       - name: Verify plugin SDK feed integrity boundaries

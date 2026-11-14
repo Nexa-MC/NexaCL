@@ -13,7 +13,7 @@
 
     <XsrPackageVersion Condition="'$(XsrVersionChannel)' == 'stable'">$(XsrVersionPrefix)</XsrPackageVersion>
     <XsrPackageVersion Condition="'$(XsrVersionChannel)' == 'alpha' or '$(XsrVersionChannel)' == 'beta'">$(XsrVersionPrefix)-$(XsrVersionChannel).$(XsrVersionSequence)</XsrPackageVersion>
-    <XsrPackageVersion Condition="'$(XsrVersionChannel)' == 'ci'">$(XsrVersionPrefix)-ci.$(XsrCommitShort)</XsrPackageVersion>
+    <XsrPackageVersion Condition="'$(XsrVersionChannel)' == 'ci'">$(XsrVersionPrefix)-ci.g$(XsrCommitShort)</XsrPackageVersion>
 
     <Product>$(XsrProductName)</Product>
     <Version>$(XsrPackageVersion)</Version>
