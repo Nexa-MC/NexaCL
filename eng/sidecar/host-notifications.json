@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "extension": "Notifications",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 2560,
+      "kind": "command",
+      "scope": "notifications",
+      "route": "SidecarNotificationsRoutes.Publish",
+      "input": "HostNotification",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostNotification",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarNotificationsRoutes",
+      "semantic": "interaction.notifications.publish"
+    }
+  ]
+}

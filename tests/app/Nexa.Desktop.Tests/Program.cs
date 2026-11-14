@@ -20,7 +20,7 @@ internal static partial class Program
     public static void Main(string[] args)
     {
         if (args is ["--sidecar-business-smoke"])
-        { SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarConfirmationAbi(); SidecarShellAbi(); SidecarThemeOptionsAbi(); SidecarThemeActivationAbi(); SidecarThemeActivationRaces(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
+        { SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarConfirmationAbi(); SidecarNotificationsAbi(); SidecarShellAbi(); SidecarThemeOptionsAbi(); SidecarThemeActivationAbi(); SidecarThemeActivationRaces(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
         if (args is ["--native-memory-preview", var memoryPreview])
         { Environment.ExitCode = RunNativeMemoryCleanupPreview(memoryPreview); return; }
         if (args is ["--update-onboarding-preview", var previewOutput])
@@ -349,6 +349,7 @@ internal static partial class Program
         ("general Sidecar presentation publishes and retires session-owned pages", SidecarPresentationAbi),
         ("general Sidecar view-state updates retain navigation and drafts", SidecarViewStateAbi),
         ("general Sidecar confirmations preserve Host decisions and retire requests", SidecarConfirmationAbi),
+        ("general Sidecar notifications preserve source, literal text and feedback admission", SidecarNotificationsAbi),
         ("general Sidecar theme activation owns previews across epochs and UI bindings", SidecarThemeActivationAbi),
         ("general Sidecar preview cleanup fences late work and retains bounded capacity", SidecarThemeActivationRaces),
         ("general Sidecar theme options preserve owner validation and binding lifetime", SidecarThemeOptionsAbi),

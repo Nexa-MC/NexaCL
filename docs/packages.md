@@ -2,6 +2,11 @@
 
 `eng/packages/manifest.json` defines shared packages independently of product Alpha/Beta versions. The closure includes Core, Contracts, Sidecar.Protocol, Sidecar.Transport, Sidecar.Host.Contracts, XSR Abstractions, Diagnostics, State, Runtime, the framework-neutral Renderer and NXML Compiler/Runtime, and separate BuildTools. Desktop, Avalonia, native platform implementations and Host services are outside this closure.
 
+Version `0.1.0-alpha.14` adds `SidecarNotificationsClient` for acknowledged,
+literal Host feedback with authenticated source attribution. Existing feedback
+limits and expiry apply. See [notifications](sidecar-host-business.md#notifications-catalog).
+Guest notification policy remains in the Sidecar; ABI 100 is unchanged.
+
 Version `0.1.0-alpha.13` adds `SidecarThemeActivationClient` for persistent theme
 activation and session-owned previews. Preview retirement is independent of NXML
 replacement and survives UI rebindings. See [theme activation](sidecar-host-business.md#theme-activation-catalog)

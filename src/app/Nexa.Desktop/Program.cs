@@ -410,6 +410,9 @@ internal static partial class Program
         var sidecarDecisions = new Nexa.Services.Composition.Sidecars.SidecarConfirmationApi(caller =>
             admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
                 && active!.SessionId == caller.SessionId ? active : null, dispatchObservation, sidecarConfirmation.AskAsync);
+        using var sidecarNotifications = new Nexa.Services.Composition.Sidecars.SidecarNotificationsApi(caller =>
+            admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
+                && active!.SessionId == caller.SessionId ? active : null, dispatchObservation);
         using var sidecarShell = new Nexa.Services.Composition.Sidecars.SidecarShellApi(caller =>
             admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
                 && active!.SessionId == caller.SessionId ? active : null, dispatchObservation);
@@ -421,7 +424,7 @@ internal static partial class Program
                 && active!.SessionId == caller.SessionId ? active : null, dispatchObservation,
             error => host.Logging.Warn("Themes", error.Message));
         sidecarBusiness.BindState(host.StateStore);
-        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes).Concat(sidecarPresentation.Routes).Concat(sidecarViewState.Routes).Concat(sidecarPages.Routes).Concat(sidecarDecisions.Routes).Concat(sidecarShell.Routes).Concat(sidecarThemeOptions.Routes).Concat(sidecarThemeActivation.Routes)));
+        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes).Concat(sidecarPresentation.Routes).Concat(sidecarViewState.Routes).Concat(sidecarPages.Routes).Concat(sidecarDecisions.Routes).Concat(sidecarShell.Routes).Concat(sidecarThemeOptions.Routes).Concat(sidecarThemeActivation.Routes).Concat(sidecarNotifications.Routes)));
         admittedSidecars = sidecars;
         await using var sidecarNetwork = new DesktopSidecarNetwork(sidecars, host.StateStore);
         SidecarHostApi sidecarApi = new(sidecars, dispatchObservation);
@@ -591,6 +594,7 @@ internal static partial class Program
 
         using DesktopFeedbackService feedback = new();
         using var sidecarConfirmationUi = sidecarConfirmation.Attach(feedback);
+        using var sidecarNotificationsUi = sidecarNotifications.Bind((caller, notice, token) => DesktopSidecarNotifications.Publish(feedback, caller, notice, token));
         using DesktopFeedbackPresenter feedbackPresenter = new(
             shell, uiIntents, feedback, runtime.Host.StateStore);
         if (storageStartupError is not null)

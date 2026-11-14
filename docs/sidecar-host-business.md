@@ -492,3 +492,43 @@ deactivate/reactivate, UI rebinds, late native completion, end-before-activation
 and cancellation capacity. The Sidecar adapter is tested against an independently
 encoded binary fixture, including lost acknowledgements and failed compensation.
 This contract does not switch the production worker or change guest ABI 100.
+
+## Notifications catalog
+
+Shared packages `0.1.0-alpha.14` provide `SidecarNotificationsClient`. Discover
+catalog `2559`, then call command `2560`, `interaction.notifications.publish`, with
+`HostNotification(Level, Title, Body)`. Levels are `Info = 1`, `Warning = 2` and
+`Error = 3`; other values are rejected. Title and body are literal strings, limited
+to 4096 and 8192 UTF-16 code units respectively. Empty strings are allowed. Control
+characters other than newline, carriage return and tab are rejected. The generated
+wire also requires valid UTF-8 and bounded frames.
+
+Desktop adds the authenticated Sidecar package name above the title and body.
+Text is not interpreted as NXML, a localization key or a Host state binding. The
+request cannot carry a callback or native action. Guest-specific attribution and
+permissions belong to the Sidecar, so the Host never receives a plugin identity
+or SDK notification object.
+
+Success means the Host feedback service accepted the request. Rendering happens
+later. The existing feedback owner controls expiry (Info: five seconds, Warning:
+fifteen seconds, Error: manual dismissal), deduplication and its 200-entry limit.
+Neither a transport acknowledgement nor screen visibility promises persistence.
+There is no automatic retry: if a reply is lost after admission, retrying could
+refresh or duplicate an already visible notification.
+
+An absent binding returns `xsr.unavailable`. A well-formed request with invalid
+text, or a failed local submission, returns `xsr.rejected`. Malformed binary fields,
+including unknown enum values, are rejected by the generated decoder before
+submission. Calls use the authenticated activation lifetime
+and current UI binding; cancellation or retirement can return `xsr.cancelled`.
+Once feedback has accepted a notification, subsequent cancellation does not undo
+it. This preserves the same uncertain-outcome rule as other acknowledged effects.
+The local binding callback must only submit to thread-safe feedback, never block
+waiting for a UI thread or another IPC request.
+
+Host tests exercise the generated binary client, source attribution, literal
+rendering, all three levels, existing deduplication, validation, unavailable UI,
+reentrant detachment and session retirement. Independent Sidecar tests decode a
+frozen wire fixture and invoke the real guest notification route, including
+permission denial, idempotency, pending acknowledgement, cancellation and lost
+replies. Worker application composition remains a separate migration step.

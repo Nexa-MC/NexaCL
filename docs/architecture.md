@@ -617,3 +617,23 @@ per-guest cleanup registration. It allocates the wire lease ID before sending a
 preview and sends an idempotent end request after an uncertain result. It never
 retries activation automatically. Existing guest ABI and Host catalogs remain
 unchanged. Production worker composition is a separate migration step.
+
+## General Sidecar notifications
+
+Notifications use a separate general Host catalog. The Host authenticates the
+Sidecar activation, validates bounded literal text and one of its three feedback
+levels, and submits to the existing thread-safe feedback owner. The Host adds the
+verified Sidecar package name; callers cannot replace that source label or request
+markup, localization keys, native actions or arbitrary callbacks. A successful
+reply means the feedback owner accepted the notification, not that a frame has
+already displayed it. Existing expiry, duplicate handling and the 200-entry cap
+remain authoritative.
+
+The local notification binding is synchronous and must only submit to the feedback
+owner; IPC remains asynchronous. Cancellation, deactivation and binding retirement
+are checked around submission. Once submitted, a notification is not rolled back
+merely because acknowledgement is lost, and clients never retry automatically.
+Guest identity, notification permissions, unsupported action checks and text
+translation remain in the Sidecar. Its application awaits the asynchronous adapter
+before reporting completion. Existing guest ABI 100 is unchanged; the worker is
+not switched until all required application and presentation ports are composed.
