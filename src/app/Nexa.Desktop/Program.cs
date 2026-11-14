@@ -410,8 +410,11 @@ internal static partial class Program
         var sidecarDecisions = new Nexa.Services.Composition.Sidecars.SidecarConfirmationApi(caller =>
             admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
                 && active!.SessionId == caller.SessionId ? active : null, dispatchObservation, sidecarConfirmation.AskAsync);
+        using var sidecarShell = new Nexa.Services.Composition.Sidecars.SidecarShellApi(caller =>
+            admittedSidecars is not null && admittedSidecars.TryGetSession(caller.PackageName, out var active)
+                && active!.SessionId == caller.SessionId ? active : null, dispatchObservation);
         sidecarBusiness.BindState(host.StateStore);
-        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes).Concat(sidecarPresentation.Routes).Concat(sidecarViewState.Routes).Concat(sidecarPages.Routes).Concat(sidecarDecisions.Routes)));
+        await using var sidecars = SidecarStartup.Create(host.Logging, functionPatches.Admission, sidecarSignals.Admission, sidecarUi.Admission, sidecarUi.ModuleAdmission, sidecarNxml.Runtime, sidecarOverrides, new Nexa.Xsr.Runtime.SidecarHostRequestRouter(sidecarBusiness.Routes.Concat(sidecarEffects.Routes).Concat(sidecarPresentation.Routes).Concat(sidecarViewState.Routes).Concat(sidecarPages.Routes).Concat(sidecarDecisions.Routes).Concat(sidecarShell.Routes)));
         admittedSidecars = sidecars;
         await using var sidecarNetwork = new DesktopSidecarNetwork(sidecars, host.StateStore);
         SidecarHostApi sidecarApi = new(sidecars, dispatchObservation);
@@ -599,6 +602,11 @@ internal static partial class Program
         await Task.WhenAll(host.StartNetworkCostMonitoringAsync(), host.StartPowerPressureMonitoringAsync()).WaitAsync(startup?.CancellationToken ?? default).ConfigureAwait(false);
         setStage("attach_product_controllers");
         AvaloniaUiPlatformActions platformActions = new() { LocalizeContentPicker = shell.Renderer.LocalizeText };
+        using var sidecarShellUi = sidecarShell.Bind(new(
+            (address, token) => { token.ThrowIfCancellationRequested(); platformActions.OpenHttpsUri(new Uri(address, UriKind.Absolute)); return Task.CompletedTask; },
+            (path, token) => { token.ThrowIfCancellationRequested(); platformActions.OpenDirectory(path); return Task.CompletedTask; },
+            async token => (await platformActions.ReadExtensionDisplaysAsync(token).ConfigureAwait(false))
+                .Select(display => new Nexa.Services.Composition.Sidecars.HostDisplay(display.Id, display.Width, display.Height, display.Scale)).ToArray()));
 
         platformActions.MemoryPressureObserved += observation =>
         {

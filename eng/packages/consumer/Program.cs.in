@@ -40,6 +40,9 @@ static class Check
         if (!presentation.Commands.TryResolve(Nexa.Sidecar.Host.Presentation.Data.SidecarPresentationRoutes.Replace, out var replace)) throw new Exception("presentation route missing");
         var hidden = await presentation.Commands.Dispatch(replace, new Nexa.Sidecar.Host.Presentation.Data.HostPresentationReplace(0, [])).Completion;
         if (hidden.Error?.Code.Value != "xsr.route_not_found") throw new Exception("undiscovered presentation accepted call");
+        var shell = new SidecarShellClient(requests, new Observer());
+        if (!shell.Queries.TryResolve(Nexa.Sidecar.Host.Shell.Data.SidecarShellRoutes.Displays, out var displays)) throw new Exception("shell route missing");
+        if ((await shell.Queries.QueryAsync<Nexa.Sidecar.Host.Shell.Data.HostShellEmpty, Nexa.Sidecar.Host.Shell.Data.HostDisplays>(displays, new())).IsSuccess) throw new Exception("undiscovered shell admitted");
         var decisions = new SidecarConfirmationClient(requests, new Observer());
         if (!decisions.Queries.TryResolve(Nexa.Sidecar.Host.Confirmation.Data.SidecarConfirmationRoutes.Ask, out var askDecision)) throw new Exception("confirmation route missing");
         if ((await decisions.Queries.QueryAsync<Nexa.Sidecar.Host.Confirmation.Data.HostConfirmationRequest, Nexa.Sidecar.Host.Confirmation.Data.HostConfirmationDecision>(askDecision, new("Test", [65]))).IsSuccess) throw new Exception("undiscovered confirmation admitted");

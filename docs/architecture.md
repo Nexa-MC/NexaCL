@@ -556,3 +556,17 @@ and a two-minute deadline retire the exact dialog and its pending decision. The
 feedback service is thread-safe and its renderer consumes snapshots; IPC workers
 never mutate UI entities. Supplied text is literal and never localized or parsed
 as markup. Details are bounded to 256 KiB UTF-8 and the title to 256 characters.
+
+## General Sidecar shell operations
+
+A separately discovered Shell catalog exposes HTTPS navigation, directory reveal,
+and display enumeration to authenticated native Sidecar sessions. Desktop binds
+its platform actions to Composition through asynchronous delegates; Composition
+never references a renderer or a guest SDK. The binding has a cancellation lifetime,
+so UI detachment cancels pending requests and prevents reuse of the old callbacks.
+Input validation and session checks precede effects. Successful replies require a
+still-live caller and binding; an uncertain result is never automatically retried.
+Only HTTPS addresses without user information and existing absolute directory
+paths are accepted. Display results are bounded and validated before encoding.
+Guest permissions, file grants and confirmation remain owned by the Sidecar.
+This catalog does not change existing catalogs or the guest ABI.

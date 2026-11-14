@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "extension": "Shell",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 1792,
+      "kind": "command",
+      "scope": "shell",
+      "route": "SidecarShellRoutes.OpenHttps",
+      "input": "HostHttpsRequest",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostHttpsRequest",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarShellRoutes",
+      "semantic": "shell.open_https"
+    },
+    {
+      "id": 1793,
+      "kind": "command",
+      "scope": "shell",
+      "route": "SidecarShellRoutes.RevealDirectory",
+      "input": "HostDirectoryRequest",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostDirectoryRequest",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarShellRoutes",
+      "semantic": "shell.reveal_directory"
+    },
+    {
+      "id": 1794,
+      "kind": "query",
+      "scope": "shell",
+      "route": "SidecarShellRoutes.Displays",
+      "input": "HostShellEmpty",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostShellEmpty",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarShellRoutes",
+      "semantic": "shell.displays",
+      "output": "HostDisplays",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostDisplays",
+      "outputAssembly": "Nexa.Services.Composition"
+    }
+  ]
+}

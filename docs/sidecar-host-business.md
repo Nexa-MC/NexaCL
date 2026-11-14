@@ -317,3 +317,51 @@ This API asks for a decision only. It neither executes a business operation nor
 grants a reusable permission. Sidecar remains responsible for operation policy,
 input binding, revalidation and execution. Never treat a failed query as consent,
 and do not retry an uncertain effect merely because a confirmation reply was lost.
+
+## Shell catalog
+
+`SidecarShellClient` discovers contract `1791` before using the three independent
+operations below. It is available in shared packages `0.1.0-alpha.11` and later.
+The existing business, effects and presentation schemas retain their identities.
+
+| ID | Operation | Input | Successful result |
+| --- | --- | --- | --- |
+| 1792 | `shell.open_https` | `HostHttpsRequest.Address` | Native browser handoff completed |
+| 1793 | `shell.reveal_directory` | `HostDirectoryRequest.Path` | Native directory handoff completed |
+| 1794 | `shell.displays` | `HostShellEmpty` | `HostDisplays.Items` |
+
+```csharp
+using Nexa.Sidecar.Host;
+using Nexa.Sidecar.Host.Shell.Data;
+
+var shell = new SidecarShellClient(requests, observer);
+if (!(await shell.DiscoverAsync(token)).IsSuccess) return;
+shell.Commands.TryResolve(SidecarShellRoutes.OpenHttps, out var open);
+var result = await shell.Commands.Dispatch(open,
+    new HostHttpsRequest("https://example.com/help"), cancellationToken: token).Completion;
+if (!result.IsSuccess) return;
+```
+
+The address must be absolute HTTPS, have no user information or control characters,
+and contain at most 16,384 characters. Directory paths must be absolute, exist as
+local directories, contain no NUL and fit 32,768 characters. Relative paths and
+file URLs are rejected. Ordinary directory links remain usable. All strings also
+follow the shared codec’s 32 KiB UTF-8 byte limit. These operations
+hand work to the native shell; success does not prove that a remote website loaded
+or that the file manager remained open.
+
+Display results contain at most 32 entries. IDs are nonblank, unique ordinal
+strings of at most 256 characters without control characters. Width and height
+are positive pixel counts; scale is finite and positive. An empty array is valid.
+The Sidecar must not treat these session-local IDs as durable monitor identities.
+
+An unattached UI returns `xsr.unavailable`; invalid input or invalid platform output
+returns `xsr.rejected`. A detached binding cancels pending requests. Replacement UI
+bindings cannot complete work for the previous binding. The Host checks the
+current authenticated session before executing and before accepting results.
+Keep the receive loop active while awaiting calls. Do not retry an uncertain
+browser or directory handoff automatically. Guest permissions, confirmation and
+file-handle ownership are enforced by the Sidecar before invoking this catalog.
+
+This catalog covers shell handoff and display enumeration only. File selection,
+clipboard images and theme mutation require their own contracts and lifetimes.

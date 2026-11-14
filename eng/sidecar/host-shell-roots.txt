@@ -1,0 +1,4 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostShellEmpty
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostHttpsRequest
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostDirectoryRequest
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostDisplays
