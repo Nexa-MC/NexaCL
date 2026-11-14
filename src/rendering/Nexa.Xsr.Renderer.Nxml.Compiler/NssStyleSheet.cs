@@ -8,11 +8,77 @@ public sealed class NssStyleSheet
 {
     private sealed record Rule(string Selector, int Specificity, IReadOnlyList<NxmlProperty> Properties);
     private readonly Rule[] _rules;
+    // Positions in _rules, by what a selector can match. An element matches a handful of the
+    // product's rules; testing every rule built two strings per rule for every element compiled.
+    private readonly Dictionary<string, int[]> _bySelector, _byClass, _byKey;
     private static readonly Lazy<NssStyleSheet> Shared = new(() => Parse(NxmlComponentLibrary.ReadFile(
         Path.Combine(AppContext.BaseDirectory, "Ui", "Styles", "Renderer.nss"))));
     public static NssStyleSheet Default => Shared.Value;
     public static NssStyleSheet Empty { get; } = new([]);
-    private NssStyleSheet(Rule[] rules) => _rules = rules;
+    private NssStyleSheet(Rule[] rules)
+    {
+        _rules = rules;
+        Dictionary<string, List<int>> selectors = new(StringComparer.Ordinal), classes = new(StringComparer.Ordinal), keys = new(StringComparer.Ordinal);
+        for (int index = 0; index < rules.Length; index++)
+        {
+            string selector = rules[index].Selector;
+            Add(selectors, selector, index);
+            if (selector.StartsWith('.')) Add(classes, selector[1..], index);
+            else if (selector.StartsWith('#')) Add(keys, selector[1..], index);
+        }
+        _bySelector = Freeze(selectors); _byClass = Freeze(classes); _byKey = Freeze(keys);
+
+        static void Add(Dictionary<string, List<int>> index, string name, int position)
+        {
+            if (!index.TryGetValue(name, out List<int>? positions)) index.Add(name, positions = []);
+            positions.Add(position);
+        }
+        static Dictionary<string, int[]> Freeze(Dictionary<string, List<int>> index)
+        {
+            Dictionary<string, int[]> frozen = new(index.Count, StringComparer.Ordinal);
+            foreach (var (name, positions) in index) frozen.Add(name, [.. positions]);
+            return frozen;
+        }
+    }
+
+    /// <summary>
+    /// The rules that apply to one element, as ascending positions: the universal selector, its
+    /// type, its key and each of its classes. Ascending positions are specificity order, then
+    /// source order, exactly as a scan of every rule would visit them.
+    /// </summary>
+    private List<int> Match(NxmlElement element)
+    {
+        string type = element.FindProperty("Kind")?.Text ?? element.Name;
+        string? key = element.FindProperty("Key")?.Text;
+        List<int> matched = [];
+        int sources = 0;
+        Take(_bySelector, "*");
+        Take(_bySelector, type);
+        if (key is not null) Take(_byKey, key);
+        string classes = element.FindProperty("Class")?.Text ?? "";
+        var byClass = _byClass.GetAlternateLookup<ReadOnlySpan<char>>();
+        foreach (Range range in classes.AsSpan().Split(' '))
+        {
+            ReadOnlySpan<char> name = classes.AsSpan(range);
+            if (!name.IsEmpty && byClass.TryGetValue(name, out int[]? positions)) { matched.AddRange(positions); sources++; }
+        }
+        if (sources > 1)
+        {
+            // One rule can be reached twice (a repeated class, a type spelled like a selector).
+            matched.Sort();
+            int kept = 0;
+            for (int index = 0; index < matched.Count; index++)
+                if (kept == 0 || matched[kept - 1] != matched[index]) matched[kept++] = matched[index];
+            matched.RemoveRange(kept, matched.Count - kept);
+        }
+        return matched;
+
+        void Take(Dictionary<string, int[]> index, string name)
+        {
+            if (!index.TryGetValue(name, out int[]? positions)) return;
+            matched.AddRange(positions); sources++;
+        }
+    }
     public NssStyleSheet With(NssStyleSheet overlay)
     {
         ArgumentNullException.ThrowIfNull(overlay);
@@ -70,14 +136,9 @@ public sealed class NssStyleSheet
         foreach (NxmlProperty property in element.Attributes)
             if (element.DefaultProperties?.Contains(property.Name) == true && (IsVisual(property.Name) || IsLayout(property.Name)))
                 result.Add(new(property.Name, property.Value.Text, NxmlStyleOrigin.ComponentDefault));
-        string type = element.FindProperty("Kind")?.Text ?? element.Name;
-        string? key = element.FindProperty("Key")?.Text;
-        string[] classes = (element.FindProperty("Class")?.Text ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        foreach (Rule rule in _rules)
-            if (rule.Selector == "*" || rule.Selector == type || rule.Selector == "#" + key
-                || rule.Selector.StartsWith('.') && classes.Contains(rule.Selector[1..], StringComparer.Ordinal))
-                foreach (NxmlProperty property in rule.Properties)
-                    result.Add(new(property.Name, property.Value.Text, NxmlStyleOrigin.HostStyleSheet));
+        foreach (int position in Match(element))
+            foreach (NxmlProperty property in _rules[position].Properties)
+                result.Add(new(property.Name, property.Value.Text, NxmlStyleOrigin.HostStyleSheet));
         foreach (NxmlProperty property in element.Attributes)
             if (element.DefaultProperties?.Contains(property.Name) != true && (IsVisual(property.Name) || IsLayout(property.Name)))
                 result.Add(new(property.Name, property.Value.Text, NxmlStyleOrigin.ExplicitMarkup));
@@ -89,13 +150,8 @@ public sealed class NssStyleSheet
         var properties = new Dictionary<string, NxmlProperty>(StringComparer.Ordinal);
         foreach (NxmlProperty property in element.Attributes)
             if (element.DefaultProperties?.Contains(property.Name) == true) properties[property.Name] = property;
-        string type = element.FindProperty("Kind")?.Text ?? element.Name;
-        string? key = element.FindProperty("Key")?.Text;
-        string[] classes = (element.FindProperty("Class")?.Text ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        foreach (Rule rule in _rules)
-            if (rule.Selector == "*" || rule.Selector == type || rule.Selector == "#" + key
-                || rule.Selector.StartsWith('.') && classes.Contains(rule.Selector[1..], StringComparer.Ordinal))
-                foreach (NxmlProperty property in rule.Properties) properties[property.Name] = property;
+        foreach (int position in Match(element))
+            foreach (NxmlProperty property in _rules[position].Properties) properties[property.Name] = property;
         foreach (NxmlProperty property in element.Attributes)
             if (element.DefaultProperties?.Contains(property.Name) != true) properties[property.Name] = property;
         return new(element.Name, properties.Values.ToArray(), element.Children);

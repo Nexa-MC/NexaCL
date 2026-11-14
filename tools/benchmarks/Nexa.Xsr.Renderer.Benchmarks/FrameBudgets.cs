@@ -51,6 +51,11 @@ internal static partial class Program
             _ = renderer.PointerCursorAt(point);
             return renderer.Render();
         });
+        // The same grid under an installed theme: every node resolves its style from the program.
+        XsrUiRenderer themed = BuildGridRenderer(40, 40, out XsrUiTree themedTree, out _);
+        themed.ApplyTheme(new GridTheme(), 1);
+        XsrUiEntityId themedLeaf = FindFirstLeaf(themedTree, out _);
+        Measure("themed-paint-1600", () => { themedTree.MarkDirty(themedLeaf, XsrUiDirtyKinds.Paint); return themed.Render(); }, routine: false);
         XsrUiRenderer large = BuildGridRenderer(100, 100, out XsrUiTree largeTree, out _);
         XsrUiEntityId largeLeaf = FindFirstLeaf(largeTree, out _);
         Measure("paint-10000-materialized", () => { largeTree.MarkDirty(largeLeaf, XsrUiDirtyKinds.Paint); return large.Render(); }, routine: false);
@@ -120,6 +125,14 @@ internal static partial class Program
             results.Add(new(name, frames, entities, allocated, elapsed[499], elapsed[949], elapsed[989], elapsed[998],
                 elapsed[^1], TailMean(elapsed, .01), TailMean(elapsed, .001), routine));
         }
+    }
+
+    private sealed class GridTheme : IXsrUiThemeStyleProgram
+    {
+        private static readonly XsrUiComputedStyle Cell = new() { Foreground = new(20, 100, 140), CornerRadius = 4 };
+        public long Revision => 1;
+        public XsrUiComputedStyle Compute(XsrUiThemeStyleContext context) =>
+            context.Parents.Count == 2 ? Cell : XsrUiComputedStyle.Empty;
     }
 
     private static int TailCount(int samples, double fraction) => Math.Max(1, (int)Math.Ceiling(samples * fraction));

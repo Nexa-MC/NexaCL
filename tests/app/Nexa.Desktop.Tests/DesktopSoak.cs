@@ -21,7 +21,7 @@ internal static partial class Program
         {
             string option = args[index];
             if (++index >= args.Length) return 2;
-            if (option == "--soak" && mode is null && args[index] is "idle" or "navigation") mode = args[index];
+            if (option == "--soak" && mode is null && args[index] is "idle" or "navigation" or "animation") mode = args[index];
             else if (option == "--seconds" && seconds == 0 && int.TryParse(args[index], NumberStyles.None, CultureInfo.InvariantCulture, out int value) && value is >= 1 and <= 28800) seconds = value;
             else if (option == "--output" && output is null) output = args[index];
             else return 2;
@@ -63,7 +63,7 @@ internal static partial class Program
         SoakSample peak = baseline;
         while (Stopwatch.GetElapsedTime(start).TotalSeconds < seconds)
         {
-            if (mode == "navigation" || requests.TryTake()) Frame(frame++);
+            if (mode is "navigation" or "animation" || requests.TryTake()) Frame(frame++);
             double elapsed = Stopwatch.GetElapsedTime(start).TotalSeconds;
             if (elapsed >= nextSample)
             {
@@ -82,6 +82,7 @@ internal static partial class Program
                 nextSample = elapsed + 1;
             }
             if (mode == "navigation") Thread.Sleep(16);
+            else if (mode == "animation") Thread.Sleep(1);
             else requests.Wait(TimeSpan.FromSeconds(Math.Clamp(Math.Min(nextSample, seconds) - elapsed, 0, 1)));
         }
         // Freeze event counts at the interval boundary, before final GC and reporting.
@@ -177,6 +178,7 @@ internal static partial class Program
                 string route = (index % 3) switch { 0 => "ui.navigation.settings", 1 => "ui.navigation.download", _ => "ui.navigation.launch" };
                 Emit(fixture.Intents, route);
             }
+            if (mode == "animation") fixture.Shell.Tree.MarkDirty(fixture.Shell.Root, XsrUiDirtyKinds.Paint);
             _ = fixture.Shell.Render(new XsrUiSize(1280, 800));
             double elapsedMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
             frameMax = Math.Max(frameMax, elapsedMs);
