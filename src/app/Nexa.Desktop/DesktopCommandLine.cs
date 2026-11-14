@@ -43,7 +43,7 @@ internal static class DesktopCommandLine
                 if (listing) return Invalid(DesktopOverlayText.Raw("command.error.list"));
                 listing = true;
             }
-            else if (argument == "--safe-mode")
+            else if (argument.Equals("--safe-mode", StringComparison.OrdinalIgnoreCase))
             {
                 if (safe) return Invalid(DesktopOverlayText.Raw("command.error.safe"));
                 safe = true;
@@ -54,7 +54,7 @@ internal static class DesktopCommandLine
                 if (!TryResolve(argument[10..], out command)) return Invalid(DesktopOverlayText.Raw("command.error.unknown"));
             }
             else if (argument == "--command" || argument.StartsWith("--list-commands=", StringComparison.Ordinal)
-                || argument.StartsWith("--safe-mode=", StringComparison.Ordinal))
+                || argument.StartsWith("--safe-mode=", StringComparison.OrdinalIgnoreCase))
                 return Invalid(DesktopOverlayText.Raw("command.error.format"));
         }
         if (listing && command is not null) return Invalid(DesktopOverlayText.Raw("command.error.conflict"));

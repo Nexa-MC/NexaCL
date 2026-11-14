@@ -1145,7 +1145,7 @@ internal static partial class Program
 #endif
         var setupOverrides = await SidecarStartup.ResolveUpdatesAsync(setupSidecarUpdates, setupLog).ConfigureAwait(false);
         var setupSidecars = SidecarStartup.Create(setupLog, nxmlModules: setupNxml.Runtime, packageOverrides: setupOverrides);
-        using var setupSidecarLifetime = SidecarStartup.StartLifetime(setupSidecars, setupLog, !args.Contains("--safe-mode", StringComparer.Ordinal));
+        using var setupSidecarLifetime = SidecarStartup.StartLifetime(setupSidecars, setupLog, !args.Contains("--safe-mode", StringComparer.OrdinalIgnoreCase));
         controller.ConfigureExtensions(setupSidecarLifetime.InitialReady);
         try { await setupSidecarLifetime.InitialReady.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false); }
         catch (TimeoutException) { setupLog.Warn("Sidecar", "First-run Sidecar discovery is continuing in the background."); }

@@ -32,6 +32,13 @@ internal static partial class Program
         AssertFalse(DesktopCommandLine.Parse(Enumerable.Repeat("x", 129).ToArray()).IsSuccess);
         AssertTrue(DesktopCommandLine.Parse(["--list-commands", "--safe-mode"]).ListCommands);
         AssertFalse(DesktopCommandLine.Parse([]).SafeMode);
+        foreach (string safe in new[] { "--safe-mode", "--SAFE-MODE", "--Safe-Mode" })
+        {
+            var parsed = DesktopCommandLine.Parse([safe, "--validate-setup"]);
+            AssertTrue(parsed.IsSuccess); AssertTrue(parsed.SafeMode);
+            AssertFalse(DesktopCommandLine.Parse(["--safe-mode", safe]).IsSuccess);
+            AssertFalse(DesktopCommandLine.Parse([safe + "=false"]).IsSuccess);
+        }
         var catalog = new UiLocalizationCatalog(); catalog.SetLanguage("en");
         string[] listing = DesktopCommandLine.FormatListing(catalog.Translate).Split(Environment.NewLine);
         AssertEqual(8, listing.Length); AssertEqual("settings\tSettings", listing[3]);
