@@ -118,7 +118,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
 
     internal double PresentedPillExpand => _node.CapsuleExpansionProgress;
 
-    internal XsrUiSceneNode Node => _node;
+    internal ref readonly XsrUiSceneNode Node => ref _node;
 
     internal AvaloniaUiSceneNodeControl? SelectionContainer => _selectionContainer;
 
@@ -126,7 +126,7 @@ internal sealed partial class AvaloniaUiSceneNodeControl : Control
 
     private bool _lastReducedMotion;
 
-    public void Apply(XsrUiSceneNode node, XsrUiSize? viewport = null)
+    public void Apply(in XsrUiSceneNode node, XsrUiSize? viewport = null)
     {
         bool reducedMotion = _reducedMotion();
         bool motionPolicyChanged = _lastReducedMotion != reducedMotion;

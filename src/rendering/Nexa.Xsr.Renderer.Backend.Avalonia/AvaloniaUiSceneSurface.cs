@@ -25,10 +25,13 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
     private readonly IXsrUiBackendShell _shell;
     private readonly object _commitGate = new();
     private readonly Dictionary<XsrUiEntityId, AvaloniaUiSceneNodeControl> _controls = [];
-    private readonly Dictionary<XsrUiEntityId, XsrUiSceneNode> _sceneNodes = [];
+    // Positions in the committed scene; the scene itself keeps the nodes.
+    private readonly Dictionary<XsrUiEntityId, int> _sceneIndexes = [];
+    private readonly List<int> _ancestorIndexes = [];
+    private readonly HashSet<XsrUiEntityId> _enterAnimated = [];
+    private readonly HashSet<XsrUiEntityId> _transitionRetained = [];
     private readonly Dictionary<Control, int> _childIndexes = [];
     private readonly List<AvaloniaUiSceneNodeControl> _outgoingControls = [];
-    private readonly HashSet<XsrUiEntityId> _currentEntities = [];
     private readonly List<XsrUiEntityId> _retiredEntities = [];
     private readonly Dictionary<XsrUiEntityId, double> _capsuleTargets = [];
     private readonly Dictionary<XsrUiEntityId, double> _progressTargets = [];
@@ -242,11 +245,12 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
             return finalSize;
         }
 
+        ReadOnlySpan<XsrUiSceneNode> nodes = _scene.AsSpan();
         foreach ((XsrUiEntityId entity, AvaloniaUiSceneNodeControl control) in _controls)
         {
-            if (TryGetNode(_scene, entity, out XsrUiSceneNode node))
+            if (_sceneIndexes.TryGetValue(entity, out int index))
             {
-                XsrUiRect layout = node.LayoutRect ?? node.Rect;
+                XsrUiRect layout = nodes[index].LayoutRect ?? nodes[index].Rect;
                 control.Arrange(new Rect(layout.X, layout.Y, layout.Width, layout.Height));
             }
         }

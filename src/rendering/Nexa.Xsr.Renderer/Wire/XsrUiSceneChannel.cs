@@ -23,7 +23,10 @@ public sealed class XsrUiSceneSender : IDisposable
             using var writer = new UiWireWriter(_images);
             writer.Int32(0x3155534e); writer.String(UiWireSchema.Fingerprint);
             writer.Int64(sequence); writer.Int64(_acknowledged); writer.Int64(scene.Version);
-            writer.IReadOnlyList_XsrUiSceneNode(scene.Nodes);
+            // The generated list form, written from the scene's own storage: enumerating the
+            // list interface boxes an enumerator and copies every node out of it first.
+            writer.Count(scene.Count);
+            foreach (ref readonly XsrUiSceneNode node in scene.AsSpan()) writer.XsrUiSceneNode(node);
             writer.Count(scene.Outgoing.Count);
             foreach (var layer in scene.Outgoing) writer.XsrUiOutgoingLayer(layer);
             var images = writer.Images;
@@ -104,7 +107,8 @@ public sealed class XsrUiSceneReceiver
                 var outgoing = new XsrUiOutgoingLayer[count];
                 for (int i = 0; i < count; i++) outgoing[i] = reader.XsrUiOutgoingLayer() ?? throw new InvalidDataException("Missing outgoing UI layer.");
                 reader.End();
-                var scene = new XsrUiScene(version, nodes.ToArray(), outgoing);
+                // The reader decodes into a fresh array; the scene takes it instead of a copy.
+                var scene = new XsrUiScene(version, nodes as XsrUiSceneNode[] ?? [.. nodes], outgoing);
                 _images = reader.Images; _sequence = sequence; _scene = scene;
                 return scene;
             }
