@@ -936,3 +936,40 @@ intermediate observations were coalesced or text was truncated. No surrounding
 form drafts are included. Each surface has one in-flight callback and one latest
 pending observation. Dialog closure, source removal and attachment shutdown
 cancel pending calls. The Host does not interpret plugin-specific callback tokens.
+
+## Configured HTTP exchanges
+
+The independent `Http` catalog uses discovery 4607 and operations 4608–4612
+(`Begin`, `Append`, `Send`, `Read`, `Release`). It requires an active, exact
+authenticated session with `HostRequests` and `BinaryPayloads`; UI features and
+`LargeGeneratedDtos` are not required. Shared packages `0.1.0-alpha.22` expose
+the typed binary client. Guest ABI 100 is unchanged.
+
+`Begin` snapshots the method, absolute HTTP(S) URI and headers. Body length -1
+means no content; 0 means an explicit empty body. Supported methods are GET,
+HEAD, POST, PUT, PATCH, DELETE and OPTIONS. Fragments, user-info and control
+characters in URIs are rejected. Content-Length and Transfer-Encoding belong
+to the transport; callers must not supply them. Header names are unique without
+case, at most 128; each has 1–64 values. Aggregate header text is at most 24 KiB
+in UTF-8. Request bodies are at most 16 MiB.
+
+`Append` requires the exact next upload offset and 1–61440 bytes. `Send` is
+accepted once, after upload completion, and returns the status code and bounded
+response headers. It uses the Host's configured client with automatic redirects
+and cookies disabled. Proxy/PAC, DNS/IP preference and provider admission stay
+in their existing Host owner. HTTP error status codes are ordinary responses.
+
+`Read` requires the next response offset and a count of 1–61440. An empty chunk
+means EOF. Responses are streamed, without a whole-response size allocation;
+plugin-specific download limits remain in the Sidecar. A failed Send or Read
+retires the exchange. Never retry an uncertain effect or sequential read.
+`Release` is idempotent for a missing ID within the caller's own session,
+cancels pending operations and acknowledges only after cleanup drains. IDs must
+not be reused in a session.
+
+Each session may reserve 32 exchanges and 64 MiB of upload buffers; the Host
+allows 64 exchanges and 128 MiB in total. Retiring resources still consume their
+reservations until pending work finishes. Two minutes without a completed
+operation expires an exchange, including a stalled operation; a timer checks
+expiry and session retirement independently of UI frames. Host shutdown applies
+a five-second drain bound. Errors contain neither addresses, headers nor bodies.

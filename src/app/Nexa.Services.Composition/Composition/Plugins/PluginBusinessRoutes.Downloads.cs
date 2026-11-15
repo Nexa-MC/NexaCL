@@ -178,15 +178,19 @@ public sealed partial class PluginBusinessRoutes
         HostRoutes.Typed<EntityRequest, DownloadState>("Downloads", "Read", (c, v) => ValueTask.FromResult(ReadDownload(c, v.Id))),
         HostRoutes.Typed<WatchRequest, SubscriptionRef>("Downloads", "Watch", (c, v) => ValueTask.FromResult(Watch(c, v,
             "nexa.downloads/100", "nexa.downloads.read", Abi100Schemas.DownloadState, () => DownloadState.Write(ReadDownload(c, v.Target))))),
-        HostRoutes.Typed<OperationRequest, OperationRef>("Downloads", "Pause", (c, v) =>
+        HostRoutes.Typed<OperationRequest, OperationRef>("Downloads", "Pause", async (c, v) =>
         {
             var item = Download(c, v.Operation);
+            Task cancellation;
             lock (_planGate)
             {
                 if (item.State is not (OperationState.Pending or OperationState.Running)) throw new AbiHostException(AbiErrors.CONFLICT);
-                item.Paused = true; item.Transfer?.Cancel(); item.Revision++;
+                item.Paused = true;
+                // Schedule callbacks while the transfer is still owned, then drain outside the progress lock.
+                cancellation = item.Transfer?.CancelAsync() ?? Task.CompletedTask; item.Revision++;
             }
-            _changes.Writer.TryWrite(true); return ValueTask.FromResult(item.Operation!);
+            await cancellation.ConfigureAwait(false);
+            _changes.Writer.TryWrite(true); return item.Operation!;
         }),
         HostRoutes.Typed<OperationRequest, OperationRef>("Downloads", "Resume", (c, v) =>
         {

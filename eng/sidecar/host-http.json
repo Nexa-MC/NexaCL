@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "extension": "Http",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 4608,
+      "kind": "command",
+      "scope": "http",
+      "route": "SidecarHttpRoutes.Begin",
+      "input": "HostHttpBegin",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostHttpBegin",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarHttpRoutes",
+      "semantic": "network.http.begin"
+    },
+    {
+      "id": 4609,
+      "kind": "command",
+      "scope": "http",
+      "route": "SidecarHttpRoutes.Append",
+      "input": "HostHttpAppend",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostHttpAppend",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarHttpRoutes",
+      "semantic": "network.http.append"
+    },
+    {
+      "id": 4610,
+      "kind": "query",
+      "scope": "http",
+      "route": "SidecarHttpRoutes.Send",
+      "input": "HostHttpRef",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostHttpRef",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarHttpRoutes",
+      "semantic": "network.http.send",
+      "output": "HostHttpResponse",
+      "outputAssembly": "Nexa.Services.Composition",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostHttpResponse"
+    },
+    {
+      "id": 4611,
+      "kind": "query",
+      "scope": "http",
+      "route": "SidecarHttpRoutes.Read",
+      "input": "HostHttpRead",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostHttpRead",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarHttpRoutes",
+      "semantic": "network.http.read",
+      "output": "HostHttpChunk",
+      "outputAssembly": "Nexa.Services.Composition",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostHttpChunk"
+    },
+    {
+      "id": 4612,
+      "kind": "command",
+      "scope": "http",
+      "route": "SidecarHttpRoutes.Release",
+      "input": "HostHttpRef",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostHttpRef",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarHttpRoutes",
+      "semantic": "network.http.release"
+    }
+  ]
+}

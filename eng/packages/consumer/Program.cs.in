@@ -79,6 +79,9 @@ static class Check
         var shortcuts = new SidecarShortcutControlClient(requests, new Observer());
         if (!shortcuts.Commands.TryResolve(Nexa.Sidecar.Host.ShortcutControl.Data.SidecarShortcutControlRoutes.Replace, out var shortcutSet)) throw new Exception("shortcut-control route missing");
         if ((await shortcuts.Commands.Dispatch(shortcutSet, new Nexa.Sidecar.Host.ShortcutControl.Data.HostShortcutSet(0, [])).Completion).IsSuccess) throw new Exception("undiscovered shortcuts admitted");
+        var http = new SidecarHttpClient(requests, new Observer());
+        if (!http.Queries.TryResolve(Nexa.Sidecar.Host.Http.Data.SidecarHttpRoutes.Send, out var httpSend)) throw new Exception("HTTP route missing");
+        if ((await http.Queries.QueryAsync<Nexa.Sidecar.Host.Http.Data.HostHttpRef, Nexa.Sidecar.Host.Http.Data.HostHttpResponse>(httpSend, new(1))).IsSuccess) throw new Exception("undiscovered HTTP admitted");
         var rasters = new SidecarRasterControlClient(requests, new Observer());
         if (!rasters.Commands.TryResolve(Nexa.Sidecar.Host.RasterControl.Data.SidecarRasterControlRoutes.Replace, out var rasterSet)) throw new Exception("raster-control route missing");
         if ((await rasters.Commands.Dispatch(rasterSet, new Nexa.Sidecar.Host.RasterControl.Data.HostRasterSet(0, [])).Completion).IsSuccess) throw new Exception("undiscovered rasters admitted");

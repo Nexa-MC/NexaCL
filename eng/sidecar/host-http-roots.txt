@@ -1,0 +1,6 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostHttpBegin
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostHttpAppend
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostHttpRef
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostHttpRead
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostHttpResponse
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostHttpChunk

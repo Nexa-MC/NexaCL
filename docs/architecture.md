@@ -874,3 +874,20 @@ latest observation; a gap marker reports discarded intermediate observations.
 Document, dialog and attachment lifetimes cancel pending calls. The existing
 empty-field shortcut callback remains compatible. This adds no guest ABI or SDK
 experiment ID.
+
+## Session-owned Sidecar HTTP exchanges
+
+The Host exposes generic, generated binary HTTP exchanges to authenticated
+Sidecars. It owns the configured HTTP transport, including committed proxy/PAC,
+DNS/IP and provider policy. The plugin Sidecar retains guest permissions,
+confirmation, credentials supplied by a guest, quotas and plugin identities.
+Neither the transport nor its catalog references the plugin SDK.
+
+Each session owns its upload/response IDs. Requests upload bounded bodies in
+chunks, send once, read responses sequentially and release explicitly. Uncertain
+send/read results are never replayed automatically. Response bodies are streamed;
+large downloads do not become large IPC frames or whole-response allocations.
+Idle expiry and session retirement cancel outstanding work. Retiring exchanges
+remain charged against quotas until their operations and resource cleanup drain.
+HTTP headers and bodies are excluded from diagnostic messages. Discovery requires
+HostRequests and BinaryPayloads, independently of native UI readiness.
