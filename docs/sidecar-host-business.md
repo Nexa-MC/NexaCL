@@ -973,3 +973,72 @@ reservations until pending work finishes. Two minutes without a completed
 operation expires an exchange, including a stalled operation; a timer checks
 expiry and session retirement independently of UI frames. Host shutdown applies
 a five-second drain bound. Errors contain neither addresses, headers nor bodies.
+
+## Native peer services
+
+Shared packages `0.1.0-alpha.23` provide `SidecarPeerClient` for authenticated
+Sidecar-to-Sidecar calls. A service exports a query whose semantic ID begins with
+`sidecar.service.` and whose input and result codecs are both `GeneratedDto` (6).
+Ordinary UI queries and command callbacks are not callable through this catalog.
+The target must negotiate binary payloads; the caller also needs Host requests.
+The launcher has no knowledge of the service's plugin, account or package model.
+
+### Discover, bind, invoke and release
+
+1. Call `DiscoverAsync`. Discovery query **4863** expects an empty generated DTO.
+   The reply is wire version 1, the independent schema/catalog fingerprint pair,
+   and the authorized operation IDs. A mismatched or missing catalog disables the
+   client; do not assume a capability from the launcher's product version.
+2. Query `SidecarPeerRoutes.Bind` (**4864**) with `HostPeerBind(Id, PackageName,
+   Service)`. Choose a positive ID not already used by this caller. `PackageName`
+   is the exact authenticated target package name. The result repeats the ID and
+   supplies the target activation's session GUID in `N` format.
+3. Query `SidecarPeerRoutes.Invoke` (**4865**) with `HostPeerCall(Id, Payload)`.
+   The opaque payload may contain at most **60 KiB**. The result is an opaque
+   `HostPeerReply.Payload` with the same size limit. No JSON or CLR object crosses
+   this boundary. A service may define a versioned binary payload of its own.
+4. Command `SidecarPeerRoutes.Release` (**4866**) retires that caller's binding.
+   Releasing an absent binding is harmless. Release cancels an admitted request
+   and waits up to five seconds for local drain; it is not a remote transaction
+   rollback acknowledgement.
+
+A binding captures the exact source and target activations and numeric query ID.
+A replacement process does not inherit it. Binding to oneself, to an unexported
+service, or to an incompatible codec fails. Another caller cannot use or release
+its ID. The Host reserves at most 32 bindings per caller and 256 overall, with one
+pending call per binding and 64 overall. Calls have a 30-second deadline. An
+independent timer reclaims bindings after two idle minutes or either activation
+ends. Long-running service work should use an explicit operation ID and status
+queries instead of waiting for user interaction inside one invocation.
+
+### Receive and authorize a request
+
+The target receives its registered numeric `QueryRequest`. Decode the input with
+`SidecarPeerService.DecodeRequest`; this returns `HostPeerEnvelope` containing
+`CallerPackage`, `CallerSession` and `Payload`. The Host supplies the first two
+fields. Accept this envelope only from the authenticated Host connection, and
+check the caller against the service's own policy **before** reading or acting on
+its payload. An envelope received from a file, guest plugin or network socket is
+not proof of identity. Return a codec-6 binary query result containing only the
+service's opaque response, not a second `HostPeerEnvelope`.
+
+For example, a service that accepts requests only from `Example.Client` first
+checks `envelope.CallerPackage == "Example.Client"`, then binds any upload or
+operation state to both that name and `envelope.CallerSession`. Keep device keys,
+authorization, consent and service-specific quotas inside the owning Sidecar.
+The general Host merely authenticates and forwards the exchange.
+
+### Failure and retry semantics
+
+Cancellation, timeout, invalid replies and transport failure retire the binding.
+A retired or expired binding returns `Unavailable`; invalid parameters, duplicate
+IDs and exhausted local admission budgets return `Rejected`. Cancellation and
+expiry preserve their `Cancelled` and `TimedOut` outcomes when the transport can
+report them. Losing the source connection can prevent any outcome from arriving.
+
+Never automatically replay an uncertain invocation. Cancellation can arrive
+after the target has committed an effect, and a lost reply does not prove that
+nothing happened. Rebind only after deciding how the service reconciles its
+operation ID. A status-only request may be retried if that service explicitly
+supports it. An installation service should verify its own signed data and keep
+its offline cache independent of the source Sidecar's lifetime.

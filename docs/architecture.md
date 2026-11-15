@@ -711,3 +711,23 @@ graph. Ordinary Host builds do not fetch it. Release catalogs describe the same
 package set for all six RIDs. macOS sealing preserves every signed Sidecar image
 byte-for-byte. A new component is enabled only after its complete six-RID input
 lock is reviewed; an absent PluginSidecar lock does not fabricate an artifact.
+
+### Authenticated native Sidecar peer services
+
+A generic broker may bind an admitted caller to an admitted peer's explicitly
+exported `sidecar.service.*` binary Query registration. Ordinary UI queries and
+commands are not peer exports. Binding resolves the numeric registration once
+and pins both activation sessions. Calls carry only a session-owned lease ID
+and at most 60 KiB of opaque data; the broker prepends the authenticated caller
+package and session. The receiver authorizes that caller and interprets its own
+service payload. Plugin contracts, permissions, grants and installation remain
+in the receiving Sidecar, outside the Host.
+
+Bindings have a two-minute idle lifetime, with at most 32 per caller and 256
+in the process. One call per binding and at most 64 calls globally may be active.
+Retiring bindings retain their reservations until admitted work drains. Calls
+have a bounded deadline and are cancelled when either activation retires;
+release and shutdown never run cancellation callbacks under the registry lock.
+An uncertain call is not automatically replayed. The service extension has its
+own generated binary schema and capability discovery, preserving existing
+Sidecar protocol fields and the frozen guest ABI.

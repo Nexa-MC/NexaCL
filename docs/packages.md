@@ -2,6 +2,12 @@
 
 `eng/packages/manifest.json` defines shared packages independently of product Alpha/Beta versions. The closure includes Core, Contracts, Sidecar.Protocol, Sidecar.Transport, Sidecar.Host.Contracts, XSR Abstractions, Diagnostics, State, Runtime, the framework-neutral Renderer and NXML Compiler/Runtime, and separate BuildTools. Desktop, Avalonia, native platform implementations and Host services are outside this closure.
 
+Version `0.1.0-alpha.23` adds `SidecarPeerClient` and `SidecarPeerService` for
+session-scoped native Sidecar services. The Host authenticates the source and
+routes opaque bytes only to explicitly exported queries. This is a general Host
+capability; it changes neither guest ABI 100 nor existing catalog fingerprints.
+See [native peer services](sidecar-host-business.md#native-peer-services).
+
 Version `0.1.0-alpha.19` adds opt-in retained document reconciliation and
 `SidecarViewReconcileClient`. A caller supplies an ordered mixture of retained
 source indices and new source bundles, with complete models, at an expected

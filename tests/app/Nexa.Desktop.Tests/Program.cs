@@ -20,7 +20,8 @@ internal static partial class Program
     public static void Main(string[] args)
     {
         if (args is ["--sidecar-business-smoke"])
-        { HostCompositionIsPluginIndependent(); SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarDialogControlAbi(); SidecarViewReconcileAbi(); SidecarShortcutAbi(); SidecarRasterAbi(); SidecarHttpAbi(); SidecarDialogFormsRetireWithWindow(); SidecarDialogLimits(); SidecarConfirmationAbi(); SidecarNotificationsAbi(); SidecarFilePickerAbi(); SidecarClipboardAbi(); SidecarContextAbi(); SidecarShellAbi(); SidecarThemeOptionsAbi(); SidecarThemeActivationAbi(); SidecarThemeActivationRaces(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
+        { HostCompositionIsPluginIndependent(); SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarDialogControlAbi(); SidecarViewReconcileAbi(); SidecarShortcutAbi(); SidecarRasterAbi(); SidecarHttpAbi(); SidecarPeerAbi(); SidecarDialogFormsRetireWithWindow(); SidecarDialogLimits(); SidecarConfirmationAbi(); SidecarNotificationsAbi(); SidecarFilePickerAbi(); SidecarClipboardAbi(); SidecarContextAbi(); SidecarShellAbi(); SidecarThemeOptionsAbi(); SidecarThemeActivationAbi(); SidecarThemeActivationRaces(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
+        if (args is ["--sidecar-peer-smoke"]) { SidecarPeerAbi(); return; }
         if (args is ["--sidecar-http-smoke"]) { SidecarHttpAbi(); return; }
         if (args is ["--sidecar-raster-smoke"]) { SidecarRasterAbi(); return; }
         if (args is ["--sidecar-shortcut-smoke"]) { SidecarShortcutAbi(); return; }
@@ -362,6 +363,7 @@ internal static partial class Program
         ("general Sidecar theme options preserve owner validation and binding lifetime", SidecarThemeOptionsAbi),
         ("general Sidecar shell effects validate callers and cancel detached bindings", SidecarShellAbi),
         ("general Sidecar page control enforces ownership, retirement and queue bounds", SidecarPageControlAbi),
+        ("general Sidecar peer services authenticate and retire session bindings", SidecarPeerAbi),
         ("general Sidecar HTTP inherits transport and streams owned exchanges", SidecarHttpAbi),
         ("general Sidecar rasters bound uploads, owned slots and native input", SidecarRasterAbi),
         ("general Sidecar shortcuts enforce visible scope and callback lifetime", SidecarShortcutAbi),

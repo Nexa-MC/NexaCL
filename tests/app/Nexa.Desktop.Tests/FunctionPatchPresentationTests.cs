@@ -59,14 +59,14 @@ internal static partial class Program
     private static async Task<(SidecarHostSession Session, SidecarConnection Plugin)> ActivateCaptionPatch(DesktopFunctionPatches patches, string prefix,
         DesktopSidecarSignals? signals = null, SidecarRegistrationItem[]? declarations = null,
         DesktopSidecarUiPatches? uiPatches = null, SidecarFeatures features = SidecarFeatures.None,
-        (uint Id, byte[] Value)[]? initialState = null, DesktopSidecarNxml? nxml = null, SidecarHostRequestRouter? hostRequests = null)
+        (uint Id, byte[] Value)[]? initialState = null, DesktopSidecarNxml? nxml = null, SidecarHostRequestRouter? hostRequests = null, string packageName = "CaptionFixture")
     {
         byte[] text = Encoding.UTF8.GetBytes(prefix);
         byte[] payload = new byte[15 + text.Length]; "NFP1"u8.CopyTo(payload); payload[4] = 1; payload[5] = 4; payload[6] = 5;
         payload[8] = 3; BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(9), checked((ushort)text.Length)); text.CopyTo(payload, 11);
         new byte[] { 2, 4, 6, 8 }.CopyTo(payload, 11 + text.Length);
         var (host, peer) = SidecarLoopbackStream.CreatePair();
-        SidecarHostSession session = new(new SidecarConnection(host), "CaptionFixture")
+        SidecarHostSession session = new(new SidecarConnection(host), packageName)
         { FunctionPatchAdmission = patches.Admission, SignalAdmission = signals?.Admission, UiPatchAdmission = uiPatches?.Admission, UiModuleAdmission = uiPatches?.ModuleAdmission, NxmlModules = nxml?.Runtime, HostRequests = hostRequests };
         SidecarConnection plugin = new(peer);
         try

@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "extension": "Peer",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 4864,
+      "kind": "query",
+      "scope": "peer",
+      "route": "SidecarPeerRoutes.Bind",
+      "input": "HostPeerBind",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostPeerBind",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarPeerRoutes",
+      "semantic": "sidecar.peer.bind",
+      "output": "HostPeerBinding",
+      "outputAssembly": "Nexa.Services.Composition",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostPeerBinding"
+    },
+    {
+      "id": 4865,
+      "kind": "query",
+      "scope": "peer",
+      "route": "SidecarPeerRoutes.Invoke",
+      "input": "HostPeerCall",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostPeerCall",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarPeerRoutes",
+      "semantic": "sidecar.peer.invoke",
+      "output": "HostPeerReply",
+      "outputAssembly": "Nexa.Services.Composition",
+      "outputType": "Nexa.Services.Composition.Sidecars.HostPeerReply"
+    },
+    {
+      "id": 4866,
+      "kind": "command",
+      "scope": "peer",
+      "route": "SidecarPeerRoutes.Release",
+      "input": "HostPeerRef",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostPeerRef",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarPeerRoutes",
+      "semantic": "sidecar.peer.release"
+    }
+  ]
+}

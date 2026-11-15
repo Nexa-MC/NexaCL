@@ -52,6 +52,14 @@ static class Check
         var clipboard = new SidecarClipboardClient(requests, new Observer());
         if (!clipboard.Queries.TryResolve(Nexa.Sidecar.Host.Clipboard.Data.SidecarClipboardRoutes.Read, out var readClipboard)) throw new Exception("clipboard route missing");
         if ((await clipboard.Queries.QueryAsync<Nexa.Sidecar.Host.Clipboard.Data.HostClipboardTransfer, Nexa.Sidecar.Host.Clipboard.Data.HostClipboardSnapshot>(readClipboard, new(1))).IsSuccess) throw new Exception("undiscovered clipboard admitted");
+        var peers = new SidecarPeerClient(requests, new Observer());
+        if (!peers.Queries.TryResolve(Nexa.Sidecar.Host.Peer.Data.SidecarPeerRoutes.Bind, out var bindPeer)) throw new Exception("peer route missing");
+        if ((await peers.Queries.QueryAsync<Nexa.Sidecar.Host.Peer.Data.HostPeerBind, Nexa.Sidecar.Host.Peer.Data.HostPeerBinding>(bindPeer,
+            new(1, "Consumer.Target", "sidecar.service.consumer"))).IsSuccess) throw new Exception("undiscovered peer admitted");
+        bool rejectedPeerEnvelope = false;
+        try { SidecarPeerService.DecodeRequest(new(SidecarWireCodecs.GeneratedDto, [])); }
+        catch (IOException) { rejectedPeerEnvelope = true; }
+        if (!rejectedPeerEnvelope) throw new Exception("empty peer envelope admitted");
         var filePicker = new SidecarFilePickerClient(requests, new Observer());
         if (!filePicker.Queries.TryResolve(Nexa.Sidecar.Host.FilePicker.Data.SidecarFilePickerRoutes.Pick, out var pickFile)) throw new Exception("file picker route missing");
         if ((await filePicker.Queries.QueryAsync<Nexa.Sidecar.Host.FilePicker.Data.HostFilePick, Nexa.Sidecar.Host.FilePicker.Data.HostFileSelection>(pickFile,

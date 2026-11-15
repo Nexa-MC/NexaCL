@@ -1,0 +1,6 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPeerBind
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPeerRef
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPeerBinding
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPeerCall
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPeerReply
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostPeerEnvelope
