@@ -1,0 +1,4 @@
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostRasterBegin
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostRasterAppend
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostRasterRef
+Nexa.Services.Composition|Nexa.Services.Composition.Sidecars.HostRasterSet

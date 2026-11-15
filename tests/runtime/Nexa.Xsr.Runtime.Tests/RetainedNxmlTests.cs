@@ -26,6 +26,20 @@ internal static partial class Program
             AssertFalse((await runtime.DispatchFormAsync(exposure, command, "not-in-markup", new Dictionary<string, string>())).IsSuccess);
             AssertFalse((await runtime.DispatchCallbackAsync(exposure, scalar, "not-a-form")).IsSuccess);
             AssertFalse((await runtime.DispatchCallbackAsync(exposure, XsrSemanticId.Parse("host.only.command"), "not-own-command")).IsSuccess);
+            var observation = new Dictionary<string, string> { ["kind"] = "Pointer", ["text"] = "initial" };
+            AssertFalse((await runtime.DispatchCallbackAsync(exposure, scalar, "observation", observation)).IsSuccess);
+            AssertFalse((await runtime.DispatchCallbackAsync(Guid.NewGuid(), command, "observation", observation)).IsSuccess);
+            AssertFalse((await runtime.DispatchCallbackAsync(exposure, command, "oversized", new Dictionary<string, string>
+            { ["text"] = new('x', SidecarUiForms.MaximumValueLength + 1) })).IsSuccess);
+            var observed = runtime.DispatchCallbackAsync(exposure, command, "surface", observation).AsTask();
+            observation["text"] = "changed after dispatch";
+            var observedFrame = await DataPlaneReceiveAsync(peer);
+            var observedForm = SidecarUiForms.Decode(SidecarDataMessages.DecodeBinaryRequest(observedFrame.Payload.Span).Value.ToArray());
+            AssertEqual("surface", observedForm.Argument); AssertEqual(2, observedForm.Fields.Length);
+            AssertEqual("initial", System.Text.Encoding.UTF8.GetString(observedForm.Fields.Single(field => field.Key == "text").Utf8Value));
+            await peer.SendAsync(new(SidecarProtocol.Version, SidecarMessageType.CommandResult, SidecarFrameTraits.Final,
+                observedFrame.CorrelationId, SidecarDataMessages.EncodeBinaryResult(true, new(0, []), null)));
+            AssertTrue((await observed).IsSuccess);
             var action = runtime.DispatchCallbackAsync(exposure, command, "shortcut").AsTask();
             var frame = await DataPlaneReceiveAsync(peer);
             var form = SidecarUiForms.Decode(SidecarDataMessages.DecodeBinaryRequest(frame.Payload.Span).Value.ToArray());

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "extension": "RasterControl",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 4352,
+      "kind": "command",
+      "scope": "rasters",
+      "route": "SidecarRasterControlRoutes.Begin",
+      "input": "HostRasterBegin",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostRasterBegin",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarRasterControlRoutes",
+      "semantic": "presentation.rasters.begin"
+    },
+    {
+      "id": 4353,
+      "kind": "command",
+      "scope": "rasters",
+      "route": "SidecarRasterControlRoutes.Append",
+      "input": "HostRasterAppend",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostRasterAppend",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarRasterControlRoutes",
+      "semantic": "presentation.rasters.append"
+    },
+    {
+      "id": 4354,
+      "kind": "command",
+      "scope": "rasters",
+      "route": "SidecarRasterControlRoutes.Seal",
+      "input": "HostRasterRef",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostRasterRef",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarRasterControlRoutes",
+      "semantic": "presentation.rasters.seal"
+    },
+    {
+      "id": 4355,
+      "kind": "command",
+      "scope": "rasters",
+      "route": "SidecarRasterControlRoutes.Replace",
+      "input": "HostRasterSet",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostRasterSet",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarRasterControlRoutes",
+      "semantic": "presentation.rasters.replace"
+    },
+    {
+      "id": 4356,
+      "kind": "command",
+      "scope": "rasters",
+      "route": "SidecarRasterControlRoutes.Release",
+      "input": "HostRasterRef",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostRasterRef",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarRasterControlRoutes",
+      "semantic": "presentation.rasters.release"
+    }
+  ]
+}

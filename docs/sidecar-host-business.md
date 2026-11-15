@@ -883,3 +883,56 @@ A lost acknowledgement leaves the mutation outcome unknown. Serialize binding
 updates with presentation updates and seal application action admission while
 recovering. The generic client never replays a callback. Guest registration IDs,
 permissions, scopes, action inputs and lifecycle checks remain in the Sidecar.
+
+## Raster resources and scoped input
+
+`SidecarRasterControlClient` discovers an independent binary catalog at **4351**.
+Its five commands are `presentation.rasters.begin` (4352), `append` (4353), `seal`
+(4354), `replace` (4355) and `release` (4356). Discovery verifies the schema and
+catalog fingerprints before advertising session-authorized operations. Callers
+must be active, admitted native Sidecars with NXML, binary payloads and UI forms.
+The UI must be attached before an upload can start.
+
+Allocate a positive resource ID within the current session. Begin with the exact
+encoded length and SHA-256 digest, then append sequential chunks of 1–65,536 bytes.
+Seal after all bytes arrive. Sealing checks the digest, bounded PNG metadata and
+successful complete decoding. Decode concurrency is limited to two per attachment;
+validation runs outside the UI frame. A failed seal retires the upload. Do not
+append to or seal an already sealed image. Release unused IDs explicitly; releasing
+an unknown ID is harmless, while releasing a bound image is rejected.
+
+Limits include 16 MiB per PNG, 16 resources/64 MiB per session, and 64 resources/
+128 MiB per attachment. Pending and unbound ready resources expire after 30 seconds;
+accepted chunks refresh that deadline. Bound resources remain live until unbound
+or their session/UI retires. Expiry does not require an active rendering frame.
+After expiry or an uncertain upload result, use a fresh resource ID.
+
+Replace publishes the **complete** raster set at `ExpectedRevision`. Each binding
+contains an owned document index, exact local Dynamic-slot key, ready image ID,
+logical width and height, own registered generated-DTO command and opaque argument.
+Widths and heights must be finite and within 1–2048; rounding them up must produce
+the PNG dimensions. One set contains at most eight bindings and 8,388,608 pixels;
+the attachment permits at most 64 bindings and 33,554,432 pixels. A slot appears at
+most once in a set. Callback arguments are limited to 32,768 UTF-16 code units each
+and 256 KiB UTF-8 in aggregate. Onboarding slots and foreign/scalar commands are
+rejected.
+
+A complete candidate is validated before the current set changes. An empty set
+removes all bindings. The UI queue is bounded to 64 operations globally and eight
+per session, with a five-second deadline. A stale revision, missing slot, missing
+resource or failed validation leaves the old set in place. Model updates retain
+installed nodes and source reconciliation retains surviving document identities.
+A removed source cancels callbacks and removes its raster nodes. Keep input
+admission sealed after an uncertain replacement until explicitly synchronizing the
+complete set again; do not replay input events to recover an acknowledgement.
+
+The native owner forwards observations only from visible, enabled owned raster
+nodes in the current page or topmost modal. The callback uses `SidecarUiForms` with
+the supplied opaque argument and exactly `kind`, `phase`, `x`, `y`, `text` and `gap`
+fields. Kind is `Pointer`, `Key`, `Text` or `Focus`; phase is bounded to 64
+characters; coordinates are finite invariant-culture numbers. Text is bounded to
+4,096 UTF-16 code units without splitting a surrogate pair. `gap` is `true` when
+intermediate observations were coalesced or text was truncated. No surrounding
+form drafts are included. Each surface has one in-flight callback and one latest
+pending observation. Dialog closure, source removal and attachment shutdown
+cancel pending calls. The Host does not interpret plugin-specific callback tokens.

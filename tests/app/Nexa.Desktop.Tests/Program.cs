@@ -20,7 +20,8 @@ internal static partial class Program
     public static void Main(string[] args)
     {
         if (args is ["--sidecar-business-smoke"])
-        { SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarDialogControlAbi(); SidecarViewReconcileAbi(); SidecarShortcutAbi(); SidecarDialogFormsRetireWithWindow(); SidecarDialogLimits(); SidecarConfirmationAbi(); SidecarNotificationsAbi(); SidecarFilePickerAbi(); SidecarClipboardAbi(); SidecarContextAbi(); SidecarShellAbi(); SidecarThemeOptionsAbi(); SidecarThemeActivationAbi(); SidecarThemeActivationRaces(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
+        { SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarDialogControlAbi(); SidecarViewReconcileAbi(); SidecarShortcutAbi(); SidecarRasterAbi(); SidecarDialogFormsRetireWithWindow(); SidecarDialogLimits(); SidecarConfirmationAbi(); SidecarNotificationsAbi(); SidecarFilePickerAbi(); SidecarClipboardAbi(); SidecarContextAbi(); SidecarShellAbi(); SidecarThemeOptionsAbi(); SidecarThemeActivationAbi(); SidecarThemeActivationRaces(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
+        if (args is ["--sidecar-raster-smoke"]) { SidecarRasterAbi(); return; }
         if (args is ["--sidecar-shortcut-smoke"]) { SidecarShortcutAbi(); return; }
         if (args is ["--native-memory-preview", var memoryPreview])
         { Environment.ExitCode = RunNativeMemoryCleanupPreview(memoryPreview); return; }
@@ -360,6 +361,7 @@ internal static partial class Program
         ("general Sidecar theme options preserve owner validation and binding lifetime", SidecarThemeOptionsAbi),
         ("general Sidecar shell effects validate callers and cancel detached bindings", SidecarShellAbi),
         ("general Sidecar page control enforces ownership, retirement and queue bounds", SidecarPageControlAbi),
+        ("general Sidecar rasters bound uploads, owned slots and native input", SidecarRasterAbi),
         ("general Sidecar shortcuts enforce visible scope and callback lifetime", SidecarShortcutAbi),
         ("general Sidecar modal documents enforce ownership, priority and retirement", SidecarDialogControlAbi),
         ("general Sidecar modal documents isolate forms and cancel nested submissions", SidecarDialogFormsRetireWithWindow),

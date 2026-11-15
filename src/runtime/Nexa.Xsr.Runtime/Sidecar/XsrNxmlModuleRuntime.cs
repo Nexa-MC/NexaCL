@@ -220,6 +220,14 @@ public sealed class XsrNxmlModuleRuntime
         CancellationToken cancellationToken = default)
         => DispatchCoreAsync(exposure, command, argument, null, cancellationToken, registeredCallback: true);
 
+    /// <summary>Dispatches bounded native observation fields through an owned registered callback.</summary>
+    public ValueTask<XsrResult> DispatchCallbackAsync(Guid exposure, XsrSemanticId command, string argument,
+        IReadOnlyDictionary<string, string> fields, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(fields);
+        return DispatchCoreAsync(exposure, command, argument, fields, cancellationToken, registeredCallback: true);
+    }
+
     public ValueTask<XsrResult> DispatchAsync(Guid exposure, XsrSemanticId command, string argument,
         CancellationToken cancellationToken = default)
         => DispatchCoreAsync(exposure, command, argument, null, cancellationToken);

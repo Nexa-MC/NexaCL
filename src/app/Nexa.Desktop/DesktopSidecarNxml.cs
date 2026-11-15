@@ -75,6 +75,8 @@ internal sealed partial class DesktopSidecarNxml
             }
             _onboardingFallback = onboardingFallback;
             _coordinator = new(shell.Tree, store);
+            _rasterContent = new(shell.Tree, store);
+            shell.Renderer.InputObserved += RasterObserved;
             shell.Renderer.PresentationPreparing += Frame;
             shell.StyleChanged += StyleChanged;
             _route = intents.Route(Intent);
@@ -114,6 +116,7 @@ internal sealed partial class DesktopSidecarNxml
             ObserveClosedDialogs();
             ProcessDialogControls();
             ProcessShortcutControls();
+            ProcessRasterControls();
         }
         private void StyleChanged(object? sender, EventArgs args) => _styledStructure = -1;
         private bool Intent(DesktopUiIntent intent)
@@ -188,6 +191,7 @@ internal sealed partial class DesktopSidecarNxml
             _shell.StyleChanged -= StyleChanged;
             _stop.Cancel(); _coordinator.Dispose(); _stop.Dispose();
             DisposeShortcuts();
+            DisposeRasters();
             DisposePages();
             foreach (var exposure in _dialogs.Keys.ToArray()) RetireDialog(exposure);
         }

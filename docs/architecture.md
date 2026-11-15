@@ -838,3 +838,39 @@ repeats without invoking another callback. Limits are 64 bindings per session,
 512 per UI attachment, 16 concurrent callbacks and the existing ten-second action
 deadline. Registration queues retain the existing 64-global/8-session/five-second
 bounds. Guest action validation and exact registration retirement stay in Sidecar.
+
+## Generic raster presentation for native Sidecars
+
+Native Sidecars may upload bounded PNG resources and bind them to their own
+published NXML Dynamic slots. The independent RasterControl catalog uses discovery
+4351 and operations 4352–4356 for begin, append, seal, complete-set replacement and
+release. It uses generated binary DTOs and the authenticated session identity.
+The Host receives pixels, document indices, scoped keys, logical sizes and a
+registered callback. It never receives guest drawing commands, SDK handles or
+plugin permissions.
+
+An upload is limited to 16 MiB; chunks are sequential and at most 64 KiB. SHA-256,
+PNG validity and pixel dimensions are checked before a resource becomes ready.
+The attachment holds at most 16 resources/64 MiB per session and 64 resources/
+128 MiB globally, including unfinished uploads. Unbound resources expire after
+30 seconds. Session loss and UI detachment release resources independently of
+incoming traffic. Bound resources cannot be explicitly released until removed
+from the binding set.
+
+A complete-set replacement must name the current presentation revision and owned
+document indices. It binds at most eight surfaces per session and 64 per UI
+attachment, with pixel budgets of eight million per session and 32 million per
+attachment. Logical dimensions are finite and within 1–2048; their rounded-up
+pixel dimensions must match the resource. Each destination is one unique owned
+Dynamic slot. Validation completes before the new set becomes visible. A rejected
+set preserves the previous set. Model updates and retained sources preserve
+bindings; removed exposures retire their resources and pending input.
+
+The Host creates and owns the raster nodes. Input is forwarded only for the
+visible, enabled node within the current page or topmost modal. It uses an
+own-session generated-DTO callback with bounded native observation fields, never
+page form drafts. Each surface permits one pending callback and one coalesced
+latest observation; a gap marker reports discarded intermediate observations.
+Document, dialog and attachment lifetimes cancel pending calls. The existing
+empty-field shortcut callback remains compatible. This adds no guest ABI or SDK
+experiment ID.
