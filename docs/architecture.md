@@ -811,3 +811,30 @@ The Host does not reopen any modal during reconciliation. This distinction lets
 independent windows survive additions elsewhere without reopening a window that
 the user has closed. Plugin view references, opaque action tokens and decisions
 about guest lifecycle events remain private to PluginSidecar.
+
+### Session-owned keyboard shortcuts
+
+The independent ShortcutControl catalog (discovery 4095, command 4096) replaces
+only the invoking Sidecar's shortcut set at an expected presentation revision.
+Each binding names an owned ordinary page or mounted document, a bounded gesture,
+a registered GeneratedDto command and an opaque argument. The Host resolves the
+current document exposure before acknowledging a complete, atomic set. It never
+receives guest command IDs, permissions or plugin scopes. Shared packages advance
+to alpha 20; existing catalogs and negotiated feature bits remain unchanged.
+
+Shortcut callbacks use the existing UiForms envelope with no form fields. The
+runtime adds a distinct dispatch path for session-registered GeneratedDto callbacks
+bound to a live document; it cannot call Host commands. Ordinary markup dispatch
+continues requiring a command declaration in that markup. Removing a document
+cancels its pending callbacks; retained sources keep their bindings across model
+updates, additions and reordering. Detaching presentation removes all bindings.
+
+Host keyboard handling runs first. Shortcuts apply only to visible content under
+the current ordinary page and are suppressed during onboarding, modal UI or text
+entry. Gesture matching is ordinal case-insensitive against the platform gesture
+text, with surrounding whitespace removed. Conflicts are resolved by Sidecar
+package name, session ID and then binding order. A running binding consumes key
+repeats without invoking another callback. Limits are 64 bindings per session,
+512 per UI attachment, 16 concurrent callbacks and the existing ten-second action
+deadline. Registration queues retain the existing 64-global/8-session/five-second
+bounds. Guest action validation and exact registration retirement stay in Sidecar.

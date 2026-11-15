@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "extension": "ShortcutControl",
+  "sessionScoped": true,
+  "operations": [
+    {
+      "id": 4096,
+      "kind": "command",
+      "scope": "shortcuts",
+      "route": "SidecarShortcutControlRoutes.Replace",
+      "input": "HostShortcutSet",
+      "inputAssembly": "Nexa.Services.Composition",
+      "inputType": "Nexa.Services.Composition.Sidecars.HostShortcutSet",
+      "routeType": "Nexa.Services.Composition.Sidecars.SidecarShortcutControlRoutes",
+      "semantic": "presentation.shortcuts.replace"
+    }
+  ]
+}

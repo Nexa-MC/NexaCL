@@ -201,6 +201,25 @@ public sealed class XsrNxmlModuleRuntime
         }
     }
 
+    /// <summary>Checks an own-session form callback independently of commands declared in markup.</summary>
+    public bool CanDispatchCallback(Guid exposure, XsrSemanticId command)
+    {
+        lock (_gate)
+        {
+            var lease = _leases.FirstOrDefault(item => !item.Retired && item.Exposures.Contains(exposure));
+            return lease is not null && IsRegisteredCallback(lease, command);
+        }
+    }
+
+    private static bool IsRegisteredCallback(Lease lease, XsrSemanticId command)
+        => lease.Features.HasFlag(SidecarFeatures.BinaryPayloads | SidecarFeatures.UiForms)
+            && lease.Registration.TryResolve(SidecarRegistrationKind.Command, command)?.CodecId == SidecarWireCodecs.GeneratedDto;
+
+    /// <summary>Dispatches a registered callback with an empty form and the owning document's lifetime.</summary>
+    public ValueTask<XsrResult> DispatchCallbackAsync(Guid exposure, XsrSemanticId command, string argument,
+        CancellationToken cancellationToken = default)
+        => DispatchCoreAsync(exposure, command, argument, null, cancellationToken, registeredCallback: true);
+
     public ValueTask<XsrResult> DispatchAsync(Guid exposure, XsrSemanticId command, string argument,
         CancellationToken cancellationToken = default)
         => DispatchCoreAsync(exposure, command, argument, null, cancellationToken);
@@ -215,14 +234,14 @@ public sealed class XsrNxmlModuleRuntime
     }
 
     private async ValueTask<XsrResult> DispatchCoreAsync(Guid exposure, XsrSemanticId command, string argument,
-        IReadOnlyDictionary<string, string>? fields, CancellationToken cancellationToken)
+        IReadOnlyDictionary<string, string>? fields, CancellationToken cancellationToken, bool registeredCallback = false)
     {
         Lease? lease; int index; CancellationToken documentLifetime;
         lock (_gate)
         {
             lease = _leases.FirstOrDefault(item => item.Exposures.Contains(exposure));
             index = lease is null ? -1 : Array.IndexOf(lease.Exposures, exposure);
-            if (lease is null || lease.Retired || !lease.Compiled[index].Commands.Contains(command))
+            if (lease is null || lease.Retired || (registeredCallback ? !IsRegisteredCallback(lease, command) : !lease.Compiled[index].Commands.Contains(command)))
                 return XsrResult.Failure(XsrRuntimeErrors.ContractMismatch());
             documentLifetime = lease.DocumentLifetimes[index].Stop.Token;
         }

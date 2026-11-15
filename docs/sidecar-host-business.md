@@ -825,3 +825,61 @@ Read the current ViewState revision and reconcile the acknowledged source set;
 if ownership cannot be established, seal action admission and recover explicitly
 with fresh sources. A fresh whole-set replacement may close windows and must not
 be presented as successful retention.
+
+## ShortcutControl: document-scoped keyboard callbacks
+
+Shared packages `0.1.0-alpha.20` add `SidecarShortcutControlClient`. Discovery is
+query **4095**; `presentation.shortcuts.replace` is command **4096**. It requires
+an authenticated active session with NXML, binary payloads and UiForms. Discovery
+checks the independent wire/catalog fingerprints before enabling the command.
+It does not change any earlier catalog or assign a guest SDK operation number.
+
+```csharp
+using Nexa.Sidecar.Host;
+using Nexa.Sidecar.Host.ShortcutControl.Data;
+
+var shortcuts = new SidecarShortcutControlClient(requests, observer);
+if (!(await shortcuts.DiscoverAsync(token)).IsSuccess) return;
+if (!shortcuts.Commands.TryResolve(SidecarShortcutControlRoutes.Replace, out var replace)) return;
+var result = await shortcuts.Commands.Dispatch(replace, new HostShortcutSet(revision,
+[
+    new HostShortcutBinding(documentIndex, "Ctrl+K", "example.sidecar.action", "open-panel")
+]), cancellationToken: token).Completion;
+```
+
+`revision` is the current presentation revision. This command does not increment
+it. `documentIndex` addresses only the caller's current ordinary page or mounted
+source; modal and onboarding documents are rejected. The command must be a
+GeneratedDto command registered by that same session. It need not be declared by
+a button in the document. The callback is an existing `SidecarUiForms` envelope:
+`Argument` contains the supplied opaque value and `Fields` is empty. Ordinary
+markup dispatch keeps its separate requirement for a markup command declaration.
+
+The request replaces the caller's complete set. An empty set clears it. A rejected
+candidate leaves existing bindings intact. Limits are 64 bindings per session,
+512 per UI attachment, 64 UTF-16 code units per gesture, 32768 per argument and
+256 KiB of aggregate UTF-8 argument bytes. Blank gestures, control characters,
+duplicate gestures for one document, foreign or missing documents, scalar/Host
+commands and stale revisions are rejected. Matching trims surrounding whitespace
+and uses ordinal case-insensitive platform gesture text; modifier aliases and
+order are not normalized. Use the platform's spelling, for example `Ctrl+K`.
+
+Host keyboard handling takes precedence. Callbacks require visible content under
+the current ordinary page; onboarding, any modal layer and focused text input
+suppress them. Conflicts resolve by Sidecar package name, session ID and binding
+order. A running binding consumes repeats without starting another call. At most
+16 callbacks run concurrently per UI attachment, each with the existing ten-second
+action deadline. This is application-window input, not an OS-wide hotkey service.
+
+Installed bindings use document identities. Model updates and retained document
+reordering preserve them; identical binding replacements also preserve their
+in-flight guard. Removing a binding cancels its pending callback. Replacing or
+removing its source, retiring its session, or detaching the UI cancels callbacks
+and retires the corresponding bindings. New sources require a new binding set.
+Queued requests are bounded to 64 globally and 8 per session, expire after five
+seconds, and revalidate their captured revision before applying on the UI thread.
+
+A lost acknowledgement leaves the mutation outcome unknown. Serialize binding
+updates with presentation updates and seal application action admission while
+recovering. The generic client never replays a callback. Guest registration IDs,
+permissions, scopes, action inputs and lifecycle checks remain in the Sidecar.

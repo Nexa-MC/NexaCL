@@ -14,6 +14,7 @@ internal static partial class Program
         ("automatic constructors async and iterators retain semantics", AutomaticConstructorsAsyncAndIteratorsRetainSemantics),
         ("NXML modules compile before ready and retire with their session", NxmlModulesCompileBeforeReadyAndRetire),
         ("dynamic NXML replacement is atomic and session owned", DynamicNxmlReplacementIsAtomicAndSessionOwned),
+        ("Registered callbacks enforce document ownership and independent markup admission", NxmlRegisteredCallbacksKeepDocumentBoundaries),
         ("NXML reconciliation retains selected identities and pending actions", NxmlReconcileRetainsOnlySelectedActionLifetimes),
         ("NXML reconciliation rejects invalid candidates without retiring the prior set", NxmlReconcileRejectsInvalidCandidatesAtomically),
         ("NXML reconciliation owns queued input and rejects cancelled or retired candidates", NxmlReconcileOwnsDataAndRejectsLateCandidates),

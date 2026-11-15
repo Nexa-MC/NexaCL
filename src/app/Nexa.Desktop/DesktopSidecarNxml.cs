@@ -113,6 +113,7 @@ internal sealed partial class DesktopSidecarNxml
             ProcessPageControls();
             ObserveClosedDialogs();
             ProcessDialogControls();
+            ProcessShortcutControls();
         }
         private void StyleChanged(object? sender, EventArgs args) => _styledStructure = -1;
         private bool Intent(DesktopUiIntent intent)
@@ -186,6 +187,7 @@ internal sealed partial class DesktopSidecarNxml
             _shell.Renderer.PresentationPreparing -= Frame; _route.Dispose();
             _shell.StyleChanged -= StyleChanged;
             _stop.Cancel(); _coordinator.Dispose(); _stop.Dispose();
+            DisposeShortcuts();
             DisposePages();
             foreach (var exposure in _dialogs.Keys.ToArray()) RetireDialog(exposure);
         }

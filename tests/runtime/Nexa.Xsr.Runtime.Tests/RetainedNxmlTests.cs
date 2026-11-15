@@ -5,6 +5,50 @@ namespace Nexa.Xsr.Runtime.Tests;
 
 internal static partial class Program
 {
+    private static async ValueTask NxmlRegisteredCallbacksKeepDocumentBoundaries()
+    {
+        XsrStateStoreBuilder builder = new(); builder.Cell<XsrNxmlModuleSnapshot>(NxmlModuleState, "Test");
+        var store = builder.Build(); var command = XsrSemanticId.Parse("test.callback.registered");
+        var scalar = XsrSemanticId.Parse("test.callback.scalar");
+        XsrNxmlModuleRuntime runtime = new(store, store.Resolve(NxmlModuleState), (source, _) => new(source.Target, []));
+        var (session, peer) = await PatchSession(new(CaptionPoint),
+            [new(SidecarRegistrationKind.Command, command.Value, 0, SidecarWireCodecs.GeneratedDto),
+             new(SidecarRegistrationKind.Command, scalar.Value, 0, SidecarWireCodecs.Utf8String)], features: SidecarFeatures.All, nxml: runtime);
+        using (session) using (peer)
+        {
+            await SnapshotAll(session, peer); await session.ActivateAsync(); await DataPlaneReceiveAsync(peer);
+            var loop = session.RunReceiveLoopAsync().AsTask();
+            await session.ReplacePresentationAsync(0, [DynamicPage("Callback")]);
+            var exposure = session.CapturePresentation(1).Documents[0].Exposure;
+            AssertTrue(runtime.CanDispatchCallback(exposure, command));
+            AssertFalse(runtime.CanDispatchCallback(exposure, scalar));
+            AssertFalse(runtime.CanDispatchCallback(Guid.NewGuid(), command));
+            AssertFalse((await runtime.DispatchFormAsync(exposure, command, "not-in-markup", new Dictionary<string, string>())).IsSuccess);
+            AssertFalse((await runtime.DispatchCallbackAsync(exposure, scalar, "not-a-form")).IsSuccess);
+            AssertFalse((await runtime.DispatchCallbackAsync(exposure, XsrSemanticId.Parse("host.only.command"), "not-own-command")).IsSuccess);
+            var action = runtime.DispatchCallbackAsync(exposure, command, "shortcut").AsTask();
+            var frame = await DataPlaneReceiveAsync(peer);
+            var form = SidecarUiForms.Decode(SidecarDataMessages.DecodeBinaryRequest(frame.Payload.Span).Value.ToArray());
+            AssertEqual("shortcut", form.Argument); AssertEqual(0, form.Fields.Length);
+            await session.ReconcilePresentationAsync(1, [new(0, null, new Dictionary<string, string>())]);
+            AssertTrue(runtime.CanDispatchCallback(exposure, command)); AssertFalse(action.IsCompleted);
+            await session.ReplacePresentationAsync(2, []);
+            var cancel = await DataPlaneReceiveAsync(peer);
+            AssertEqual(SidecarMessageType.Cancel, cancel.MessageType); AssertEqual(frame.CorrelationId, cancel.CorrelationId);
+            AssertFalse((await action).IsSuccess); AssertFalse(runtime.CanDispatchCallback(exposure, command));
+            session.Dispose(); await loop.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        var (legacy, legacyPeer) = await PatchSession(new(CaptionPoint),
+            [new(SidecarRegistrationKind.Command, command.Value, 0, SidecarWireCodecs.GeneratedDto)],
+            features: SidecarFeatures.All & ~SidecarFeatures.UiForms, nxml: runtime);
+        using (legacy) using (legacyPeer)
+        {
+            await SnapshotAll(legacy, legacyPeer); await legacy.ActivateAsync(); await DataPlaneReceiveAsync(legacyPeer);
+            await legacy.ReplacePresentationAsync(0, [DynamicPage("LegacyCallback")]);
+            AssertFalse(runtime.CanDispatchCallback(legacy.CapturePresentation(1).Documents[0].Exposure, command));
+        }
+    }
+
     private static async ValueTask NxmlReconcileRetainsOnlySelectedActionLifetimes()
     {
         XsrStateStoreBuilder builder = new(); builder.Cell<XsrNxmlModuleSnapshot>(NxmlModuleState, "Test");
