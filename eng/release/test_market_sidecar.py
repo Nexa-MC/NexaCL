@@ -22,6 +22,7 @@ class MarketSidecarTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             lock = dict(runtimeVersion='1.0.0', commit='a' * 40, hostReference='b' * 40, artifacts={})
+            plugin_lock = dict(runtimeVersion='0.2.0-beta.1', commit='c' * 40, hostReference='b' * 40, artifacts={})
             for rid in RIDS:
                 source = root / f'Nexa.Cloud.Market.Sidecar-{rid}.nsc'
                 source.write_bytes(('native fixture ' + rid).encode() * 8)
@@ -30,6 +31,10 @@ class MarketSidecarTests(unittest.TestCase):
                 stage(source, payload, rid, lock, self.keys.public, self.keys.private, '', self.keys.fingerprint)
                 self.assertEqual(source.read_bytes(), (payload / NAME).read_bytes())
                 self.assertEqual(rid, json.loads((payload / INFO).read_text())['runtimeIdentifier'])
+                plugin_source = root / f'Nexa.Plugin.Sidecar-{rid}.nsc'
+                plugin_source.write_bytes(('plugin image ' + rid).encode() * 8)
+                plugin_lock['artifacts'][rid] = dict(sha256=hashlib.sha256(plugin_source.read_bytes()).hexdigest(), size=plugin_source.stat().st_size)
+                stage(plugin_source, payload, rid, plugin_lock, self.keys.public, self.keys.private, '', self.keys.fingerprint, package_id='Nexa.Plugin.Sidecar')
                 stem = root / f'Nexa-2.0.0.alpha.16-{rid}'
                 if rid.startswith('win-'):
                     with zipfile.ZipFile(str(stem) + '.portable.zip', 'w') as archive:
@@ -40,12 +45,28 @@ class MarketSidecarTests(unittest.TestCase):
             verify_archives(root, '2.0.0.alpha.16', lock, self.keys.public, self.keys.fingerprint)
             verify_archives(root, '2.0.0.alpha.16', lock, self.keys.public, self.keys.fingerprint, export=True)
             self.assertEqual(12, len(catalog_names(root, '2.0.0.alpha.16')))
+            verify_archives(root, '2.0.0.alpha.16', plugin_lock, self.keys.public, self.keys.fingerprint, export=True, package_id='Nexa.Plugin.Sidecar')
+            self.assertEqual(18, len(catalog_names(root, '2.0.0.alpha.16')))
+            # Re-exporting Market must preserve the independently verified Plugin entry.
+            verify_archives(root, '2.0.0.alpha.16', lock, self.keys.public, self.keys.fingerprint, export=True)
+            self.assertEqual(18, len(catalog_names(root, '2.0.0.alpha.16')))
             catalog_path = root / 'Nexa-Sidecars-linux-x64.json'
             original = catalog_path.read_bytes()
             catalog = json.loads(original)
             catalog['packages'][0]['sha256'] = '0' * 64
             catalog_path.write_text(json.dumps(catalog))
             with self.assertRaisesRegex(ValueError, 'digest'):
+                catalog_names(root, '2.0.0.alpha.16')
+            catalog_path.write_bytes(original)
+            changed = json.loads(original)
+            changed['packages'].pop()
+            catalog_path.write_text(json.dumps(changed))
+            with self.assertRaisesRegex(ValueError, 'package set'):
+                catalog_names(root, '2.0.0.alpha.16')
+            changed = json.loads(original)
+            changed['packages'][1] = changed['packages'][0]
+            catalog_path.write_text(json.dumps(changed))
+            with self.assertRaisesRegex(ValueError, 'duplicate'):
                 catalog_names(root, '2.0.0.alpha.16')
             catalog_path.write_bytes(original)
             lock['artifacts']['linux-x64']['sha256'] = 'f' * 64

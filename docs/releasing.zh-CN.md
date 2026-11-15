@@ -22,3 +22,15 @@ Alpha/Beta 保持 prerelease，稳定版按对应渠道设置。完整包包括 
 公开已包含 `SHA256SUMS.asc` 的签名草稿后，工作流跳过重建，保护公开字节。失败时保留日志，只重试失败任务，不移动已发布标签、不覆盖公开文件、不绕过签名。更新仓库每十五分钟的计划同步可能延迟，手动同步仍需等待实际成功。
 
 发布私钥只在源仓库 Actions Secrets 中使用；更新仓库只需要公钥。仓库 OpenPGP 身份不能代替 Windows Authenticode、Apple Developer ID 或公证。本文不宣称这些操作系统信任凭据已经配置。
+
+## 独立 Sidecar 构建输入
+
+发布流程通过 `eng/release/independent_sidecars.py` 对独立构建的映像进行签名和校验。
+Market 沿用现有输入锁；PluginSidecar 必须在完整六平台构建成功并经过审查后，将
+实际源码提交、构建编号、版本、宿主引用、最小宿主版本及各平台大小和 SHA-256 写入
+`eng/release/plugin-sidecar.lock.json`，才会进入发布包。普通宿主构建仍保持独立。
+
+具体步骤见 [Sidecar 输入流程](sidecar-release-inputs.md)：先在 PluginSidecar 仓库运行
+`distribution-build.yml`，再以相同提交及成功构建编号运行 `publish-distribution-inputs.yml`，
+核对其 `provenance.json` 后填写锁文件。不得用零哈希、旧平台产物或占位版本补足缺口。
+缺少锁文件表示插件发布尚未完成；CI 计费或运行器问题须先解决，不能视为平台测试通过。

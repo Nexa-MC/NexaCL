@@ -700,3 +700,14 @@ including configured HTTP; no guest SDK value crosses those boundaries. Old
 embedded-plugin integration tests retire with the removed owner. Sidecar-owned
 tests exercise guest behavior, while native Host tests retain generic contracts,
 resource ownership, UI routing and retirement coverage.
+
+### Independently built optional Sidecar distribution
+
+The release pipeline can bundle multiple independently built, reviewed Sidecar
+images. Each image is pinned by source commit, build run, RID, size and SHA-256,
+then signed with the existing publisher key. PluginSidecar remains an optional
+process: its SDK, native libraries and UI assets never enter the Host project
+graph. Ordinary Host builds do not fetch it. Release catalogs describe the same
+package set for all six RIDs. macOS sealing preserves every signed Sidecar image
+byte-for-byte. A new component is enabled only after its complete six-RID input
+lock is reviewed; an absent PluginSidecar lock does not fabricate an artifact.

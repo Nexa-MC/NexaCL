@@ -22,3 +22,13 @@ Alpha/Beta remain prereleases. Full packages comprise per-architecture Windows S
 Publishing a signed draft already containing `SHA256SUMS.asc` skips rebuilding to protect immutable bytes. Retain failure logs and retry failed jobs without moving public tags, replacing assets, or bypassing signatures. Scheduled update synchronization may lag its fifteen-minute interval; manual synchronization still requires actual success.
 
 Source Actions Secrets hold release private keys; the update repository needs public keys only. OpenPGP does not replace Windows Authenticode, Apple Developer ID, or notarization. This guide does not claim those OS credentials are configured.
+
+## Independent Sidecar inputs
+
+The release pipeline signs and verifies independently built images listed by
+`eng/release/independent_sidecars.py`. Market keeps its existing reviewed input
+lock. PluginSidecar is included only when `plugin-sidecar.lock.json` contains a
+reviewed successful six-platform build; ordinary Host builds remain independent.
+Follow [the Sidecar input procedure](sidecar-release-inputs.md) to produce,
+review and enable those artifacts. A missing lock means the plugin-enabled
+release is still pending, not that a placeholder package can be published.

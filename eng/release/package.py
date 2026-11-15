@@ -142,18 +142,22 @@ def create_dmg(source, destination):
 def seal_macos_bundle(app, work):
     # Preserve independently publisher-signed Sidecar bytes. Deep force-signing
     # would rewrite its Mach-O signature and invalidate the detached GPG signature.
-    sidecar = app / "Contents/MacOS/Nexa.Cloud.Market.Sidecar.nsc"
-    held = work / "publisher-signed-sidecar.nsc"
-    if sidecar.exists():
-        sidecar.rename(held)
+    preserved = []
     try:
+        for sidecar in sorted((app / "Contents/MacOS").glob("*.nsc")):
+            if sidecar.is_symlink() or not sidecar.is_file():
+                raise ValueError("Sidecar image must be a regular file")
+            held = work / ("publisher-signed-" + sidecar.name)
+            if held.exists():
+                raise ValueError("Sidecar holding path already exists")
+            sidecar.rename(held)
+            preserved.append((held, sidecar))
         run("codesign", "--force", "--deep", "--sign", "-", app)
     finally:
-        if held.exists():
+        for held, sidecar in preserved:
             held.rename(sidecar)
-    if sidecar.exists():
-        # The Sidecar already has its NativeAOT ad-hoc signature. Reseal only
-        # the outer application after restoring it, without rewriting nested code.
+    if preserved:
+        # Reseal the outer application without rewriting nested publisher images.
         run("codesign", "--force", "--sign", "-", app)
     run("codesign", "--verify", "--deep", "--strict", app)
 

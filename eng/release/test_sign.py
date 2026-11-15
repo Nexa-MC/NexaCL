@@ -58,23 +58,25 @@ class SigningTests(unittest.TestCase):
     def test_sidecar_catalogs_and_images_join_signed_distribution(self):
         import hashlib
         import json
-        from sidecar_catalog import RIDS, PACKAGE
+        from sidecar_catalog import RIDS, PACKAGES
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             version = "2.0.0.alpha.16"
             for name in expected_names(version):
                 (root / name).write_bytes(b"launcher fixture")
             for rid in RIDS:
-                payload = b"signed sidecar fixture" * 8
-                image = f"{PACKAGE}-{rid}.nsc"
-                (root / image).write_bytes(payload)
-                catalog = dict(schema=1, rid=rid, release=version, packages=[
-                    dict(id=PACKAGE, version="1.0.0", minimumHostVersion=version,
-                         sha256=hashlib.sha256(payload).hexdigest(), size=len(payload))])
+                entries = []
+                for identity in sorted(PACKAGES):
+                    payload = ("signed sidecar fixture " + identity).encode() * 8
+                    image = f"{identity}-{rid}.nsc"
+                    (root / image).write_bytes(payload)
+                    entries.append(dict(id=identity, version="1.0.0", minimumHostVersion=version,
+                                        sha256=hashlib.sha256(payload).hexdigest(), size=len(payload)))
+                catalog = dict(schema=1, rid=rid, release=version, packages=entries)
                 (root / f"Nexa-Sidecars-{rid}.json").write_text(json.dumps(catalog))
             sign_distribution(root, version, self.public, self.private, "", self.fingerprint)
             verify_signatures(root, version, self.public, self.fingerprint)
-            self.assertEqual(64, len(list(root.iterdir())))
+            self.assertEqual(76, len(list(root.iterdir())))
             (root / "Nexa-Sidecars-linux-x64.json.asc").write_text("untrusted")
             with self.assertRaises(ValueError):
                 verify_signatures(root, version, self.public, self.fingerprint)

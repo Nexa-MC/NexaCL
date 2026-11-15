@@ -15,20 +15,25 @@ class RuntimePayloadTests(unittest.TestCase):
             root = Path(temporary); app = root / "Nexa.app"
             binary = app / "Contents/MacOS/Nexa.Cloud.Market.Sidecar.nsc"
             binary.parent.mkdir(parents=True); binary.write_bytes(b"publisher signed Mach-O")
+            plugin = binary.with_name("Nexa.Plugin.Sidecar.nsc")
+            plugin.write_bytes(b"independent plugin image")
             calls = []
             def sign(*args):
                 calls.append(args)
                 if "--deep" in args and "--force" in args:
                     self.assertFalse(binary.exists())
+                    self.assertFalse(plugin.exists())
                 if "--force" in args and "--deep" not in args:
                     self.assertEqual(b"publisher signed Mach-O", binary.read_bytes())
             with patch.object(package, "run", side_effect=sign):
                 package.seal_macos_bundle(app, root)
+            self.assertEqual(b"independent plugin image", plugin.read_bytes())
             self.assertEqual(3, len(calls))
             self.assertEqual(b"publisher signed Mach-O", binary.read_bytes())
             with patch.object(package, "run", side_effect=RuntimeError("signing failed")):
                 with self.assertRaises(RuntimeError): package.seal_macos_bundle(app, root)
             self.assertEqual(b"publisher signed Mach-O", binary.read_bytes())
+            self.assertEqual(b"independent plugin image", plugin.read_bytes())
 
     def seed(self, source, platform):
         suffix = ".exe" if platform == "win" else ""
