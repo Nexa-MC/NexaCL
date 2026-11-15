@@ -20,7 +20,7 @@ internal static partial class Program
     public static void Main(string[] args)
     {
         if (args is ["--sidecar-business-smoke"])
-        { SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarDialogControlAbi(); SidecarViewReconcileAbi(); SidecarShortcutAbi(); SidecarRasterAbi(); SidecarHttpAbi(); SidecarDialogFormsRetireWithWindow(); SidecarDialogLimits(); SidecarConfirmationAbi(); SidecarNotificationsAbi(); SidecarFilePickerAbi(); SidecarClipboardAbi(); SidecarContextAbi(); SidecarShellAbi(); SidecarThemeOptionsAbi(); SidecarThemeActivationAbi(); SidecarThemeActivationRaces(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
+        { HostCompositionIsPluginIndependent(); SidecarBusinessAbi(); SidecarEffectsAbi(); SidecarPresentationAbi(); SidecarViewStateAbi(); SidecarPageControlAbi(); SidecarDialogControlAbi(); SidecarViewReconcileAbi(); SidecarShortcutAbi(); SidecarRasterAbi(); SidecarHttpAbi(); SidecarDialogFormsRetireWithWindow(); SidecarDialogLimits(); SidecarConfirmationAbi(); SidecarNotificationsAbi(); SidecarFilePickerAbi(); SidecarClipboardAbi(); SidecarContextAbi(); SidecarShellAbi(); SidecarThemeOptionsAbi(); SidecarThemeActivationAbi(); SidecarThemeActivationRaces(); SidecarFormsCaptureOnlyInvokingExposure(); Console.WriteLine("General Sidecar business ABI smoke passed."); return; }
         if (args is ["--sidecar-http-smoke"]) { SidecarHttpAbi(); return; }
         if (args is ["--sidecar-raster-smoke"]) { SidecarRasterAbi(); return; }
         if (args is ["--sidecar-shortcut-smoke"]) { SidecarShortcutAbi(); return; }
@@ -475,21 +475,8 @@ internal static partial class Program
         ("Sidecar scroll dispatches active-page observations and user links", SidecarScrollDispatchesOnlyActivePage),
         ("Sidecar links accept only bounded HTTPS destinations", SidecarLinksAllowOnlyUserFacingHttps),
         ("Sidecar standalone pages navigate, return and retire", SidecarStandalonePagesNavigateAndRetire),
-        ("Plugin theme preview retains ownership across appearance updates", ExternalThemePreviewRetiresOnlyItsOwnPresentation),
-        ("Plugin manager storage recovery safe mode and cancelled approval", PluginManagerRecoveryAndSafeMode),
-        ("Plugin Desktop admission pages actions and business routes", PluginDesktopIntegration),
-        ("Plugin offline catalog encryption consent and lifecycle restoration", PluginOfflineRestoration),
-        ("Plugin file grants revisions symlinks and retirement", PluginFileResourcesAndSymlinks),
-        ("Plugin completion installation templates and scoped recovery", PluginCompletionInstall),
-        ("Plugin completion theme resources are owned and options migrate", PluginCompletionThemes),
-        ("Plugin completion instances clone and delete with stale-plan guards", PluginCompletionInstances),
-        ("Plugin completion providers consume callbacks and retire ownership", PluginCompletionProviders),
-        ("Plugin completion settings persist and migrate with CAS", PluginCompletionSettings),
-        ("Plugin scoped backups isolate capture retention prune and export", PluginScopedBackups),
-        ("Plugin business subscriptions process operations and retirement", PluginBusinessLifecycle),
-        ("Plugin managed Java offers license confirmation and revision fencing", PluginManagedJavaInstallation),
-        ("Plugin catalog providers query callbacks identity and scoped cursors", PluginCatalogProviders),
-        ("Plugin advanced UI contributions dialogs field answers and scoped shortcuts", PluginAdvancedUiIntegration),
+        ("Host composes without plugin SDK assemblies or a fixed plugin page", HostCompositionIsPluginIndependent),
+        ("External theme preview retains ownership across appearance updates", ExternalThemePreviewRetiresOnlyItsOwnPresentation),
         ("Unified updates serialize failures and restart", UnifiedUpdatesSerializeFailuresAndRestart),
         ("Sidecar updates publish only verified complete packages", SidecarUpdatesPublishOnlyVerifiedCompletePackages),
         ("Host and Sidecar share one onboarding sequence and persist selected root", FirstRunAndSidecarShareOneOnboardingSequence),

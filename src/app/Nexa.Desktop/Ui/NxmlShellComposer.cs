@@ -62,8 +62,7 @@ public static class NxmlShellComposer
         XsrUiEntityId navigation = FindDirectChild(tree, body, XsrUiSemanticRole.Navigation);
         XsrUiEntityId content = FindDescendant(tree, body, XsrUiSemanticRole.Content);
 
-        IReadOnlyList<XsrUiShellNavigationItem> defaults = [.. XsrUiShell.DefaultNavigationItems.Take(3),
-            new("navigation.plugins", DesktopOverlayText.Raw("plugin.navigation"), "lucide/puzzle"), XsrUiShell.DefaultNavigationItems[3]];
+        IReadOnlyList<XsrUiShellNavigationItem> defaults = XsrUiShell.DefaultNavigationItems;
         XsrUiEntityId[] itemEntities = [.. tree.Children(navigation)];
         if (itemEntities.Length != defaults.Count)
         {

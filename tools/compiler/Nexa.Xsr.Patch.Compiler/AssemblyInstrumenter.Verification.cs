@@ -15,7 +15,6 @@ internal sealed partial class AssemblyInstrumenter
         {
             if (Path.GetFileName(path) == "Nexa.Xsr.Patch.Compiler.dll")
                 throw new InvalidDataException("The build compiler must not ship in the product runtime closure.");
-            if (IsExternalPluginSdk(path)) continue;
             if (IsRendering(path)) { rendering++; continue; }
             if (IsStandaloneNativeEngine(path)) engines++;
             methods += Verify(path); assemblies++;
@@ -40,27 +39,6 @@ internal sealed partial class AssemblyInstrumenter
             || module.Resources.Any(resource => resource.Name.StartsWith(Marker, StringComparison.Ordinal)))
             throw new InvalidDataException("Rendering assemblies must not carry automatic entries: " + path);
         return true;
-    }
-
-    internal static bool IsExternalPluginSdk(string path)
-    {
-        string name = Path.GetFileNameWithoutExtension(path);
-        if (name is not ("Nexa.Plugin.Bootstrap.V1" or "Nexa.Plugin.Sdk.Abi100" or "Nexa.Plugin.Hosting" or "Nexa.Plugin.MarketDelivery")) return false;
-        using var module = ModuleDefinition.ReadModule(path, new ReaderParameters { InMemory = true });
-        if (module.Assembly.Name.Name != name) return false;
-        bool package = false;
-        foreach (string manifest in Directory.EnumerateFiles(Path.GetDirectoryName(Path.GetFullPath(path))!, "*.deps.json"))
-        {
-            using var document = JsonDocument.Parse(File.ReadAllBytes(manifest));
-            if (!document.RootElement.TryGetProperty("libraries", out var libraries)) continue;
-            foreach (var library in libraries.EnumerateObject())
-            {
-                if (!library.Name.StartsWith(name + "/", StringComparison.Ordinal)) continue;
-                if (!library.Value.TryGetProperty("type", out var type) || type.GetString() != "package") return false;
-                package = true;
-            }
-        }
-        return package;
     }
 
     internal static bool IsStandaloneNativeEngine(string path)

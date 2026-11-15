@@ -5,13 +5,12 @@ English | [简体中文](building.zh-CN.md)
 Run commands from the repository root. Install the .NET 10 SDK pinned in `global.json` and Python 3. NativeAOT additionally requires the target OS compiler, linker, and platform libraries. The actual setup is specified by `.github/workflows/launcher-build.yml` and `xsr-ci.yml`.
 
 ```sh
-python eng/plugins/prepare.py
 dotnet restore NexaCL.slnx
 dotnet build NexaCL.slnx -c Release -m:1
 dotnet run --project src/app/Nexa.Desktop -c Release --no-build
 ```
 
-The plugin preparation step downloads the public, hash-pinned SDK feed and verifies every package. It requires no private repository credentials. The build-input release also includes the exact SDK source snapshot; use `--source /path/to/PluginSidecar` to rebuild from a local Git checkout.
+The Host build does not consume plugin SDK packages or require the PluginSidecar repository. Build and package optional Sidecars independently; the generic Host protocol packages are described in [Sidecar contracts](sidecar-host-business.md).
 
 Project names and assembly identities remain stable across directory changes. `Directory.Build.props` identifies the repository and product source roots; `Directory.Build.targets` enables automatic instrumentation for product projects under `src/`. Tools and tests do not infer product identity from directory depth; native projects retain explicit instrumentation settings.
 

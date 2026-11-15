@@ -5,13 +5,12 @@
 在仓库根目录执行命令。安装 `global.json` 指定的 .NET 10 SDK；Python 3 用于工程脚本。NativeAOT 还需要目标系统的本地编译器、链接器和平台库，实际安装项以 `.github/workflows/launcher-build.yml`、`xsr-ci.yml` 为准。
 
 ```sh
-python eng/plugins/prepare.py
 dotnet restore NexaCL.slnx
 dotnet build NexaCL.slnx -c Release -m:1
 dotnet run --project src/app/Nexa.Desktop -c Release --no-build
 ```
 
-插件准备步骤下载公开、哈希锁定的 SDK 包源，并逐包校验，无需私有仓库凭据。构建输入发行项还提供对应源码快照；使用 `--source /path/to/PluginSidecar` 可从本地 Git 仓库重建。
+宿主构建不使用插件 SDK 包，也不需要 PluginSidecar 仓库。可选 Sidecar 独立构建与打包；通用宿主协议见 [Sidecar 契约](sidecar-host-business.md)。
 
 业务实现、UI 和测试的项目名与程序集身份保持不变。`Directory.Build.props` 定义仓库根和产品源码范围；`Directory.Build.targets` 为 `src/` 下产品项目启用自动插桩。工具与测试不通过目录深度猜测产品身份，原生项目沿用显式插桩配置。
 

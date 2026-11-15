@@ -336,6 +336,12 @@ internal static partial class Program
                 continue;
             }
 
+            if (packageName.StartsWith("Nexa.Plugin.", StringComparison.OrdinalIgnoreCase)
+                || packageName.StartsWith("PluginSidecar.", StringComparison.OrdinalIgnoreCase))
+            {
+                failures.Add($"{projectName} must not embed the independent plugin SDK package '{packageName}'.");
+            }
+
             if (AllowedReferences.ContainsKey(packageName))
             {
                 failures.Add($"{projectName} bypasses the project graph with internal package '{packageName}'.");

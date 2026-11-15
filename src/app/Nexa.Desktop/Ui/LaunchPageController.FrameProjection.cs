@@ -120,7 +120,6 @@ internal sealed partial class LaunchPageController
         set { _shell.Tree.Destroy(_bedrockInstallPage); _bedrockInstallPage = value; }
     }
     internal XsrUiEntityId SettingsPage { get; set; }
-    internal XsrUiEntityId PluginsPage { get; set; }
     internal XsrUiEntityId ResourcesPage { get; set; }
 
 
