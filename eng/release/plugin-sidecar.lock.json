@@ -1,0 +1,36 @@
+{
+  "repository": "Nexa-MC/PluginSidecar",
+  "commit": "133f29d6a26e17d23a5857628618566e0a3a3743",
+  "buildRun": 44279005534,
+  "artifacts": {
+    "win-x64": {
+      "size": 59092992,
+      "sha256": "5e237f9369b888a3073ffcbe71746dc39bed4c8939ee30dc8b680a34c0acc226"
+    },
+    "win-arm64": {
+      "size": 53477888,
+      "sha256": "9dbaff0d35f6f90dd53f438669f8206429ea030205f3ef18833a47fa7c1486ce"
+    },
+    "linux-x64": {
+      "size": 65673824,
+      "sha256": "feb03a0bf5f06389979dae7b3f641083ba1846c9327bd715a0f821b5b5b366e7"
+    },
+    "linux-arm64": {
+      "size": 62290560,
+      "sha256": "38d3d8aad6984672a951cb8ca2bf94a75a438f0dda64fb816108f9c77fdcb519"
+    },
+    "osx-x64": {
+      "size": 66788400,
+      "sha256": "77134bb4b381f1cfe9d6a5a1078d5ce76ec93ebfe7df9d3cc0a61b1a68fffd7a"
+    },
+    "osx-arm64": {
+      "size": 62772112,
+      "sha256": "c41f889d9b8ed0e54d48122e53b778b2ea6b4c288e077ed452e5c96f0c48d9cf"
+    }
+  },
+  "inputRepository": "Nexa-MC/PluginSidecar",
+  "inputRelease": "plugin-inputs-133f29d6a26e",
+  "runtimeVersion": "0.2.0-alpha.13",
+  "hostReference": "42ad7a1a3c7279d1cbc093d765e87c98f3878fff",
+  "minimumHostVersion": "2.0.0.alpha.30"
+}
