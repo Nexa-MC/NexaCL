@@ -48,8 +48,7 @@ internal sealed record DesktopStartupUpdate(NexaUpdateQuery Query, XsrResult<Nex
         catch (Exception failure) when (failure is not OutOfMemoryException and not AccessViolationException)
         {
             onFailure(failure);
-            discovery ??= XsrResult.Failure<NexaUpdateStatus>(new(XsrErrorKind.Unavailable,
-                XsrSemanticId.Parse("nexa.update.unavailable"), "暂时无法检查更新，请稍后重试。"));
+            discovery ??= XsrResult.Failure<NexaUpdateStatus>(NexaUpdateContract.Unavailable);
             return new(query, discovery, installing, false);
         }
     }

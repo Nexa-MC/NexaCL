@@ -68,7 +68,7 @@ public sealed class NexaUpdateService(HttpClient http, Rollouts.RolloutService? 
         }
         catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or JsonException or InvalidOperationException or KeyNotFoundException or FormatException or UnauthorizedAccessException or OperationCanceledException)
         {
-            return XsrResult.Failure<NexaUpdateStatus>(new(XsrErrorKind.Unavailable, XsrSemanticId.Parse("nexa.update.unavailable"), "暂时无法检查更新，请稍后重试。"));
+            return XsrResult.Failure<NexaUpdateStatus>(NexaUpdateContract.Unavailable);
         }
     }
 
