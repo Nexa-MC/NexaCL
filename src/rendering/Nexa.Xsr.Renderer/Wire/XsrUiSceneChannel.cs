@@ -86,7 +86,13 @@ public sealed class XsrUiSceneReceiver
     public XsrUiScene Accept(ReadOnlyMemory<byte> packet)
     {
         if (packet.Length > UiWireLimits.Frame) throw new InvalidDataException("UI frame byte budget exceeded.");
-        byte[] bytes = packet.ToArray();
+        return AcceptOwned(packet.ToArray());
+    }
+
+    // The shell decoder already extracted a private byte array from its reply envelope.
+    // Public callers retain ownership of their input, so Accept still takes a snapshot.
+    internal XsrUiScene AcceptOwned(byte[] bytes)
+    {
         lock (_gate)
         {
             try

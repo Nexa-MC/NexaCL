@@ -155,6 +155,7 @@ internal static partial class Program
             VerifyNativeWindowPointerRouting(window, shell, surface);
             VerifyTypefaceRenderingAndInput();
             VerifyNativeContextMenusPreserveLeftClickAndPasswordRules();
+            SceneCommitReadsMotionPolicyOnce();
             VerifyTrayCloseAndExplicitExitAdmission(window, shell);
             VerifySessionEndClosesWindow(WindowCloseReason.OSShutdown);
             VerifySessionEndClosesWindow(WindowCloseReason.ApplicationShutdown);

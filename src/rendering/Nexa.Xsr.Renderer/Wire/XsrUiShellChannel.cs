@@ -47,7 +47,7 @@ public sealed class XsrUiRemoteShell : IXsrUiBackendShell
         using var response = XsrUiShellChannel.Response(_transport.Exchange(request.Finish()));
         var facts = XsrUiShellChannel.ReadFacts(response);
         byte[] frame = response.Buffer(); response.End();
-        var scene = _scenes.Accept(frame);
+        var scene = _scenes.AcceptOwned(frame);
         using var acknowledgement = XsrUiShellChannel.Request(2);
         acknowledgement.Int64(_scenes.Sequence);
         using var accepted = XsrUiShellChannel.Response(_transport.Exchange(acknowledgement.Finish()));

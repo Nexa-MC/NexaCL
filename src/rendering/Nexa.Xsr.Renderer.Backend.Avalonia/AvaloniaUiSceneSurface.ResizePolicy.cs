@@ -28,7 +28,7 @@ public sealed partial class AvaloniaUiSceneSurface
     private void OnNativeViewportChanged()
     {
         if (_disposed) return;
-        if (!_rasterPresentationEnabled || _shell.Renderer.EffectiveReducedMotion || _scene is null
+        if (!_rasterPresentationEnabled || PresentationReducedMotion() || _scene is null
             || _themeResizePolicy is AvaloniaUiThemeResizePolicy.Auto or AvaloniaUiThemeResizePolicy.Immediate or AvaloniaUiThemeResizePolicy.Instant)
         { RetireThemeResize(); RequestCommit(); return; }
         if (_themeResizePolicy == AvaloniaUiThemeResizePolicy.Deferred)
@@ -48,15 +48,15 @@ public sealed partial class AvaloniaUiSceneSurface
         }
         AvaloniaUiMotion.Animate(this, "theme-resize-width", () => _themeResizeViewport?.Width ?? Bounds.Width,
             value => { _themeResizeViewport = new(value, _themeResizeViewport?.Height ?? Bounds.Height); RequestCommit(); },
-            target.Width, 180, completed: () => Complete(true), reducedMotion: () => _shell.Renderer.EffectiveReducedMotion);
+            target.Width, 180, completed: () => Complete(true), reducedMotion: PresentationReducedMotion);
         AvaloniaUiMotion.Animate(this, "theme-resize-height", () => _themeResizeViewport?.Height ?? Bounds.Height,
             value => { _themeResizeViewport = new(_themeResizeViewport?.Width ?? Bounds.Width, value); RequestCommit(); },
-            target.Height, 180, completed: () => Complete(false), reducedMotion: () => _shell.Renderer.EffectiveReducedMotion);
+            target.Height, 180, completed: () => Complete(false), reducedMotion: PresentationReducedMotion);
     }
 
     private XsrUiSize ThemeRenderViewport()
     {
-        if (_shell.Renderer.EffectiveReducedMotion) RetireThemeResize();
+        if (PresentationReducedMotion()) RetireThemeResize();
         _lastPresentedViewport = _themeResizeViewport ?? new XsrUiSize(Bounds.Width, Bounds.Height);
         return _lastPresentedViewport;
     }

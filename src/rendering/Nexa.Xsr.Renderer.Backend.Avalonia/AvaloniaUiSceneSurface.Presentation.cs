@@ -13,6 +13,12 @@ namespace Nexa.Xsr.Renderer.Backend.Avalonia;
 
 public sealed partial class AvaloniaUiSceneSurface
 {
+    private bool? _sceneReducedMotion;
+    // Remote shells cross the binary interface for each read. Share one policy sample
+    // during a commit; animation ticks between commits must still observe the live policy.
+    private bool PresentationReducedMotion() => _applyingScene
+        ? _sceneReducedMotion ??= _shell.Renderer.EffectiveReducedMotion
+        : _shell.Renderer.EffectiveReducedMotion;
 
     private void ApplyScene(XsrUiScene scene)
     {
@@ -58,7 +64,7 @@ public sealed partial class AvaloniaUiSceneSurface
                 control = new AvaloniaUiSceneNodeControl(
                     RouteAutomationFocus,
                     RouteAutomationInvoke,
-                    () => _shell.Renderer.EffectiveReducedMotion,
+                    PresentationReducedMotion,
                     new AvaloniaUiTextInputActions(
                         (entity, value) => { _shell.Renderer.SetTextInputValue(entity, value); CommitScene(); },
                         (entity, start, end) => { _shell.Renderer.SetTextSelection(entity, start, end); CommitScene(); },
@@ -126,7 +132,7 @@ public sealed partial class AvaloniaUiSceneSurface
         if (_scrollRevisions.TryGetValue(node.Entity, out long revision) && revision == motion.Revision) return;
         _scrollRevisions[node.Entity] = motion.Revision;
         AvaloniaUiMotion.Cancel(this, ("scroll-inertia", node.Entity));
-        if (motion.Dragging || Math.Abs(motion.Velocity) < 5 || _shell.Renderer.EffectiveReducedMotion) return;
+        if (motion.Dragging || Math.Abs(motion.Velocity) < 5 || PresentationReducedMotion()) return;
         double duration = Math.Clamp(Math.Log(Math.Abs(motion.Velocity) / 5) / ScrollInertiaDecay, .08, 1.4);
         double fraction = 1 - Math.Exp(-ScrollInertiaDecay * duration);
         double offset = motion.Direction == XsrUiOrientation.Horizontal ? scroll.OffsetX : scroll.OffsetY;
@@ -138,7 +144,7 @@ public sealed partial class AvaloniaUiSceneSurface
             value => _shell.Renderer.SetScrollPresentationOffset(entity, value),
             target, duration * 1000, progress => (1 - Math.Exp(-ScrollInertiaDecay * duration * progress)) / fraction,
             completed: () => _shell.Renderer.FinishScrollInertia(entity),
-            reducedMotion: () => _shell.Renderer.EffectiveReducedMotion);
+            reducedMotion: PresentationReducedMotion);
 
     private void DriveSegmentScroll(in XsrUiSceneNode node)
     {
@@ -156,7 +162,7 @@ public sealed partial class AvaloniaUiSceneSurface
             () => _shell.Renderer.GetSegmentScrollPresentationOffset(entity),
             value => _shell.Renderer.SetSegmentScrollPresentationOffset(entity, value, target.Revision),
             target.Target, AvaloniaMotionTokens.SegmentScrollSpringResponseSeconds,
-            () => _shell.Renderer.EffectiveReducedMotion, readCurrentPosition: true);
+            PresentationReducedMotion, readCurrentPosition: true);
 
     private void DriveSegmentReveal(in XsrUiSceneNode node)
     {
@@ -169,7 +175,7 @@ public sealed partial class AvaloniaUiSceneSurface
         AvaloniaUiMotion.AnimateSpring(this, ("segment-reveal", entity),
             () => _shell.Renderer.GetSegmentRevealProgress(entity),
             value => _shell.Renderer.SetSegmentRevealProgress(entity, value),
-            expanded ? 1 : 0, .25, () => _shell.Renderer.EffectiveReducedMotion);
+            expanded ? 1 : 0, .25, PresentationReducedMotion);
 
     private void SynchronizeNativeFocus(XsrUiScene scene)
     {
@@ -201,7 +207,7 @@ public sealed partial class AvaloniaUiSceneSurface
         AvaloniaUiMotion.AnimateSpring(this, ("capsule", entity),
             () => TryGetNode(entity, out XsrUiSceneNode current) ? current.CapsuleExpansionProgress : presented,
             progress => _shell.Renderer.SetCapsulePresentationProgress(entity, progress),
-            target, AvaloniaMotionTokens.CapsuleSpringResponseSeconds, () => _shell.Renderer.EffectiveReducedMotion);
+            target, AvaloniaMotionTokens.CapsuleSpringResponseSeconds, PresentationReducedMotion);
 
     private void DriveProgressGeometry(in XsrUiSceneNode node)
     {
@@ -209,7 +215,7 @@ public sealed partial class AvaloniaUiSceneSurface
         double target = _shell.Renderer.GetProgressTarget(node.Entity);
         if (_progressTargets.TryGetValue(node.Entity, out double previous) && previous == target) return;
         _progressTargets[node.Entity] = target;
-        if (_shell.Renderer.EffectiveReducedMotion)
+        if (PresentationReducedMotion())
         {
             _shell.Renderer.SetProgressPresentation(node.Entity, target);
             return;
@@ -222,7 +228,7 @@ public sealed partial class AvaloniaUiSceneSurface
             () => TryGetNode(entity, out XsrUiSceneNode current) ? current.Progress ?? 0 : presented,
             value => _shell.Renderer.SetProgressPresentation(entity, value),
             target, AvaloniaMotionTokens.ProgressFillMilliseconds, AvaloniaUiMotion.EaseOut,
-            reducedMotion: () => _shell.Renderer.EffectiveReducedMotion);
+            reducedMotion: PresentationReducedMotion);
 
     private void DrivePagerGeometry(in XsrUiSceneNode node)
     {
@@ -240,7 +246,7 @@ public sealed partial class AvaloniaUiSceneSurface
         AvaloniaUiMotion.AnimateSpring(this, ("pager", entity), () => pager.Position,
             position => _shell.Renderer.SetPagerPresentationPosition(entity, position),
             pager.PageIndex, AvaloniaMotionTokens.PagerSpringResponseSeconds,
-            () => _shell.Renderer.EffectiveReducedMotion,
+            PresentationReducedMotion,
             pager.ReleaseVelocity == 0 ? null : pager.ReleaseVelocity);
 
     /// <summary>
@@ -286,12 +292,12 @@ public sealed partial class AvaloniaUiSceneSurface
                     () => _shell.Renderer.GetTransitionOffset(target),
                     value => _shell.Renderer.SetTransitionOffset(target, value),
                     0, AvaloniaMotionTokens.NavigationSpringResponseSeconds,
-                    () => _shell.Renderer.EffectiveReducedMotion, readCurrentPosition: true, delayMilliseconds: delay);
+                    PresentationReducedMotion, readCurrentPosition: true, delayMilliseconds: delay);
                 AvaloniaUiMotion.AnimateSpring(this, ("slide-y", target),
                     () => _shell.Renderer.GetTransitionOffsetY(target),
                     value => _shell.Renderer.SetTransitionOffsetY(target, value),
                     0, AvaloniaMotionTokens.ContentSpringResponseSeconds,
-                    () => _shell.Renderer.EffectiveReducedMotion, readCurrentPosition: true, delayMilliseconds: delay);
+                    PresentationReducedMotion, readCurrentPosition: true, delayMilliseconds: delay);
                 continue;
             }
             // A card and its descendants form one layer; chrome keeps its background in place.
@@ -318,7 +324,7 @@ public sealed partial class AvaloniaUiSceneSurface
     /// </summary>
     private void OnNavigationExpandedChanged(object? sender, EventArgs e)
     {
-        if (_shell.Renderer.EffectiveReducedMotion)
+        if (PresentationReducedMotion())
         {
             // The shell already snapped the progress; make sure no older track can write over
             // the settled fact.
@@ -333,7 +339,7 @@ public sealed partial class AvaloniaUiSceneSurface
             value => _shell.SetRailPresentationProgress(value),
             _shell.IsNavigationExpanded ? 1 : 0,
             AvaloniaMotionTokens.RailSpringResponseSeconds,
-            reducedMotion: () => _shell.Renderer.EffectiveReducedMotion);
+            reducedMotion: PresentationReducedMotion);
     }
 
     private void ConfigureSelectionRelationships(XsrUiScene scene)

@@ -141,7 +141,7 @@ public sealed partial class AvaloniaUiSceneSurface : Panel, IDisposable
         if (_applyingScene) { RequestCommit(); return; }
         _applyingScene = true;
         try { CommitSceneCore(); }
-        finally { _applyingScene = false; }
+        finally { _sceneReducedMotion = null; _applyingScene = false; }
     }
 
     private void CommitSceneCore()
