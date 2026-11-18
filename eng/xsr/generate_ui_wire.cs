@@ -73,7 +73,7 @@ void Emit(Type t, bool write)
     string id = Id(t), name = Name(t);
     if (Special(t))
     {
-        if (write) schema.AppendLine(id + ":" + (t.IsEnum ? string.Join(',', Enum.GetValues(t).Cast<object>().Select(v => v + "=" + Convert.ToInt64(v))) : "scalar"));
+        if (write) schema.Append(id + ":" + (t.IsEnum ? string.Join(',', Enum.GetValues(t).Cast<object>().Select(v => v + "=" + Convert.ToInt64(v))) : "scalar")).Append('\n');
         if (!t.IsEnum) return;
         if (Enum.GetUnderlyingType(t) != typeof(int)) throw new InvalidOperationException("Unsupported enum storage: " + t);
         var values = Enum.GetValues(t).Cast<object>().Select(Convert.ToInt32).Distinct().ToArray();
@@ -100,7 +100,7 @@ void Emit(Type t, bool write)
     else
     {
         var shape = Shape(t);
-        if (write) schema.AppendLine(id + ":" + string.Join(',', shape.Properties.Select(p => p.Name + "=" + Id(p.PropertyType) + ":" + nullability.Create(p).ReadState + ":" + FieldMethod(t, p))));
+        if (write) schema.Append(id + ":" + string.Join(',', shape.Properties.Select(p => p.Name + "=" + Id(p.PropertyType) + ":" + nullability.Create(p).ReadState + ":" + FieldMethod(t, p)))).Append('\n');
         if (!t.IsValueType) code.Append(write ? "        Boolean(value is not null); if (value is null) return;\n" : "        if (!Boolean()) return null;\n");
         if (write)
             foreach (var p in shape.Properties) code.Append($"        {FieldMethod(t, p)}(value.{p.Name});\n");

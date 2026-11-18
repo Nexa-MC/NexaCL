@@ -34,7 +34,7 @@ def main():
                         str(output / "UiWire.Generated.cs"), *(["window"] if options.window else [])], check=True, cwd=root)
         if options.check:
             for name in (("UiWire.Generated.cs",) if options.window else ("UiWire.Generated.cs", "XsrUiInput.Generated.cs")):
-                if (output / name).read_bytes() != (target / name).read_bytes():
+                if (output / name).read_text(encoding="utf-8") != (target / name).read_text(encoding="utf-8"):
                     raise SystemExit(f"UI wire schema is stale: {name}. Regenerate and review the ABI change.")
 
 
