@@ -156,6 +156,8 @@ internal static partial class Program
             VerifyTypefaceRenderingAndInput();
             VerifyNativeContextMenusPreserveLeftClickAndPasswordRules();
             VerifyTrayCloseAndExplicitExitAdmission(window, shell);
+            VerifySessionEndClosesWindow(WindowCloseReason.OSShutdown);
+            VerifySessionEndClosesWindow(WindowCloseReason.ApplicationShutdown);
             await VerifyPreparedWindowEntranceAsync(window).ConfigureAwait(true);
             await VerifyTrayVisibilityAsync(window).ConfigureAwait(true);
             VerifyAccessibleContentAndNativeFocus(window, shell, surface);

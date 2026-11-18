@@ -219,6 +219,9 @@ public sealed partial class AvaloniaUiShellWindow : Window
     {
         base.OnClosing(e);
         if (e.Cancel) return;
+        // Win32 maps WM_QUERYENDSESSION to OSShutdown or ApplicationShutdown depending on
+        // the session flags. Returning Cancel here would veto shutdown or logoff.
+        if (e.CloseReason is WindowCloseReason.OSShutdown or WindowCloseReason.ApplicationShutdown) return;
         if (!_explicitCloseRequested && !_closeAnimationStarted && HideToTrayRequested?.Invoke() == true) { e.Cancel = true; return; }
         if (!_closeAnimationStarted && CloseGuard?.Invoke() == false) { e.Cancel = true; return; }
         CancelTrayVisibility();

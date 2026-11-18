@@ -1,11 +1,47 @@
+using System.Runtime.CompilerServices;
 using Avalonia.Controls;
+using Avalonia.Platform;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Backend.Avalonia;
+using Nexa.Xsr.State;
 
 namespace Nexa.Xsr.Renderer.Backend.Avalonia.Tests;
 
 internal static partial class Program
 {
+    private static void VerifySessionEndClosesWindow(WindowCloseReason reason)
+    {
+        var shell = XsrUiShellComposer.Compose(new XsrStateStoreBuilder().Build());
+        var window = new AvaloniaUiShellWindow(shell);
+        int trayRequests = 0, guardRequests = 0;
+        bool closed = false;
+        window.Closed += (_, _) => closed = true;
+        window.HideToTrayRequested = () => { trayRequests++; return true; };
+        window.CloseGuard = () => { guardRequests++; return false; };
+        window.Show();
+        try
+        {
+            var closing = GetPlatformClosing(window.PlatformImpl!)!;
+            AssertFalse(closing(reason));
+            AssertTrue(closed);
+            AssertEqual(0, trayRequests);
+            AssertEqual(0, guardRequests);
+        }
+        finally
+        {
+            if (!closed)
+            {
+                window.HideToTrayRequested = null;
+                window.CloseGuard = null;
+                shell.Renderer.ReducedMotion = true;
+                window.Close();
+            }
+        }
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Closing")]
+    private static extern Func<WindowCloseReason, bool>? GetPlatformClosing(IWindowImpl impl);
+
     private static void VerifyTrayCloseAndExplicitExitAdmission(AvaloniaUiShellWindow window, XsrUiShell shell)
     {
         using (var integration = new AvaloniaUiDesktopIntegration(window, () => { window.Show(); window.Activate(); }, () => { }, value => value))
