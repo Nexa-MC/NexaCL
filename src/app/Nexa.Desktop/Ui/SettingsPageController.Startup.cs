@@ -77,8 +77,16 @@ internal sealed partial class SettingsPageController
 
     internal async Task PrepareInitialUpdateAsync(CancellationToken token)
     {
-        if (_updateReading is { } initial)
-            await initial.WaitAsync(token).ConfigureAwait(true);
+        token.ThrowIfCancellationRequested();
+        if (_updateReading is { IsCompleted: false } initial)
+        {
+            if (_shell.Stage.Navigation.Current == Page && _selected == "advanced")
+                await initial.WaitAsync(token).ConfigureAwait(true);
+            else
+                // The controller already observes this request and wakes the shell on completion.
+                // Other startup destinations can be presented while the bounded check continues.
+                _updateCheckStop?.CancelAfter(DesktopStartupReadiness.OnlineBudget);
+        }
         UpdateReleaseCheck();
     }
 

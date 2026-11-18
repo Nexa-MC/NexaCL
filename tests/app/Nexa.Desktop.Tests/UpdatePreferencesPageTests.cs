@@ -25,6 +25,8 @@ internal static partial class Program
         fixture.Shell.Render(new(1000, 900));
         AssertEqual(1, calls.Count); AssertEqual("alpha", calls[0].Query.Channel);
         AssertFalse(fixture.Shell.Stage.Navigation.Current == settings.Page);
+        AssertTrue(settings.PrepareInitialUpdateAsync(default).IsCompletedSuccessfully);
+        AssertFalse(calls[0].Token.IsCancellationRequested);
         var policy = fixture.Foundation.Host.SettingsPolicy;
         AssertTrue(policy.Set(new("updates.channel", SettingsLayer.Global, new(SettingsOverrideMode.Custom, "beta"))).IsSuccess);
         fixture.Shell.Render(new(1000, 900)); AssertTrue(calls[0].Token.IsCancellationRequested);
@@ -36,7 +38,10 @@ internal static partial class Program
         AssertFalse(Has("SettingsDownloadUpdate"));
         Emit(fixture.Intents, "ui.settings.update.check", FindByKey(fixture.Shell, scene, "SettingsCheckUpdate").Entity);
         fixture.Shell.Render(new(1000, 900)); AssertEqual(2, calls.Count); AssertEqual("beta", calls[1].Query.Channel);
+        var visibleCheck = settings.PrepareInitialUpdateAsync(default);
+        AssertFalse(visibleCheck.IsCompleted);
         calls[1].Completion.SetResult(XsrResult.Success(new NexaUpdateStatus(null)));
+        visibleCheck.GetAwaiter().GetResult();
         fixture.Shell.Render(new(1000, 900)); fixture.Shell.Render(new(1000, 900)); AssertEqual(2, calls.Count);
         bool Has(string name)
         {
