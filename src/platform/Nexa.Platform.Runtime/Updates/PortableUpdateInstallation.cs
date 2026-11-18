@@ -58,11 +58,14 @@ public static partial class PortableUpdateInstallation
         ? System.IO.Path.Combine(root, "Nexa.app/Contents/MacOS/Nexa.Desktop")
         : System.IO.Path.Combine(root, "Nexa.Desktop" + (OperatingSystem.IsWindows() ? ".exe" : ""));
 
-    public static void Restart(string root)
+    public static void Restart(string root) => Restart(root, []);
+
+    public static void Restart(string root, IReadOnlyList<string> arguments)
     {
         using var directory = PortableUpdateDirectory.Open(root);
-        using Process process = Process.Start(new ProcessStartInfo(Executable(directory.Path))
-        { UseShellExecute = false, WorkingDirectory = directory.Path }) ?? throw new IOException("无法重新启动 NexaCL。");
+        var start = new ProcessStartInfo(Executable(directory.Path)) { UseShellExecute = false, WorkingDirectory = directory.Path };
+        foreach (string argument in arguments) start.ArgumentList.Add(argument);
+        using Process process = Process.Start(start) ?? throw new IOException("无法重新启动 NexaCL。");
     }
 
     [LibraryImport("libc", EntryPoint = "geteuid")]

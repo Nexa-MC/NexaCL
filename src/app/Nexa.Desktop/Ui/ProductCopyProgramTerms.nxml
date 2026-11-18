@@ -23,6 +23,7 @@
     <Text Key="program.copy.9b97822516a0690f" Content="读取本地版本" Localize="false" />
     <Text Key="program.copy.9da908e4aee4f152" Content="存储恢复未完成，继续使用原数据位置：" Localize="false" />
     <Text Key="program.copy.9e3c76d5453e563b" Content="检查启动器更新" Localize="false" />
+    <Text Key="program.update.install" Content="正在下载并安装启动器更新…" Localize="false" />
     <Text Key="program.copy.a091eff3f907eb94" Content="准备原生窗口" Localize="false" />
     <Text Key="program.copy.a6300dab1fd19a8d" Content="准备启动器" Localize="false" />
     <Text Key="program.copy.abff81701ef3aae3" Content="加载初始页面资料" Localize="false" />

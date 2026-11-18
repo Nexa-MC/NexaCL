@@ -8,6 +8,30 @@ namespace Nexa.Desktop.Tests;
 
 internal static partial class Program
 {
+    private static void SettingsReusesStartupUpdateDiscoveryAndAllowsRefresh()
+    {
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));
+        using var settings = new SettingsPageController(fixture.Shell, fixture.Intents, fixture.Foundation.Queries,
+            fixture.Foundation.Commands, fixture.Store, fixture.Feedback);
+        var builder = new XsrQueryRouterBuilder();
+        int requests = 0;
+        var result = XsrResult.Success(new NexaUpdateStatus(null));
+        builder.Register<NexaUpdateQuery, NexaUpdateStatus>(NexaUpdateContract.Check, (_, _) =>
+        { requests++; return new(result); });
+        var query = new NexaUpdateQuery("2.0.0.alpha.29", "win-x64", "alpha");
+        settings.ConfigureUpdates(builder.Build(new NoopDispatchObserver()), query, _ => { },
+            initialUpdate: new(query, result, false, false));
+        fixture.Shell.Renderer.ReducedMotion = true;
+        fixture.Shell.Stage.Navigation.Replace(settings.Page);
+        var scene = fixture.Shell.Render(new(1000, 900));
+        Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.advanced").Entity);
+        scene = fixture.Shell.Render(new(1000, 900));
+        AssertEqual(0, requests);
+        Emit(fixture.Intents, "ui.settings.update.check", FindByKey(fixture.Shell, scene, "SettingsCheckUpdate").Entity);
+        fixture.Shell.Render(new(1000, 900));
+        AssertEqual(1, requests);
+    }
+
     private static void UpdatePreferencesCheckOutsideSettingsAndRetireOldChannels()
     {
         using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]));

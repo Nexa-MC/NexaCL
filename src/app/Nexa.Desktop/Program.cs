@@ -240,6 +240,7 @@ internal static partial class Program
                                 "startup_resource_catalog" => ProductPresentationText.Raw("program.copy.ca69b5ddc439a203"),
                                 "startup_update_preferences" => ProductPresentationText.Raw("program.copy.e4219ee996f8b46a"),
                                 "startup_update_discovery" => ProductPresentationText.Raw("program.copy.9e3c76d5453e563b"),
+                                "startup_install_update" => ProductPresentationText.Raw("program.update.install"),
                                 "startup_native_fonts_media_icons" or "startup_first_run_scene" => ProductPresentationText.Raw("program.copy.f73e91c015c68a99"),
                                 "startup_ready" or "startup_first_run_ready" => ProductPresentationText.Raw("program.copy.63c66119bd081130"),
                                 "gui_lifetime" => ProductPresentationText.Raw("program.copy.997cb4f867a376f8"),
@@ -322,6 +323,18 @@ internal static partial class Program
             && !args.Contains("--validate-shell", StringComparer.OrdinalIgnoreCase)
             && !args.Contains("--validate-themes", StringComparer.OrdinalIgnoreCase) && setup.Read().Required))
         {
+            if (!validateSetup && startup is not null && !args.Contains("--safe-mode", StringComparer.OrdinalIgnoreCase)
+                && SupportsPackagedUpdate())
+            {
+                try
+                {
+                    if (await UpdateBeforeSetupAsync(args, folders.Root, setStage,
+                        failure => WriteBootstrapLog(sink, LogLevel.Warn, "Startup update: " + failure.Message),
+                        startup.CancellationToken).ConfigureAwait(false)) return 0;
+                }
+                catch (Exception failure) when (failure is not OperationCanceledException and not OutOfMemoryException and not AccessViolationException)
+                { WriteBootstrapLog(sink, LogLevel.Warn, "Startup update: " + failure.Message); }
+            }
             setStage("first_run");
             return await RunFirstRunAsync(args, setup, validateSetup, instance, disableHardwareAcceleration, startup, setStage).ConfigureAwait(false);
         }
@@ -376,6 +389,41 @@ internal static partial class Program
             host.Logging.Warn("Storage", "Startup storage recovery was not completed; retaining the source data root: " + storageStartupError.Message);
         await using var accountServiceLifetime = host.Accounts;
         using var telemetryLifetime = host.Telemetry;
+#if NEXA_NATIVE_SERVICES
+        await using var networking = new LauncherNetworkRuntime(host, settingsFolder, buildInfo, SidecarStartup.ReadReleaseKey());
+        await networking.Initialization.ConfigureAwait(false);
+#else
+        await using var networking = new LauncherNetworkRuntime(host, settingsFolder, buildInfo);
+#endif
+        HttpClient updateHttp = networking.Http;
+        string updateRid = networking.RuntimeId;
+        string updateChannel = buildInfo.UpdateChannel;
+        var rollouts = networking.Rollouts;
+        var updateService = networking.Updates;
+        var updateQueries = networking.Queries;
+#if NEXA_NATIVE_SERVICES
+        var automaticUpdate = await CreateNativeUpdateControlAsync(updateService, buildInfo.ProductVersion, updateRid).ConfigureAwait(false);
+#else
+        var automaticUpdate = CreateUpdateControl(updateHttp, buildInfo.ProductVersion, updateRid);
+#endif
+        DesktopStartupUpdate? initialUpdate = null;
+        if (startup is not null && !safeMode && SupportsPackagedUpdate())
+        {
+            var effective = host.SettingsPolicy.Read(new());
+            if (effective.IsSuccess)
+            {
+                var policy = SettingsUpdatePolicy.FromSnapshot(effective.Value!, updateChannel);
+                initialUpdate = await DesktopStartupUpdate.RunAsync(automaticUpdate,
+                    new(buildInfo.ProductVersion, updateRid, policy.Channel), policy.AutomaticCheck,
+                    updateService.CheckAsync, setStage, failure => host.Logging.Warn("Update", failure.Message),
+                    startup.CancellationToken).ConfigureAwait(false);
+                if (initialUpdate.RestartRequired)
+                {
+                    _restartAfterExit = StartupUpdateRestart(args);
+                    return 0;
+                }
+            }
+        }
         host.Accounts.ConfigureRegionalPolicy(Nexa.Services.RegionalPolicy.Current);
         DesktopFunctionPatches functionPatches = new();
         DesktopSidecarSignals sidecarSignals = new();
@@ -803,27 +851,10 @@ internal static partial class Program
             token.ThrowIfCancellationRequested(); return path;
         }, library.Commands);
         settingsPage.TelemetryRequired = buildInfo.DiagnosticsRequired;
-#if NEXA_NATIVE_SERVICES
-        await using var networking = new LauncherNetworkRuntime(host, settingsFolder, buildInfo, SidecarStartup.ReadReleaseKey());
-        await networking.Initialization.ConfigureAwait(false);
-#else
-        await using var networking = new LauncherNetworkRuntime(host, settingsFolder, buildInfo);
-#endif
-        HttpClient updateHttp = networking.Http;
-        string updateRid = networking.RuntimeId;
-        string updateChannel = buildInfo.UpdateChannel;
-        var rollouts = networking.Rollouts;
-        var updateService = networking.Updates;
-        var updateQueries = networking.Queries;
-#if NEXA_NATIVE_SERVICES
-        var automaticUpdate = await CreateNativeUpdateControlAsync(networking.Updates, buildInfo.ProductVersion, updateRid).ConfigureAwait(false);
-#else
-        var automaticUpdate = CreateUpdateControl(updateHttp, buildInfo.ProductVersion, updateRid);
-#endif
         bool restartAfterUpdate = false;
         settingsPage.ConfigureUpdates(updateQueries, new(buildInfo.ProductVersion, updateRid, updateChannel), platformActions.OpenHttpsUri,
             automaticUpdate, () => { restartAfterUpdate = true; platformActions.RequestClose(); },
-            error => host.Logging.Error("Update", "自动更新失败。", ExceptionDiagnostics.Describe(error)));
+            error => host.Logging.Error("Update", "自动更新失败。", ExceptionDiagnostics.Describe(error)), initialUpdate);
         settingsPage.ConfigureSidecarUpdates(sidecarUpdates, () =>
         {
             var start = new System.Diagnostics.ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false };

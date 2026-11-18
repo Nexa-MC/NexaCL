@@ -51,10 +51,14 @@ public sealed class AutomaticUpdateHost : IUpdateHost
         await process.WaitForExitAsync(token).ConfigureAwait(false);
         return process.ExitCode;
     }
-    public void RestartLauncher()
+    public void RestartLauncher() => RestartLauncher([]);
+
+    public void RestartLauncher(IReadOnlyList<string> arguments)
     {
-        using IUpdateDirectory root = ProtectedUpdateDirectory.Open(UpdateInstallation.Root);
-        using Process process = Process.Start(new ProcessStartInfo(UpdateInstallation.Bootstrap) { UseShellExecute = false })
+        using IUpdateDirectory root = ProtectedUpdateDirectory.Open(InstallationPath);
+        var start = new ProcessStartInfo(UpdateInstallation.Bootstrap) { UseShellExecute = false };
+        foreach (string argument in arguments) start.ArgumentList.Add(argument);
+        using Process process = Process.Start(start)
             ?? throw new IOException("无法重新启动 NexaCL。");
     }
 }

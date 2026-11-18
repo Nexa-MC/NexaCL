@@ -32,6 +32,7 @@ internal sealed partial class SettingsPageController
     private Task<XsrResult<SettingsEffectiveSnapshot>>? _updatePolicyReading;
     private long _updatePolicyRevision = -1;
     private bool _startupUpdateChecked;
+    private DesktopStartupUpdate? _initialLauncherUpdate;
     private CancellationTokenSource? _updateCheckStop;
     private string? _updateOfferChannel;
     private Action<Uri>? _openUpdateLink;
@@ -47,10 +48,13 @@ internal sealed partial class SettingsPageController
     private Action<Exception>? _updateFailure;
 
     internal void ConfigureUpdates(XsrQueryRouter queries, NexaUpdateQuery query, Action<Uri> open,
-        IAutomaticUpdateControl? automatic = null, Action? restart = null, Action<Exception>? failure = null)
+        IAutomaticUpdateControl? automatic = null, Action? restart = null, Action<Exception>? failure = null,
+        DesktopStartupUpdate? initialUpdate = null)
     {
         _updateQueries = queries; _updateQuery = _buildUpdateQuery = query; _openUpdateLink = open;
         _automaticUpdates = automatic; _restartForUpdate = restart; _updateFailure = failure;
+        _initialLauncherUpdate = initialUpdate;
+        _automaticRecoveryAttempted = initialUpdate?.InstallAttempted == true;
         if (automatic is not null) { _automaticReading = automatic.ReadAsync(_updateStop.Token); WakeOnPlatformCompletion(_automaticReading); }
     }
 
@@ -157,7 +161,17 @@ internal sealed partial class SettingsPageController
         if (!_startupUpdateChecked)
         {
             _startupUpdateChecked = true;
-            if (policy.AutomaticCheck) { StartUpdateCheck(); CheckSidecarUpdates(); }
+            if (policy.AutomaticCheck)
+            {
+                if (_initialLauncherUpdate is { Discovery: { } result } initial && initial.Query == query)
+                {
+                    _updateReadingQuery = query;
+                    _updateReading = Task.FromResult(result);
+                }
+                else StartUpdateCheck();
+                CheckSidecarUpdates();
+            }
+            _initialLauncherUpdate = null;
         }
         if (changed && _visible && _selected == "advanced" && _catalog is not null) RefreshUpdateCard();
     }

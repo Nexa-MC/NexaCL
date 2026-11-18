@@ -345,6 +345,7 @@
   {"source":"发现插件接口","en":"Discovering plugin interfaces","zh-Hant":"探索外掛介面"},
   {"source":"读取更新状态","en":"Reading update state","zh-Hant":"讀取更新狀態"},
   {"source":"检查启动器更新","en":"Checking launcher updates","zh-Hant":"檢查啟動器更新"},
+  {"source":"正在下载并安装启动器更新…","en":"Downloading and installing the launcher update…","zh-Hant":"正在下載並安裝啟動器更新…"},
   {"source":"部分在线信息暂时不可用，可稍后重试。","en":"Some online information is temporarily unavailable. Please retry later.","zh-Hant":"部分線上資訊暫時無法使用，可稍後重試。"},
   {"source":"资源来源暂时不可用。请检查网络后重试。","en":"The resource source is temporarily unavailable. Check your connection and retry.","zh-Hant":"資源來源暫時無法使用。請檢查網路後重試。"},
   {"source":"恢复本地事务","en":"Recovering local transactions","zh-Hant":"復原本機交易"},
