@@ -10,6 +10,7 @@ internal static partial class Program
         ("shell wire preserves window metrics and recovers after lost acknowledgement", Sync(ShellWirePreservesWindowMetricsAndRecoversAfterLostAcknowledgement)),
         ("input wire preserves hits and validates before mutation", Sync(InputWirePreservesHitsAndRejectsBeforeMutation)),
         ("text wire preserves layout and validates before invocation", Sync(TextWirePreservesUnboundedLayoutAndRejectsTrailingRequests)),
+        ("shell scene deltas preserve edits, resync and v1 peers", Sync(ShellSceneDeltasPreserveEditsAndLegacyPeers)),
         ("scene wire admission is atomic", Sync(SceneWireRoundTripAndAdmissionAreAtomic)),
         ("scene wire images reuse retire and resynchronize", Sync(SceneWireImagesReuseRetireAndResynchronize)),
         ("HorizontalContentDragKeepsClicksAndPublishesAxisInertia", Sync(HorizontalContentDragKeepsClicksAndPublishesAxisInertia)),

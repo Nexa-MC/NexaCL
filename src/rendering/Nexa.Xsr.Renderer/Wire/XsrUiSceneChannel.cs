@@ -9,6 +9,7 @@ public sealed class XsrUiSceneSender : IDisposable
     private Dictionary<string, PngImage> _images = new(StringComparer.Ordinal);
     private XsrUiScenePacket? _pending;
     private long _next, _acknowledged;
+    private int _lastNodeCount, _lastByteCount;
     private bool _disposed;
 
     public XsrUiScenePacket Prepare(XsrUiScene scene)
@@ -20,7 +21,10 @@ public sealed class XsrUiSceneSender : IDisposable
             ObjectDisposedException.ThrowIf(_disposed, this);
             if (_pending is not null) throw new InvalidOperationException("A UI scene packet is already pending.");
             long sequence = checked(++_next);
-            using var writer = new UiWireWriter(_images);
+            // Repeated frames of the same scene usually fit their previous encoding.
+            // Cap the hint so that replacing a large image never preallocates its size again.
+            int capacity = scene.Count == _lastNodeCount ? Math.Min((_lastByteCount + 1023) & ~1023, 256 * 1024) : 0;
+            using var writer = new UiWireWriter(_images, capacity);
             writer.Int32(0x3155534e); writer.String(UiWireSchema.Fingerprint);
             writer.Int64(sequence); writer.Int64(_acknowledged); writer.Int64(scene.Version);
             // The generated list form, written from the scene's own storage: enumerating the
@@ -30,7 +34,9 @@ public sealed class XsrUiSceneSender : IDisposable
             writer.Count(scene.Outgoing.Count);
             foreach (var layer in scene.Outgoing) writer.XsrUiOutgoingLayer(layer);
             var images = writer.Images;
-            _pending = new(writer.Finish(), sequence, accepted =>
+            byte[] bytes = writer.Finish();
+            _lastNodeCount = scene.Count; _lastByteCount = bytes.Length;
+            _pending = new(bytes, sequence, accepted =>
             {
                 lock (_gate)
                 {
@@ -42,6 +48,16 @@ public sealed class XsrUiSceneSender : IDisposable
             return _pending;
         }
     }
+    // The remote window can reconnect with no scene or a different sequence.
+    internal void ResetBaseline()
+    {
+        lock (_gate)
+        {
+            _images.Clear();
+            _acknowledged = 0;
+        }
+    }
+
     public void Dispose()
     {
         lock (_gate)

@@ -180,9 +180,48 @@ internal static partial class Program
         AssertThrows<ObjectDisposedException>(() => remote.Render(new(900, 600)));
     }
 
+    private static void ShellSceneDeltasPreserveEditsAndLegacyPeers()
+    {
+        var shell = XsrUiShellComposer.Compose(new Nexa.Xsr.State.XsrStateStoreBuilder().Build());
+        var cell = shell.Tree.Create("delta-label");
+        var text = new XsrUiText("first");
+        shell.Tree.SetComponent(cell, text);
+        shell.Tree.Attach(cell, shell.Content);
+        using var endpoint = new XsrUiShellEndpoint(shell);
+        var channel = new InterruptedShellTransport(endpoint);
+        var remote = new XsrUiRemoteShell(channel, shell.Renderer);
+        var size = new XsrUiSize(800, 600);
+        remote.Render(size);
+        int full = channel.LastRenderBytes;
+        text.Content = "changed " + char.ConvertFromUtf32(0x1F30C);
+        shell.Tree.MarkDirty(cell, XsrUiDirtyKinds.Paint);
+        var scene = remote.Render(size);
+        AssertEqual(text.Content, Node(scene, cell).Text);
+        AssertTrue(channel.LastRenderBytes < full / 2);
+        channel.InvalidPrefix = true;
+        AssertThrows<InvalidDataException>(() => remote.Render(size));
+        channel.InvalidPrefix = false;
+        AssertEqual(text.Content, Node(remote.Render(size), cell).Text);
+        AssertTrue(channel.LastRenderBytes >= full);
+
+        // A new window has no image/byte baseline. The old request form must also
+        // continue to decode a full canonical packet when the hello is unsupported.
+        var replacement = new XsrUiRemoteShell(channel, shell.Renderer);
+        AssertEqual(text.Content, Node(replacement.Render(size), cell).Text);
+        AssertTrue(channel.LastRenderBytes >= full);
+        channel.Legacy = true;
+        var legacy = new XsrUiRemoteShell(channel, shell.Renderer);
+        AssertEqual(text.Content, Node(legacy.Render(size), cell).Text);
+        legacy.Render(size);
+        AssertTrue(channel.LastRenderBytes >= full - 1);
+    }
+
     private sealed class InterruptedShellTransport(IXsrUiWireTransport endpoint) : IXsrUiWireTransport
     {
         public bool DropAcknowledgement { get; set; }
+        public bool Legacy { get; set; }
+        public bool InvalidPrefix { get; set; }
+        public int LastRenderBytes { get; private set; }
         public byte[]? Last { get; private set; }
         public byte[] Exchange(ReadOnlyMemory<byte> request)
         {
@@ -190,9 +229,18 @@ internal static partial class Program
             // Header is magic, length-prefixed schema fingerprint, then the fixed operation number.
             var bytes = request.Span;
             int operationOffset = 8 + System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(bytes[4..]);
-            if (DropAcknowledgement && System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(bytes[operationOffset..]) == 2)
-                throw new IOException("Simulated lost acknowledgement.");
-            return endpoint.Exchange(request);
+            int operation = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(bytes[operationOffset..]);
+            if (Legacy && operation > 5) throw new InvalidDataException("Unknown UI shell operation.");
+            if (DropAcknowledgement && operation == 2) throw new IOException("Simulated lost acknowledgement.");
+            byte[] reply = endpoint.Exchange(request);
+            if (operation is 1 or 7) LastRenderBytes = reply.Length;
+            if (InvalidPrefix && operation == 7)
+            {
+                int header = reply.AsSpan().IndexOf("NSU1"u8);
+                AssertTrue(header >= 13 && reply[header - 13] == 1);
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(reply.AsSpan(header - 12), int.MaxValue);
+            }
+            return reply;
         }
     }
 

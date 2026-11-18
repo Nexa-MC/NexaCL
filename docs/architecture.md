@@ -731,3 +731,12 @@ release and shutdown never run cancellation callbacks under the registry lock.
 An uncertain call is not automatically replayed. The service extension has its
 own generated binary schema and capability discovery, preserving existing
 Sidecar protocol fields and the frozen guest ABI.
+
+### Window shell scene transfer
+
+Window peers may discover compact scene transfer with read-only shell operation 6.
+Operation 7 renders against the last acknowledged frame. Operations 0 through 5
+retain their v1 layouts for existing peers. Both ends retain at most one 4 MiB
+baseline between renders. A compact reply reconstructs the exact canonical scene
+packet before normal schema, sequence, resource and image admission. A missing
+acknowledgement resets the baseline. Large frames use the ordinary full transfer.

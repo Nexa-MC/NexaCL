@@ -11,10 +11,26 @@ public sealed class XsrUiRemoteShell : IXsrUiBackendShell
     private readonly IXsrUiWireTransport _transport;
     private readonly XsrUiSceneReceiver _scenes = new();
     private XsrUiWindowFacts _facts;
+    private readonly bool _compactScenes;
+    private ReadOnlyMemory<byte> _previousFrame;
     public XsrUiRemoteShell(IXsrUiWireTransport transport, IXsrUiBackendRenderer renderer)
     {
         ArgumentNullException.ThrowIfNull(transport); ArgumentNullException.ThrowIfNull(renderer);
-        _transport = transport; Renderer = renderer; _facts = Refresh();
+        _transport = transport; Renderer = renderer;
+        using var hello = XsrUiShellChannel.Request(6);
+        byte[] reply;
+        try { reply = transport.Exchange(hello.Finish()); }
+        catch (Exception error) when (error is InvalidDataException or InvalidOperationException)
+        {
+            // Older peers reject the optional read-only hello (the native bridge maps
+            // operation rejection to InvalidOperationException). Use their v1 facts path.
+            _facts = Refresh();
+            return;
+        }
+        using var response = XsrUiShellChannel.Response(reply);
+        _facts = XsrUiShellChannel.ReadFacts(response);
+        _compactScenes = response.Boolean();
+        response.End();
     }
     public string Title => _facts.Title;
     public string Version => _facts.Version;
@@ -42,12 +58,15 @@ public sealed class XsrUiRemoteShell : IXsrUiBackendShell
 
     public XsrUiScene Render(XsrUiSize viewport)
     {
-        using var request = XsrUiShellChannel.Request(1);
+        using var request = XsrUiShellChannel.Request(_compactScenes ? 7 : 1);
         request.XsrUiSize(viewport);
+        if (_compactScenes) request.Int64(_scenes.Sequence);
         using var response = XsrUiShellChannel.Response(_transport.Exchange(request.Finish()));
         var facts = XsrUiShellChannel.ReadFacts(response);
-        byte[] frame = response.Buffer(); response.End();
+        byte[] frame = _compactScenes ? XsrUiSceneTransfer.Read(response, _previousFrame, _scenes.Sequence) : response.Buffer();
+        response.End();
         var scene = _scenes.AcceptOwned(frame);
+        _previousFrame = _compactScenes ? XsrUiSceneTransfer.Retain(frame) : default;
         using var acknowledgement = XsrUiShellChannel.Request(2);
         acknowledgement.Int64(_scenes.Sequence);
         using var accepted = XsrUiShellChannel.Response(_transport.Exchange(acknowledgement.Finish()));
@@ -88,7 +107,9 @@ public sealed class XsrUiShellEndpoint : IXsrUiWireTransport, IDisposable
     private readonly IXsrUiBackendShell _shell;
     private readonly XsrUiSceneSender _scenes = new();
     private XsrUiScenePacket? _pending;
-    private bool _disposed, _rendering;
+    private bool _disposed, _rendering, _compactPending;
+    private ReadOnlyMemory<byte> _previousFrame;
+    private long _previousSequence;
     // Subscribers enqueue a native notification; they must not render or synchronously wait here.
     public event Action<XsrUiShellInvalidation>? Invalidated;
     public XsrUiShellEndpoint(IXsrUiBackendShell shell)
@@ -105,30 +126,56 @@ public sealed class XsrUiShellEndpoint : IXsrUiWireTransport, IDisposable
         if (request.Length > UiWireLimits.Frame) throw new InvalidDataException("UI shell request exceeds its budget.");
         using var reader = XsrUiShellChannel.Response(request.ToArray());
         using var writer = XsrUiShellChannel.Envelope();
-        switch (reader.Int32())
+        int operation = reader.Int32();
+        switch (operation)
         {
             case 0:
                 reader.End(); XsrUiShellChannel.WriteFacts(writer, _shell); break;
+            case 6:
+                reader.End(); XsrUiShellChannel.WriteFacts(writer, _shell); writer.Boolean(true); break;
             case 1:
-                var viewport = reader.XsrUiSize(); reader.End();
+            case 7:
+                var viewport = reader.XsrUiSize();
+                long baseline = operation == 7 ? reader.Int64() : 0;
+                reader.End();
                 if (_rendering) throw new InvalidOperationException("Reentrant UI shell rendering is not supported.");
                 _rendering = true;
                 try
                 {
                     // An abandoned acknowledgement forces a fresh image baseline on the next render.
-                    _pending?.Dispose(); _pending = null;
+                    if (_pending is not null)
+                    {
+                        _pending.Dispose(); _pending = null;
+                        _previousFrame = default; _previousSequence = 0;
+                    }
+                    if (operation == 7 ? baseline != _previousSequence : _compactPending)
+                    {
+                        _scenes.ResetBaseline();
+                        _previousFrame = default; _previousSequence = 0;
+                    }
                     var scene = _shell.Render(viewport);
                     ObjectDisposedException.ThrowIf(_disposed, this);
                     _pending = _scenes.Prepare(scene);
                     XsrUiShellChannel.WriteFacts(writer, _shell);
-                    writer.Buffer(_pending.Bytes);
+                    _compactPending = operation == 7;
+                    if (_compactPending)
+                        XsrUiSceneTransfer.Write(writer, _pending.Bytes, _previousFrame);
+                    else writer.Buffer(_pending.Bytes);
                 }
-                catch { _pending?.Dispose(); _pending = null; throw; }
+                catch
+                {
+                    _pending?.Dispose(); _pending = null;
+                    _previousFrame = default; _previousSequence = 0;
+                    _scenes.ResetBaseline();
+                    throw;
+                }
                 finally { _rendering = false; }
                 break;
             case 2:
                 long sequence = reader.Int64(); reader.End();
                 (_pending ?? throw new InvalidDataException("No pending UI shell frame.")).Acknowledge(sequence);
+                _previousFrame = _compactPending ? XsrUiSceneTransfer.Retain(_pending.Bytes) : default;
+                _previousSequence = sequence;
                 _pending.Dispose(); _pending = null;
                 break;
             case 3:
@@ -149,7 +196,7 @@ public sealed class XsrUiShellEndpoint : IXsrUiWireTransport, IDisposable
         if (_disposed) return;
         _disposed = true;
         _shell.RenderRequested -= OnRender; _shell.NavigationExpandedChanged -= OnNavigation;
-        Invalidated = null;
+        Invalidated = null; _previousFrame = default;
         _pending?.Dispose(); _pending = null; _scenes.Dispose();
     }
 }
