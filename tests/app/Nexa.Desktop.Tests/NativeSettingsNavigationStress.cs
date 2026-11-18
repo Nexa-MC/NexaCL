@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media.Imaging;
+using System.Diagnostics;
 using Nexa.Desktop.Ui;
 using Nexa.Services.Capabilities;
 using Nexa.Xsr.Renderer;
@@ -55,6 +56,7 @@ internal static partial class Program
                 }, timeout.Token);
 
                 HashSet<string> visited = [];
+                var samples = new List<(string Section, double Milliseconds, long Bytes, int Collections)>(408);
                 // Real product segmented track, pager, scene commits and native compositor.
                 // Each sweep reverses while the prior page/selection springs are still active.
                 for (int sweep = 0; sweep < 24; sweep++)
@@ -76,8 +78,14 @@ internal static partial class Program
                             double fraction = sweep % 2 == 0 ? step / 16d : 1 - step / 16d;
                             point = new(navigation.Rect.X + 2 + (navigation.Rect.Width - 4) * fraction,
                                 navigation.Rect.Y + navigation.Rect.Height / 2);
+                            long allocated = GC.GetAllocatedBytesForCurrentThread();
+                            int collections = GC.CollectionCount(0);
+                            long started = Stopwatch.GetTimestamp();
                             AssertTrue(f.Shell.Renderer.PointerMoved(point));
                             window.Surface.CommitScene();
+                            var elapsed = Stopwatch.GetElapsedTime(started);
+                            samples.Add((settings!.SelectedSection, elapsed.TotalMilliseconds,
+                                GC.GetAllocatedBytesForCurrentThread() - allocated, GC.CollectionCount(0) - collections));
                             visited.Add(settings!.SelectedSection);
                         }, timeout.Token);
                         await Task.Delay(4, timeout.Token);
@@ -90,6 +98,9 @@ internal static partial class Program
                 }
                 if (!visited.Contains("platform")) throw new InvalidOperationException("The gesture must actually enter device capabilities.");
                 if (visited.Count < 8) throw new InvalidOperationException("The gesture must traverse settings rather than only scroll a page.");
+                File.WriteAllLines(Path.Combine(output, "settings-drag.csv"), samples.Select(s =>
+                    FormattableString.Invariant($"{s.Section},{s.Milliseconds:F4},{s.Bytes},{s.Collections}"))
+                    .Prepend("section,pointer_and_commit_ms,ui_thread_bytes,gen0_collections"));
                 // Keep the real capability query alive long enough to finish, then verify the
                 // same off-thread native memory path used by the broker without cached facts.
                 await Task.Delay(500, timeout.Token);
