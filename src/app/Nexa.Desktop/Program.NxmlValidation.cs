@@ -727,6 +727,24 @@ internal static partial class Program
             var page = shell.Stage.Navigation.Current;
             shell.Render(wide);
             XsrUiEntityId Find(string key) => FindLaunchInstallValidationNode(shell, page, key);
+            async Task<XsrUiEntityId> WaitForCatalogNodeAsync(string key, XsrUiSize viewport)
+            {
+                try
+                {
+                    while (true)
+                    {
+                        await controller.WaitUntilIdle().WaitAsync(timeout.Token).ConfigureAwait(false);
+                        shell.Render(viewport);
+                        var node = FindLaunchInstallValidationNode(shell, page, key, required: false);
+                        if (node.IsAssigned) return node;
+                        await Task.Delay(TimeSpan.FromMilliseconds(10), timeout.Token).ConfigureAwait(false);
+                    }
+                }
+                catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+                {
+                    throw new InvalidOperationException("Timed out waiting for launch/install validation element: " + key);
+                }
+            }
             if (mainlandGuide)
             {
                 int opened = 0;
@@ -769,14 +787,12 @@ internal static partial class Program
             if (!shell.Renderer.Focus(input, showIndicator: false)) throw new InvalidOperationException("Search input cannot focus.");
             shell.Renderer.EditText(XsrUiTextEdit.Left, extendSelection: true);
             int caret = draft.SelectionEnd;
-            shell.Render(wide);
-            var filtered = Find("CatalogRow:game:fixture-511");
+            var filtered = await WaitForCatalogNodeAsync("CatalogRow:game:fixture-511", wide).ConfigureAwait(false);
             if (shell.Tree.Parent(filtered) != list || shell.Tree.Children(list).Count != 1
                 || draft.ReadDraft() != "fixture-511" || draft.SelectionEnd != caret || shell.Renderer.Focused != input)
                 throw new InvalidOperationException("Catalogue search failed to retain its literal draft/caret or replace its owned window.");
             shell.Renderer.SetTextInputValue(input, "");
-            shell.Render(wide);
-            var selected = Find("CatalogRow:game:1.20.1");
+            var selected = await WaitForCatalogNodeAsync("CatalogRow:game:1.20.1", wide).ConfigureAwait(false);
             if (!shell.Renderer.Activate(selected)) throw new InvalidOperationException("Fixture game row did not activate.");
             await controller.WaitUntilIdle().WaitAsync(timeout.Token).ConfigureAwait(false);
             shell.Render(wide);
@@ -819,9 +835,7 @@ internal static partial class Program
                     throw new InvalidOperationException("Theme/constrained layout lost interactive geometry, drafts or declarative segment state.");
             }
             intents.Emit(XsrSemanticId.Parse("ui.install.page.fabric"), Find("JavaFabricTab"), XsrCorrelationId.Create());
-            await controller.WaitUntilIdle().WaitAsync(timeout.Token).ConfigureAwait(false);
-            scene = shell.Render(narrow);
-            var loader = Find("CatalogRow:loader:0.16.0");
+            var loader = await WaitForCatalogNodeAsync("CatalogRow:loader:0.16.0", narrow).ConfigureAwait(false);
             const string detail = "literal <loader> {data detail} {state private}";
             if (shell.Tree.Parent(loader) != Find("JavaFabricPageRows")
                 || shell.Tree.GetComponent<NxmlDynamicSlot>(Find("JavaFabricPageRows")) is null
@@ -858,11 +872,11 @@ internal static partial class Program
         finally { Directory.Delete(directory, recursive: true); }
     }
 
-    private static XsrUiEntityId FindLaunchInstallValidationNode(XsrUiShell shell, XsrUiEntityId root, string key)
+    private static XsrUiEntityId FindLaunchInstallValidationNode(XsrUiShell shell, XsrUiEntityId root, string key, bool required = true)
     {
         XsrUiEntityId found = default;
         shell.Tree.Walk(root, entity => { if (shell.Tree.Name(entity) == key) found = entity; return true; });
-        if (!found.IsAssigned) throw new InvalidOperationException("Missing launch/install validation element: " + key);
+        if (required && !found.IsAssigned) throw new InvalidOperationException("Missing launch/install validation element: " + key);
         return found;
     }
 

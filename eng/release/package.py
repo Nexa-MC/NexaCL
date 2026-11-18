@@ -119,21 +119,25 @@ def create_dmg(source, destination):
     for attempt in range(3):
         with tempfile.TemporaryDirectory(prefix="nexacl-dmg-", dir=destination.parent) as staging:
             image = Path(staging) / "image.dmg"
+            environment = {**os.environ, "LC_ALL": "C"}
             try:
-                result = subprocess.run(
+                created = subprocess.run(
                     ["hdiutil", "create", "-volname", "NexaCL", "-srcfolder", str(source),
                      "-size", f"{capacity_mib}m", "-format", "UDZO", str(image)],
-                    check=True, capture_output=True, text=True,
-                    env={**os.environ, "LC_ALL": "C"})
+                    check=True, capture_output=True, text=True, env=environment)
+                print(created.stdout or "", end="", flush=True)
+                verified = subprocess.run(
+                    ["hdiutil", "verify", str(image)],
+                    check=True, capture_output=True, text=True, env=environment)
+                print(verified.stdout or "", end="", flush=True)
             except subprocess.CalledProcessError as error:
-                # Never retry permission, disk-space, input or verification failures.
-                if attempt == 2 or "Resource busy" not in (error.stderr or ""):
-                    print(error.stderr or "", flush=True)
+                details = error.stderr or ""
+                transient = ("Resource busy", "Resource temporarily unavailable")
+                if attempt == 2 or not any(message in details for message in transient):
+                    print(details, flush=True)
                     raise
-                print(f"hdiutil resource busy; retrying ({attempt + 1}/2)", flush=True)
+                print(f"hdiutil {error.cmd[1]} encountered resource contention; retrying ({attempt + 1}/2)", flush=True)
             else:
-                print(result.stdout or "", end="", flush=True)
-                run("hdiutil", "verify", image)
                 os.replace(image, destination)
                 return
         time.sleep(2 ** (attempt + 1))

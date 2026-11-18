@@ -14,7 +14,11 @@ class DmgTests(unittest.TestCase):
             target.write_bytes(b"previous")
             images = []
 
-            def create(args, **kwargs):
+            def hdiutil(args, **kwargs):
+                if args[1] == "verify":
+                    self.assertEqual(b"complete", Path(args[2]).read_bytes())
+                    self.assertEqual(b"previous", target.read_bytes())
+                    return subprocess.CompletedProcess(args, 0, stdout="")
                 self.assertEqual("128m", args[args.index("-size") + 1])
                 image = Path(args[-1])
                 images.append(image)
@@ -23,13 +27,7 @@ class DmgTests(unittest.TestCase):
                     raise subprocess.CalledProcessError(1, args, stderr="hdiutil: create failed - Resource busy")
                 return subprocess.CompletedProcess(args, 0, stdout="")
 
-            def verify(*args):
-                self.assertEqual(("hdiutil", "verify"), args[:2])
-                self.assertEqual(b"complete", Path(args[2]).read_bytes())
-                self.assertEqual(b"previous", target.read_bytes())
-
-            with patch.object(package.subprocess, "run", side_effect=create), \
-                    patch.object(package, "run", side_effect=verify), \
+            with patch.object(package.subprocess, "run", side_effect=hdiutil), \
                     patch.object(package.time, "sleep") as sleep:
                 package.create_dmg(root, target)
             self.assertEqual(b"complete", target.read_bytes())
@@ -42,13 +40,12 @@ class DmgTests(unittest.TestCase):
             with self.subTest(message=message), tempfile.TemporaryDirectory() as root:
                 target = Path(root) / "result.dmg"
                 target.write_bytes(b"previous")
-                error = subprocess.CalledProcessError(1, ["hdiutil"], stderr=message)
+                error = subprocess.CalledProcessError(1, ["hdiutil", "create"], stderr=message)
                 with patch.object(package.subprocess, "run", side_effect=error) as create, \
-                        patch.object(package, "run") as verify, patch.object(package.time, "sleep"):
+                        patch.object(package.time, "sleep"):
                     with self.assertRaises(subprocess.CalledProcessError):
                         package.create_dmg(root, target)
                 self.assertEqual(attempts, create.call_count)
-                verify.assert_not_called()
                 self.assertEqual(b"previous", target.read_bytes())
                 self.assertEqual([target], list(Path(root).iterdir()))
 
@@ -56,17 +53,44 @@ class DmgTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             target = Path(root) / "result.dmg"
             target.write_bytes(b"previous")
-            def create(args, **kwargs):
+            def hdiutil(args, **kwargs):
+                if args[1] == "verify":
+                    raise subprocess.CalledProcessError(1, args, stderr="Checksum mismatch")
                 Path(args[-1]).write_bytes(b"invalid")
                 return subprocess.CompletedProcess(args, 0, stdout="")
-            with patch.object(package.subprocess, "run", side_effect=create) as command, \
-                    patch.object(package, "run", side_effect=subprocess.CalledProcessError(1, ["verify"])), \
+            with patch.object(package.subprocess, "run", side_effect=hdiutil) as command, \
                     patch.object(package.time, "sleep") as sleep:
                 with self.assertRaises(subprocess.CalledProcessError):
                     package.create_dmg(root, target)
-            self.assertEqual(1, command.call_count)
+            self.assertEqual(["create", "verify"], [call.args[0][1] for call in command.call_args_list])
             sleep.assert_not_called()
             self.assertEqual(b"previous", target.read_bytes())
+
+    def test_temporarily_unavailable_verification_retries_before_replacing_image(self):
+        with tempfile.TemporaryDirectory() as root:
+            target = Path(root) / "result.dmg"
+            target.write_bytes(b"previous")
+            images = []
+
+            def hdiutil(args, **kwargs):
+                image = Path(args[-1])
+                if args[1] == "create":
+                    images.append(image)
+                    image.write_bytes(b"complete")
+                else:
+                    self.assertEqual(b"previous", target.read_bytes())
+                    if len(images) == 1:
+                        raise subprocess.CalledProcessError(
+                            1, args, stderr="hdiutil: verify failed - Resource temporarily unavailable")
+                return subprocess.CompletedProcess(args, 0, stdout="")
+
+            with patch.object(package.subprocess, "run", side_effect=hdiutil), \
+                    patch.object(package.time, "sleep") as sleep:
+                package.create_dmg(root, target)
+            sleep.assert_called_once_with(2)
+            self.assertEqual(2, len(set(images)))
+            self.assertEqual(b"complete", target.read_bytes())
+            self.assertEqual([target], list(Path(root).iterdir()))
 
     def test_image_capacity_includes_payload_and_filesystem_headroom(self):
         with tempfile.TemporaryDirectory() as root:
@@ -74,9 +98,10 @@ class DmgTests(unittest.TestCase):
             with (source / "NexaCL.pkg").open("wb") as stream:
                 stream.truncate(100 * (1 << 20))
             target = Path(root) / "result.dmg"
-            def create(args, **kwargs):
-                self.assertEqual("189m", args[args.index("-size") + 1])
-                Path(args[-1]).write_bytes(b"image")
+            def hdiutil(args, **kwargs):
+                if args[1] == "create":
+                    self.assertEqual("189m", args[args.index("-size") + 1])
+                    Path(args[-1]).write_bytes(b"image")
                 return subprocess.CompletedProcess(args, 0, stdout="")
-            with patch.object(package.subprocess, "run", side_effect=create), patch.object(package, "run"):
+            with patch.object(package.subprocess, "run", side_effect=hdiutil):
                 package.create_dmg(source, target)
