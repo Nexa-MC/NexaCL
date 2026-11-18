@@ -7,9 +7,8 @@ public sealed partial class XsrUiRenderer
     private sealed record ThemeAnimationClock(DateTimeOffset Started, DateTimeOffset LastRendered, long PreparedFrame,
         IReadOnlyList<XsrUiStyleAnimation> Animations);
 
-    private DateTimeOffset PrepareThemeAnimationClock(XsrUiEntityId entity)
+    private DateTimeOffset PrepareThemeAnimationClock(XsrUiEntityId entity, IReadOnlyList<XsrUiStyleAnimation> animations)
     {
-        var animations = GetThemeStyle(entity)?.Style.Animations ?? [];
         DateTimeOffset now = _gestureTime.GetUtcNow();
         if (!_themeAnimationClocks.TryGetValue(entity, out var clock)
             || !SameThemeAnimations(clock.Animations, animations)
@@ -56,9 +55,8 @@ public sealed partial class XsrUiRenderer
             _themeAnimationClocks.Remove(dead);
     }
 
-    private XsrUiVisualStyleSnapshot ProjectThemeStyle(XsrUiEntityId entity)
+    private XsrUiVisualStyleSnapshot ProjectThemeStyle(XsrUiEntityId entity, ThemeStyleEntry? themed)
     {
-        ThemeStyleEntry? themed = GetThemeStyle(entity);
         if (themed is null) return ProjectStyle(_tree.GetComponent<XsrUiVisualStyle>(entity));
         // Host compatibility colors may inherit the built-in palette. Explicit third-party colors are literal.
         XsrUiComputedStyle style = themed.Style;
@@ -73,9 +71,10 @@ public sealed partial class XsrUiRenderer
             Hover = style.Hover ?? source.Hover,
             IsComputed = true,
         };
-        foreach (XsrUiStyleAnimation animation in style.Animations ?? [])
+        var animations = style.Animations ?? [];
+        foreach (XsrUiStyleAnimation animation in animations)
         {
-            double value = SampleStyleAnimation(entity, animation);
+            double value = SampleStyleAnimation(entity, animation, animations);
             visual = animation.Property switch
             {
                 XsrUiStyleAnimationProperty.Opacity => visual with { Opacity = Math.Clamp(value, 0, 1) },
@@ -95,14 +94,15 @@ public sealed partial class XsrUiRenderer
         || style.Animations?.Any(animation => animation.Property is XsrUiStyleAnimationProperty.Opacity
             or XsrUiStyleAnimationProperty.CornerRadius or XsrUiStyleAnimationProperty.BlurRadius) == true;
 
-    private XsrUiSceneTransform? ThemeTransform(XsrUiEntityId entity, XsrUiRect rect)
+    private XsrUiSceneTransform? ThemeTransform(XsrUiEntityId entity, XsrUiRect rect, XsrUiComputedStyle? style)
     {
-        XsrUiComputedStyle? style = GetThemeStyle(entity)?.Style;
+        if (style?.Transform is null && style?.Animations is not { Count: > 0 }) return null;
         XsrUiStyleTransform transform = style?.Transform ?? new(ScaleX: 1, ScaleY: 1);
         bool defined = style?.Transform is not null;
-        foreach (XsrUiStyleAnimation animation in style?.Animations ?? [])
+        var animations = style?.Animations ?? [];
+        foreach (XsrUiStyleAnimation animation in animations)
         {
-            double value = SampleStyleAnimation(entity, animation);
+            double value = SampleStyleAnimation(entity, animation, animations);
             XsrUiStyleTransform next = animation.Property switch
             {
                 XsrUiStyleAnimationProperty.TranslateX => transform with { TranslateX = value },
@@ -126,10 +126,10 @@ public sealed partial class XsrUiRenderer
             pivotY + transform.TranslateY - pivotX * m12 - pivotY * m22);
     }
 
-    private double SampleStyleAnimation(XsrUiEntityId entity, XsrUiStyleAnimation animation)
+    private double SampleStyleAnimation(XsrUiEntityId entity, XsrUiStyleAnimation animation, IReadOnlyList<XsrUiStyleAnimation> animations)
     {
         if (EffectiveReducedMotion) return animation.Keyframes[^1].Value;
-        double cycles = Math.Max(0, (_gestureTime.GetUtcNow() - PrepareThemeAnimationClock(entity)).TotalMilliseconds / animation.Duration.TotalMilliseconds);
+        double cycles = Math.Max(0, (_gestureTime.GetUtcNow() - PrepareThemeAnimationClock(entity, animations)).TotalMilliseconds / animation.Duration.TotalMilliseconds);
         double progress = animation.Repeat ? cycles % 1 : Math.Min(1, cycles);
         if (animation.Repeat && animation.Alternate && ((long)Math.Floor(cycles) & 1) != 0) progress = 1 - progress;
         IReadOnlyList<XsrUiStyleKeyframe> frames = animation.Keyframes;

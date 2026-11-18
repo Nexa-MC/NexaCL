@@ -184,6 +184,33 @@ internal static partial class Program
             .Where(node => tree.Parent(node.Entity) == root).Select(node => node.Entity).ToArray());
     }
 
+    private static void ModalClearsFocusStyleAndTransformInTheSameFrame()
+    {
+        XsrUiTree tree = new();
+        var root = tree.Create("root");
+        var button = ThemeLeaf(tree, root, "button", 80, 40);
+        tree.SetComponent(button, new XsrUiInput { Focusable = true });
+        XsrUiColor normal = new(20, 30, 40), focused = new(50, 60, 70);
+        XsrUiRenderer renderer = new(tree, new XsrStateStoreBuilder().Build());
+        renderer.SetRoot(root);
+        renderer.ApplyTheme(new TestThemeProgram(1, context =>
+            context.InteractionState.HasFlag(XsrUiThemeInteractionState.Focus)
+                ? new() { Background = focused, Transform = new(TranslateX: 12) }
+                : new() { Background = normal }), 1);
+        renderer.Render();
+        AssertTrue(renderer.Focus(button));
+        var before = renderer.Render().Nodes.Single(node => node.Entity == button);
+        AssertEqual(focused, before.VisualStyle.Background);
+        AssertClose(12, before.Rect.X);
+
+        var dialog = ThemeLeaf(tree, root, "dialog", 80, 40);
+        tree.SetComponent(dialog, new XsrUiOverlayLayer(isModal: true));
+        var after = renderer.Render().Nodes.Single(node => node.Entity == button);
+        AssertFalse(after.IsFocused);
+        AssertEqual(normal, after.VisualStyle.Background);
+        AssertClose(0, after.Rect.X);
+    }
+
     private static void ThemeTransformSharesDrawingInverseHitAndInheritedGeometry()
     {
         XsrUiTree tree = new(); var root = tree.Create("root");

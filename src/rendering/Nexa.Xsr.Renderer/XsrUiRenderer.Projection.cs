@@ -110,12 +110,6 @@ public sealed partial class XsrUiRenderer
             overlayClosing = localOverlayMotion.IsClosing;
             overlayAnchor = rect;
         }
-        XsrUiRect layoutRect = rect;
-        XsrUiSceneTransform? ownTransform = ThemeTransform(entity, layoutRect);
-        XsrUiSceneTransform? sceneTransform = ownTransform is { } own
-            ? parentTransform is { } inherited ? own.Then(inherited) : own : parentTransform;
-        if (sceneTransform is { } affine) rect = affine.Bounds(layoutRect);
-        XsrUiComputedStyle? themeStyle = GetThemeStyle(entity)?.Style;
         XsrUiSelection? selection = components.Get<XsrUiSelection>();
         XsrUiInput? input = components.Get<XsrUiInput>();
         bool enabled = accessible && IsEnabled(input) && (components.Get<XsrUiSegmentReveal>()?.Expanded ?? true);
@@ -129,6 +123,13 @@ public sealed partial class XsrUiRenderer
             if (_hovered == entity) _hovered = default;
             if (_focused == entity) _focused = default;
         }
+        ThemeStyleEntry? themed = GetThemeStyle(entity);
+        XsrUiComputedStyle? themeStyle = themed?.Style;
+        XsrUiRect layoutRect = rect;
+        XsrUiSceneTransform? ownTransform = ThemeTransform(entity, layoutRect, themeStyle);
+        XsrUiSceneTransform? sceneTransform = ownTransform is { } own
+            ? parentTransform is { } inherited ? own.Then(inherited) : own : parentTransform;
+        if (sceneTransform is { } affine) rect = affine.Bounds(layoutRect);
         // A zero-width initial fill still needs to reach the backend to start its animation.
         XsrUiRect clipBounds = components.Get<XsrUiProgress>() is not null
             && _arrangedSlots.TryGetValue(entity.Index, out XsrUiRect progressSlot)
@@ -165,7 +166,7 @@ public sealed partial class XsrUiRenderer
             enabled && (input?.IsFocused ?? false),
             animation?.Progress,
             animation is { Keyframes.Count: > 0 } ? animation.Value : null,
-            ProjectThemeStyle(entity),
+            ProjectThemeStyle(entity, themed),
             selection?.IsSelected ?? false,
             enabled && (input?.Focusable ?? false),
             enabled && (input?.Clickable ?? false),
@@ -234,7 +235,7 @@ public sealed partial class XsrUiRenderer
             XsrUiRect presentedBounds = sceneTransform?.Bounds(presented) ?? presented;
             AddSceneNode(new XsrUiSceneNode(track.Thumb, presentedBounds, depth + 1, XsrUiSemanticRole.None,
                 null, null, null, false, null, null,
-                ProjectThemeStyle(track.Thumb),
+                ProjectThemeStyle(track.Thumb, GetThemeStyle(track.Thumb)),
                 IsEnabled: false, ClipRect: Intersect(visibleClip ?? rect, presentedBounds), IsAccessible: false,
                 TransitionKey: thumbTransition.Key, TransitionOffsetX: thumbTransition.OffsetX,
                 TransitionPresentedOffsetX: thumbTransition.PresentedOffsetX)
