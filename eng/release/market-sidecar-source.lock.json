@@ -1,0 +1,7 @@
+{
+  "repository": "Nexa-MC/Nexa-Cloud-Market-Sidecar",
+  "commit": "4a687c0dd22b0b81177ade8a8c469679b668c150",
+  "hostReference": "42ad7a1a3c7279d1cbc093d765e87c98f3878fff",
+  "runtimeVersion": "1.0.1",
+  "minimumHostVersion": "2.0.0.alpha.20"
+}

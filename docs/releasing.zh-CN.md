@@ -25,10 +25,7 @@ Alpha/Beta 保持 prerelease，稳定版按对应渠道设置。完整包包括 
 
 ## 独立 Sidecar 构建输入
 
-发布流程通过 `eng/release/independent_sidecars.py` 对独立构建的映像进行签名和校验。
-Market 沿用现有输入锁；PluginSidecar 必须在完整六平台构建成功并经过审查后，将
-实际源码提交、构建编号、版本、宿主引用、最小宿主版本及各平台大小和 SHA-256 写入
-`eng/release/plugin-sidecar.lock.json`，才会进入发布包。普通宿主构建仍保持独立。
+发布 CI 检出固定提交并编译 Market，校验六平台来源记录后签名。签名后的 Market 映像与更新目录会随发布同步至 `NexaCL-Update`，供兼容宿主单独安装。PluginSidecar 需要经过审核的六平台 `plugin-sidecar.lock.json` 才会进入发布包。普通宿主构建仍保持独立。
 
 具体步骤见 [Sidecar 输入流程](sidecar-release-inputs.md)：先在 PluginSidecar 仓库运行
 `distribution-build.yml`，再以相同提交及成功构建编号运行 `publish-distribution-inputs.yml`，

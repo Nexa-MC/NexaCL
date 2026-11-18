@@ -86,13 +86,47 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
-      - name: Fetch reviewed independent Sidecar images
+      - name: Resolve the reviewed Market source
+        id: market-source
+        shell: bash
+        env:
+          MARKET_SIDECAR_READ_TOKEN: ${{ secrets.MARKET_SIDECAR_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$MARKET_SIDECAR_READ_TOKEN" ]]; then
+            echo '::error::Configure MARKET_SIDECAR_READ_TOKEN with read-only access to Nexa-Cloud-Market-Sidecar.'
+            exit 1
+          fi
+          python eng/release/market_ci.py source >> "$GITHUB_OUTPUT"
+      - name: Check out Market Sidecar source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ${{ steps.market-source.outputs.repository }}
+          ref: ${{ steps.market-source.outputs.commit }}
+          path: .market-ci-source
+          token: ${{ secrets.MARKET_SIDECAR_READ_TOKEN }}
+          persist-credentials: false
+      - name: Build and validate Market Sidecar from source
+        shell: pwsh
+        run: |
+          $checkout = Join-Path $env:RUNNER_TEMP 'nexa-market-source'
+          Move-Item -LiteralPath '.market-ci-source' -Destination $checkout
+          try {
+            python eng/release/market_ci.py build --checkout $checkout `
+              --output (Join-Path $env:RUNNER_TEMP 'sidecar-input') `
+              --provenance (Join-Path $env:RUNNER_TEMP 'market-provenance') --rid '${{ matrix.rid }}'
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          } finally {
+            Remove-Item -LiteralPath $checkout -Recurse -Force
+          }
+      - name: Fetch reviewed independent PluginSidecar image
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          python eng/release/independent_sidecars.py fetch "$RUNNER_TEMP/sidecar-input" --rid '${{ matrix.rid }}'
+          python eng/release/independent_sidecars.py fetch "$RUNNER_TEMP/sidecar-input" \
+            --market-ci "$RUNNER_TEMP/market-provenance" --rid '${{ matrix.rid }}'
       - name: Install Linux packaging tools
         if: runner.os == 'Linux'
         shell: bash
@@ -291,13 +325,15 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
-          python eng/release/independent_sidecars.py stage "$RUNNER_TEMP/launcher" --rid '${{ matrix.rid }}' --source "$RUNNER_TEMP/sidecar-input"
+          python eng/release/independent_sidecars.py stage "$RUNNER_TEMP/launcher" --rid '${{ matrix.rid }}' \
+            --source "$RUNNER_TEMP/sidecar-input" --market-ci "$RUNNER_TEMP/market-provenance"
       - name: Verify signed Sidecar through the production NativeAOT Host
         shell: bash
         run: |
           binary="$RUNNER_TEMP/launcher/Nexa.Desktop"
           if [[ '${{ matrix.rid }}' == win-* ]]; then binary="${binary}.exe"; fi
-          python eng/release/independent_sidecars.py smoke "$RUNNER_TEMP/launcher" --host "$binary"
+          python eng/release/independent_sidecars.py smoke "$RUNNER_TEMP/launcher" --host "$binary" \
+            --market-ci "$RUNNER_TEMP/market-provenance"
       - name: Prepare persistent Windows Explorer signing identity
         if: runner.os == 'Windows'
         shell: pwsh
@@ -351,6 +387,11 @@ jobs:
           name: Nexa-${{ matrix.rid }}
           path: artifacts/*
           if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Market-provenance-${{ matrix.rid }}
+          path: ${{ runner.temp }}/market-provenance/market-build-${{ matrix.rid }}.json
+          if-no-files-found: error
   distribution:
     needs: [metadata, launcher]
     runs-on: ubuntu-24.04
@@ -370,9 +411,14 @@ jobs:
         with:
           name: release-metadata
           path: release-metadata
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: Market-provenance-*
+          path: market-provenance
+          merge-multiple: true
       - name: Require every package and calculate checksums
         run: |
-          python3 eng/release/independent_sidecars.py export artifacts --version "$PRODUCT_VERSION"
+          python3 eng/release/independent_sidecars.py export artifacts --version "$PRODUCT_VERSION" --market-ci market-provenance
           python3 eng/release/verify.py artifacts "$PRODUCT_VERSION"
       - name: Generate and round-trip publisher-authenticated differential packages
         if: needs.metadata.outputs.release == 'true' && needs.metadata.outputs.channel != 'ci'
@@ -383,7 +429,7 @@ jobs:
           python3 eng/release/delta.py artifacts "$PRODUCT_VERSION" "$RUNNER_TEMP/update-history"
           python3 eng/release/verify.py artifacts "$PRODUCT_VERSION"
       - name: Verify embedded Sidecar signatures and provenance in all six portable packages
-        run: python3 eng/release/independent_sidecars.py verify artifacts --version "$PRODUCT_VERSION"
+        run: python3 eng/release/independent_sidecars.py verify artifacts --version "$PRODUCT_VERSION" --market-ci market-provenance
       - name: Sign and independently verify the complete distribution
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}

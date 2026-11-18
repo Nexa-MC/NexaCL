@@ -1,10 +1,26 @@
 # Independent Sidecar release inputs
 
 A launcher source build requires neither the plugin SDK nor a PluginSidecar
-checkout. Release packaging consumes already-built `.nsc` images, verifies their
-reviewed hashes, adds the publisher's detached signature and verifies the
-resulting portable archives. All plugin-specific managed code, native libraries
+checkout. In release CI, NexaCL builds Market from a pinned source checkout and consumes
+the reviewed PluginSidecar image when its lock is present. Packaging adds the
+publisher's detached signatures and verifies the results in the portable archives. All plugin-specific managed code, native libraries
 and UI assets remain inside the PluginSidecar image.
+
+## Build Market in launcher CI
+
+`eng/release/market-sidecar-source.lock.json` pins the private Market repository,
+full source revision, its Host ABI reference and its independent runtime version.
+Configure `MARKET_SIDECAR_READ_TOKEN` on the NexaCL repository with Contents read
+access to the private Market repository. Checkout credentials are discarded before
+building, and only the executable and its provenance leave the build step. A
+missing credential or source mismatch stops the job before packaging.
+
+Each target runner verifies the pinned project, publishes NativeAOT, and records
+its image hash, size, CI run and launcher commit. The packaging step signs those
+exact bytes. Distribution verifies every portable archive against all six
+provenance records before exporting the signed Sidecar catalog and per-platform
+images. `NexaCL-Update` mirrors those assets from the verified public launcher
+release. Compatible launchers can install the Market component independently.
 
 ## Produce reviewed inputs
 

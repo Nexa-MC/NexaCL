@@ -25,10 +25,10 @@ Source Actions Secrets hold release private keys; the update repository needs pu
 
 ## Independent Sidecar inputs
 
-The release pipeline signs and verifies independently built images listed by
-`eng/release/independent_sidecars.py`. Market keeps its existing reviewed input
-lock. PluginSidecar is included only when `plugin-sidecar.lock.json` contains a
-reviewed successful six-platform build; ordinary Host builds remain independent.
+The release pipeline builds Market from its reviewed source commit and exports its
+signed images and update catalogs to the independent update source. PluginSidecar
+is included when `plugin-sidecar.lock.json` records a successful reviewed
+six-platform build. Ordinary Host builds remain independent.
 Follow [the Sidecar input procedure](sidecar-release-inputs.md) to produce,
 review and enable those artifacts. A missing lock means the plugin-enabled
 release is still pending, not that a placeholder package can be published.

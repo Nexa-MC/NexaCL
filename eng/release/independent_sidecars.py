@@ -8,14 +8,17 @@ import subprocess
 from sidecar_catalog import catalog_names
 from sidecar_package import ROOT, RIDS, stage, verify_archives
 from manifest import release_channel
+from market_ci import PACKAGE as MARKET, built_lock
 
 LOCKS = (('Nexa.Cloud.Market.Sidecar', 'market-sidecar.lock.json', True),
          ('Nexa.Plugin.Sidecar', 'plugin-sidecar.lock.json', False))
 
 
-def reviewed_locks(root=ROOT):
+def reviewed_locks(root=ROOT, *, market_from_source=False):
     result = []
     for identity, filename, required in LOCKS:
+        if market_from_source and identity == MARKET:
+            continue
         path = root / 'eng/release' / filename
         if not path.exists() and not required:
             continue
@@ -60,8 +63,9 @@ def main():
     parser.add_argument('--rid', choices=RIDS)
     parser.add_argument('--version')
     parser.add_argument('--host', type=Path)
+    parser.add_argument('--market-ci', type=Path, help='Use the Market image produced by this CI run')
     args = parser.parse_args()
-    locks = reviewed_locks()
+    locks = reviewed_locks(market_from_source=args.market_ci is not None)
     if args.mode in ('fetch', 'stage') and args.rid is None:
         parser.error('--rid is required')
     if args.mode == 'stage' and args.source is None:
@@ -74,9 +78,13 @@ def main():
         fetch(args.directory, args.rid, locks)
         return
     if args.mode == 'smoke':
-        for identity, _ in locks:
+        identities = ([MARKET] if args.market_ci is not None else []) + [identity for identity, _ in locks]
+        for identity in identities:
             subprocess.run([str(args.host.resolve()), '--validate-shell', '--require-sidecar=' + identity], check=True)
         return
+    if args.market_ci is not None:
+        rids = (args.rid,) if args.mode == 'stage' else RIDS
+        locks.insert(0, (MARKET, built_lock(args.market_ci, rids)))
     public = (ROOT / 'GPG-PUBLIC-KEY.asc').read_bytes()
     for identity, lock in locks:
         if args.mode == 'stage':
