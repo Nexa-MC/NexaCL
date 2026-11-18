@@ -307,13 +307,50 @@ public sealed partial class XsrUiRenderer
         while (_visibleChildren.Count <= depth) _visibleChildren.Add([]);
         List<XsrUiEntityId> children = _visibleChildren[depth];
         children.Clear();
-        if (_themeProgram is null) _tree.CopyChildren(entity, children);
-        else children.AddRange(OrderedChildren(entity));
+        _tree.CopyChildren(entity, children);
+        if (_themeProgram is not null && children.Count > 1) OrderSceneChildren(children);
         int kept = 0;
         for (int index = 0; index < children.Count; index++)
             if (IsVisible(children[index])) children[kept++] = children[index];
         children.RemoveRange(kept, children.Count - kept);
         return children;
+    }
+
+    // Sorting finishes before visiting descendants, so one buffer serves every depth.
+    // Keep authored positions as tie breakers and keep overlays above normal children.
+    private readonly List<SceneChildOrder> _sceneChildOrder = [];
+
+    private void OrderSceneChildren(List<XsrUiEntityId> children)
+    {
+        _sceneChildOrder.Clear();
+        bool sorted = true;
+        for (int index = 0; index < children.Count; index++)
+        {
+            XsrUiEntityId child = children[index];
+            bool overlay = _tree.GetComponent<XsrUiOverlayLayer>(child) is not null;
+            int order = overlay ? 0 : GetThemeStyle(child)?.Style.Order ?? 0;
+            SceneChildOrder entry = new(child, overlay, order, index);
+            if (index > 0 && _sceneChildOrder[index - 1].CompareTo(entry) > 0) sorted = false;
+            _sceneChildOrder.Add(entry);
+        }
+        if (!sorted)
+        {
+            _sceneChildOrder.Sort();
+            for (int index = 0; index < children.Count; index++) children[index] = _sceneChildOrder[index].Entity;
+        }
+        _sceneChildOrder.Clear();
+    }
+
+    private readonly record struct SceneChildOrder(XsrUiEntityId Entity, bool Overlay, int Order, int Position)
+        : IComparable<SceneChildOrder>
+    {
+        public int CompareTo(SceneChildOrder other)
+        {
+            int comparison = Overlay.CompareTo(other.Overlay);
+            if (comparison != 0) return comparison;
+            comparison = Order.CompareTo(other.Order);
+            return comparison != 0 ? comparison : Position.CompareTo(other.Position);
+        }
     }
 
     private bool IsStableContent(XsrUiEntityId entity)

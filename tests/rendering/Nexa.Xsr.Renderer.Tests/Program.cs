@@ -29,6 +29,7 @@ internal static partial class Program
         ("theme admission validates retained nodes before mutation", Sync(ThemeAdmissionIncludesRetainedNodesAndRejectsWithoutMutation)),
         ("theme state responsive and source changes invalidate correctly", Sync(ThemeInteractionResponsiveAndSourceChangesInvalidateOnlyNeededStyle)),
         ("theme grid fractions spans order and absolute share input geometry", Sync(ThemeGridFractionsSpansOrderAndAbsoluteGeometryAgreeWithInput)),
+        ("theme scene ordering retains ties overlays and live changes", Sync(ThemeSceneOrderingPreservesAuthoredTiesOverlaysAndLiveChanges)),
         ("theme affine drawing and inverse hit geometry agree", Sync(ThemeTransformSharesDrawingInverseHitAndInheritedGeometry)),
         ("theme font bridge and keyframes honor revision motion and idle", Sync(ThemeFontBridgeRevisionRemeasuresAndAnimationHonorsMotionAndIdles)),
         ("ScrollbarThumbDragAndTrackPageUseSceneGeometry", Sync(ScrollbarThumbDragAndTrackPageUseSceneGeometry)),

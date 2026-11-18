@@ -128,6 +128,62 @@ internal static partial class Program
         AssertSequence(new[] { first, second, wide, absolute }, tree.Children(root).ToArray());
     }
 
+    private static void ThemeSceneOrderingPreservesAuthoredTiesOverlaysAndLiveChanges()
+    {
+        XsrUiTree tree = new();
+        var root = tree.Create("root");
+        var first = ThemeLeaf(tree, root, "first", 80, 80);
+        var overlay = ThemeLeaf(tree, root, "overlay", 80, 80);
+        var second = ThemeLeaf(tree, root, "second", 80, 80);
+        var early = ThemeLeaf(tree, root, "early", 80, 80);
+        var topOverlay = ThemeLeaf(tree, root, "top", 80, 80);
+        var nestedFirst = ThemeLeaf(tree, first, "first", 20, 20);
+        var nestedEarly = ThemeLeaf(tree, first, "early", 20, 20);
+        tree.SetComponent(overlay, new XsrUiOverlayLayer());
+        tree.SetComponent(topOverlay, new XsrUiOverlayLayer());
+        tree.SetComponent(topOverlay, new XsrUiInput { Clickable = true });
+        tree.SetComponent(early, new XsrUiSelection());
+        TestThemeProgram theme = new(1, context => new()
+        {
+            Order = context.Identity.Key switch
+            {
+                "early" => context.InteractionState.HasFlag(XsrUiThemeInteractionState.Selected) ? 3 : -1,
+                "first" or "second" => 2,
+                "overlay" => 100,
+                "top" => -100,
+                _ => 0,
+            },
+        });
+        XsrUiRenderer renderer = new(tree, new XsrStateStoreBuilder().Build());
+        renderer.SetRoot(root);
+        renderer.ApplyTheme(theme, 1);
+        AssertOrder(early, first, second, overlay, topOverlay);
+        AssertEqual(topOverlay, renderer.HitTest(new(10, 10)));
+        AssertSequence(new[] { nestedEarly, nestedFirst }, renderer.Render().Nodes
+            .Where(node => tree.Parent(node.Entity) == first).Select(node => node.Entity).ToArray());
+
+        tree.GetComponent<XsrUiSelection>(early)!.IsSelected = true;
+        tree.MarkDirty(early, XsrUiDirtyKinds.Paint);
+        AssertOrder(first, second, early, overlay, topOverlay);
+        tree.ReorderChildren(root, [topOverlay, second, overlay, first, early]);
+        AssertOrder(second, first, early, topOverlay, overlay);
+        tree.GetComponent<XsrUiElement>(second)!.IsVisible = false;
+        tree.MarkDirty(second, XsrUiDirtyKinds.Layout);
+        AssertOrder(first, early, topOverlay, overlay);
+        tree.Destroy(first);
+        AssertOrder(early, topOverlay, overlay);
+        tree.GetComponent<XsrUiElement>(second)!.IsVisible = true;
+        tree.MarkDirty(second, XsrUiDirtyKinds.Layout);
+        AssertOrder(second, early, topOverlay, overlay);
+        renderer.ClearTheme(2);
+        renderer.Render();
+        renderer.ApplyTheme(theme, 3);
+        AssertOrder(second, early, topOverlay, overlay);
+
+        void AssertOrder(params XsrUiEntityId[] expected) => AssertSequence(expected, renderer.Render().Nodes
+            .Where(node => tree.Parent(node.Entity) == root).Select(node => node.Entity).ToArray());
+    }
+
     private static void ThemeTransformSharesDrawingInverseHitAndInheritedGeometry()
     {
         XsrUiTree tree = new(); var root = tree.Create("root");
