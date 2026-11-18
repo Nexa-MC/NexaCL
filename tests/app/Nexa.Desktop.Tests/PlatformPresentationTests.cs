@@ -77,10 +77,17 @@ internal static partial class Program
             AssertTrue(badge.Rect.Width >= 96 && badge.Rect.Width <= 330);
             AssertEqual("尚未接入", badge.Text);
         }
+        Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.general").Entity);
+        scene = fixture.Shell.Render(new(1100, 1400));
+        fixture.Shell.Renderer.TextLocalizer = source => source == "尚未接入" ? "Not available yet" : source;
+        Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.platform").Entity);
+        PumpUntil(() => HasKey(fixture.Shell, scene, "PlatformCapabilityBadge.input.keyboard.available"));
+        AssertEqual("Not available yet", FindByKey(fixture.Shell, scene, "PlatformCapabilityBadge.input.keyboard.available").Text);
         current = new(3, now, [devices.Observe([], now, "fixture"), packs.Observe([], now, "fixture")]);
         fixture.Store.Publish(fixture.Store.Resolve(MachineCapabilityStateContract.RevisionKey), 3L);
         PumpUntil(() => List(packs.Id).SingleOrDefault() == "默认资源");
         AssertEqual("未检测到已连接设备", List(devices.Id).Single());
+        AssertFalse(HasKey(fixture.Shell, scene, "PlatformCapabilityBadge.input.keyboard.available"));
     }
 
     private static void PlatformRepairRejectsRetiredConfirmationAndJavaPick()

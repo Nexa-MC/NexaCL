@@ -1,7 +1,9 @@
+using System.Runtime.CompilerServices;
 using Nexa.Services.Capabilities;
 using Nexa.Services.Minecraft;
 using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
+using Nexa.Xsr.Renderer.Nxml;
 using Nexa.Xsr.State;
 
 namespace Nexa.Desktop.Ui;
@@ -14,6 +16,10 @@ internal static class SettingsPresentationState
 
 internal sealed partial class SettingsPageController
 {
+    // Observations are immutable. Reopening the page can mount the same compiled row while
+    // the snapshot is alive; retiring an instance or a probe does not retain its observations.
+    private readonly ConditionalWeakTable<ICapability, ScalarCapabilityRow> _scalarCapabilityRows = new();
+    private sealed record ScalarCapabilityRow(string Badge, NxmlHostIr Fragment);
     private static readonly Lazy<Dictionary<string, string>> PlatformTerms = new(ReadPlatformTerms);
     private static readonly Lazy<string[]> PlatformGroups = new(() => PlatformTerms.Value
         .Where(pair => pair.Key.StartsWith("group.", StringComparison.Ordinal) && pair.Key != "group.memory")
@@ -225,15 +231,23 @@ internal sealed partial class SettingsPageController
             }
             return;
         }
-        _dynamic.Append(card, DesktopMarkup.Dynamic("SettingsPlatformCapability.d.nxml", new Dictionary<string, string>
+        string badge = _shell.Renderer.LocalizeText(StatusText(value));
+        if (_scalarCapabilityRows.TryGetValue(value, out var cached) && cached.Badge == badge)
+        {
+            _dynamic.Append(card, cached.Fragment);
+            return;
+        }
+        var fragment = DesktopMarkup.Dynamic("SettingsPlatformCapability.d.nxml", new Dictionary<string, string>
         {
             ["row"] = "PlatformCapability." + value.Id,
             ["label"] = value.Definition.Label,
             ["badgeKey"] = "PlatformCapabilityBadge." + value.Id,
-            ["badge"] = _shell.Renderer.LocalizeText(StatusText(value)),
+            ["badge"] = badge,
             ["badgeStyle"] = value.Availability == CapabilityAvailability.Available ? "platform-badge platform-badge-available" : "platform-badge",
             ["evidence"] = value.Availability == CapabilityAvailability.Available ? value.Source : value.Reason
-        }));
+        });
+        _scalarCapabilityRows.AddOrUpdate(value, new(badge, fragment));
+        _dynamic.Append(card, fragment);
     }
 
     private XsrUiEntityId BuildCapabilityList(XsrUiEntityId card, ICapability value)
