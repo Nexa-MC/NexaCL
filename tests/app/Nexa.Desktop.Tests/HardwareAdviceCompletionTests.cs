@@ -85,6 +85,7 @@ internal static partial class Program
         Emit(fixture.Intents, "ui.settings.section", FindByKey(fixture.Shell, scene, "SettingsNav.platform").Entity);
         PumpUntil(() => HasKey(fixture.Shell, scene, "HardwareAdvice.Risk.Facts"));
         AssertEqual(instance.DirectoryPath, capturedScope!.InstanceDirectory);
+        var observation = FindByKey(fixture.Shell, scene, "PlatformCapability.minecraft.settings.render_distance").Entity;
         AssertTrue(FindByKey(fixture.Shell, scene, "HardwareAdvice.Risk.Facts").Text!.Contains("未知", StringComparison.Ordinal));
         long machineRevision = fixture.Store.Read<long>(fixture.Store.Resolve(MachineCapabilityStateContract.RevisionKey)).Value;
         for (int frame = 0; frame < 16; frame++) scene = fixture.Shell.Render(new(1100, 2800));
@@ -99,6 +100,7 @@ internal static partial class Program
         AssertEqual(1, evaluated.Count);
         AssertTrue(evaluated.All(snapshot => ReferenceEquals(snapshot, first)));
         AssertTrue(HasKey(fixture.Shell, scene, "PlatformPreflightCard"));
+        AssertEqual(observation, FindByKey(fixture.Shell, scene, "PlatformCapability.minecraft.settings.render_distance").Entity);
         AssertFalse(scene.Nodes.Where(node => fixture.Shell.Tree.Name(node.Entity).StartsWith("HardwareAdvice.", StringComparison.Ordinal))
             .Any(node => node.Text?.Contains("private-pack", StringComparison.Ordinal) == true));
         Emit(fixture.Intents, "ui.settings.platform.refresh", FindByKey(fixture.Shell, scene, "PlatformRefresh").Entity);

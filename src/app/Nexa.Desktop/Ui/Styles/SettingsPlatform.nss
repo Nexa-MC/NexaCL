@@ -1,4 +1,5 @@
 /* Platform observations and readonly, snapshot-scoped preflight. */
+.platform-summary { Orientation: Vertical; Spacing: 24; }
 .platform-toolbar { Orientation: Horizontal; Spacing: 12; }
 .platform-status-slot { Weight: 1; }
 .platform-status { Height: 32; FontSize: 12; Foreground: #5e6e82; }

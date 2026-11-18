@@ -1,0 +1,3 @@
+<nxml-dynamic>
+  <Dynamic Key="PlatformSummary" Class="platform-summary" TransitionKey="platform-summary" TransitionMovesSelf="false" TransitionIndependentChildren="true" />
+</nxml-dynamic>

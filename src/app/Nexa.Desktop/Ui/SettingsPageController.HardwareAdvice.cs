@@ -32,16 +32,24 @@ internal sealed partial class SettingsPageController
         }
         if (_hardwareAdviceRead is not { IsCompleted: true } read) return;
         _hardwareAdviceRead = null; _hardwareAdviceStop?.Dispose(); _hardwareAdviceStop = null;
-        if (ReferenceEquals(_hardwareAdviceSource, _machine) && PendingQuery.Succeeded(read))
-            _hardwareAdviceReport = read.Result.Value;
-        BuildSections();
+        if (!ReferenceEquals(_hardwareAdviceSource, _machine) || !PendingQuery.Succeeded(read)) return;
+        _hardwareAdviceReport = read.Result.Value;
+        // Only these cards depend on preflight. Keep the observation rows and their live
+        // entities (including scroll/focus targets) when the asynchronous report arrives.
+        if (_platformPreflightCard.IsAssigned) _dynamic.Remove(_platformPreflightCard);
+        if (_platformHardwareCard.IsAssigned) _dynamic.Remove(_platformHardwareCard);
+        _platformPreflightCard = _platformHardwareCard = default;
+        _platformRemediationActions.Clear();
+        Interlocked.Increment(ref _platformActionGeneration);
+        BuildPreflightCard();
+        BuildHardwareAdvice();
     }
     private void BuildHardwareAdvice()
     {
         if (_machine is not { } source || !_machineScope.HasInstanceScope || MemoryAnalysisUnavailable) return;
         var report = ReferenceEquals(_hardwareAdviceSource, source) ? _hardwareAdviceReport : null;
         var facts = CaptureHardwareAdvice(source, report, _shell.Renderer.LocalizeText);
-        _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsHardwareAdvice.d.nxml", new Dictionary<string, string>
+        _platformHardwareCard = _dynamic.Append(_platformSummary, DesktopMarkup.Dynamic("SettingsHardwareAdvice.d.nxml", new Dictionary<string, string>
         {
             ["shader"] = facts.Shader,
             ["packs"] = facts.ResourcePacks,

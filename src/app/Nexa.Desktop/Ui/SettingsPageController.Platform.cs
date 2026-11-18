@@ -36,6 +36,7 @@ internal sealed partial class SettingsPageController
     private enum PlatformReadError { Detection, Read }
     private readonly Dictionary<XsrUiEntityId, (string Id, MachineCapabilitySnapshot Snapshot, MachineCapabilityQuery Scope, long Generation)> _platformRemediationActions = [];
     private long _platformActionGeneration;
+    private XsrUiEntityId _platformSummary, _platformPreflightCard, _platformHardwareCard;
     private static readonly XsrSemanticId RefreshPlatform = XsrSemanticId.Parse("ui.settings.platform.refresh");
     private Task<XsrResult<MachineCapabilitySnapshot>>? _machineReading;
     private MachineCapabilityQuery? _machineReadingScope;
@@ -127,7 +128,9 @@ internal sealed partial class SettingsPageController
     {
         _platformRemediationActions.Clear();
         Interlocked.Increment(ref _platformActionGeneration);
-        var toolbar = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsPlatformToolbar.d.nxml", new Dictionary<string, string>
+        _platformPreflightCard = _platformHardwareCard = default;
+        _platformSummary = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsPlatformSummary.d.nxml"));
+        var toolbar = _dynamic.Append(_platformSummary, DesktopMarkup.Dynamic("SettingsPlatformToolbar.d.nxml", new Dictionary<string, string>
         { ["enabled"] = Flag(_machineRefreshing is null) }));
         var statusSlot = CatalogNodes(toolbar)["PlatformStatus"];
         string statusTemplate = _machineError switch
@@ -146,9 +149,10 @@ internal sealed partial class SettingsPageController
             // Real facts only: definitions with no wired provider are registry placeholders
             // (they rendered as endless 尚未接入检测提供方 rows), and remediation-style
             // Action definitions are operations, not observations.
-            var visible = _machine.Values
-                .Where(value => !MemoryAnalysisUnavailable || !value.Id.StartsWith("estimate.", StringComparison.Ordinal) || value.Id == "estimate.status")
-                .Where(value => !(MemoryAnalysisUnavailable && value.Availability == CapabilityAvailability.TemporarilyUnavailable
+            bool memoryUnavailable = MemoryAnalysisUnavailable;
+            var groups = _machine.Values
+                .Where(value => !memoryUnavailable || !value.Id.StartsWith("estimate.", StringComparison.Ordinal) || value.Id == "estimate.status")
+                .Where(value => !(memoryUnavailable && value.Availability == CapabilityAvailability.TemporarilyUnavailable
                     && (value.Id.StartsWith("preflight.memory.", StringComparison.Ordinal)
                         || value.Id.StartsWith("preflight.estimator.", StringComparison.Ordinal) || value.Id == "preflight.gpu.vram.launch_critical")))
                 .Where(value => value.Definition.Kind != CapabilityKind.Action && value.Definition.Kind != CapabilityKind.Policy)
@@ -156,27 +160,24 @@ internal sealed partial class SettingsPageController
                     and not "mod.metadata.fingerprint" and not "minecraft.settings.fingerprint")
                 .Where(value => value.Availability != CapabilityAvailability.NotImplemented
                     || value.Reason != "尚未接入检测提供方")
-                .GroupBy(value => value.Id, StringComparer.Ordinal)
-                .Select(group => group.First())
-                .ToList();
-            var orderedGroups = visible.Select(value => value.Definition.Group).Distinct()
+                .GroupBy(value => value.Definition.Group, StringComparer.Ordinal)
                 .OrderBy(group =>
                 {
-                    int index = Array.IndexOf(PlatformGroups.Value, group);
+                    int index = Array.IndexOf(PlatformGroups.Value, group.Key);
                     return index < 0 ? int.MaxValue : index;
-                }).ThenBy(group => group, StringComparer.CurrentCulture)
-                .ToList();
-            foreach (var group in orderedGroups)
+                }).ThenBy(group => group.Key, StringComparer.CurrentCulture);
+            foreach (var observations in groups)
             {
+                string group = observations.Key;
                 var section = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsPlatformGroup.d.nxml", new Dictionary<string, string>
                 {
                     ["group"] = "PlatformGroup." + group,
-                    ["title"] = MemoryAnalysisUnavailable && group == PlatformTerm("group.18") ? PlatformTerm("group.memory") : group,
+                    ["title"] = memoryUnavailable && group == PlatformTerm("group.18") ? PlatformTerm("group.memory") : group,
                     ["card"] = "PlatformCard." + group,
                     ["body"] = "PlatformCard." + group + ".Body"
                 }));
                 var card = CatalogNodes(section)["PlatformCard." + group + ".Body"];
-                foreach (var value in visible.Where(value => value.Definition.Group == group))
+                foreach (var value in observations)
                     BuildCapabilityRow(card, value);
             }
         }
@@ -266,7 +267,7 @@ internal sealed partial class SettingsPageController
     {
         if (_machine is not { } machine || !ReferenceEquals(_hardwareAdviceSource, machine)
             || _hardwareAdviceReport is not { OverallSeverity: not PreflightSeverity.None } report) return;
-        var card = _dynamic.Append(_sections, DesktopMarkup.Dynamic("SettingsPlatformPreflight.d.nxml", new Dictionary<string, string>
+        var card = _platformPreflightCard = _dynamic.Append(_platformSummary, DesktopMarkup.Dynamic("SettingsPlatformPreflight.d.nxml", new Dictionary<string, string>
         { ["severity"] = _shell.Renderer.LocalizeText(SeverityLabel(report.OverallSeverity)) }, _shell.Renderer.LocalizeText));
         var issues = CatalogNodes(card)["PlatformPreflightIssues"];
         foreach (var issue in report.CollapsedIssues)
