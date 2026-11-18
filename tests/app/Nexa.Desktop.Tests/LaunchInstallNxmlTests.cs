@@ -1,7 +1,9 @@
 using Nexa.Desktop.Ui;
 using Nexa.Services.Minecraft.Install;
+using Nexa.Xsr;
 using Nexa.Xsr.Renderer;
 using Nexa.Xsr.Renderer.Nxml;
+using Nexa.Xsr.Runtime;
 
 namespace Nexa.Desktop.Tests;
 
@@ -65,6 +67,28 @@ internal static partial class Program
             AssertTrue(fixture.Shell.Tree.GetComponent<XsrUiSelection>(child) is not null
                 || fixture.Shell.Tree.Name(child).StartsWith("CatalogBefore.", StringComparison.Ordinal)
                 || fixture.Shell.Tree.Name(child).StartsWith("CatalogAfter.", StringComparison.Ordinal));
+    }
+
+    private static void LaunchInstallShutdownCancelsTheQueuedDraft()
+    {
+        TaskCompletionSource submitted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        var commands = new XsrCommandRouterBuilder();
+        commands.Register<InstallDraftReplace>(MinecraftInstallDraftContract.Replace, async (_, token) =>
+        {
+            submitted.TrySetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, token).ConfigureAwait(false);
+            return XsrResult.Success();
+        });
+        using var fixture = new LaunchPageFixture(new ImmediateInstanceSource([]),
+            installCommands: commands.Build(new NoopDispatchObserver()));
+        Emit(fixture.Intents, "ui.navigation.download");
+        Emit(fixture.Intents, "ui.install.java");
+        fixture.Shell.Render(new(900, 600));
+        Emit(fixture.Intents, "ui.page.back");
+        fixture.Shell.Render(new(900, 600));
+        submitted.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+        Task shutdown = fixture.Controller.DisposeAsync().AsTask();
+        shutdown.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
     }
 
     private static void LaunchInstallCatalogLiteralDataUsesBoundedIdentity()

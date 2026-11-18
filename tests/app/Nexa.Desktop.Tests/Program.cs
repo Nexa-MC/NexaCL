@@ -254,6 +254,7 @@ internal static partial class Program
         ("ThemeVirtualCatalogsUseSameGenerationGeometryWithoutRequeryOrDraftLoss", ThemeVirtualCatalogsUseSameGenerationGeometryWithoutRequeryOrDraftLoss),
         ("ThemeScreenshotMetricsReflowOwnedCardsAndRetainPreviewRoutes", ThemeScreenshotMetricsReflowOwnedCardsAndRetainPreviewRoutes),
         ("LaunchInstallOwnedCatalogRetainsSelectionDraftFocusAndScroll", LaunchInstallOwnedCatalogRetainsSelectionDraftFocusAndScroll),
+        ("LaunchInstallShutdownCancelsTheQueuedDraft", LaunchInstallShutdownCancelsTheQueuedDraft),
         ("LaunchInstallCatalogLiteralDataUsesBoundedIdentity", LaunchInstallCatalogLiteralDataUsesBoundedIdentity),
         ("LaunchInstallCatalogLocaleReloadRetainsLiteralDraftAndOwnedRows", LaunchInstallCatalogLocaleReloadRetainsLiteralDraftAndOwnedRows),
         ("CustomIdentityProjectionPreservesLiveDraftsAndOwnedNotes", CustomIdentityProjectionPreservesLiveDraftsAndOwnedNotes),

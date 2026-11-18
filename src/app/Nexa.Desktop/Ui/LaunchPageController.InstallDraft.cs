@@ -1,5 +1,6 @@
 using System.Collections;
 using Nexa.Services.Minecraft.Install;
+using Nexa.Xsr;
 
 namespace Nexa.Desktop.Ui;
 
@@ -14,7 +15,7 @@ internal sealed partial class LaunchPageController
         if (_installCatalogCommands?.TryResolve(MinecraftInstallDraftContract.Change, out var route) == true)
             QueueDraftUpdate(() => _installCatalogCommands.Dispatch(route, change, cancellationToken: _lifetimeCancellation.Token).Completion);
     }
-    private Task QueueDraftUpdate(Func<Task<Nexa.Xsr.XsrResult>> send)
+    private Task QueueDraftUpdate(Func<Task<XsrResult>> send)
     {
         lock (_refreshGate)
         {
@@ -25,8 +26,11 @@ internal sealed partial class LaunchPageController
             try { await previous.ConfigureAwait(false); }
             catch (Exception error) when (error is not OutOfMemoryException and not AccessViolationException)
             { _ = previous.Exception; }
-            _lifetimeCancellation.Token.ThrowIfCancellationRequested();
+            CancellationToken lifetime = _lifetimeCancellation.Token;
+            lifetime.ThrowIfCancellationRequested();
             var result = await send().ConfigureAwait(false);
+            // XSR transports cancellation as a result, but shutdown drains cancelled tasks.
+            if (result.Error?.Kind == XsrErrorKind.Cancelled) lifetime.ThrowIfCancellationRequested();
             if (!result.IsSuccess) throw new InvalidOperationException(result.Error?.Message ?? "Installation draft update failed.");
         }
     }

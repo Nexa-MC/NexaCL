@@ -42,7 +42,8 @@ internal static partial class Program
             IInstallCatalogSource? installSource = null,
             IXsrStateObserver? stateObserver = null,
             Nexa.Services.RegionalPolicy? regionalPolicy = null,
-            Nexa.Services.Memory.IProcessMemoryPort? memoryPort = null)
+            Nexa.Services.Memory.IProcessMemoryPort? memoryPort = null,
+            XsrCommandRouter? installCommands = null)
         {
             _temporaryDirectory = Path.Combine(
                 Path.GetTempPath(),
@@ -87,7 +88,7 @@ internal static partial class Program
                 Store,
                 Library,
                 Feedback, accountCommands: enableSkins ? Onboarding.Commands : null,
-                timeProvider: timeProvider, directoryEffects: directoryEffects, installCatalogCommands: InstallCatalog.Commands, installCatalogQueries: InstallCatalog.Queries, recoveryQueries: Foundation.Queries,
+                timeProvider: timeProvider, directoryEffects: directoryEffects, installCatalogCommands: installCommands ?? InstallCatalog.Commands, installCatalogQueries: InstallCatalog.Queries, recoveryQueries: Foundation.Queries,
                 regionalPolicy: regionalPolicy ?? new("US"));
             _bedrockInstall = new(Shell, Intents, Store, Feedback, () => { }, _ => { });
             Controller.BedrockInstallPage = _bedrockInstall.Page;
