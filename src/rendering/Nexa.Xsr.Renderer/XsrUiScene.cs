@@ -95,8 +95,23 @@ public readonly record struct XsrUiSceneNode(
     public XsrUiGraphSnapshot? Graph { get; init; }
     public XsrUiContextMenuSnapshot? ContextMenu { get; init; }
     public XsrUiSegmentScrollSnapshot? SegmentScroll { get; init; }
-    public XsrUiScrollbarSnapshot? VerticalScrollbar { get; init; }
-    public XsrUiScrollbarSnapshot? HorizontalScrollbar { get; init; }
+    // Only scroll hosts carry indicator geometry. Keep its three rectangles out of every
+    // text, image and layout node while retaining value equality and immutable scene copies.
+    private sealed record ScrollbarGeometry(XsrUiScrollbarSnapshot Value);
+    private readonly ScrollbarGeometry? _verticalScrollbar;
+    private readonly ScrollbarGeometry? _horizontalScrollbar;
+
+    public XsrUiScrollbarSnapshot? VerticalScrollbar
+    {
+        get => _verticalScrollbar?.Value;
+        init => _verticalScrollbar = value is { } bar ? new(bar) : null;
+    }
+
+    public XsrUiScrollbarSnapshot? HorizontalScrollbar
+    {
+        get => _horizontalScrollbar?.Value;
+        init => _horizontalScrollbar = value is { } bar ? new(bar) : null;
+    }
     public bool? IsChecked { get; init; }
     public bool IsSelectionRequired { get; init; } = true;
     /// <summary>Confirmed, immutable palette for backend-owned decorations; independent of custom style colors.</summary>

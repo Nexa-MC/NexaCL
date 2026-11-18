@@ -260,15 +260,28 @@ public sealed partial class XsrUiRenderer
         GetThemeStyle(entity)?.Visual ?? _tree.GetComponent<XsrUiVisualStyle>(entity);
 
     private XsrUiStyleIdentity StyleIdentity(XsrUiEntityId entity) =>
-        _tree.GetComponent<XsrUiStyleIdentity>(entity) ?? new("Node", _tree.Name(entity), [],
-            _tree.GetComponent<XsrUiSemantic>(entity)?.Role.ToString());
+        StyleIdentity(entity, _tree.ReadComponents(entity));
+
+    private XsrUiStyleIdentity StyleIdentity(XsrUiEntityId entity, XsrUiPresentation.ComponentView components)
+    {
+        if (components.Get<XsrUiStyleIdentity>() is { } declared) return declared;
+        string name = _tree.Name(entity);
+        string? role = components.Get<XsrUiSemantic>()?.Role.ToString();
+        if (_themeStyles.TryGetValue(entity, out var entry)
+            && entry.Key.Identity is { Kind: "Node" } previous
+            && previous.Key == name && previous.Role == role
+            && ReferenceEquals(previous.Classes, Array.Empty<string>()))
+            return previous;
+        return new("Node", name, Array.Empty<string>(), role);
+    }
 
     private ThemeStyleKey CreateThemeStyleKey(XsrUiEntityId entity, long revision, XsrUiThemeEnvironment environment)
     {
-        XsrUiElement? element = _tree.GetComponent<XsrUiElement>(entity);
-        XsrUiStackPanel? stack = _tree.GetComponent<XsrUiStackPanel>(entity);
-        XsrUiVisualStyleSnapshot visual = _tree.GetComponent<XsrUiVisualStyle>(entity)?.Snapshot() ?? default;
-        XsrUiInput? input = _tree.GetComponent<XsrUiInput>(entity);
+        var components = _tree.ReadComponents(entity);
+        XsrUiElement? element = components.Get<XsrUiElement>();
+        XsrUiStackPanel? stack = components.Get<XsrUiStackPanel>();
+        XsrUiVisualStyleSnapshot visual = components.Get<XsrUiVisualStyle>()?.Snapshot() ?? default;
+        XsrUiInput? input = components.Get<XsrUiInput>();
         XsrUiThemeInteractionState state = XsrUiThemeInteractionState.None;
         bool enabled = IsEnabled(input);
         if (enabled && input?.IsHovered == true) state |= XsrUiThemeInteractionState.Hover;
@@ -276,9 +289,9 @@ public sealed partial class XsrUiRenderer
         if (enabled && input?.IsFocused == true) state |= XsrUiThemeInteractionState.Focus;
         if (enabled && input?.IsFocusVisible == true) state |= XsrUiThemeInteractionState.FocusVisible;
         if (!enabled) state |= XsrUiThemeInteractionState.Disabled;
-        if (_tree.GetComponent<XsrUiSelection>(entity)?.IsSelected == true) state |= XsrUiThemeInteractionState.Selected;
-        if (_tree.GetComponent<XsrUiToggle>(entity)?.IsChecked == true) state |= XsrUiThemeInteractionState.Checked;
-        XsrUiStyleIdentity identity = StyleIdentity(entity);
+        if (components.Get<XsrUiSelection>()?.IsSelected == true) state |= XsrUiThemeInteractionState.Selected;
+        if (components.Get<XsrUiToggle>()?.IsChecked == true) state |= XsrUiThemeInteractionState.Checked;
+        XsrUiStyleIdentity identity = StyleIdentity(entity, components);
         HashCode parents = new();
         for (XsrUiEntityId parent = _tree.Parent(entity); parent.IsAssigned; parent = _tree.Parent(parent))
         {

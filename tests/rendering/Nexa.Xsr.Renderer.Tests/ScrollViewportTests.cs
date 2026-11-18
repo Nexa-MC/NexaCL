@@ -71,6 +71,28 @@ internal static partial class Program
         AssertEqual(new XsrUiRect(0, 0, 300, 40), scene.Nodes.Single(n => n.Entity == f.Child).Rect);
     }
 
+    private static void ScrollbarGeometryPreservesSceneValueSemantics()
+    {
+        var f = ScrollViewport(XsrUiOrientation.Vertical, wraps: true);
+        var scene = f.Renderer.Render();
+        var original = scene[0];
+        var vertical = original.VerticalScrollbar!.Value;
+        var horizontal = vertical with { Direction = XsrUiOrientation.Horizontal };
+        var both = original with { HorizontalScrollbar = horizontal };
+        var equal = both with { VerticalScrollbar = vertical, HorizontalScrollbar = horizontal };
+        AssertEqual(both, equal);
+        AssertEqual(both.GetHashCode(), equal.GetHashCode());
+        AssertTrue(both != original);
+        AssertEqual(horizontal, (both with { VerticalScrollbar = null }).HorizontalScrollbar!.Value);
+        AssertEqual(original, both with { HorizontalScrollbar = null });
+
+        f.Scroll.ShowsVerticalIndicator = false;
+        f.Tree.MarkDirty(f.Root, XsrUiDirtyKinds.Layout);
+        AssertTrue(f.Renderer.Render()[0].VerticalScrollbar is null);
+        AssertEqual(vertical, scene[0].VerticalScrollbar!.Value);
+        AssertTrue(scene[0].HorizontalScrollbar is null);
+    }
+
     private static void ScrollSnapshotQueryUsesLastSceneAndRejectsRetiredEntities()
     {
         var f = ScrollViewport(XsrUiOrientation.Vertical);

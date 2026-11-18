@@ -2,6 +2,7 @@ namespace Nexa.Xsr.Renderer;
 
 public sealed partial class XsrUiRenderer
 {
+    private static readonly XsrUiVisualStyleSnapshot DefaultVisual = new XsrUiVisualStyle().Snapshot();
     private readonly Dictionary<XsrUiEntityId, ThemeAnimationClock> _themeAnimationClocks = [];
     private readonly HashSet<XsrUiEntityId> _themeAnimationVisible = [];
     private sealed record ThemeAnimationClock(DateTimeOffset Started, DateTimeOffset LastRendered, long PreparedFrame,
@@ -41,11 +42,12 @@ public sealed partial class XsrUiRenderer
         return true;
     }
 
-    private void RecordThemeAnimationScene(IReadOnlyList<XsrUiSceneNode> nodes)
+    private void RecordThemeAnimationScene(ReadOnlySpan<XsrUiSceneNode> nodes)
     {
         _themeAnimationVisible.Clear();
+        if (_themeAnimationClocks.Count == 0) return;
         DateTimeOffset now = _gestureTime.GetUtcNow();
-        foreach (var node in nodes)
+        foreach (ref readonly var node in nodes)
         {
             if (node.Rect.Width <= 0 || node.Rect.Height <= 0 || !_themeAnimationClocks.TryGetValue(node.Entity, out var clock)) continue;
             _themeAnimationVisible.Add(node.Entity);
@@ -62,7 +64,7 @@ public sealed partial class XsrUiRenderer
         XsrUiComputedStyle style = themed.Style;
         if (!HasThemeVisualOverrides(style)) return ProjectStyle(_tree.GetComponent<XsrUiVisualStyle>(entity));
         XsrUiVisualStyleSnapshot source = _colorScheme.Project(_tree.GetComponent<XsrUiVisualStyle>(entity)?.Snapshot()
-            ?? new XsrUiVisualStyle().Snapshot());
+            ?? DefaultVisual);
         XsrUiVisualStyleSnapshot visual = themed.Visual.Snapshot() with
         {
             Background = style.Background ?? source.Background,

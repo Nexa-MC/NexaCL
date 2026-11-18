@@ -44,6 +44,32 @@ internal static partial class Program
         AssertThrows<InvalidOperationException>(() => renderer.ApplyTheme(new TestThemeProgram(1, _ => new()), 2));
     }
 
+    private static void ImplicitStyleIdentityTracksRoleAndExplicitOverrides()
+    {
+        var tree = new XsrUiTree();
+        var root = tree.Create("parent");
+        var leaf = tree.Create("leaf");
+        tree.Attach(leaf, root);
+        var semantic = new XsrUiSemantic(XsrUiSemanticRole.Text);
+        tree.SetComponent(root, semantic);
+        var renderer = new XsrUiRenderer(tree, new XsrStateStoreBuilder().Build());
+        renderer.SetRoot(root);
+        var selected = new XsrUiColor(7, 8, 9);
+        renderer.ApplyTheme(new TestThemeProgram(1, ctx =>
+            ctx.Identity.Key == "leaf" && ctx.Parents[0] is { Kind: "Node", Role: "Text", Classes.Count: 0 }
+                ? new() { Background = selected } : XsrUiComputedStyle.Empty), 1);
+        XsrUiColor Color() => renderer.Render().Nodes.Single(n => n.Entity == leaf).VisualStyle.Background;
+        AssertEqual(selected, Color());
+        semantic.Role = XsrUiSemanticRole.Button;
+        tree.MarkDirty(root, XsrUiDirtyKinds.Paint);
+        AssertTrue(Color() != selected);
+        semantic.Role = XsrUiSemanticRole.Text;
+        tree.SetComponent(root, new XsrUiStyleIdentity("Node", "parent", ["custom"], "Text"));
+        AssertTrue(Color() != selected);
+        tree.SetComponent<XsrUiStyleIdentity>(root, null);
+        AssertEqual(selected, Color());
+    }
+
     private static void ThemeAdmissionIncludesRetainedNodesAndRejectsWithoutMutation()
     {
         XsrUiTree tree = new(); var root = tree.Create("root");
